@@ -1,5 +1,22 @@
 # Agente coordinador — demo local
 
+## Ampliación autorizada: plano, reconstrucción y similitud (2026-11-13)
+
+Solicitud posterior del usuario: centrar el trabajo en el visualizador de planos y vistas, cotas, piezas, explicación del harness, reconstrucción y embeddings coherentes para agrupar muebles. Rama de integración `demo/drawing-workbench`, base integrada `40e5e40`. Se conserva la revisión humana y la estimación existentes.
+
+Propiedad para esta fase:
+- A: ingesta, geometria, `servicios/decomposition.py`, nuevo `servicios/reconstruction.py`, pruebas geométricas y de reconstrucción; su registro. No escribe contratos.
+- B: contratos (único escritor), API/main, harness, repositorio y similitud/embeddings; pruebas backend salvo las reservadas a A; su registro.
+- C: frontend completo, dependencias JS declaradas y pruebas; su registro.
+- D: fixtures propios, generador, referencias reservadas y `tests/test_demo*`; su registro.
+- Coordinador: documentación de entrega, índice de equipo, integración, comprobación navegador y restricciones reproducibles. GPT-6 Astra revisa en lectura el resultado integrado.
+
+Secuencia: A/B acuerdan y registran primero contratos aditivos de dibujo enriquecido, escena y descriptor/similitud, avisan C/D; paralelizar implementación y pruebas en ramas aisladas; integrar; recorrer plano/revisión/3D/agrupación en navegador y comprobar proveedor real si está configurado; corregir hallazgos Astra; documentar límites.
+
+Criterios: cotas con anclajes y unidades; navegación/pan/zoom; selección bidireccional pieza/evidencia; explicaciones verificables con fuentes y premisas; sólidos únicamente con dimensiones suficientes y colocación justificada, sin completar incógnitas; descriptor semántico versionado, embeddings reales identificados con modelo y caché, similitud geométrica separada; grupos reproducibles sobre entradas propias. No publicar PlankAssembly ni atribuir precisión industrial a la reconstrucción.
+
+Estado: en curso; capacidades de esta ampliación todavía no verificadas.
+
 Identidad: agente coordinador de IA; no representa a una persona. Autorización: solicitud explícita del usuario del 2026-11-13.
 
 ## Alcance y propiedad
