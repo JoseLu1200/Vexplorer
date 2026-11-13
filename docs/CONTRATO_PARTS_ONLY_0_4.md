@@ -20,9 +20,11 @@ extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtracti
 
 `SeparatedPartsExtraction` contiene observaciones agrupadas únicamente por asociación explícita. Cada observación expone vistas y bounds locales, dimensiones `length/width/thickness`, cantidad observada o desconocida y referencias a entidades/evidencias. Varias vistas nunca incrementan cantidad.
 
-Los `AssemblyCandidate` son hipótesis separadas del ledger y de los escenarios legacy. Sus `uses` solo referencian observaciones, roles hipotéticos y cantidades observadas o desconocidas. Las dimensiones `width/height/depth` del mueble son derivadas mediante constraints estructurados; no proceden de cotas del conjunto. Se conservan permutaciones de roles y los layouts `between_sides|cap_sides` compatibles. No se inventan tapa, base, trasera, herrajes ni material.
+El servicio cruza cada view/contour/entity/evidence/measurement contra el `DrawingExtraction` congelado y valida que la key procede de la gramática permitida. Un conflicto dimensional exige al menos dos vistas/evidencias incompatibles. `ambiguous` y `unassociated` nunca se fusionan por geometría o proximidad.
 
-Una revisión puede seleccionar `assembly_candidate_id` y aportar decisiones humanas por pieza. Esto crea otra revisión; no reescribe observaciones. La escena solo crea ocurrencias cuando cantidad y `length/width/thickness` están respaldados por observación o confirmación humana. En otro caso es `incomplete`. La firma de A será:
+Los `AssemblyCandidate` son hipótesis separadas del ledger y de los escenarios legacy. Sus `uses` solo referencian observaciones, roles hipotéticos y cantidades observadas o desconocidas; `unassigned_part_observation_ids` conserva el resto y el servicio exige cobertura exacta. Una cantidad `observed_annotation` se copia exactamente de `ObservedQuantity` con la misma evidencia; `human_confirmed` solo procede de Review y `unknown` implica `null`. Las dimensiones `width/height/depth` del mueble son recalculadas por servidor mediante constraints con operación y operandos estructurados; nunca se confía en un resultado numérico aportado por el modelo. Se conservan permutaciones de roles y los layouts `between_sides|cap_sides` compatibles. No se inventan tapa, base, trasera, herrajes ni material.
+
+Una revisión puede seleccionar `assembly_candidate_id` y aportar decisiones humanas por pieza. Esto crea otra revisión; no reescribe observaciones ni convierte automáticamente roles/layout/dimensiones en hechos. La escena solo crea ocurrencias cuando cantidad y `length/width/thickness` están respaldados y el placement procede de constraints estructurados del candidato seleccionado. En otro caso es `incomplete` y omite el sólido; `placement_status` distingue hipótesis de selección humana. La firma de A será:
 
 ```text
 reconstruct_parts_scene(extraction: DrawingExtraction, parts: SeparatedPartsExtraction, result: Result) -> ReconstructionScene
@@ -37,7 +39,7 @@ reconstruct_parts_scene(extraction: DrawingExtraction, parts: SeparatedPartsExtr
 - `POST /api/v1/runs/{run_id}/reviews` conserva la ruta y admite `assembly_candidate_id` junto con decisiones humanas; no se crea un segundo sistema de revisión.
 - Dibujo, explicaciones, escena, biblioteca, similitud, grupos y exportaciones permanecen ligados a `result_revision`.
 
-El descriptor canónico incorpora espesores observados/confirmados y `classification_status`; IDs, keys, coordenadas, filename y evidencias quedan fuera del fingerprint semántico. La familia y los roles permanecen `hypothesis` hasta revisión humana.
+El flujo nuevo usa `FurnitureDescriptorV2` (`descriptor_version=furniture-v2`), que incorpora espesores observados/confirmados y `classification_status`. `FurnitureDescriptor` v1 se conserva sin reinterpretarlo para leer biblioteca legacy. IDs, keys, coordenadas, filename y evidencias quedan fuera del fingerprint semántico. Embeddings v1/v2 pertenecen a espacios contractuales distintos: caché, similitud semántica y grupos incluyen la versión y rechazan mezclas. La familia y los roles permanecen `hypothesis` hasta revisión humana.
 
 ## Propiedad de implementación
 

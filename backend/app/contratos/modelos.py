@@ -226,6 +226,8 @@ class ObservedPartDimension(StrictModel):
             raise ValueError("observed dimension requires value, view and evidence references")
         if self.state != "observed" and self.value_mm is not None:
             raise ValueError("unknown or conflict dimension must have null value")
+        if self.state == "conflict" and (len(self.view_ids) < 2 or len(self.evidence_ids) < 2):
+            raise ValueError("conflict dimension requires at least two view and evidence references")
         return self
 
 
@@ -316,12 +318,23 @@ class AssemblyPartUse(StrictModel):
 class AssemblyConstraint(StrictModel):
     id: str = Field(min_length=1)
     kind: Literal["equal_dimensions", "exterior_from_parts", "role_compatibility"]
+    operation: Literal["equal", "sum", "difference", "compatibility"]
     dimension: Literal["length", "width", "thickness", "assembled_width", "assembled_height", "assembled_depth"]
     operand_refs: tuple[str, ...] = Field(min_length=1)
     result_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     status: Literal["pass", "unknown", "conflict"]
     tolerance_mm: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     evidence_ids: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def result_matches_status(self) -> "AssemblyConstraint":
+        if self.status == "pass" and (self.result_mm is None or not self.evidence_ids):
+            raise ValueError("passing constraint requires a result and evidence")
+        if self.status != "pass" and self.result_mm is not None:
+            raise ValueError("unknown or conflict constraint must have null result")
+        if self.status == "conflict" and (len(self.operand_refs) < 2 or len(self.evidence_ids) < 2):
+            raise ValueError("conflict constraint requires incompatible operands and evidence")
+        return self
 
 
 class DerivedAssemblyDimension(StrictModel):
@@ -342,11 +355,12 @@ class DerivedAssemblyDimension(StrictModel):
 
 class AssemblyCandidate(StrictModel):
     id: str = Field(min_length=1)
-    family: Literal["rectangular_shelving"]
+    family: Literal["rectangular_shelving", "unknown"]
     family_status: Literal["hypothesis"] = "hypothesis"
-    layout: Literal["between_sides", "cap_sides"]
+    layout: Literal["between_sides", "cap_sides", "unknown"]
     layout_status: Literal["hypothesis"] = "hypothesis"
-    uses: tuple[AssemblyPartUse, ...] = Field(min_length=1)
+    uses: tuple[AssemblyPartUse, ...]
+    unassigned_part_observation_ids: tuple[str, ...] = ()
     constraints: tuple[AssemblyConstraint, ...]
     derived_dimensions: tuple[DerivedAssemblyDimension, ...]
     unknown_fields: tuple[str, ...]
@@ -360,6 +374,13 @@ class AssemblyCandidate(StrictModel):
         ids = [item.part_observation_id for item in self.uses]
         if len(ids) != len(set(ids)):
             raise ValueError("part observation used more than once in assembly candidate")
+        if set(ids) & set(self.unassigned_part_observation_ids):
+            raise ValueError("part observation cannot be both used and unassigned")
+        if len(self.unassigned_part_observation_ids) != len(set(self.unassigned_part_observation_ids)):
+            raise ValueError("duplicate unassigned part observation")
+        axes = [item.axis for item in self.derived_dimensions]
+        if len(axes) != len(set(axes)):
+            raise ValueError("derived assembly axes must be unique")
         return self
 
 
@@ -499,6 +520,8 @@ class SceneObject(StrictModel):
     evidence_ids: tuple[str, ...]
     placement_basis: str = Field(min_length=1)
     part_observation_id: str | None = None
+    placement_status: Literal["hypothesis", "human_selected"] = "human_selected"
+    placement_constraint_ids: tuple[str, ...] = ()
 
 
 class ReconstructionScene(StrictModel):
@@ -563,8 +586,19 @@ class FurnitureDescriptor(StrictModel):
     structure: Literal["top_base_between_sides", "top_base_cap_sides", "unknown"]
     material: str | None = None
     finish: str | None = None
-    thicknesses_mm: tuple[float, ...] = ()
-    classification_status: Literal["hypothesis", "confirmed"] = "hypothesis"
+    unknown_fields: tuple[str, ...]
+
+
+class FurnitureDescriptorV2(StrictModel):
+    descriptor_version: Literal["furniture-v2"] = "furniture-v2"
+    family: Literal["rectangular_shelving", "unknown"]
+    dimensions: DescriptorDimensions
+    roles: tuple[RoleQuantity, ...]
+    structure: Literal["top_base_between_sides", "top_base_cap_sides", "unknown"]
+    material: str | None = None
+    finish: str | None = None
+    thicknesses_mm: tuple[float, ...]
+    classification_status: Literal["hypothesis", "confirmed"]
     unknown_fields: tuple[str, ...]
 
 
@@ -572,7 +606,7 @@ class EmbeddingMetadata(StrictModel):
     provider: Literal["openai"] = "openai"
     model: str = Field(min_length=1)
     dimensions: int = Field(gt=0)
-    descriptor_version: Literal["furniture-v1"] = "furniture-v1"
+    descriptor_version: Literal["furniture-v1", "furniture-v2"] = "furniture-v1"
     cache_key: str = Field(min_length=1)
     status: Literal["generated", "cache"]
 
@@ -583,7 +617,7 @@ class LibraryItem(StrictModel):
     run_id: str = Field(min_length=1)
     result_revision: int = Field(gt=0)
     label: str = Field(min_length=1)
-    descriptor: FurnitureDescriptor
+    descriptor: FurnitureDescriptor | FurnitureDescriptorV2
     descriptor_fingerprint: str = Field(min_length=64, max_length=64)
     created_at: str = Field(min_length=1)
     embedding: EmbeddingMetadata | None = None
