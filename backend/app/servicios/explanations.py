@@ -2,7 +2,19 @@ from __future__ import annotations
 
 import math
 
-from backend.app.contratos.modelos import DrawingExtraction, ExplanationBundle, FormulaExplanation, PieceExplanation, Result
+from backend.app.contratos.modelos import ComponentProposal, DecompositionScenario, DrawingExtraction, ExplanationBundle, FormulaExplanation, PieceExplanation, Result
+
+
+def explain_proposal(extraction: DrawingExtraction, scenario: DecompositionScenario, proposal: ComponentProposal) -> PieceExplanation:
+    observations = {item.id: item for item in extraction.observations}
+    dimension_ids = tuple(sorted({dimension_id for observation_id in proposal.source_observation_ids if (observation := observations.get(observation_id)) for dimension_id in observation.dimension_ids}))
+    field_states = {
+        "quantity": "hypothesis" if proposal.quantity is not None else "unknown",
+        "length_mm": "observed" if proposal.length_mm is not None and proposal.length_derivation == "direct_observation" else "unknown",
+        "width_mm": "observed" if proposal.width_mm is not None else "unknown",
+        "thickness_mm": "unknown", "material": "unknown", "finish": "unknown",
+    }
+    return PieceExplanation(piece_id=proposal.id, proposal_id=proposal.id, role=proposal.role, source_entity_ids=proposal.source_entity_ids, source_contour_ids=proposal.source_contour_ids, evidence_ids=proposal.evidence_ids, dimension_ids=dimension_ids, measurements={"quantity": proposal.quantity, "length_mm": proposal.length_mm, "width_mm": proposal.width_mm, "thickness_mm": proposal.thickness_mm}, formulas=(), premises=proposal.assumptions + scenario.assumptions, unknown_fields=tuple(sorted(field for field, state in field_states.items() if state == "unknown")), field_states=field_states)
 
 
 def explain_result(extraction: DrawingExtraction, result: Result) -> ExplanationBundle:
@@ -12,14 +24,7 @@ def explain_result(extraction: DrawingExtraction, result: Result) -> Explanation
     if not result.pieces:
         for scenario in result.scenarios:
             for proposal in scenario.components:
-                dimension_ids = tuple(sorted({dimension_id for observation_id in proposal.source_observation_ids if (observation := observations.get(observation_id)) for dimension_id in observation.dimension_ids}))
-                field_states = {
-                    "quantity": "hypothesis" if proposal.quantity is not None else "unknown",
-                    "length_mm": "observed" if proposal.length_mm is not None and proposal.length_derivation == "direct_observation" else "unknown",
-                    "width_mm": "observed" if proposal.width_mm is not None else "unknown",
-                    "thickness_mm": "unknown", "material": "unknown", "finish": "unknown",
-                }
-                pieces.append(PieceExplanation(piece_id=proposal.id, proposal_id=proposal.id, role=proposal.role, source_entity_ids=proposal.source_entity_ids, source_contour_ids=proposal.source_contour_ids, evidence_ids=proposal.evidence_ids, dimension_ids=dimension_ids, measurements={"quantity": proposal.quantity, "length_mm": proposal.length_mm, "width_mm": proposal.width_mm, "thickness_mm": proposal.thickness_mm}, formulas=(), premises=proposal.assumptions + scenario.assumptions, unknown_fields=tuple(sorted(field for field, state in field_states.items() if state == "unknown")), field_states=field_states))
+                pieces.append(explain_proposal(extraction, scenario, proposal))
         return ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(pieces), warnings=("hypotheses_require_human_review",))
     for piece in result.pieces:
         proposal = proposals[piece.proposal_id]
