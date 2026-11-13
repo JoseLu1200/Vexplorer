@@ -95,3 +95,24 @@ def test_missing_observed_thickness_keeps_parts_scene_without_solids(tmp_path: P
     assert scene.state == "incomplete"
     assert scene.objects == ()
     assert any(warning.startswith("incomplete_piece:") for warning in scene.warnings)
+
+
+def test_observed_thickness_changes_panel_sizes_without_changing_outer_width(tmp_path: Path) -> None:
+    extraction, parts, candidate, repository = _run(tmp_path, "piezas_espesor_36.dxf")
+    result = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=1, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id, notes="Selecciona control de espesor observado",
+        ),
+    )
+
+    scene = reconstruct_parts_scene(extraction, parts, result)
+
+    assert scene.state == "ready"
+    sides = sorted((item for item in scene.objects if item.role == "side_panel"), key=lambda item: item.occurrence_index)
+    assert [item.position_mm.x for item in sides] == [0.0, 864.0]
+    assert all(item.dimensions_mm.x == 36.0 for item in sides)
+    top = next(item for item in scene.objects if item.role == "top_panel")
+    assert top.dimensions_mm.x == 828.0
+    assert max(item.bbox_mm.max.x for item in scene.objects) == 900.0
