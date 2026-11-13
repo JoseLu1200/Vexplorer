@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Vexplorer convierte un plano DXF en un despiece y una estimación revisables, con evidencia visible.">
+    <meta name="theme-color" content="#f2f0e9">
+    <title>Vexplorer | Plano, despiece y estimación</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%23101619%22/><path d=%22M16 17h9l7 27 7-27h9L37 51H27z%22 fill=%22%234c67ff%22/></svg>">
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Saltar al espacio de trabajo</a>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Vexplorer, inicio"><span>V</span> Vexplorer</a>
+      <div class="topbar__meta"><span class="signal" aria-hidden="true"></span><span id="service-status">Conectando con el servicio</span></div>
+      <button class="button button--quiet" id="trace-toggle" type="button" aria-expanded="false" aria-controls="trace-drawer">Ver traza</button>
+    </header>
+
+    <main id="workspace">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Lectura técnica asistida · Familia estantería rectangular</p>
+        <h1 id="page-title">Del plano a una<br>decisión revisable</h1>
+        <p class="intro__copy">Carga un DXF. Cada propuesta queda ligada al dibujo y cada cifra conserva su origen. Lo desconocido permanece visible.</p>
+        <div class="proof"><span class="proof__mark">01</span><p>La geometría funciona sin proveedor. Ningún campo pendiente se rellena automáticamente.</p></div>
+      </section>
+
+      <section class="stage stage--active" id="upload-stage" aria-labelledby="upload-title">
+        <div class="stage__rail"><span>01</span><i></i></div>
+        <div class="stage__body">
+          <div class="section-heading">
+            <div><p class="eyebrow">Entrada</p><h2 id="upload-title">Carga el plano</h2></div>
+            <span class="status-chip" id="upload-status">Listo</span>
+          </div>
+          <form id="upload-form" class="upload-grid">
+            <label class="dropzone" for="drawing-file">
+              <input id="drawing-file" name="file" type="file" accept=".dxf,application/dxf" required>
+              <span class="dropzone__icon" aria-hidden="true">↗</span>
+              <strong>Selecciona un archivo DXF</strong>
+              <span>Archivo individual de hasta 20 MiB</span>
+              <small id="file-name">Ningún archivo seleccionado</small>
+            </label>
+            <fieldset class="mode-picker">
+              <legend>Modo de análisis</legend>
+              <label><input type="radio" name="mode" value="geometry_only" checked><span><b>Solo geometría</b><small>Disponible sin proveedor</small></span></label>
+              <label><input type="radio" name="mode" value="live" disabled><span><b>Agente en vivo</b><small id="live-note">Proveedor no configurado</small></span></label>
+              <label><input type="radio" name="mode" value="recorded_replay" disabled><span><b>Replay grabado</b><small id="replay-note">Sin grabación real</small></span></label>
+              <button class="button button--primary" type="submit">Analizar DXF <span aria-hidden="true">→</span></button>
+            </fieldset>
+          </form>
+          <p class="inline-message" id="global-message" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="stage is-locked" id="drawing-stage" aria-labelledby="drawing-title">
+        <div class="stage__rail"><span>02</span><i></i></div>
+        <div class="stage__body">
+          <div class="section-heading">
+            <div><p class="eyebrow">Evidencia</p><h2 id="drawing-title">Lee el plano</h2></div>
+            <span class="status-chip status-chip--muted" id="unit-label">Pendiente</span>
+          </div>
+          <div class="drawing-layout">
+            <div class="viewer-card">
+              <div class="viewer-toolbar"><div id="view-tabs" role="tablist" aria-label="Vistas del plano"></div><span id="drawing-id">Sin dibujo</span></div>
+              <svg id="drawing-viewer" role="img" aria-label="Vista bidimensional del plano" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="empty-state" id="drawing-empty"><strong>El plano aparecerá aquí</strong><span>Primero carga un DXF admitido.</span></div>
+            </div>
+            <aside class="evidence-card" aria-labelledby="evidence-title">
+              <p class="eyebrow">Origen seleccionado</p><h3 id="evidence-title">Sin selección</h3>
+              <div id="evidence-detail" class="detail-stack"><p>Selecciona una fila o un contorno para consultar su procedencia.</p></div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage is-locked" id="parts-stage" aria-labelledby="parts-title">
+        <div class="stage__rail"><span>03</span><i></i></div>
+        <div class="stage__body">
+          <div class="section-heading">
+            <div><p class="eyebrow">Propuestas</p><h2 id="parts-title">Contrasta el despiece</h2></div>
+            <span class="status-chip status-chip--warning" id="scenario-status">Pendiente de análisis</span>
+          </div>
+          <div class="legend" aria-label="Clases de información"><span data-origin="observed">Observado</span><span data-origin="derived">Calculado</span><span data-origin="hypothesis">Hipótesis</span><span data-origin="human_confirmed">Confirmado por persona</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Componente</th><th>Estado</th><th>Cantidad</th><th>Largo</th><th>Ancho</th><th>Grosor</th></tr></thead>
+              <tbody id="parts-body"><tr class="empty-row"><td colspan="6">Todavía no hay propuestas. El plano seguirá disponible aunque el despiece quede vacío.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage is-locked" id="review-stage" aria-labelledby="review-title">
+        <div class="stage__rail"><span>04</span><i></i></div>
+        <div class="stage__body">
+          <div class="section-heading"><div><p class="eyebrow">Decisión humana</p><h2 id="review-title">Resuelve el montaje ambiguo</h2></div><span class="status-chip status-chip--warning" id="revision-label">Sin revisión</span></div>
+          <form id="review-form" class="review-grid">
+            <fieldset id="scenario-options"><legend>Escenario respaldado</legend><p class="empty-copy">Las alternativas aparecerán cuando el backend las proponga.</p></fieldset>
+            <div class="review-reason"><label for="review-reason">Motivo técnico</label><textarea id="review-reason" rows="4" placeholder="Indica qué evidencia o conocimiento de taller respalda la decisión" required></textarea><button class="button button--primary" type="submit" disabled id="review-submit">Registrar decisión</button><p id="review-message" class="inline-message" role="status"></p></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="statement" aria-label="Beneficio principal"><p>Cada cifra conserva su origen.<br><span>Cada duda termina en una decisión registrada.</span></p></section>
+
+      <section class="stage is-locked" id="estimate-stage" aria-labelledby="estimate-title">
+        <div class="stage__rail"><span>05</span><i></i></div>
+        <div class="stage__body">
+          <div class="section-heading"><div><p class="eyebrow">Orientación económica</p><h2 id="estimate-title">Revisa comparables y estimación</h2></div><span class="status-chip status-chip--warning">Provisional</span></div>
+          <div class="estimate-grid">
+            <article class="panel"><div class="panel__heading"><div><p class="eyebrow">Histórico</p><h3>Proyectos comparables</h3></div><span class="synthetic-tag">Sintético</span></div><div id="comparables-list" class="comparable-list"><p class="empty-copy">Sin comparables disponibles.</p></div></article>
+            <article class="panel panel--dark"><div class="panel__heading"><div><p class="eyebrow">Cálculo por conceptos</p><h3>Estimación provisional</h3></div><span id="estimate-revision">Sin revisión</span></div><div id="estimate-lines" class="estimate-lines"><p class="empty-copy">Confirma un montaje para solicitar la estimación.</p></div><div class="estimate-total"><span>Total orientativo</span><strong id="estimate-total">Pendiente</strong></div><button class="button button--light" id="estimate-button" type="button" disabled>Calcular estimación</button></article>
+          </div>
+          <div class="export-bar"><div><p class="eyebrow">Entrega</p><strong>Ficha y traza auditables</strong><span>La exportación conserva desconocidos, revisión y procedencia.</span></div><div class="export-actions"><button class="button button--quiet" data-export="json" type="button" disabled>Exportar ficha JSON</button><button class="button button--quiet" data-export="csv" type="button" disabled>Exportar ficha CSV</button><button class="button button--primary" id="trace-export" type="button" disabled>Exportar traza</button></div></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="trace-drawer" id="trace-drawer" aria-label="Traza de la ejecución" aria-hidden="true">
+      <div class="trace-drawer__head"><div><p class="eyebrow">Actividad auditable</p><h2>Traza</h2></div><button class="icon-button" id="trace-close" type="button" aria-label="Cerrar traza">×</button></div>
+      <p class="trace-note">Acciones y resultados breves. Nunca razonamiento interno.</p>
+      <ol id="trace-list" class="trace-list"><li class="empty-copy">No hay eventos todavía.</li></ol>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <footer><span>Vexplorer · Demostración local</span><nav aria-label="Enlaces legales"><span>Los resultados requieren revisión técnica</span><a href="#workspace">Volver arriba</a></nav></footer>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>
