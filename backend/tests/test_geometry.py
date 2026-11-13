@@ -134,7 +134,45 @@ def test_dimension_scale_is_visible_and_not_silently_applied(tmp_path):
     extraction = extract_drawing(path)
 
     assert extraction.dimensions[0].value_mm is None
+    assert extraction.dimension_graphics[0].display_text == "1200"
     assert any("dimension_scale_conflict" in warning and "2" in warning for warning in extraction.warnings)
+
+
+def test_lwpolyline_in_non_xy_ocs_is_not_inferred_as_planar_geometry(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    polyline = modelspace.add_lwpolyline(
+        [(0, 0), (600, 0), (600, 300), (0, 300)], close=True,
+    )
+    polyline.dxf.extrusion = (0, 1, 0)
+    modelspace.add_text("FRONT").set_placement((0, -20))
+    path = tmp_path / "non-xy-ocs.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert extraction.contours == ()
+    assert derive_rectangular_hypotheses(extraction) == ()
+    assert any(warning.startswith("unsupported_entity_plane:LWPOLYLINE:") for warning in extraction.warnings)
+
+
+def test_lines_with_varying_z_do_not_form_a_false_rectangular_contour(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    corners = ((0, 0, 0), (600, 0, 0), (600, 300, 10), (0, 300, 0))
+    for start, end in zip(corners, corners[1:] + corners[:1], strict=True):
+        modelspace.add_line(start, end)
+    modelspace.add_text("FRONT").set_placement((0, -20))
+    path = tmp_path / "varying-z-lines.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert extraction.contours == ()
+    assert derive_rectangular_hypotheses(extraction) == ()
+    assert any(warning.startswith("unsupported_entity_plane:LINE:") for warning in extraction.warnings)
 
 
 def test_trapezoid_is_not_a_rectangular_hypothesis(tmp_path):

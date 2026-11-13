@@ -43,6 +43,32 @@ def _point2(point: object) -> tuple[float, float]:
     return (float(point[0]), float(point[1]))  # type: ignore[index]
 
 
+def _planar_xy_points(points: Iterable[object], tolerance: float = 1e-9) -> tuple[tuple[float, float], ...] | None:
+    points_3d = tuple((float(point[0]), float(point[1]), float(point[2])) for point in points)  # type: ignore[index]
+    if not all(isfinite(value) for point in points_3d for value in point):
+        raise ValueError("DXF entity contains non-finite coordinates")
+    if points_3d and max(point[2] for point in points_3d) - min(point[2] for point in points_3d) > tolerance:
+        return None
+    return tuple((x, y) for x, y, _ in points_3d)
+
+
+def _rendered_dimension_text(entity: object) -> str | None:
+    try:
+        visual_entities = entity.virtual_entities()  # type: ignore[attr-defined]
+    except (AttributeError, ezdxf.DXFError):
+        return None
+    for visual in visual_entities:
+        if visual.dxftype() == "MTEXT":
+            value = visual.plain_text().strip()
+        elif visual.dxftype() == "TEXT":
+            value = str(visual.dxf.text).strip()
+        else:
+            continue
+        if value:
+            return value
+    return None
+
+
 def _entity_id(entity: object, ordinal: int) -> str:
     handle = getattr(getattr(entity, "dxf", None), "handle", None)
     return f"entity-{handle}" if isinstance(handle, str) and handle else f"entity-{ordinal}"
@@ -74,13 +100,21 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
         layer = str(entity.dxf.layer)
         entity_id = _entity_id(entity, ordinal)
         if kind == "LINE":
-            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((_point2(entity.dxf.start), _point2(entity.dxf.end)))))
+            points = _planar_xy_points((entity.dxf.start, entity.dxf.end))
+            if points is None:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            parsed.append(ParsedEntity(entity_id, kind, layer, points))
         elif kind == "LWPOLYLINE":
             vertices = tuple(entity.get_points("xyb"))
             if any(abs(float(vertex[2])) > 1e-12 for vertex in vertices):
                 warnings.append(f"unsupported_bulge:{entity_id}")
                 continue
-            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((float(x), float(y)) for x, y, _ in vertices), bool(entity.closed)))
+            points = _planar_xy_points(entity.vertices_in_wcs())
+            if points is None:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.closed)))
         elif kind in {"TEXT", "MTEXT"}:
             text = entity.plain_text() if kind == "MTEXT" else str(entity.dxf.text)
             insert = _point2(entity.dxf.insert)
@@ -88,6 +122,7 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
         elif kind == "DIMENSION":
             dimension_type = int(entity.dxf.dimtype) & 0x0F
             conflict = False
+            dimension_scale = 1.0
             try:
                 measurement = float(entity.get_measurement()) if dimension_type in {0, 1} else None
             except (TypeError, ValueError, ezdxf.DXFError):
@@ -146,9 +181,9 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
                     )
                 )
                 raw_text = str(entity.dxf.text or "")
-                display_text = (
-                    raw_text
-                    if raw_text not in {"", "<>"}
+                rendered_text = _rendered_dimension_text(entity) if abs(dimension_scale - 1.0) > 1e-12 else None
+                display_text = rendered_text or (
+                    raw_text if raw_text not in {"", "<>"}
                     else f"{measurement:g} {unit}" if measurement is not None and unit != "unknown"
                     else f"{measurement:g} source-unit" if measurement is not None
                     else "unresolved"
