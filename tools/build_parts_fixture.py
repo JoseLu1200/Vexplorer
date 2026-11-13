@@ -47,8 +47,10 @@ BASE_PARTS: Final = (
     PartSpec("K2", 864.0, 300.0, 18.0, 2),
     PartSpec("K3", 864.0, 300.0, 18.0, 2),
 )
-THICK_PARTS: Final = tuple(
-    PartSpec(item.key, item.length, item.width, 36.0, item.qty) for item in BASE_PARTS
+THICK_PARTS: Final = (
+    PartSpec("K1", 1200.0, 300.0, 36.0, 2),
+    PartSpec("K2", 828.0, 300.0, 36.0, 2),
+    PartSpec("K3", 828.0, 300.0, 36.0, 2),
 )
 VARIANT_PARTS: Final = (
     PartSpec("K1", 1300.0, 320.0, 18.0, 2),
