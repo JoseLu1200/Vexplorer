@@ -23,7 +23,7 @@ $env:OPENAI_MODEL="gpt-6.1-sol"
 
 ## Pruebas automatizadas
 
-Última ejecución integrada antes de revisión final: `python -m pytest -q`: **52 passed**; `npm test --prefix frontend`: **28 passed**. Hay un aviso de deprecación del adaptador TestClient/httpx de Starlette; no falla la suite. Se actualizarán estos resultados si la revisión exige cambios.
+Verificación final integrada y repetida por GPT-6 Astra: `python -m pytest -q`: **55 passed**; `npm test --prefix frontend`: **35 passed**. `compileall` terminó correctamente y `pip check` no encontró dependencias incompatibles. Hay un aviso de deprecación del adaptador TestClient/httpx de Starlette; no falla la suite.
 
 Cobertura comprobada: conversión pulgadas/mm y unidades desconocidas, conservación del espesor ausente, distinción vistas/cantidad, trapecio fuera del subconjunto rectangular, cotas angulares o conflictivas, límite de entidades, esquema Pydantic estricto, escenarios excluyentes, derivación desde premisas, revisión obsoleta, tarifa compatible, costes de todas las piezas y coste fijo una vez, exportación completa, datos públicos sin diagnósticos de abstención, hash/ruta/manifiesto y consumo de bytes verificados.
 
@@ -46,7 +46,13 @@ Fallos encontrados y corregidos durante integración: DIMLFAC 100 del generador,
 
 ## Estado de revisión final
 
-En curso: revisión independiente GPT-6 Astra sobre el diff integrado. Este apartado no declara aceptación hasta registrar su dictamen y resolver hallazgos importantes.
+**Dictamen GPT-6 Astra: SHIP**, tras revisar y revalidar las correcciones, sin hallazgos críticos ni importantes pendientes. Código revisado hasta `5c340a7`.
+
+Astra reprodujo dos fallos importantes: la revisión manual podía sumar escenarios incompatibles y la descomposición admitía trapecios por su caja envolvente. Las regresiones ahora verifican `422 incompatible_scenario_selection` sin alterar la revisión vigente y `422 unsupported_geometry`. También se conserva explícitamente el escenario elegido por el agente en ejecución, resultado y traza.
+
+El navegador verificó restauración por URL y recarga, revisión 3 con espesor 20 mm y montaje cubriendo laterales (1160/900/860 mm), invalidación de la estimación anterior y nuevo total 127,60 EUR. Cargar la variante incompleta limpió formulario/presupuesto y mostró solo tres cotas, con grosor desconocido. La versión final live registró las herramientas reales `inspeccionar_evidencia` y `entregar_despiece`, sus referencias y `scenario-between-sides`, en la ejecución `run-35bdf551d7624e65a1cd046e7861ccb7`. No se expusieron argumentos libres, prompts ni secretos.
+
+`git diff --check c09a6f9` informa espacios de descripciones de tipos de línea generados por ezdxf y líneas finales adicionales en algunos artefactos. Es ruido de formato conocido, no una prueba limpia ni un fallo funcional. Se conserva el DXF reproducible tal como lo genera ezdxf.
 
 ## Límites
 

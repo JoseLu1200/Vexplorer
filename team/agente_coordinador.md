@@ -25,7 +25,7 @@ Identidad: agente coordinador de IA; no representa a una persona. Autorización:
 - Se siguen la especificación del usuario y PLAN.md; decisiones rutinarias autónomas según autorización expresa.
 
 ## Estado
-En curso. Contrato y fixture aún pendientes de acuerdo; ninguna capacidad de aplicación verificada todavía.
+Completado: demo local integrada y verificada; aceptación final GPT-6 Astra SHIP. El historial de bloques siguiente conserva el estado que tenía cada entrega en su momento.
 
 ## Integración parcial
 - Contratos 3346537, fixture c3c5e85 y geometría 7b46a2a/7ce5112/1cd65bc integrados.
@@ -45,3 +45,11 @@ En curso. Contrato y fixture aún pendientes de acuerdo; ninguna capacidad de ap
 - A asume temporalmente backend/app/servicios/decomposition.py y backend/tests/test_decomposition_geometry.py para el gate rectangular encontrado por Astra; B avisado para evitar solape.
 - B corrige exclusividad de escenarios en revisión y cálculo parcial; C restaura sesiones/trazas y limpia estimaciones caducadas.
 
+
+## Cierre final
+- Implementación integrada desde main c09a6f9 en demo/first-executable, con commits propios de A/B/C/D y coordinación. Sin push, VPS ni publicación de datos externos.
+- Acuerdo A/B0.2 y aviso C registrados; cada worktree conserva su alcance.
+- Verificación final: 55 pruebas Python, 35 JavaScript; compileall correcto, pip check sin incompatibilidades. Advertencia TestClient/httpx y whitespace generado documentados.
+- Navegador real: geometry_only, live GPT-6.1 Sol con herramientas reales, selección de evidencia, revisiones2/3, invalidación y recálculo, comparables, ficha JSON, traza y variante incompleta. Decisiones de ensayo atribuidas al agente, no a un técnico humano.
+- Revisor final GPT-6 Astra: SHIP tras correcciones0dcd5fe/5c340a7. No quedan fallos importantes o críticos; quedan los límites declarados en README.
+- Servicio local activo en http://127.0.0.1:8765. Comandos reproducibles y guion en README; evidencia detallada en docs/VERIFICACION_DEMO.md.

@@ -24,4 +24,4 @@ A/B acordaron `0.2.0` antes de implementar, y avisaron a C/D. Los registros prop
 - El fixture propio permite integrar sin depender de PlankAssembly; la adaptación del corpus sigue separada y pendiente.
 - [DEMO_IMPLEMENTACION](../docs/DEMO_IMPLEMENTACION.md) recoge alcance y secuencia. [VERIFICACION_DEMO](../docs/VERIFICACION_DEMO.md) distingue pruebas observadas y capacidades pendientes.
 
-La [plantilla]( _TEMPLATE.md) permanece disponible para incorporaciones futuras; no concede autorización ni identidad por sí sola.
+La [plantilla](_TEMPLATE.md) permanece disponible para incorporaciones futuras; no concede autorización ni identidad por sí sola.

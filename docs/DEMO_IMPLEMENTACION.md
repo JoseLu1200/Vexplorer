@@ -34,8 +34,8 @@ A y B registran su acuerdo explícito antes de implementar contratos; B es su ú
 - [x] Instalar y arrancar con comandos comprobados.
 - [x] Recorrer en navegador carga → evidencia → decisión humana → comparable → estimación → exportación.
 - [x] Comprobar variante incompleta y modos disponibles.
-- [ ] Revisión final GPT-6 Astra y corrección de hallazgos.
-- [ ] Actualizar README, resultados y límites con evidencia observada.
+- [x] Revisión final GPT-6 Astra y corrección de hallazgos.
+- [x] Actualizar README, resultados y límites con evidencia observada.
 
 ## Criterios de aceptación
 
@@ -57,4 +57,3 @@ El aislamiento se verifica en las capacidades y contexto de las herramientas: so
 ## Límites deliberados
 
 Fixture de desarrollo sintético, una familia y un subconjunto DXF declarado. No acredita generalización, ahorro humano, aptitud de fabricación ni precisión económica empresarial. DWG/PDF, adaptación PlankAssembly, embeddings y comparación estadística de métodos requieren trabajo posterior. No se despliega ni se publica ningún dataset.
-
