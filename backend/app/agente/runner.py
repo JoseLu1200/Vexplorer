@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from backend.app.agente.tools import tool_schemas
-from backend.app.contratos.modelos import DecompositionScenario, DrawingExtraction, InspectEvidenceArgs, SelectScenarioArgs
+from backend.app.contratos.modelos import DecompositionScenario, DrawingExtraction, ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs
+from backend.app.servicios.explanations import explain_proposal
 from pydantic import ValidationError
 
 
@@ -48,6 +49,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
     evidence = {item.id: item for item in extraction.evidence}
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
+    proposals = {proposal.id: (scenario, proposal) for scenario in scenarios for proposal in scenario.components}
     repairs = 0
     actions: list[AgentAction] = []
     while model_calls < limits.max_model_calls:
@@ -81,6 +83,19 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         "dimensions": [item.model_dump(mode="json") for item in extraction.dimensions if set(item.evidence_ids) & set(args.evidence_ids)],
                     }
                     actions.append(AgentAction(tool_name=call.name, ok=not unknown, evidence_ids=tuple(item for item in args.evidence_ids if item in evidence), summary="Evidencia vectorial del ledger inspeccionada." if not unknown else "Referencia de evidencia desconocida rechazada."))
+                elif call.name == "explicar_pieza":
+                    args = ExplainPieceArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    if args.result_revision != 1:
+                        data = {"ok": False, "error": "revision_not_available"}
+                        actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Revisión no disponible en este bucle rechazada."))
+                    elif args.piece_id not in proposals:
+                        data = {"ok": False, "error": "unknown_reference"}
+                        actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Propuesta desconocida rechazada."))
+                    else:
+                        scenario, proposal = proposals[args.piece_id]
+                        explanation = explain_proposal(extraction, scenario, proposal)
+                        data = {"ok": True, "explanation": explanation.model_dump(mode="json")}
+                        actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=explanation.evidence_ids, summary="Explicación determinista de hipótesis consultada."))
                 elif call.name == "entregar_despiece":
                     args = SelectScenarioArgs.model_validate_json(json.dumps(arguments), strict=True)
                     if args.scenario_id not in scenario_ids:
