@@ -44,8 +44,9 @@
 |---|---|---|---|
 | TDD rojo | `python -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 7 fallos, 1 pasa antes de generar DXF/manifiesto | Dependencia ezdxf instalada tras declaración de B |
 | Fixture e aislamiento reproducible | mismo comando tras generar | 9 pasan; dos procesos generan bytes idénticos | Todavía sin backend integrado |
+| E2E rojo previo a integración | `python -m pytest tests/test_demo_e2e.py -q` | error de colección esperado: backend agéntico/API aún ausente en esta rama | Pendiente ejecutar contra commit B integrado |
 
 ## Siguiente bloque
 
-- Implementar y ejecutar el E2E independiente contra el backend integrado: salida congelada, revisión versionada, cálculo ligado a revisión, exportación sin duplicar y auditoría dinámica de accesos a referencia.
+- Ejecutar y ajustar el E2E independiente ya escrito contra el backend integrado: salida congelada, revisión versionada, cálculo ligado a revisión, exportación sin duplicar y auditoría dinámica de accesos a referencia.
 
