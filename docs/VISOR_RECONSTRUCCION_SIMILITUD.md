@@ -34,7 +34,7 @@ Implementación integrada y comprobada localmente el 2026-11-14. La revisión fi
 - [x] Biblioteca, diferencias, similitud y agrupación sobre variantes propias.
 - [x] Embedding real y persistencia/caché comprobados con proveedor configurado.
 - [x] Suite Python/JS y regresiones del recorrido anterior.
-- [ ] Revisión final GPT-6 Astra y corrección de hallazgos.
+- [x] Revisión final GPT-6 Astra: SHIP, tras corrección de hallazgos.
 
 ## Evidencia observada
 
