@@ -30,7 +30,7 @@ def test_agent_uses_native_tools_against_current_ledger_only() -> None:
     provider = FakeProvider(
         [
             ProviderResponse(id="response-1", tool_calls=(ToolCall(call_id="call-1", name="inspeccionar_evidencia", arguments={"evidence_ids": [evidence_id]}),)),
-            ProviderResponse(id="response-2", tool_calls=(ToolCall(call_id="call-2", name="seleccionar_escenario", arguments={"scenario_id": scenarios[0].id}),)),
+            ProviderResponse(id="response-2", tool_calls=(ToolCall(call_id="call-2", name="entregar_despiece", arguments={"scenario_id": scenarios[0].id}),)),
         ]
     )
 

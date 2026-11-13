@@ -185,6 +185,8 @@ class ReviewRequest(StrictModel):
     def unique_proposals(self) -> "ReviewRequest":
         if not self.decisions and self.scenario_id is None:
             raise ValueError("a scenario selection or explicit decisions are required")
+        if self.decisions and self.scenario_id is not None:
+            raise ValueError("scenario selection and explicit decisions are mutually exclusive")
         if self.scenario_id is not None and (self.confirmed_thickness_mm is None or not self.notes):
             raise ValueError("scenario selection requires thickness and notes")
         ids = [item.proposal_id for item in self.decisions]

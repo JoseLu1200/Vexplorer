@@ -31,7 +31,7 @@ class RequestModel(BaseModel):
 
 
 class RunRequest(RequestModel):
-    document_id: str
+    document_id: str = Field(pattern=r"^doc-[0-9a-f]{32}$")
     mode: Literal["live", "geometry_only", "recorded_replay"]
 
 
@@ -124,7 +124,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
     @app.post("/api/v1/runs/{run_id}/reviews")
     def review_run(run_id: str, request: ReviewRequest):
         try:
-            return _ok(repository.review(run_id, request).model_dump(mode="json"), 201)
+            result = repository.review(run_id, request)
+            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id})
+            return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         except ValueError as exc:
@@ -145,6 +147,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
             result = repository.get_result(run_id, request.result_revision)
             value = estimate_result(result, find_comparables(result))
             repository.save_estimate(run_id, value)
+            repository.append_event(run_id, "estimate_committed", {"result_revision": value.result_revision, "total": value.total, "currency": value.currency})
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
         except ValueError as exc:
@@ -157,7 +160,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
             result = repository.get_result(run_id)
         except KeyError:
             return _error(404, "result_not_found", "Resultado inexistente.")
-        payload, media = (export_json(result), "application/json") if format == "json" else (export_csv(result), "text/csv; charset=utf-8")
+        if format == "json":
+            try:
+                estimate_value = repository.get_estimate(run_id, result.result_revision).model_dump(mode="json")
+            except KeyError:
+                estimate_value = None
+            bundle = {"schema_version": "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "comparables": [item.model_dump(mode="json") for item in find_comparables(result)], "estimate": estimate_value, "events": list(repository.get_events(run_id))}
+            payload, media = json.dumps(bundle, ensure_ascii=False, indent=2), "application/json"
+        else:
+            payload, media = export_csv(result), "text/csv; charset=utf-8"
         return Response(payload, media_type=media, headers={"Content-Disposition": f'attachment; filename="{run_id}-r{result.result_revision}.{format}"'})
 
     @app.get("/api/v1/runs/{run_id}/events")

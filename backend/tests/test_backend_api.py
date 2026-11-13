@@ -92,3 +92,21 @@ def test_unavailable_live_and_unrecorded_replay_are_explicit_errors(tmp_path: Pa
     assert config["unavailable_reason"]
     assert config["recorded_replay_available"] is False
     assert all("path" not in str(tool).lower() for tool in config["tools"])
+
+
+def test_document_id_cannot_escape_storage_and_export_is_audit_bundle(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    escaped = client.post("/api/v1/runs", json={"document_id": "../private", "mode": "geometry_only"})
+    assert escaped.status_code == 422
+
+    document_id = _upload(client)
+    created = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only"}).json()["data"]
+    run_id = created["run"]["id"]
+    client.post(f"/api/v1/runs/{run_id}/reviews", json={"base_result_revision": 1, "reviewer_name": "Técnica demo", "scenario_id": "scenario-between-sides", "confirmed_thickness_mm": 18, "material": "tablero sintético", "finish": "melamina sintética", "notes": "Confirmado"})
+    client.post(f"/api/v1/runs/{run_id}/estimate", json={"result_revision": 2})
+
+    bundle = client.get(f"/api/v1/runs/{run_id}/exports", params={"format": "json"}).json()
+    assert bundle["result_revision"] == 2
+    assert bundle["result"]["review"]["reviewer_name"] == "Técnica demo"
+    assert bundle["estimate"]["result_revision"] == 2
+    assert bundle["comparables"] and bundle["events"]

@@ -63,9 +63,9 @@ class DemoRepository:
                 (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
-            db.execute("INSERT INTO events VALUES (?, 1, 'run_state_changed', ?)", (run_id, json.dumps({"state": "needs_review", "mode": mode})))
-            db.execute("INSERT INTO events VALUES (?, 2, 'result_committed', ?)", (run_id, json.dumps({"result_revision": 1, "state": "needs_review"})))
-            db.execute("INSERT INTO events VALUES (?, 3, 'run_finished', ?)", (run_id, json.dumps({"state": "needs_review", "result_revision": 1})))
+            db.execute("INSERT INTO events VALUES (?, 1, 'run_state_changed', ?)", (run_id, json.dumps({"timestamp": created_at, "state": "needs_review", "mode": mode})))
+            db.execute("INSERT INTO events VALUES (?, 2, 'result_committed', ?)", (run_id, json.dumps({"timestamp": created_at, "result_revision": 1, "state": "needs_review"})))
+            db.execute("INSERT INTO events VALUES (?, 3, 'run_finished', ?)", (run_id, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
         return self.get_run(run_id)
 
     def get_run(self, run_id: str) -> RunSnapshot:
@@ -145,8 +145,10 @@ class DemoRepository:
         reason = request.notes or "; ".join(item.notes for item in request.decisions)
         result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=request.scenario_id))
         with self._connect() as db:
+            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
+            if reserved.rowcount != 1:
+                raise ValueError("stale_result_revision")
             db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
-            db.execute("UPDATE runs SET current_result_revision=? WHERE id=?", (revision, run_id))
         return result
 
     def save_estimate(self, run_id: str, estimate: Estimate) -> None:
@@ -167,3 +169,10 @@ class DemoRepository:
         with self._connect() as db:
             rows = db.execute("SELECT sequence,event_type,payload FROM events WHERE run_id=? ORDER BY sequence", (run_id,)).fetchall()
         return tuple({"sequence": row["sequence"], "event_type": row["event_type"], "data": json.loads(row["payload"])} for row in rows)
+
+    def append_event(self, run_id: str, event_type: str, payload: dict) -> None:
+        self.get_run(run_id)
+        stamped = {"timestamp": _now(), **payload}
+        with self._connect() as db:
+            sequence = db.execute("SELECT COALESCE(MAX(sequence), 0) + 1 FROM events WHERE run_id=?", (run_id,)).fetchone()[0]
+            db.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (run_id, sequence, event_type, json.dumps(stamped)))
