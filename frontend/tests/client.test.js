@@ -58,8 +58,9 @@ test("document drawing and preview stay available before a run", async () => {
   const fetchImpl = async (url) => { urls.push(url); return response(200, { data: { drawing_id: "d-1" } }); };
   const client = createApiClient({ fetchImpl });
   assert.deepEqual(await client.getDocumentDrawing("doc 1"), { drawing_id: "d-1" });
+  assert.deepEqual(await client.getDocumentDrawing("doc 1", "separated_part_views"), { drawing_id: "d-1" });
   assert.equal(client.documentPreviewUrl("doc 1"), "/api/v1/documents/doc%201/preview.svg");
-  assert.deepEqual(urls, ["/api/v1/documents/doc%201/drawing"]);
+  assert.deepEqual(urls, ["/api/v1/documents/doc%201/drawing", "/api/v1/documents/doc%201/drawing?input_kind=separated_part_views"]);
 });
 
 test("0.3 endpoints preserve exact revision and similarity modes", async () => {
@@ -82,6 +83,8 @@ test("parts-only run is explicit and parts convenience endpoint is revisioned by
   const client = createApiClient({ fetchImpl, idFactory: () => "key" });
   await client.createRun("doc-1", "geometry_only", "separated_part_views");
   await client.getParts("run parts");
+  await client.getParts("run parts", 2);
   assert.deepEqual(JSON.parse(requests[0][1].body), { document_id: "doc-1", mode: "geometry_only", input_kind: "separated_part_views" });
   assert.equal(requests[1][0], "/api/v1/runs/run%20parts/parts");
+  assert.equal(requests[2][0], "/api/v1/runs/run%20parts/parts?result_revision=2");
 });
