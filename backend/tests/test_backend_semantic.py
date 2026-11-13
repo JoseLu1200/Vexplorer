@@ -3,10 +3,11 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
-from backend.app.contratos.modelos import DescriptorDimensions, FurnitureDescriptorV2, LibraryItem, Result
+from backend.app.contratos.modelos import DescriptorDimensions, FurnitureDescriptorV2, LibraryItem, Result, ReviewDecision, ReviewRequest
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.similarity.service import geometric_match
 from backend.app.geometria import extract_drawing
+from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 from backend.app.servicios.repository import DemoRepository
 from backend.tests.test_backend_parts_repository import _parts_payload
@@ -89,3 +90,45 @@ def test_parts_geometric_similarity_distinguishes_thickness() -> None:
     match = geometric_match(base, candidate)
     assert match.score < 1
     assert any(item.field == "thicknesses_mm" for item in match.differences)
+
+
+def test_parts_descriptor_represents_human_confirmed_quantity_without_mutating_observation(tmp_path: Path) -> None:
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "piezas_qty_desconocida.dxf"
+    extraction = extract_drawing(fixture, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+    candidates = derive_assembly_candidates(parts)
+    candidate = candidates[0]
+    unknown_use = next(item for item in candidate.uses if item.allocated_quantity is None)
+    original = next(item for item in parts.observations if item.id == unknown_use.part_observation_id)
+    repository = DemoRepository(tmp_path / "parts-confirmed.sqlite3")
+    repository.create_run(
+        "run-confirmed", "geometry_only", extraction, (),
+        part_analysis=parts, assembly_candidates=candidates,
+    )
+    reviewed = repository.review("run-confirmed", ReviewRequest(
+        base_result_revision=1,
+        reviewer_name="Operadora local",
+        assembly_candidate_id=candidate.id,
+        decisions=(ReviewDecision(
+            proposal_id=unknown_use.id,
+            action="confirm",
+            role=unknown_use.role,
+            quantity=2,
+            notes="Confirma dos ocurrencias físicas de esta pieza.",
+        ),),
+        notes="Selecciona el candidato y confirma la cantidad ausente.",
+    ))
+
+    descriptor = build_descriptor(reviewed)
+
+    assert reviewed.state == "completed"
+    assert original.quantity.value is None and original.quantity.state == "unknown"
+    resolved_feature = next(
+        item for item in descriptor.part_features
+        if item.length_mm == original.dimensions.length.value_mm
+        and item.width_mm == original.dimensions.width.value_mm
+    )
+    assert resolved_feature.quantity == 2
+    assert resolved_feature.field_states["quantity"] == "confirmed"
+    assert "quantity" not in resolved_feature.unknown_fields
+    assert f"uses.{unknown_use.id}.quantity" not in descriptor.unknown_fields
