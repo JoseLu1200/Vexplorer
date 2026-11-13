@@ -165,6 +165,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, "unsupported_geometry", "Las vistas no respaldan escenarios rectangulares coherentes.")
         trace_events: tuple[dict, ...] = ()
         agent_selected_scenario_id = None
+        agent_selected_assembly_candidate_id = None
         if request.mode == "live":
             try:
                 provider = agent_provider or OpenAIResponsesProvider(settings)
@@ -174,7 +175,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         assembly_candidates,
                         key=lambda item: item.id != outcome.selected_assembly_candidate_id,
                     ))
-                    agent_selected_scenario_id = outcome.selected_assembly_candidate_id
+                    agent_selected_assembly_candidate_id = outcome.selected_assembly_candidate_id
                 else:
                     outcome = run_agent(extraction, scenarios, provider, AgentLimits())
                     scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
@@ -200,6 +201,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             request.document_id,
             part_analysis,
             assembly_candidates,
+            agent_selected_assembly_candidate_id,
         )
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 

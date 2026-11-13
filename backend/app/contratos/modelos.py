@@ -697,6 +697,7 @@ class RunSnapshot(StrictModel):
     result_revision: int | None
     created_at: str
     agent_selected_scenario_id: str | None = None
+    agent_selected_assembly_candidate_id: str | None = None
     document_id: str | None = None
     input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
 
