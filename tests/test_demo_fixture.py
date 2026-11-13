@@ -19,6 +19,7 @@ PUBLIC_CASES = (
     "estanteria_incompleta.dxf",
     "mueble_demo_002.dxf",
     "mueble_demo_003.dxf",
+    "mueble_demo_004.dxf",
     "mueble_demo_unidades_desconocidas.dxf",
     "mueble_demo_trapecio.dxf",
 )
@@ -83,18 +84,20 @@ def test_public_dimensions_are_few_overall_observations() -> None:
 
 
 @pytest.mark.parametrize(
-    ("filename", "expected_measurements", "expected_shelf_lines"),
+    ("filename", "expected_measurements", "expected_shelf_lines", "expected_width"),
     [
-        ("estanteria_montada.dxf", [18.0, 300.0, 900.0, 1200.0], 2),
-        ("estanteria_incompleta.dxf", [300.0, 900.0, 1200.0], 2),
-        ("mueble_demo_002.dxf", [18.0, 320.0, 1000.0, 1300.0], 2),
-        ("mueble_demo_003.dxf", [18.0, 280.0, 700.0, 800.0], 1),
+        ("estanteria_montada.dxf", [18.0, 300.0, 900.0, 1200.0], 2, 900.0),
+        ("estanteria_incompleta.dxf", [300.0, 900.0, 1200.0], 2, 900.0),
+        ("mueble_demo_002.dxf", [18.0, 320.0, 1000.0, 1300.0], 2, 1000.0),
+        ("mueble_demo_003.dxf", [18.0, 280.0, 700.0, 800.0], 1, 700.0),
+        ("mueble_demo_004.dxf", [18.0, 300.0, 900.0, 1200.0], 2, 900.0),
     ],
 )
 def test_parametric_library_has_independent_dimensions_and_structure(
     filename: str,
     expected_measurements: list[float],
     expected_shelf_lines: int,
+    expected_width: float,
 ) -> None:
     doc = _read(filename)
     dimensions = sorted(
@@ -105,7 +108,7 @@ def test_parametric_library_has_independent_dimensions_and_structure(
         line
         for line in doc.modelspace().query("LINE[layer=='VIEW_GEOMETRY']")
         if abs(line.dxf.start.y - line.dxf.end.y) < 1e-9
-        and line.dxf.start.x == 0.0
+        and abs(line.dxf.end.x - line.dxf.start.x) == expected_width
     ]
 
     assert dimensions == expected_measurements
@@ -157,11 +160,26 @@ def test_private_library_groups_dimensions_separately_from_structure() -> None:
     assert reference["expected_groups"]["same_structure"] == [
         "estanteria_montada.dxf",
         "mueble_demo_002.dxf",
+        "mueble_demo_004.dxf",
     ]
     assert reference["expected_groups"]["different_structure"] == [
         "mueble_demo_003.dxf"
     ]
     assert reference["evaluation_policy"]["runtime_must_not_read_this_file"] is True
+
+
+def test_translated_duplicate_changes_coordinates_not_public_dimensions() -> None:
+    doc = _read("mueble_demo_004.dxf")
+    front = next(
+        entity
+        for entity in doc.modelspace().query("LWPOLYLINE[layer=='VIEW_GEOMETRY']")
+    )
+    points = [(point[0], point[1]) for point in front.get_points("xy")]
+
+    assert min(x for x, _ in points) == 5000.0
+    assert min(y for _, y in points) == 2500.0
+    assert max(x for x, _ in points) - min(x for x, _ in points) == 900.0
+    assert max(y for _, y in points) - min(y for _, y in points) == 1200.0
 
 
 def test_negative_preview_fixtures_do_not_encode_a_bom() -> None:
