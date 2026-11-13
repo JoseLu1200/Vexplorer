@@ -9,15 +9,16 @@
 
 ## Tarea de la sesión
 
-- Objetivo: ingesta DXF con `ezdxf` y propuestas deterministas para la demo de una estantería rectangular montada, preservando evidencia, incertidumbre y procedencia.
-- Referencia: T1–T3 y soporte honesto de T11 para plano pobre.
-- Estado: terminado para integración.
+- Objetivo: enriquecer el plano con textos y cotas ancladas y generar una escena 3D determinista, trazable y explícitamente incompleta cuando falten revisión, dimensiones o posiciones.
+- Referencia: ampliación autorizada de plano, reconstrucción y similitud del 2026-11-13.
+- Estado: contrato aditivo 0.3 acordado explícitamente; implementación TDD en curso.
 
 ## Alcance y reservas
 
 - Puedo editar: `backend/app/ingesta/`, `backend/app/geometria/`, `backend/tests/test_geometry.py`, `tools/prepare_evaluation.py`, `tests/test_prepare_evaluation.py` y este archivo.
 - La ampliación para los dos archivos del preparador fue autorizada explícitamente el 2026-11-13; ningún otro agente los edita durante esta tarea.
 - Transferencia puntual autorizada tras revisión Astra: también `backend/app/servicios/decomposition.py` y la prueba nueva `backend/tests/test_decomposition_geometry.py`; B fue informado para no solapar.
+- Nueva propiedad de fase: `backend/app/ingesta/`, `backend/app/geometria/`, `backend/app/servicios/decomposition.py`, nuevo `backend/app/servicios/reconstruction.py`, `backend/tests/test_geometry.py`, `backend/tests/test_decomposition_geometry.py`, nuevo `backend/tests/test_reconstruction.py` y este registro.
 - Solo leeré: contratos, API, frontend, fixture público de evaluación y documentación.
 - `backend/app/contratos/` pertenece exclusivamente al agente B.
 - Solapes detectados: ninguno; la interfaz con B debe acordarse antes de implementación contractual.
@@ -37,7 +38,7 @@
 
 ## Siguiente bloque
 
-- Integrar con fixture público cuando D publique su commit y contrastar el recorrido completo en rama coordinadora.
+- Cerrar acuerdo aditivo A/B sobre dibujo enriquecido y escena; avisar C/D; luego implementar por TDD.
 
 ## Decisiones
 
@@ -45,6 +46,7 @@
 |---|---|---|---|
 | 2026-11-13 | Mantener cálculos puros y deterministas; separar observación, derivación e hipótesis | Reglas de arquitectura y trazabilidad | Delegación y documentación del repositorio |
 | 2026-11-13 | A acepta contrapropuesta B: extracción sin propuestas; `dimensions.origin=observed|derived`; `warnings` y `synthetic`; hipótesis aparte | Evitar mezclar hechos con interpretación | Mensajes explícitos A/B y aviso posterior a C |
+| 2026-11-13 | A/B acuerdan adición 0.3: `DrawingText`, `DimensionGraphic`, anclajes source/mm, escena por ocurrencia y `reconstruct_scene(extraction, result)` | Visor legible y 3D trazable sin inventar dimensiones o posiciones | Confirmación explícita de B; B único escritor de contratos; avisos C/D |
 
 ## Dependencias / avisos
 
@@ -52,7 +54,8 @@
 - Necesito de D: forma pública del fixture sin acceder a la referencia reservada ni codificar sus medidas.
 - Afecta a C: IDs, unidades, contornos, cotas, vistas y propuestas que consumirá el visor.
 - Aviso realizado: contrato final comunicado a frontend y fixture coordinado con evaluación el 2026-11-13.
-- Cambio de `contratos/`: no aplica; A no escribirá contratos.
+- Aviso realizado: contrato aditivo 0.3 comunicado a frontend y evaluación el 2026-11-13.
+- Cambio de `contratos/`: acuerdo A/B explícito 0.3; B es único escritor, A solo importa modelos.
 
 ## Pruebas y revisión
 
