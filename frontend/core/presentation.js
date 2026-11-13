@@ -15,6 +15,7 @@ export function normaliseRunPayload(payload = {}) {
   return {
     ...payload.run,
     result,
+    estimate: payload.estimate ?? null,
     result_revision: result?.result_revision ?? payload.run.result_revision ?? null,
   };
 }

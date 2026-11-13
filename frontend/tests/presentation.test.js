@@ -16,11 +16,13 @@ test("canonical replay capability enables replay without renaming backend fields
 });
 
 test("run plus result API payload becomes one frontend snapshot", () => {
-  const snapshot = normaliseRunPayload({ run: { id: "run-1", state: "needs_review" }, result: { result_revision: 1, state: "needs_review", pieces: [] } });
+  const estimate = { result_revision: 1, total: 125 };
+  const snapshot = normaliseRunPayload({ run: { id: "run-1", state: "needs_review" }, result: { result_revision: 1, state: "needs_review", pieces: [] }, estimate });
   assert.equal(snapshot.id, "run-1");
   assert.equal(snapshot.state, "needs_review");
   assert.equal(snapshot.result_revision, 1);
   assert.equal(snapshot.result.state, "needs_review");
+  assert.equal(snapshot.estimate, estimate);
 });
 
 test("estimate presentation preserves unknown rates and backend totals", () => {
