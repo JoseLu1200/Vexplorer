@@ -126,7 +126,7 @@ function renderPartsAndReview() {
   }
   components.forEach((component) => {
     const row = document.createElement("tr"); row.dataset.componentId = component.id; row.tabIndex = 0;
-    const dimensions = component.dimensions_mm ?? component.dimensions ?? {};
+    const dimensions = component.dimensions_mm ?? component.dimensions ?? { length: component.length_mm, width: component.width_mm, thickness: component.thickness_mm };
     const origin = component.origin ?? component.status ?? "hypothesis";
     const values = [component.name ?? component.label ?? "Componente propuesto", sourceLabel(origin), component.quantity, dimensions.length, dimensions.width, dimensions.thickness];
     values.forEach((value, index) => {
@@ -230,6 +230,7 @@ async function submitReview(event) {
   try {
     const payload = buildScenarioReviewPayload(state.snapshot, {
       scenario_id: scenario.value,
+      reviewer_name: $("#reviewer-name").value,
       confirmed_thickness_mm: $("#review-thickness").value,
       material: $("#review-material").value,
       finish: $("#review-finish").value,

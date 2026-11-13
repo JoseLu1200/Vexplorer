@@ -11,12 +11,15 @@ export function buildReviewPayload(snapshot, decisions) {
 export function buildScenarioReviewPayload(snapshot, values) {
   if (!Number.isInteger(snapshot?.result_revision)) throw new TypeError("Falta la revisión base del resultado.");
   if (!values?.scenario_id) throw new TypeError("Selecciona un escenario de montaje.");
+  const reviewerName = String(values.reviewer_name ?? "").trim();
+  if (!reviewerName) throw new TypeError("Indica el nombre de la persona revisora.");
   const thickness = Number(values.confirmed_thickness_mm);
   if (!Number.isFinite(thickness) || thickness <= 0) throw new TypeError("Indica un espesor confirmado mayor que cero.");
   const notes = String(values.notes ?? "").trim();
   if (!notes) throw new TypeError("La decisión necesita notas técnicas.");
   return {
     base_result_revision: snapshot.result_revision,
+    reviewer_name: reviewerName,
     scenario_id: values.scenario_id,
     confirmed_thickness_mm: thickness,
     material: String(values.material ?? "").trim() || null,

@@ -26,3 +26,15 @@ test("estimate presentation preserves unknown rates and backend totals", () => {
   assert.equal(presented.items[1].rateLabel, "Desconocido");
   assert.equal(presented.revisionLabel, "Revisión 2");
 });
+
+test("canonical cost concepts expose their factors and hours without client recalculation", () => {
+  const presented = presentEstimate({
+    result_revision: 4,
+    concepts: [{ id: "material", label: "Tablero", base_amount: 80, factor: 1.14, amount: 91.2, explanation: "Ajuste por superficie", comparable_id: "hist-1" }],
+    total: 91.2,
+    hours: 7.5,
+  });
+  assert.equal(presented.items[0].quantityLabel, "Factor 1,14");
+  assert.equal(presented.items[0].rateLabel, "Base 80,00\u00a0€");
+  assert.equal(presented.hoursLabel, "7,5 h");
+});
