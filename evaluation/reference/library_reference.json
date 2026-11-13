@@ -9,13 +9,18 @@
   "expected_groups": {
     "same_structure": [
       "estanteria_montada.dxf",
-      "mueble_demo_002.dxf"
+      "mueble_demo_002.dxf",
+      "mueble_demo_004.dxf"
     ],
     "different_structure": [
       "mueble_demo_003.dxf"
     ]
   },
   "reviewed_references": {
+    "mueble_demo_004.dxf": {
+      "transformed_duplicate_of": "estanteria_montada.dxf",
+      "transformation": "translation_only"
+    },
     "mueble_demo_002.dxf": {
       "construction": "horizontal_panels_between_sides",
       "pieces": [

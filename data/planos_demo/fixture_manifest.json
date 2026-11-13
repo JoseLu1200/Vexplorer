@@ -40,6 +40,11 @@
       "requires_human_mounting_confirmation": true,
       "expected_unknown_fields": []
     },
+    "mueble_demo_004.dxf": {
+      "purpose": "translation_invariance_control_for_the_development_fixture",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
     "mueble_demo_unidades_desconocidas.dxf": {
       "purpose": "negative_preview_fixture_with_unknown_source_units",
       "requires_human_mounting_confirmation": true,

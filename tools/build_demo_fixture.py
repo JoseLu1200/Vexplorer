@@ -33,6 +33,8 @@ class FixtureSpec:
     incomplete: bool = False
     source_unit: int = units.MM
     trapezoid_inset: float = 0.0
+    origin_x: float = 0.0
+    origin_y: float = 0.0
 
 
 FIXTURES: Final = {
@@ -44,6 +46,9 @@ FIXTURES: Final = {
         1000.0, 1300.0, 320.0, (433.0, 866.0)
     ),
     "mueble_demo_003.dxf": FixtureSpec(700.0, 800.0, 280.0, (400.0,)),
+    "mueble_demo_004.dxf": FixtureSpec(
+        900.0, 1200.0, 300.0, (400.0, 800.0), origin_x=5000.0, origin_y=2500.0
+    ),
     "mueble_demo_unidades_desconocidas.dxf": FixtureSpec(
         900.0, 1200.0, 300.0, (400.0, 800.0), source_unit=0
     ),
@@ -102,68 +107,73 @@ def build_fixture(path: Path, spec: FixtureSpec) -> None:
     doc.layers.add(DIMENSIONS_LAYER, color=2)
     doc.layers.add(LABELS_LAYER, color=3)
     modelspace = doc.modelspace()
+    origin_x, origin_y = spec.origin_x, spec.origin_y
 
     # FRONT: assembled outline plus two unresolved internal boundaries.
     if spec.trapezoid_inset:
         modelspace.add_lwpolyline(
             [
-                (0.0, 0.0),
-                (spec.width, 0.0),
-                (spec.width - spec.trapezoid_inset, spec.height),
-                (spec.trapezoid_inset, spec.height),
+                (origin_x, origin_y),
+                (origin_x + spec.width, origin_y),
+                (origin_x + spec.width - spec.trapezoid_inset, origin_y + spec.height),
+                (origin_x + spec.trapezoid_inset, origin_y + spec.height),
             ],
             close=True,
             dxfattribs={"layer": GEOMETRY_LAYER},
         )
     else:
-        _rectangle(modelspace, 0.0, 0.0, spec.width, spec.height)
+        _rectangle(modelspace, origin_x, origin_y, spec.width, spec.height)
         for shelf_level in spec.shelf_levels:
-            _line(modelspace, (0.0, shelf_level), (spec.width, shelf_level))
+            _line(
+                modelspace,
+                (origin_x, origin_y + shelf_level),
+                (origin_x + spec.width, origin_y + shelf_level),
+            )
         if not spec.incomplete:
             _line(
                 modelspace,
-                (spec.visible_offset, 0.0),
-                (spec.visible_offset, spec.height),
+                (origin_x + spec.visible_offset, origin_y),
+                (origin_x + spec.visible_offset, origin_y + spec.height),
             )
             _line(
                 modelspace,
-                (spec.width - spec.visible_offset, 0.0),
-                (spec.width - spec.visible_offset, spec.height),
+                (origin_x + spec.width - spec.visible_offset, origin_y),
+                (origin_x + spec.width - spec.visible_offset, origin_y + spec.height),
             )
-    _label(modelspace, "FRONT", (0.0, spec.height + 45.0))
+    _label(modelspace, "FRONT", (origin_x, origin_y + spec.height + 45.0))
 
     # TOP: only the mounted envelope is certain in the incomplete variant.
-    top_y = -(spec.depth + 200.0)
-    _rectangle(modelspace, 0.0, top_y, spec.width, spec.depth)
+    top_y = origin_y - (spec.depth + 200.0)
+    _rectangle(modelspace, origin_x, top_y, spec.width, spec.depth)
     if not spec.incomplete and not spec.trapezoid_inset:
         _line(
             modelspace,
-            (spec.visible_offset, top_y),
-            (spec.visible_offset, top_y + spec.depth),
+            (origin_x + spec.visible_offset, top_y),
+            (origin_x + spec.visible_offset, top_y + spec.depth),
         )
         _line(
             modelspace,
-            (spec.width - spec.visible_offset, top_y),
-            (spec.width - spec.visible_offset, top_y + spec.depth),
+            (origin_x + spec.width - spec.visible_offset, top_y),
+            (origin_x + spec.width - spec.visible_offset, top_y + spec.depth),
         )
-    _label(modelspace, "TOP", (0.0, top_y + spec.depth + 45.0))
+    _label(modelspace, "TOP", (origin_x, top_y + spec.depth + 45.0))
 
     # RIGHT: the horizontal boundaries remain observations, not part counts.
-    right_x = spec.width + 300.0
-    _rectangle(modelspace, right_x, 0.0, spec.depth, spec.height)
+    right_x = origin_x + spec.width + 300.0
+    _rectangle(modelspace, right_x, origin_y, spec.depth, spec.height)
     if not spec.trapezoid_inset:
         for shelf_level in spec.shelf_levels:
             _line(
                 modelspace,
-                (right_x, shelf_level),
-                (right_x + spec.depth, shelf_level),
+                (right_x, origin_y + shelf_level),
+                (right_x + spec.depth, origin_y + shelf_level),
             )
-    _label(modelspace, "RIGHT", (right_x, spec.height + 45.0))
+    _label(modelspace, "RIGHT", (right_x, origin_y + spec.height + 45.0))
 
     _label(
         modelspace,
         "FIXTURE SINTETICO",
-        (0.0, spec.height + 110.0),
+        (origin_x, origin_y + spec.height + 110.0),
         height=24.0,
     )
 
@@ -171,31 +181,31 @@ def build_fixture(path: Path, spec: FixtureSpec) -> None:
     # absent from the incomplete variant, so thickness must remain unknown.
     _dimension(
         modelspace,
-        base=(0.0, -90.0),
-        p1=(0.0, 0.0),
-        p2=(spec.width, 0.0),
+        base=(origin_x, origin_y - 90.0),
+        p1=(origin_x, origin_y),
+        p2=(origin_x + spec.width, origin_y),
         angle=0.0,
     )
     _dimension(
         modelspace,
-        base=(-110.0, 0.0),
-        p1=(0.0, 0.0),
-        p2=(0.0, spec.height),
+        base=(origin_x - 110.0, origin_y),
+        p1=(origin_x, origin_y),
+        p2=(origin_x, origin_y + spec.height),
         angle=90.0,
     )
     _dimension(
         modelspace,
-        base=(-120.0, top_y),
-        p1=(0.0, top_y),
-        p2=(0.0, top_y + spec.depth),
+        base=(origin_x - 120.0, top_y),
+        p1=(origin_x, top_y),
+        p2=(origin_x, top_y + spec.depth),
         angle=90.0,
     )
     if not spec.incomplete and not spec.trapezoid_inset:
         _dimension(
             modelspace,
-            base=(0.0, top_y - 75.0),
-            p1=(0.0, top_y),
-            p2=(spec.visible_offset, top_y),
+            base=(origin_x, top_y - 75.0),
+            p1=(origin_x, top_y),
+            p2=(origin_x + spec.visible_offset, top_y),
             angle=0.0,
         )
 
@@ -243,6 +253,11 @@ def build_all(output_dir: Path) -> None:
             },
             "mueble_demo_003.dxf": {
                 "purpose": "development_fixture_with_changed_internal_structure",
+                "requires_human_mounting_confirmation": True,
+                "expected_unknown_fields": [],
+            },
+            "mueble_demo_004.dxf": {
+                "purpose": "translation_invariance_control_for_the_development_fixture",
                 "requires_human_mounting_confirmation": True,
                 "expected_unknown_fields": [],
             },
