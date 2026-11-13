@@ -81,7 +81,7 @@ export function normaliseDrawing(extraction) {
       ...model.dimensions.filter((item) => allowed(item.viewId)).map((item) => item.label),
     ];
     const longest = labels.reduce((length, label) => Math.max(length, String(label ?? "").length), 0);
-    return Math.min(180, Math.max(28, longest * 8 + 16));
+    return { left: 28, right: Math.min(180, Math.max(28, longest * 8 + 16)), top: 28, bottom: 28 };
   };
   return model;
 }
