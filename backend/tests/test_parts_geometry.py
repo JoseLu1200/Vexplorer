@@ -127,3 +127,34 @@ def test_translation_changes_source_origins_but_not_local_part_analysis(tmp_path
     assert first.observations[0].dimensions == second.observations[0].dimensions
     assert first.observations[0].views[0].local_origin_source != second.observations[0].views[0].local_origin_source
     assert first.observations[0].views[0].local_bounds_source == second.observations[0].views[0].local_bounds_source
+
+
+def test_public_complete_fixture_extracts_three_physical_part_types() -> None:
+    extraction = extract_drawing(
+        Path("data/planos_demo/piezas_completo.dxf"), input_kind="separated_part_views",
+    )
+
+    parts = extract_separated_parts(extraction)
+
+    assert [item.part_key for item in parts.observations] == ["K1", "K2", "K3"]
+    assert [item.quantity.value for item in parts.observations] == [2, 2, 2]
+    assert [
+        (item.dimensions.length.value_mm, item.dimensions.width.value_mm, item.dimensions.thickness.value_mm)
+        for item in parts.observations
+    ] == [(1200.0, 300.0, 18.0), (864.0, 300.0, 18.0), (864.0, 300.0, 18.0)]
+
+
+def test_views_without_keys_remain_three_unassociated_observations() -> None:
+    extraction = extract_drawing(
+        Path("data/planos_demo/piezas_ambigua_sin_id.dxf"), input_kind="separated_part_views",
+    )
+
+    parts = extract_separated_parts(extraction)
+
+    assert len(parts.observations) == 3
+    assert all(item.part_key is None for item in parts.observations)
+    assert all(item.association_basis == "unassociated" for item in parts.observations)
+    assert all(item.status == "ambiguous" for item in parts.observations)
+    assert all(len(item.views) == 1 for item in parts.observations)
+    assert all(item.quantity.value is None and item.quantity.state == "unknown" for item in parts.observations)
+    assert any(warning.startswith("unassociated_quantity_annotation:") for warning in parts.warnings)
