@@ -56,3 +56,19 @@ def test_agent_enforces_call_budget_and_tool_schemas_have_no_filesystem_access()
     schemas = tool_schemas()
     assert all(tool["strict"] is True for tool in schemas)
     assert all("path" not in str(tool).lower() and "file" not in str(tool).lower() for tool in schemas)
+
+
+def test_agent_returns_safe_tool_error_for_malformed_json_then_repairs() -> None:
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "estanteria_montada.dxf"
+    extraction = extract_drawing(fixture)
+    scenarios = derive_decomposition_scenarios(extraction)
+    provider = FakeProvider([
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="bad", name="inspeccionar_evidencia", arguments_json="{not-json"),)),
+        ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="good", name="entregar_despiece", arguments={"scenario_id": scenarios[0].id}),)),
+    ])
+
+    outcome = run_agent(extraction, scenarios, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+
+    assert outcome.selected_scenario_id == scenarios[0].id
+    assert outcome.actions[0].ok is False
+    assert outcome.actions[0].summary == "Argumentos de herramienta inválidos rechazados."
