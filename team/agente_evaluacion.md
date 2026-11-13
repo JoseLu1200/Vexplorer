@@ -57,6 +57,7 @@
 | Biblioteca parametrizada e aislamiento | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 19 pasan | API 0.3 aún no integrada en esta rama |
 | Control de invariancia, TDD rojo | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py -q` | 5 fallos por control trasladado ausente; 15 pasan | Fallo esperado antes de implementar |
 | Biblioteca con traslación | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 22 pasan | Descriptor/API pendientes de B |
+| Aceptación preview/escena, TDD rojo | `.venv\Scripts\python.exe -m pytest tests/test_demo_workbench.py -q` | 3 fallos HTTP 404 esperados | Endpoints 0.3 todavía no integrados |
 
 ## Siguiente bloque
 
