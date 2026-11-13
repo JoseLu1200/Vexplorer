@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -17,14 +18,39 @@ import ezdxf
 from ezdxf import units
 
 
-WIDTH: Final = 900.0
-HEIGHT: Final = 1200.0
-DEPTH: Final = 300.0
-VISIBLE_OFFSET: Final = 18.0
-
 GEOMETRY_LAYER: Final = "VIEW_GEOMETRY"
 DIMENSIONS_LAYER: Final = "DIMENSIONS"
 LABELS_LAYER: Final = "LABELS"
+
+
+@dataclass(frozen=True)
+class FixtureSpec:
+    width: float
+    height: float
+    depth: float
+    shelf_levels: tuple[float, ...]
+    visible_offset: float = 18.0
+    incomplete: bool = False
+    source_unit: int = units.MM
+    trapezoid_inset: float = 0.0
+
+
+FIXTURES: Final = {
+    "estanteria_montada.dxf": FixtureSpec(900.0, 1200.0, 300.0, (400.0, 800.0)),
+    "estanteria_incompleta.dxf": FixtureSpec(
+        900.0, 1200.0, 300.0, (400.0, 800.0), incomplete=True
+    ),
+    "mueble_demo_002.dxf": FixtureSpec(
+        1000.0, 1300.0, 320.0, (433.0, 866.0)
+    ),
+    "mueble_demo_003.dxf": FixtureSpec(700.0, 800.0, 280.0, (400.0,)),
+    "mueble_demo_unidades_desconocidas.dxf": FixtureSpec(
+        900.0, 1200.0, 300.0, (400.0, 800.0), source_unit=0
+    ),
+    "mueble_demo_trapecio.dxf": FixtureSpec(
+        900.0, 1200.0, 300.0, (), trapezoid_inset=80.0
+    ),
+}
 
 
 def _rectangle(modelspace, x: float, y: float, width: float, height: float) -> None:
@@ -66,46 +92,80 @@ def _dimension(
     dimension.render()
 
 
-def build_fixture(path: Path, *, incomplete: bool) -> None:
+def build_fixture(path: Path, spec: FixtureSpec) -> None:
     """Write one public DXF containing only assembled orthographic views."""
     previous_fixed_metadata = ezdxf.options.write_fixed_meta_data_for_testing
     ezdxf.options.write_fixed_meta_data_for_testing = True
     doc = ezdxf.new("R2010", setup=True)
-    doc.units = units.MM
+    doc.units = spec.source_unit
     doc.layers.add(GEOMETRY_LAYER, color=7)
     doc.layers.add(DIMENSIONS_LAYER, color=2)
     doc.layers.add(LABELS_LAYER, color=3)
     modelspace = doc.modelspace()
 
     # FRONT: assembled outline plus two unresolved internal boundaries.
-    _rectangle(modelspace, 0.0, 0.0, WIDTH, HEIGHT)
-    _line(modelspace, (0.0, 400.0), (WIDTH, 400.0))
-    _line(modelspace, (0.0, 800.0), (WIDTH, 800.0))
-    if not incomplete:
-        _line(modelspace, (VISIBLE_OFFSET, 0.0), (VISIBLE_OFFSET, HEIGHT))
-        _line(modelspace, (WIDTH - VISIBLE_OFFSET, 0.0), (WIDTH - VISIBLE_OFFSET, HEIGHT))
-    _label(modelspace, "FRONT", (0.0, HEIGHT + 45.0))
+    if spec.trapezoid_inset:
+        modelspace.add_lwpolyline(
+            [
+                (0.0, 0.0),
+                (spec.width, 0.0),
+                (spec.width - spec.trapezoid_inset, spec.height),
+                (spec.trapezoid_inset, spec.height),
+            ],
+            close=True,
+            dxfattribs={"layer": GEOMETRY_LAYER},
+        )
+    else:
+        _rectangle(modelspace, 0.0, 0.0, spec.width, spec.height)
+        for shelf_level in spec.shelf_levels:
+            _line(modelspace, (0.0, shelf_level), (spec.width, shelf_level))
+        if not spec.incomplete:
+            _line(
+                modelspace,
+                (spec.visible_offset, 0.0),
+                (spec.visible_offset, spec.height),
+            )
+            _line(
+                modelspace,
+                (spec.width - spec.visible_offset, 0.0),
+                (spec.width - spec.visible_offset, spec.height),
+            )
+    _label(modelspace, "FRONT", (0.0, spec.height + 45.0))
 
     # TOP: only the mounted envelope is certain in the incomplete variant.
-    top_y = -500.0
-    _rectangle(modelspace, 0.0, top_y, WIDTH, DEPTH)
-    if not incomplete:
-        _line(modelspace, (VISIBLE_OFFSET, top_y), (VISIBLE_OFFSET, top_y + DEPTH))
+    top_y = -(spec.depth + 200.0)
+    _rectangle(modelspace, 0.0, top_y, spec.width, spec.depth)
+    if not spec.incomplete and not spec.trapezoid_inset:
         _line(
             modelspace,
-            (WIDTH - VISIBLE_OFFSET, top_y),
-            (WIDTH - VISIBLE_OFFSET, top_y + DEPTH),
+            (spec.visible_offset, top_y),
+            (spec.visible_offset, top_y + spec.depth),
         )
-    _label(modelspace, "TOP", (0.0, top_y + DEPTH + 45.0))
+        _line(
+            modelspace,
+            (spec.width - spec.visible_offset, top_y),
+            (spec.width - spec.visible_offset, top_y + spec.depth),
+        )
+    _label(modelspace, "TOP", (0.0, top_y + spec.depth + 45.0))
 
     # RIGHT: the horizontal boundaries remain observations, not part counts.
-    right_x = 1200.0
-    _rectangle(modelspace, right_x, 0.0, DEPTH, HEIGHT)
-    _line(modelspace, (right_x, 400.0), (right_x + DEPTH, 400.0))
-    _line(modelspace, (right_x, 800.0), (right_x + DEPTH, 800.0))
-    _label(modelspace, "RIGHT", (right_x, HEIGHT + 45.0))
+    right_x = spec.width + 300.0
+    _rectangle(modelspace, right_x, 0.0, spec.depth, spec.height)
+    if not spec.trapezoid_inset:
+        for shelf_level in spec.shelf_levels:
+            _line(
+                modelspace,
+                (right_x, shelf_level),
+                (right_x + spec.depth, shelf_level),
+            )
+    _label(modelspace, "RIGHT", (right_x, spec.height + 45.0))
 
-    _label(modelspace, "FIXTURE SINTETICO", (0.0, HEIGHT + 110.0), height=24.0)
+    _label(
+        modelspace,
+        "FIXTURE SINTETICO",
+        (0.0, spec.height + 110.0),
+        height=24.0,
+    )
 
     # Public general dimensions.  The short observation is deliberately
     # absent from the incomplete variant, so thickness must remain unknown.
@@ -113,29 +173,29 @@ def build_fixture(path: Path, *, incomplete: bool) -> None:
         modelspace,
         base=(0.0, -90.0),
         p1=(0.0, 0.0),
-        p2=(WIDTH, 0.0),
+        p2=(spec.width, 0.0),
         angle=0.0,
     )
     _dimension(
         modelspace,
         base=(-110.0, 0.0),
         p1=(0.0, 0.0),
-        p2=(0.0, HEIGHT),
+        p2=(0.0, spec.height),
         angle=90.0,
     )
     _dimension(
         modelspace,
         base=(-120.0, top_y),
         p1=(0.0, top_y),
-        p2=(0.0, top_y + DEPTH),
+        p2=(0.0, top_y + spec.depth),
         angle=90.0,
     )
-    if not incomplete:
+    if not spec.incomplete and not spec.trapezoid_inset:
         _dimension(
             modelspace,
             base=(0.0, top_y - 75.0),
             p1=(0.0, top_y),
-            p2=(VISIBLE_OFFSET, top_y),
+            p2=(spec.visible_offset, top_y),
             angle=0.0,
         )
 
@@ -152,8 +212,8 @@ def build_fixture(path: Path, *, incomplete: bool) -> None:
 
 def build_all(output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    build_fixture(output_dir / "estanteria_montada.dxf", incomplete=False)
-    build_fixture(output_dir / "estanteria_incompleta.dxf", incomplete=True)
+    for filename, spec in FIXTURES.items():
+        build_fixture(output_dir / filename, spec)
     manifest = {
         "fixture_family": "synthetic_rectangular_shelving",
         "provenance": "original_development_fixture_not_derived_from_a_corpus",
@@ -175,6 +235,26 @@ def build_all(output_dir: Path) -> None:
                 "purpose": "development_fixture_with_missing_thickness_evidence",
                 "requires_human_mounting_confirmation": True,
                 "expected_unknown_fields": ["thickness"],
+            },
+            "mueble_demo_002.dxf": {
+                "purpose": "development_fixture_with_changed_overall_dimensions",
+                "requires_human_mounting_confirmation": True,
+                "expected_unknown_fields": [],
+            },
+            "mueble_demo_003.dxf": {
+                "purpose": "development_fixture_with_changed_internal_structure",
+                "requires_human_mounting_confirmation": True,
+                "expected_unknown_fields": [],
+            },
+            "mueble_demo_unidades_desconocidas.dxf": {
+                "purpose": "negative_preview_fixture_with_unknown_source_units",
+                "requires_human_mounting_confirmation": True,
+                "expected_unknown_fields": ["effective_unit", "metric_dimensions"],
+            },
+            "mueble_demo_trapecio.dxf": {
+                "purpose": "negative_preview_fixture_outside_rectangular_decomposition",
+                "requires_human_mounting_confirmation": False,
+                "expected_unknown_fields": [],
             },
         },
     }

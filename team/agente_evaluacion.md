@@ -9,10 +9,11 @@
 
 ## Tarea y alcance
 
-- Estado: terminado.
+- Estado: en curso para la ampliación de plano, reconstrucción y similitud del 2026-11-13.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
+- Objetivo actual: biblioteca propia parametrizada con variantes de dimensiones/estructura, oráculos privados y aceptación de escena física, descriptores, similitud y agrupación mediante la API integrada.
 
 ## Hecho
 
@@ -31,12 +32,16 @@
 | 2026-11-13 | Capas públicas neutrales y referencia solo del evaluador | Evitar fugas a extractor, prompt, herramientas y endpoints |
 | 2026-11-13 | Tres vistas no equivalen a cantidad; referencia revisada suma siete ocurrencias | Probar identidad/conteo de forma independiente |
 | 2026-11-13 | PlankAssembly queda como tarea futura separada y acotada | CC BY-NC-ND 4.0, adaptación y vistas 2D siguen pendientes |
+| 2026-11-13 | Biblioteca pública parametrizada con nombres opacos para dos variantes y controles negativos | Evaluar geometría/estructura sin usar IDs o respuestas privadas como señal |
+| 2026-11-13 | Unidad desconocida y trapecio son casos de preview, no casos de despiece | El plano debe seguir visible aunque la inferencia se abstenga |
 
 ## Dependencias / avisos
 
 - B entregará la API vertical para ejecutar el E2E TestClient de revisión, comparable, estimación y exportación.
 - La referencia privada nunca se comunica al extractor ni se incorpora a prompts, endpoints, herramientas, índice histórico o runtime.
 - No hay cambio de `contratos/` por D.
+- Nueva fase: A/B deben comunicar el contrato aditivo de escena, descriptor/similitud y agrupación antes de cerrar las pruebas E2E; D no escribirá esos contratos ni duplicará sus pruebas unitarias.
+- Los fixtures nuevos solo comunican vistas/cotas públicas. BOM, montaje de referencia y grupos esperados del evaluador permanecen fuera del runtime.
 
 ## Pruebas
 
@@ -48,8 +53,16 @@
 | E2E contra API real integrada | desde raíz: `.venv\Scripts\python.exe -m pytest .worktrees/evaluacion/tests/test_demo_e2e.py -q` | 2 pasan; 1 aviso deprecación TestClient/httpx | Oráculo económico manual suma todas las piezas: 127,84 EUR |
 | Suite D integrada | desde raíz: `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py tests/test_demo_e2e.py -q` | 11 pasan; 1 aviso deprecación | Incluye aislamiento estático y dinámico |
 | Suite Python integrada | desde raíz: `.venv\Scripts\python.exe -m pytest -q` | 52 pasan; 1 aviso deprecación tras hardening del bundle | No se ejecutó navegador; corresponde al coordinador |
+| Biblioteca parametrizada, TDD rojo | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py -q` | 9 fallos por fixtures/referencia aún ausentes; 8 pasan | Fallo esperado antes de implementar |
+| Biblioteca parametrizada e aislamiento | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 19 pasan | API 0.3 aún no integrada en esta rama |
 
-## Cierre
+## Siguiente bloque
+
+- Escribir primero regresiones de generación parametrizada y biblioteca pública; observar fallo.
+- Implementar los nuevos DXF y referencias privadas, manteniendo reproducibilidad y aislamiento.
+- Tras acuerdo A/B, añadir aceptación API de escena, exportación versionada, descriptor sin fugas, similitud invariante y grupos offline reproducibles.
+
+## Cierre de la fase anterior
 
 - Entrega completada dentro de las rutas asignadas; sin despliegue, `push` ni datos de terceros.
 - El E2E exige que la exportación JSON sea una ficha completa y coherente de la revisión: resultado, comparables, estimación y eventos.
