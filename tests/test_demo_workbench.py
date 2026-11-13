@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+import json
 import os
 from collections import Counter
 from contextlib import contextmanager
@@ -140,6 +141,11 @@ def test_reconstruction_scene_counts_occurrences_and_matches_independent_volume(
         scene_response = client.get(
             f"/api/v1/runs/{run_id}/scene", params={"result_revision": 2}
         )
+        revisions_response = client.get(f"/api/v1/runs/{run_id}/revisions")
+        explanations_response = client.get(
+            f"/api/v1/runs/{run_id}/explanations",
+            params={"result_revision": 2},
+        )
 
     assert initial["result_revision"] == 1
     assert unavailable_response.status_code == 200, unavailable_response.text
@@ -148,6 +154,27 @@ def test_reconstruction_scene_counts_occurrences_and_matches_independent_volume(
     assert unavailable["objects"] == []
 
     assert reviewed["result_revision"] == 2
+    assert revisions_response.status_code == 200, revisions_response.text
+    assert [item["result_revision"] for item in revisions_response.json()["data"]] == [1, 2]
+    assert explanations_response.status_code == 200, explanations_response.text
+    explanations = explanations_response.json()["data"]
+    assert explanations["schema_version"] == "0.3.0"
+    shelf_explanation = next(item for item in explanations["pieces"] if item["role"] == "shelf")
+    assert shelf_explanation["source_entity_ids"]
+    assert shelf_explanation["source_contour_ids"]
+    assert shelf_explanation["evidence_ids"]
+    assert "human_mounting_confirmation" in shelf_explanation["premises"]
+    assert shelf_explanation["formulas"] == [
+        {
+            "field": "length_mm",
+            "expression": "overall_width_mm - 2 * confirmed_thickness_mm",
+            "operands_mm": {
+                "overall_width_mm": 900.0,
+                "confirmed_thickness_mm": 18.0,
+            },
+            "result_mm": 864.0,
+        }
+    ]
     assert scene_response.status_code == 200, scene_response.text
     scene = scene_response.json()["data"]
     assert scene["schema_version"] == "0.3.0"
@@ -201,4 +228,134 @@ def test_unknown_thickness_blocks_scene_solids(
     assert scene["state"] == "unavailable"
     assert scene["objects"] == []
     assert scene["warnings"]
+
+
+def test_offline_library_is_invariant_explainable_and_reproducibly_grouped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cases = {
+        "case-A": "estanteria_montada.dxf",
+        "case-B": "mueble_demo_004.dxf",
+        "case-C": "mueble_demo_002.dxf",
+        "case-D": "mueble_demo_003.dxf",
+    }
+    runs: dict[str, str] = {}
+    saved: dict[str, dict] = {}
+
+    with _deny_runtime_reference_reads():
+        client = _client(tmp_path, monkeypatch)
+        for label, filename in cases.items():
+            document_id = _upload(client, filename)
+            run_id, _ = _start(client, document_id)
+            _review_between_sides(client, run_id)
+            response = client.post(
+                f"/api/v1/runs/{run_id}/library",
+                json={
+                    "result_revision": 2,
+                    "label": label,
+                    "embedding_mode": "offline",
+                },
+            )
+            assert response.status_code == 201, response.text
+            runs[label] = run_id
+            saved[label] = response.json()["data"]
+
+        listed_response = client.get("/api/v1/library")
+        similarity_response = client.post(
+            f"/api/v1/runs/{runs['case-A']}/similarity",
+            json={"result_revision": 2, "mode": "geometric", "limit": 10},
+        )
+        semantic_response = client.post(
+            f"/api/v1/runs/{runs['case-A']}/similarity",
+            json={"result_revision": 2, "mode": "semantic", "limit": 10},
+        )
+        groups_first_response = client.post(
+            "/api/v1/library/groups",
+            json={"mode": "geometric", "threshold": 0.999999},
+        )
+        groups_second_response = client.post(
+            "/api/v1/library/groups",
+            json={"mode": "geometric", "threshold": 0.999999},
+        )
+        export_response = client.get(
+            f"/api/v1/runs/{runs['case-A']}/exports",
+            params={"format": "json"},
+        )
+
+    assert listed_response.status_code == 200, listed_response.text
+    listed = listed_response.json()["data"]
+    assert len(listed) == 4
+    assert all(item["embedding"] is None for item in listed)
+
+    original = saved["case-A"]
+    translated = saved["case-B"]
+    dimensional_variant = saved["case-C"]
+    structural_variant = saved["case-D"]
+    assert original["descriptor"]["descriptor_version"] == "furniture-v1"
+    assert original["descriptor"] == translated["descriptor"]
+    assert original["descriptor_fingerprint"] == translated["descriptor_fingerprint"]
+    assert original["descriptor_fingerprint"] != dimensional_variant["descriptor_fingerprint"]
+    assert dimensional_variant["descriptor"]["structure"] == original["descriptor"]["structure"]
+    assert structural_variant["descriptor"]["roles"] != original["descriptor"]["roles"]
+
+    descriptor_surfaces = json.dumps(
+        [item["descriptor"] for item in listed],
+        ensure_ascii=False,
+        sort_keys=True,
+    ).casefold()
+    for forbidden in (
+        "run-",
+        "doc-",
+        "mueble_demo",
+        "estanteria_montada",
+        "case-a",
+        "case-b",
+        "evaluation/reference",
+        "private_id",
+    ):
+        assert forbidden not in descriptor_surfaces
+
+    assert similarity_response.status_code == 200, similarity_response.text
+    matches = similarity_response.json()["data"]
+    assert [item["method"] for item in matches] == ["geometric"] * 3
+    assert [item["score_kind"] for item in matches] == ["geometric_similarity"] * 3
+    assert matches[0]["run_id"] == runs["case-B"]
+    assert matches[0]["score"] == pytest.approx(1.0)
+    scores_by_run = {item["run_id"]: item["score"] for item in matches}
+    assert scores_by_run[runs["case-C"]] > scores_by_run[runs["case-D"]]
+    assert matches[1]["differences"]
+    assert "probability" not in json.dumps(matches).casefold()
+
+    assert semantic_response.status_code == 409
+    assert semantic_response.json()["error"]["code"] == "semantic_embedding_missing"
+
+    assert groups_first_response.status_code == 200, groups_first_response.text
+    assert groups_second_response.status_code == 200, groups_second_response.text
+    groups_first = groups_first_response.json()["data"]
+    groups_second = groups_second_response.json()["data"]
+    assert groups_first == groups_second
+    assert len(groups_first) == 1
+    assert set(groups_first[0]["member_ids"]) == {original["id"], translated["id"]}
+    assert groups_first[0]["method"] == "geometric"
+    assert groups_first[0]["score_kind"] == "geometric_similarity"
+    assert groups_first[0]["threshold"] == pytest.approx(0.999999)
+
+    # La referencia se abre solo después de congelar las salidas del runtime.
+    frozen_groups = json.loads(json.dumps(groups_first, sort_keys=True))
+    private_reference = json.loads(
+        (REFERENCE_DIR / "library_reference.json").read_text(encoding="utf-8")
+    )
+    assert private_reference["expected_groups"]["same_structure"][:1] == [
+        "estanteria_montada.dxf"
+    ]
+    assert frozen_groups == groups_first
+
+    assert export_response.status_code == 200, export_response.text
+    bundle = export_response.json()
+    assert bundle["result_revision"] == 2
+    assert bundle["scene"]["state"] == "ready"
+    assert bundle["explanations"]["result_revision"] == 2
+    assert bundle["descriptor"] == original["descriptor"]
+    assert bundle["library_item"]["id"] == original["id"]
 
