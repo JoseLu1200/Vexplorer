@@ -18,3 +18,11 @@ test("SVG labels preserve a constant apparent pixel size across zoom", () => {
   assert.equal(svgUnitPerPixel({ width: 900, height: 450 }, 900, 450), 1);
   assert.equal(svgUnitPerPixel({ width: 450, height: 225 }, 900, 450), .5);
 });
+
+test("asymmetric label padding does not consume the short viewport axis", () => {
+  const fitted = fitViewport({ minX: 0, minY: 0, maxX: 100, maxY: 50 }, 200, 100, { left: 20, right: 60, top: 10, bottom: 10 });
+  assert.equal(Number(fitted.width.toFixed(3)), 166.667);
+  assert.equal(Number(fitted.height.toFixed(3)), 83.333);
+  assert.equal(Number(fitted.x.toFixed(3)), -16.667);
+  assert.equal(Number(fitted.y.toFixed(3)), -16.667);
+});
