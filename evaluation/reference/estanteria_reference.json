@@ -1,0 +1,37 @@
+{
+  "reference_version": "1.0.0",
+  "fixture_id": "synthetic-shelving-dev-001",
+  "provenance": {
+    "kind": "original_synthetic_development_fixture",
+    "derived_from_external_corpus": false,
+    "plankassembly_used": false,
+    "industrial_validation": false
+  },
+  "reviewed_reference": {
+    "construction": "horizontal_panels_between_sides_with_inset_shelves",
+    "pieces": [
+      {"private_id": "p-side", "role": "side_panel", "quantity": 2, "dimensions_mm": [1200.0, 300.0, 18.0]},
+      {"private_id": "p-cap", "role": "top_or_base_panel", "quantity": 2, "dimensions_mm": [864.0, 300.0, 18.0]},
+      {"private_id": "p-shelf", "role": "shelf", "quantity": 2, "dimensions_mm": [864.0, 280.0, 18.0]},
+      {"private_id": "p-back", "role": "back_panel", "quantity": 1, "dimensions_mm": [864.0, 1164.0, 6.0]}
+    ]
+  },
+  "acceptable_alternative_scenarios": [
+    {
+      "scenario_id": "between_sides",
+      "description": "Paneles horizontales entre laterales; referencia revisada del evaluador."
+    },
+    {
+      "scenario_id": "overlay_caps",
+      "description": "Tapas de ancho completo y laterales entre tapas; compatible con las proyecciones generales sin detalle de juntas."
+    }
+  ],
+  "evaluation_policy": {
+    "requires_human_mounting_confirmation": true,
+    "unique_solution_claimed": false,
+    "incomplete_variant_must_keep_thickness_unknown": true,
+    "compare_only_after_output_is_frozen": true,
+    "allow_justified_alternative": true
+  }
+}
+
