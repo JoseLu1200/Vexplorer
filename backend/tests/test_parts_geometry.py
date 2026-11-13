@@ -160,6 +160,7 @@ def test_views_without_keys_remain_three_unassociated_observations() -> None:
     assert all(item.association_basis == "unassociated" for item in parts.observations)
     assert all(item.status == "ambiguous" for item in parts.observations)
     assert all(len(item.views) == 1 for item in parts.observations)
+    assert {item.views[0].view_id for item in parts.observations} <= {view.id for view in extraction.views}
     assert all(item.quantity.value is None and item.quantity.state == "unknown" for item in parts.observations)
     assert any(warning.startswith("unassociated_quantity_annotation:") for warning in parts.warnings)
 

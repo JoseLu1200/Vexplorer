@@ -58,6 +58,8 @@ def _view_labels(
             match = PART_VIEW_LABEL.fullmatch(text)
             if match:
                 labels.append((f"part-{match.group('key').lower()}-{match.group('role').lower()}", entity.points[0]))
+            elif text.upper() in {"FRONT", "TOP", "SIDE"}:
+                labels.append((f"unassociated-{entity.id}-{text.lower()}", entity.points[0]))
         else:
             normalized = text.upper()
             if normalized in VIEW_LABELS:
@@ -70,7 +72,7 @@ def _view_id(view_key: str) -> str:
 
 
 def _view_role(view_key: str) -> str:
-    if view_key.startswith("part-"):
+    if view_key.startswith(("part-", "unassociated-")):
         return view_key.rsplit("-", 1)[1].upper()
     return view_key
 
