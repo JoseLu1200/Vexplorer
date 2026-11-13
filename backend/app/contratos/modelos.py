@@ -226,8 +226,8 @@ class ObservedPartDimension(StrictModel):
             raise ValueError("observed dimension requires value, view and evidence references")
         if self.state != "observed" and self.value_mm is not None:
             raise ValueError("unknown or conflict dimension must have null value")
-        if self.state == "conflict" and (len(self.view_ids) < 2 or len(self.evidence_ids) < 2):
-            raise ValueError("conflict dimension requires at least two view and evidence references")
+        if self.state == "conflict" and (not self.view_ids or not self.measurement_ids or len(self.evidence_ids) < 2):
+            raise ValueError("conflict dimension requires a view, measurement and incompatible evidence references")
         return self
 
 
@@ -617,6 +617,14 @@ class FurnitureDescriptor(StrictModel):
     unknown_fields: tuple[str, ...]
 
 
+class DescriptorPartFeature(StrictModel):
+    length_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    quantity: int | None = Field(default=None, gt=0)
+    unknown_fields: tuple[Literal["length_mm", "width_mm", "thickness_mm", "quantity"], ...] = ()
+
+
 class FurnitureDescriptorV2(StrictModel):
     descriptor_version: Literal["furniture-v2"] = "furniture-v2"
     family: Literal["rectangular_shelving", "unknown"]
@@ -627,6 +635,7 @@ class FurnitureDescriptorV2(StrictModel):
     finish: str | None = None
     thicknesses_mm: tuple[float, ...]
     classification_status: Literal["hypothesis", "confirmed"]
+    part_features: tuple[DescriptorPartFeature, ...] = ()
     unknown_fields: tuple[str, ...]
 
 

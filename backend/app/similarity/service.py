@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 
-from backend.app.contratos.modelos import FurnitureDescriptor, LibraryItem, SimilarityDifference, SimilarityGroup, SimilarityMatch
+from backend.app.contratos.modelos import FurnitureDescriptor, FurnitureDescriptorV2, LibraryItem, SimilarityDifference, SimilarityGroup, SimilarityMatch
 
 
 def _ratio(left: float | None, right: float | None) -> float:
@@ -35,6 +35,8 @@ def descriptor_differences(left: FurnitureDescriptor, right: FurnitureDescriptor
         a, b = getattr(left, field), getattr(right, field)
         if a != b:
             values.append(SimilarityDifference(field=field, query_value=str(a), candidate_value=str(b)))
+    if isinstance(left, FurnitureDescriptorV2) and isinstance(right, FurnitureDescriptorV2) and left.thicknesses_mm != right.thicknesses_mm:
+        values.append(SimilarityDifference(field="thicknesses_mm", query_value=str(left.thicknesses_mm), candidate_value=str(right.thicknesses_mm)))
     a_roles = {item.role: item.quantity for item in left.roles}
     b_roles = {item.role: item.quantity for item in right.roles}
     for role in sorted(set(a_roles) | set(b_roles)):
@@ -47,8 +49,16 @@ def geometric_match(query: FurnitureDescriptor, candidate: LibraryItem) -> Simil
     dimensions = tuple(_ratio(getattr(query.dimensions, field), getattr(candidate.descriptor.dimensions, field)) for field in ("width_mm", "depth_mm", "height_mm"))
     dimension_score = sum(dimensions) / len(dimensions)
     role_score = _role_score(query, candidate.descriptor)
-    score = round(0.7 * dimension_score + 0.3 * role_score, 6)
-    return SimilarityMatch(library_item_id=candidate.id, run_id=candidate.run_id, result_revision=candidate.result_revision, method="geometric", score=score, score_kind="geometric_similarity", score_components={"dimensions": round(dimension_score, 6), "roles": round(role_score, 6), "dimensions_weight": 0.7, "roles_weight": 0.3}, differences=descriptor_differences(query, candidate.descriptor))
+    if isinstance(query, FurnitureDescriptorV2) and isinstance(candidate.descriptor, FurnitureDescriptorV2):
+        left_thickness = sum(query.thicknesses_mm) / len(query.thicknesses_mm) if query.thicknesses_mm else None
+        right_thickness = sum(candidate.descriptor.thicknesses_mm) / len(candidate.descriptor.thicknesses_mm) if candidate.descriptor.thicknesses_mm else None
+        thickness_score = _ratio(left_thickness, right_thickness)
+        score = round(0.6 * dimension_score + 0.25 * role_score + 0.15 * thickness_score, 6)
+        components = {"dimensions": round(dimension_score, 6), "roles": round(role_score, 6), "thickness": round(thickness_score, 6), "dimensions_weight": 0.6, "roles_weight": 0.25, "thickness_weight": 0.15}
+    else:
+        score = round(0.7 * dimension_score + 0.3 * role_score, 6)
+        components = {"dimensions": round(dimension_score, 6), "roles": round(role_score, 6), "dimensions_weight": 0.7, "roles_weight": 0.3}
+    return SimilarityMatch(library_item_id=candidate.id, run_id=candidate.run_id, result_revision=candidate.result_revision, method="geometric", score=score, score_kind="geometric_similarity", score_components=components, differences=descriptor_differences(query, candidate.descriptor))
 
 
 def cosine_similarity(left: tuple[float, ...], right: tuple[float, ...]) -> float:
