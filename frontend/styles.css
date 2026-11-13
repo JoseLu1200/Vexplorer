@@ -12,6 +12,7 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:1ms!important}}
 .is-view-hidden{display:none}
 .detail-item code{display:block;margin-top:4px;color:#7b878c;font:10px var(--mono);overflow-wrap:anywhere}
+.threshold-field{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px}.threshold-field input{width:76px;padding:6px;border:1px solid var(--line);border-radius:4px}.library-members{display:grid;gap:4px;margin-top:7px}.library-link{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border:1px solid var(--line);border-radius:4px;color:var(--ink);background:#f8f8f5;text-decoration:none;font-size:11px}.library-link:hover{border-color:var(--blue);color:var(--blue)}
 
 /* Compact two-row CAD controls and resilient session navigation. */
 .navigator{gap:8px}

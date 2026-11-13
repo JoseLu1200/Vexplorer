@@ -11,7 +11,7 @@ import { createRequestFence } from "./core/request-fence.js";
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null };
+const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), uploadFence=createRequestFence();
 
@@ -32,7 +32,7 @@ function resetEstimateUi() {
 function resetRunUi() {
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate();
   state.eventSource?.close();
-  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null });
+  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
@@ -423,14 +423,19 @@ function setupWorkspaceControls() {
 
 function renderLibraryResults(raw, mode) {
   const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[];
-  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||item.explanation||"Sin diferencias documentadas"; card.append(title,detail,differences); root.append(card); });
+  items.forEach((item)=>{ const candidate=state.libraryItems.get(item.library_item_id); const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=candidate?.label??item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; const threshold=Number.isFinite(item.threshold)?` · umbral ${item.threshold.toFixed(2)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? candidate?.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}${threshold}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||item.explanation||"Sin diferencias documentadas"; card.append(title,detail,differences); const linked=item.member_ids?.map((id)=>state.libraryItems.get(id)).filter(Boolean)??(candidate?[candidate]:[]); if(linked.length){ const links=document.createElement("div"); links.className="library-members"; linked.forEach((entry)=>links.append(libraryRunLink(entry))); card.append(links); } root.append(card); });
   if(!items.length)root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
 }
 
 function renderLibraryEntries(raw) {
-  const items=raw.items??raw??[]; const root=$("#library-list"); root.replaceChildren();
+  const items=raw.items??raw??[]; state.libraryItems=new Map(items.map((item)=>[item.id,item])); const root=$("#library-list"); root.replaceChildren();
   items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
   if(!items.length)root.append(emptyParagraph("La biblioteca técnica está vacía."));
+}
+
+function libraryRunLink(item) {
+  const link=document.createElement("a"), url=new URL(location.href); url.searchParams.set("run",item.run_id); link.href=url; link.className="library-link";
+  const label=document.createElement("span"); label.textContent=item.label; const action=document.createElement("b"); action.textContent=`Abrir rev. ${item.result_revision}`; link.append(label,action); return link;
 }
 
 async function boot() {
@@ -443,7 +448,7 @@ async function boot() {
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
   $("#save-library").addEventListener("click",async()=>{ try { const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); renderLibraryEntries(await api.getLibrary()); text($("#semantic-note"),"Revisión guardada en la biblioteca técnica."); } catch(error){ text($("#semantic-note"),error.message); } });
   $("#find-similar").addEventListener("click",async()=>{ const mode=$("#similarity-mode").value; try { renderLibraryResults(await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6}),mode); } catch(error){ const root=$("#library-list"); root.replaceChildren(emptyParagraph(error.message)); } });
-  $("#group-library").addEventListener("click",async()=>{ const selected=$("#similarity-mode").value; const mode=selected==="semantic"?"semantic":"geometric"; try { renderLibraryResults(await api.groupLibrary({mode,threshold:mode==="semantic"?.75:.7}),mode); } catch(error){ $("#library-list").replaceChildren(emptyParagraph(error.message)); } });
+  $("#group-library").addEventListener("click",async()=>{ const selected=$("#similarity-mode").value; const mode=selected==="semantic"?"semantic":"geometric", threshold=Number($("#group-threshold").value); try { renderLibraryResults(await api.groupLibrary({mode,threshold}),mode); } catch(error){ $("#library-list").replaceChildren(emptyParagraph(error.message)); } });
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
   const restoredRunId = restoreRunId(location, localStorage);
   if (restoredRunId) {
