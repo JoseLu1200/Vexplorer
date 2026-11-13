@@ -1,0 +1,5 @@
+node_modules/
+vendor/three/*.js
+vendor/three/addons/
+!vendor/three/LICENSE
+

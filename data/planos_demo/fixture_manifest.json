@@ -1,0 +1,62 @@
+{
+  "fixture_family": "synthetic_rectangular_shelving",
+  "provenance": "original_development_fixture_not_derived_from_a_corpus",
+  "license_audit": "no_third_party_source_assets",
+  "input_contract": {
+    "format": "DXF R2010",
+    "units": "mm",
+    "views": [
+      "FRONT",
+      "TOP",
+      "RIGHT"
+    ],
+    "layers": [
+      "VIEW_GEOMETRY",
+      "DIMENSIONS",
+      "LABELS"
+    ],
+    "semantics": "assembled_views_are_observations_not_physical_quantities"
+  },
+  "cases": {
+    "estanteria_montada.dxf": {
+      "purpose": "development_fixture_with_general_dimensions_and_mounting_ambiguity",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "estanteria_incompleta.dxf": {
+      "purpose": "development_fixture_with_missing_thickness_evidence",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": [
+        "thickness"
+      ]
+    },
+    "mueble_demo_002.dxf": {
+      "purpose": "development_fixture_with_changed_overall_dimensions",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "mueble_demo_003.dxf": {
+      "purpose": "development_fixture_with_changed_internal_structure",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "mueble_demo_004.dxf": {
+      "purpose": "translation_invariance_control_for_the_development_fixture",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "mueble_demo_unidades_desconocidas.dxf": {
+      "purpose": "negative_preview_fixture_with_unknown_source_units",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": [
+        "effective_unit",
+        "metric_dimensions"
+      ]
+    },
+    "mueble_demo_trapecio.dxf": {
+      "purpose": "negative_preview_fixture_outside_rectangular_decomposition",
+      "requires_human_mounting_confirmation": false,
+      "expected_unknown_fields": []
+    }
+  }
+}

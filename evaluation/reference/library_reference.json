@@ -1,0 +1,49 @@
+{
+  "reference_version": "1.0.0",
+  "provenance": {
+    "kind": "original_synthetic_development_library",
+    "derived_from_external_corpus": false,
+    "plankassembly_used": false,
+    "industrial_validation": false
+  },
+  "expected_groups": {
+    "same_structure": [
+      "estanteria_montada.dxf",
+      "mueble_demo_002.dxf",
+      "mueble_demo_004.dxf"
+    ],
+    "different_structure": [
+      "mueble_demo_003.dxf"
+    ]
+  },
+  "reviewed_references": {
+    "mueble_demo_004.dxf": {
+      "transformed_duplicate_of": "estanteria_montada.dxf",
+      "transformation": "translation_only"
+    },
+    "mueble_demo_002.dxf": {
+      "construction": "horizontal_panels_between_sides",
+      "pieces": [
+        {"private_id": "b-side", "role": "side_panel", "quantity": 2, "dimensions_mm": [1300.0, 320.0, 18.0]},
+        {"private_id": "b-cap", "role": "top_or_base_panel", "quantity": 2, "dimensions_mm": [964.0, 320.0, 18.0]},
+        {"private_id": "b-shelf", "role": "shelf", "quantity": 2, "dimensions_mm": [964.0, 300.0, 18.0]},
+        {"private_id": "b-back", "role": "back_panel", "quantity": 1, "dimensions_mm": [964.0, 1264.0, 6.0]}
+      ]
+    },
+    "mueble_demo_003.dxf": {
+      "construction": "horizontal_panels_between_sides",
+      "pieces": [
+        {"private_id": "c-side", "role": "side_panel", "quantity": 2, "dimensions_mm": [800.0, 280.0, 18.0]},
+        {"private_id": "c-cap", "role": "top_or_base_panel", "quantity": 2, "dimensions_mm": [664.0, 280.0, 18.0]},
+        {"private_id": "c-shelf", "role": "shelf", "quantity": 1, "dimensions_mm": [664.0, 260.0, 18.0]},
+        {"private_id": "c-back", "role": "back_panel", "quantity": 1, "dimensions_mm": [664.0, 764.0, 6.0]}
+      ]
+    }
+  },
+  "evaluation_policy": {
+    "runtime_must_not_read_this_file": true,
+    "compare_only_after_outputs_are_frozen": true,
+    "descriptor_must_ignore_filenames_and_ids": true,
+    "semantic_boundary_mock_only_in_identified_tests": true
+  }
+}

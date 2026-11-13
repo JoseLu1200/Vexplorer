@@ -1,0 +1,24 @@
+{
+  "oracle_version": "1.0.0",
+  "case": "reviewed_between_sides_all_confirmed_components",
+  "inputs": {
+    "fixed_cost_eur": 40.0,
+    "material_cost_eur": 60.0,
+    "reference_area_mm2": 1200000.0,
+    "side_area_mm2": 720000.0,
+    "top_and_base_area_mm2": 518400.0,
+    "shelves_area_mm2": 518400.0,
+    "target_area_mm2": 1756800.0
+  },
+  "expected": {
+    "comparable_id": "hist-syn-1",
+    "material_factor": 1.464,
+    "fixed_amount_eur": 40.0,
+    "material_amount_eur": 87.84,
+    "total_eur": 127.84,
+    "hours": null
+  },
+  "manual_calculation": "40 + 60 * ((2*1200*300 + 2*864*300 + 2*864*300) / 1200000) = 127.84",
+  "independence": "Expected values are evaluator-authored constants; no backend resolver is imported."
+}
+

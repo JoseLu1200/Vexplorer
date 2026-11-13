@@ -7,7 +7,6 @@ import hashlib
 import json
 from pathlib import Path, PureWindowsPath
 import re
-import shutil
 import tempfile
 import zipfile
 
@@ -54,6 +53,10 @@ VISUAL_CASES = (
     ),
 )
 
+PUBLIC_INPUT_INSTRUCTION = (
+    "Use only evidence visible in this input. Keep unsupported dimensions, identity, and quantity unknown."
+)
+
 
 def sha256(path: Path) -> str:
     with path.open("rb") as stream:
@@ -72,9 +75,9 @@ def safe_source(root: Path, name: str) -> Path:
     return path
 
 
-def read_manifest(source: Path) -> dict[str, str]:
+def _parse_manifest(source: Path, data: bytes) -> dict[str, str]:
     entries = {}
-    for line in (source / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+    for line in data.decode("utf-8").splitlines():
         if not line.strip():
             continue
         fields = line.split(maxsplit=1)
@@ -91,16 +94,40 @@ def read_manifest(source: Path) -> dict[str, str]:
     return entries
 
 
-def audit_dataset(source: Path) -> Audit:
+def read_manifest_snapshot(source: Path) -> tuple[dict[str, str], str]:
+    data = (source / "SHA256SUMS").read_bytes()
+    return _parse_manifest(source, data), hashlib.sha256(data).hexdigest()
+
+
+def read_manifest(source: Path) -> dict[str, str]:
+    return read_manifest_snapshot(source)[0]
+
+
+def read_verified(source: Path, entries: dict[str, str], name: str) -> bytes:
+    if name not in entries:
+        raise ValueError(f"source path missing from manifest: {name}")
+    path = safe_source(source, name)
+    if not path.is_file():
+        raise ValueError(f"missing source: {name}")
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != entries[name]:
+        raise ValueError(f"hash mismatch: {name}")
+    return data
+
+
+def public_input_metadata(*, case_id: str, file: str, task: str, split: str,
+                          format: str, unit: str | None, digest: str) -> dict[str, object]:
+    public_task = task.removesuffix("_with_abstention")
+    return {"id": case_id, "file": file, "task": public_task, "split": split, "format": format,
+            "unit": unit, "limitation": PUBLIC_INPUT_INSTRUCTION, "sha256": digest}
+
+
+def audit_dataset(source: Path, manifest_snapshot: tuple[dict[str, str], str] | None = None) -> Audit:
     source = source.resolve()
-    entries = read_manifest(source)
+    entries, manifest_digest = manifest_snapshot or read_manifest_snapshot(source)
     for name, expected in entries.items():
-        path = safe_source(source, name)
-        if not path.is_file():
-            raise ValueError(f"missing source: {name}")
-        if sha256(path) != expected:
-            raise ValueError(f"hash mismatch: {name}")
-    cases = json.loads((source / "index.json").read_text(encoding="utf-8"))
+        read_verified(source, entries, name)
+    cases = json.loads(read_verified(source, entries, "index.json"))
     if not isinstance(cases, list) or not cases:
         raise ValueError("index must contain cases")
     paths = 0
@@ -121,16 +148,17 @@ def audit_dataset(source: Path) -> Audit:
             found = True
         if not found:
             raise ValueError(f"case has no indexed paths: {case['id']}")
-    return Audit(len(entries), len(cases), paths, sha256(source / "SHA256SUMS"))
+    return Audit(len(entries), len(cases), paths, manifest_digest)
 
 
-def render_crops(source: Path, destination: Path, crops: tuple[tuple[float, float, float, float], ...]) -> None:
+def render_crops(source: Path | bytes, destination: Path, crops: tuple[tuple[float, float, float, float], ...]) -> None:
     """Rebuild from pixels, not PDF clipping (which can retain hidden objects)."""
     if destination.exists():
         raise ValueError(f"destination exists: {destination}")
     if not crops:
         raise ValueError("no crops")
-    with fitz.open(source) as original, fitz.open() as output:
+    original_document = fitz.open(source) if isinstance(source, Path) else fitz.open(stream=source, filetype="pdf")
+    with original_document as original, fitz.open() as output:
         for crop in crops:
             rect = fitz.Rect(crop)
             if rect.is_empty or rect.is_infinite or not original[0].rect.contains(rect):
@@ -172,12 +200,13 @@ def prepare_dataset(source: Path, destination: Path) -> Audit:
         raise ValueError("source/output overlap")
     if destination.exists():
         raise ValueError(f"output exists: {destination}")
-    audit = audit_dataset(source)
-    entries = read_manifest(source)
+    manifest_snapshot = read_manifest_snapshot(source)
+    entries = manifest_snapshot[0]
+    audit = audit_dataset(source, manifest_snapshot)
     for case in VISUAL_CASES:
         if entries.get(case.source) != case.source_sha256:
             raise ValueError(f"source revision differs from reviewed crop: {case.case_id}")
-    catalog = json.loads((source / "index.json").read_text(encoding="utf-8"))
+    catalog = json.loads(read_verified(source, entries, "index.json"))
     cad = sorted((c for c in catalog if c.get("track") == "single_part_cad_dimension_extraction"), key=lambda c: c["id"])
     if len(cad) != 14:
         raise ValueError("expected 14 admitted CAD extraction cases")
@@ -193,31 +222,37 @@ def prepare_dataset(source: Path, destination: Path) -> Audit:
     inputs, private = [], []
     for case in VISUAL_CASES:
         name = case.case_id + ".pdf"
-        render_crops(source / case.source, agent / name, case.crops)
-        inputs.append({"id": case.case_id, "file": name, "task": case.task,
-                       "split": "development", "format": "raster_pdf", "unit": case.unit,
-                       "limitation": case.limitation, "sha256": sha256(agent / name)})
+        render_crops(read_verified(source, entries, case.source), agent / name, case.crops)
+        inputs.append(public_input_metadata(
+            case_id=case.case_id, file=name, task=case.task, split="development",
+            format="raster_pdf", unit=case.unit, digest=sha256(agent / name),
+        ))
         private.append({**asdict(case), "source_page": 1, "crop_units": "PDF points", "raster_scale": 2,
                         "family_id": "bench_vise", "split": "development"})
     for number, case in enumerate(cad, 1):
         case_id = f"cad-{number:03d}"
         name = case_id + ".dxf"
-        shutil.copyfile(source / case["dxf"], agent / name)
+        (agent / name).write_bytes(read_verified(source, entries, case["dxf"]))
         ref = case.get("dimension_records")
         if ref:
-            shutil.copyfile(source / ref, evaluator / (case_id + "-publisher-dimensions.json"))
-        inputs.append({"id": case_id, "file": name, "task": "extract_annotated_cad",
-                       "split": "development", "format": "dxf", "unit": None,
-                       "limitation": "Single component, annotations retained; resolve units from admitted evidence. Not a blind despiece test.",
-                       "sha256": sha256(agent / name)})
+            (evaluator / (case_id + "-publisher-dimensions.json")).write_bytes(
+                read_verified(source, entries, ref)
+            )
+        inputs.append(public_input_metadata(
+            case_id=case_id, file=name, task="extract_annotated_cad", split="development",
+            format="dxf", unit=None, digest=sha256(agent / name),
+        ))
         private.append({"id": case_id, "family_id": case["id"], "source": case["dxf"],
                         "source_sha256": entries[case["dxf"]], "publisher_reference": ref,
-                        "reference_status": "publisher annotation, not independently certified gold"})
+                        "reference_status": "publisher annotation, not independently certified gold",
+                        "limitation": "Single component, annotations retained; not a blind despiece test."})
     # Only audited reference files are copied, never source scripts or a whole directory tree.
     for name in entries:
         if name.startswith("conjuntos/bench_vise/") and name.endswith((".pdf", "README.md", "source_manifest.json")):
-            shutil.copyfile(source / name, evaluator / Path(name).name)
-    shutil.copyfile(source / "bench_vise_reference.json", evaluator / "bench_vise_reference.json")
+            (evaluator / Path(name).name).write_bytes(read_verified(source, entries, name))
+    (evaluator / "bench_vise_reference.json").write_bytes(
+        read_verified(source, entries, "bench_vise_reference.json")
+    )
     write_json(evaluator / "cases.json", private)
     write_json(evaluator / "audit.json", asdict(audit))
     write_json(evaluator / "expectations.json", {
