@@ -346,10 +346,11 @@ class PieceExplanation(StrictModel):
     source_contour_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...]
     dimension_ids: tuple[str, ...]
+    measurements: dict[str, float | int | None]
     formulas: tuple[FormulaExplanation, ...]
     premises: tuple[str, ...]
     unknown_fields: tuple[str, ...]
-    field_states: dict[str, Literal["observed", "calculated", "confirmed", "unknown"]]
+    field_states: dict[str, Literal["observed", "calculated", "confirmed", "hypothesis", "unknown"]]
 
 
 class ExplanationBundle(StrictModel):
@@ -358,6 +359,76 @@ class ExplanationBundle(StrictModel):
     result_revision: int = Field(gt=0)
     pieces: tuple[PieceExplanation, ...]
     warnings: tuple[str, ...] = ()
+
+
+class DescriptorDimensions(StrictModel):
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    depth_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    height_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+
+class RoleQuantity(StrictModel):
+    role: str = Field(min_length=1)
+    quantity: int | None = Field(default=None, gt=0)
+
+
+class FurnitureDescriptor(StrictModel):
+    descriptor_version: Literal["furniture-v1"] = "furniture-v1"
+    family: Literal["rectangular_shelving", "unknown"]
+    dimensions: DescriptorDimensions
+    roles: tuple[RoleQuantity, ...]
+    structure: Literal["top_base_between_sides", "top_base_cap_sides", "unknown"]
+    material: str | None = None
+    finish: str | None = None
+    unknown_fields: tuple[str, ...]
+
+
+class EmbeddingMetadata(StrictModel):
+    provider: Literal["openai"] = "openai"
+    model: str = Field(min_length=1)
+    dimensions: int = Field(gt=0)
+    descriptor_version: Literal["furniture-v1"] = "furniture-v1"
+    cache_key: str = Field(min_length=1)
+    status: Literal["generated", "cache"]
+
+
+class LibraryItem(StrictModel):
+    schema_version: Literal["0.3.0"] = "0.3.0"
+    id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)
+    label: str = Field(min_length=1)
+    descriptor: FurnitureDescriptor
+    descriptor_fingerprint: str = Field(min_length=64, max_length=64)
+    created_at: str = Field(min_length=1)
+    embedding: EmbeddingMetadata | None = None
+
+
+class SimilarityDifference(StrictModel):
+    field: str = Field(min_length=1)
+    query_value: str
+    candidate_value: str
+
+
+class SimilarityMatch(StrictModel):
+    library_item_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)
+    method: Literal["geometric", "semantic"]
+    score: float = Field(ge=-1, le=1, allow_inf_nan=False)
+    score_kind: Literal["geometric_similarity", "cosine_similarity"]
+    score_components: dict[str, float]
+    differences: tuple[SimilarityDifference, ...]
+    embedding: EmbeddingMetadata | None = None
+
+
+class SimilarityGroup(StrictModel):
+    id: str = Field(min_length=1)
+    member_ids: tuple[str, ...] = Field(min_length=2)
+    method: Literal["geometric", "semantic"]
+    score_kind: Literal["geometric_similarity", "cosine_similarity"]
+    threshold: float = Field(ge=-1, le=1, allow_inf_nan=False)
+    explanation: str = Field(min_length=1)
 
 
 class RunSnapshot(StrictModel):
@@ -370,6 +441,7 @@ class RunSnapshot(StrictModel):
     result_revision: int | None
     created_at: str
     agent_selected_scenario_id: str | None = None
+    document_id: str | None = None
 
 
 class Comparable(StrictModel):

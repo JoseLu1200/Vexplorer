@@ -10,6 +10,7 @@ from backend.app.contratos.modelos import (
     DrawingExtraction,
     Estimate,
     HumanReview,
+    LibraryItem,
     ResolvedPiece,
     Result,
     ReviewRequest,
@@ -46,24 +47,33 @@ class DemoRepository:
                     run_id TEXT NOT NULL, sequence INTEGER NOT NULL, event_type TEXT NOT NULL,
                     payload TEXT NOT NULL, PRIMARY KEY (run_id, sequence)
                 );
+                CREATE TABLE IF NOT EXISTS library_items (
+                    run_id TEXT PRIMARY KEY, payload TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS embedding_cache (
+                    cache_key TEXT PRIMARY KEY, model TEXT NOT NULL, dimensions INTEGER NOT NULL,
+                    descriptor_version TEXT NOT NULL, vector_json TEXT NOT NULL, created_at TEXT NOT NULL
+                );
                 """
             )
             columns = {row[1] for row in db.execute("PRAGMA table_info(runs)").fetchall()}
             if "agent_selected_scenario_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_scenario_id TEXT")
+            if "document_id" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN document_id TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None) -> RunSnapshot:
         created_at = _now()
         initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?)",
-                (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?)",
+                (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -82,7 +92,7 @@ class DemoRepository:
             row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if row is None:
             raise KeyError(run_id)
-        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"])
+        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], document_id=row["document_id"])
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -202,3 +212,38 @@ class DemoRepository:
         with self._connect() as db:
             sequence = db.execute("SELECT COALESCE(MAX(sequence), 0) + 1 FROM events WHERE run_id=?", (run_id,)).fetchone()[0]
             db.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (run_id, sequence, event_type, json.dumps(stamped)))
+
+    def save_library_item(self, item: LibraryItem) -> None:
+        self.get_result(item.run_id, item.result_revision)
+        with self._connect() as db:
+            db.execute("INSERT OR REPLACE INTO library_items (run_id,payload) VALUES (?, ?)", (item.run_id, item.model_dump_json()))
+
+    def get_library_items(self) -> tuple[LibraryItem, ...]:
+        with self._connect() as db:
+            rows = db.execute("SELECT payload FROM library_items ORDER BY run_id").fetchall()
+        return tuple(LibraryItem.model_validate_json(row[0]) for row in rows)
+
+    def get_library_item(self, run_id: str) -> LibraryItem:
+        with self._connect() as db:
+            row = db.execute("SELECT payload FROM library_items WHERE run_id=?", (run_id,)).fetchone()
+        if row is None:
+            raise KeyError(run_id)
+        return LibraryItem.model_validate_json(row[0])
+
+    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...]) -> None:
+        from backend.app.semantic.embeddings import validate_embedding
+
+        validated = validate_embedding(list(vector), dimensions)
+        with self._connect() as db:
+            db.execute("INSERT OR REPLACE INTO embedding_cache VALUES (?, ?, ?, ?, ?, ?)", (cache_key, model, dimensions, descriptor_version, json.dumps(validated), _now()))
+
+    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]:
+        from backend.app.semantic.embeddings import validate_embedding
+
+        with self._connect() as db:
+            row = db.execute("SELECT model,dimensions,descriptor_version,vector_json FROM embedding_cache WHERE cache_key=?", (cache_key,)).fetchone()
+        if row is None:
+            raise KeyError(cache_key)
+        if row["model"] != model or row["dimensions"] != dimensions or row["descriptor_version"] != descriptor_version:
+            raise ValueError("embedding_space_incompatible")
+        return validate_embedding(json.loads(row["vector_json"]), dimensions)

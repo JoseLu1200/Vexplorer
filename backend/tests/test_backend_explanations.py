@@ -52,6 +52,17 @@ def test_explanation_unknown_revision_is_not_silently_replaced(tmp_path: Path, m
     assert response.json()["error"]["code"] == "result_not_found"
 
 
+def test_initial_explanations_describe_hypotheses_without_human_confirmation(tmp_path: Path, monkeypatch) -> None:
+    client, run_id = _reviewed_run(tmp_path, monkeypatch)
+
+    bundle = client.get(f"/api/v1/runs/{run_id}/explanations", params={"result_revision": 1}).json()["data"]
+
+    assert len(bundle["pieces"]) >= 8
+    assert all("human_mounting_confirmation" not in item["premises"] for item in bundle["pieces"])
+    assert any(item["field_states"]["thickness_mm"] == "unknown" for item in bundle["pieces"])
+    assert any(item["measurements"]["width_mm"] == 300 for item in bundle["pieces"])
+
+
 def test_explain_piece_tool_is_public_and_strict() -> None:
     schema = next(item for item in tool_schemas() if item["name"] == "explicar_pieza")
     assert schema["strict"] is True
