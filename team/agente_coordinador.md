@@ -1,5 +1,13 @@
 # Agente coordinador — demo local
 
+## Entrada corregida por el usuario: piezas separadas (2026-11-14)
+
+El usuario exige partir únicamente de vistas del despiece y confirma DXF 2D con piezas separadas. La auditoría baseline queda conservada en `59623ef`; producto auditado `dab7ce5`. Nuevo trabajo en `feat/parts-integration` y worktrees `feat/parts-{geometry,backend,frontend,evaluation}`. Diseño y plan en `docs/superpowers/{specs,plans}/2026-11-14-piezas-separadas*`.
+
+A/B han acordado por mensajes el contrato aditivo 0.4 antes de implementar, B lo registra y es escritor único. C/D reciben shape para trabajar en paralelo. A posee ingesta/extracción/parts/reconstrucción; B contratos/API/harness/repositorio/revisión/descriptor; C frontend; D fixtures/referencia privada/aceptación; root documentación/integración/navegador; Astra revisión final. Hallazgos baseline no se borran: cada corrección tendrá verificación posterior identificada.
+
+Estado: diseño registrado y contrato en publicación; regresiones OCS/Z/DIMLFAC de A listas `854d003`, pendientes de integrar. No se ha verificado aún el nuevo flujo.
+
 ## Auditoría de uso solicitada el 2026-11-14
 
 Base congelada: main `dab7ce5`. El usuario pide probar API y navegador y documentar capacidades, fallos y pendientes. Rama de documentación `audit/app-20261114`; no se modifica código de producto durante la auditoría.
