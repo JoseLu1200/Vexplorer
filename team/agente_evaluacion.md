@@ -21,6 +21,7 @@
 - Creado bloque parts-only público con siete DXF propios: completo, cantidad desconocida, espesor desconocido, dimensiones distintas, espesor 36 mm, claves/traslación distintas y vistas ambiguas sin clave.
 - La gramática visible usa `PART <key> FRONT|TOP|SIDE` y `QTY <key> <n>`; FRONT=(L,W), TOP=(L,T), SIDE=(T,W). Un `QTY` suelto no se asocia.
 - Separada la nueva referencia de ensamblaje, roles y economía en `evaluation/reference/piezas_reference.json`; el generador no la importa ni la lee.
+- Neutralizado el manifiesto público tras detectar que sus propósitos describían faltas de evidencia; todos los casos comparten ahora una descripción genérica.
 - Creado fixture propio de estantería rectangular montada, en DXF R2010 y mm, con vistas `FRONT`, `TOP`, `RIGHT`, cotas generales y sin nombres de piezas/BOM.
 - Creada variante incompleta que elimina evidencia de espesor y exige conservarlo desconocido.
 - Separada la construcción revisada en `evaluation/reference/`, con dos escenarios plausibles y política que no reclama solución única.
@@ -70,6 +71,8 @@
 | Suite Python en raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 113 pasan; 1 aviso deprecación | Incluye hardening de argumentos nativos; no incluye JavaScript ni navegador |
 | Parts-only TDD rojo | `python -m pytest tests/test_parts_only_evaluation.py -q` antes del generador | 14 fallos por DXF, manifiesto, módulo y referencia ausentes | Fallos esperados del nuevo bloque |
 | Parts-only fixture + aislamiento | `python -m pytest tests/test_parts_only_evaluation.py tests/test_demo_isolation.py -q` | 17 pasan | API 0.4 todavía no integrada; solo contrato público de entrada y aislamiento |
+| Manifiesto neutral TDD | test focalizado antes/después de eliminar propósitos diagnósticos | 1 fallo esperado, después 1 pasa | Filenames de demo permanecen; no entran al modelo/descriptor |
+| Aceptación 0.4 TDD roja | `python -m pytest tests/test_parts_only_evaluation.py -q` | 15 pasan; 4 fallan porque la API 0.3 rechaza `input_kind` | Fallo esperado previo a integrar extractor/orquestación/API 0.4 |
 
 ## Siguiente bloque
 
