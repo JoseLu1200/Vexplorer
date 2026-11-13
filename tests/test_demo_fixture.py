@@ -58,14 +58,17 @@ def test_demo_dxf_declares_mm_and_only_public_layers(filename: str) -> None:
 
 def test_public_dimensions_are_few_overall_observations() -> None:
     doc = _read("estanteria_montada.dxf")
+    dimensions = list(doc.modelspace().query("DIMENSION"))
     measurements = sorted(
-        round(float(dimension.get_measurement()), 6)
-        for dimension in doc.modelspace().query("DIMENSION")
+        round(float(dimension.get_measurement()), 6) for dimension in dimensions
     )
 
     # Oráculo escrito a mano a partir de las cotas públicas del caso,
     # no calculado mediante el generador ni el extractor del producto.
     assert measurements == [18.0, 300.0, 900.0, 1200.0]
+    assert {
+        float(dimension.get_dim_style().dxf.dimlfac) for dimension in dimensions
+    } == {1.0}
 
 
 def test_three_views_are_not_physical_quantity() -> None:

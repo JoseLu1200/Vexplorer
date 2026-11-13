@@ -60,7 +60,7 @@ def _dimension(
         p1=p1,
         p2=p2,
         angle=angle,
-        dimstyle="EZDXF",
+        dimstyle="Standard",
         dxfattribs={"layer": DIMENSIONS_LAYER},
     )
     dimension.render()
