@@ -45,7 +45,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
     model_calls = 0
     tool_calls = 0
     previous_response_id = None
-    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": [item.id for item in extraction.evidence], "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "component_roles": [component.role for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
+    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": [item.id for item in extraction.evidence], "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
     evidence = {item.id: item for item in extraction.evidence}
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
