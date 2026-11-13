@@ -17,6 +17,12 @@ Criterios: cotas con anclajes y unidades; navegación/pan/zoom; selección bidir
 
 Estado: en curso; capacidades de esta ampliación todavía no verificadas.
 
+Transferencia adicional por petición de reutilización open source: coordinador asume exclusivamente `backend/app/salida/drawing_preview.py` y `backend/tests/test_drawing_preview.py`, nuevos archivos de representación SVG con ezdxf. B mantiene la ruta API, C integra la imagen y A mantiene el ledger geométrico. Avisados A/B/C antes de código. El SVG no constituye evidencia métrica ni aporta identidades de piezas; no se alinea con el ledger sin transformación demostrada.
+
+Bloque de render: SVGBackend integrado con presupuesto de entidades/recursión, tiempo cooperativo y tamaño; sin adjuntos externos ni contenido activo. Pruebas propias primero rojas por módulo ausente, luego tres verdes sobre curvas/bloques/texto/cotas, ciclo recursivo y DXF inválido. Pillow 12.3.0 declarada por B e instalada desde pyproject; versión registrada en requirements-demo. Endpoint/UI aún pendientes de integración. Investigación open source documentada en docs/OPEN_SOURCE.md.
+
+Push autorizado por solicitud posterior del usuario: `git push -u origin demo/drawing-workbench`, observado correcto hasta `8eb85ab`. La ampliación posterior continúa en desarrollo y se subirá tras verificación; sin despliegue.
+
 Identidad: agente coordinador de IA; no representa a una persona. Autorización: solicitud explícita del usuario del 2026-11-13.
 
 ## Alcance y propiedad
