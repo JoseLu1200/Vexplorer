@@ -5,11 +5,13 @@ import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
+import { boundsForPoints, fitViewport, panViewport, zoomViewport } from "./core/viewport.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { runId: null, snapshot: null, drawing: null, ledger: null, eventLedger: null, eventSource: null, selected: null };
+const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null };
+let sceneViewer;
 
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
 function unlock(id) { $(`#${id}`)?.classList.remove("is-locked"); }
@@ -26,9 +28,10 @@ function resetEstimateUi() {
 
 function resetRunUi() {
   state.eventSource?.close();
-  Object.assign(state, { runId: null, snapshot: null, drawing: null, ledger: null, eventLedger: null, eventSource: null, selected: null });
+  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
+  $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
   text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#run-mode-label"), "Sin ejecución");
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
   const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 6; cell.textContent = "Todavía no hay propuestas. El plano seguirá disponible aunque el despiece quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
@@ -43,11 +46,16 @@ function resetRunUi() {
 
 function configureModes(config = {}) {
   availableModes(config.capabilities ?? config).forEach((mode) => {
-    const input = $(`input[name="mode"][value="${mode.id}"]`);
+    const input = $(`[name="mode"] [value="${mode.id}"]`) ?? $(`[name="mode"][value="${mode.id}"]`);
     if (input) input.disabled = !mode.enabled;
   });
   if (config.live_available || config.capabilities?.live_available) text($("#live-note"), "Proveedor real configurado");
   if (config.recorded_replay_available || config.replay_available || config.capabilities?.replay_available) text($("#replay-note"), "Grabación real disponible");
+  const semantic = config.semantic ?? config.capabilities?.semantic ?? {};
+  const semanticOption = $("#similarity-mode option[value='semantic']");
+  const semanticAvailable = Boolean(semantic.available ?? config.semantic_available);
+  if (semanticOption) semanticOption.disabled = !semanticAvailable;
+  text($("#semantic-note"), semanticAvailable ? `Semántico real · ${semantic.model ?? config.semantic_model ?? "modelo configurado"}` : "Semántico no disponible: usa el descriptor geométrico offline.");
 }
 
 function extractComponents() {
@@ -57,24 +65,20 @@ function extractComponents() {
 function renderDrawing() {
   if (!state.drawing) return;
   const model = normaliseDrawing(state.drawing);
+  state.drawingModel = model;
   text($("#unit-label"), model.unitLabel);
   text($("#drawing-id"), model.drawingId ?? "Dibujo procesado");
   $("#drawing-empty").hidden = model.paths.length > 0;
-  const svg = $("#drawing-viewer");
-  svg.replaceChildren();
-  const allPoints = model.paths.flatMap((path) => path.points);
-  if (allPoints.length) {
-    const xs = allPoints.map((point) => point[0]);
-    const ys = allPoints.map((point) => -point[1]);
-    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const pad = Math.max(12, Math.max(maxX - minX, maxY - minY) * .08);
-    svg.setAttribute("viewBox", `${minX-pad} ${minY-pad} ${Math.max(1,maxX-minX)+2*pad} ${Math.max(1,maxY-minY)+2*pad}`);
-  }
+  const svg = $("#drawing-viewer"); svg.replaceChildren();
+  const allPoints = [...model.paths.flatMap((path) => path.points), ...model.texts.map((item) => item.position), ...model.dimensions.flatMap((item) => item.segments.flat())].map(([x,y]) => [x,-y]);
+  const rect = $("#cad-viewport").getBoundingClientRect();
+  state.fittedViewport = fitViewport(boundsForPoints(allPoints), rect.width || 900, rect.height || 520, 28);
+  state.viewport = { ...state.fittedViewport }; applyViewport();
   model.paths.forEach((path) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
     node.setAttribute("d", svgPath(path.points, path.closed));
     node.setAttribute("class", "drawing-path");
-    node.dataset.contourId = path.id;
+    node.dataset.contourId = path.id; node.dataset.viewId = path.viewId ?? ""; node._entityIds = path.entityIds; node.classList.add("layer-entities");
     node.setAttribute("tabindex", "0");
     node.setAttribute("role", "button");
     node.setAttribute("aria-label", `Contorno ${path.id}`);
@@ -83,25 +87,44 @@ function renderDrawing() {
     node.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") select(); });
     svg.append(node);
   });
+  model.dimensions.forEach((dimension) => {
+    dimension.segments.forEach((segment) => { const line = document.createElementNS("http://www.w3.org/2000/svg", "path"); line.setAttribute("d", svgPath(segment)); line.setAttribute("class", "dimension-line layer-dimensions"); line.dataset.viewId = dimension.viewId ?? ""; svg.append(line); });
+    if (dimension.position && dimension.label) { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", dimension.position[0]); label.setAttribute("y", -dimension.position[1]); label.setAttribute("class", "dimension-text layer-dimensions"); label.dataset.viewId = dimension.viewId ?? ""; label.textContent = dimension.label; svg.append(label); }
+  });
+  model.texts.forEach((item) => { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", item.position[0]); label.setAttribute("y", -item.position[1]); label.setAttribute("class", "drawing-text layer-texts"); label.dataset.viewId = item.viewId ?? ""; label.textContent = item.text; svg.append(label); });
   const tabs = $("#view-tabs");
   tabs.replaceChildren();
-  (model.views ?? []).forEach((view, index) => {
+  const all = document.createElement("button"); all.type = "button"; all.className = "view-tab"; all.dataset.view = "all"; all.setAttribute("aria-selected", "true"); all.textContent = "Todas"; all.addEventListener("click", () => activateView("all", all)); tabs.append(all);
+  (model.views ?? []).forEach((view) => {
     const button = document.createElement("button");
     button.type = "button"; button.className = "view-tab"; button.role = "tab";
-    button.setAttribute("aria-selected", index === 0 ? "true" : "false");
-    button.textContent = ({ FRONT: "Frente", TOP: "Planta", SIDE: "Lateral", UNKNOWN: "Sin orientar" })[view.label] ?? view.label;
-    button.addEventListener("click", () => filterView(view.id, button));
+    button.setAttribute("aria-selected", "false");
+    button.textContent = ({ FRONT: "Alzado", TOP: "Planta", SIDE: "Lateral", UNKNOWN: "Sin orientar" })[view.label] ?? view.label;
+    button.addEventListener("click", () => activateView(view.id, button));
     tabs.append(button);
   });
+  if (state.documentId) { const original = document.createElement("button"); original.type="button"; original.className="view-tab"; original.textContent="CAD original"; original.setAttribute("aria-selected","false"); original.addEventListener("click",()=>activateView("original",original)); tabs.append(original); }
+  const three = document.createElement("button"); three.type="button"; three.className="view-tab"; three.textContent="3D"; three.setAttribute("aria-selected","false"); three.addEventListener("click",()=>activateView("3d",three)); tabs.append(three);
+  applyLayerVisibility();
   renderEvidence(null);
   unlock("drawing-stage");
 }
 
-function filterView(viewId, button) {
+function activateView(viewId, button) {
+  state.activeView = viewId;
   $$(".view-tab").forEach((tab) => tab.setAttribute("aria-selected", String(tab === button)));
-  const allowed = new Set((state.drawing?.contours ?? []).filter((c) => (c.view_id ?? c.view) === viewId).map((c) => c.id));
-  $$(".drawing-path").forEach((path) => path.classList.toggle("is-dimmed", !allowed.has(path.dataset.contourId)));
+  $("#drawing-viewer").hidden = viewId === "original" || viewId === "3d";
+  $("#original-view").hidden = viewId !== "original";
+  $("#scene-viewer").hidden = viewId !== "3d";
+  $("#explode-control").hidden = viewId !== "3d";
+  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", !["all", node.dataset.viewId].includes(viewId)));
+  if (viewId === "3d") loadScene();
+  else if (!["original"].includes(viewId)) fitDrawing();
 }
+
+function applyViewport() { if (state.viewport) $("#drawing-viewer").setAttribute("viewBox", `${state.viewport.x} ${state.viewport.y} ${state.viewport.width} ${state.viewport.height}`); }
+function fitDrawing() { if (state.fittedViewport) { state.viewport = { ...state.fittedViewport }; applyViewport(); } }
+function applyLayerVisibility() { [["entities","#toggle-entities"],["texts","#toggle-texts"],["dimensions","#toggle-dimensions"]].forEach(([name,id]) => $$(`.layer-${name}`).forEach((node)=>node.classList.toggle("is-layer-hidden", !$(id).checked))); }
 
 function selectContour(contourId) {
   const { components } = extractComponents();
@@ -116,11 +139,12 @@ function selectComponent(component) {
   state.selected = selectionForComponent(component, state.drawing);
   applySelection();
   renderEvidence(component);
+  sceneViewer?.select(component.id);
 }
 
 function applySelection() {
   $$(".drawing-path").forEach((path) => {
-    const selected = state.selected?.contourIds?.has(path.dataset.contourId);
+    const selected = state.selected?.contourIds?.has(path.dataset.contourId) || path._entityIds?.some((id)=>state.selected?.entityIds?.has(id));
     path.classList.toggle("is-selected", Boolean(selected));
     path.classList.toggle("is-dimmed", Boolean(state.selected) && !selected);
   });
@@ -130,6 +154,16 @@ function applySelection() {
 function renderEvidence(component, contourId) {
   text($("#evidence-title"), component?.name ?? (contourId ? "Contorno del plano" : "Sin selección"));
   const root = $("#evidence-detail"); root.replaceChildren();
+  const summary = $("#piece-summary"); summary.replaceChildren();
+  if (component) {
+    const dims = component.dimensions_mm ?? component.dimensions ?? {};
+    const details = document.createElement("p");
+    details.textContent = `Largo ${formatMeasurement(dims.length ?? component.length_mm,"mm")} · Ancho ${formatMeasurement(dims.width ?? component.width_mm,"mm")} · Grosor ${formatMeasurement(dims.thickness ?? component.thickness_mm,"mm")} · Cantidad ${component.quantity ?? "desconocida"}`;
+    summary.append(details);
+    const formula = component.length_derivation ?? component.formula ?? component.derivation;
+    if (formula) { const note = document.createElement("p"); note.textContent = `Fórmula: ${formula}`; summary.append(note); }
+    (component.assumptions ?? component.premises ?? []).forEach((value)=>{ const note=document.createElement("p"); note.textContent=`Premisa: ${value}`; summary.append(note); });
+  } else summary.append(emptyParagraph(contourId ? "Evidencia geométrica sin pieza asociada." : "Selecciona una pieza o evidencia."));
   const ids = component?.evidence_ids ?? [];
   const evidences = (state.drawing?.evidence ?? state.ledger?.evidence ?? []).filter((item) => ids.includes(item.id));
   let records = evidences.length ? evidences : [{ id: contourId ?? "sin evidencia", description: component ? "Propuesta pendiente de evidencia enlazada." : "Contorno geométrico seleccionado." }];
@@ -140,6 +174,25 @@ function renderEvidence(component, contourId) {
     const description = document.createElement("span"); description.textContent = record.description ?? record.kind ?? "Evidencia geométrica";
     card.append(strong, description); root.append(card);
   });
+  const explanations = state.explanations?.pieces ?? state.explanations?.items ?? state.explanations?.explanations ?? [];
+  const explanation = explanations.find((item)=>[item.piece_id,item.proposal_id,item.component_id].includes(component?.id));
+  const explanationRoot = $("#explanation-detail"); explanationRoot.replaceChildren();
+  if (explanation) {
+    const heading=document.createElement("h3"); heading.textContent="Explicación respaldada"; explanationRoot.append(heading);
+    [explanation.summary, explanation.formula, ...(explanation.formulas ?? []).map((item)=>`${item.field}: ${item.expression} = ${formatMeasurement(item.result_mm,"mm")}`), ...(explanation.premises ?? explanation.assumptions ?? []), ...(explanation.unknown_fields ?? []).map((item)=>`Desconocido: ${item}`)].filter(Boolean).forEach((value)=>{ const p=document.createElement("p"); p.textContent=String(value); explanationRoot.append(p); });
+  }
+}
+
+async function loadScene() {
+  const warning = $("#scene-warning"); warning.hidden = true;
+  if (!state.runId || !Number.isInteger(state.snapshot?.result_revision)) { warning.hidden = false; text(warning, "3D no disponible: registra una revisión con medidas completas."); return; }
+  try {
+    const raw = await api.getScene(state.runId, state.snapshot.result_revision); state.scene = raw;
+    if (!sceneViewer) { const { SceneViewer } = await import("./components/SceneViewer.js"); sceneViewer = new SceneViewer($("#scene-viewer"), { onSelect: (item) => { const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
+    const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
+    warning.hidden = !messages.length; text(warning, messages.join(" · "));
+  } catch (error) { state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
 }
 
 function renderPartsAndReview() {
@@ -224,14 +277,35 @@ async function refreshTraceHistory() {
 async function refreshRun() {
   if (!state.runId) return;
   state.snapshot = normaliseRunPayload(await api.getRun(state.runId));
+  state.documentId = state.snapshot.document_id ?? state.snapshot.document?.document_id ?? state.documentId;
+  if (state.documentId) $("#original-preview").src = api.documentPreviewUrl(state.documentId);
   const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
+  await loadRevisionContext();
+  if (state.activeView === "3d") await loadScene();
   if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi();
   if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(); unlock("estimate-stage"); }
+}
+
+async function loadRevisionContext() {
+  if (!state.runId) return;
+  const revision = state.snapshot?.result_revision;
+  try {
+    const raw = await api.getRevisions(state.runId); const revisions = raw.revisions ?? raw.items ?? raw ?? [];
+    const root = $("#revisions-list"); root.replaceChildren();
+    revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.reviewer_name ?? item.actor ?? "Sistema"} · ${item.scenario_id ?? item.state ?? "sin escenario"}`; card.append(title,detail); root.append(card); });
+    if (!revisions.length) root.append(emptyParagraph("Sin revisiones registradas."));
+  } catch { /* endpoint aditivo: el resto del visor sigue operativo */ }
+  if (Number.isInteger(revision)) {
+    try { state.explanations = await api.getExplanations(state.runId, revision); } catch { state.explanations = null; }
+    $("#save-library").disabled = false; $("#find-similar").disabled = false;
+  } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
+  state.scene = null;
+  sceneViewer?.setScene({ state: "unavailable", objects: [], warnings: ["Esperando reconstrucción de la revisión actual."] });
 }
 
 async function loadComparables() {
@@ -266,7 +340,11 @@ async function runUpload(event) {
   try {
     resetRunUi();
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
-    const documentRecord = await api.upload(file); const runPayload = await api.createRun(documentRecord.document_id ?? documentRecord.id, mode);
+    const documentRecord = await api.upload(file); state.documentId = documentRecord.document_id ?? documentRecord.id;
+    $("#original-preview").src = api.documentPreviewUrl(state.documentId);
+    state.drawing = await api.getDocumentDrawing(state.documentId); renderDrawing();
+    setMessage("Plano disponible. Iniciando análisis…");
+    const runPayload = await api.createRun(state.documentId, mode);
     state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
   } catch (error) { setMessage(error.message, true); text($("#upload-status"), "Error"); }
@@ -299,13 +377,37 @@ async function exportResult(format) {
 
 function toggleTrace(open) { const drawer = $("#trace-drawer"); drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open; if (open) $("#trace-close").focus(); }
 
+function setupWorkspaceControls() {
+  $$('[data-panel]').forEach((button)=>button.addEventListener("click",()=>{ $$('[data-panel]').forEach((item)=>item.classList.toggle("is-active",item===button)); $$('[data-panel-content]').forEach((panel)=>panel.classList.toggle("is-active",panel.dataset.panelContent===button.dataset.panel)); }));
+  ["entities","texts","dimensions"].forEach((name)=>$(`#toggle-${name}`).addEventListener("change",applyLayerVisibility));
+  $("#fit-view").addEventListener("click",fitDrawing); $("#reset-view").addEventListener("click",fitDrawing);
+  const zoom=(factor)=>{ if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
+  $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
+  const viewport=$("#cad-viewport"); let drag=null;
+  viewport.addEventListener("wheel",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
+  viewport.addEventListener("pointerdown",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
+  viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
+  viewport.addEventListener("pointerup",()=>{drag=null;}); viewport.addEventListener("pointercancel",()=>{drag=null;});
+  $("#explode-scene").addEventListener("change",(event)=>sceneViewer?.setExploded(event.target.checked));
+}
+
+function renderLibraryResults(raw, mode) {
+  const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[];
+  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label??item.name??item.run_id??item.library_item_id??"Elemento de biblioteca"; const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||"Sin diferencias documentadas"; card.append(title,detail,differences); root.append(card); });
+  if(!items.length)root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
+}
+
 async function boot() {
+  setupWorkspaceControls();
   $("#upload-form").addEventListener("submit", runUpload); $("#review-form").addEventListener("submit", submitReview);
   $("#drawing-file").addEventListener("change", (event) => text($("#file-name"), event.target.files[0]?.name ?? "Ningún archivo seleccionado"));
   $("#trace-toggle").addEventListener("click", () => toggleTrace(true)); $("#trace-close").addEventListener("click", () => toggleTrace(false)); $("#scrim").addEventListener("click", () => toggleTrace(false));
   $("#estimate-button").addEventListener("click", async () => { try { renderEstimate(await api.estimate(state.runId, { result_revision: state.snapshot?.result_revision })); await refreshTraceHistory(); } catch (error) { setMessage(error.message, true); } });
   $$("[data-export]").forEach((button) => button.addEventListener("click", () => exportResult(button.dataset.export)));
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
+  $("#save-library").addEventListener("click",async()=>{ try { const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); text($("#semantic-note"),"Revisión guardada en la biblioteca técnica."); } catch(error){ text($("#semantic-note"),error.message); } });
+  $("#find-similar").addEventListener("click",async()=>{ const mode=$("#similarity-mode").value; try { renderLibraryResults(await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6}),mode); } catch(error){ const root=$("#library-list"); root.replaceChildren(emptyParagraph(error.message)); } });
+  $("#group-library").addEventListener("click",async()=>{ const selected=$("#similarity-mode").value; const mode=selected==="semantic"?"semantic":"geometric"; try { renderLibraryResults(await api.groupLibrary({mode,threshold:mode==="semantic"?.75:.7}),mode); } catch(error){ $("#library-list").replaceChildren(emptyParagraph(error.message)); } });
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
   const restoredRunId = restoreRunId(location, localStorage);
   if (restoredRunId) {

@@ -24,18 +24,20 @@ Ampliar la interfaz a un espacio CAD técnico compacto: vistas 2D con cotas dibu
 
 ## Estado
 
-Nueva fase en curso sobre `demo/viewer-frontend`, base `56faba4`. Contratos de visor/reconstrucción y biblioteca/similitud solicitados a A/B antes de cablear consumidores.
+Fase implementada sobre `demo/viewer-frontend`, base `56faba4`. Consume el contrato aditivo acordado 0.3 para textos, gráficos de cota, explicaciones, escena por ocurrencia, revisiones y recuperación semántica/geométrica. Pendiente integración/QA final con los endpoints de B.
 
 ## Dependencias / avisos
 
 - Contrato 0.2 acordado por A/B y consumido por IDs estables de entidad, contorno, evidencia y propuesta.
-- Pendiente aviso A/B de ampliaciones para anclajes de cotas, colocaciones 3D, revisiones y recuperación semántica/geométrica.
+- Three.js queda fijado en `0.187.0`; `npm ci` genera solo `three.module.js`, `three.core.js`, `OrbitControls.js` y la licencia bajo `frontend/vendor/`, sin CDN ni publicación de `node_modules`.
 - FastAPI sirve `frontend/` desde el mismo origen; las rutas de recursos son `/styles.css`, `/app.js` y módulos relativos.
 - El frontend no incluirá mocks prefijados que se presenten como inferencia. Los tests podrán usar fixtures contractuales explícitos y la UI mostrará estados vacíos o errores cuando la API no aporte datos.
 
 ## Verificación
 
-- `cd frontend; npm test`: 28 pruebas, 28 aprobadas, 0 fallos en el último ciclo local.
+- `cd frontend; npm test`: 42 pruebas, 42 aprobadas, 0 fallos en el último ciclo local.
+- `node --check app.js` y `node --check components/SceneViewer.js`: sin errores de sintaxis.
+- Smoke HTTP en `http://127.0.0.1:8766`: `/`, `app.js`, `three.module.js`, `three.core.js` y `OrbitControls.js` responden 200. El visor 3D se importa dinámicamente para que un fallo WebGL no bloquee 2D.
 - Navegador real en `http://127.0.0.1:8765`: servicio y recursos cargados; upload DXF real; 3 vistas y 15 paths; 4 cotas observadas; tabla de hipótesis; dos escenarios incompatibles; campos de revisión; comparables sintéticos y traza visibles.
 - El coordinador verificó en navegador la revisión 2 con balda calculada a 864 mm y estimación total 127,84 EUR. Durante esa revisión se detectaron y corrigieron overlay `hidden`, estado de carga terminal, procedencia por campo y detalle de tarifas/factores.
 - No se probó modo `live`: no hay proveedor real configurado. Replay permanece deshabilitado porque no existe grabación real.
