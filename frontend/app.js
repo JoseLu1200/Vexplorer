@@ -159,7 +159,7 @@ function applySelection() {
 }
 
 function renderEvidence(component, contourId) {
-  text($("#evidence-title"), component?.name ?? (contourId ? "Contorno del plano" : "Sin selección"));
+  text($("#evidence-title"), component?.label ?? component?.name ?? (contourId ? "Contorno del plano" : "Sin selección"));
   const root = $("#evidence-detail"); root.replaceChildren();
   const summary = $("#piece-summary"); summary.replaceChildren();
   if (component) {
@@ -191,7 +191,8 @@ function renderEvidence(component, contourId) {
   const explanationRoot = $("#explanation-detail"); explanationRoot.replaceChildren();
   if (explanation) {
     const heading=document.createElement("h3"); heading.textContent="Explicación respaldada"; explanationRoot.append(heading);
-    [explanation.summary, explanation.formula, ...(explanation.formulas ?? []).map((item)=>`${item.field}: ${item.expression} = ${formatMeasurement(item.result_mm,"mm")}`), ...(explanation.premises ?? explanation.assumptions ?? []), ...(explanation.unknown_fields ?? []).map((item)=>`Desconocido: ${item}`)].filter(Boolean).forEach((value)=>{ const p=document.createElement("p"); p.textContent=String(value); explanationRoot.append(p); });
+    const fieldLabel=(value)=>({length_mm:"Largo",width_mm:"Ancho",thickness_mm:"Grosor",quantity:"Cantidad",material:"Material",finish:"Acabado"})[value]??value;
+    [explanation.summary, explanation.formula, ...(explanation.formulas ?? []).map((item)=>`${fieldLabel(item.field)}: ${item.expression} = ${formatMeasurement(item.result_mm,"mm")}`), ...(explanation.premises ?? explanation.assumptions ?? []), ...(explanation.unknown_fields ?? []).map((item)=>`Desconocido: ${fieldLabel(item)}`)].filter(Boolean).forEach((value)=>{ const p=document.createElement("p"); p.textContent=String(value); explanationRoot.append(p); });
   }
 }
 
