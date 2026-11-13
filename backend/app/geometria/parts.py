@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from collections import defaultdict
+from math import hypot
 
 from backend.app.contratos.modelos import (
     Bounds2D, DrawingContour, DrawingExtraction, ObservedPartDimension,
@@ -19,6 +20,7 @@ PART_LABEL = re.compile(
 QUANTITY_LABEL = re.compile(
     r"^QTY\s+(?P<key>[A-Za-z0-9_-]+)\s+(?P<quantity>[1-9]\d*)$", re.IGNORECASE,
 )
+LOOSE_QUANTITY_LABEL = re.compile(r"^QTY\s+[1-9]\d*$", re.IGNORECASE)
 AXES_BY_ROLE = {
     "FRONT": (("length", "x"), ("width", "y")),
     "TOP": (("length", "x"), ("thickness", "y")),
@@ -64,6 +66,12 @@ def _candidate_revision(observations: tuple[SeparatedPartObservation, ...]) -> s
     } for item in observations]
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return f"parts-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _distance_to_bounds(point: Point2D, bounds: Bounds2D) -> float:
+    dx = max(bounds.min_x - point.x, 0.0, point.x - bounds.max_x)
+    dy = max(bounds.min_y - point.y, 0.0, point.y - bounds.max_y)
+    return hypot(dx, dy)
 
 
 def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtraction:
@@ -159,7 +167,70 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         ))
         extraction_warnings.extend(warnings)
 
-    result = tuple(observations)
+    if not labels_by_key:
+        role_labels = [
+            (text.text.strip().upper(), text)
+            for text in extraction.texts
+            if text.text.strip().upper() in AXES_BY_ROLE
+        ]
+        unused_label_ids = {text.id for _, text in role_labels}
+        unknown_contours = tuple(sorted(
+            (contour for contour in extraction.contours if contour.view_id == "view-unknown"),
+            key=lambda item: item.id,
+        ))
+        for index, contour in enumerate(unknown_contours, start=1):
+            source_bounds = _bounds((contour,), metric=False)
+            metric_bounds = _bounds((contour,), metric=True)
+            if source_bounds is None:
+                continue
+            available_labels = [(role, text) for role, text in role_labels if text.id in unused_label_ids]
+            if not available_labels:
+                continue
+            role, label = min(
+                available_labels,
+                key=lambda item: (_distance_to_bounds(item[1].position_source, source_bounds), item[0], item[1].id),
+            )
+            unused_label_ids.remove(label.id)
+            view_id = f"part-view-{contour.id}"
+            contour_evidence = tuple(sorted({
+                evidence_id for entity_id in contour.source_entity_ids for evidence_id in evidence_by_entity[entity_id]
+            }))
+            label_evidence = text_evidence[label.source_entity_id]
+            evidence_ids = tuple(sorted(set(contour_evidence) | {label_evidence}))
+            dimensions_by_name: dict[str, ObservedPartDimension] = {
+                "length": ObservedPartDimension(value_mm=None, state="unknown"),
+                "width": ObservedPartDimension(value_mm=None, state="unknown"),
+                "thickness": ObservedPartDimension(value_mm=None, state="unknown"),
+            }
+            if metric_bounds:
+                extents = {"x": metric_bounds.max_x - metric_bounds.min_x, "y": metric_bounds.max_y - metric_bounds.min_y}
+                for axis, coordinate in AXES_BY_ROLE[role]:
+                    dimensions_by_name[axis] = ObservedPartDimension(
+                        value_mm=extents[coordinate], state="observed",
+                        view_ids=(view_id,), evidence_ids=contour_evidence,
+                    )
+            warning = f"missing_part_key:{view_id}"
+            observations.append(SeparatedPartObservation(
+                id=f"part-observation-unassociated-{index}", part_key=None,
+                association_basis="unassociated",
+                views=(PartViewReference(
+                    view_id=view_id, role=role, contour_ids=(contour.id,),
+                    local_origin_source=Point2D(x=source_bounds.min_x, y=source_bounds.min_y),
+                    local_origin_mm=Point2D(x=metric_bounds.min_x, y=metric_bounds.min_y) if metric_bounds else None,
+                    local_bounds_source=_local_bounds(source_bounds),
+                    local_bounds_mm=_local_bounds(metric_bounds) if metric_bounds else None,
+                ),),
+                dimensions=PartDimensions(**dimensions_by_name),
+                quantity=ObservedQuantity(value=None, state="unknown"), status="ambiguous",
+                source_entity_ids=tuple(sorted(set(contour.source_entity_ids) | {label.source_entity_id})),
+                evidence_ids=evidence_ids, warnings=(warning,),
+            ))
+            extraction_warnings.append(warning)
+        for text in extraction.texts:
+            if LOOSE_QUANTITY_LABEL.fullmatch(text.text.strip()):
+                extraction_warnings.append(f"unassociated_quantity_annotation:{text.id}")
+
+    result = tuple(sorted(observations, key=lambda item: item.id))
     return SeparatedPartsExtraction(
         drawing_id=extraction.drawing_id, candidate_revision=_candidate_revision(result),
         observations=result, warnings=tuple(extraction_warnings),
