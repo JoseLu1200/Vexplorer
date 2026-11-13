@@ -6,7 +6,7 @@ El usuario exige partir únicamente de vistas del despiece y confirma DXF 2D con
 
 A/B han acordado por mensajes el contrato aditivo 0.4 antes de implementar, B lo registra y es escritor único. C/D reciben shape para trabajar en paralelo. A posee ingesta/extracción/parts/reconstrucción; B contratos/API/harness/repositorio/revisión/descriptor; C frontend; D fixtures/referencia privada/aceptación; root documentación/integración/navegador; Astra revisión final. Hallazgos baseline no se borran: cada corrección tendrá verificación posterior identificada.
 
-Estado: diseño registrado y contrato en publicación; regresiones OCS/Z/DIMLFAC de A listas `854d003`, pendientes de integrar. No se ha verificado aún el nuevo flujo.
+Estado: contrato `86fe0c1` + `6a82a8e`, regresiones OCS/Z/DIMLFAC `854d003` y fixtures `4ae1cee`/`7d3376c`/`1c399af` integrados. Auditoría baseline aceptada por Astra tras reforzar evidencia en `20540ff` + `0a8161a`. A/B revisan asignación por ejemplares: un tipo observado puede servir a varios roles, con cantidades disjuntas y sin duplicación. No se ha verificado aún el nuevo flujo completo.
 
 ## Auditoría de uso solicitada el 2026-11-14
 

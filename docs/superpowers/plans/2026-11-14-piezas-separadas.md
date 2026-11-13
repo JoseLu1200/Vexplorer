@@ -35,7 +35,7 @@
 Archivos: `backend/app/contratos/modelos.py`, `main.py`, `agente/*`, `servicios/repository.py`, servicios de revisión/orquestación nuevos, explicaciones/salida, `semantic/*`, `similarity/*`; pruebas backend de esos módulos. No editar archivos de A.
 
 - [x] Acuerdo A/B escrito antes de implementar; comunicar shapes a C/D.
-- [ ] Publicar contrato aditivo y pruebas de validación/compatibilidad; commit temprano para consumidores.
+- [x] Publicar contrato aditivo y pruebas de validación/compatibilidad; commits `86fe0c1` + `6a82a8e`, integrados como `56aeea3` + `700f406`. Asignación de ejemplares por rol en extensión acordada A/B.
 - [ ] Integrar extracción de A en `POST /runs` explícito; resultados parciales se mantienen revisables.
 - [ ] Implementar candidatos grounded, revisión y herramientas live sin cifras propuestas por el modelo.
 - [ ] Derivar descriptor incluyendo espesores y estado de clasificación; versionar espacio semántico y rechazar mezclas incompatibles.
@@ -54,8 +54,8 @@ Archivos: `backend/app/ingesta/dxf_reader.py`, `geometria/extraction.py`, nuevo 
 
 Archivos: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*`, `tests/test_parts_only_evaluation.py`.
 
-- [ ] Generar solo vistas de paneles, etiquetas opacas y cotas/cantidades admitidas; referencia ensamblada separada.
-- [ ] Variantes con faltantes, asociación ambigua y posiciones/keys/dimensiones distintas; metadatos sin pistas de respuesta.
+- [x] Generar solo vistas de paneles, etiquetas opacas y cotas/cantidades admitidas; público `4ae1cee`, referencia privada `7d3376c` solo evaluador/root.
+- [x] Variantes con faltantes, asociación ambigua y posiciones/keys/dimensiones distintas; metadatos neutralizados en `1c399af`.
 - [ ] Prueba de recorrido que congela salida antes de abrir referencia; auditoría de aislamiento y aritmética.
 - [ ] Ejecutar pruebas relevantes y entregar commits/evidencia a root.
 
@@ -73,7 +73,7 @@ Archivos: `frontend/*` y tests JS; consume contrato B.
 
 Archivos: este plan, diseño, `team/agente_coordinador.md`, README/informe nuevo de aceptación; coordinación de cherry-picks/merges.
 
-- [x] Conservar auditoría baseline y evidencia HTTP/browser/live (`59623ef`).
+- [x] Conservar auditoría baseline y evidencia HTTP/browser/live (`59623ef`), reforzada `20540ff` + `0a8161a`; Astra SHIP de auditoría, no de la nueva implementación.
 - [ ] Integrar contrato y commits en `feat/parts-integration`, resolver solo con el dueño del archivo.
 - [ ] Ejecutar suites finales y HTTP real; nueva instancia aislada y recorrido en Chrome con DXF de piezas separadas.
 - [ ] Ejecución live y embedding reales si están configurados; registrar resultados sin secretos.

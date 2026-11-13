@@ -73,7 +73,7 @@ Capturas: [Alzado sin líneas interiores](auditoria/2026-11-14/browser-front-mis
 | A04 | Alta | Abrir fixture montada → Alzado: desaparecen líneas interiores. Encajar no ajusta la vista seleccionada | `frontend/core/drawing.js:33`, `frontend/app.js:125`; captura y DOM real |
 | A05 | Media | Guardar biblioteca → abrir Traza: falta el evento que sí aparece en SSE; recargar lo recupera | `frontend/app.js:449`; 6 eventos UI frente a 7 API |
 | A06 | Media | UI estrecha desborda y deja acciones fuera de pantalla | Captura y rectángulos DOM medidos |
-| A07 | Media | Repetir POST `/runs` con mismo `Idempotency-Key` crea dos IDs diferentes | Repro aislado TestClient por agente frontend; cliente envía clave, backend no la consume |
+| A07 | Media | Repetir POST `/runs` con mismo `Idempotency-Key` crea dos IDs diferentes | [Repro aislado TestClient](auditoria/2026-11-14/idempotency.json); cliente envía clave, backend no la consume |
 | A08 | Media | «Abrir rev. N» solo enlaza `?run=...`; se carga la revisión más reciente si el run avanzó | Confirmado por lectura de `frontend/app.js:436` y `main.py:get_run`; no recorrido histórico completo en navegador |
 
 Otros límites de UX comprobados: enum de fórmula `overall_width_minus_two_thickness` y texto inglés de evidencia; etiquetas de biblioteca basadas en `drawing_id`; aviso de colisiones persiste al volver a 2D; los detalles del descriptor y premisas de colocación no se muestran completos. No se corrigieron durante la auditoría baseline.
