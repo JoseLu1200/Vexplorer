@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.agente.prompts import SYSTEM_PROMPT
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
 from backend.app.agente.tools import parts_tool_schemas, tool_schemas
 from backend.app.geometria import extract_drawing
@@ -159,3 +160,5 @@ def test_parts_agent_inspects_grounded_part_and_selects_existing_candidate() -> 
     assert outcome.selected_assembly_candidate_id == selected.id
     assert [item.tool_name for item in outcome.actions] == ["inspeccionar_pieza", "entregar_candidato_montaje"]
     assert {item["name"] for item in parts_tool_schemas()} == {"inspeccionar_pieza", "entregar_candidato_montaje"}
+    assert "vistas 2D de piezas separadas" in SYSTEM_PROMPT
+    assert "no calculas medidas" in SYSTEM_PROMPT
