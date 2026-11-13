@@ -35,9 +35,10 @@ Fase implementada sobre `demo/viewer-frontend`, base `56faba4`. Consume el contr
 
 ## Verificación
 
-- `cd frontend; npm test`: 42 pruebas, 42 aprobadas, 0 fallos en el último ciclo local.
+- `cd frontend; npm test`: 46 pruebas, 46 aprobadas, 0 fallos en el último ciclo local, incluidas respuestas/rechazos diferidos que no pueden pisar una sesión nueva.
 - `node --check app.js` y `node --check components/SceneViewer.js`: sin errores de sintaxis.
 - Smoke HTTP en `http://127.0.0.1:8766`: `/`, `app.js`, `three.module.js`, `three.core.js` y `OrbitControls.js` responden 200. El visor 3D se importa dinámicamente para que un fallo WebGL no bloquee 2D.
 - Navegador real en `http://127.0.0.1:8765`: servicio y recursos cargados; upload DXF real; 3 vistas y 15 paths; 4 cotas observadas; tabla de hipótesis; dos escenarios incompatibles; campos de revisión; comparables sintéticos y traza visibles.
 - El coordinador verificó en navegador la revisión 2 con balda calculada a 864 mm y estimación total 127,84 EUR. Durante esa revisión se detectaron y corrigieron overlay `hidden`, estado de carga terminal, procedencia por campo y detalle de tarifas/factores.
+- El coordinador verificó en navegador real la reconstrucción 3D de seis ocurrencias con órbita/captura sin bloqueo, las cotas legibles durante zoom y la biblioteca geométrica/semántica con grupos explicados.
 - No se probó modo `live`: no hay proveedor real configurado. Replay permanece deshabilitado porque no existe grabación real.
