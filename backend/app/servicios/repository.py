@@ -48,19 +48,22 @@ class DemoRepository:
                 );
                 """
             )
+            columns = {row[1] for row in db.execute("PRAGMA table_info(runs)").fetchall()}
+            if "agent_selected_scenario_id" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN agent_selected_scenario_id TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = ()) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None) -> RunSnapshot:
         created_at = _now()
-        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at)
+        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?)",
-                (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?)",
+                (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -79,7 +82,7 @@ class DemoRepository:
             row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if row is None:
             raise KeyError(run_id)
-        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"])
+        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"])
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -103,8 +106,18 @@ class DemoRepository:
             raise ValueError("stale_result_revision")
         previous = self.get_result(run_id)
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
+        proposal_scenarios = {proposal.id: scenario.id for scenario in previous.scenarios for proposal in scenario.components}
         pieces: list[ResolvedPiece] = []
         rejected: list[str] = []
+        selected_scenario_id = request.scenario_id
+        if request.decisions:
+            decision_scenarios = {proposal_scenarios.get(item.proposal_id) for item in request.decisions}
+            if None in decision_scenarios:
+                raise ValueError("unknown_proposal")
+            if len(decision_scenarios) != 1:
+                raise ValueError("incompatible_scenario_selection")
+            selected_scenario_id = next(iter(decision_scenarios))
+            rejected.extend(proposal.id for scenario in previous.scenarios if scenario.id != selected_scenario_id for proposal in scenario.components)
         if request.scenario_id is not None:
             selected = next((item for item in previous.scenarios if item.id == request.scenario_id), None)
             if selected is None:
@@ -142,14 +155,15 @@ class DemoRepository:
             )
         selected_proposals = {item.proposal_id for item in pieces}
         covered = selected_proposals | set(rejected)
-        complete = bool(pieces) and covered == set(proposals) and all(
+        rejected_in_selected = {item for item in rejected if proposal_scenarios.get(item) == selected_scenario_id}
+        complete = bool(pieces) and covered == set(proposals) and not rejected_in_selected and all(
             item.quantity is not None and item.length_mm is not None and item.width_mm is not None and item.thickness_mm is not None
             for item in pieces
         )
         revision = request.base_result_revision + 1
         timestamp = _now()
         reason = request.notes or "; ".join(item.notes for item in request.decisions)
-        result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=request.scenario_id))
+        result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=selected_scenario_id), agent_selected_scenario_id=previous.agent_selected_scenario_id)
         with self._connect() as db:
             reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
             if reserved.rowcount != 1:

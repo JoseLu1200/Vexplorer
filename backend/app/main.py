@@ -92,15 +92,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
         if not scenarios:
             return _error(422, "unsupported_geometry", "Las vistas no respaldan escenarios rectangulares coherentes.")
         trace_events: tuple[dict, ...] = ()
+        agent_selected_scenario_id = None
         if request.mode == "live":
             try:
                 outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits())
             except Exception as exc:
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
             scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
-            trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary} for action in outcome.actions)
+            agent_selected_scenario_id = outcome.selected_scenario_id
+            trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary, "selected_scenario_id": action.selected_scenario_id} for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
-        run = repository.create_run(run_id, request.mode, extraction, scenarios, trace_events)
+        run = repository.create_run(run_id, request.mode, extraction, scenarios, trace_events, agent_selected_scenario_id)
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.get("/api/v1/runs/{run_id}")

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from backend.app.contratos.modelos import (
     Bounds2D,
     ComponentProposal,
@@ -197,3 +199,33 @@ def test_family_rules_propose_two_mountings_without_counting_views_as_parts(tmp_
 def test_orthographic_dimensions_preserve_axes_and_reject_disagreement() -> None:
     assert resolve_orthographic_dimensions((400, 1200), (400, 600), (600, 1200)) == (400, 1200, 600)
     assert resolve_orthographic_dimensions((400, 1200), (401, 600), (600, 1200)) is None
+
+
+def test_manual_review_cannot_combine_incompatible_scenarios(tmp_path: Path) -> None:
+    from backend.app.geometria import extract_drawing
+
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "estanteria_montada.dxf"
+    extraction = extract_drawing(fixture)
+    scenarios = derive_decomposition_scenarios(extraction)
+    repository = DemoRepository(tmp_path / "demo.sqlite3")
+    repository.create_run("run-exclusive", "geometry_only", extraction, scenarios)
+    decisions = tuple(
+        ReviewDecision(proposal_id=proposal.id, action="confirm", role=proposal.role, quantity=proposal.quantity or 1, length_mm=proposal.length_mm or proposal.length_basis_mm, width_mm=proposal.width_mm, thickness_mm=18, material="tablero sintético", finish="melamina sintética", notes="Confirmación manual")
+        for scenario in scenarios for proposal in scenario.components
+    )
+
+    with pytest.raises(ValueError, match="incompatible_scenario_selection"):
+        repository.review("run-exclusive", ReviewRequest(base_result_revision=1, reviewer_name="Revisora", decisions=decisions))
+    assert repository.get_result("run-exclusive").result_revision == 1
+
+
+def test_estimate_rejects_result_still_needing_review(tmp_path: Path) -> None:
+    repository = DemoRepository(tmp_path / "demo.sqlite3")
+    repository.create_run("run-partial", "geometry_only", _extraction(), (_scenario(),))
+    partial = repository.review(
+        "run-partial",
+        ReviewRequest(base_result_revision=1, reviewer_name="Revisora", decisions=(ReviewDecision(proposal_id="proposal-panel", action="confirm", role="shelf", quantity=1, length_mm=900, width_mm=320, thickness_mm=19, material="tablero sintético", finish="melamina sintética", notes="Solo una parte"),)),
+    ).model_copy(update={"state": "needs_review"})
+
+    with pytest.raises(ValueError, match="result_needs_review"):
+        estimate_result(partial, find_comparables(partial))

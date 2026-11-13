@@ -28,6 +28,7 @@ class AgentAction:
     ok: bool
     evidence_ids: tuple[str, ...]
     summary: str
+    selected_scenario_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -83,7 +84,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         data = {"ok": False, "error": "unknown_reference"}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Escenario desconocido rechazado."))
                     else:
-                        actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana."))
+                        actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana.", selected_scenario_id=args.scenario_id))
                         return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls, actions=tuple(actions))
                 else:
                     data = {"ok": False, "error": "unknown_tool"}
