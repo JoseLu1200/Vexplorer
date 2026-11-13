@@ -28,3 +28,8 @@ export function zoomViewport(viewport, factor, anchor) {
     height: viewport.height * clamped,
   };
 }
+
+export function svgUnitPerPixel(viewport, pixelWidth, pixelHeight) {
+  if (!viewport || pixelWidth <= 0 || pixelHeight <= 0) return 1;
+  return Math.max(viewport.width / pixelWidth, viewport.height / pixelHeight);
+}

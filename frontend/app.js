@@ -5,7 +5,7 @@ import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
-import { boundsForPoints, fitViewport, panViewport, zoomViewport } from "./core/viewport.js";
+import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -105,6 +105,7 @@ function renderDrawing() {
   });
   if (state.documentId) { const original = document.createElement("button"); original.type="button"; original.className="view-tab"; original.textContent="CAD original"; original.setAttribute("aria-selected","false"); original.addEventListener("click",()=>activateView("original",original)); tabs.append(original); }
   const three = document.createElement("button"); three.type="button"; three.className="view-tab"; three.textContent="3D"; three.setAttribute("aria-selected","false"); three.addEventListener("click",()=>activateView("3d",three)); tabs.append(three);
+  applySvgTextScale();
   applyLayerVisibility();
   renderEvidence(null);
   unlock("drawing-stage");
@@ -122,7 +123,13 @@ function activateView(viewId, button) {
   else if (!["original"].includes(viewId)) fitDrawing();
 }
 
-function applyViewport() { if (state.viewport) $("#drawing-viewer").setAttribute("viewBox", `${state.viewport.x} ${state.viewport.y} ${state.viewport.width} ${state.viewport.height}`); }
+function applyViewport() { if (state.viewport) { $("#drawing-viewer").setAttribute("viewBox", `${state.viewport.x} ${state.viewport.y} ${state.viewport.width} ${state.viewport.height}`); applySvgTextScale(); } }
+function applySvgTextScale() {
+  if (!state.viewport) return;
+  const rect=$("#cad-viewport").getBoundingClientRect(); if(!rect.width||!rect.height)return;
+  const unitPerPixel=svgUnitPerPixel(state.viewport,rect.width,rect.height);
+  $$(".drawing-text,.dimension-text").forEach((node)=>{ node.style.fontSize=`${unitPerPixel*12}px`; node.style.strokeWidth=`${unitPerPixel*2.5}px`; });
+}
 function fitDrawing() { if (state.fittedViewport) { state.viewport = { ...state.fittedViewport }; applyViewport(); } }
 function applyLayerVisibility() { [["entities","#toggle-entities"],["texts","#toggle-texts"],["dimensions","#toggle-dimensions"]].forEach(([name,id]) => $$(`.layer-${name}`).forEach((node)=>node.classList.toggle("is-layer-hidden", !$(id).checked))); }
 
@@ -167,12 +174,17 @@ function renderEvidence(component, contourId) {
   const ids = component?.evidence_ids ?? [];
   const evidences = (state.drawing?.evidence ?? state.ledger?.evidence ?? []).filter((item) => ids.includes(item.id));
   let records = evidences.length ? evidences : [{ id: contourId ?? "sin evidencia", description: component ? "Propuesta pendiente de evidencia enlazada." : "Contorno geométrico seleccionado." }];
-  if (!component && !contourId && state.drawing?.dimensions?.length) records = state.drawing.dimensions.map((dimension) => ({ id: dimension.id, description: `${sourceLabel(dimension.origin)} · ${formatMeasurement(dimension.value_mm, "mm")}` }));
+  if (!component && !contourId && state.drawing?.dimensions?.length) records = state.drawing.dimensions.map((dimension) => {
+    const view = state.drawing.views?.find((item)=>item.id===dimension.view_id);
+    const viewLabel=({FRONT:"Alzado",TOP:"Planta",SIDE:"Lateral",UNKNOWN:"Vista sin orientar"})[view?.label]??"Vista asociada";
+    return { id: dimension.id, title: `Cota ${sourceLabel(dimension.origin).toLowerCase()} · ${viewLabel}`, description: formatMeasurement(dimension.value_mm, "mm") };
+  });
   records.forEach((record) => {
     const card = document.createElement("div"); card.className = "detail-item";
-    const strong = document.createElement("b"); strong.textContent = record.id;
+    const strong = document.createElement("b"); strong.textContent = record.title ?? ({geometry:"Geometría de respaldo",annotation:"Anotación del plano",view_association:"Asociación de vista"})[record.kind] ?? (contourId ? "Contorno geométrico" : "Evidencia vinculada");
     const description = document.createElement("span"); description.textContent = record.description ?? record.kind ?? "Evidencia geométrica";
-    card.append(strong, description); root.append(card);
+    const identifier=document.createElement("code"); identifier.textContent=record.id;
+    card.append(strong, description, identifier); root.append(card);
   });
   const explanations = state.explanations?.pieces ?? state.explanations?.items ?? state.explanations?.explanations ?? [];
   const explanation = explanations.find((item)=>[item.piece_id,item.proposal_id,item.component_id].includes(component?.id));
@@ -297,9 +309,10 @@ async function loadRevisionContext() {
   try {
     const raw = await api.getRevisions(state.runId); const revisions = raw.revisions ?? raw.items ?? raw ?? [];
     const root = $("#revisions-list"); root.replaceChildren();
-    revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.reviewer_name ?? item.actor ?? "Sistema"} · ${item.scenario_id ?? item.state ?? "sin escenario"}`; card.append(title,detail); root.append(card); });
+    revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.review?.reviewer_name ?? "Sistema"} · ${item.review?.selected_scenario_id ?? item.state ?? "sin escenario"}`; card.append(title,detail); root.append(card); });
     if (!revisions.length) root.append(emptyParagraph("Sin revisiones registradas."));
   } catch { /* endpoint aditivo: el resto del visor sigue operativo */ }
+  try { renderLibraryEntries(await api.getLibrary()); } catch { /* biblioteca aditiva */ }
   if (Number.isInteger(revision)) {
     try { state.explanations = await api.getExplanations(state.runId, revision); } catch { state.explanations = null; }
     $("#save-library").disabled = false; $("#find-similar").disabled = false;
@@ -384,6 +397,7 @@ function setupWorkspaceControls() {
   const zoom=(factor)=>{ if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
   $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
   const viewport=$("#cad-viewport"); let drag=null;
+  new ResizeObserver(()=>{ applySvgTextScale(); sceneViewer?.resize(); }).observe(viewport);
   viewport.addEventListener("wheel",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
   viewport.addEventListener("pointerdown",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
   viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
@@ -393,8 +407,14 @@ function setupWorkspaceControls() {
 
 function renderLibraryResults(raw, mode) {
   const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[];
-  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label??item.name??item.run_id??item.library_item_id??"Elemento de biblioteca"; const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||"Sin diferencias documentadas"; card.append(title,detail,differences); root.append(card); });
+  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||item.explanation||"Sin diferencias documentadas"; card.append(title,detail,differences); root.append(card); });
   if(!items.length)root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
+}
+
+function renderLibraryEntries(raw) {
+  const items=raw.items??raw??[]; const root=$("#library-list"); root.replaceChildren();
+  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
+  if(!items.length)root.append(emptyParagraph("La biblioteca técnica está vacía."));
 }
 
 async function boot() {
@@ -405,7 +425,7 @@ async function boot() {
   $("#estimate-button").addEventListener("click", async () => { try { renderEstimate(await api.estimate(state.runId, { result_revision: state.snapshot?.result_revision })); await refreshTraceHistory(); } catch (error) { setMessage(error.message, true); } });
   $$("[data-export]").forEach((button) => button.addEventListener("click", () => exportResult(button.dataset.export)));
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
-  $("#save-library").addEventListener("click",async()=>{ try { const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); text($("#semantic-note"),"Revisión guardada en la biblioteca técnica."); } catch(error){ text($("#semantic-note"),error.message); } });
+  $("#save-library").addEventListener("click",async()=>{ try { const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); renderLibraryEntries(await api.getLibrary()); text($("#semantic-note"),"Revisión guardada en la biblioteca técnica."); } catch(error){ text($("#semantic-note"),error.message); } });
   $("#find-similar").addEventListener("click",async()=>{ const mode=$("#similarity-mode").value; try { renderLibraryResults(await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6}),mode); } catch(error){ const root=$("#library-list"); root.replaceChildren(emptyParagraph(error.message)); } });
   $("#group-library").addEventListener("click",async()=>{ const selected=$("#similarity-mode").value; const mode=selected==="semantic"?"semantic":"geometric"; try { renderLibraryResults(await api.groupLibrary({mode,threshold:mode==="semantic"?.75:.7}),mode); } catch(error){ $("#library-list").replaceChildren(emptyParagraph(error.message)); } });
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
