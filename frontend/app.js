@@ -3,7 +3,7 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, presentEstimate } from "./core/presentation.js";
-import { buildReviewPayload } from "./core/review.js";
+import { buildScenarioReviewPayload } from "./core/review.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -25,7 +25,7 @@ function configureModes(config = {}) {
 
 function extractComponents() {
   const snapshot = state.snapshot ?? {};
-  const scenarios = snapshot.scenarios ?? snapshot.decomposition_scenarios ?? state.ledger?.scenarios ?? [];
+  const scenarios = snapshot.result?.scenarios ?? snapshot.scenarios ?? snapshot.decomposition_scenarios ?? state.ledger?.scenarios ?? [];
   const active = scenarios.find((item) => item.id === snapshot.selected_scenario_id) ?? scenarios[0];
   return { scenarios, components: snapshot.result?.pieces ?? active?.components ?? active?.component_proposals ?? state.ledger?.component_proposals ?? [] };
 }
@@ -228,7 +228,13 @@ async function runUpload(event) {
 async function submitReview(event) {
   event.preventDefault(); const scenario = $("input[name='scenario']:checked"); if (!scenario) return;
   try {
-    const payload = buildReviewPayload(state.snapshot, [{ scenario_id: scenario.value, decision: "accept", reason: $("#review-reason").value }]);
+    const payload = buildScenarioReviewPayload(state.snapshot, {
+      scenario_id: scenario.value,
+      confirmed_thickness_mm: $("#review-thickness").value,
+      material: $("#review-material").value,
+      finish: $("#review-finish").value,
+      notes: $("#review-reason").value,
+    });
     const result = await api.review(state.runId, payload); state.snapshot = { ...state.snapshot, ...result };
     text($("#review-message"), "Decisión registrada en una nueva revisión."); await refreshRun();
   } catch (error) {

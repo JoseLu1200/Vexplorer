@@ -96,7 +96,14 @@
           <div class="section-heading"><div><p class="eyebrow">Decisión humana</p><h2 id="review-title">Resuelve el montaje ambiguo</h2></div><span class="status-chip status-chip--warning" id="revision-label">Sin revisión</span></div>
           <form id="review-form" class="review-grid">
             <fieldset id="scenario-options"><legend>Escenario respaldado</legend><p class="empty-copy">Las alternativas aparecerán cuando el backend las proponga.</p></fieldset>
-            <div class="review-reason"><label for="review-reason">Motivo técnico</label><textarea id="review-reason" rows="4" placeholder="Indica qué evidencia o conocimiento de taller respalda la decisión" required></textarea><button class="button button--primary" type="submit" disabled id="review-submit">Registrar decisión</button><p id="review-message" class="inline-message" role="status"></p></div>
+            <div class="review-reason">
+              <label for="review-thickness">Espesor confirmado en mm</label><input id="review-thickness" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="18" required>
+              <label for="review-material">Material</label><input id="review-material" type="text" placeholder="Melamina blanca">
+              <label for="review-finish">Acabado</label><input id="review-finish" type="text" placeholder="Canto ABS">
+              <label for="review-reason">Notas técnicas</label><textarea id="review-reason" rows="4" placeholder="Indica qué evidencia o conocimiento de taller respalda la decisión" required></textarea>
+              <p class="field-note">El servidor aplica las premisas del montaje y calcula las medidas. El navegador no resta ni completa dimensiones.</p>
+              <button class="button button--primary" type="submit" disabled id="review-submit">Registrar decisión</button><p id="review-message" class="inline-message" role="status"></p>
+            </div>
           </form>
         </div>
       </section>
