@@ -5,7 +5,6 @@ import json
 import re
 from collections import defaultdict
 from itertools import permutations
-from math import hypot
 
 from backend.app.contratos.modelos import (
     AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, Bounds2D,
@@ -77,12 +76,6 @@ def _candidate_revision(observations: tuple[SeparatedPartObservation, ...]) -> s
     } for item in observations]
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return f"parts-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:16]}"
-
-
-def _distance_to_bounds(point: Point2D, bounds: Bounds2D) -> float:
-    dx = max(bounds.min_x - point.x, 0.0, point.x - bounds.max_x)
-    dy = max(bounds.min_y - point.y, 0.0, point.y - bounds.max_y)
-    return hypot(dx, dy)
 
 
 def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtraction:
@@ -213,30 +206,25 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         extraction_warnings.extend(warnings)
 
     if not labels_by_key:
-        role_labels = [
-            (text.text.strip().upper(), text)
-            for text in extraction.texts
-            if text.text.strip().upper() in AXES_BY_ROLE
-        ]
-        unused_label_ids = {text.id for _, text in role_labels}
-        unknown_contours = tuple(sorted(
-            (contour for contour in extraction.contours if contour.view_id == "view-unknown"),
+        views_by_id = {view.id: view for view in extraction.views}
+        labels_by_view = {
+            text.view_id: text for text in extraction.texts if text.text.strip().upper() in AXES_BY_ROLE
+        }
+        unassociated_contours = tuple(sorted(
+            (contour for contour in extraction.contours if contour.view_id.startswith("view-unassociated-")),
             key=lambda item: item.id,
         ))
-        for index, contour in enumerate(unknown_contours, start=1):
+        for index, contour in enumerate(unassociated_contours, start=1):
             source_bounds = _bounds((contour,), metric=False)
             metric_bounds = _bounds((contour,), metric=True)
             if source_bounds is None:
                 continue
-            available_labels = [(role, text) for role, text in role_labels if text.id in unused_label_ids]
-            if not available_labels:
+            view = views_by_id.get(contour.view_id)
+            label = labels_by_view.get(contour.view_id)
+            if view is None or label is None:
                 continue
-            role, label = min(
-                available_labels,
-                key=lambda item: (_distance_to_bounds(item[1].position_source, source_bounds), item[0], item[1].id),
-            )
-            unused_label_ids.remove(label.id)
-            view_id = f"part-view-{contour.id}"
+            role = view.label
+            view_id = view.id
             contour_evidence = tuple(sorted({
                 evidence_id for entity_id in contour.source_entity_ids for evidence_id in evidence_by_entity[entity_id]
             }))
