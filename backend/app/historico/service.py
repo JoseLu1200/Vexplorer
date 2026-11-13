@@ -9,10 +9,24 @@ _CATALOG = (
 )
 
 
+def _assembly_dimensions(result: Result) -> tuple[float | None, float | None, float | None]:
+    pieces = {piece.role: piece for piece in result.pieces}
+    side, top = pieces.get("side_panel"), pieces.get("top_panel")
+    selected = result.review.selected_scenario_id if result.review else None
+    if side and top and side.thickness_mm:
+        thickness = side.thickness_mm
+        depth = side.width_mm or top.width_mm
+        if selected == "scenario-between-sides" and top.length_mm and side.length_mm:
+            return top.length_mm + 2 * thickness, depth, side.length_mm
+        if selected == "scenario-cap-sides" and top.length_mm and side.length_mm:
+            return top.length_mm, depth, side.length_mm + 2 * thickness
+    piece = result.pieces[0] if result.pieces else None
+    return (piece.length_mm if piece else None, piece.width_mm if piece else None, None)
+
+
 def find_comparables(result: Result, limit: int = 3) -> tuple[Comparable, ...]:
     piece = result.pieces[0] if result.pieces else None
-    width = piece.length_mm if piece and piece.length_mm else None
-    depth = piece.width_mm if piece and piece.width_mm else None
+    width, depth, _height = _assembly_dimensions(result)
     material = piece.material if piece else None
     finish = piece.finish if piece else None
     values: list[Comparable] = []
