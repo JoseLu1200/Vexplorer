@@ -1,5 +1,17 @@
 # Agente coordinador — demo local
 
+## Auditoría de uso solicitada el 2026-11-14
+
+Base congelada: main `dab7ce5`. El usuario pide probar API y navegador y documentar capacidades, fallos y pendientes. Rama de documentación `audit/app-20261114`; no se modifica código de producto durante la auditoría.
+
+- Coordinador: instancia aislada, navegador, informe `docs/AUDITORIA_APP_2026-11-14.md`, evidencia resumida y enlaces README.
+- D: pruebas HTTP de aceptación y negativos, script reproducible `tools/audit_api.py`, evidencia `docs/auditoria/2026-11-14/api.json` y su registro; rama propia desde baseline.
+- A: revisión de implementación y contraejemplos geométricos, solo lectura/scratch ignorado, sin referencias reservadas en runtime.
+- C: revisión de comportamiento de interfaz/contratos y comprobaciones pendientes, solo lectura/scratch; no alterar la sesión del navegador del coordinador.
+- Astra: contraste final entre informe y evidencia, solo lectura.
+
+Los casos de prueba usarán almacenamiento separado `.runtime/audit-20261114/`; no se alterarán revisiones o biblioteca de la demo existente. El informe distinguirá PASS, FAIL, limitación prevista, no implementado y no verificado. Hallazgos nuevos permanecen documentados para reproducirlos; no se incorporan correcciones silenciosas.
+
 ## Ampliación autorizada: plano, reconstrucción y similitud (2026-11-13)
 
 Solicitud posterior del usuario: centrar el trabajo en el visualizador de planos y vistas, cotas, piezas, explicación del harness, reconstrucción y embeddings coherentes para agrupar muebles. Rama de integración `demo/drawing-workbench`, base integrada `40e5e40`. Se conserva la revisión humana y la estimación existentes.
