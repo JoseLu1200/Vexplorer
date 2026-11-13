@@ -15,3 +15,6 @@ __pycache__/
 /output/
 /build/
 /dist/
+
+.worktrees/
+.runtime/
