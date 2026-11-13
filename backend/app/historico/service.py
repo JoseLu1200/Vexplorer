@@ -10,6 +10,17 @@ _CATALOG = (
 
 
 def _assembly_dimensions(result: Result) -> tuple[float | None, float | None, float | None]:
+    if result.input_semantics == "separated_part_views":
+        candidate = next((item for item in result.assembly_candidates if item.id == result.selected_assembly_candidate_id), None)
+        if candidate is None:
+            candidates = result.assembly_candidates
+            signatures = [{item.axis: item.value_mm if item.state == "derived" else None for item in value.derived_dimensions} for value in candidates]
+            if signatures and all(item == signatures[0] for item in signatures):
+                values = signatures[0]
+                return values.get("width"), values.get("depth"), values.get("height")
+            return None, None, None
+        values = {item.axis: item.value_mm if item.state == "derived" else None for item in candidate.derived_dimensions}
+        return values.get("width"), values.get("depth"), values.get("height")
     pieces = {piece.role: piece for piece in result.pieces}
     side, top = pieces.get("side_panel"), pieces.get("top_panel")
     selected = result.review.selected_scenario_id if result.review else None
