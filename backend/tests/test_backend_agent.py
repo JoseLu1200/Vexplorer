@@ -40,6 +40,7 @@ def test_agent_uses_native_tools_against_current_ledger_only() -> None:
     assert outcome.model_calls == 2 and outcome.tool_calls == 2
     assert [action.tool_name for action in outcome.actions] == ["inspeccionar_evidencia", "entregar_despiece"]
     assert outcome.actions[0].evidence_ids == (evidence_id,)
+    assert outcome.actions[-1].selected_scenario_id == scenarios[0].id
     assert extraction.model_dump_json() == before
 
 

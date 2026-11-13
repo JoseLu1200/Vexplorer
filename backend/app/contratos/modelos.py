@@ -230,6 +230,7 @@ class Result(StrictModel):
     rejected_proposal_ids: tuple[str, ...] = ()
     created_at: str
     review: HumanReview | None = None
+    agent_selected_scenario_id: str | None = None
 
 
 class RunSnapshot(StrictModel):
@@ -241,6 +242,7 @@ class RunSnapshot(StrictModel):
     candidate_revision: str
     result_revision: int | None
     created_at: str
+    agent_selected_scenario_id: str | None = None
 
 
 class Comparable(StrictModel):

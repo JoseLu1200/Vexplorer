@@ -4,6 +4,8 @@ from backend.app.contratos.modelos import Comparable, CostConcept, Estimate, Res
 
 
 def estimate_result(result: Result, comparables: tuple[Comparable, ...]) -> Estimate:
+    if result.state != "completed":
+        raise ValueError("result_needs_review")
     if not comparables:
         raise ValueError("no_comparables")
     if not result.pieces:
