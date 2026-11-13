@@ -28,12 +28,12 @@ A y B registran su acuerdo explícito antes de implementar contratos; B es su ú
 
 - [x] Actualizar main y comprobar baseline: 13 pruebas pasan.
 - [x] Crear rama de integración y cuatro worktrees.
-- [ ] Registrar acuerdo A/B y aviso C.
-- [ ] Integrar contratos, fixture, geometría, backend y frontend.
-- [ ] Ejecutar pruebas de unidades, cardinalidad, abstención, aislamiento, revisión y cálculo.
-- [ ] Instalar y arrancar con comandos comprobados.
-- [ ] Recorrer en navegador carga → evidencia → decisión humana → comparable → estimación → exportación.
-- [ ] Comprobar variante incompleta y modos disponibles.
+- [x] Registrar acuerdo A/B y aviso C.
+- [x] Integrar contratos, fixture, geometría, backend y frontend.
+- [x] Ejecutar pruebas de unidades, cardinalidad, abstención, aislamiento, revisión y cálculo.
+- [x] Instalar y arrancar con comandos comprobados.
+- [x] Recorrer en navegador carga → evidencia → decisión humana → comparable → estimación → exportación.
+- [x] Comprobar variante incompleta y modos disponibles.
 - [ ] Revisión final GPT-6 Astra y corrección de hallazgos.
 - [ ] Actualizar README, resultados y límites con evidencia observada.
 
@@ -57,3 +57,4 @@ El aislamiento se verifica en las capacidades y contexto de las herramientas: so
 ## Límites deliberados
 
 Fixture de desarrollo sintético, una familia y un subconjunto DXF declarado. No acredita generalización, ahorro humano, aptitud de fabricación ni precisión económica empresarial. DWG/PDF, adaptación PlankAssembly, embeddings y comparación estadística de métodos requieren trabajo posterior. No se despliega ni se publica ningún dataset.
+

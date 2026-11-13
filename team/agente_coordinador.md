@@ -39,3 +39,9 @@ En curso. Contrato y fixture aún pendientes de acuerdo; ninguna capacidad de ap
 - Astra revisa código integrado; cierre pendiente de dictamen y regresiones finales.
 
 
+
+## Transferencias durante revisión
+- Coordinador mantiene team/README.md como índice común actualizado; los registros propios permanecen bajo autoría de cada agente.
+- A asume temporalmente backend/app/servicios/decomposition.py y backend/tests/test_decomposition_geometry.py para el gate rectangular encontrado por Astra; B avisado para evitar solape.
+- B corrige exclusividad de escenarios en revisión y cálculo parcial; C restaura sesiones/trazas y limpia estimaciones caducadas.
+
