@@ -29,6 +29,7 @@
 - Implementado lector real `ezdxf` para LINE, LWPOLYLINE, TEXT/MTEXT y DIMENSION lineal; unidades conocidas se normalizan y las desconocidas se conservan sin mm.
 - Implementadas vistas neutrales, contornos trazables, observaciones, evidencias y propuestas rectangulares genéricas con cantidad y espesor desconocidos.
 - Verificados ambos DXF públicos de D sin abrir `evaluation/reference/**`: tres vistas y tres contornos; la variante incompleta expone una cota menos, sin completar el dato.
+- Endurecida la honestidad: cotas angulares quedan fuera con warning; override textual o escala conflictiva conserva warning y `value_mm=null`; trapecios no producen hipótesis rectangulares; límite de 100.000 entidades se aplica antes del análisis.
 
 ## Siguiente bloque
 
@@ -56,11 +57,13 @@
 | Geometría + contrato | `python -m pytest backend/tests/test_geometry.py backend/tests/test_backend_contract.py -q` | 9 passed | Fixture público de D aún no integrado |
 | Fixture público | `extract_drawing` sobre ambos `data/planos_demo/*.dxf` | montada: ready/mm, 3 vistas, 3 contornos, 4 cotas; incompleta: ready/mm, 3 vistas, 3 contornos, 3 cotas | La revisión semántica vive en hipótesis/escenario, no en la salud de ingesta |
 | Suite completa tras fixture | `python -m pytest -q` | 30 passed | Incluye 8 pruebas de aislamiento/fixture de D |
+| Regresiones de revisión | `python -m pytest backend/tests/test_geometry.py -q` | 10 passed | Angular, texto/escala, trapecio y límite cubiertos |
+| Suite final | `python -m pytest -q` | 35 passed | Ejecución fresca tras correcciones |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 
 ## Bloqueos y cierre
 
 - Bloqueos: ninguno para el alcance propio.
 - Pendientes: adaptación B de hipótesis a escenarios en integración.
-- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Los contornos de líneas detectan rectángulos axis-aligned con lados completos.
+- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal sin override/escala conflictivos; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Los contornos de líneas detectan rectángulos axis-aligned con lados completos.
 - Reservas liberadas: ninguna.

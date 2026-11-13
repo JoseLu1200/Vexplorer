@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import dist
+from math import dist, hypot
 from pathlib import Path
 from typing import Any
 
@@ -102,6 +102,29 @@ def _rectangular_line_contour(component: list[ParsedEntity], tolerance: float = 
     return ((min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y))
 
 
+def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, float] | None:
+    if len(points) != 4:
+        return None
+    vectors = [
+        (points[(index + 1) % 4].x - points[index].x, points[(index + 1) % 4].y - points[index].y)
+        for index in range(4)
+    ]
+    lengths = [hypot(x, y) for x, y in vectors]
+    if any(length <= tolerance for length in lengths):
+        return None
+    for index in range(4):
+        current = vectors[index]
+        following = vectors[(index + 1) % 4]
+        dot = current[0] * following[0] + current[1] * following[1]
+        if abs(dot) > tolerance * lengths[index] * lengths[(index + 1) % 4]:
+            return None
+    if abs(lengths[0] - lengths[2]) > tolerance * max(lengths[0], lengths[2]):
+        return None
+    if abs(lengths[1] - lengths[3]) > tolerance * max(lengths[1], lengths[3]):
+        return None
+    return tuple(sorted((lengths[0], lengths[1]), reverse=True))
+
+
 def extraction_payload(path: Path) -> dict[str, Any]:
     drawing = parse_dxf(path)
     labels = _view_labels(drawing)
@@ -124,7 +147,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})
         if entity.kind == "DIMENSION" and entity.measurement is not None:
             evidence_id = f"evidence-dimension-{entity.id}"
-            value_mm = entity.measurement * drawing.unit_scale_to_mm if entity.measurement is not None and drawing.unit_scale_to_mm is not None else None
+            value_mm = entity.measurement * drawing.unit_scale_to_mm if not entity.dimension_conflict and drawing.unit_scale_to_mm is not None else None
             evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": "Linear dimension annotation observed in drawing"})
             dimensions.append({"id": f"dimension-{entity.id}", "kind": "annotation", "value_mm": value_mm, "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed"})
 
@@ -156,7 +179,10 @@ def extraction_payload(path: Path) -> dict[str, Any]:
         bounds_mm = {key: value * drawing.unit_scale_to_mm for key, value in bounds_source.items()} if drawing.unit_scale_to_mm is not None else None
         views.append({"id": f"view-{label.lower()}", "label": label, "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
-    status = "needs_review" if drawing.unit_scale_to_mm is None or any(warning.startswith("unsupported_") for warning in drawing.warnings) else "ready"
+    status = "needs_review" if drawing.unit_scale_to_mm is None or any(
+        warning.startswith("unsupported_") or "conflict" in warning or "override" in warning
+        for warning in drawing.warnings
+    ) else "ready"
     observations = []
     for view in views:
         observations.append({
@@ -189,9 +215,9 @@ def derive_rectangular_hypotheses(extraction: Any) -> tuple[GeometryHypothesis, 
         points = contour.points_mm
         if not points or len(points) < 4:
             continue
-        xs = [point.x for point in points]
-        ys = [point.y for point in points]
-        dimensions = tuple(sorted((max(xs) - min(xs), max(ys) - min(ys)), reverse=True))
+        dimensions = _rectangle_dimensions(points)
+        if dimensions is None:
+            continue
         result.append(GeometryHypothesis(
             id=f"hypothesis-{contour.id}", label="panel", contour_ids=(contour.id,), observed_dimension_ids=(),
             observed_dimensions_mm=dimensions,
