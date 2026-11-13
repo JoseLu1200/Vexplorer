@@ -2,7 +2,7 @@ import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
-import { availableModes, componentsForSnapshot, presentEstimate } from "./core/presentation.js";
+import { availableModes, componentsForSnapshot, normaliseRunPayload, presentEstimate } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -20,7 +20,7 @@ function configureModes(config = {}) {
     if (input) input.disabled = !mode.enabled;
   });
   if (config.live_available || config.capabilities?.live_available) text($("#live-note"), "Proveedor real configurado");
-  if (config.replay_available || config.capabilities?.replay_available) text($("#replay-note"), "Grabación real disponible");
+  if (config.recorded_replay_available || config.replay_available || config.capabilities?.replay_available) text($("#replay-note"), "Grabación real disponible");
 }
 
 function extractComponents() {
@@ -181,7 +181,7 @@ function connectEvents(runId) {
 
 async function refreshRun() {
   if (!state.runId) return;
-  state.snapshot = await api.getRun(state.runId);
+  state.snapshot = normaliseRunPayload(await api.getRun(state.runId));
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
@@ -218,8 +218,8 @@ async function runUpload(event) {
   const mode = new FormData(event.currentTarget).get("mode");
   try {
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
-    const documentRecord = await api.upload(file); const run = await api.createRun(documentRecord.document_id ?? documentRecord.id, mode);
-    state.runId = run.run_id ?? run.id; state.snapshot = run; text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
+    const documentRecord = await api.upload(file); const runPayload = await api.createRun(documentRecord.document_id ?? documentRecord.id, mode);
+    state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
   } catch (error) { setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
