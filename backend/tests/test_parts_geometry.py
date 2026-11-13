@@ -164,15 +164,15 @@ def test_views_without_keys_remain_three_unassociated_observations() -> None:
     assert any(warning.startswith("unassociated_quantity_annotation:") for warning in parts.warnings)
 
 
-def test_complete_types_preserve_all_role_and_layout_hypotheses() -> None:
+def test_complete_types_preserve_only_dimensionally_compatible_role_hypotheses() -> None:
     parts = extract_separated_parts(extract_drawing(
         Path("data/planos_demo/piezas_completo.dxf"), input_kind="separated_part_views",
     ))
 
     candidates = derive_assembly_candidates(parts)
 
-    assert len(candidates) == 12
-    assert {item.layout for item in candidates} == {"between_sides", "cap_sides"}
+    assert len(candidates) == 2
+    assert {item.layout for item in candidates} == {"between_sides"}
     assert all(item.family == "rectangular_shelving" and item.needs_review for item in candidates)
     assert all({use.part_observation_id for use in item.uses} == {part.id for part in parts.observations} for item in candidates)
     assert all(sum(use.allocated_quantity or 0 for use in item.uses) == 6 for item in candidates)
@@ -187,6 +187,16 @@ def test_complete_types_preserve_all_role_and_layout_hypotheses() -> None:
         == {("top_panel", (1,)), ("base_panel", (2,))}
         for item in split_candidates
     )
+
+
+def test_cap_sides_is_rejected_when_shelf_does_not_fit_between_sides() -> None:
+    parts = extract_separated_parts(extract_drawing(
+        Path("data/planos_demo/piezas_completo.dxf"), input_kind="separated_part_views",
+    ))
+
+    candidates = derive_assembly_candidates(parts)
+
+    assert not any(item.layout == "cap_sides" for item in candidates)
 
 
 def test_unknown_quantity_remains_null_in_candidates() -> None:
