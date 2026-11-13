@@ -4,6 +4,8 @@ Vexplorer permite explorar un plano DXF, consultar sus vistas y cotas, proponer 
 
 Recorrido: **plano y cotas → piezas y explicación → revisión → reconstrucción 3D → similares y grupos → ficha, estimación y traza**. Los casos son propios y de desarrollo; no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
+La [auditoría de API y navegador del 14/11/2026](docs/AUDITORIA_APP_2026-11-14.md) documenta lo observado en `dab7ce5`, sus fallos reproducibles y sus límites. Esa versión parte de vistas del conjunto montado; **no resuelve todavía el nuevo recorrido desde vistas DXF de piezas separadas**.
+
 ## Instalación y arranque (PowerShell)
 
 Desde la raíz del repositorio, con Python 3.11 o posterior y Node/npm:

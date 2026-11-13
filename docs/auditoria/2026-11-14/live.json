@@ -1,0 +1,3639 @@
+{
+  "date_utc": "2026-11-13T23:15:32.583989+00:00",
+  "base_url": "http://127.0.0.1:8767",
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/config",
+      "status": 200,
+      "elapsed_s": 0.029,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "provider": "openai_responses",
+          "model": "gpt-6.1-sol",
+          "live_available": true,
+          "unavailable_reason": null,
+          "recorded_replay_available": false,
+          "modes": [
+            "geometry_only",
+            "live"
+          ],
+          "modality": "structured_vector_evidence_without_vision",
+          "limits": {
+            "max_model_calls": 15,
+            "max_tool_calls": 30,
+            "timeout_s": 120
+          },
+          "tools": [
+            {
+              "name": "inspeccionar_evidencia",
+              "description": "Consulta evidencias por ID dentro del ledger autorizado del run actual."
+            },
+            {
+              "name": "entregar_despiece",
+              "description": "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas."
+            },
+            {
+              "name": "explicar_pieza",
+              "description": "Devuelve fuentes, estados, premisas y desconocidos de una hipótesis de componente en la revisión 1; no la confirma ni revela razonamiento interno."
+            }
+          ],
+          "semantic": {
+            "available": true,
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "unavailable_reason": null,
+            "offline_mode": "geometric"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "elapsed_s": 0.002,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "document_id": "doc-1b7238011399476eb4cf450e3c4e76f4",
+          "original_filename": "audit-estanteria_montada.dxf",
+          "size_bytes": 53918,
+          "sha256": "9884c7f8b3100a536d85421dfea25496df5ec6d70296e9ecc963cc83b3e2ac3c",
+          "source_kind": "uploaded"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs",
+      "status": 201,
+      "elapsed_s": 17.455,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "run": {
+            "schema_version": "0.2.0",
+            "id": "run-23303f6ef7c8412c81cca2f70eb2c157",
+            "mode": "live",
+            "state": "needs_review",
+            "reason_code": null,
+            "candidate_revision": "drawing-9884c7f8b3100a53",
+            "result_revision": 1,
+            "created_at": "2026-11-13T23:15:50.244408+00:00",
+            "agent_selected_scenario_id": "scenario-cap-sides",
+            "document_id": "doc-1b7238011399476eb4cf450e3c4e76f4"
+          },
+          "result": {
+            "schema_version": "0.2.0",
+            "run_id": "run-23303f6ef7c8412c81cca2f70eb2c157",
+            "result_revision": 1,
+            "state": "needs_review",
+            "scenarios": [
+              {
+                "id": "scenario-cap-sides",
+                "title": "Tapa y base cubren laterales",
+                "components": [
+                  {
+                    "id": "proposal-cap-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_height_minus_two_thickness",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-between-sides"
+                ],
+                "state": "hypothesis"
+              },
+              {
+                "id": "scenario-between-sides",
+                "title": "Tapa y base entre laterales",
+                "components": [
+                  {
+                    "id": "proposal-between-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": 1200.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-cap-sides"
+                ],
+                "state": "hypothesis"
+              }
+            ],
+            "pieces": [],
+            "rejected_proposal_ids": [],
+            "created_at": "2026-11-13T23:15:50.244408+00:00",
+            "review": null,
+            "agent_selected_scenario_id": "scenario-cap-sides"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/config",
+      "status": 200,
+      "elapsed_s": 0.019,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "provider": "openai_responses",
+          "model": "gpt-6.1-sol",
+          "live_available": true,
+          "unavailable_reason": null,
+          "recorded_replay_available": false,
+          "modes": [
+            "geometry_only",
+            "live"
+          ],
+          "modality": "structured_vector_evidence_without_vision",
+          "limits": {
+            "max_model_calls": 15,
+            "max_tool_calls": 30,
+            "timeout_s": 120
+          },
+          "tools": [
+            {
+              "name": "inspeccionar_evidencia",
+              "description": "Consulta evidencias por ID dentro del ledger autorizado del run actual."
+            },
+            {
+              "name": "entregar_despiece",
+              "description": "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas."
+            },
+            {
+              "name": "explicar_pieza",
+              "description": "Devuelve fuentes, estados, premisas y desconocidos de una hipótesis de componente en la revisión 1; no la confirma ni revela razonamiento interno."
+            }
+          ],
+          "semantic": {
+            "available": true,
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "unavailable_reason": null,
+            "offline_mode": "geometric"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/runs/run-23303f6ef7c8412c81cca2f70eb2c157",
+      "status": 200,
+      "elapsed_s": 0.003,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "run": {
+            "schema_version": "0.2.0",
+            "id": "run-23303f6ef7c8412c81cca2f70eb2c157",
+            "mode": "live",
+            "state": "needs_review",
+            "reason_code": null,
+            "candidate_revision": "drawing-9884c7f8b3100a53",
+            "result_revision": 1,
+            "created_at": "2026-11-13T23:15:50.244408+00:00",
+            "agent_selected_scenario_id": "scenario-cap-sides",
+            "document_id": "doc-1b7238011399476eb4cf450e3c4e76f4"
+          },
+          "result": {
+            "schema_version": "0.2.0",
+            "run_id": "run-23303f6ef7c8412c81cca2f70eb2c157",
+            "result_revision": 1,
+            "state": "needs_review",
+            "scenarios": [
+              {
+                "id": "scenario-cap-sides",
+                "title": "Tapa y base cubren laterales",
+                "components": [
+                  {
+                    "id": "proposal-cap-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_height_minus_two_thickness",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-between-sides"
+                ],
+                "state": "hypothesis"
+              },
+              {
+                "id": "scenario-between-sides",
+                "title": "Tapa y base entre laterales",
+                "components": [
+                  {
+                    "id": "proposal-between-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": 1200.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-cap-sides"
+                ],
+                "state": "hypothesis"
+              }
+            ],
+            "pieces": [],
+            "rejected_proposal_ids": [],
+            "created_at": "2026-11-13T23:15:50.244408+00:00",
+            "review": null,
+            "agent_selected_scenario_id": "scenario-cap-sides"
+          },
+          "estimate": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "elapsed_s": 0.002,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "document_id": "doc-8d105c2c9eeb4c3a8f17f4446e8f9587",
+          "original_filename": "audit-estanteria_montada.dxf",
+          "size_bytes": 53918,
+          "sha256": "9884c7f8b3100a536d85421dfea25496df5ec6d70296e9ecc963cc83b3e2ac3c",
+          "source_kind": "uploaded"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs",
+      "status": 201,
+      "elapsed_s": 0.029,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "run": {
+            "schema_version": "0.2.0",
+            "id": "run-dd88042c3ab34a7699c7089dc12e4556",
+            "mode": "geometry_only",
+            "state": "needs_review",
+            "reason_code": null,
+            "candidate_revision": "drawing-9884c7f8b3100a53",
+            "result_revision": 1,
+            "created_at": "2026-11-13T23:16:31.862739+00:00",
+            "agent_selected_scenario_id": null,
+            "document_id": "doc-8d105c2c9eeb4c3a8f17f4446e8f9587"
+          },
+          "result": {
+            "schema_version": "0.2.0",
+            "run_id": "run-dd88042c3ab34a7699c7089dc12e4556",
+            "result_revision": 1,
+            "state": "needs_review",
+            "scenarios": [
+              {
+                "id": "scenario-between-sides",
+                "title": "Tapa y base entre laterales",
+                "components": [
+                  {
+                    "id": "proposal-between-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": 1200.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-cap-sides"
+                ],
+                "state": "hypothesis"
+              },
+              {
+                "id": "scenario-cap-sides",
+                "title": "Tapa y base cubren laterales",
+                "components": [
+                  {
+                    "id": "proposal-cap-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_height_minus_two_thickness",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-between-sides"
+                ],
+                "state": "hypothesis"
+              }
+            ],
+            "pieces": [],
+            "rejected_proposal_ids": [],
+            "created_at": "2026-11-13T23:16:31.862739+00:00",
+            "review": null,
+            "agent_selected_scenario_id": null
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-dd88042c3ab34a7699c7089dc12e4556/reviews",
+      "status": 201,
+      "elapsed_s": 0.018,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.2.0",
+          "run_id": "run-dd88042c3ab34a7699c7089dc12e4556",
+          "result_revision": 2,
+          "state": "completed",
+          "scenarios": [
+            {
+              "id": "scenario-between-sides",
+              "title": "Tapa y base entre laterales",
+              "components": [
+                {
+                  "id": "proposal-between-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": 1200.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 1200.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-cap-sides"
+              ],
+              "state": "hypothesis"
+            },
+            {
+              "id": "scenario-cap-sides",
+              "title": "Tapa y base cubren laterales",
+              "components": [
+                {
+                  "id": "proposal-cap-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_height_minus_two_thickness",
+                  "length_basis_mm": 1200.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": 900.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": 900.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-between-sides"
+              ],
+              "state": "hypothesis"
+            }
+          ],
+          "pieces": [
+            {
+              "id": "piece-proposal-between-sides-side_panel",
+              "proposal_id": "proposal-between-sides-side_panel",
+              "label": "Laterales",
+              "role": "side_panel",
+              "quantity": 2,
+              "length_mm": 1200.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "observed",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-top_panel",
+              "proposal_id": "proposal-between-sides-top_panel",
+              "label": "Tapa",
+              "role": "top_panel",
+              "quantity": 1,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-base_panel",
+              "proposal_id": "proposal-between-sides-base_panel",
+              "label": "Base",
+              "role": "base_panel",
+              "quantity": 1,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-shelf",
+              "proposal_id": "proposal-between-sides-shelf",
+              "label": "Baldas interiores",
+              "role": "shelf",
+              "quantity": 2,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            }
+          ],
+          "rejected_proposal_ids": [
+            "proposal-cap-sides-side_panel",
+            "proposal-cap-sides-top_panel",
+            "proposal-cap-sides-base_panel",
+            "proposal-cap-sides-shelf"
+          ],
+          "created_at": "2026-11-13T23:16:31.876840+00:00",
+          "review": {
+            "reviewer_name": "Agente auditor — prueba técnica",
+            "reason": "Ensayo automatizado, no revisión industrial.",
+            "timestamp": "2026-11-13T23:16:31.876840+00:00",
+            "selected_scenario_id": "scenario-between-sides"
+          },
+          "agent_selected_scenario_id": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-dd88042c3ab34a7699c7089dc12e4556/library",
+      "status": 201,
+      "elapsed_s": 0.49,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.3.0",
+          "id": "library-run-dd88042c3ab34a7699c7089dc12e4556",
+          "run_id": "run-dd88042c3ab34a7699c7089dc12e4556",
+          "result_revision": 2,
+          "label": "Auditoría proveedor estanteria_montada.dxf",
+          "descriptor": {
+            "descriptor_version": "furniture-v1",
+            "family": "rectangular_shelving",
+            "dimensions": {
+              "width_mm": 900.0,
+              "depth_mm": 300.0,
+              "height_mm": 1200.0
+            },
+            "roles": [
+              {
+                "role": "base_panel",
+                "quantity": 1
+              },
+              {
+                "role": "shelf",
+                "quantity": 2
+              },
+              {
+                "role": "side_panel",
+                "quantity": 2
+              },
+              {
+                "role": "top_panel",
+                "quantity": 1
+              }
+            ],
+            "structure": "top_base_between_sides",
+            "material": "tablero sintético",
+            "finish": "melamina sintética",
+            "unknown_fields": []
+          },
+          "descriptor_fingerprint": "4d7c24649b217ca7221937237e1f9dc7e2d2ee065a8bc44945a34b4315283272",
+          "created_at": "2026-11-13T23:16:32.365982+00:00",
+          "embedding": {
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "descriptor_version": "furniture-v1",
+            "cache_key": "a8d4c7d9a67edb80eff0881956a8c7cdfe8b7e06f4a46fca665536806b70a9bc",
+            "status": "generated"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "elapsed_s": 0.002,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "document_id": "doc-a666432015de403786c9cd912d6ac2d6",
+          "original_filename": "audit-mueble_demo_002.dxf",
+          "size_bytes": 53943,
+          "sha256": "cb7386106fc9a5c2969114c38d956a5430a45ad6c97c1508462b915c0e15cfe5",
+          "source_kind": "uploaded"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs",
+      "status": 201,
+      "elapsed_s": 0.028,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "run": {
+            "schema_version": "0.2.0",
+            "id": "run-b54839cb25c747a6970276e809d4e9dc",
+            "mode": "geometry_only",
+            "state": "needs_review",
+            "reason_code": null,
+            "candidate_revision": "drawing-cb7386106fc9a5c2",
+            "result_revision": 1,
+            "created_at": "2026-11-13T23:16:32.403625+00:00",
+            "agent_selected_scenario_id": null,
+            "document_id": "doc-a666432015de403786c9cd912d6ac2d6"
+          },
+          "result": {
+            "schema_version": "0.2.0",
+            "run_id": "run-b54839cb25c747a6970276e809d4e9dc",
+            "result_revision": 1,
+            "state": "needs_review",
+            "scenarios": [
+              {
+                "id": "scenario-between-sides",
+                "title": "Tapa y base entre laterales",
+                "components": [
+                  {
+                    "id": "proposal-between-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": 1300.0,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1300.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-cap-sides"
+                ],
+                "state": "hypothesis"
+              },
+              {
+                "id": "scenario-cap-sides",
+                "title": "Tapa y base cubren laterales",
+                "components": [
+                  {
+                    "id": "proposal-cap-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_height_minus_two_thickness",
+                    "length_basis_mm": 1300.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": 1000.0,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": 1000.0,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 320.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 1000.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-between-sides"
+                ],
+                "state": "hypothesis"
+              }
+            ],
+            "pieces": [],
+            "rejected_proposal_ids": [],
+            "created_at": "2026-11-13T23:16:32.403625+00:00",
+            "review": null,
+            "agent_selected_scenario_id": null
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-b54839cb25c747a6970276e809d4e9dc/reviews",
+      "status": 201,
+      "elapsed_s": 0.02,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.2.0",
+          "run_id": "run-b54839cb25c747a6970276e809d4e9dc",
+          "result_revision": 2,
+          "state": "completed",
+          "scenarios": [
+            {
+              "id": "scenario-between-sides",
+              "title": "Tapa y base entre laterales",
+              "components": [
+                {
+                  "id": "proposal-between-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": 1300.0,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 1300.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-cap-sides"
+              ],
+              "state": "hypothesis"
+            },
+            {
+              "id": "scenario-cap-sides",
+              "title": "Tapa y base cubren laterales",
+              "components": [
+                {
+                  "id": "proposal-cap-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_height_minus_two_thickness",
+                  "length_basis_mm": 1300.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": 1000.0,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": 1000.0,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 320.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 1000.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-between-sides"
+              ],
+              "state": "hypothesis"
+            }
+          ],
+          "pieces": [
+            {
+              "id": "piece-proposal-between-sides-side_panel",
+              "proposal_id": "proposal-between-sides-side_panel",
+              "label": "Laterales",
+              "role": "side_panel",
+              "quantity": 2,
+              "length_mm": 1300.0,
+              "width_mm": 320.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "observed",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-top_panel",
+              "proposal_id": "proposal-between-sides-top_panel",
+              "label": "Tapa",
+              "role": "top_panel",
+              "quantity": 1,
+              "length_mm": 964.0,
+              "width_mm": 320.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-base_panel",
+              "proposal_id": "proposal-between-sides-base_panel",
+              "label": "Base",
+              "role": "base_panel",
+              "quantity": 1,
+              "length_mm": 964.0,
+              "width_mm": 320.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-shelf",
+              "proposal_id": "proposal-between-sides-shelf",
+              "label": "Baldas interiores",
+              "role": "shelf",
+              "quantity": 2,
+              "length_mm": 964.0,
+              "width_mm": 320.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            }
+          ],
+          "rejected_proposal_ids": [
+            "proposal-cap-sides-side_panel",
+            "proposal-cap-sides-top_panel",
+            "proposal-cap-sides-base_panel",
+            "proposal-cap-sides-shelf"
+          ],
+          "created_at": "2026-11-13T23:16:32.417640+00:00",
+          "review": {
+            "reviewer_name": "Agente auditor — prueba técnica",
+            "reason": "Ensayo automatizado, no revisión industrial.",
+            "timestamp": "2026-11-13T23:16:32.417640+00:00",
+            "selected_scenario_id": "scenario-between-sides"
+          },
+          "agent_selected_scenario_id": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-b54839cb25c747a6970276e809d4e9dc/library",
+      "status": 201,
+      "elapsed_s": 0.221,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.3.0",
+          "id": "library-run-b54839cb25c747a6970276e809d4e9dc",
+          "run_id": "run-b54839cb25c747a6970276e809d4e9dc",
+          "result_revision": 2,
+          "label": "Auditoría proveedor mueble_demo_002.dxf",
+          "descriptor": {
+            "descriptor_version": "furniture-v1",
+            "family": "rectangular_shelving",
+            "dimensions": {
+              "width_mm": 1000.0,
+              "depth_mm": 320.0,
+              "height_mm": 1300.0
+            },
+            "roles": [
+              {
+                "role": "base_panel",
+                "quantity": 1
+              },
+              {
+                "role": "shelf",
+                "quantity": 2
+              },
+              {
+                "role": "side_panel",
+                "quantity": 2
+              },
+              {
+                "role": "top_panel",
+                "quantity": 1
+              }
+            ],
+            "structure": "top_base_between_sides",
+            "material": "tablero sintético",
+            "finish": "melamina sintética",
+            "unknown_fields": []
+          },
+          "descriptor_fingerprint": "be2866570353b5d9b2dddfed274a80f841ed782dfcf66820599026d337c4f131",
+          "created_at": "2026-11-13T23:16:32.639883+00:00",
+          "embedding": {
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "descriptor_version": "furniture-v1",
+            "cache_key": "06da169ca355d0011864e3279da96070831be5225c7498c4b979e8fd4bd12c00",
+            "status": "generated"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "elapsed_s": 0.002,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "document_id": "doc-ed5b598edefe4be09789d77895803523",
+          "original_filename": "audit-mueble_demo_004.dxf",
+          "size_bytes": 54173,
+          "sha256": "6edb7769af3decab2a8a480cb8a548d236b52fd7946b3592025a5dd62aca3c7f",
+          "source_kind": "uploaded"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs",
+      "status": 201,
+      "elapsed_s": 0.028,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "run": {
+            "schema_version": "0.2.0",
+            "id": "run-d931eb59736c4ae0b1dd7500d06b35ad",
+            "mode": "geometry_only",
+            "state": "needs_review",
+            "reason_code": null,
+            "candidate_revision": "drawing-6edb7769af3decab",
+            "result_revision": 1,
+            "created_at": "2026-11-13T23:16:32.679179+00:00",
+            "agent_selected_scenario_id": null,
+            "document_id": "doc-ed5b598edefe4be09789d77895803523"
+          },
+          "result": {
+            "schema_version": "0.2.0",
+            "run_id": "run-d931eb59736c4ae0b1dd7500d06b35ad",
+            "result_revision": 1,
+            "state": "needs_review",
+            "scenarios": [
+              {
+                "id": "scenario-between-sides",
+                "title": "Tapa y base entre laterales",
+                "components": [
+                  {
+                    "id": "proposal-between-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": 1200.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-between-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-cap-sides"
+                ],
+                "state": "hypothesis"
+              },
+              {
+                "id": "scenario-cap-sides",
+                "title": "Tapa y base cubren laterales",
+                "components": [
+                  {
+                    "id": "proposal-cap-sides-side_panel",
+                    "label": "Laterales",
+                    "role": "side_panel",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_height_minus_two_thickness",
+                    "length_basis_mm": 1200.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-top_panel",
+                    "label": "Tapa",
+                    "role": "top_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-base_panel",
+                    "label": "Base",
+                    "role": "base_panel",
+                    "quantity": 1,
+                    "length_mm": 900.0,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "direct_observation",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8D",
+                      "entity-93",
+                      "entity-97"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  },
+                  {
+                    "id": "proposal-cap-sides-shelf",
+                    "label": "Baldas interiores",
+                    "role": "shelf",
+                    "quantity": 2,
+                    "length_mm": null,
+                    "width_mm": 300.0,
+                    "thickness_mm": null,
+                    "length_derivation": "overall_width_minus_two_thickness",
+                    "length_basis_mm": 900.0,
+                    "source_observation_ids": [
+                      "observation-view-front",
+                      "observation-view-side",
+                      "observation-view-top"
+                    ],
+                    "source_contour_ids": [
+                      "contour-entity-8D",
+                      "contour-entity-93",
+                      "contour-entity-97"
+                    ],
+                    "source_entity_ids": [
+                      "entity-8E",
+                      "entity-98",
+                      "entity-8F",
+                      "entity-99"
+                    ],
+                    "evidence_ids": [
+                      "evidence-contour-entity-8D",
+                      "evidence-contour-entity-93",
+                      "evidence-contour-entity-97"
+                    ],
+                    "assumptions": [
+                      "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                    ],
+                    "information_class": "hypothesis"
+                  }
+                ],
+                "assumptions": [
+                  "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+                ],
+                "incompatible_with": [
+                  "scenario-between-sides"
+                ],
+                "state": "hypothesis"
+              }
+            ],
+            "pieces": [],
+            "rejected_proposal_ids": [],
+            "created_at": "2026-11-13T23:16:32.679179+00:00",
+            "review": null,
+            "agent_selected_scenario_id": null
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-d931eb59736c4ae0b1dd7500d06b35ad/reviews",
+      "status": 201,
+      "elapsed_s": 0.018,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.2.0",
+          "run_id": "run-d931eb59736c4ae0b1dd7500d06b35ad",
+          "result_revision": 2,
+          "state": "completed",
+          "scenarios": [
+            {
+              "id": "scenario-between-sides",
+              "title": "Tapa y base entre laterales",
+              "components": [
+                {
+                  "id": "proposal-between-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": 1200.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 1200.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-between-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-cap-sides"
+              ],
+              "state": "hypothesis"
+            },
+            {
+              "id": "scenario-cap-sides",
+              "title": "Tapa y base cubren laterales",
+              "components": [
+                {
+                  "id": "proposal-cap-sides-side_panel",
+                  "label": "Laterales",
+                  "role": "side_panel",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_height_minus_two_thickness",
+                  "length_basis_mm": 1200.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-top_panel",
+                  "label": "Tapa",
+                  "role": "top_panel",
+                  "quantity": 1,
+                  "length_mm": 900.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-base_panel",
+                  "label": "Base",
+                  "role": "base_panel",
+                  "quantity": 1,
+                  "length_mm": 900.0,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "direct_observation",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8D",
+                    "entity-93",
+                    "entity-97"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                },
+                {
+                  "id": "proposal-cap-sides-shelf",
+                  "label": "Baldas interiores",
+                  "role": "shelf",
+                  "quantity": 2,
+                  "length_mm": null,
+                  "width_mm": 300.0,
+                  "thickness_mm": null,
+                  "length_derivation": "overall_width_minus_two_thickness",
+                  "length_basis_mm": 900.0,
+                  "source_observation_ids": [
+                    "observation-view-front",
+                    "observation-view-side",
+                    "observation-view-top"
+                  ],
+                  "source_contour_ids": [
+                    "contour-entity-8D",
+                    "contour-entity-93",
+                    "contour-entity-97"
+                  ],
+                  "source_entity_ids": [
+                    "entity-8E",
+                    "entity-98",
+                    "entity-8F",
+                    "entity-99"
+                  ],
+                  "evidence_ids": [
+                    "evidence-contour-entity-8D",
+                    "evidence-contour-entity-93",
+                    "evidence-contour-entity-97"
+                  ],
+                  "assumptions": [
+                    "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+                  ],
+                  "information_class": "hypothesis"
+                }
+              ],
+              "assumptions": [
+                "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+              ],
+              "incompatible_with": [
+                "scenario-between-sides"
+              ],
+              "state": "hypothesis"
+            }
+          ],
+          "pieces": [
+            {
+              "id": "piece-proposal-between-sides-side_panel",
+              "proposal_id": "proposal-between-sides-side_panel",
+              "label": "Laterales",
+              "role": "side_panel",
+              "quantity": 2,
+              "length_mm": 1200.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "observed",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-top_panel",
+              "proposal_id": "proposal-between-sides-top_panel",
+              "label": "Tapa",
+              "role": "top_panel",
+              "quantity": 1,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-base_panel",
+              "proposal_id": "proposal-between-sides-base_panel",
+              "label": "Base",
+              "role": "base_panel",
+              "quantity": 1,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            },
+            {
+              "id": "piece-proposal-between-sides-shelf",
+              "proposal_id": "proposal-between-sides-shelf",
+              "label": "Baldas interiores",
+              "role": "shelf",
+              "quantity": 2,
+              "length_mm": 864.0,
+              "width_mm": 300.0,
+              "thickness_mm": 18.0,
+              "material": "tablero sintético",
+              "finish": "melamina sintética",
+              "source_observation_ids": [
+                "observation-view-front",
+                "observation-view-side",
+                "observation-view-top"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8D",
+                "contour-entity-93",
+                "contour-entity-97"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-97"
+              ],
+              "human_confirmation": "Ensayo automatizado, no revisión industrial.",
+              "field_states": {
+                "quantity": "confirmed",
+                "length_mm": "calculated",
+                "width_mm": "observed",
+                "thickness_mm": "confirmed",
+                "material": "confirmed",
+                "finish": "confirmed"
+              }
+            }
+          ],
+          "rejected_proposal_ids": [
+            "proposal-cap-sides-side_panel",
+            "proposal-cap-sides-top_panel",
+            "proposal-cap-sides-base_panel",
+            "proposal-cap-sides-shelf"
+          ],
+          "created_at": "2026-11-13T23:16:32.694332+00:00",
+          "review": {
+            "reviewer_name": "Agente auditor — prueba técnica",
+            "reason": "Ensayo automatizado, no revisión industrial.",
+            "timestamp": "2026-11-13T23:16:32.694332+00:00",
+            "selected_scenario_id": "scenario-between-sides"
+          },
+          "agent_selected_scenario_id": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-d931eb59736c4ae0b1dd7500d06b35ad/library",
+      "status": 201,
+      "elapsed_s": 0.02,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.3.0",
+          "id": "library-run-d931eb59736c4ae0b1dd7500d06b35ad",
+          "run_id": "run-d931eb59736c4ae0b1dd7500d06b35ad",
+          "result_revision": 2,
+          "label": "Auditoría proveedor mueble_demo_004.dxf",
+          "descriptor": {
+            "descriptor_version": "furniture-v1",
+            "family": "rectangular_shelving",
+            "dimensions": {
+              "width_mm": 900.0,
+              "depth_mm": 300.0,
+              "height_mm": 1200.0
+            },
+            "roles": [
+              {
+                "role": "base_panel",
+                "quantity": 1
+              },
+              {
+                "role": "shelf",
+                "quantity": 2
+              },
+              {
+                "role": "side_panel",
+                "quantity": 2
+              },
+              {
+                "role": "top_panel",
+                "quantity": 1
+              }
+            ],
+            "structure": "top_base_between_sides",
+            "material": "tablero sintético",
+            "finish": "melamina sintética",
+            "unknown_fields": []
+          },
+          "descriptor_fingerprint": "4d7c24649b217ca7221937237e1f9dc7e2d2ee065a8bc44945a34b4315283272",
+          "created_at": "2026-11-13T23:16:32.714995+00:00",
+          "embedding": {
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "descriptor_version": "furniture-v1",
+            "cache_key": "a8d4c7d9a67edb80eff0881956a8c7cdfe8b7e06f4a46fca665536806b70a9bc",
+            "status": "cache"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-d931eb59736c4ae0b1dd7500d06b35ad/similarity",
+      "status": 200,
+      "elapsed_s": 0.005,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": [
+          {
+            "library_item_id": "library-run-dd88042c3ab34a7699c7089dc12e4556",
+            "run_id": "run-dd88042c3ab34a7699c7089dc12e4556",
+            "result_revision": 2,
+            "method": "semantic",
+            "score": 1.0,
+            "score_kind": "cosine_similarity",
+            "score_components": {
+              "cosine": 1.0
+            },
+            "differences": [],
+            "embedding": {
+              "provider": "openai",
+              "model": "text-embedding-3-small",
+              "dimensions": 256,
+              "descriptor_version": "furniture-v1",
+              "cache_key": "a8d4c7d9a67edb80eff0881956a8c7cdfe8b7e06f4a46fca665536806b70a9bc",
+              "status": "generated"
+            }
+          },
+          {
+            "library_item_id": "library-run-b54839cb25c747a6970276e809d4e9dc",
+            "run_id": "run-b54839cb25c747a6970276e809d4e9dc",
+            "result_revision": 2,
+            "method": "semantic",
+            "score": 0.999049,
+            "score_kind": "cosine_similarity",
+            "score_components": {
+              "cosine": 0.999049
+            },
+            "differences": [
+              {
+                "field": "dimensions.width_mm",
+                "query_value": "900.0",
+                "candidate_value": "1000.0"
+              },
+              {
+                "field": "dimensions.depth_mm",
+                "query_value": "300.0",
+                "candidate_value": "320.0"
+              },
+              {
+                "field": "dimensions.height_mm",
+                "query_value": "1200.0",
+                "candidate_value": "1300.0"
+              }
+            ],
+            "embedding": {
+              "provider": "openai",
+              "model": "text-embedding-3-small",
+              "dimensions": 256,
+              "descriptor_version": "furniture-v1",
+              "cache_key": "06da169ca355d0011864e3279da96070831be5225c7498c4b979e8fd4bd12c00",
+              "status": "generated"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/runs/run-d931eb59736c4ae0b1dd7500d06b35ad/library",
+      "status": 201,
+      "elapsed_s": 0.02,
+      "response": {
+        "schema_version": "0.2.0",
+        "data": {
+          "schema_version": "0.3.0",
+          "id": "library-run-d931eb59736c4ae0b1dd7500d06b35ad",
+          "run_id": "run-d931eb59736c4ae0b1dd7500d06b35ad",
+          "result_revision": 2,
+          "label": "Auditoría proveedor traslado",
+          "descriptor": {
+            "descriptor_version": "furniture-v1",
+            "family": "rectangular_shelving",
+            "dimensions": {
+              "width_mm": 900.0,
+              "depth_mm": 300.0,
+              "height_mm": 1200.0
+            },
+            "roles": [
+              {
+                "role": "base_panel",
+                "quantity": 1
+              },
+              {
+                "role": "shelf",
+                "quantity": 2
+              },
+              {
+                "role": "side_panel",
+                "quantity": 2
+              },
+              {
+                "role": "top_panel",
+                "quantity": 1
+              }
+            ],
+            "structure": "top_base_between_sides",
+            "material": "tablero sintético",
+            "finish": "melamina sintética",
+            "unknown_fields": []
+          },
+          "descriptor_fingerprint": "4d7c24649b217ca7221937237e1f9dc7e2d2ee065a8bc44945a34b4315283272",
+          "created_at": "2026-11-13T23:16:32.741822+00:00",
+          "embedding": {
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "dimensions": 256,
+            "descriptor_version": "furniture-v1",
+            "cache_key": "a8d4c7d9a67edb80eff0881956a8c7cdfe8b7e06f4a46fca665536806b70a9bc",
+            "status": "cache"
+          }
+        }
+      }
+    }
+  ],
+  "live_events_sse": "id: 1\nevent: run_state_changed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 1, \"event_type\": \"run_state_changed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"state\": \"needs_review\", \"mode\": \"live\"}}\n\nid: 2\nevent: tool_completed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 2, \"event_type\": \"tool_completed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"tool_name\": \"inspeccionar_evidencia\", \"ok\": true, \"evidence_ids\": [\"evidence-contour-entity-8D\", \"evidence-contour-entity-93\", \"evidence-contour-entity-97\", \"evidence-dimension-entity-9C\", \"evidence-dimension-entity-AC\", \"evidence-dimension-entity-BC\", \"evidence-dimension-entity-CC\"], \"summary\": \"Evidencia vectorial del ledger inspeccionada.\", \"selected_scenario_id\": null}}\n\nid: 3\nevent: tool_completed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 3, \"event_type\": \"tool_completed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"tool_name\": \"explicar_pieza\", \"ok\": true, \"evidence_ids\": [\"evidence-contour-entity-8D\", \"evidence-contour-entity-93\", \"evidence-contour-entity-97\"], \"summary\": \"Explicación determinista de hipótesis consultada.\", \"selected_scenario_id\": null}}\n\nid: 4\nevent: tool_completed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 4, \"event_type\": \"tool_completed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"tool_name\": \"explicar_pieza\", \"ok\": true, \"evidence_ids\": [\"evidence-contour-entity-8D\", \"evidence-contour-entity-93\", \"evidence-contour-entity-97\"], \"summary\": \"Explicación determinista de hipótesis consultada.\", \"selected_scenario_id\": null}}\n\nid: 5\nevent: tool_completed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 5, \"event_type\": \"tool_completed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"tool_name\": \"entregar_despiece\", \"ok\": true, \"evidence_ids\": [], \"summary\": \"Escenario hipotético entregado para revisión humana.\", \"selected_scenario_id\": \"scenario-cap-sides\"}}\n\nid: 6\nevent: result_committed\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 6, \"event_type\": \"result_committed\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}}\n\nid: 7\nevent: run_finished\ndata: {\"schema_version\": \"0.2.0\", \"run_id\": \"run-23303f6ef7c8412c81cca2f70eb2c157\", \"sequence\": 7, \"event_type\": \"run_finished\", \"data\": {\"timestamp\": \"2026-11-13T23:15:50.244408+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}}\n\n",
+  "live_run_id": "run-23303f6ef7c8412c81cca2f70eb2c157"
+}
