@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { availableModes, presentEstimate } from "../core/presentation.js";
+import { availableModes, componentsForSnapshot, presentEstimate } from "../core/presentation.js";
 
 test("geometry only stays available while unconfigured provider modes stay disabled", () => {
   assert.deepEqual(availableModes({ live_available: false, replay_available: false }), [
@@ -37,4 +37,21 @@ test("canonical cost concepts expose their factors and hours without client reca
   assert.equal(presented.items[0].quantityLabel, "Factor 1,14");
   assert.equal(presented.items[0].rateLabel, "Base 80,00\u00a0€");
   assert.equal(presented.hoursLabel, "7,5 h");
+});
+
+test("initial result shows scenario proposals when reviewed pieces are still empty", () => {
+  const proposal = { id: "proposal-side", label: "Lateral" };
+  const model = componentsForSnapshot({
+    result: { pieces: [], scenarios: [{ id: "scenario-a", components: [proposal] }] },
+  });
+  assert.deepEqual(model.components, [proposal]);
+  assert.equal(model.scenarios[0].id, "scenario-a");
+});
+
+test("reviewed pieces replace hypotheses after a human decision", () => {
+  const piece = { id: "piece-side", label: "Lateral confirmado" };
+  const model = componentsForSnapshot({
+    result: { pieces: [piece], scenarios: [{ id: "scenario-a", components: [{ id: "proposal-side" }] }] },
+  });
+  assert.deepEqual(model.components, [piece]);
 });

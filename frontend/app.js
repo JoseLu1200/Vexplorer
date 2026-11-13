@@ -2,7 +2,7 @@ import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
-import { availableModes, presentEstimate } from "./core/presentation.js";
+import { availableModes, componentsForSnapshot, presentEstimate } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -24,10 +24,7 @@ function configureModes(config = {}) {
 }
 
 function extractComponents() {
-  const snapshot = state.snapshot ?? {};
-  const scenarios = snapshot.result?.scenarios ?? snapshot.scenarios ?? snapshot.decomposition_scenarios ?? state.ledger?.scenarios ?? [];
-  const active = scenarios.find((item) => item.id === snapshot.selected_scenario_id) ?? scenarios[0];
-  return { scenarios, components: snapshot.result?.pieces ?? active?.components ?? active?.component_proposals ?? state.ledger?.component_proposals ?? [] };
+  return componentsForSnapshot(state.snapshot, state.ledger);
 }
 
 function renderDrawing() {
@@ -69,6 +66,7 @@ function renderDrawing() {
     button.addEventListener("click", () => filterView(view.id, button));
     tabs.append(button);
   });
+  renderEvidence(null);
   unlock("drawing-stage");
 }
 
@@ -107,7 +105,8 @@ function renderEvidence(component, contourId) {
   const root = $("#evidence-detail"); root.replaceChildren();
   const ids = component?.evidence_ids ?? [];
   const evidences = (state.drawing?.evidence ?? state.ledger?.evidence ?? []).filter((item) => ids.includes(item.id));
-  const records = evidences.length ? evidences : [{ id: contourId ?? "sin evidencia", description: component ? "Propuesta pendiente de evidencia enlazada." : "Contorno geométrico seleccionado." }];
+  let records = evidences.length ? evidences : [{ id: contourId ?? "sin evidencia", description: component ? "Propuesta pendiente de evidencia enlazada." : "Contorno geométrico seleccionado." }];
+  if (!component && !contourId && state.drawing?.dimensions?.length) records = state.drawing.dimensions.map((dimension) => ({ id: dimension.id, description: `${sourceLabel(dimension.origin)} · ${formatMeasurement(dimension.value_mm, "mm")}` }));
   records.forEach((record) => {
     const card = document.createElement("div"); card.className = "detail-item";
     const strong = document.createElement("b"); strong.textContent = record.id;
@@ -127,7 +126,7 @@ function renderPartsAndReview() {
   components.forEach((component) => {
     const row = document.createElement("tr"); row.dataset.componentId = component.id; row.tabIndex = 0;
     const dimensions = component.dimensions_mm ?? component.dimensions ?? { length: component.length_mm, width: component.width_mm, thickness: component.thickness_mm };
-    const origin = component.origin ?? component.status ?? "hypothesis";
+    const origin = component.human_confirmation ? "human_confirmed" : (component.origin ?? component.information_class ?? component.status ?? "hypothesis");
     const values = [component.name ?? component.label ?? "Componente propuesto", sourceLabel(origin), component.quantity, dimensions.length, dimensions.width, dimensions.thickness];
     values.forEach((value, index) => {
       const cell = document.createElement("td");
@@ -147,8 +146,8 @@ function renderPartsAndReview() {
     const label = document.createElement("label"); label.className = "scenario-option";
     const input = document.createElement("input"); input.type = "radio"; input.name = "scenario"; input.value = scenario.id; input.checked = index === 0;
     const content = document.createElement("span");
-    const title = document.createElement("b"); title.textContent = scenario.name ?? scenario.label ?? `Escenario ${index + 1}`;
-    const detail = document.createElement("small"); detail.textContent = scenario.description ?? scenario.rationale ?? "Interpretación de montaje pendiente de confirmación";
+    const title = document.createElement("b"); title.textContent = scenario.title ?? scenario.name ?? scenario.label ?? `Escenario ${index + 1}`;
+    const detail = document.createElement("small"); detail.textContent = (scenario.assumptions ?? []).join(" · ") || scenario.description || scenario.rationale || "Interpretación de montaje pendiente de confirmación";
     content.append(title, detail); label.append(input, content); options.append(label);
   });
   if (!scenarios.length) { const empty = document.createElement("p"); empty.className = "empty-copy"; empty.textContent = "No hay una alternativa de montaje disponible para confirmar."; options.append(empty); }

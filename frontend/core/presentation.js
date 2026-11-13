@@ -9,6 +9,17 @@ export function availableModes(capabilities = {}) {
   ];
 }
 
+export function componentsForSnapshot(snapshot = {}, ledger = {}) {
+  const scenarios = snapshot.result?.scenarios ?? snapshot.scenarios ?? snapshot.decomposition_scenarios ?? ledger.scenarios ?? [];
+  const selectedId = snapshot.result?.review?.selected_scenario_id ?? snapshot.selected_scenario_id;
+  const active = scenarios.find((item) => item.id === selectedId) ?? scenarios[0];
+  const reviewedPieces = snapshot.result?.pieces ?? [];
+  return {
+    scenarios,
+    components: reviewedPieces.length ? reviewedPieces : (active?.components ?? active?.component_proposals ?? ledger.component_proposals ?? []),
+  };
+}
+
 function known(value, suffix = "") {
   return Number.isFinite(value) ? `${NUMBER.format(value)}${suffix}` : "Desconocido";
 }
