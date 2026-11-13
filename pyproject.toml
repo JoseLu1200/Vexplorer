@@ -1,18 +1,26 @@
 [project]
-name = "vexplorer-evaluation-tools"
-version = "0.1.0"
+name = "vexplorer"
+version = "0.2.0"
 requires-python = ">=3.11"
-dependencies = ["PyMuPDF>=1.27.2,<1.28"]
+dependencies = [
+  "PyMuPDF>=1.27.2,<1.28",
+  "ezdxf>=1.4,<2",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "pydantic>=2.10,<3",
+  "python-multipart>=0.0.18,<1",
+  "uvicorn>=0.34,<1",
+]
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "backend/tests"]
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["tools*"]
+include = ["tools*", "backend*"]
