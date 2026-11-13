@@ -1,0 +1,34 @@
+{
+  "fixture_family": "synthetic_rectangular_shelving",
+  "provenance": "original_development_fixture_not_derived_from_a_corpus",
+  "license_audit": "no_third_party_source_assets",
+  "input_contract": {
+    "format": "DXF R2010",
+    "units": "mm",
+    "views": [
+      "FRONT",
+      "TOP",
+      "RIGHT"
+    ],
+    "layers": [
+      "VIEW_GEOMETRY",
+      "DIMENSIONS",
+      "LABELS"
+    ],
+    "semantics": "assembled_views_are_observations_not_physical_quantities"
+  },
+  "cases": {
+    "estanteria_montada.dxf": {
+      "purpose": "development_fixture_with_general_dimensions_and_mounting_ambiguity",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "estanteria_incompleta.dxf": {
+      "purpose": "development_fixture_with_missing_thickness_evidence",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": [
+        "thickness"
+      ]
+    }
+  }
+}
