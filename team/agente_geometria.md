@@ -11,7 +11,7 @@
 
 - Objetivo: enriquecer el plano con textos y cotas ancladas y generar una escena 3D determinista, trazable y explícitamente incompleta cuando falten revisión, dimensiones o posiciones.
 - Referencia: ampliación autorizada de plano, reconstrucción y similitud del 2026-11-13.
-- Estado: contrato aditivo 0.3 acordado explícitamente; implementación TDD en curso.
+- Estado: implementación 0.3 terminada para integración.
 
 ## Alcance y reservas
 
@@ -35,6 +35,8 @@
 - Endurecida la honestidad: cotas angulares quedan fuera con warning; override textual o escala conflictiva conserva warning y `value_mm=null`; trapecios no producen hipótesis rectangulares; límite de 100.000 entidades se aplica antes del análisis.
 - Endurecido el preparador: metadata pública uniforme sin diagnóstico de respuesta, sidecar Bench Vise sujeto a ruta segura/manifiesto/hash y lecturas fuente verificadas contra un snapshot inmutable para detectar TOCTOU.
 - Corregido el servicio de descomposición: solo contornos cerrados con cuatro esquinas axis-aligned y evidencia fuente atraviesan el gate de estantería; cajas coherentes de trapecios se abstienen.
+- Enriquecida la extracción con textos públicos planos, capas/posiciones, cotas lineales segmentadas y ancladas, unidades explícitas y asociación geométrica de vistas.
+- Implementada reconstrucción 3D esquemática por ocurrencia física tras revisión: montaje entre/cubriendo laterales, niveles de balda observados, bbox y evidencia; estados incompletos sin sólidos inventados.
 
 ## Siguiente bloque
 
@@ -50,7 +52,7 @@
 
 ## Dependencias / avisos
 
-- Necesito de B: commit con tipos contractuales 0.2 bajo su ownership.
+- Recibido de B: contrato aditivo 0.3 en `351fb63`, integrado como dependencia `13d18e4`; A no modificó modelos.
 - Necesito de D: forma pública del fixture sin acceder a la referencia reservada ni codificar sus medidas.
 - Afecta a C: IDs, unidades, contornos, cotas, vistas y propuestas que consumirá el visor.
 - Aviso realizado: contrato final comunicado a frontend y fixture coordinado con evaluación el 2026-11-13.
@@ -71,11 +73,14 @@
 | Auditoría corpus local | `python -m tools.prepare_evaluation --source ../../../engineering_dataset --audit-only` | 421 archivos, 65 casos, 93 rutas; manifiesto `60b45a…` | Solo auditoría; no se regeneró ni publicó corpus |
 | Gate de descomposición | `python -m pytest backend/tests/test_decomposition_geometry.py backend/tests/test_backend_flow.py -q` | 6 passed | Rechaza tres trapecios coherentes y mantiene W/D/H rectangular existente |
 | Suite tras gate | `python -m pytest -q` | 50 passed | Incluye backend integrado; creó `.vexplorer-data/` local no versionado |
+| Contrato y dibujo 0.3 | `python -m pytest backend/tests/test_geometry.py backend/tests/test_backend_contract.py backend/tests/test_backend_contract_viewer.py -q` | 23 passed | Texto se conserva como dato; el frontend debe usar `textContent` |
+| Reconstrucción | `python -m pytest backend/tests/test_reconstruction.py backend/tests/test_geometry.py -q` | 20 passed | Cajas esquemáticas, colisiones no evaluadas |
+| Suite fase visor | `python -m pytest -q` | 69 passed | Ejecución fresca antes de commits A |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 
 ## Bloqueos y cierre
 
 - Bloqueos: ninguno para el alcance propio.
-- Pendientes: adaptación B de hipótesis a escenarios en integración; root integra este endurecimiento.
-- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal sin override/escala conflictivos; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Los contornos de líneas detectan rectángulos axis-aligned con lados completos.
+- Pendientes: B integra endpoint de escena; C consume textos/cotas/escena; D ejecuta aceptación independiente.
+- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal sin override/escala conflictivos; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Escena solo para roles y dos montajes admitidos tras revisión; no trasera, material, mecanizados, colisiones certificadas ni sólidos de fabricación.
 - Reservas liberadas: ninguna.
