@@ -29,6 +29,29 @@
       "expected_unknown_fields": [
         "thickness"
       ]
+    },
+    "mueble_demo_002.dxf": {
+      "purpose": "development_fixture_with_changed_overall_dimensions",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "mueble_demo_003.dxf": {
+      "purpose": "development_fixture_with_changed_internal_structure",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": []
+    },
+    "mueble_demo_unidades_desconocidas.dxf": {
+      "purpose": "negative_preview_fixture_with_unknown_source_units",
+      "requires_human_mounting_confirmation": true,
+      "expected_unknown_fields": [
+        "effective_unit",
+        "metric_dimensions"
+      ]
+    },
+    "mueble_demo_trapecio.dxf": {
+      "purpose": "negative_preview_fixture_outside_rectangular_decomposition",
+      "requires_human_mounting_confirmation": false,
+      "expected_unknown_fields": []
     }
   }
 }

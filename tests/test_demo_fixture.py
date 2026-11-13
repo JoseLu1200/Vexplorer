@@ -12,6 +12,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_DIR = ROOT / "data" / "planos_demo"
 REFERENCE_PATH = ROOT / "evaluation" / "reference" / "estanteria_reference.json"
+LIBRARY_REFERENCE_PATH = ROOT / "evaluation" / "reference" / "library_reference.json"
+
+PUBLIC_CASES = (
+    "estanteria_montada.dxf",
+    "estanteria_incompleta.dxf",
+    "mueble_demo_002.dxf",
+    "mueble_demo_003.dxf",
+    "mueble_demo_unidades_desconocidas.dxf",
+    "mueble_demo_trapecio.dxf",
+)
 
 
 def _read(name: str):
@@ -27,12 +37,13 @@ def _model_texts(doc) -> set[str]:
 
 @pytest.mark.parametrize(
     "filename",
-    ["estanteria_montada.dxf", "estanteria_incompleta.dxf"],
+    PUBLIC_CASES,
 )
 def test_demo_dxf_declares_mm_and_only_public_layers(filename: str) -> None:
     doc = _read(filename)
 
-    assert doc.header["$INSUNITS"] == 4
+    expected_unit = 0 if filename == "mueble_demo_unidades_desconocidas.dxf" else 4
+    assert doc.header["$INSUNITS"] == expected_unit
     assert _model_texts(doc) >= {"FRONT", "TOP", "RIGHT", "FIXTURE SINTETICO"}
 
     allowed_layers = {"0", "Defpoints", "VIEW_GEOMETRY", "DIMENSIONS", "LABELS"}
@@ -69,6 +80,36 @@ def test_public_dimensions_are_few_overall_observations() -> None:
     assert {
         float(dimension.get_dim_style().dxf.dimlfac) for dimension in dimensions
     } == {1.0}
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected_measurements", "expected_shelf_lines"),
+    [
+        ("estanteria_montada.dxf", [18.0, 300.0, 900.0, 1200.0], 2),
+        ("estanteria_incompleta.dxf", [300.0, 900.0, 1200.0], 2),
+        ("mueble_demo_002.dxf", [18.0, 320.0, 1000.0, 1300.0], 2),
+        ("mueble_demo_003.dxf", [18.0, 280.0, 700.0, 800.0], 1),
+    ],
+)
+def test_parametric_library_has_independent_dimensions_and_structure(
+    filename: str,
+    expected_measurements: list[float],
+    expected_shelf_lines: int,
+) -> None:
+    doc = _read(filename)
+    dimensions = sorted(
+        round(float(dimension.get_measurement()), 6)
+        for dimension in doc.modelspace().query("DIMENSION")
+    )
+    front_lines = [
+        line
+        for line in doc.modelspace().query("LINE[layer=='VIEW_GEOMETRY']")
+        if abs(line.dxf.start.y - line.dxf.end.y) < 1e-9
+        and line.dxf.start.x == 0.0
+    ]
+
+    assert dimensions == expected_measurements
+    assert len(front_lines) == expected_shelf_lines
 
 
 def test_three_views_are_not_physical_quantity() -> None:
@@ -109,6 +150,38 @@ def test_reference_records_real_ambiguity_and_is_not_unique_gold() -> None:
     assert len(reference["acceptable_alternative_scenarios"]) >= 2
 
 
+def test_private_library_groups_dimensions_separately_from_structure() -> None:
+    reference = json.loads(LIBRARY_REFERENCE_PATH.read_text(encoding="utf-8"))
+
+    assert reference["reference_version"] == "1.0.0"
+    assert reference["expected_groups"]["same_structure"] == [
+        "estanteria_montada.dxf",
+        "mueble_demo_002.dxf",
+    ]
+    assert reference["expected_groups"]["different_structure"] == [
+        "mueble_demo_003.dxf"
+    ]
+    assert reference["evaluation_policy"]["runtime_must_not_read_this_file"] is True
+
+
+def test_negative_preview_fixtures_do_not_encode_a_bom() -> None:
+    unknown_units = _read("mueble_demo_unidades_desconocidas.dxf")
+    trapezoid = _read("mueble_demo_trapecio.dxf")
+
+    assert unknown_units.header["$INSUNITS"] == 0
+    front = next(
+        entity
+        for entity in trapezoid.modelspace().query("LWPOLYLINE[layer=='VIEW_GEOMETRY']")
+    )
+    points = [(round(point[0], 6), round(point[1], 6)) for point in front.get_points("xy")]
+    assert points == [(0.0, 0.0), (900.0, 0.0), (820.0, 1200.0), (80.0, 1200.0)]
+    assert all(
+        token not in " ".join(_model_texts(doc)).casefold()
+        for doc in (unknown_units, trapezoid)
+        for token in ("bom", "balda", "lateral", "shelf", "side panel")
+    )
+
+
 def test_fixture_generation_is_byte_reproducible(tmp_path: Path) -> None:
     first = tmp_path / "first"
     second = tmp_path / "second"
@@ -117,10 +190,6 @@ def test_fixture_generation_is_byte_reproducible(tmp_path: Path) -> None:
     subprocess.run(command + ["--output-dir", str(first)], cwd=ROOT, check=True)
     subprocess.run(command + ["--output-dir", str(second)], cwd=ROOT, check=True)
 
-    for filename in (
-        "estanteria_montada.dxf",
-        "estanteria_incompleta.dxf",
-        "fixture_manifest.json",
-    ):
+    for filename in (*PUBLIC_CASES, "fixture_manifest.json"):
         assert (first / filename).read_bytes() == (second / filename).read_bytes()
 
