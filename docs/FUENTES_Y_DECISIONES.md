@@ -6,7 +6,7 @@
 
 ## Evidencia recibida y comprobación local
 
-La fuente del corpus actual es el ZIP aportado por el usuario, `engineering-drawings-harness.zip`, identificado por SHA-256 en [DATASET.md](DATASET.md). Se leyeron sus índices, manifiestos, referencias y registros; se abrieron 14 DXF, se contrastaron handles y unidades y se revisaron visualmente los PDF de conjunto Bench Vise y detalle Jaw Pad.
+La fuente del corpus mecánico auxiliar es el ZIP aportado por el usuario, `engineering-drawings-harness.zip`, identificado por SHA-256 en [DATASET.md](DATASET.md). Se leyeron sus índices, manifiestos, referencias y registros; se abrieron 14 DXF, se contrastaron handles y unidades y se revisaron visualmente los PDF de conjunto Bench Vise y detalle Jaw Pad.
 
 `verification.json` describe comprobaciones del preparador del paquete; no se atribuyen automáticamente a esta revisión. Los PDF Julius conservan planos fuente sin anotaciones completas por pieza. DWG se inspeccionó por encabezado y STEP por texto/sidecars, sin lector DWG ni kernel geométrico independiente. Las filas Parquet no se abrieron en esta auditoría.
 
@@ -77,8 +77,14 @@ No se ha medido ahorro de tiempo, precisión semántica, despiece correcto de mu
 
 Fuente primaria de requisitos: [transcripcion-contexto-poc.md](../transcripcion-contexto-poc.md). El paquete extraído cubría extracción y revisión técnica, pero no desarrollaba recuperación histórica, estimación económica ni una evaluación completa desde planos pobres. Se añaden T11–T13 y [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md) para cubrir esas necesidades.
 
-Decisión documental: conservar el alcance técnico 0.1.0 como primer hito y exigir inferencia, histórico y estimación para la prueba de concepto completa. No se declara código implementado, dataset nuevo descargado ni contratos aprobados. La transcripción se conserva sin corregir sus errores de reconocimiento para no alterar la fuente.
+Decisión documental: conservar el alcance técnico 0.1.0 como primer hito y exigir inferencia, histórico y estimación para la prueba de concepto completa. Ese ajuste inicial no implementó código de aplicación ni aprobó contratos. La descarga posterior de PlankAssembly se registra separadamente a continuación. La transcripción se conserva sin corregir sus errores de reconocimiento para no alterar la fuente.
 
 ## Investigación y admisión de nuevos datos
 
 La [comparación actualizada de investigación y datasets](INVESTIGACION_Y_DATASETS.md) registra fuentes primarias, cifras, límites y acceso comprobado. El [protocolo de cuatro métodos](COMPARATIVA_METODOS.md) separa reglas, visión directa, herramientas e histórico. Son propuestas de evaluación; no resultados ejecutados.
+
+## Descarga y auditoría posterior de PlankAssembly
+
+Fuente y evidencia: [ficha HF](https://huggingface.co/datasets/manycore-research/PlankAssembly), [lector del publicador](https://github.com/manycore-research/PlankAssembly/blob/main/dataset/data_utils.py) y [registro local resumido](PLANKASSEMBLY.md). Se verificaron revisión, SHA-256, CRC, extracción, JSON y listas oficiales. La primera fila es envolvente; 6.520 JSON carecen de `normal`. No se ha medido calidad de inferencia ni generado planos.
+
+Decisión documental: priorizar este mobiliario para preparar T11; mantener controles mecánicos y fixtures independientes. Preservar particiones oficiales y auditar variantes antes de afirmar ausencia de fugas. Resolver condiciones de uso empresarial/derivados de CC BY-NC-ND 4.0 antes de esos usos; la autorización HF solo confirma acceso. El histórico económico y la evaluación con técnicos continúan pendientes.

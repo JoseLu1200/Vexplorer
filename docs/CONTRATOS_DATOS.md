@@ -210,3 +210,9 @@ El inventario 0.1.0 anterior no basta para cumplir la transcripción. Antes de i
 | Estimación | Revisión de despiece/escenario, comparables, conceptos, cantidades, factores/tarifas, operaciones, unidades, coste/horas y exclusiones |
 
 Separar estados observados, derivados, hipotéticos y confirmados por humano por campo. No insertar componentes hipotéticos en `pieces` como si estuvieran medidos. No extender silenciosamente `Submission` con cifras libres: las herramientas resuelven referencias y cálculos con premisas autorizadas. Exportar hipótesis en una sección diferenciada. Acordar migración y versión antes de modificar consumidores; los ejemplos 0.1.0 siguen ilustrando solo el hito técnico.
+
+## Referencia de PlankAssembly y contrato de producto
+
+Los JSON de [PlankAssembly](PLANKASSEMBLY.md) son datos externos del evaluador, no `Submission`, `EvidenceLedger` ni un esquema alternativo de producto. El adaptador pendiente debe distinguir envolvente y tableros, conservar índices de `attach`, registrar mm y representar la ausencia de `normal`. No convertir esos datos privados en evidencia observada por el agente desde un plano pobre.
+
+La procedencia de una futura vista debe conservar su transformación de escala y proyección. Campos específicos de preparación viven fuera del contrato público hasta el acuerdo correspondiente; esta actualización no añade campos a 0.1.0. Material, acabado, coste y tiempo permanecen desconocidos sin otra fuente.

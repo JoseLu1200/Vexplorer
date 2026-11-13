@@ -46,3 +46,7 @@
 - Added per-case ZIPs because a full control and its degraded variant must not share an agent context. Both new archive tests failed first, then implementation followed.
 
 - Final review: no Critical/Important findings; minor deferred: ZIP timestamps prevent byte-identical archive hashes across generations. Content and per-run integrity remain verified.
+
+## Later dataset update — 2026-11-13
+
+This completed plan covers only the mechanical 17-case development pilot. [PlankAssembly](../../PLANKASSEMBLY.md) was subsequently downloaded and audited as a separate source; this plan's no-download constraint applied to its original bounded task. No PlankAssembly rendering or inference has been implemented. Its future preparation must account for the bounding-box row, missing normals, projection scale, official splits, reference isolation and dataset licensing. The existing CLI and completed checkboxes do not claim those capabilities.

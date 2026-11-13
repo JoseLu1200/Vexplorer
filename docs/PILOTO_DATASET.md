@@ -63,3 +63,9 @@ Revisión del cambio `6d6229d..c8f1f63`: sin incidencias críticas o importantes
 ## Complemento de mobiliario
 
 La [selección de nuevos datasets](INVESTIGACION_Y_DATASETS.md) propone PlankAssembly para tableros/vistas y IKEA-Manual para montaje. No sustituye ni modifica este corpus verificado. El protocolo de [cuatro métodos](COMPARATIVA_METODOS.md) describe cómo usar el piloto sin confundir preparación con resultados de inferencia.
+
+## PlankAssembly: fuente nueva, piloto separado pendiente
+
+La descarga y extracción de [PlankAssembly](PLANKASSEMBLY.md) están verificadas en `../plankassembly_dataset/`. No se ha añadido a estos 17 casos ni al comando `tools.prepare_evaluation`, que espera el manifiesto mecánico. No apuntar ese comando al nuevo directorio ni afirmar que genera vistas de muebles.
+
+El siguiente piloto requiere un adaptador específico, control de envolvente/asociaciones, escalas y normales ausentes, vistas 2D sin fugas y referencia separada. Hasta entonces no hay DXF de PlankAssembly preparado para FreeCAD ni resultados de interpretación del agente. El paquete `engineering_evaluation_pilot_v2` conserva su contenido y sus hashes.

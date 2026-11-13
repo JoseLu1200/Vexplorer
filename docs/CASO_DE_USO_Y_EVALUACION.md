@@ -38,7 +38,7 @@ Comparar por separado plano completo, plano empobrecido y plano pobre real. La a
 
 Separar desarrollo, prueba e histórico por familia de mueble/proyecto antes de generar variantes. Agrupar duplicados, revisiones, escalados y sus derivados para que no crucen particiones. Un caso de prueba no puede recuperar su propio despiece del índice. Congelar la selección y la referencia antes de evaluar.
 
-El dataset mecánico actual es auxiliar: verifica lectura de CAD y asociación de detalles, pero no cubre esta evaluación de mobiliario ni aporta un histórico de costes. Hace falta seleccionar o preparar pares adecuados; esta entrega no afirma haberlos conseguido.
+El dataset mecánico es auxiliar para lectura de CAD y asociación de detalles. [PlankAssembly](PLANKASSEMBLY.md) ya está descargado y aporta componentes de mobiliario en forma paramétrica, con unidades mm. Sus entradas 2D aún deben generarse y revisarse. Permitirá evaluar pares controlados; la utilidad empresarial sigue requiriendo planos pobres reales, revisión humana e histórico de costes.
 
 ## Inferir sin presentar supuestos como hechos
 
@@ -71,7 +71,7 @@ Entregar a compras/administración una ficha con piezas y estados, comparables u
 
 ## Evaluación y criterios de aceptación
 
-Propuesta inicial: seleccionar al menos tres familias de muebles, con un caso reservado por familia y referencias revisadas; informar el número real de casos y no generalizar desde esa muestra pequeña. Si no es viable, reducir la demostración y declarar qué objetivo no se ha validado. Acordar tolerancias y criterios antes de observar resultados; no afinarlos sobre el conjunto reservado.
+Comenzar con armarios/estanterías de tableros y un reservado independiente de desarrollo; para ampliar cobertura, seleccionar después al menos tres familias con referencias revisadas; informar el número real de casos y no generalizar desde esa muestra pequeña. Si no es viable, reducir la demostración y declarar qué objetivo no se ha validado. Acordar tolerancias y criterios antes de observar resultados; no afinarlos sobre el conjunto reservado.
 
 | Prueba | Qué registrar |
 |---|---|

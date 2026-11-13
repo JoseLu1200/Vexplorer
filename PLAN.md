@@ -216,6 +216,11 @@ Los comandos siguientes se ejecutan **cuando exista el proyecto**, desde `backen
 
 **Rutas futuras:** `backend/app/agente/descomposicion.py`, `backend/tests/evaluation/test_sparse_furniture.py`; ampliar contratos, revisión y frontend tras acuerdo A/B y aviso C. Seleccionar datos desde el inicio para no descubrir al final que falta el caso de negocio.
 
+- [x] Descargar, extraer y auditar PlankAssembly: 26.707 modelos oficiales; ver [PLANKASSEMBLY](docs/PLANKASSEMBLY.md).
+- [ ] Revisar condiciones para la PoC empresarial y sus entregables; el acceso HF no acredita permiso comercial adicional.
+- [ ] Preparar un adaptador fuera del alcance del agente: excluir envolvente, conservar asociaciones y admitir normales ausentes; validar con fixtures independientes.
+- [ ] Generar una muestra de vistas ortogonales 2D y sus variantes, registrar escala/unidades y comprobar exportación DXF antes de anunciar compatibilidad con FreeCAD. No está implementado.
+- [ ] Revisar duplicados/familias entre splits; conservar splits oficiales y documentar aparte cualquier partición propia.
 - [ ] Preparar pares entrada pobre/referencia completa de mobiliario; anotar piezas, secciones, cantidades, medidas y campos desconocidos con segunda revisión.
 - [ ] Crear variantes empobrecidas y auditar fugas en capas, bloques, textos, metadatos, archivos vecinos y herramientas; separar familias antes de generar variantes.
 - [ ] Acordar un modelo de escenarios de descomposición separado de las piezas confirmadas. Registrar regiones/vistas que motivan cada propuesta aunque no haya contorno individual de la pieza.
@@ -240,7 +245,7 @@ Los comandos siguientes se ejecutan **cuando exista el proyecto**, desde `backen
 
 ## T13 — Evaluación y demo de negocio
 
-Seguir [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md) para comparar reglas, modelo visual, modelo con herramientas y herramientas con histórico. La [selección de datasets](docs/INVESTIGACION_Y_DATASETS.md) distingue candidatos de mobiliario, corpus técnico y acceso pendiente.
+Seguir [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md) para comparar reglas, modelo visual, modelo con herramientas y herramientas con histórico. La [selección de datasets](docs/INVESTIGACION_Y_DATASETS.md) distingue PlankAssembly descargado, corpus mecánico auxiliar y candidatos cuyo acceso o descarga siguen pendientes.
 
 - [ ] Congelar familias reservadas, referencias, histórico permitido, tolerancias y criterios antes de ejecutar; seguir [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md).
 - [ ] Comparar geometría/reglas, harness y revisión humana con la misma entrada pobre. Medir componentes, cantidades, dimensiones, abstenciones y tiempo de corrección.

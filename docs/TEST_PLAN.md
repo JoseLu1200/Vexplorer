@@ -111,3 +111,20 @@ Estos casos son especificaciones pendientes, no pruebas ejecutadas. Medir los in
 ## Comparación de reglas, visión, herramientas e histórico
 
 Aplicar [COMPARATIVA_METODOS](COMPARATIVA_METODOS.md): separar representación común de comparación del flujo completo; controlar información, particiones por familia, abstenciones, tiempo humano y recursos. El piloto actual es desarrollo. Histórico y coste quedan no evaluados mientras falten referencias adecuadas.
+
+## Admisión de PlankAssembly y futuras pruebas
+
+Ya comprobado en la [auditoría](PLANKASSEMBLY.md): SHA-256 y CRC correctos, extracción completa, 26.707 IDs oficiales sin ausencias ni intersecciones exactas; 985 JSON adicionales y 6.520 sin `normal`. La inspección no demuestra ausencia de duplicados geométricos ni validez constructiva completa.
+
+| Caso futuro | Resultado esperado |
+|---|---|
+| PLA-01: envolvente y tres tableros en fixture propio | Tres ocurrencias físicas; envolvente excluida y referencias de asociación conservadas |
+| PLA-02: falta `normal` con coordenadas válidas | Estado de anotación ausente; procesamiento compatible o exclusión justificada según tarea, sin inventar normal |
+| PLA-03: proyección normalizada y exportación DXF | Escala/unidades explícitas; medidas contrastadas con fixture independiente y lector real |
+| PLA-04: variantes/escalados del mismo diseño | Grupo común; impedir cruce entre desarrollo, reservado e histórico permitido |
+| PLA-05: capas o IDs revelan cada tablero | Rechazar la entrada pobre hasta eliminar esa fuga y conservar un mapa privado |
+| PLA-06: solo una vista sin escala ni espesor observable | Medidas métricas o espesor desconocidos; no acceder al programa para completarlos |
+| PLA-07: reconstrucción plausible alternativa | Evaluar coherencia y ambigüedad separadamente de coincidencia exacta con la referencia |
+| PLA-08: comparable geométrico sin material ni coste | Recuperación evaluable con etiquetas; presupuesto real no evaluado |
+
+Estos casos están especificados, no implementados. La generación 2D y la inferencia permanecen pendientes. Las pruebas públicas usarán fixtures propios; los datos de terceros quedan fuera de Git.

@@ -43,7 +43,7 @@ El bucle debe ser pequeño y explícito. La referencia de «unas 50 líneas» se
 
 Las prioridades P0/P1 siguientes corresponden al hito técnico. No sustituyen T11–T13: la prueba de concepto completa requiere mobiliario emparejado, propuestas desde planos pobres y recuperación histórica con estimación.
 
-`engineering-drawings-harness.zip` contiene planos mecánicos y combina piezas CAD aisladas con conjuntos en PDF. Se adopta como corpus principal de pruebas técnicas. No contiene un benchmark completo de conjuntos de muebles DWG/DXF con todas sus piezas anotadas.
+`engineering-drawings-harness.zip` contiene planos mecánicos y combina piezas CAD aisladas con conjuntos en PDF. Se conserva como corpus auxiliar de pruebas técnicas. No contiene un benchmark completo de conjuntos de muebles DWG/DXF con todas sus piezas anotadas.
 
 | Prioridad | Entrega | Datos que la prueban |
 |---|---|---|
@@ -72,3 +72,7 @@ Antes de modificar contratos, A/B registran acuerdo explícito y se avisa a C. A
 ## Documentos de ejecución
 
 [PLAN.md](PLAN.md) divide el trabajo en T1–T10 (hito técnico) y T11–T13 (inferencia, histórico, estimación y aceptación de negocio). [ARQUITECTURA](docs/ARQUITECTURA.md) describe el flujo completo; [DATASET](docs/DATASET.md) conserva la evidencia; [ADAPTACION_DATASET](docs/ADAPTACION_DATASET.md) explica cómo aprovecharla sin mezclar tareas. [TDD](docs/TDD.md) y [TEST_PLAN](docs/TEST_PLAN.md) fijan las comprobaciones antes de implementar.
+
+## Incorporación verificada de mobiliario
+
+La descarga de [PlankAssembly](docs/PLANKASSEMBLY.md) permite preparar T11 con referencias paramétricas de tableros. El siguiente entregable es una muestra de vistas 2D del conjunto con respuesta privada y unidades controladas, no un entrenamiento masivo ni un visor 3D como sustituto del plano. Esta preparación está pendiente y debe encajar con sus condiciones de uso. Los fixtures propios mantienen su función de oráculo independiente; Orla y Bench Vise siguen como controles técnicos. T12 necesita histórico económico adicional y T13 planos/tiempos reales del equipo.

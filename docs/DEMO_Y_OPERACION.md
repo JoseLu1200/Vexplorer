@@ -60,3 +60,9 @@ La comprobación operativa futura será cargar fixture, iniciar, consultar plano
 El guion anterior presenta el hito técnico. Para demostrar el objetivo completo, sustituir su eje por: plano 2D pobre de un mueble → propuestas de piezas/secciones y dudas → revisión técnica → muebles históricos similares y diferencias → ficha de compras con costes/horas calculados y supuestos visibles. Después de congelar la salida, comparar con el despiece reservado del evaluador.
 
 Identificar claramente casos reales y sintéticos. Si no existen referencias de mobiliario o histórico económico, mostrar únicamente demostración del mecanismo y declarar pendiente la validación de negocio. Presentar abstención o escenarios ante incógnitas; nunca rellenar importes para completar la demo. Ensayar este recorrido y medirlo antes de prometer una duración.
+
+## Estado de PlankAssembly en la demo
+
+[PlankAssembly](PLANKASSEMBLY.md) está descargado y extraído localmente; aún no ofrece una demo de interpretación. No abrir un JSON en FreeCAD esperando un plano ni prometer un DXF inexistente. Preparar primero vistas derivadas y comprobarlas. La presentación debe identificar su origen sintético y revelar la referencia de componentes solo después de congelar la salida evaluada.
+
+No mostrar búsqueda geométrica como presupuesto validado: faltan materiales, acabados y costes/horas históricos. Comprobar las condiciones CC BY-NC-ND 4.0 antes de incorporar fuentes o derivados a una demo empresarial/publicación. No hay despliegue ni endpoint nuevo de PlankAssembly en el VPS.

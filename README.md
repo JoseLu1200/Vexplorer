@@ -10,7 +10,9 @@ La arquitectura acordada usa **Python 3.11+, FastAPI, Pydantic, ezdxf, tool use 
 
 El objetivo completo, según la [transcripción](transcripcion-contexto-poc.md), es **inferir piezas y secciones desde planos 2D pobres y estimar costes y tiempos con muebles históricos similares**. El plan original del ZIP cubría sobre todo extracción; se amplía en T11–T13 con hipótesis separadas de hechos, un corpus de entrada/referencia sin fugas y comparables explicados. Véase [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md).
 
-## Dataset de trabajo actual
+## Datasets de trabajo actuales
+
+**PlankAssembly ya está descargado, extraído y auditado:** 26.707 modelos de mobiliario en las particiones oficiales, más 985 JSON no listados. Es la fuente prioritaria para preparar pares de vistas 2D y despiece de tableros. Las vistas aún no están generadas: el ZIP contiene programas JSON, no planos DWG/DXF. Unidades, estructura, licencia CC BY-NC-ND 4.0, anomalías y tareas pendientes en [PLANKASSEMBLY](docs/PLANKASSEMBLY.md).
 
 Se adopta **`engineering-drawings-harness.zip` como corpus auxiliar de pruebas técnicas**, pendiente de admitir cada caso para el comportamiento que realmente evalúe. Sustituye al corpus anterior de bloques de mobiliario, descartado por no aportar despiece y cotas de componentes.
 
@@ -36,7 +38,7 @@ El recorrido de despiece de paneles se verifica con un **fixture propio, explíc
 
 ## Prueba de concepto de negocio (T11–T13)
 
-Preparar planos pobres de mobiliario con despiece de referencia reservado al evaluador; proponer componentes y alternativas revisables; recuperar proyectos históricos por atributos y embeddings; calcular una estimación provisional con ajustes documentados de dimensiones, materiales y acabados. La ficha exportada distingue medidas observadas, cálculos, hipótesis y confirmaciones humanas. Faltan referencias reales de mobiliario e histórico económico para validar este objetivo; los fixtures sintéticos solo prueban el mecanismo.
+Preparar planos pobres de mobiliario con despiece de referencia reservado al evaluador; proponer componentes y alternativas revisables; recuperar proyectos históricos por atributos y embeddings; calcular una estimación provisional con ajustes documentados de dimensiones, materiales y acabados. La ficha exportada distingue medidas observadas, cálculos, hipótesis y confirmaciones humanas. Ya hay referencias paramétricas de mobiliario en PlankAssembly. Faltan su adaptación a entradas 2D auditadas, planos pobres reales de la empresa e histórico económico para validar la utilidad industrial; los fixtures sintéticos solo prueban el mecanismo.
 
 ## Orden de lectura
 
@@ -44,7 +46,8 @@ Preparar planos pobres de mobiliario con despiece de referencia reservado al eva
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Instrucciones del equipo, stack y permisos de edición |
 | [initial-plan.md](initial-plan.md) | Objetivo, arquitectura inicial y decisiones de alcance |
-| [docs/DATASET.md](docs/DATASET.md) | Auditoría del dataset y límites de sus referencias |
+| [docs/DATASET.md](docs/DATASET.md) | Inventario de corpus y auditoría mecánica |
+| [docs/PLANKASSEMBLY.md](docs/PLANKASSEMBLY.md) | Descarga de mobiliario verificada y preparación 2D pendiente |
 | [docs/CONTRATOS_DATOS.md](docs/CONTRATOS_DATOS.md) | Propuesta de modelos; acuerdo A/B pendiente, aviso C |
 | [ORGANIZACION.md](ORGANIZACION.md) | Reparto, dependencias e integración |
 | [PLAN.md](PLAN.md) | Tareas concretas, rutas futuras y criterios de aceptación |

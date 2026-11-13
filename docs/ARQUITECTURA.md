@@ -10,7 +10,7 @@ Este documento adopta la arquitectura facilitada por el equipo: frontend, FastAP
 
 Convertir un plano vectorial de mobiliario en una lectura revisable: vistas, cotas, candidatos a componentes, significado propuesto y documentación visual. El despiece se entrega únicamente donde el dibujo respalda identidad, dimensiones y cantidades. Un resultado parcial que conserva lo desconocido es un resultado previsto.
 
-Separar dos niveles semánticos: **objeto completo** (mesa, sofá, puerta arquitectónica) y **componente** (tablero, lateral, balda). El corpus actual combina piezas mecánicas individuales CAD con conjuntos en PDF. No demuestra automáticamente el despiece de un mueble ni determina cantidades de conjunto a partir de un archivo de componente. `entity_level=object|unknown` no entra en `pieces`. Las dimensiones generales permanecen como mediciones del plano, sin renombrar altura como espesor.
+Separar dos niveles semánticos: **objeto completo** (mesa, sofá, puerta arquitectónica) y **componente** (tablero, lateral, balda). El corpus mecánico auxiliar combina piezas individuales CAD con conjuntos en PDF. PlankAssembly añade referencias paramétricas de mobiliario descargadas, con vistas por generar. No demuestra automáticamente el despiece de un mueble ni determina cantidades de conjunto a partir de un archivo de componente. `entity_level=object|unknown` no entra en `pieces`. Las dimensiones generales permanecen como mediciones del plano, sin renombrar altura como espesor.
 
 El alcance P0 del despiece es mobiliario rectangular de tableros y dibujos vectoriales suficientemente informativos. Los 14 CAD reales sirven para lectura de unidades, cotas, vistas y abstención; el despiece de paneles se verifica con un fixture propio. Los 51 paquetes de conjuntos PDF requieren el piloto P1 descrito en [ADAPTACION_DATASET](ADAPTACION_DATASET.md). Los casos de fabricación deben seleccionarse y anotarse; pueden complementarse con fixtures propios. No se reconstruye de manera general un sólido a partir de cualquier proyección.
 
@@ -130,3 +130,9 @@ T11 incorpora escenarios de descomposición separados del ledger de observacione
 T12 añade módulos futuros `backend/app/historico/` y `backend/app/estimacion/`. El primero recupera comparables desde un catálogo permitido; el segundo calcula escenarios de coste/horas con referencias, tarifas y supuestos identificados. El agente solicita herramientas y explica resultados; el código calcula. Congelar versión del índice/modelo de embeddings, catálogo, reglas económicas y revisión del despiece en cada estimación. Cambiar cualquiera invalida su caché.
 
 Los originales y referencias de evaluación reservadas no pertenecen al repositorio accesible por herramientas. La UI y exportación distinguen hechos, propuestas y estimación provisional. Los estados 0.1.0 de Run/Result no certifican aceptación económica ni de fabricación; estas ampliaciones requieren contratos versionados.
+
+## Frontera de preparación de PlankAssembly
+
+El futuro preparador de [PlankAssembly](PLANKASSEMBLY.md) opera fuera del proceso de inferencia: programa paramétrico → vistas del conjunto y manifiesto privado → paquete 2D por caso. El evaluador conserva cuboides, asociaciones y respuesta; el agente solo puede inspeccionar la entrada permitida. El motor de producto no consulta ese programa para rellenar medidas ausentes.
+
+Registrar revisión, generador, proyecciones y escala en la procedencia; convertir DXF y verificar unidades es trabajo pendiente. Añadir PlankAssembly al almacenamiento local no habilita una entrada JSON nueva de la API ni entrena un modelo. Recuperación geométrica futura y presupuestación con histórico económico siguen como módulos distintos.

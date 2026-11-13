@@ -2,7 +2,7 @@
 
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
-Estado: especificación futura, propuesta de contrato `0.1.0` pendiente de acuerdo explícito A/B y aviso a C. Los modelos Pydantic de `backend/app/contratos/` serán la única autoridad del formato; el Markdown no constituye un esquema implementado. No existe aquí un lector de producción ni se han ejecutado pruebas de producto. El corpus actual es `engineering-drawings-harness.zip`; su auditoría y límites están en [DATASET.md](DATASET.md). La propuesta de datos está en [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md), la interpretación en [SEMANTICA.md](SEMANTICA.md) y los controles en [VALIDACION.md](VALIDACION.md).
+Estado: especificación futura, propuesta de contrato `0.1.0` pendiente de acuerdo explícito A/B y aviso a C. Los modelos Pydantic de `backend/app/contratos/` serán la única autoridad del formato; el Markdown no constituye un esquema implementado. No existe aquí un lector de producción ni se han ejecutado pruebas de producto. El corpus mecánico auxiliar `engineering-drawings-harness.zip` está auditado en [DATASET.md](DATASET.md); [PlankAssembly](PLANKASSEMBLY.md) añade referencias de mobiliario cuya preparación 2D sigue pendiente. La propuesta de datos está en [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md), la interpretación en [SEMANTICA.md](SEMANTICA.md) y los controles en [VALIDACION.md](VALIDACION.md).
 
 ## Alcance y entrada
 
@@ -74,3 +74,9 @@ Si un contorno mide `598 mm` y el texto sobreescrito indica `600`, se crearán m
 `backend/app/geometria/vistas.py` propondrá agrupaciones espaciales usando regiones, orientación, capas y rótulos, conservando alternativas si la segmentación no es inequívoca. Una `Observation` contiene `view_id` y `contour_ids`; no representa por sí misma una pieza física. Tres vistas ortográficas pueden describir una misma ocurrencia. La asociación de vistas y las cantidades se decidirán como se especifica en [SEMANTICA.md](SEMANTICA.md).
 
 La salida será un ledger de entidades, evidencia, mediciones, observaciones y candidatos. Las rutas son futuras. [TEST_PLAN.md](TEST_PLAN.md) describe pruebas y fixtures sintéticos aún no ejecutados.
+
+## Vistas derivadas de PlankAssembly
+
+La [auditoría](PLANKASSEMBLY.md) confirma coordenadas fuente en mm y una primera fila de `planks` que representa la envolvente global. El futuro generador debe proyectar los tableros posteriores, conservar asociaciones mediante un mapeo explícito y registrar cada transformación. El código oficial normaliza coordenadas al renderizar: una unidad SVG no equivale automáticamente a un milímetro.
+
+Distinguir líneas visibles y ocultas; proyectar todos los rectángulos de cada tablero sin resolver visibilidad puede revelar componentes que el plano pobre no mostraría. Los IDs, colores o capas por pieza también pueden filtrar la respuesta. La exportación DXF, las cotas generales y la escala necesitan comprobación independiente. No se han generado esas vistas ni verificado su apertura en FreeCAD. La geometría referida a cuboides no incluye mecanizados o tolerancias industriales.

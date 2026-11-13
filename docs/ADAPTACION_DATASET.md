@@ -1,10 +1,10 @@
-# Adaptación de Vexplorer al dataset de ingeniería
+# Adaptación de Vexplorer a los datasets disponibles
 
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
 ## Decisión recomendada
 
-Usar `engineering-drawings-harness.zip` como **corpus técnico principal**, con dos tareas explícitas: extracción de información de una pieza CAD e interpretación de conjuntos PDF. Mantener el producto de mobiliario del plan inicial y comprobar su despiece con un fixture propio hasta disponer de planos de fabricación de muebles anotados.
+Usar `engineering-drawings-harness.zip` como **corpus técnico auxiliar**, con dos tareas explícitas: extracción de información de una pieza CAD e interpretación de conjuntos PDF. Mantener fixtures propios para pruebas independientes y preparar la evaluación de mobiliario con PlankAssembly descargado, sin confundir vistas generadas con planos de fabricación originales.
 
 Esta decisión permite avanzar con datos concretos. No acredita generalización entre mecánica y mobiliario ni soporte automático de todos los formatos del ZIP. La auditoría está en [DATASET.md](DATASET.md); las decisiones técnicas siguen pendientes de implementación y, cuando afectan al contrato, de acuerdo A/B y aviso C.
 
@@ -85,6 +85,10 @@ El orden recomendado prioriza una prueba real de principio a fin. No se añade e
 
 ## Datos aún necesarios para el objetivo de la transcripción
 
-El corpus descrito sigue siendo auxiliar para el hito técnico. Faltan pares de **mobiliario** con plano pobre de entrada y despiece/secciones de referencia revisados, además de histórico con atributos y costes/horas fiables. Las muestras mecánicas no suplen ese vacío. Seleccionar fuentes y permisos antes de afirmar cobertura; no se ha descargado un corpus adicional en esta actualización documental.
+El corpus mecánico descrito es auxiliar para el hito técnico. [PlankAssembly](PLANKASSEMBLY.md) ya aporta referencias paramétricas de mobiliario descargadas y auditadas. Faltan generar y revisar sus entradas 2D, admitir su uso según licencia y conseguir planos pobres reales e histórico con atributos y costes/horas fiables. Disponer de programas de forma no equivale a disponer de una evaluación industrial preparada.
 
 T11 debe separar físicamente entrada y referencia, generar variantes empobrecidas auditadas y particionar por familia/proyecto antes de crear derivados. T12 necesita un histórico que excluya el propio caso de prueba y sus duplicados. Los datos sintéticos son útiles para comprobar el mecanismo y deben identificarse como tales; no acreditan resultados reales de despiece o presupuesto. Procedimiento y criterios en [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md).
+
+## PlankAssembly: siguiente preparación, todavía pendiente
+
+Aplicar [PLANKASSEMBLY](PLANKASSEMBLY.md): seleccionar una muestra, revisar condiciones, generar vistas del conjunto y reservar programas/asociaciones al evaluador. El adaptador debe excluir la envolvente global de las piezas y conservar los índices originales de asociación. Las normales ausentes requieren una política explícita, no una dirección inventada. Registrar escala de render y eventual conversión SVG→DXF; inspeccionar visualmente el resultado y comprobar unidades antes de abrirlo como plano editable. El preparador mecánico actual no realiza estas operaciones.

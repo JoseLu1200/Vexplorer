@@ -51,3 +51,9 @@ La revisión crea Result revisión `2` y conserva revisión `1`. `Run.state` ter
 Las cadenas dimensionales generales `R-015` son P1 hasta estructurar eje, marco, términos, juntas y evidencia mediante acuerdo A/B y aviso a C. P0 siempre informa `not_applicable`. El ejemplo futuro `18+564+18=600` verifica diferencia `0`; con vano `560`, suma `596` y diferencia `4`. No se suman largos arbitrarios. La colisión genérica P0 también es `not_applicable`: solapes 2D y cajas esquemáticas no prueban colisión física.
 
 Cada ciclo futuro conservará caso, comando, fallo por la razón correcta, cambio mínimo y salida posterior. La inspección de este paquete no proporciona esas ejecuciones. Los casos y prioridades de [TEST_PLAN.md](TEST_PLAN.md) permanecen pendientes hasta existir implementación y evidencia reproducible.
+
+## Pruebas pendientes del adaptador de PlankAssembly
+
+Usar fixtures propios mínimos para verificar exclusión de envolvente, mapeo de asociaciones, normales ausentes, escala de proyección y prevención de fugas. Los valores esperados deben estar calculados independientemente del generador. Después contrastar una muestra real admitida y documentar las diferencias. La [auditoría de descarga](PLANKASSEMBLY.md) ya existe; estas pruebas del adaptador y del agente aún no.
+
+El tooling de preparación mecánica tiene 13 pruebas documentadas en [PILOTO_DATASET](PILOTO_DATASET.md). No atribuirlas a un lector de PlankAssembly, a reconstrucción ni a presupuestación.

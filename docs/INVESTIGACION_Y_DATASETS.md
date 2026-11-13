@@ -6,7 +6,7 @@ Revisión: 13 de noviembre de 2026. Este documento contrasta el resumen aportado
 
 | Candidato | Qué permite estudiar | Límite y disponibilidad comprobada | Prioridad propuesta |
 |---|---|---|---|
-| PlankAssembly | Reconstrucción de muebles de tableros desde tres vistas; 26.707 programas de forma | Se distribuyen programas 3D; el código genera dibujos SVG. El Hub lista data.zip de 19.607.117 bytes, pero deniega lectura a la cuenta conectada: autorización pendiente | Primero para pares controlados de vistas y componentes de mobiliario |
+| PlankAssembly | Reconstrucción de muebles de tableros desde tres vistas; 26.707 programas de forma | Se distribuyen programas 3D; el código genera dibujos SVG. Descarga y extracción verificadas: ZIP de 19.607.117 bytes, 26.707 modelos oficiales; unidades mm; licencia CC BY-NC-ND 4.0. Vistas 2D pendientes | Primero para pares controlados de vistas y componentes de mobiliario |
 | IKEA-Manual | 102 muebles con piezas, manuales y relaciones de montaje | Manuales, no planos de fabricación acotados. Conversión AssemblyWorld accesible; sus unidades físicas son desconocidas | Complemento para identidad de componentes y montaje |
 | CAD2Program | Dibujos y programas de armarios; el artículo describe 368K modelos | El repositorio consultado contiene la web; no se verificó una descarga del corpus completo | Referencia de arquitectura; no dependencia disponible confirmada |
 | OmniMech | Más de 251K dibujos/modelos mecánicos, cotas y reconstrucción | La web anuncia muestras; el Hub muestra directorios, pero deniega lectura a la cuenta conectada | Ampliación mecánica si se obtiene acceso; no sustituto automático de mobiliario |
@@ -17,7 +17,7 @@ Fuentes: [PlankAssembly, proyecto](https://manycore-research.github.io/PlankAsse
 
 La selección es una inferencia de adecuación al proyecto, no un ranking publicado. PlankAssembly es el candidato más directo para representar tableros y vistas; IKEA-Manual aporta montaje explícito. Ninguno acredita por sí solo un presupuesto ni la interpretación general de un único alzado incompleto. Conservar los datos actuales permite comprobar cotas mientras se prepara la vertiente de mobiliario.
 
-PlankAssembly no entrega un paquete listo de DWG/DXF industriales. Su referencia simplifica los tableros como cuboides con relaciones de contacto; los dibujos se generan desde los programas. Son pares controlados útiles, con una diferencia respecto a planos reales recibidos en fábrica. No inferir unidades físicas sin comprobar los datos. El código declara AGPL-3.0; eso no determina por sí solo las condiciones del dataset. El acceso denegado no se ha intentado sortear.
+PlankAssembly no entrega un paquete listo de DWG/DXF industriales. Su referencia simplifica los tableros como cuboides con relaciones de contacto; los dibujos se generan desde los programas. Son pares controlados útiles, con una diferencia respecto a planos reales recibidos en fábrica. La ficha ya accesible declara milímetros y licencia CC BY-NC-ND 4.0, distinta del AGPL-3.0 del código. El usuario obtuvo acceso y la descarga autenticada se verificó. La [auditoría local](PLANKASSEMBLY.md) registra diferencias respecto a la descripción: 985 JSON fuera de los splits, normales ausentes y primera fila de envolvente excluida de las piezas.
 
 La conversión AssemblyWorld de IKEA-Manual publica 102 Parquet y conserva geometría, páginas PNG y anotaciones seleccionadas. No incluye los PDF/SVG originales ni todas las máscaras y cámaras del dataset fuente. Para una evaluación de todas las anotaciones, preferir la distribución original de Stanford; para este formato convertido, admitir solo los campos comprobados. Tener coordenadas de vértices no prueba que estén en metros.
 
@@ -44,9 +44,9 @@ Los porcentajes tienen tareas, entradas y denominadores distintos: no se promedi
 ## Decisión práctica y orden
 
 1. Mantener el piloto local para cotas, unidades y abstención.
-2. Priorizar la admisión de PlankAssembly cuando se disponga de acceso. Revisar muestra, unidades y relaciones de piezas antes de generar un corpus grande; conservar programas completos solo como referencia del evaluador.
+2. Priorizar la preparación 2D de PlankAssembly ya descargado, tras revisar las condiciones de uso y una muestra de desarrollo; conservar programas completos solo como referencia del evaluador.
 3. Usar IKEA-Manual como complemento de estructura/montaje, sin atribuir precisión métrica a coordenadas de unidad desconocida.
 4. Tratar CAD2Program como referencia hasta verificar una distribución utilizable. No confundir código de una web con código de entrenamiento o datos publicados.
 5. Evaluar las cuatro alternativas con el protocolo de [COMPARATIVA_METODOS](COMPARATIVA_METODOS.md). No descargar grandes corpora mecánicos solo por su tamaño.
 
-En esta revisión no se han descargado datasets nuevos, solicitado acceso en nombre del usuario ni cambiado los archivos del corpus existente. El estado de acceso corresponde a la cuenta conectada y puede cambiar tras autorización del publicador.
+Actualización de disponibilidad: PlankAssembly se descargó y extrajo después de que el usuario obtuviera acceso. La integridad coincide con el hash publicado; [PLANKASSEMBLY](PLANKASSEMBLY.md) contiene revisión y auditoría. IKEA-Manual y los demás candidatos no se han descargado en esta actualización. OmniMech sigue pendiente de acceso comprobado. El corpus mecánico existente se conserva.

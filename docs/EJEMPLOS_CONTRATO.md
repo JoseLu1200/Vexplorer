@@ -401,3 +401,7 @@ El servidor resolvería `length=600`, `width=400`, `thickness=18` desde las refe
 | Ledger vacío válido | Listas vacías, R-018 en revisión, nunca `completed` |
 
 Estos ejemplos se pueden parsear como JSON. Eso solo verifica sintaxis: la aprobación del modelo de datos y las pruebas geométricas siguen pendientes.
+
+## Relación con el nuevo corpus descargado
+
+El panel y los mensajes de este documento siguen siendo ejemplos propios y sintéticos; no se han extraído de [PlankAssembly](PLANKASSEMBLY.md). La descarga no convierte estos ejemplos en una ejecución ni aprueba el contrato. Para futuros ejemplos de ese corpus, mantener su programa como referencia privada, excluir la envolvente del recuento y no publicar coordenadas reservadas dentro del contexto del agente. Cualquier cambio del contrato mantiene el acuerdo A/B y aviso C.

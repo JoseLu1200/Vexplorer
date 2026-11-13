@@ -26,7 +26,7 @@ Decisiones imprescindibles:
 5. Qué campos puede proponer el LLM y cuáles solo puede resolver el backend.
 6. Qué se enseña cuando falta espesor o no existe evidencia de despiece.
 
-El nuevo corpus contiene 14 piezas mecánicas DXF; los conjuntos están en PDF. Seleccionar un caso CAD para cotas y un fixture propio de paneles para despiece. El piloto PDF es P1, sujeto a los contratos de página/región y referencias del conjunto. No poner el conversor DWG en la ruta crítica. Si ODA está instalado, comprobar un par DXF/DWG conocido; si no, la implementación P0 sigue con DXF. No utilizar el reservado para elegir la demo.
+El corpus mecánico auxiliar contiene 14 piezas mecánicas DXF; sus conjuntos están en PDF. PlankAssembly aporta modelos de mobiliario descargados, con vistas 2D todavía por preparar. Seleccionar un caso CAD para cotas y un fixture propio de paneles para despiece. El piloto PDF es P1, sujeto a los contratos de página/región y referencias del conjunto. No poner el conversor DWG en la ruta crítica. Si ODA está instalado, comprobar un par DXF/DWG conocido; si no, la implementación P0 sigue con DXF. No utilizar el reservado para elegir la demo.
 
 ## 3. Dependencias de integración
 
@@ -94,4 +94,8 @@ El vídeo y cualquier envío del proyecto son trabajo posterior del equipo. Este
 
 El orden anterior es el del hito técnico. Antes de pulir el visor 3D, priorizar T11–T13: corpus de mobiliario emparejado, propuestas desde planos pobres, revisión, comparables y estimación. A y D (si existe) preparan entradas/referencias y anotaciones; A/B diseñan inferencia y contratos; B coordina histórico y cálculo determinista; C presenta diferencias, supuestos y ficha de compras. Con tres personas, A/B comparten datos y C coordina el ensayo. Son responsabilidades propuestas, no identidades ni reservas.
 
-Seleccionar desde el inicio mobiliario con referencia completa e histórico económico utilizable. Registrar su ausencia como límite de validación. Revisar con el técnico los criterios de [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md) antes de evaluar; no fijar tolerancias después de ver el resultado. T10 no cierra por sí sola el objetivo completo.
+Seleccionar desde el inicio una muestra de PlankAssembly para vistas controladas y conseguir planos reales e histórico económico utilizable. La referencia paramétrica ya está disponible; las entradas 2D y la referencia económica siguen pendientes. Revisar con el técnico los criterios de [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md) antes de evaluar; no fijar tolerancias después de ver el resultado. T10 no cierra por sí sola el objetivo completo.
+
+## Preparación de PlankAssembly
+
+A/D revisan unidades, envolvente inicial, asociaciones, normales ausentes y grupos de variantes según [la auditoría](docs/PLANKASSEMBLY.md). A/B mantienen el programa de referencia fuera del alcance del agente; C presenta procedencia de las vistas generadas sin afirmar que sean planos de fábrica. Resolver las condiciones de uso antes de incorporar datos o derivados a entregables externos. Estas responsabilidades no asignan personas ni reservas.

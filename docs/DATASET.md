@@ -1,8 +1,12 @@
 # Dataset candidato para Vexplorer: ingeniería y referencias parciales
 
+## Inventario vigente
+
+Hay dos fuentes descargadas: **PlankAssembly**, para preparar mobiliario de tableros, y **engineering_dataset**, como control mecánico auxiliar. La auditoría de PlankAssembly está en [PLANKASSEMBLY](PLANKASSEMBLY.md): 26.707 modelos oficiales, 985 JSON adicionales, mm y vistas 2D pendientes. Las secciones siguientes auditan exclusivamente el ZIP mecánico; sus 422 archivos no incluyen PlankAssembly.
+
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
-**Estado: auditoría documental del candidato `engineering-drawings-harness.zip`, sin código de producto ni suite de Vexplorer ejecutada.** El paquete aporta conjuntos mecánicos con planos PDF y piezas CAD aisladas. Mejora la disponibilidad de ejemplos con listas de materiales, pero no constituye un benchmark completo de despiece de mobiliario desde DWG/DXF. Su admisión se propone por tarea y evidencia, sin cambiar automáticamente el alcance del producto.
+**Estado: auditoría documental del candidato `engineering-drawings-harness.zip`, sin código de producto ni suite de aplicación ejecutada. La suite del preparador mecánico se documenta en [PILOTO_DATASET](PILOTO_DATASET.md).** El paquete aporta conjuntos mecánicos con planos PDF y piezas CAD aisladas. Mejora la disponibilidad de ejemplos con listas de materiales, pero no constituye un benchmark completo de despiece de mobiliario desde DWG/DXF. Su admisión se propone por tarea y evidencia, sin cambiar automáticamente el alcance del producto.
 
 ## Inventario comprobado del archivo
 
@@ -94,6 +98,6 @@ Se recomienda admitir el nuevo paquete como **material de desarrollo por tareas 
 
 ## Datos aún necesarios para el objetivo de la transcripción
 
-El corpus descrito sigue siendo auxiliar para el hito técnico. Faltan pares de **mobiliario** con plano pobre de entrada y despiece/secciones de referencia revisados, además de histórico con atributos y costes/horas fiables. Las muestras mecánicas no suplen ese vacío. Seleccionar fuentes y permisos antes de afirmar cobertura; no se ha descargado un corpus adicional en esta actualización documental.
+El corpus mecánico descrito es auxiliar para el hito técnico. [PlankAssembly](PLANKASSEMBLY.md) ya aporta referencias paramétricas de mobiliario descargadas y auditadas. Faltan generar y revisar sus entradas 2D, admitir su uso según licencia y conseguir planos pobres reales e histórico con atributos y costes/horas fiables. Disponer de programas de forma no equivale a disponer de una evaluación industrial preparada.
 
 T11 debe separar físicamente entrada y referencia, generar variantes empobrecidas auditadas y particionar por familia/proyecto antes de crear derivados. T12 necesita un histórico que excluya el propio caso de prueba y sus duplicados. Los datos sintéticos son útiles para comprobar el mecanismo y deben identificarse como tales; no acreditan resultados reales de despiece o presupuesto. Procedimiento y criterios en [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md).

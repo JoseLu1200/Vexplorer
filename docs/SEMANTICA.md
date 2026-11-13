@@ -2,7 +2,7 @@
 
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
-Estado: especificación futura y propuesta `schema_version=0.1.0`, pendiente de acuerdo A/B y aviso a C. Pydantic en `backend/app/contratos/` será la única autoridad futura del JSON. Se interpreta evidencia geométrica ya calculada; no se entrega aplicación ejecutable ni se han pasado pruebas de producto. El corpus actual, 14 componentes CAD y 51 paquetes de conjuntos PDF, está descrito en [DATASET.md](DATASET.md). Véanse [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md), [GEOMETRIA_Y_PLANOS.md](GEOMETRIA_Y_PLANOS.md) y [VALIDACION.md](VALIDACION.md).
+Estado: especificación futura y propuesta `schema_version=0.1.0`, pendiente de acuerdo A/B y aviso a C. Pydantic en `backend/app/contratos/` será la única autoridad futura del JSON. Se interpreta evidencia geométrica ya calculada; no se entrega aplicación ejecutable ni se han pasado pruebas de producto. El corpus mecánico auxiliar, 14 componentes CAD y 51 paquetes de conjuntos PDF, está descrito en [DATASET.md](DATASET.md); la referencia de mobiliario descargada está en [PLANKASSEMBLY](PLANKASSEMBLY.md). Véanse [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md), [GEOMETRIA_Y_PLANOS.md](GEOMETRIA_Y_PLANOS.md) y [VALIDACION.md](VALIDACION.md).
 
 ## Separar observación, hipótesis y ocurrencia
 
@@ -12,7 +12,7 @@ Una entidad es una primitiva CAD. Un contorno es una construcción geométrica t
 
 En P0, un conjunto de hipótesis contiene alternativas de interpretación de **una misma ocurrencia física**. No representa alternativas de cardinalidad «una pieza frente a tres piezas». Ejemplo sintético: observaciones `800×400`, `800×18` y `400×18` pueden sustentar distintas asociaciones de ejes para una ocurrencia; elegir una exige evidencia y coherencia. Si la duda es si las vistas pertenecen a una o varias ocurrencias, se conserva `needs_review` y se regenera el ledger tras resolver la identidad. No se fuerza esa duda dentro de `hypothesis_set_id` ni se introduce una cantidad inventada.
 
-## Uso semántico del corpus actual
+## Uso semántico del corpus mecánico auxiliar
 
 Los 14 casos Orla son soportes, placas, ejes, casquillos y otras piezas mecánicas aisladas. Sus distintas vistas no son distintas ocurrencias. Sirven para extracción DXF lineal/rectangular seleccionada, procedencia, cotas y abstención; no demuestran cantidades de paneles o roles de mobiliario. Los 51 paquetes de conjuntos son PDF y quedan fuera de la entrada P0. Bench Vise se propone como piloto PDF P1 con BOM de 12 referencias y 22 unidades y dimensiones revisadas solo de Jaw Pad; requiere evidencia por página/región y acuerdo de adaptación, sin introducir PDF ahora.
 
@@ -84,3 +84,9 @@ La UI P0 revisa referencias, etiquetas y alternativas que ya están respaldadas 
 T11 debe representar alternativas de componentes y secciones del mueble completo, incluyendo una pieza frente a varias, fuera de los grupos 0.1.0 limitados a una ocurrencia. Estas propuestas se vinculan a regiones y observaciones, conservan supuestos y se someten a revisión; no se publican como piezas medidas por carecer de contorno propio. Se mantiene la prohibición de sumar alternativas incompatibles o inferir cantidades contando vistas.
 
 La similitud entre candidatas del mismo plano no satisface la búsqueda histórica de la transcripción. T12 compara muebles de proyectos distintos por dimensiones, materiales, acabados y contenido semántico permitido. Contrastar baseline de atributos con embeddings; devolver diferencias verificables y campos ausentes, no solo score. El parecido sugiere comparables, pero no demuestra igual construcción, precio o tiempo. El ajuste económico corresponde al motor determinista y conserva sus premisas.
+
+## Semántica de la referencia de mobiliario
+
+En [PlankAssembly](PLANKASSEMBLY.md), la envolvente inicial no cuenta como pieza. Las filas posteriores representan ocurrencias de tableros en el modelo de referencia; varias proyecciones no multiplican esa cantidad. Igualdad de dimensiones no demuestra igualdad de material, mecanizado o función. Los nombres «balda», «puerta» o «lateral» requieren etiquetado o hipótesis explícita.
+
+Las asociaciones privadas ayudan a puntuar reconstrucción, pero no prueban por sí solas el tipo de unión, herraje ni orden real de montaje. Algunos JSON no contienen normales; cualquier interpretación de dirección debe registrar su origen. Una entrada pobre puede admitir varias descomposiciones compatibles: comparar con la referencia sin tratarla como única solución físicamente posible.

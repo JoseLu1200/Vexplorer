@@ -31,7 +31,9 @@ Plantilla: [_TEMPLATE.md](_TEMPLATE.md). Su existencia no concede una reserva. L
 
 - [ ] Asignar personas a los roles.
 - [ ] Elegir el primer DXF y el fixture de despiece propio.
-- [ ] Seleccionar pares de mobiliario entrada pobre/referencia e histórico para T11–T13; acordar evaluación antes de ejecutar.
+- [x] Descargar y auditar PlankAssembly; registro en [PLANKASSEMBLY](../docs/PLANKASSEMBLY.md).
+- [ ] Preparar y revisar sus vistas 2D con referencia separada, condiciones de uso y control de duplicados.
+- [ ] Conseguir planos reales e histórico económico para T11–T13; acordar evaluación antes de ejecutar.
 - [ ] Revisar [CONTRATOS_DATOS.md](../docs/CONTRATOS_DATOS.md) entre A/B y avisar a C.
 - [ ] Registrar versión y fecha del acuerdo; aún no existe un contrato implementado aprobado.
 - [ ] Decidir si el piloto PDF entra después del recorrido DXF; ver [ADAPTACION_DATASET.md](../docs/ADAPTACION_DATASET.md).

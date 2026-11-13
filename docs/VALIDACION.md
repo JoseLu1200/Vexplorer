@@ -2,7 +2,7 @@
 
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
-Estado: especificación futura, propuesta de contrato `0.1.0` pendiente de acuerdo explícito A/B y aviso a C. Pydantic en `backend/app/contratos/` será la única autoridad del JSON; [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md) es propuesta documental, no contrato implementado. El validador y sus pruebas son trabajo futuro. [DATASET.md](DATASET.md) distingue auditoría del corpus actual y pruebas de producto aún no ejecutadas.
+Estado: especificación futura, propuesta de contrato `0.1.0` pendiente de acuerdo explícito A/B y aviso a C. Pydantic en `backend/app/contratos/` será la única autoridad del JSON; [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md) es propuesta documental, no contrato implementado. El validador y sus pruebas son trabajo futuro. [DATASET.md](DATASET.md) distingue las auditorías de datos de las pruebas de producto aún no ejecutadas.
 
 ## Responsabilidad y orden
 
@@ -65,7 +65,7 @@ El volumen `V=L×W×T` podrá calcularse solo para una caja rectangular con tres
 
 Las proyecciones ortográficas se superponen normalmente. Un cruce 2D o una caja de presentación superpuesta no demuestra choque. Con colocación 3D fiable, el solape AABB sigue siendo solo fase amplia; confirmar choque requiere sólidos y criterio de contacto. P0 reportará `R-016=not_applicable`; las cajas esquemáticas no aportan evidencia física.
 
-## Qué demuestra la auditoría del corpus actual
+## Qué demuestra la auditoría del corpus mecánico
 
 Se abrieron 14 DXF Orla; once declaran unidad desconocida y tres mm. El cotejo por handle confirma 370 `DIMENSION` en JSON, pero cuatro `ARC_DIMENSION` adicionales no están cubiertas allí. Hay 14 cotas angulares, que no son mm, y 50 sobrescrituras. Las verificaciones del ZIP y los sidecars no son pruebas aprobadas de `R-001` a `R-018` ni oráculos semánticos independientes. DWG solo se inspeccionó por header y STEP por texto, sin kernel.
 
@@ -94,3 +94,9 @@ La revisión humana P0 selecciona referencias y alternativas existentes y confir
 En T11 separar «hipótesis coherente» de «pieza respaldada por evidencia». La primera puede mostrarse para revisión sin elevarse a hecho. Las confirmaciones humanas crean premisas nuevas con autor/fuente y revisión; el libro original no se sobrescribe. R-015 continúa pendiente de modelo estructurado: proponer una unión no equivale a validar su cadena dimensional.
 
 T12 exige cálculos reproducibles, comparables permitidos, unidades/moneda/fecha compatibles, conceptos sin doble contabilización y factores identificados. Ausencia de tarifa, desglose o comparable deja el importe desconocido o el escenario explícitamente provisional. Separar validez aritmética, incertidumbre económica y aprobación humana. Ninguna de ellas convierte una propuesta en orden de compra o certificación de fabricación.
+
+## Auditoría de referencia frente a validación del agente
+
+La descarga de [PlankAssembly](PLANKASSEMBLY.md) pasó hash, CRC y comprobaciones de extracción. Eso no implica que el futuro agente haya recuperado piezas correctas. El evaluador debe excluir la envolvente global del recuento, conservar índices de asociaciones y distinguir normales ausentes de coordenadas inválidas.
+
+Comprobar dimensiones del cuboide por código, pero no llamar a esas extensiones planos de fabricación. Revisar unidades tras proyección, identidad entre vistas y ambigüedad del caso. Una alternativa coherente puede diferir de la referencia reservada; documentar el criterio de correspondencia antes de puntuar. No hay validaciones de inferencia ejecutadas sobre este corpus.

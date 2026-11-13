@@ -60,3 +60,9 @@ No usar una puntuación global para ocultar errores críticos. Cuando no hay una
 ## Criterio de continuidad
 
 Escoger el método que reduzca trabajo humano manteniendo los errores y la cobertura acordados con el técnico; no el que produzca más piezas ni el render más atractivo. Conservar A como baseline aunque C/D resulten mejores. Integrar un corpus de mobiliario si aporta pares verificables y un campo de evaluación que hoy falta, no simplemente más volumen.
+
+## Preparación de la comparación con PlankAssembly
+
+[PlankAssembly](PLANKASSEMBLY.md) ya está disponible localmente; aún faltan vistas y casos admitidos. Conservar la separación oficial de 24.039/1.329/1.339 como referencia y auditar variantes/duplicados antes de construir una evaluación por familia. Excluir los 985 JSON no listados de comparaciones sobre el split oficial. Marcar como desarrollo los ejemplos inspeccionados.
+
+B/C reciben vistas equivalentes del conjunto, sin programa fuente ni identificación de piezas filtrada por capas. Comparar controles completos y variantes pobres, manteniendo separados sus resultados. La referencia contiene cuboides y asociaciones, no un coste industrial. D puede evaluarse para recuperación geométrica si se prepara un índice independiente y etiquetado; la estimación económica continúa no evaluable sin históricos fiables.

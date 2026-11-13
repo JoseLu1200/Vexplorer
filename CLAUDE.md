@@ -89,3 +89,9 @@ Cualquier otro cambio de código sin archivo personal asociado está prohibido.
 ## Comandos
 
 Existe tooling local de preparación, todavía no backend ni frontend: `python -m pytest -q` y `python -m tools.prepare_evaluation --source ../engineering_dataset --audit-only`. Instalación y generación en [PILOTO_DATASET](docs/PILOTO_DATASET.md). El `pyproject.toml` de raíz declara solo estas herramientas; no afirmar comandos de servidor o lint aún inexistentes.
+
+## Datos disponibles y estado de preparación
+
+[PlankAssembly](docs/PLANKASSEMBLY.md) está descargado y auditado: 26.707 modelos oficiales de tableros, coordenadas en mm y referencia de componentes. El ZIP no incluye planos 2D; generación de vistas y exportación DXF están pendientes. La primera fila de `planks` es envolvente, y algunos JSON carecen de `normal`. El permiso de descarga no cambia la licencia CC BY-NC-ND 4.0 ni acredita permiso comercial adicional.
+
+El [piloto mecánico](docs/PILOTO_DATASET.md) conserva sus 17 casos y tooling; no procesa PlankAssembly. Estas constataciones no amplían automáticamente contratos, endpoints o formatos de entrada implementados. No hay resultados de inferencia ni histórico económico verificado.
