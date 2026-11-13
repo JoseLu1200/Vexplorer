@@ -62,6 +62,11 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),
     getDrawing: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/drawing`),
     getLedger: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/ledger`),
+    async getEventHistory(runId) {
+      const response = await fetchImpl(`/api/v1/runs/${encodeURIComponent(runId)}/events`);
+      if (!response.ok) throw new ApiError("No se pudo recuperar la traza.", { status: response.status, code: "event_history_unavailable" });
+      return response.text();
+    },
     getComparables: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/comparables`),
     estimate: (runId, body = {}) => post(`/api/v1/runs/${encodeURIComponent(runId)}/estimate`, body),
     review: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/reviews`, body),

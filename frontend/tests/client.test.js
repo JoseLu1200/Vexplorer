@@ -46,3 +46,9 @@ test("review requests send the base revision and an idempotency key", async () =
   assert.equal(request.init.headers["Idempotency-Key"], "review-key");
   assert.deepEqual(JSON.parse(request.init.body), { base_result_revision: 1, decisions: [] });
 });
+
+test("event history reads the persisted SSE snapshot as text", async () => {
+  const fetchImpl = async () => new Response("id: 1\nevent: run_finished\ndata: {}\n\n", { status: 200, headers: { "content-type": "text/event-stream" } });
+  const client = createApiClient({ fetchImpl });
+  assert.equal(await client.getEventHistory("run-1"), "id: 1\nevent: run_finished\ndata: {}\n\n");
+});
