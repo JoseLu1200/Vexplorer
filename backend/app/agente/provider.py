@@ -14,7 +14,8 @@ from backend.app.agente.prompts import SYSTEM_PROMPT
 class ToolCall:
     call_id: str
     name: str
-    arguments: dict[str, Any]
+    arguments: dict[str, Any] | None = None
+    arguments_json: str | None = None
 
 
 @dataclass(frozen=True)
@@ -50,9 +51,11 @@ class OpenAIResponsesProvider:
         )
         response.raise_for_status()
         body = response.json()
+        if body.get("status") in ("failed", "incomplete"):
+            raise RuntimeError(f"provider_response_{body['status']}")
         calls = []
         for item in body.get("output", []):
             if item.get("type") != "function_call":
                 continue
-            calls.append(ToolCall(call_id=item["call_id"], name=item["name"], arguments=json.loads(item["arguments"])))
+            calls.append(ToolCall(call_id=item["call_id"], name=item["name"], arguments_json=item["arguments"]))
         return ProviderResponse(id=body["id"], tool_calls=tuple(calls))
