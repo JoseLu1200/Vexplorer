@@ -1,9 +1,10 @@
 import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
-import { createEventLedger, eventLabel } from "./core/events.js";
+import { createEventLedger, eventLabel, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, fieldOrigin, normaliseRunPayload, presentEstimate, runStatusPresentation } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
+import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -13,6 +14,32 @@ const state = { runId: null, snapshot: null, drawing: null, ledger: null, eventL
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
 function unlock(id) { $(`#${id}`)?.classList.remove("is-locked"); }
 function setMessage(value, error = false) { const node = $("#global-message"); text(node, value); node.classList.toggle("is-error", error); }
+
+function emptyParagraph(value) { const node = document.createElement("p"); node.className = "empty-copy"; node.textContent = value; return node; }
+
+function resetEstimateUi() {
+  $("#estimate-lines").replaceChildren(emptyParagraph("La revisión actual todavía no tiene estimación. Calcula una nueva para evitar reutilizar importes anteriores."));
+  text($("#estimate-revision"), state.snapshot?.result_revision ? `Revisión ${state.snapshot.result_revision} · Sin estimación` : "Sin revisión");
+  text($("#estimate-total"), "Pendiente");
+  $$("[data-export]").forEach((button) => { button.disabled = true; });
+}
+
+function resetRunUi() {
+  state.eventSource?.close();
+  Object.assign(state, { runId: null, snapshot: null, drawing: null, ledger: null, eventLedger: null, eventSource: null, selected: null });
+  clearRunSession(localStorage, location, history);
+  $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
+  text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente");
+  text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
+  const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 6; cell.textContent = "Todavía no hay propuestas. El plano seguirá disponible aunque el despiece quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
+  text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
+  const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
+  $("#review-form").reset(); $("#review-submit").disabled = true; text($("#review-message"), "");
+  $("#comparables-list").replaceChildren(emptyParagraph("Sin comparables disponibles."));
+  resetEstimateUi(); $("#estimate-button").disabled = true;
+  $("#trace-export").disabled = true;
+  $("#trace-list").replaceChildren(emptyParagraph("No hay eventos todavía."));
+}
 
 function configureModes(config = {}) {
   availableModes(config.capabilities ?? config).forEach((mode) => {
@@ -180,10 +207,18 @@ function renderTrace() {
 function connectEvents(runId) {
   state.eventSource?.close(); state.eventLedger = createEventLedger(runId);
   const source = new EventSource(`/api/v1/runs/${encodeURIComponent(runId)}/events`); state.eventSource = source;
-  ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance"].forEach((type) => source.addEventListener(type, (message) => {
-    try { const envelope = JSON.parse(message.data); if (state.eventLedger.append(envelope)) renderTrace(); if (type === "run_finished") { source.close(); refreshRun(); } } catch { setMessage("La traza recibió un evento no válido.", true); }
+  ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance","human_review_committed","estimate_committed"].forEach((type) => source.addEventListener(type, (message) => {
+    try { const envelope = JSON.parse(message.data); if (state.eventLedger.append(envelope)) renderTrace(); if (type === "run_finished") refreshRun(); } catch { setMessage("La traza recibió un evento no válido.", true); }
   }));
-  source.onerror = () => { if (!state.snapshot || !["completed","needs_review","failed","cancelled","timed_out"].includes(state.snapshot.state)) text($("#service-status"), "Reconectando la traza"); };
+  source.onerror = () => { if (state.snapshot && ["completed","needs_review","failed","cancelled","timed_out"].includes(state.snapshot.state)) source.close(); else text($("#service-status"), "Reconectando la traza"); };
+}
+
+async function refreshTraceHistory() {
+  if (!state.runId) return;
+  if (!state.eventLedger) state.eventLedger = createEventLedger(state.runId);
+  const body = await api.getEventHistory(state.runId);
+  parseEventStream(body).forEach((event) => state.eventLedger.append(event));
+  renderTrace();
 }
 
 async function refreshRun() {
@@ -194,7 +229,7 @@ async function refreshRun() {
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
-  if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate);
+  if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi();
   if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(); unlock("estimate-stage"); }
 }
 
@@ -211,7 +246,7 @@ async function loadComparables() {
       const diff = document.createElement("small"); diff.textContent = (item.differences ?? []).join(" · ") || item.explanation || "Sin diferencias documentadas";
       top.append(name, score); card.append(top, diff); root.append(card);
     });
-    $("#estimate-button").disabled = false;
+    $("#estimate-button").disabled = state.snapshot?.result?.state !== "completed";
   } catch (error) { text($("#comparables-list"), error.message); }
 }
 
@@ -228,9 +263,10 @@ async function runUpload(event) {
   if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un DXF más pequeño.", true);
   const mode = new FormData(event.currentTarget).get("mode");
   try {
+    resetRunUi();
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
     const documentRecord = await api.upload(file); const runPayload = await api.createRun(documentRecord.document_id ?? documentRecord.id, mode);
-    state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
+    state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
   } catch (error) { setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
@@ -247,7 +283,7 @@ async function submitReview(event) {
       notes: $("#review-reason").value,
     });
     const result = await api.review(state.runId, payload); state.snapshot = { ...state.snapshot, ...result };
-    text($("#review-message"), "Decisión registrada en una nueva revisión."); await refreshRun();
+    text($("#review-message"), "Decisión registrada en una nueva revisión."); await refreshRun(); await refreshTraceHistory();
   } catch (error) {
     text($("#review-message"), error.code === "stale_result_revision" ? "La revisión cambió. Se han recargado los datos antes de sobrescribir." : error.message);
     if (error.code === "stale_result_revision") await refreshRun();
@@ -266,10 +302,15 @@ async function boot() {
   $("#upload-form").addEventListener("submit", runUpload); $("#review-form").addEventListener("submit", submitReview);
   $("#drawing-file").addEventListener("change", (event) => text($("#file-name"), event.target.files[0]?.name ?? "Ningún archivo seleccionado"));
   $("#trace-toggle").addEventListener("click", () => toggleTrace(true)); $("#trace-close").addEventListener("click", () => toggleTrace(false)); $("#scrim").addEventListener("click", () => toggleTrace(false));
-  $("#estimate-button").addEventListener("click", async () => { try { renderEstimate(await api.estimate(state.runId, { result_revision: state.snapshot?.result_revision })); } catch (error) { setMessage(error.message, true); } });
+  $("#estimate-button").addEventListener("click", async () => { try { renderEstimate(await api.estimate(state.runId, { result_revision: state.snapshot?.result_revision })); await refreshTraceHistory(); } catch (error) { setMessage(error.message, true); } });
   $$("[data-export]").forEach((button) => button.addEventListener("click", () => exportResult(button.dataset.export)));
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
+  const restoredRunId = restoreRunId(location, localStorage);
+  if (restoredRunId) {
+    state.runId = restoredRunId;
+    try { await refreshRun(); await refreshTraceHistory(); } catch (error) { clearRunSession(localStorage, location, history); state.runId = null; setMessage(`No se pudo restaurar la ejecución: ${error.message}`, true); }
+  }
 }
 
 boot();

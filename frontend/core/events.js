@@ -26,6 +26,16 @@ export function eventLabel(event) {
     result_committed: "Resultado guardado",
     run_finished: "Ejecución finalizada",
     provenance: "Procedencia registrada",
+    human_review_committed: "Revisión humana registrada",
+    estimate_committed: "Estimación guardada",
   };
   return labels[event?.event_type] ?? "Actividad registrada";
+}
+
+export function parseEventStream(body) {
+  return String(body ?? "").split(/\r?\n\r?\n/).flatMap((block) => {
+    const data = block.split(/\r?\n/).find((line) => line.startsWith("data:"));
+    if (!data) return [];
+    try { return [JSON.parse(data.slice(5).trim())]; } catch { return []; }
+  });
 }
