@@ -75,11 +75,12 @@ def _assign_view(
 ) -> str:
     if not labels or not entity.points:
         return "UNKNOWN"
-    if entity.kind == "DIMENSION" and entity.extension_starts and regions:
+    region_points = entity.extension_starts if entity.kind == "DIMENSION" else entity.points
+    if entity.kind in {"DIMENSION", "LINE"} and region_points and regions:
         def distance_to_region(region: tuple[float, float, float, float]) -> float:
             min_x, min_y, max_x, max_y = region
             total = 0.0
-            for x, y in entity.extension_starts or ():
+            for x, y in region_points:
                 dx = max(min_x - x, 0.0, x - max_x)
                 dy = max(min_y - y, 0.0, y - max_y)
                 total += hypot(dx, dy)
