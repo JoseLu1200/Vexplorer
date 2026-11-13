@@ -331,6 +331,35 @@ class ReconstructionScene(StrictModel):
     collision_status: Literal["not_evaluated"] = "not_evaluated"
 
 
+class FormulaExplanation(StrictModel):
+    field: str = Field(min_length=1)
+    expression: str = Field(min_length=1)
+    operands_mm: dict[str, float]
+    result_mm: float = Field(gt=0, allow_inf_nan=False)
+
+
+class PieceExplanation(StrictModel):
+    piece_id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    source_entity_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    dimension_ids: tuple[str, ...]
+    formulas: tuple[FormulaExplanation, ...]
+    premises: tuple[str, ...]
+    unknown_fields: tuple[str, ...]
+    field_states: dict[str, Literal["observed", "calculated", "confirmed", "unknown"]]
+
+
+class ExplanationBundle(StrictModel):
+    schema_version: Literal["0.3.0"] = "0.3.0"
+    run_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)
+    pieces: tuple[PieceExplanation, ...]
+    warnings: tuple[str, ...] = ()
+
+
 class RunSnapshot(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     id: str
@@ -391,3 +420,8 @@ class InspectEvidenceArgs(StrictModel):
 
 class SelectScenarioArgs(StrictModel):
     scenario_id: str = Field(min_length=1)
+
+
+class ExplainPieceArgs(StrictModel):
+    piece_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)

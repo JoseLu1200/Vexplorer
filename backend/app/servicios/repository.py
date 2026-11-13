@@ -100,6 +100,12 @@ class DemoRepository:
             raise KeyError((run_id, revision))
         return Result.model_validate_json(row[0])
 
+    def get_results(self, run_id: str) -> tuple[Result, ...]:
+        self.get_run(run_id)
+        with self._connect() as db:
+            rows = db.execute("SELECT payload FROM results WHERE run_id=? ORDER BY revision", (run_id,)).fetchall()
+        return tuple(Result.model_validate_json(row[0]) for row in rows)
+
     def review(self, run_id: str, request: ReviewRequest) -> Result:
         run = self.get_run(run_id)
         if request.base_result_revision != run.result_revision:
