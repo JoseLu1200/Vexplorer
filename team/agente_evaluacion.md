@@ -9,14 +9,18 @@
 
 ## Tarea y alcance
 
-- Estado: en curso para la ampliación de plano, reconstrucción y similitud del 2026-11-13.
+- Estado: en curso para la entrada parts-only 0.4 del 2026-11-14.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
+- Propiedad adicional autorizada: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*` y `tests/test_parts_only_evaluation.py`.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
-- Objetivo actual: biblioteca propia parametrizada con variantes de dimensiones/estructura, oráculos privados y aceptación de escena física, descriptores, similitud y agrupación mediante la API integrada.
+- Objetivo actual: fixture propio compuesto solo por vistas locales de piezas separadas, cantidades públicas asociadas cuando existan, variantes con incógnitas y controles de descriptor, manteniendo ensamblaje/roles/BOM exclusivamente en referencia privada.
 
 ## Hecho
 
+- Creado bloque parts-only público con siete DXF propios: completo, cantidad desconocida, espesor desconocido, dimensiones distintas, espesor 36 mm, claves/traslación distintas y vistas ambiguas sin clave.
+- La gramática visible usa `PART <key> FRONT|TOP|SIDE` y `QTY <key> <n>`; FRONT=(L,W), TOP=(L,T), SIDE=(T,W). Un `QTY` suelto no se asocia.
+- Separada la nueva referencia de ensamblaje, roles y economía en `evaluation/reference/piezas_reference.json`; el generador no la importa ni la lee.
 - Creado fixture propio de estantería rectangular montada, en DXF R2010 y mm, con vistas `FRONT`, `TOP`, `RIGHT`, cotas generales y sin nombres de piezas/BOM.
 - Creada variante incompleta que elimina evidencia de espesor y exige conservarlo desconocido.
 - Separada la construcción revisada en `evaluation/reference/`, con dos escenarios plausibles y política que no reclama solución única.
@@ -42,6 +46,7 @@
 - No hay cambio de `contratos/` por D.
 - Nueva fase: A/B deben comunicar el contrato aditivo de escena, descriptor/similitud y agrupación antes de cerrar las pruebas E2E; D no escribirá esos contratos ni duplicará sus pruebas unitarias.
 - Los fixtures nuevos solo comunican vistas/cotas públicas. BOM, montaje de referencia y grupos esperados del evaluador permanecen fuera del runtime.
+- Parts-only 0.4: A/B acordaron claves opacas y ejes locales; D espera el hash contractual materializado antes de fijar pruebas de integración. No se agrupa por proximidad ni se infiere cantidad desde el número de vistas.
 
 ## Pruebas
 
@@ -63,12 +68,14 @@
 | Suite D contra backend candidato | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Verificación cruzada; no sustituye la suite final en raíz |
 | Suite D en raíz integrada | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Backend, escena, biblioteca y tests D integrados |
 | Suite Python en raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 113 pasan; 1 aviso deprecación | Incluye hardening de argumentos nativos; no incluye JavaScript ni navegador |
+| Parts-only TDD rojo | `python -m pytest tests/test_parts_only_evaluation.py -q` antes del generador | 14 fallos por DXF, manifiesto, módulo y referencia ausentes | Fallos esperados del nuevo bloque |
+| Parts-only fixture + aislamiento | `python -m pytest tests/test_parts_only_evaluation.py tests/test_demo_isolation.py -q` | 17 pasan | API 0.4 todavía no integrada; solo contrato público de entrada y aislamiento |
 
 ## Siguiente bloque
 
-- Repetir la aceptación 0.3 y la suite D sobre la raíz cuando el backend publique e integre las rutas.
-- Confirmar que la exportación integrada conserva escena, explicaciones, descriptor y elemento de biblioteca para la revisión exacta.
-- Entregar al coordinador los commits D y la evidencia final, sin despliegue ni `push`.
+- Compartir el commit temprano de fixtures con A/B sin revelar la referencia privada.
+- Tras recibir el hash contractual 0.4, añadir aceptación de observaciones, trazabilidad, revisión, descriptor, escena y economía sin duplicar pruebas unitarias A/B.
+- Ejecutar suites completas sobre la raíz integrada; sin despliegue ni `push`.
 
 ## Cierre de la fase anterior
 
