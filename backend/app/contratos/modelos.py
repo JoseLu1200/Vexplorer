@@ -16,6 +16,29 @@ class Point2D(StrictModel):
     y: float = Field(allow_inf_nan=False)
 
 
+class Point3D(StrictModel):
+    x: float = Field(allow_inf_nan=False)
+    y: float = Field(allow_inf_nan=False)
+    z: float = Field(allow_inf_nan=False)
+
+
+class Size3D(StrictModel):
+    x: float = Field(gt=0, allow_inf_nan=False)
+    y: float = Field(gt=0, allow_inf_nan=False)
+    z: float = Field(gt=0, allow_inf_nan=False)
+
+
+class Bounds3D(StrictModel):
+    min: Point3D
+    max: Point3D
+
+    @model_validator(mode="after")
+    def ordered(self) -> "Bounds3D":
+        if self.min.x > self.max.x or self.min.y > self.max.y or self.min.z > self.max.z:
+            raise ValueError("bounds must be ordered")
+        return self
+
+
 class Bounds2D(StrictModel):
     min_x: float = Field(allow_inf_nan=False)
     min_y: float = Field(allow_inf_nan=False)
@@ -54,6 +77,36 @@ class DrawingContour(StrictModel):
     closed: bool
 
 
+class DrawingText(StrictModel):
+    id: str = Field(min_length=1)
+    source_entity_id: str = Field(min_length=1)
+    view_id: str = Field(min_length=1)
+    layer: str
+    text: str
+    position_source: Point2D
+    position_mm: Point2D | None
+
+
+class DimensionGraphic(StrictModel):
+    id: str = Field(min_length=1)
+    dimension_id: str = Field(min_length=1)
+    source_entity_id: str = Field(min_length=1)
+    view_id: str = Field(min_length=1)
+    layer: str
+    display_text: str
+    raw_text: str
+    extension_start_a_source: Point2D
+    extension_start_a_mm: Point2D | None
+    extension_start_b_source: Point2D
+    extension_start_b_mm: Point2D | None
+    dimension_start_source: Point2D
+    dimension_start_mm: Point2D | None
+    dimension_end_source: Point2D
+    dimension_end_mm: Point2D | None
+    text_position_source: Point2D
+    text_position_mm: Point2D | None
+
+
 class ObservedDimension(StrictModel):
     id: str = Field(min_length=1)
     kind: Literal["overall", "annotation"]
@@ -61,6 +114,8 @@ class ObservedDimension(StrictModel):
     source_entity_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...] = Field(min_length=1)
     origin: Literal["observed", "derived"]
+    view_id: str | None = None
+    graphic_id: str | None = None
 
 
 class Evidence(StrictModel):
@@ -90,12 +145,14 @@ class DrawingExtraction(StrictModel):
     dimensions: tuple[ObservedDimension, ...]
     evidence: tuple[Evidence, ...]
     observations: tuple[DrawingObservation, ...]
+    texts: tuple[DrawingText, ...] = ()
+    dimension_graphics: tuple[DimensionGraphic, ...] = ()
     warnings: tuple[str, ...] = ()
     synthetic: bool = False
 
     @model_validator(mode="after")
     def validate_ledger(self) -> "DrawingExtraction":
-        collections = (self.entities, self.views, self.contours, self.dimensions, self.evidence, self.observations)
+        collections = (self.entities, self.views, self.contours, self.dimensions, self.evidence, self.observations, self.texts, self.dimension_graphics)
         all_ids = [item.id for collection in collections for item in collection]
         if len(all_ids) != len(set(all_ids)):
             raise ValueError("duplicate ids are not allowed")
@@ -104,6 +161,7 @@ class DrawingExtraction(StrictModel):
         contour_ids = {item.id for item in self.contours}
         dimension_ids = {item.id for item in self.dimensions}
         evidence_ids = {item.id for item in self.evidence}
+        graphic_ids = {item.id for item in self.dimension_graphics}
         for view in self.views:
             if not set(view.entity_ids) <= entity_ids:
                 raise ValueError("view references an unknown entity")
@@ -113,16 +171,28 @@ class DrawingExtraction(StrictModel):
         for dimension in self.dimensions:
             if not set(dimension.source_entity_ids) <= entity_ids or not set(dimension.evidence_ids) <= evidence_ids:
                 raise ValueError("dimension has an unknown reference")
+            if dimension.view_id is not None and dimension.view_id not in view_ids:
+                raise ValueError("dimension has an unknown reference")
+            if dimension.graphic_id is not None and dimension.graphic_id not in graphic_ids:
+                raise ValueError("dimension has an unknown reference")
         for item in self.evidence:
             if not set(item.source_entity_ids) <= entity_ids:
                 raise ValueError("evidence references an unknown entity")
         for observation in self.observations:
             if observation.view_id not in view_ids or not set(observation.contour_ids) <= contour_ids or not set(observation.dimension_ids) <= dimension_ids:
                 raise ValueError("observation has an unknown reference")
+        for item in self.texts:
+            if item.source_entity_id not in entity_ids or item.view_id not in view_ids:
+                raise ValueError("text has an unknown reference")
+        for item in self.dimension_graphics:
+            if item.dimension_id not in dimension_ids or item.source_entity_id not in entity_ids or item.view_id not in view_ids:
+                raise ValueError("dimension graphic has an unknown reference")
         metric_values_present = any(entity.points_mm is not None for entity in self.entities)
         metric_values_present |= any(view.bounds_mm is not None for view in self.views)
         metric_values_present |= any(contour.points_mm is not None for contour in self.contours)
         metric_values_present |= any(item.value_mm is not None for item in self.dimensions)
+        metric_values_present |= any(item.position_mm is not None for item in self.texts)
+        metric_values_present |= any(value is not None for item in self.dimension_graphics for value in (item.extension_start_a_mm, item.extension_start_b_mm, item.dimension_start_mm, item.dimension_end_mm, item.text_position_mm))
         if self.source_unit == "unknown":
             if self.unit_scale_to_mm is not None or self.coordinate_unit != "source" or metric_values_present:
                 raise ValueError("unknown unit cannot contain metric values")
@@ -231,6 +301,34 @@ class Result(StrictModel):
     created_at: str
     review: HumanReview | None = None
     agent_selected_scenario_id: str | None = None
+
+
+class SceneObject(StrictModel):
+    id: str = Field(min_length=1)
+    piece_id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    occurrence_index: int = Field(ge=1)
+    position_mm: Point3D
+    dimensions_mm: Size3D
+    bbox_mm: Bounds3D
+    source_contour_ids: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    placement_basis: str = Field(min_length=1)
+
+
+class ReconstructionScene(StrictModel):
+    schema_version: Literal["0.3.0"] = "0.3.0"
+    run_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)
+    state: Literal["ready", "incomplete", "unavailable"]
+    selected_scenario_id: str | None = None
+    coordinate_system: Literal["x=width,y=height,z=depth; origin=front-left-bottom"] = "x=width,y=height,z=depth; origin=front-left-bottom"
+    objects: tuple[SceneObject, ...] = ()
+    warnings: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    collision_status: Literal["not_evaluated"] = "not_evaluated"
 
 
 class RunSnapshot(StrictModel):
