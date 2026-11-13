@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from backend.app.contratos.modelos import AssemblyCandidate, AssemblyPartUse, DerivedAssemblyDimension, DrawingExtraction, ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference, Point2D, ReviewRequest, SeparatedPartObservation, SeparatedPartsExtraction
+from backend.app.contratos.modelos import AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, DerivedAssemblyDimension, DrawingExtraction, ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference, Point2D, ReviewRequest, SeparatedPartObservation, SeparatedPartsExtraction
+from backend.app.historico.service import _assembly_dimensions
 from backend.app.servicios.repository import DemoRepository
+from backend.app.servicios.explanations import explain_result
 from backend.tests.test_backend_contract import _unknown_extraction
 
 
@@ -47,3 +49,27 @@ def test_parts_review_selects_candidate_and_resolves_only_observed_values(tmp_pa
     assert reviewed.pieces[0].quantity == 2
     assert reviewed.pieces[0].thickness_mm == 18
     assert reviewed.pieces[0].source_part_observation_ids == (observation.id,)
+
+
+def test_historical_dimensions_use_selected_assembly_derivations_not_a_piece_axis(tmp_path: Path) -> None:
+    extraction, parts, candidate = _parts_payload()
+    constraints = tuple(AssemblyConstraint(id=f"constraint-{axis}", kind="exterior_from_parts", operation="sum", dimension=f"assembled_{axis}", operand_refs=(f"part.{axis}",), result_mm=value, status="pass", evidence_ids=("evidence-1",)) for axis, value in (("width", 900), ("height", 1200), ("depth", 300)))
+    dimensions = tuple(DerivedAssemblyDimension(axis=axis, value_mm=value, state="derived", operand_refs=(f"part.{axis}",), constraint_id=f"constraint-{axis}") for axis, value in (("width", 900), ("height", 1200), ("depth", 300)))
+    candidate = candidate.model_copy(update={"family": "rectangular_shelving", "layout": "between_sides", "constraints": constraints, "derived_dimensions": dimensions, "unknown_fields": ()})
+    repository = DemoRepository(tmp_path / "historical.sqlite3")
+    repository.create_run("run-parts", "geometry_only", extraction, (), part_analysis=parts, assembly_candidates=(candidate,))
+    reviewed = repository.review("run-parts", ReviewRequest(base_result_revision=1, reviewer_name="Operador", assembly_candidate_id=candidate.id, notes="Selecciona ensamblaje"))
+    assert _assembly_dimensions(reviewed) == (900, 300, 1200)
+
+
+def test_parts_explanations_use_part_observation_provenance(tmp_path: Path) -> None:
+    extraction, parts, candidate = _parts_payload()
+    repository = DemoRepository(tmp_path / "explanations.sqlite3")
+    repository.create_run("run-parts", "geometry_only", extraction, (), part_analysis=parts, assembly_candidates=(candidate,))
+    initial = explain_result(extraction, repository.get_result("run-parts"))
+    reviewed = repository.review("run-parts", ReviewRequest(base_result_revision=1, reviewer_name="Operador", assembly_candidate_id=candidate.id, notes="Selecciona hipótesis"))
+    after = explain_result(extraction, reviewed)
+    assert initial.pieces[0].proposal_id == candidate.uses[0].id
+    assert initial.pieces[0].source_entity_ids == parts.observations[0].source_entity_ids
+    assert initial.pieces[0].field_states["quantity"] == "unknown"
+    assert after.pieces[0].source_contour_ids == tuple(contour for view in parts.observations[0].views for contour in view.contour_ids)

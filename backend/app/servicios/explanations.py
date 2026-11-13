@@ -18,6 +18,8 @@ def explain_proposal(extraction: DrawingExtraction, scenario: DecompositionScena
 
 
 def explain_result(extraction: DrawingExtraction, result: Result) -> ExplanationBundle:
+    if result.input_semantics == "separated_part_views" and result.part_analysis is not None:
+        return _explain_parts_result(result)
     proposals = {item.id: item for scenario in result.scenarios for item in scenario.components}
     observations = {item.id: item for item in extraction.observations}
     pieces: list[PieceExplanation] = []
@@ -39,3 +41,25 @@ def explain_result(extraction: DrawingExtraction, result: Result) -> Explanation
         pieces.append(PieceExplanation(piece_id=piece.id, proposal_id=piece.proposal_id, role=piece.role, source_entity_ids=proposal.source_entity_ids, source_contour_ids=piece.source_contour_ids, evidence_ids=piece.evidence_ids, dimension_ids=dimension_ids, measurements={"quantity": piece.quantity, "length_mm": piece.length_mm, "width_mm": piece.width_mm, "thickness_mm": piece.thickness_mm}, formulas=formulas, premises=tuple(premises), unknown_fields=unknown_fields, field_states=piece.field_states))
     warnings = ("result_has_unresolved_fields",) if any(item.unknown_fields for item in pieces) else ()
     return ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(pieces), warnings=warnings)
+
+
+def _explain_parts_result(result: Result) -> ExplanationBundle:
+    assert result.part_analysis is not None
+    observations = {item.id: item for item in result.part_analysis.observations}
+    candidates = (next(item for item in result.assembly_candidates if item.id == result.selected_assembly_candidate_id),) if result.selected_assembly_candidate_id else result.assembly_candidates
+    uses = {item.id: (candidate, item) for candidate in candidates for item in candidate.uses}
+    explanations: list[PieceExplanation] = []
+    if not result.pieces:
+        for use_id in sorted(uses):
+            candidate, use = uses[use_id]
+            observation = observations[use.part_observation_id]
+            dimensions = observation.dimensions
+            states = {"role": "hypothesis", "quantity": "observed" if use.allocated_quantity is not None else "unknown", "length_mm": dimensions.length.state if dimensions.length.state != "conflict" else "unknown", "width_mm": dimensions.width.state if dimensions.width.state != "conflict" else "unknown", "thickness_mm": dimensions.thickness.state if dimensions.thickness.state != "conflict" else "unknown", "material": "unknown", "finish": "unknown"}
+            explanations.append(PieceExplanation(piece_id=use.id, proposal_id=use.id, role=use.role, source_entity_ids=observation.source_entity_ids, source_contour_ids=tuple(contour for view in observation.views for contour in view.contour_ids), evidence_ids=tuple(sorted(set(observation.evidence_ids) | set(use.evidence_ids))), dimension_ids=tuple(sorted(set(dimensions.length.measurement_ids + dimensions.width.measurement_ids + dimensions.thickness.measurement_ids))), measurements={"quantity": use.allocated_quantity, "length_mm": dimensions.length.value_mm, "width_mm": dimensions.width.value_mm, "thickness_mm": dimensions.thickness.value_mm}, formulas=(), premises=candidate.assumptions + ("role_assignment_is_hypothesis", "assembly_layout_is_hypothesis"), unknown_fields=tuple(sorted(field for field, state in states.items() if state == "unknown")), field_states=states))
+        return ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(explanations), warnings=("assembly_hypotheses_require_human_review",))
+    for piece in result.pieces:
+        candidate, use = uses[piece.proposal_id]
+        observation = observations[use.part_observation_id]
+        explanations.append(PieceExplanation(piece_id=piece.id, proposal_id=piece.proposal_id, role=piece.role, source_entity_ids=observation.source_entity_ids, source_contour_ids=piece.source_contour_ids, evidence_ids=piece.evidence_ids, dimension_ids=tuple(sorted(set(observation.dimensions.length.measurement_ids + observation.dimensions.width.measurement_ids + observation.dimensions.thickness.measurement_ids))), measurements={"quantity": piece.quantity, "length_mm": piece.length_mm, "width_mm": piece.width_mm, "thickness_mm": piece.thickness_mm}, formulas=(), premises=candidate.assumptions + ("human_selected_assembly_candidate",), unknown_fields=tuple(sorted(field for field, state in piece.field_states.items() if state == "unknown")), field_states=piece.field_states))
+    warnings = ("result_has_unresolved_fields",) if any(item.unknown_fields for item in explanations) else ()
+    return ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(explanations), warnings=warnings)

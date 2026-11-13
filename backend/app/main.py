@@ -256,7 +256,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 status = "generated"
             except (ValueError, EmbeddingProviderError) as exc:
                 return _error(409, str(exc), "El caché pertenece a un espacio de embedding incompatible.")
-            embedding = EmbeddingMetadata(model=model, dimensions=dimensions, cache_key=cache_key, status=status)
+            embedding = EmbeddingMetadata(model=model, dimensions=dimensions, descriptor_version=descriptor.descriptor_version, cache_key=cache_key, status=status)
         item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding)
         repository.save_library_item(item)
         repository.append_event(run_id, "library_item_saved", {"result_revision": result.result_revision, "embedding_mode": request.embedding_mode})
