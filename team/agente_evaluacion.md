@@ -42,7 +42,7 @@
 | Caso | Comando | Resultado observado | Limitación |
 |---|---|---|---|
 | TDD rojo | `python -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 7 fallos, 1 pasa antes de generar DXF/manifiesto | Dependencia ezdxf instalada tras declaración de B |
-| Fixture e aislamiento | mismo comando tras generar | 8 pasan | Todavía sin backend integrado |
+| Fixture e aislamiento reproducible | mismo comando tras generar | 9 pasan; dos procesos generan bytes idénticos | Todavía sin backend integrado |
 
 ## Siguiente bloque
 
