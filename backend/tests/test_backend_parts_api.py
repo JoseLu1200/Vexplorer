@@ -163,7 +163,8 @@ def test_parts_live_uses_native_grounded_tools_and_persists_selection(tmp_path: 
 
     assert response.status_code == 201
     payload = response.json()["data"]
-    selected = payload["run"]["agent_selected_scenario_id"]
+    assert payload["run"]["agent_selected_scenario_id"] is None
+    selected = payload["run"]["agent_selected_assembly_candidate_id"]
     assert selected == provider.initial_context["assembly_candidates"][0]["id"]
     assert payload["result"]["assembly_candidates"][0]["id"] == selected
     events = client.get(f"/api/v1/runs/{payload['run']['id']}/events").text
