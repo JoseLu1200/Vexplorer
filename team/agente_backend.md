@@ -22,10 +22,22 @@ Implementar el backend local completo de la primera demo: contrato Pydantic 0.2 
 
 ## Estado
 
-En curso. Contrato 0.2 acordado; implementación contractual en ciclo TDD.
+Vertical slice backend completo y verificado; pendiente únicamente integrar los commits en la rama coordinadora y repetir el recorrido navegador del equipo.
 
 ## Registro de trabajo
 
 - 2026-11-13: identidad, alcance, dependencias y bloqueo contractual registrados antes de editar código.
 - 2026-11-13: acuerdo explícito A/B 0.2: `extract_drawing(path: Path) -> DrawingExtraction`; geometría entrega solo observaciones/evidencia, sin propuestas; B mantiene escenarios hipotéticos y revisiones separadas. C y D avisados antes de implementar.
 - 2026-11-13: consultada documentación oficial de OpenAI Responses/function calling; el adaptador live usará herramientas estrictas y correlación por `call_id`, sin herramientas integradas ni acceso libre a archivos.
+- 2026-11-13: commit contractual `3346537`; `python -m pytest backend/tests/test_backend_contract.py -q` → 4 passed. Compartido con A/C/D.
+- 2026-11-13: commits integrados de A/D para verificar extractor y fixture reales: `427b9c0`, `1130b4e`, `8c40471`, `f346c77`; no son autoría de B.
+- 2026-11-13: commit servidor `df184a9`: upload DXF, escenarios incompatibles, revisión versionada, histórico sintético, estimación por conceptos, export, SSE, frontend estático y live configurable.
+- 2026-11-13: commit hardening `a7ce394`: anti-traversal, dimensiones ortográficas consistentes, export bundle auditable, eventos de revisión/estimación, revisión atómica, tarifa compatible y herramientas live con evidencia vectorial estructurada.
+- 2026-11-13: `python -m pytest -q` → 45 passed. Smoke live real con `gpt-6.1-sol` y fixture público → HTTP 201, resultado `needs_review`, dos escenarios; sin fallback ni exposición de secretos.
+
+## Límites reales
+
+- Modalidad live: evidencia vectorial estructurada, no visión ni imagen; la persona confirma escenario, espesor, material y acabado.
+- Catálogo, costes y tarifas son sintéticos y se etiquetan como tales; horas permanecen desconocidas.
+- `recorded_replay` se rechaza hasta disponer de una grabación real autorizada.
+- Persistencia SQLite local de un host; sin promesa de alta disponibilidad ni autenticación multiusuario en esta demo.

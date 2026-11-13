@@ -54,7 +54,7 @@ class DemoRepository:
         connection.row_factory = sqlite3.Row
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...]) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = ()) -> RunSnapshot:
         created_at = _now()
         initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at)
         with self._connect() as db:
@@ -63,9 +63,15 @@ class DemoRepository:
                 (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
-            db.execute("INSERT INTO events VALUES (?, 1, 'run_state_changed', ?)", (run_id, json.dumps({"timestamp": created_at, "state": "needs_review", "mode": mode})))
-            db.execute("INSERT INTO events VALUES (?, 2, 'result_committed', ?)", (run_id, json.dumps({"timestamp": created_at, "result_revision": 1, "state": "needs_review"})))
-            db.execute("INSERT INTO events VALUES (?, 3, 'run_finished', ?)", (run_id, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
+            sequence = 1
+            db.execute("INSERT INTO events VALUES (?, ?, 'run_state_changed', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "state": "needs_review", "mode": mode})))
+            for trace in trace_events:
+                sequence += 1
+                db.execute("INSERT INTO events VALUES (?, ?, 'tool_completed', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, **trace})))
+            sequence += 1
+            db.execute("INSERT INTO events VALUES (?, ?, 'result_committed', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "result_revision": 1, "state": "needs_review"})))
+            sequence += 1
+            db.execute("INSERT INTO events VALUES (?, ?, 'run_finished', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
         return self.get_run(run_id)
 
     def get_run(self, run_id: str) -> RunSnapshot:

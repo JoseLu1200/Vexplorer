@@ -23,10 +23,19 @@ class AgentLimits:
 
 
 @dataclass(frozen=True)
+class AgentAction:
+    tool_name: str
+    ok: bool
+    evidence_ids: tuple[str, ...]
+    summary: str
+
+
+@dataclass(frozen=True)
 class AgentOutcome:
     selected_scenario_id: str
     model_calls: int
     tool_calls: int
+    actions: tuple[AgentAction, ...]
 
 
 def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits()) -> AgentOutcome:
@@ -39,6 +48,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
     repairs = 0
+    actions: list[AgentAction] = []
     while model_calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
@@ -66,17 +76,22 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         "contours": [item.model_dump(mode="json") for item in extraction.contours if set(item.source_entity_ids) & source_ids],
                         "dimensions": [item.model_dump(mode="json") for item in extraction.dimensions if set(item.evidence_ids) & set(args.evidence_ids)],
                     }
+                    actions.append(AgentAction(tool_name=call.name, ok=not unknown, evidence_ids=tuple(item for item in args.evidence_ids if item in evidence), summary="Evidencia vectorial del ledger inspeccionada." if not unknown else "Referencia de evidencia desconocida rechazada."))
                 elif call.name == "entregar_despiece":
                     args = SelectScenarioArgs.model_validate(call.arguments)
                     if args.scenario_id not in scenario_ids:
                         data = {"ok": False, "error": "unknown_reference"}
+                        actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Escenario desconocido rechazado."))
                     else:
-                        return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls)
+                        actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana."))
+                        return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls, actions=tuple(actions))
                 else:
                     data = {"ok": False, "error": "unknown_tool"}
+                    actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Herramienta no autorizada rechazada."))
             except ValidationError as exc:
                 repairs += 1
                 data = {"ok": False, "error": "invalid_arguments", "details": exc.errors(include_url=False)}
+                actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Argumentos de herramienta inválidos rechazados."))
                 if repairs > limits.max_validation_repairs:
                     raise RuntimeError("validation_repair_budget_exhausted") from exc
             outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
