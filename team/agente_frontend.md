@@ -24,14 +24,17 @@ Construir una interfaz JS/HTML local para la familia de estantería rectangular 
 
 ## Estado
 
-En curso. Documentación y normas leídas; UX y pruebas pueden prepararse mientras se espera el aviso del contrato A/B. No se consumirá un esquema supuesto como si fuera definitivo.
+Implementación completa e integrada por el coordinador en `demo/first-executable`. La UI consume el contrato canónico 0.2, muestra propuestas de los dos escenarios de montaje, registra la revisión humana, consulta comparables y presenta la estimación y exportaciones del backend.
 
 ## Dependencias / avisos
 
-- Pendiente de B: contrato 0.2 acordado, rutas, payloads y forma de servir `frontend/` desde FastAPI.
-- Pendiente de A/B: forma final de `DrawingPreview` y mapeos `path/contour/evidence/candidate`.
+- Contrato 0.2 acordado por A/B y consumido por IDs estables de entidad, contorno, evidencia y propuesta.
+- FastAPI sirve `frontend/` desde el mismo origen; las rutas de recursos son `/styles.css`, `/app.js` y módulos relativos.
 - El frontend no incluirá mocks prefijados que se presenten como inferencia. Los tests podrán usar fixtures contractuales explícitos y la UI mostrará estados vacíos o errores cuando la API no aporte datos.
 
 ## Verificación
 
-Pendiente de implementar. Se registrarán comandos y resultados reales al finalizar cada bloque.
+- `cd frontend; npm test`: 28 pruebas, 28 aprobadas, 0 fallos en el último ciclo local.
+- Navegador real en `http://127.0.0.1:8765`: servicio y recursos cargados; upload DXF real; 3 vistas y 15 paths; 4 cotas observadas; tabla de hipótesis; dos escenarios incompatibles; campos de revisión; comparables sintéticos y traza visibles.
+- El coordinador verificó en navegador la revisión 2 con balda calculada a 864 mm y estimación total 127,84 EUR. Durante esa revisión se detectaron y corrigieron overlay `hidden`, estado de carga terminal, procedencia por campo y detalle de tarifas/factores.
+- No se probó modo `live`: no hay proveedor real configurado. Replay permanece deshabilitado porque no existe grabación real.
