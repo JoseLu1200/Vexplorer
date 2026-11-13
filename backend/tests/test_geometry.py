@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import ezdxf
 import pytest
 
@@ -162,3 +164,99 @@ def test_entity_limit_is_checked_before_entity_analysis(tmp_path):
         parse_dxf(path, max_entities=4)
 
     assert MAX_ENTITIES == 100_000
+
+
+def test_linear_dimension_has_readable_anchors_instead_of_defpoint_zigzag(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    dimension = document.modelspace().add_linear_dim(
+        base=(0, 50), p1=(0, 0), p2=(600, 0), angle=0,
+    )
+    dimension.render()
+    path = tmp_path / "anchored-dimension.dxf"
+    document.saveas(path)
+
+    parsed = parse_dxf(path)
+    entity = next(item for item in parsed.entities if item.kind == "DIMENSION")
+
+    assert entity.extension_starts == ((0.0, 0.0), (600.0, 0.0))
+    assert entity.dimension_line == ((0.0, 50.0), (600.0, 50.0))
+    assert entity.text_position == (300.0, 50.0)
+    assert entity.display_text == "600 mm"
+
+
+def test_public_dxf_text_remains_plain_data_with_layer_and_position(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    document.layers.add("PUBLIC_NOTES")
+    document.modelspace().add_text("<img src=x onerror=alert(1)>", dxfattribs={"layer": "PUBLIC_NOTES"}).set_placement((12, 34))
+    path = tmp_path / "public-text.dxf"
+    document.saveas(path)
+
+    parsed = parse_dxf(path)
+    entity = next(item for item in parsed.entities if item.kind == "TEXT")
+
+    assert entity.text == "<img src=x onerror=alert(1)>"
+    assert entity.layer == "PUBLIC_NOTES"
+    assert entity.points == ((12.0, 34.0),)
+
+
+def test_extraction_exposes_plain_text_and_segmented_dimension_graphic(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline([(0, 0), (600, 0), (600, 300), (0, 300)], close=True)
+    modelspace.add_text("FRONT").set_placement((0, 350))
+    modelspace.add_text("Nota pública").set_placement((100, 200))
+    dimension = modelspace.add_linear_dim(base=(0, -50), p1=(0, 0), p2=(600, 0), angle=0)
+    dimension.render()
+    path = tmp_path / "enriched.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    note = next(item for item in extraction.texts if item.text == "Nota pública")
+    assert note.layer == "0"
+    assert note.position_source.x == 100
+    assert note.position_mm.x == 100
+    graphic = extraction.dimension_graphics[0]
+    dimension_value = extraction.dimensions[0]
+    assert graphic.dimension_id == dimension_value.id
+    assert dimension_value.graphic_id == graphic.id
+    assert dimension_value.view_id == "view-front"
+    assert graphic.dimension_start_mm.model_dump() == {"x": 0.0, "y": -50.0}
+    assert graphic.dimension_end_mm.model_dump() == {"x": 600.0, "y": -50.0}
+    assert graphic.extension_start_a_mm.model_dump() == {"x": 0.0, "y": 0.0}
+    assert graphic.extension_start_b_mm.model_dump() == {"x": 600.0, "y": 0.0}
+    assert graphic.display_text == "600 mm"
+
+
+def test_unknown_units_keep_text_and_dimension_anchors_in_source_coordinates_only(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 0
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline([(0, 0), (10, 0), (10, 5), (0, 5)], close=True)
+    modelspace.add_text("FRONT").set_placement((0, 6))
+    dimension = modelspace.add_linear_dim(base=(0, -1), p1=(0, 0), p2=(10, 0), angle=0)
+    dimension.render()
+    path = tmp_path / "unknown-unit-enriched.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert all(item.position_mm is None for item in extraction.texts)
+    graphic = extraction.dimension_graphics[0]
+    assert graphic.dimension_start_source.model_dump() == {"x": 0.0, "y": -1.0}
+    assert graphic.dimension_start_mm is None
+    assert graphic.dimension_end_mm is None
+    assert graphic.display_text == "10 source-unit"
+
+
+def test_demo_dimensions_are_anchored_to_their_geometric_views_not_nearest_label():
+    extraction = extract_drawing(Path("data/planos_demo/estanteria_montada.dxf"))
+
+    views_by_value = {dimension.value_mm: dimension.view_id for dimension in extraction.dimensions}
+    assert views_by_value[900.0] == "view-front"
+    assert views_by_value[1200.0] == "view-front"
+    assert views_by_value[300.0] == "view-top"
+    assert views_by_value[18.0] == "view-top"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
-from math import isfinite
+from math import atan2, cos, isfinite, radians, sin
 from pathlib import Path
 import re
 from typing import Iterable
@@ -24,6 +24,10 @@ class ParsedEntity:
     text: str | None = None
     measurement: float | None = None
     dimension_conflict: bool = False
+    extension_starts: tuple[tuple[float, float], tuple[float, float]] | None = None
+    dimension_line: tuple[tuple[float, float], tuple[float, float]] | None = None
+    text_position: tuple[float, float] | None = None
+    display_text: str | None = None
 
 
 @dataclass(frozen=True)
@@ -113,9 +117,46 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
             for attr in ("defpoint", "defpoint2", "defpoint3"):
                 if entity.dxf.hasattr(attr):
                     points.append(_point2(getattr(entity.dxf, attr)))
+            extension_starts = None
+            dimension_line = None
+            text_position = None
+            display_text = None
+            if dimension_type in {0, 1} and len(points) == 3:
+                base, start_a, start_b = points
+                angle = (
+                    radians(float(entity.dxf.angle))
+                    if dimension_type == 0
+                    else atan2(start_b[1] - start_a[1], start_b[0] - start_a[0])
+                )
+                direction = (cos(angle), sin(angle))
+
+                def project(point: tuple[float, float]) -> tuple[float, float]:
+                    offset = (point[0] - base[0], point[1] - base[1])
+                    along = offset[0] * direction[0] + offset[1] * direction[1]
+                    return (base[0] + along * direction[0], base[1] + along * direction[1])
+
+                extension_starts = (start_a, start_b)
+                dimension_line = (project(start_a), project(start_b))
+                text_position = (
+                    _point2(entity.dxf.text_midpoint)
+                    if entity.dxf.hasattr("text_midpoint")
+                    else (
+                        (dimension_line[0][0] + dimension_line[1][0]) / 2,
+                        (dimension_line[0][1] + dimension_line[1][1]) / 2,
+                    )
+                )
+                raw_text = str(entity.dxf.text or "")
+                display_text = (
+                    raw_text
+                    if raw_text not in {"", "<>"}
+                    else f"{measurement:g} {unit}" if measurement is not None and unit != "unknown"
+                    else f"{measurement:g} source-unit" if measurement is not None
+                    else "unresolved"
+                )
             parsed.append(ParsedEntity(
                 entity_id, kind, layer, _finite_points(points), text=str(entity.dxf.text or ""),
-                measurement=measurement, dimension_conflict=conflict,
+                measurement=measurement, dimension_conflict=conflict, extension_starts=extension_starts,
+                dimension_line=dimension_line, text_position=text_position, display_text=display_text,
             ))
         else:
             warnings.append(f"unsupported_entity:{kind}:{entity_id}")
