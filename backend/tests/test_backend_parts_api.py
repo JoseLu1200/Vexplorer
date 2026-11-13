@@ -70,3 +70,37 @@ def test_parts_only_requires_explicit_input_kind(tmp_path: Path, monkeypatch) ->
 
     assert drawing.status_code == 200
     assert drawing.json()["data"]["input_kind"] == "mounted_views_legacy"
+
+
+def test_parts_scene_dispatches_to_reviewed_parts_reconstruction(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    document_id = _upload(client)
+    created = client.post(
+        "/api/v1/runs",
+        json={
+            "document_id": document_id,
+            "mode": "geometry_only",
+            "input_kind": "separated_part_views",
+        },
+    ).json()["data"]
+    run_id = created["run"]["id"]
+    candidate_id = created["result"]["assembly_candidates"][0]["id"]
+    reviewed = client.post(
+        f"/api/v1/runs/{run_id}/reviews",
+        json={
+            "base_result_revision": 1,
+            "reviewer_name": "Operadora local",
+            "assembly_candidate_id": candidate_id,
+            "notes": "Selecciona esta hipótesis de montaje y asignación de roles.",
+        },
+    )
+
+    assert reviewed.status_code == 201
+    assert reviewed.json()["data"]["state"] == "completed"
+    scene = client.get(
+        f"/api/v1/runs/{run_id}/scene", params={"result_revision": 2}
+    )
+    assert scene.status_code == 200
+    assert scene.json()["data"]["state"] == "ready"
+    assert len(scene.json()["data"]["objects"]) == 6
+    assert all(item["part_observation_id"] for item in scene.json()["data"]["objects"])
