@@ -26,3 +26,9 @@ Identidad: agente coordinador de IA; no representa a una persona. Autorización:
 
 ## Estado
 En curso. Contrato y fixture aún pendientes de acuerdo; ninguna capacidad de aplicación verificada todavía.
+
+## Integración parcial
+- Contratos 3346537, fixture c3c5e85 y geometría 7b46a2a/7ce5112/1cd65bc integrados.
+- Entorno virtual nuevo instalado con .venv/Scripts/python.exe -m pip install -e '.[test]'. Suite integrada: 30 passed antes del último filtro de cotas; pendiente nueva ejecución con regresiones.
+- Coordinador mantiene además requirements-demo.txt como restricciones del entorno comprobado (Python 3.14 Windows), sin rutas locales ni secretos.
+
