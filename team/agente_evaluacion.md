@@ -44,7 +44,8 @@
 |---|---|---|---|
 | TDD rojo | `python -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 7 fallos, 1 pasa antes de generar DXF/manifiesto | Dependencia ezdxf instalada tras declaración de B |
 | Fixture e aislamiento reproducible | mismo comando tras generar | 9 pasan; dos procesos generan bytes idénticos | Todavía sin backend integrado |
-| E2E rojo previo a integración | `python -m pytest tests/test_demo_e2e.py -q` | error de colección esperado: backend agéntico/API aún ausente en esta rama | Pendiente ejecutar contra commit B integrado |
+| E2E rojo previo a integración | `python -m pytest tests/test_demo_e2e.py -q` | error de colección esperado: backend agéntico/API aún ausente en esta rama | Resuelto al integrar B |
+| E2E contra API real integrada | desde raíz: `.venv\Scripts\python.exe -m pytest .worktrees/evaluacion/tests/test_demo_e2e.py -q` | 2 pasan; 1 aviso deprecación TestClient/httpx | Oráculo económico manual suma todas las piezas: 127,84 EUR |
 
 ## Siguiente bloque
 

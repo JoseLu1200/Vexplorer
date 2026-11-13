@@ -151,6 +151,7 @@ def test_real_api_freezes_hypotheses_before_private_comparison_and_recalculates(
                 "material": "tablero sintético",
                 "finish": "melamina sintética",
                 "notes": "Técnico confirma montaje y espesor observables",
+                "reviewer_name": "Revisor E2E",
             },
         )
         assert reviewed_response.status_code == 201, reviewed_response.text
@@ -163,6 +164,7 @@ def test_real_api_freezes_hypotheses_before_private_comparison_and_recalculates(
                 "scenario_id": "scenario-between-sides",
                 "confirmed_thickness_mm": 18,
                 "notes": "revisión obsoleta",
+                "reviewer_name": "Revisor E2E",
             },
         )
         snapshot = client.get(f"/api/v1/runs/{run_id}").json()["data"]
@@ -210,7 +212,7 @@ def test_real_api_freezes_hypotheses_before_private_comparison_and_recalculates(
     assert concepts["setup"]["factor"] == 1
     assert concepts["material"]["factor"] == economic_oracle["expected"]["material_factor"]
     assert concepts["material"]["amount"] == economic_oracle["expected"]["material_amount_eur"]
-    assert first_estimate["total"] == economic_oracle["expected"]["total_eur"] == 76.0
+    assert first_estimate["total"] == economic_oracle["expected"]["total_eur"] == 127.84
     assert first_estimate["hours"] is economic_oracle["expected"]["hours"] is None
 
     assert exported_json.status_code == 200
