@@ -38,7 +38,7 @@ def _point2(point: object) -> tuple[float, float]:
 
 def _entity_id(entity: object, ordinal: int) -> str:
     handle = getattr(getattr(entity, "dxf", None), "handle", None)
-    return f"entity-{handle or ordinal:>s}" if isinstance(handle, str) else f"entity-{ordinal}"
+    return f"entity-{handle}" if isinstance(handle, str) and handle else f"entity-{ordinal}"
 
 
 def _finite_points(points: Iterable[tuple[float, float]]) -> tuple[tuple[float, float], ...]:
@@ -76,10 +76,12 @@ def parse_dxf(path: Path) -> ParsedDrawing:
             insert = _point2(entity.dxf.insert)
             parsed.append(ParsedEntity(entity_id, kind, layer, (insert,), text=text.strip()))
         elif kind == "DIMENSION":
+            dimension_type = int(entity.dxf.dimtype) & 0x0F
             try:
-                measurement = float(entity.get_measurement())
+                measurement = float(entity.get_measurement()) if dimension_type in {0, 1} else None
             except (TypeError, ValueError, ezdxf.DXFError):
                 measurement = None
+            if measurement is None:
                 warnings.append(f"unsupported_dimension:{entity_id}")
             points = []
             for attr in ("defpoint", "defpoint2", "defpoint3"):
