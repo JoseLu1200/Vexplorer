@@ -92,6 +92,7 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
     proposals = {item.id: item for item in scenario.components}
     warnings: list[str] = []
     complete: dict[str, ResolvedPiece] = {}
+    duplicate_role = False
     for piece in result.pieces:
         if piece.proposal_id not in proposals or piece.role not in SUPPORTED_ROLES:
             warnings.append(f"unsupported_placement:{piece.id}")
@@ -102,7 +103,17 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
         ):
             warnings.append(f"incomplete_piece:{piece.id}")
             continue
+        if piece.role in complete:
+            warnings.append(f"duplicate_resolved_role:{piece.role}")
+            duplicate_role = True
+            continue
         complete[piece.role] = piece
+    if duplicate_role:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=scenario_id, warnings=tuple(warnings),
+            assumptions=tuple(scenario.assumptions),
+        )
     side = complete.get("side_panel")
     top = complete.get("top_panel")
     base = complete.get("base_panel")
@@ -112,8 +123,8 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
             selected_scenario_id=scenario_id, warnings=tuple(warnings or ["envelope_pieces_missing"]),
             assumptions=tuple(scenario.assumptions),
         )
-    thicknesses = {side.thickness_mm, top.thickness_mm, base.thickness_mm}
-    depths = {side.width_mm, top.width_mm, base.width_mm}
+    thicknesses = {piece.thickness_mm for piece in complete.values()}
+    depths = {piece.width_mm for piece in complete.values()}
     if len(thicknesses) != 1 or len(depths) != 1:
         return ReconstructionScene(
             run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
@@ -138,6 +149,13 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
         return ReconstructionScene(
             run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
             selected_scenario_id=scenario_id, warnings=("unsupported_mounting_scenario",),
+            assumptions=tuple(scenario.assumptions),
+        )
+    if abs(top.length_mm - horizontal_width) > 1e-6 or abs(base.length_mm - horizontal_width) > 1e-6:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=scenario_id,
+            warnings=tuple(warnings + ["inconsistent_resolved_dimensions"]),
             assumptions=tuple(scenario.assumptions),
         )
 
@@ -180,10 +198,11 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
                 objects.append(_scene_object(
                     shelf, index, (thickness, level, 0.0),
                     (shelf.length_mm, shelf.thickness_mm, shelf.width_mm),
-                    f"{scenario_id}: observed FRONT/SIDE level entities {','.join(proposal.source_entity_ids)}",
+                    f"{scenario_id}: observed FRONT/SIDE level anchors the shelf lower face; entities {','.join(proposal.source_entity_ids)}",
                 ))
     assumptions = tuple(scenario.assumptions) + (
         "Boxes are schematic reviewed panel occurrences, not manufacturing solids.",
+        "Each observed shelf level is interpreted as the lower face of its reviewed shelf box.",
         "Collision checking is not certified and remains not_evaluated.",
     )
     return ReconstructionScene(
