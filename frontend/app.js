@@ -364,9 +364,10 @@ async function runUpload(event) {
   event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un archivo DXF.", true);
   if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un DXF más pequeño.", true);
   const mode = new FormData(event.currentTarget).get("mode");
+  let uploadToken;
   try {
     resetRunUi();
-    const uploadToken=uploadFence.issue(file);
+    uploadToken=uploadFence.issue(file);
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
     const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id;
     $("#original-preview").src = api.documentPreviewUrl(state.documentId);
@@ -375,7 +376,7 @@ async function runUpload(event) {
     const runPayload = await api.createRun(state.documentId, mode); if(!uploadFence.isCurrent(uploadToken,file))return;
     state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
-  } catch (error) { setMessage(error.message, true); text($("#upload-status"), "Error"); }
+  } catch (error) { if(uploadToken&&!uploadFence.isCurrent(uploadToken,file))return; setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
 
 async function submitReview(event) {
