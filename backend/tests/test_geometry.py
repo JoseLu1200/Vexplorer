@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import ezdxf
+import pytest
 
 from backend.app.geometria.extraction import derive_rectangular_hypotheses, extract_drawing
+from backend.app.ingesta.dxf_reader import MAX_ENTITIES, parse_dxf
 
 
 def _drawing(tmp_path, *, unit_code: int, sizes=((1.0, 0.5),), labels=("FRONT",)):
@@ -81,3 +83,82 @@ def test_connected_lines_form_a_traceable_contour(tmp_path):
     assert len(extraction.contours) == 1
     assert len(extraction.contours[0].source_entity_ids) == 4
     assert derive_rectangular_hypotheses(extraction)[0].observed_dimensions_mm == (300.0, 120.0)
+
+
+def test_angular_dimension_is_warned_and_never_published_as_millimetres(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    dimension = modelspace.add_angular_dim_2l(
+        base=(3, 3), line1=((0, 0), (5, 0)), line2=((0, 0), (3, 3)),
+    )
+    dimension.render()
+    path = tmp_path / "angular.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert extraction.dimensions == ()
+    assert any(warning.startswith("unsupported_dimension:") for warning in extraction.warnings)
+
+
+def test_overridden_dimension_text_preserves_conflict_and_abstains(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    dimension = modelspace.add_linear_dim(base=(0, 50), p1=(0, 0), p2=(600, 0))
+    dimension.dimension.dxf.text = "620"
+    dimension.render()
+    path = tmp_path / "conflict.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert extraction.dimensions[0].value_mm is None
+    assert any("dimension_text_conflict" in warning and "620" in warning for warning in extraction.warnings)
+
+
+def test_dimension_scale_is_visible_and_not_silently_applied(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    dimension = modelspace.add_linear_dim(
+        base=(0, 50), p1=(0, 0), p2=(600, 0), override={"dimlfac": 2},
+    )
+    dimension.render()
+    path = tmp_path / "scaled-dimension.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert extraction.dimensions[0].value_mm is None
+    assert any("dimension_scale_conflict" in warning and "2" in warning for warning in extraction.warnings)
+
+
+def test_trapezoid_is_not_a_rectangular_hypothesis(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline([(0, 0), (500, 0), (420, 200), (30, 200)], close=True)
+    modelspace.add_text("FRONT").set_placement((0, -20))
+    path = tmp_path / "trapezoid.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert len(extraction.contours) == 1
+    assert derive_rectangular_hypotheses(extraction) == ()
+
+
+def test_entity_limit_is_checked_before_entity_analysis(tmp_path):
+    document = ezdxf.new("R2010")
+    modelspace = document.modelspace()
+    for index in range(5):
+        modelspace.add_line((index, 0), (index, 1))
+    path = tmp_path / "too-many.dxf"
+    document.saveas(path)
+
+    with pytest.raises(ValueError, match="entity limit exceeded"):
+        parse_dxf(path, max_entities=4)
+
+    assert MAX_ENTITIES == 100_000
