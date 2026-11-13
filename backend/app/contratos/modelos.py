@@ -135,6 +135,7 @@ class DrawingObservation(StrictModel):
 class DrawingExtraction(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     drawing_id: str = Field(min_length=1)
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
     status: Literal["ready", "needs_review"]
     source_unit: Literal["mm", "cm", "m", "in", "unknown"]
     unit_scale_to_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
@@ -201,6 +202,167 @@ class DrawingExtraction(StrictModel):
         return self
 
 
+class PartViewReference(StrictModel):
+    view_id: str = Field(min_length=1)
+    role: Literal["FRONT", "TOP", "SIDE"]
+    contour_ids: tuple[str, ...] = Field(min_length=1)
+    local_origin_source: Point2D
+    local_origin_mm: Point2D | None = None
+    local_bounds_source: Bounds2D
+    local_bounds_mm: Bounds2D | None
+
+
+class ObservedPartDimension(StrictModel):
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    state: Literal["observed", "unknown", "conflict"]
+    origin: Literal["observed"] = "observed"
+    measurement_ids: tuple[str, ...] = ()
+    view_ids: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def evidence_matches_state(self) -> "ObservedPartDimension":
+        if self.state == "observed" and (self.value_mm is None or not self.view_ids or not self.evidence_ids):
+            raise ValueError("observed dimension requires value, view and evidence references")
+        if self.state != "observed" and self.value_mm is not None:
+            raise ValueError("unknown or conflict dimension must have null value")
+        return self
+
+
+class PartDimensions(StrictModel):
+    length: ObservedPartDimension
+    width: ObservedPartDimension
+    thickness: ObservedPartDimension
+
+
+class ObservedQuantity(StrictModel):
+    value: int | None = Field(default=None, gt=0)
+    state: Literal["observed", "unknown", "ambiguous"]
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def evidence_matches_state(self) -> "ObservedQuantity":
+        if self.state == "observed" and (self.value is None or not self.evidence_ids):
+            raise ValueError("observed quantity requires value and evidence references")
+        if self.state != "observed" and self.value is not None:
+            raise ValueError("unknown or ambiguous quantity must have null value")
+        return self
+
+
+class SeparatedPartObservation(StrictModel):
+    id: str = Field(min_length=1)
+    part_key: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]+$")
+    association_basis: Literal["explicit_key", "unassociated", "ambiguous"]
+    views: tuple[PartViewReference, ...] = Field(min_length=1)
+    dimensions: PartDimensions
+    quantity: ObservedQuantity
+    status: Literal["complete", "partial", "ambiguous"]
+    source_entity_ids: tuple[str, ...] = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    warnings: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def association_is_explicit(self) -> "SeparatedPartObservation":
+        if self.association_basis == "explicit_key" and self.part_key is None:
+            raise ValueError("explicit association requires part_key")
+        if self.association_basis == "unassociated" and self.part_key is not None:
+            raise ValueError("unassociated observation cannot have part_key")
+        view_ids = [item.view_id for item in self.views]
+        roles = [item.role for item in self.views]
+        if len(view_ids) != len(set(view_ids)) or len(roles) != len(set(roles)):
+            raise ValueError("part observation views and roles must be unique")
+        return self
+
+
+class SeparatedPartsExtraction(StrictModel):
+    schema_version: Literal["0.4.0"] = "0.4.0"
+    drawing_id: str = Field(min_length=1)
+    candidate_revision: str = Field(min_length=1)
+    input_kind: Literal["separated_part_views"] = "separated_part_views"
+    observations: tuple[SeparatedPartObservation, ...]
+    warnings: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def unique_observations(self) -> "SeparatedPartsExtraction":
+        ids = [item.id for item in self.observations]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate part observation ids")
+        view_ids = [view.view_id for item in self.observations for view in item.views]
+        if len(view_ids) != len(set(view_ids)):
+            raise ValueError("view belongs to more than one part observation")
+        explicit_keys = [item.part_key for item in self.observations if item.association_basis == "explicit_key"]
+        if len(explicit_keys) != len(set(explicit_keys)):
+            raise ValueError("explicit part_key belongs to more than one observation")
+        return self
+
+
+class AssemblyPartUse(StrictModel):
+    part_observation_id: str = Field(min_length=1)
+    role: Literal["side_panel", "shelf", "top_panel", "base_panel", "back_panel", "door", "divider", "unknown"]
+    role_status: Literal["hypothesis"] = "hypothesis"
+    quantity: int | None = Field(default=None, gt=0)
+    quantity_source: Literal["observed_annotation", "human_confirmed", "unknown"]
+    evidence_ids: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def quantity_matches_source(self) -> "AssemblyPartUse":
+        if self.quantity_source == "unknown" and self.quantity is not None:
+            raise ValueError("unknown quantity source must have null quantity")
+        if self.quantity_source != "unknown" and self.quantity is None:
+            raise ValueError("observed or confirmed quantity source requires quantity")
+        return self
+
+
+class AssemblyConstraint(StrictModel):
+    id: str = Field(min_length=1)
+    kind: Literal["equal_dimensions", "exterior_from_parts", "role_compatibility"]
+    dimension: Literal["length", "width", "thickness", "assembled_width", "assembled_height", "assembled_depth"]
+    operand_refs: tuple[str, ...] = Field(min_length=1)
+    result_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    status: Literal["pass", "unknown", "conflict"]
+    tolerance_mm: float = Field(default=0.1, gt=0, allow_inf_nan=False)
+    evidence_ids: tuple[str, ...]
+
+
+class DerivedAssemblyDimension(StrictModel):
+    axis: Literal["width", "height", "depth"]
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    state: Literal["derived", "unknown", "conflict"]
+    operand_refs: tuple[str, ...]
+    constraint_id: str | None = None
+
+    @model_validator(mode="after")
+    def value_matches_state(self) -> "DerivedAssemblyDimension":
+        if self.state == "derived" and (self.value_mm is None or not self.operand_refs or self.constraint_id is None):
+            raise ValueError("derived assembly dimension requires value, operands and constraint")
+        if self.state != "derived" and self.value_mm is not None:
+            raise ValueError("unknown or conflict assembly dimension must have null value")
+        return self
+
+
+class AssemblyCandidate(StrictModel):
+    id: str = Field(min_length=1)
+    family: Literal["rectangular_shelving"]
+    family_status: Literal["hypothesis"] = "hypothesis"
+    layout: Literal["between_sides", "cap_sides"]
+    layout_status: Literal["hypothesis"] = "hypothesis"
+    uses: tuple[AssemblyPartUse, ...] = Field(min_length=1)
+    constraints: tuple[AssemblyConstraint, ...]
+    derived_dimensions: tuple[DerivedAssemblyDimension, ...]
+    unknown_fields: tuple[str, ...]
+    assumptions: tuple[str, ...] = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    state: Literal["hypothesis"] = "hypothesis"
+    needs_review: Literal[True] = True
+
+    @model_validator(mode="after")
+    def unique_part_uses(self) -> "AssemblyCandidate":
+        ids = [item.part_observation_id for item in self.uses]
+        if len(ids) != len(set(ids)):
+            raise ValueError("part observation used more than once in assembly candidate")
+        return self
+
+
 class ComponentProposal(StrictModel):
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
@@ -215,6 +377,7 @@ class ComponentProposal(StrictModel):
     source_contour_ids: tuple[str, ...]
     source_entity_ids: tuple[str, ...] = ()
     evidence_ids: tuple[str, ...]
+    source_part_observation_ids: tuple[str, ...] = ()
     assumptions: tuple[str, ...] = Field(min_length=1)
     information_class: Literal["hypothesis"] = "hypothesis"
 
@@ -250,15 +413,20 @@ class ReviewRequest(StrictModel):
     material: str | None = None
     finish: str | None = None
     notes: str | None = None
+    assembly_candidate_id: str | None = None
 
     @model_validator(mode="after")
     def unique_proposals(self) -> "ReviewRequest":
-        if not self.decisions and self.scenario_id is None:
+        if not self.decisions and self.scenario_id is None and self.assembly_candidate_id is None:
             raise ValueError("a scenario selection or explicit decisions are required")
-        if self.decisions and self.scenario_id is not None:
+        if self.scenario_id is not None and (self.decisions or self.assembly_candidate_id is not None):
             raise ValueError("scenario selection and explicit decisions are mutually exclusive")
+        if self.assembly_candidate_id is not None and self.scenario_id is not None:
+            raise ValueError("legacy scenario and assembly candidate are mutually exclusive")
         if self.scenario_id is not None and (self.confirmed_thickness_mm is None or not self.notes):
             raise ValueError("scenario selection requires thickness and notes")
+        if self.assembly_candidate_id is not None and not self.notes:
+            raise ValueError("assembly candidate selection requires notes")
         ids = [item.proposal_id for item in self.decisions]
         if len(ids) != len(set(ids)):
             raise ValueError("duplicate proposal decisions")
@@ -279,6 +447,7 @@ class ResolvedPiece(StrictModel):
     source_observation_ids: tuple[str, ...]
     source_contour_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...]
+    source_part_observation_ids: tuple[str, ...] = ()
     human_confirmation: str
     field_states: dict[str, Literal["observed", "calculated", "confirmed", "unknown"]]
 
@@ -288,6 +457,7 @@ class HumanReview(StrictModel):
     reason: str
     timestamp: str
     selected_scenario_id: str | None
+    selected_assembly_candidate_id: str | None = None
 
 
 class Result(StrictModel):
@@ -301,6 +471,18 @@ class Result(StrictModel):
     created_at: str
     review: HumanReview | None = None
     agent_selected_scenario_id: str | None = None
+    input_semantics: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
+    part_analysis: SeparatedPartsExtraction | None = None
+    assembly_candidates: tuple[AssemblyCandidate, ...] = ()
+    selected_assembly_candidate_id: str | None = None
+
+    @model_validator(mode="after")
+    def parts_payload_matches_semantics(self) -> "Result":
+        if self.input_semantics == "separated_part_views" and self.part_analysis is None:
+            raise ValueError("separated part result requires part_analysis")
+        if self.selected_assembly_candidate_id is not None and self.selected_assembly_candidate_id not in {item.id for item in self.assembly_candidates}:
+            raise ValueError("selected assembly candidate is unknown")
+        return self
 
 
 class SceneObject(StrictModel):
@@ -316,6 +498,7 @@ class SceneObject(StrictModel):
     source_contour_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...]
     placement_basis: str = Field(min_length=1)
+    part_observation_id: str | None = None
 
 
 class ReconstructionScene(StrictModel):
@@ -380,6 +563,8 @@ class FurnitureDescriptor(StrictModel):
     structure: Literal["top_base_between_sides", "top_base_cap_sides", "unknown"]
     material: str | None = None
     finish: str | None = None
+    thicknesses_mm: tuple[float, ...] = ()
+    classification_status: Literal["hypothesis", "confirmed"] = "hypothesis"
     unknown_fields: tuple[str, ...]
 
 
@@ -442,6 +627,7 @@ class RunSnapshot(StrictModel):
     created_at: str
     agent_selected_scenario_id: str | None = None
     document_id: str | None = None
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
 
 
 class Comparable(StrictModel):
@@ -497,3 +683,13 @@ class SelectScenarioArgs(StrictModel):
 class ExplainPieceArgs(StrictModel):
     piece_id: str = Field(min_length=1)
     result_revision: int = Field(gt=0)
+
+
+class InspectSeparatedPartArgs(StrictModel):
+    candidate_revision: str = Field(min_length=1)
+    part_observation_id: str = Field(min_length=1)
+
+
+class SelectAssemblyCandidateArgs(StrictModel):
+    candidate_revision: str = Field(min_length=1)
+    assembly_candidate_id: str = Field(min_length=1)
