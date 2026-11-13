@@ -23,6 +23,15 @@ Bloque de render: SVGBackend integrado con presupuesto de entidades/recursión, 
 
 Push autorizado por solicitud posterior del usuario: `git push -u origin demo/drawing-workbench`, observado correcto hasta `8eb85ab`. La ampliación posterior continúa en desarrollo y se subirá tras verificación; sin despliegue.
 
+## Cierre de ampliación (2026-11-14)
+
+- Integrados A/B/C/D en `demo/drawing-workbench`: cotas/textos anclados, CAD original SVG, preview sin despiece, reconstrucción por ocurrencias, explicaciones, biblioteca local, embeddings reales y grupos geométricos/semánticos. Three.js local con licencia y dependencias fijadas.
+- Navegador real: carga propia, selección de evidencia, revisión 2, largos 864 mm, CAD original, seis tableros WebGL, restauración, consultas y agrupación de biblioteca. Corregidos asset faltante, mínimo/centro de cajas, bucle de resize, respuestas y errores async obsoletos.
+- Proveedor embeddings real: tres llamadas de generación `text-embedding-3-small` a 256 dimensiones; control trasladado y repetición reutilizan caché. Los cuatro ejemplos cercanos forman un grupo; no se afirma calidad empresarial de clustering.
+- Verificación integrada: 119 pruebas Python y 46 JavaScript, compileall correcto y pip check sin incompatibilidades. Aviso conocido TestClient/httpx. Pruebas focalizadas adicionales cubren `explicar_pieza`, argumentos malformados, IDs visibles al modelo y agrupación semántica compatible.
+- Astra detectó y se corrigieron agrupación semántica inicialmente ausente, carreras de respuestas antiguas, herramienta explicativa sin handler y referencias de propuestas ausentes del contexto. Dictamen final pendiente de cierre.
+- El usuario solicitó explícitamente varias veces merge y push de todo a main. Se realizará merge sin force-push, conservando commits de agentes. No se despliega ni se publican datasets externos; `.env`, runtime, SQLite, caches y worktrees permanecen ignorados.
+
 Identidad: agente coordinador de IA; no representa a una persona. Autorización: solicitud explícita del usuario del 2026-11-13.
 
 ## Alcance y propiedad

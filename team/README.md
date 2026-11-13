@@ -10,11 +10,13 @@ Estado: swarm autorizado por el usuario el 2026-11-13 para la primera demo ejecu
 | C, frontend | [agente_frontend.md](agente_frontend.md) | Frontend JS/HTML y pruebas de interfaz |
 | D, evaluación | [agente_evaluacion.md](agente_evaluacion.md) | Fixture propio, referencia reservada y evaluación independiente |
 
-Implementación: GPT-6.1 Sol en cuatro worktrees aislados. Revisión final: GPT-6 Astra, solo lectura; no modifica archivos. El coordinador integra mediante commits en `demo/first-executable` y verifica en la raíz del repositorio. No hay identidades humanas deducidas de Git.
+Implementación: GPT-6.1 Sol en cuatro worktrees aislados. Revisión final: GPT-6 Astra, solo lectura. La primera demo se integró en `demo/first-executable`; la ampliación del visor en `demo/drawing-workbench`. El usuario autorizó después fusionar y subir todo a `main`. El coordinador verifica en la raíz. No hay identidades humanas deducidas de Git.
 
 ## Acuerdo de contratos
 
 A/B acordaron `0.2.0` antes de implementar, y avisaron a C/D. Los registros propios documentan la aceptación. `DrawingExtraction` conserva evidencia observada; escenarios, premisas y resultados revisados son modelos separados. B mantiene [modelos.py](../backend/app/contratos/modelos.py) como fuente única. Los documentos de contrato `0.1.0` siguen como propuesta histórica del plan amplio, no como contrato ejecutable de la demo.
+
+La ampliación aditiva 0.3 fue acordada de nuevo por A/B y comunicada a C/D: dibujo enriquecido, escena, explicaciones y biblioteca semántica. A mantiene reconstrucción y B contrato/API. El coordinador implementó el render SVG independiente por transferencia explícita. Los resultados antiguos 0.2 conservan lectura.
 
 ## Coordinación y verificación
 
