@@ -50,3 +50,11 @@ Vertical slice backend completo y verificado; pendiente únicamente integrar los
 - Descriptor canónico versionado sin IDs/rutas/nombre/traslación; vector geométrico etiquetado separado del embedding real. Biblioteca conserva la última revisión de cada run y excluye duplicados de revisión.
 - Embeddings OpenAI explícitos con `text-embedding-3-small`, dimensión configurable, caché por descriptor/modelo/dimensión/versión y errores visibles. El modo offline nunca se presenta como embedding semántico.
 - Estado inicial: documentación obligatoria y guía oficial de embeddings leídas; contrato acordado y endpoints propuestos; todavía sin cambios de producto.
+
+## Cambio de fundamento `parts-only` — 2026-11-14
+
+- Rama `feat/parts-backend` desde `main` `dab7ce5`.
+- Nueva entrada: exclusivamente DXF 2D de piezas separadas; no se reutilizan vistas del mueble montado como evidencia.
+- Acuerdo explícito A/B 0.4 previo a código: `extract_separated_parts(extraction) -> SeparatedPartsExtraction`, cantidades nullable, agrupación solo por key pública explícita, ejes locales fijos sin ordenar, candidatos de ensamblaje hipotéticos separados y reconstrucción posterior a revisión.
+- B mantiene contratos, API/repositorio/revisión/harness/semántica. A mantiene ingesta, geometría parts-only y reconstrucción; `decomposition.py` legacy no participa.
+- C y D avisados del shape antes de implementar. Contrato escrito en `docs/CONTRATO_PARTS_ONLY_0_4.md`.
