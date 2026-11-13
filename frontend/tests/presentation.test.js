@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { availableModes, componentsForSnapshot, fieldOrigin, normaliseRunPayload, presentEstimate, runStatusPresentation } from "../core/presentation.js";
+import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "../core/presentation.js";
 
 test("geometry only stays available while unconfigured provider modes stay disabled", () => {
   assert.deepEqual(availableModes({ live_available: false, replay_available: false }), [
@@ -85,6 +85,11 @@ test("reviewed pieces replace hypotheses after a human decision", () => {
 });
 
 test("terminal review state no longer reads as processing", () => {
-  assert.deepEqual(runStatusPresentation("needs_review"), { label: "Revisión necesaria", message: "Geometría extraída. Revisa las hipótesis antes de exportar." });
-  assert.deepEqual(runStatusPresentation("completed"), { label: "Completado", message: "Resultado revisado y listo para estimar o exportar." });
+  assert.deepEqual(snapshotStatusPresentation({ state: "needs_review", result: { state: "needs_review" } }), { label: "Revisión necesaria", message: "Geometría extraída. Revisa las hipótesis antes de exportar." });
+  assert.deepEqual(snapshotStatusPresentation({ state: "needs_review", result: { state: "completed" } }), { label: "Completado", message: "Resultado revisado y listo para estimar o exportar." });
+});
+
+test("restored execution mode is labeled independently from the next run selector", () => {
+  assert.equal(executionModeLabel("geometry_only"), "Ejecución: solo geometría");
+  assert.equal(executionModeLabel("live"), "Ejecución: agente en vivo");
 });

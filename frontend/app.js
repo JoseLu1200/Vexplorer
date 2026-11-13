@@ -1,8 +1,8 @@
 import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
-import { createEventLedger, eventLabel, parseEventStream } from "./core/events.js";
+import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
-import { availableModes, componentsForSnapshot, fieldOrigin, normaliseRunPayload, presentEstimate, runStatusPresentation } from "./core/presentation.js";
+import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 
@@ -29,7 +29,7 @@ function resetRunUi() {
   Object.assign(state, { runId: null, snapshot: null, drawing: null, ledger: null, eventLedger: null, eventSource: null, selected: null });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
-  text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente");
+  text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#run-mode-label"), "Sin ejecución");
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
   const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 6; cell.textContent = "Todavía no hay propuestas. El plano seguirá disponible aunque el despiece quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
   text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
@@ -198,7 +198,7 @@ function renderTrace() {
     const item = document.createElement("li");
     const title = document.createElement("b"); title.textContent = eventLabel(event);
     const summary = document.createElement("span"); summary.textContent = event.data?.summary ?? event.data?.reason_code ?? `Secuencia ${event.sequence}`;
-    const time = document.createElement("time"); time.dateTime = event.timestamp ?? ""; time.textContent = event.timestamp ? new Date(event.timestamp).toLocaleTimeString("es-ES") : `Evento ${event.sequence}`;
+    const timestamp = eventTimestamp(event); const time = document.createElement("time"); time.dateTime = timestamp ?? ""; time.textContent = timestamp ? new Date(timestamp).toLocaleTimeString("es-ES") : `Evento ${event.sequence}`;
     item.append(title, summary, time); root.append(item);
   });
   $("#trace-export").disabled = false;
@@ -224,8 +224,9 @@ async function refreshTraceHistory() {
 async function refreshRun() {
   if (!state.runId) return;
   state.snapshot = normaliseRunPayload(await api.getRun(state.runId));
-  const status = runStatusPresentation(state.snapshot.state);
+  const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
+  text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
