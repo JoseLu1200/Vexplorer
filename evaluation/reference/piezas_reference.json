@@ -1,0 +1,68 @@
+{
+  "reference_version": "1.0.0",
+  "provenance": {
+    "kind": "original_synthetic_evaluator_reference",
+    "derived_from_external_corpus": false,
+    "industrial_validation": false
+  },
+  "reviewed_reference": {
+    "source_fixture": "piezas_completo.dxf",
+    "assembly_hypothesis": "between_sides",
+    "pieces": [
+      {
+        "public_key": "K1",
+        "private_role": "side_panel",
+        "quantity": 2,
+        "dimensions_mm": [1200.0, 300.0, 18.0]
+      },
+      {
+        "public_key": "K2",
+        "private_role": "outer_horizontal",
+        "quantity": 2,
+        "dimensions_mm": [864.0, 300.0, 18.0]
+      },
+      {
+        "public_key": "K3",
+        "private_role": "shelf",
+        "quantity": 2,
+        "dimensions_mm": [864.0, 300.0, 18.0]
+      }
+    ],
+    "assembly_dimensions_mm": {
+      "width": 900.0,
+      "height": 1200.0,
+      "depth": 300.0
+    },
+    "economic_oracle": {
+      "panel_area_mm2": 1756800.0,
+      "reference_area_mm2": 1200000.0,
+      "material_factor": 1.464,
+      "fixed_amount_eur": 40.0,
+      "material_amount_eur": 87.84,
+      "total_eur": 127.84,
+      "hours": null
+    }
+  },
+  "acceptable_alternative_assemblies": [
+    "between_sides",
+    "cap_sides"
+  ],
+  "descriptor_controls": {
+    "same_after_key_and_translation_change": [
+      "piezas_completo.dxf",
+      "piezas_ids_trasladados.dxf"
+    ],
+    "must_differ_by_dimensions": "piezas_dimensiones_variante.dxf",
+    "must_differ_by_thickness": "piezas_espesor_36.dxf",
+    "unknown_quantity": "piezas_qty_desconocida.dxf",
+    "unknown_thickness": "piezas_espesor_desconocido.dxf",
+    "ambiguous_without_grouping_key": "piezas_ambigua_sin_id.dxf"
+  },
+  "evaluation_policy": {
+    "runtime_must_not_read_this_file": true,
+    "compare_only_after_outputs_are_frozen": true,
+    "roles_and_assembly_are_private": true,
+    "views_never_imply_quantity": true,
+    "unique_assembly_claimed": false
+  }
+}

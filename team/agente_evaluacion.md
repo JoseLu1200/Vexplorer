@@ -9,15 +9,18 @@
 
 ## Tarea y alcance
 
-- Estado: auditoría independiente de API HTTP real del 2026-11-14, sin modificar producto.
+- Estado: en curso para la entrada parts-only 0.4 del 2026-11-14.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
-- Propiedad adicional autorizada para esta auditoría: `tools/audit_api.py` y `docs/auditoria/2026-11-14/api.json`.
+- Propiedad adicional autorizada: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*` y `tests/test_parts_only_evaluation.py`.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
-- Objetivo actual: ejecutar carga, preview, inferencia geométrica, revisión, historial, escena, economía, biblioteca y errores mediante HTTP real contra una instancia aislada; producir evidencia JSON saneada y reproducible.
+- Objetivo actual: fixture propio compuesto solo por vistas locales de piezas separadas, cantidades públicas asociadas cuando existan, variantes con incógnitas y controles de descriptor, manteniendo ensamblaje/roles/BOM exclusivamente en referencia privada.
 
 ## Hecho
 
+- Creado bloque parts-only público con siete DXF propios: completo, cantidad desconocida, espesor desconocido, dimensiones distintas, espesor 36 mm, claves/traslación distintas y vistas ambiguas sin clave.
+- La gramática visible usa `PART <key> FRONT|TOP|SIDE` y `QTY <key> <n>`; FRONT=(L,W), TOP=(L,T), SIDE=(T,W). Un `QTY` suelto no se asocia.
+- Separada la nueva referencia de ensamblaje, roles y economía en `evaluation/reference/piezas_reference.json`; el generador no la importa ni la lee.
 - Creado fixture propio de estantería rectangular montada, en DXF R2010 y mm, con vistas `FRONT`, `TOP`, `RIGHT`, cotas generales y sin nombres de piezas/BOM.
 - Creada variante incompleta que elimina evidencia de espesor y exige conservarlo desconocido.
 - Separada la construcción revisada en `evaluation/reference/`, con dos escenarios plausibles y política que no reclama solución única.
@@ -43,7 +46,7 @@
 - No hay cambio de `contratos/` por D.
 - Nueva fase: A/B deben comunicar el contrato aditivo de escena, descriptor/similitud y agrupación antes de cerrar las pruebas E2E; D no escribirá esos contratos ni duplicará sus pruebas unitarias.
 - Los fixtures nuevos solo comunican vistas/cotas públicas. BOM, montaje de referencia y grupos esperados del evaluador permanecen fuera del runtime.
-- La auditoría usa exclusivamente fixtures públicos y no habilita proveedor real. El coordinador administra la instancia aislada en `127.0.0.1:8767` y su runtime; D no corrige hallazgos durante la auditoría.
+- Parts-only 0.4: A/B acordaron claves opacas y ejes locales; D espera el hash contractual materializado antes de fijar pruebas de integración. No se agrupa por proximidad ni se infiere cantidad desde el número de vistas.
 
 ## Pruebas
 
@@ -65,16 +68,14 @@
 | Suite D contra backend candidato | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Verificación cruzada; no sustituye la suite final en raíz |
 | Suite D en raíz integrada | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Backend, escena, biblioteca y tests D integrados |
 | Suite Python en raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 113 pasan; 1 aviso deprecación | Incluye hardening de argumentos nativos; no incluye JavaScript ni navegador |
-| Primer pase auditoría HTTP | `python tools/audit_api.py --base-url http://127.0.0.1:8767` | 61 pasan, 3 hallazgos encadenados | La revisión de auditoría usó material/acabado fuera del catálogo sintético; estimación 422, export sin estimación y sin evento económico. No fue fallo de producto |
-| Auditoría HTTP final | mismo comando tras usar la premisa pública compatible | 64 pasan, 0 fallan; evidencia en `docs/auditoria/2026-11-14/api.json` | `geometry_only` y embeddings offline; ningún proveedor real ni referencia privada |
-| Suite Python de auditoría | `..\..\.venv\Scripts\python.exe -m pytest -q` | 119 pasan; 1 aviso deprecación | La primera ejecución detectó la ruta privada literal en el runner; se eliminó de la superficie runtime y se repitió completa |
-| Suite JavaScript de auditoría | `npm test --prefix frontend` | 46 pasan, 0 fallan | Pruebas automatizadas; el recorrido de navegador corresponde al coordinador |
+| Parts-only TDD rojo | `python -m pytest tests/test_parts_only_evaluation.py -q` antes del generador | 14 fallos por DXF, manifiesto, módulo y referencia ausentes | Fallos esperados del nuevo bloque |
+| Parts-only fixture + aislamiento | `python -m pytest tests/test_parts_only_evaluation.py tests/test_demo_isolation.py -q` | 17 pasan | API 0.4 todavía no integrada; solo contrato público de entrada y aislamiento |
 
 ## Siguiente bloque
 
-- Entregar al coordinador el runner, la evidencia saneada y los IDs observados, sin corregir producto ni hacer `push`.
-- Registrar como no implementado el nuevo objetivo de entrada compuesta solo por vistas separadas de piezas, sin mueble montado.
-- Esperar el contrato exacto A/B antes de crear el futuro fixture de piezas, sus variantes u oráculos.
+- Compartir el commit temprano de fixtures con A/B sin revelar la referencia privada.
+- Tras recibir el hash contractual 0.4, añadir aceptación de observaciones, trazabilidad, revisión, descriptor, escena y economía sin duplicar pruebas unitarias A/B.
+- Ejecutar suites completas sobre la raíz integrada; sin despliegue ni `push`.
 
 ## Cierre de la fase anterior
 
@@ -82,3 +83,14 @@
 - El E2E exige que la exportación JSON sea una ficha completa y coherente de la revisión: resultado, comparables, estimación y eventos.
 - Pendiente del coordinador: recorrido de navegador real y cualquier validación con técnico. Este fixture de desarrollo no acredita precisión industrial ni benchmark ciego.
 
+
+## Auditoría baseline conservada tras integración
+
+Auditoría cerrada en 1ae40cd; tools/audit_api.py transferido al coordinador para hardening de evidencia. Producto baseline dab7ce5 sin modificaciones durante el ensayo.
+
+| Comprobación | Comando | Resultado | Alcance |
+|---|---|---|---|
+| Primer pase auditoría HTTP | `python tools/audit_api.py --base-url http://127.0.0.1:8767` | 61 pasan, 3 hallazgos encadenados | La revisión de auditoría usó material/acabado fuera del catálogo sintético; estimación 422, export sin estimación y sin evento económico. No fue fallo de producto |
+| Auditoría HTTP final | mismo comando tras usar la premisa pública compatible | 64 pasan, 0 fallan; evidencia en `docs/auditoria/2026-11-14/api.json` | `geometry_only` y embeddings offline; ningún proveedor real ni referencia privada |
+| Suite Python de auditoría | `..\..\.venv\Scripts\python.exe -m pytest -q` | 119 pasan; 1 aviso deprecación | La primera ejecución detectó la ruta privada literal en el runner; se eliminó de la superficie runtime y se repitió completa |
+| Suite JavaScript de auditoría | `npm test --prefix frontend` | 46 pasan, 0 fallan | Pruebas automatizadas; el recorrido de navegador corresponde al coordinador |
