@@ -299,19 +299,28 @@ class SeparatedPartsExtraction(StrictModel):
 
 
 class AssemblyPartUse(StrictModel):
+    id: str = Field(min_length=1)
     part_observation_id: str = Field(min_length=1)
     role: Literal["side_panel", "shelf", "top_panel", "base_panel", "back_panel", "door", "divider", "unknown"]
     role_status: Literal["hypothesis"] = "hypothesis"
-    quantity: int | None = Field(default=None, gt=0)
+    source_quantity: int | None = Field(default=None, gt=0)
+    allocated_quantity: int | None = Field(default=None, gt=0)
+    occurrence_indices: tuple[int, ...] = ()
     quantity_source: Literal["observed_annotation", "human_confirmed", "unknown"]
     evidence_ids: tuple[str, ...]
 
     @model_validator(mode="after")
     def quantity_matches_source(self) -> "AssemblyPartUse":
-        if self.quantity_source == "unknown" and self.quantity is not None:
-            raise ValueError("unknown quantity source must have null quantity")
-        if self.quantity_source != "unknown" and self.quantity is None:
-            raise ValueError("observed or confirmed quantity source requires quantity")
+        if self.quantity_source == "unknown":
+            if self.source_quantity is not None or self.allocated_quantity is not None or self.occurrence_indices:
+                raise ValueError("unknown quantity source must have null quantities and no occurrences")
+            return self
+        if self.source_quantity is None or self.allocated_quantity is None:
+            raise ValueError("observed or confirmed quantity source requires source and allocated quantities")
+        if len(self.occurrence_indices) != self.allocated_quantity or len(self.occurrence_indices) != len(set(self.occurrence_indices)):
+            raise ValueError("allocated quantity must match unique occurrence indices")
+        if any(index < 1 or index > self.source_quantity for index in self.occurrence_indices):
+            raise ValueError("occurrence index is outside source quantity")
         return self
 
 
@@ -371,9 +380,13 @@ class AssemblyCandidate(StrictModel):
 
     @model_validator(mode="after")
     def unique_part_uses(self) -> "AssemblyCandidate":
+        use_ids = [item.id for item in self.uses]
+        if len(use_ids) != len(set(use_ids)):
+            raise ValueError("duplicate assembly use ids")
+        identities = [(item.part_observation_id, item.role) for item in self.uses]
+        if len(identities) != len(set(identities)):
+            raise ValueError("part observation and role allocation must be unique")
         ids = [item.part_observation_id for item in self.uses]
-        if len(ids) != len(set(ids)):
-            raise ValueError("part observation used more than once in assembly candidate")
         if set(ids) & set(self.unassigned_part_observation_ids):
             raise ValueError("part observation cannot be both used and unassigned")
         if len(self.unassigned_part_observation_ids) != len(set(self.unassigned_part_observation_ids)):
@@ -381,6 +394,21 @@ class AssemblyCandidate(StrictModel):
         axes = [item.axis for item in self.derived_dimensions]
         if len(axes) != len(set(axes)):
             raise ValueError("derived assembly axes must be unique")
+        for observation_id in set(ids):
+            allocations = [item for item in self.uses if item.part_observation_id == observation_id]
+            sources = {item.source_quantity for item in allocations}
+            if len(sources) != 1:
+                raise ValueError("allocations must share one source quantity")
+            source_quantity = next(iter(sources))
+            if source_quantity is None:
+                if len(allocations) != 1:
+                    raise ValueError("unknown quantity cannot be split across roles")
+                continue
+            occurrence_indices = [index for item in allocations for index in item.occurrence_indices]
+            if len(occurrence_indices) != len(set(occurrence_indices)):
+                raise ValueError("occurrence indices overlap across role allocations")
+            if sum(item.allocated_quantity or 0 for item in allocations) != source_quantity:
+                raise ValueError("allocated quantities must cover source quantity exactly")
         return self
 
 

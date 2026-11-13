@@ -52,9 +52,9 @@ def test_parts_extraction_rejects_view_reuse() -> None:
 
 
 def test_assembly_candidate_keeps_roles_and_layout_as_hypotheses_with_unknown_quantity() -> None:
-    candidate = AssemblyCandidate(id="assembly-1", family="rectangular_shelving", layout="between_sides", uses=(AssemblyPartUse(part_observation_id="part-observation-P01", role="shelf", quantity=None, quantity_source="unknown", evidence_ids=("evidence-length",)),), constraints=(), derived_dimensions=(), unknown_fields=("uses.part-observation-P01.quantity",), assumptions=("role_assignment_not_observed", "assembly_layout_not_observed"), evidence_ids=("evidence-length",))
+    candidate = AssemblyCandidate(id="assembly-1", family="rectangular_shelving", layout="between_sides", uses=(AssemblyPartUse(id="use-shelf", part_observation_id="part-observation-P01", role="shelf", source_quantity=None, allocated_quantity=None, occurrence_indices=(), quantity_source="unknown", evidence_ids=("evidence-length",)),), constraints=(), derived_dimensions=(), unknown_fields=("uses.part-observation-P01.quantity",), assumptions=("role_assignment_not_observed", "assembly_layout_not_observed"), evidence_ids=("evidence-length",))
     assert candidate.state == "hypothesis" and candidate.needs_review is True
-    assert candidate.uses[0].quantity is None and candidate.uses[0].role_status == "hypothesis"
+    assert candidate.uses[0].allocated_quantity is None and candidate.uses[0].role_status == "hypothesis"
 
 
 def test_parts_descriptor_is_v2_and_legacy_v1_does_not_accept_new_semantics() -> None:
@@ -77,8 +77,17 @@ def test_conflicts_and_derived_numbers_require_structured_provenance() -> None:
 
 def test_assembly_candidate_rejects_duplicate_derived_axes_and_overlap_with_unassigned() -> None:
     dimension = DerivedAssemblyDimension(axis="width", value_mm=None, state="unknown", operand_refs=())
-    use = AssemblyPartUse(part_observation_id="part-1", role="unknown", quantity=None, quantity_source="unknown", evidence_ids=())
+    use = AssemblyPartUse(id="use-1", part_observation_id="part-1", role="unknown", source_quantity=None, allocated_quantity=None, occurrence_indices=(), quantity_source="unknown", evidence_ids=())
     with pytest.raises(ValidationError, match="used and unassigned"):
         AssemblyCandidate(id="assembly-1", family="rectangular_shelving", layout="between_sides", uses=(use,), unassigned_part_observation_ids=("part-1",), constraints=(), derived_dimensions=(dimension,), unknown_fields=("layout",), assumptions=("not_observed",), evidence_ids=("evidence-1",))
     with pytest.raises(ValidationError, match="derived assembly axes"):
         AssemblyCandidate(id="assembly-1", family="rectangular_shelving", layout="between_sides", uses=(use,), constraints=(), derived_dimensions=(dimension, dimension), unknown_fields=("layout",), assumptions=("not_observed",), evidence_ids=("evidence-1",))
+
+
+def test_one_observed_type_can_allocate_distinct_occurrences_to_different_roles() -> None:
+    top = AssemblyPartUse(id="use-top", part_observation_id="part-horizontal", role="top_panel", source_quantity=2, allocated_quantity=1, occurrence_indices=(1,), quantity_source="observed_annotation", evidence_ids=("qty-evidence",))
+    base = top.model_copy(update={"id": "use-base", "role": "base_panel", "occurrence_indices": (2,)})
+    candidate = AssemblyCandidate(id="assembly-split", family="rectangular_shelving", layout="between_sides", uses=(top, base), constraints=(), derived_dimensions=(), unknown_fields=(), assumptions=("role_assignment_not_observed",), evidence_ids=("qty-evidence",))
+    assert sum(item.allocated_quantity or 0 for item in candidate.uses) == 2
+    with pytest.raises(ValidationError, match="occurrence indices overlap"):
+        AssemblyCandidate(id="assembly-overlap", family="rectangular_shelving", layout="between_sides", uses=(top, base.model_copy(update={"occurrence_indices": (1,)})), constraints=(), derived_dimensions=(), unknown_fields=(), assumptions=("role_assignment_not_observed",), evidence_ids=("qty-evidence",))
