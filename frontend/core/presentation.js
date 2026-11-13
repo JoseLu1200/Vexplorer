@@ -5,8 +5,18 @@ export function availableModes(capabilities = {}) {
   return [
     { id: "geometry_only", enabled: true },
     { id: "live", enabled: Boolean(capabilities.live_available) },
-    { id: "recorded_replay", enabled: Boolean(capabilities.replay_available) },
+    { id: "recorded_replay", enabled: Boolean(capabilities.recorded_replay_available ?? capabilities.replay_available) },
   ];
+}
+
+export function normaliseRunPayload(payload = {}) {
+  if (!payload.run) return payload;
+  const result = payload.result ?? null;
+  return {
+    ...payload.run,
+    result,
+    result_revision: result?.result_revision ?? payload.run.result_revision ?? null,
+  };
 }
 
 export function componentsForSnapshot(snapshot = {}, ledger = {}) {

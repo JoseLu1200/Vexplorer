@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { availableModes, componentsForSnapshot, presentEstimate } from "../core/presentation.js";
+import { availableModes, componentsForSnapshot, normaliseRunPayload, presentEstimate } from "../core/presentation.js";
 
 test("geometry only stays available while unconfigured provider modes stay disabled", () => {
   assert.deepEqual(availableModes({ live_available: false, replay_available: false }), [
@@ -9,6 +9,18 @@ test("geometry only stays available while unconfigured provider modes stay disab
     { id: "live", enabled: false },
     { id: "recorded_replay", enabled: false },
   ]);
+});
+
+test("canonical replay capability enables replay without renaming backend fields", () => {
+  assert.equal(availableModes({ recorded_replay_available: true })[2].enabled, true);
+});
+
+test("run plus result API payload becomes one frontend snapshot", () => {
+  const snapshot = normaliseRunPayload({ run: { id: "run-1", state: "needs_review" }, result: { result_revision: 1, state: "needs_review", pieces: [] } });
+  assert.equal(snapshot.id, "run-1");
+  assert.equal(snapshot.state, "needs_review");
+  assert.equal(snapshot.result_revision, 1);
+  assert.equal(snapshot.result.state, "needs_review");
 });
 
 test("estimate presentation preserves unknown rates and backend totals", () => {
