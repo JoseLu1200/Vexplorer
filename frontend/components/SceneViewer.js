@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { normaliseScene, sceneMeshCenter } from "../core/scene.js";
+import { cameraZoomPosition, normaliseScene, sceneMeshCenter } from "../core/scene.js";
 
 export class SceneViewer {
   constructor(root, { onSelect = () => {} } = {}) {
@@ -67,6 +67,11 @@ export class SceneViewer {
     const size = box.getSize(new THREE.Vector3()); const center = box.getCenter(new THREE.Vector3()); const radius = Math.max(size.x, size.y, size.z, 1);
     this.controls.target.copy(center); this.camera.position.copy(center).add(new THREE.Vector3(radius * 1.4, radius, radius * 1.4));
     this.camera.near = Math.max(.1, radius / 1000); this.camera.far = radius * 20; this.camera.updateProjectionMatrix(); this.controls.update();
+  }
+
+  zoom(factor) {
+    const position=cameraZoomPosition(this.camera.position.toArray(),this.controls.target.toArray(),factor);
+    this.camera.position.fromArray(position); this.controls.update(); this.draw();
   }
 
   resize() {

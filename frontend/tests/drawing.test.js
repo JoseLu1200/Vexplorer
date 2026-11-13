@@ -99,3 +99,16 @@ test("drawing exposes points scoped to selected part views for fit", () => {
   });
   assert.deepEqual(model.pointsForViews(new Set(["view-1"])), [[0, 0], [120, 0]]);
 });
+
+test("fit reserves screen space for visible DXF and dimension labels", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    texts: [
+      { id: "part-label", view_id: "view-1", text: "PART K2 SIDE", position_source: [120, 0] },
+      { id: "other-label", view_id: "view-2", text: "A VERY LONG LABEL OUTSIDE THIS PART", position_source: [1000, 0] },
+    ],
+    dimension_graphics: [{ id: "dg", dimension_id: "dim", view_id: "view-1", display_text: "18 mm", text_position_source: [120, 20] }],
+  });
+  assert.equal(model.fitPaddingForViews(new Set(["view-1"])), 112);
+  assert.equal(model.fitPaddingForViews(new Set(["view-2"])), 180);
+});
