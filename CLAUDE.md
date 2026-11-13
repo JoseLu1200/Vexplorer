@@ -88,4 +88,4 @@ Cualquier otro cambio de código sin archivo personal asociado está prohibido.
 
 ## Comandos
 
-Aún no hay código. Cuando exista el `pyproject.toml`, documenta aquí los comandos reales (instalar, arrancar el servidor, `pytest`, `ruff`) y borra esta nota.
+Existe tooling local de preparación, todavía no backend ni frontend: `python -m pytest -q` y `python -m tools.prepare_evaluation --source ../engineering_dataset --audit-only`. Instalación y generación en [PILOTO_DATASET](docs/PILOTO_DATASET.md). El `pyproject.toml` de raíz declara solo estas herramientas; no afirmar comandos de servidor o lint aún inexistentes.

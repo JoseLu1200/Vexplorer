@@ -10,7 +10,7 @@ Antes de editar código: comprobar identidad declarada, archivo personal explíc
 
 Leer también la [transcripción](transcripcion-contexto-poc.md) y [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md). P0 es el hito técnico; T11–T13 cubren los objetivos necesarios de inferencia desde planos pobres, histórico y estimación. No presentar extracción de cotas como cumplimiento completo.
 
-El paquete actual es documental. No contiene código de aplicación, pruebas ejecutadas de Vexplorer ni un contrato ya aprobado. Las rutas y los comandos del plan se materializarán durante implementación.
+El paquete contiene documentación y tooling de preparación del dataset, con pruebas ejecutadas descritas en [PILOTO_DATASET](docs/PILOTO_DATASET.md). No contiene todavía código de aplicación, pruebas de interpretación del agente ni un contrato ya aprobado. Las rutas y los comandos del plan se materializarán durante implementación.
 
 ## Contratos y arquitectura
 

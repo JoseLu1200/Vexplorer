@@ -1,0 +1,18 @@
+[project]
+name = "vexplorer-evaluation-tools"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["PyMuPDF>=1.27.2,<1.28"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["tools*"]

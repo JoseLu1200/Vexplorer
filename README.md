@@ -1,6 +1,8 @@
 # Vexplorer — del plano al despiece y presupuesto revisables
 
-**Estado: documentación y plan de implementación. Este paquete no contiene la aplicación.**
+**Estado: documentación, plan y herramienta de preparación del dataset. La aplicación todavía no está implementada.**
+
+El [piloto del dataset](docs/PILOTO_DATASET.md) ya se ha generado: 14 DXF y 3 casos PDF de vistas 2D, con referencias separadas y un ZIP independiente por caso. Incluye comandos y verificaciones reproducibles.
 
 Vexplorer ayuda a interpretar planos de mobiliario: localiza elementos, extrae medidas con código determinista, propone nombres y agrupaciones y presenta un despiece revisable cuando la evidencia permite obtenerlo. La selección de una pieza enlaza con los contornos que la justifican. Lo desconocido permanece visible; una medida no aparece por la suposición de un modelo.
 
@@ -77,4 +79,4 @@ La primera integración debe mostrar una medida con su evidencia de origen. La s
 
 Una persona carga un plano pobre admitido, revisa propuestas de piezas y secciones, consulta muebles históricos similares y exporta una ficha de despiece y estimación con procedencia y supuestos. La evaluación compara con despieces reservados y presupuestos/horas de referencia donde existan, además de medir la corrección humana necesaria. Si faltan datos, sabe cuáles faltan. `completed` describe el resultado de las comprobaciones implementadas, no una certificación de fabricación.
 
-La auditoría de archivos se ha realizado; las pruebas del producto están especificadas y **pendientes de implementar**. Los CAD de terceros y las respuestas de referencia no se incluyen en este paquete Markdown. Fecha: **13 de noviembre de 2026, UTC**.
+La auditoría de archivos y las pruebas del preparador del dataset se han ejecutado; las pruebas de la aplicación siguen **pendientes de implementar**. Los CAD de terceros y las respuestas de referencia no se incluyen en este paquete Markdown. Fecha: **13 de noviembre de 2026, UTC**.

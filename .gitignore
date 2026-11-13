@@ -6,3 +6,10 @@
 
 # Local source archive; extracted documentation is versioned
 /Vexplorer_documentacion_hackathon.zip
+
+# Python tooling and generated local artifacts
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.venv/
+/output/
