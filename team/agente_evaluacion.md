@@ -52,5 +52,6 @@
 ## Cierre
 
 - Entrega completada dentro de las rutas asignadas; sin despliegue, `push` ni datos de terceros.
+- El E2E exige que la exportación JSON sea una ficha completa y coherente de la revisión: resultado, comparables, estimación y eventos.
 - Pendiente del coordinador: recorrido de navegador real y cualquier validación con técnico. Este fixture de desarrollo no acredita precisión industrial ni benchmark ciego.
 

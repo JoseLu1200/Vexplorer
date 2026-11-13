@@ -200,6 +200,9 @@ def test_real_api_freezes_hypotheses_before_private_comparison_and_recalculates(
     assert by_role["side_panel"]["width_mm"] == 300.0
 
     assert comparables[0]["id"] == economic_oracle["expected"]["comparable_id"]
+    assert comparables[0]["width_mm"] == 800.0
+    assert any("900" in difference for difference in comparables[0]["differences"])
+    assert all("1200×300" not in difference for difference in comparables[0]["differences"])
     assert first_estimate_response.status_code == 201
     assert second_estimate_response.status_code == 201
     first_estimate = first_estimate_response.json()["data"]
@@ -216,7 +219,20 @@ def test_real_api_freezes_hypotheses_before_private_comparison_and_recalculates(
     assert first_estimate["hours"] is economic_oracle["expected"]["hours"] is None
 
     assert exported_json.status_code == 200
-    assert exported_json.json() == reviewed
+    export_bundle = exported_json.json()
+    assert export_bundle["schema_version"] == "0.2.0"
+    assert export_bundle["result_revision"] == 2
+    assert export_bundle["result"] == reviewed
+    assert export_bundle["estimate"] == first_estimate
+    assert [item["id"] for item in export_bundle["comparables"]] == [
+        item["id"] for item in comparables
+    ]
+    assert export_bundle["events"]
+    assert any(
+        event["event_type"] == "human_review_committed"
+        and event["data"]["result_revision"] == 2
+        for event in export_bundle["events"]
+    )
     assert exported_csv.status_code == 200
     assert "result_revision" in exported_csv.text
     assert ",2," in exported_csv.text
