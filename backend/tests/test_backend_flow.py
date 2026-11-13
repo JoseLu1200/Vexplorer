@@ -124,6 +124,7 @@ def test_comparables_and_estimate_reference_exact_review_without_double_counting
     estimate = estimate_result(reviewed, comparables)
 
     assert comparables and all(item.synthetic for item in comparables)
+    assert "900×320" in comparables[0].differences[0]
     assert estimate.result_revision == 2
     assert estimate.currency == "EUR"
     assert estimate.total == round(sum(item.amount for item in estimate.concepts), 2)

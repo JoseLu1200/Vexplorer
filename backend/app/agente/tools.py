@@ -10,5 +10,5 @@ def _schema(name: str, description: str, model) -> dict:
 def tool_schemas() -> list[dict]:
     return [
         _schema("inspeccionar_evidencia", "Consulta evidencias por ID dentro del ledger autorizado del run actual.", InspectEvidenceArgs),
-        _schema("seleccionar_escenario", "Selecciona una hipótesis de montaje existente; no la confirma ni añade medidas.", SelectScenarioArgs),
+        _schema("entregar_despiece", "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas.", SelectScenarioArgs),
     ]
