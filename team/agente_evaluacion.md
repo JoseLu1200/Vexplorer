@@ -12,6 +12,7 @@
 - Estado: en curso para la entrada parts-only 0.4 del 2026-11-14.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
 - Propiedad adicional autorizada: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*` y `tests/test_parts_only_evaluation.py`.
+- Propiedad adicional de auditoría HTTP parts-only: `tools/audit_parts.py` y `docs/auditoria/2026-11-14/parts-api.json`.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
 - Objetivo actual: fixture propio compuesto solo por vistas locales de piezas separadas, cantidades públicas asociadas cuando existan, variantes con incógnitas y controles de descriptor, manteniendo ensamblaje/roles/BOM exclusivamente en referencia privada.
@@ -77,12 +78,18 @@
 | Aceptación 0.4 TDD roja | `python -m pytest tests/test_parts_only_evaluation.py -q` | 15 pasan; 4 fallan porque la API 0.3 rechaza `input_kind` | Fallo esperado previo a integrar extractor/orquestación/API 0.4 |
 | Aceptación 0.4 contra backend candidato | desde rama B HEAD `81efa93`: parts-only | 19 pasan; 1 aviso deprecación | TestClient real; referencia privada bloqueada durante runtime |
 | Suite D contra backend candidato 0.4 | parts-only + fixtures/aislamiento/E2E/workbench legacy | 47 pasan; 1 aviso deprecación | Falta repetir sobre raíz integrada y HTTP real 8768 |
+| Suite D sobre raíz parcial `c1db234` | misma suite combinada | 46 pasan, 1 falla | Export parts rev2 llama explicaciones legacy y lanza `KeyError`; reportado, sin modificar producto |
+| Auditoría HTTP parts-only | `tools/audit_parts.py --base-url http://127.0.0.1:8768` | 43 pasan, 1 hallazgo | Run real geometry-only/offline: completar cantidad por revisión deja Scene `ready` con 4 objetos y omite las 2 ocurrencias revisadas |
+| Suite D sobre raíz integrada `59a49d6` | parts-only + fixture/aislamiento/E2E/workbench | 47 pasan; 1 aviso deprecación | Incluye export parts y explicaciones corregidos |
+| Suite Python sobre raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 176 pasan; 1 aviso deprecación | El hallazgo HTTP de revisión incremental no estaba cubierto por la suite |
+| Suite JavaScript sobre raíz integrada | `npm test --prefix frontend` | 61 pasan | Sin navegador real ni proveedor; ambos quedan a cargo del coordinador |
 
 ## Siguiente bloque
 
 - Compartir el commit temprano de fixtures con A/B sin revelar la referencia privada.
 - Tras recibir el hash contractual 0.4, añadir aceptación de observaciones, trazabilidad, revisión, descriptor, escena y economía sin duplicar pruebas unitarias A/B.
 - Ejecutar suites completas sobre la raíz integrada; sin despliegue ni `push`.
+- Corregir fuera de esta auditoría la reconstrucción incremental tras completar una cantidad desconocida: el resultado queda `completed` y la escena `ready`, pero la escena omite la pieza cuya cantidad se confirmó en la segunda revisión.
 
 ## Cierre de la fase anterior
 

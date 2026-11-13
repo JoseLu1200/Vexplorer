@@ -1,0 +1,754 @@
+{
+  "audit_schema": "vexplorer-parts-api-audit-1",
+  "capabilities": {
+    "assembly_candidates": {
+      "evidence": "coverage checked without binding opaque keys to roles",
+      "state": "hypotheses_only"
+    },
+    "economy": {
+      "evidence": "area normalization and one setup concept checked",
+      "state": "synthetic_demo_only"
+    },
+    "live_agent": {
+      "evidence": "no provider call made",
+      "state": "not_exercised"
+    },
+    "offline_similarity": {
+      "evidence": "translation, dimensions and thickness controls checked",
+      "state": "audited"
+    },
+    "reviewed_scene": {
+      "evidence": "six traceable occurrences; not manufacturing validation",
+      "state": "schematic"
+    },
+    "semantic_embeddings": {
+      "evidence": "all library writes used offline mode",
+      "state": "not_exercised"
+    },
+    "separated_part_observations": {
+      "evidence": "keyed local views, dimensions and quantities checked",
+      "state": "audited"
+    }
+  },
+  "checks": [
+    {
+      "expected": {
+        "data.status": "ok",
+        "status": 200
+      },
+      "name": "service.health",
+      "observed": {
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.complete",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "status": 200,
+        "svg": true
+      },
+      "name": "preview.complete",
+      "observed": {
+        "bytes": 54336,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.complete",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 200,
+        "views": 9
+      },
+      "name": "drawing.parts_semantics",
+      "observed": {
+        "input_kind": "separated_part_views",
+        "status": 200,
+        "views": 9
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.complete.r1",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "observations": 3,
+        "occurrences": 6,
+        "quantities": [
+          2,
+          2,
+          2
+        ],
+        "views_each": 3
+      },
+      "name": "parts.observations_views_and_quantities",
+      "observed": {
+        "observations": 3,
+        "quantities": [
+          2,
+          2,
+          2
+        ],
+        "views_each": [
+          3,
+          3,
+          3
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "allocations_equal_source_quantity": true,
+        "covered_observations": 3
+      },
+      "name": "candidate.coverage_and_allocations",
+      "observed": {
+        "allocations_equal_source_quantity": true,
+        "covered_observations": 3
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "name": "scene.pre_review_unavailable",
+      "observed": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "candidate_selected": true,
+        "revision": 2,
+        "status": 201
+      },
+      "name": "review.complete",
+      "observed": {
+        "code": null,
+        "state": "completed",
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.complete.r2",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "occurrences": 6,
+        "selected": true,
+        "state": "completed"
+      },
+      "name": "review.completed_versioned_snapshot",
+      "observed": {
+        "occurrences": 6,
+        "selected": true,
+        "state": "completed"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "missing": [
+          404,
+          "result_not_found"
+        ],
+        "stale": [
+          409,
+          "stale_result_revision"
+        ]
+      },
+      "name": "review.stale_and_missing_revision_errors",
+      "observed": {
+        "missing": [
+          404,
+          "result_not_found"
+        ],
+        "stale": [
+          409,
+          "stale_result_revision"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 6,
+        "source_counts": [
+          2,
+          2,
+          2
+        ],
+        "state": "ready",
+        "status": 200
+      },
+      "name": "scene.six_traceable_occurrences",
+      "observed": {
+        "objects": 6,
+        "source_counts": [
+          2,
+          2,
+          2
+        ],
+        "state": "ready",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "factor": 1.464,
+        "material": 87.84,
+        "rate_eur_m2": 50.0,
+        "setup": 40.0,
+        "total": 127.84
+      },
+      "name": "cost.area_rate_and_single_setup",
+      "observed": {
+        "comparables_status": 200,
+        "concept_ids": [
+          "material",
+          "setup"
+        ],
+        "estimate_status": 201,
+        "factor": 1.464,
+        "material": 87.84,
+        "rate_eur_m2": 50.0,
+        "setup": 40.0,
+        "total": 127.84
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "pieces": 4,
+        "revision": 2,
+        "status": 200
+      },
+      "name": "explanations.reviewed_parts",
+      "observed": {
+        "pieces": 4,
+        "revision": 2,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v2",
+        "revision": 2,
+        "scene": "ready",
+        "status": 200,
+        "total": 127.84
+      },
+      "name": "export.complete_revision_bundle",
+      "observed": {
+        "descriptor": "furniture-v2",
+        "revision": 2,
+        "scene": "ready",
+        "status": 200,
+        "total": 127.84
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.library_base",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.library_base",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v2",
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.library_base",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.library_translated",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.library_translated",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v2",
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.library_translated",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.library_dimensions",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.library_dimensions",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v2",
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.library_dimensions",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.library_thickness",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.library_thickness",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v2",
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.library_thickness",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor_equal": true,
+        "fingerprint_equal": true
+      },
+      "name": "library.keys_and_translation_invariant",
+      "observed": {
+        "descriptor_equal": true,
+        "fingerprint_equal": true
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "fingerprints_differ": true,
+        "thicknesses": [
+          [
+            18.0
+          ],
+          [
+            36.0
+          ]
+        ],
+        "widths": [
+          900.0,
+          900.0
+        ]
+      },
+      "name": "library.dimensions_and_thickness_controls",
+      "observed": {
+        "dimension_differs": true,
+        "thickness_differs": true,
+        "thicknesses": [
+          [
+            18.0
+          ],
+          [
+            36.0
+          ]
+        ],
+        "widths": [
+          900.0,
+          900.0
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "forbidden_tokens_found": []
+      },
+      "name": "library.descriptor_excludes_keys_filenames_case_hints",
+      "observed": {
+        "forbidden_tokens_found": []
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "translated_grouped": true,
+        "translated_score": 1.0,
+        "variants_excluded": true
+      },
+      "name": "library.geometric_similarity_and_group",
+      "observed": {
+        "groups_status": 200,
+        "paired_group_id": "group-geometric-ca1075f0bb1d5485",
+        "similarity_status": 200,
+        "translated_score": 1.0
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.qty_unknown",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.qty_unknown",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.qty_unknown.r1",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "unknown_observations": 1
+      },
+      "name": "partial.qty_unknown.null_preserved",
+      "observed": {
+        "unknown_observations": 1
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "candidate_selected": true,
+        "revision": 2,
+        "status": 201
+      },
+      "name": "review.qty_unknown",
+      "observed": {
+        "code": null,
+        "state": "needs_review",
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "result_state": "needs_review",
+        "scene_state": "incomplete",
+        "unknown_solid": false
+      },
+      "name": "partial.qty_unknown.no_fabricated_solid",
+      "observed": {
+        "objects": 0,
+        "result_state": "needs_review",
+        "scene_state": "incomplete",
+        "scene_status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 6,
+        "result_state": "completed",
+        "review_status": 201,
+        "reviewed_solid": true,
+        "revision": 3,
+        "scene_state": "ready"
+      },
+      "name": "partial.qty_unknown.human_input_enables_scene",
+      "observed": {
+        "code": null,
+        "objects": 4,
+        "result_state": "completed",
+        "review_status": 201,
+        "reviewed_solid": false,
+        "revision": 3,
+        "scene_state": "ready",
+        "scene_status": 200
+      },
+      "status": "fail"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.thickness_unknown",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.thickness_unknown",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.thickness_unknown.r1",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "unknown_observations": 1
+      },
+      "name": "partial.thickness_unknown.null_preserved",
+      "observed": {
+        "unknown_observations": 1
+      },
+      "status": "pass"
+    }
+  ],
+  "findings": [
+    {
+      "check": "partial.qty_unknown.human_input_enables_scene",
+      "expected": {
+        "objects": 6,
+        "result_state": "completed",
+        "review_status": 201,
+        "reviewed_solid": true,
+        "revision": 3,
+        "scene_state": "ready"
+      },
+      "observed": {
+        "code": null,
+        "objects": 4,
+        "result_state": "completed",
+        "review_status": 201,
+        "reviewed_solid": false,
+        "revision": 3,
+        "scene_state": "ready",
+        "scene_status": 200
+      },
+      "severity": "important"
+    }
+  ],
+  "generated_at": "2026-11-13T23:53:36.147982+00:00",
+  "policy": {
+    "embedding_mode": "offline",
+    "private_reference_reads": false,
+    "provider_calls": false,
+    "public_fixtures_only": true,
+    "run_mode": "geometry_only",
+    "transport": "real_http"
+  },
+  "resources": {
+    "documents": {
+      "complete": "doc-d5294a071f4046519fd3ba4a7d0f7548",
+      "library_base": "doc-48580a42d2fd4c25918e5b1b1bf9c864",
+      "library_dimensions": "doc-ed9b6ca7a07440c987d01228c5196b32",
+      "library_thickness": "doc-d044da05f525432db6ecedfef5b081b4",
+      "library_translated": "doc-3d2b1f8d87b54024b53304c3ba0d00ad",
+      "qty_unknown": "doc-e5137088330b4ebe806bc88a222d433f",
+      "thickness_unknown": "doc-9b3c5332709a4fe08b90c526329e4484"
+    },
+    "library_items": {
+      "library_base": "library-run-9948051be77b4aa6a23616aea9271118",
+      "library_dimensions": "library-run-f1badd0ddc5c41ce912c3c5dbbe5e5e8",
+      "library_thickness": "library-run-48cd602845bd4db0a5b6b5d00039ea91",
+      "library_translated": "library-run-1b47510aaf1d48f88935e260b7349b9c"
+    },
+    "runs": {
+      "complete": "run-dabe49c8fc064b948441dc56281a28ce",
+      "library_base": "run-9948051be77b4aa6a23616aea9271118",
+      "library_dimensions": "run-f1badd0ddc5c41ce912c3c5dbbe5e5e8",
+      "library_thickness": "run-48cd602845bd4db0a5b6b5d00039ea91",
+      "library_translated": "run-1b47510aaf1d48f88935e260b7349b9c",
+      "qty_unknown": "run-78322e8c8b034ce4a6bb0cce61815555",
+      "thickness_unknown": "run-008346e3c083439cb9f5b8d4455ef322"
+    }
+  },
+  "summary": {
+    "duration_ms": 741,
+    "failed": 1,
+    "passed": 43,
+    "result": "findings"
+  },
+  "target": "http://127.0.0.1:8768"
+}
