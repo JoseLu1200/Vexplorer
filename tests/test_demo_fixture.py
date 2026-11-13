@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import ezdxf
@@ -102,4 +104,20 @@ def test_reference_records_real_ambiguity_and_is_not_unique_gold() -> None:
     assert reference["evaluation_policy"]["requires_human_mounting_confirmation"] is True
     assert reference["evaluation_policy"]["unique_solution_claimed"] is False
     assert len(reference["acceptable_alternative_scenarios"]) >= 2
+
+
+def test_fixture_generation_is_byte_reproducible(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    command = [sys.executable, "-m", "tools.build_demo_fixture"]
+
+    subprocess.run(command + ["--output-dir", str(first)], cwd=ROOT, check=True)
+    subprocess.run(command + ["--output-dir", str(second)], cwd=ROOT, check=True)
+
+    for filename in (
+        "estanteria_montada.dxf",
+        "estanteria_incompleta.dxf",
+        "fixture_manifest.json",
+    ):
+        assert (first / filename).read_bytes() == (second / filename).read_bytes()
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import OrderedDict
 from pathlib import Path
 from typing import Final
 
@@ -67,6 +68,8 @@ def _dimension(
 
 def build_fixture(path: Path, *, incomplete: bool) -> None:
     """Write one public DXF containing only assembled orthographic views."""
+    previous_fixed_metadata = ezdxf.options.write_fixed_meta_data_for_testing
+    ezdxf.options.write_fixed_meta_data_for_testing = True
     doc = ezdxf.new("R2010", setup=True)
     doc.units = units.MM
     doc.layers.add(GEOMETRY_LAYER, color=7)
@@ -137,7 +140,14 @@ def build_fixture(path: Path, *, incomplete: bool) -> None:
         )
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    doc.saveas(path)
+    # ezdxf normally records timestamps and random GUIDs.  Fixed metadata and
+    # stable class ordering make this authored fixture byte-reproducible.
+    doc.classes.add_required_classes(doc.dxfversion)
+    doc.classes.classes = OrderedDict(sorted(doc.classes.classes.items()))
+    try:
+        doc.saveas(path)
+    finally:
+        ezdxf.options.write_fixed_meta_data_for_testing = previous_fixed_metadata
 
 
 def build_all(output_dir: Path) -> None:
