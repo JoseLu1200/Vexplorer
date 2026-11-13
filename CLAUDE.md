@@ -2,6 +2,8 @@
 
 Hackathon: a partir de un plano (DWG/DXF) genera un **despiece** (lista de piezas con nombre, cantidad, largo, ancho, grosor y contornos de origen). Contexto y decisiones de arquitectura completos en [`initial-plan.md`](initial-plan.md): léelo antes de tocar nada.
 
+La [transcripción](transcripcion-contexto-poc.md) concreta el objetivo: inferir piezas y secciones desde planos pobres, y orientar costes y tiempos mediante muebles históricos similares. [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md) distingue el hito técnico de la prueba de concepto completa, sin cambiar las reglas de equipo ni aprobar contratos nuevos.
+
 ## Stack
 
 - **Python 3.11+**, backend con **FastAPI** (HTTP + SSE para la traza del agente en vivo).
@@ -15,7 +17,7 @@ Hackathon: a partir de un plano (DWG/DXF) genera un **despiece** (lista de pieza
 
 ## Estructura prevista
 
-```
+```text
 backend/app/
   api/           FastAPI: endpoints + SSE
   ingesta/       DWG→DXF, unidades, limpieza

@@ -1,24 +1,39 @@
-# Equipo
+# Equipo de Vexplorer
 
-Un archivo `team/<nombre>.md` por integrante, creado desde [`_TEMPLATE.md`](_TEMPLATE.md). Reglas completas en [`../CLAUDE.md`](../CLAUDE.md).
+**Estado: organización preparada; integrantes y reservas aún sin designar.** Las reglas de identidad, alcance y cambios de contrato están en [CLAUDE.md](../CLAUDE.md). Este índice no asigna identidad a nadie ni sustituye su archivo personal.
 
-**Para editar código hay que haber creado tu archivo o designado uno existente de forma explícita.** Sin él, Claude solo lee y explica.
+## Roles propuestos
 
-## Roles (de `initial-plan.md`)
+| Rol | Responsabilidad | Entrega principal |
+|---|---|---|
+| A | Ingesta y geometría determinista | Unidades, cotas, vistas, contornos, candidatas y evidencia |
+| B | Contratos, herramientas, harness y validación | Modelos Pydantic, resultado validado, API y eventos |
+| C | Frontend JS/HTML y three.js | Plano seleccionable, tabla, traza, revisión y esquema 3D |
+| D, opcional | Dataset, etiquetado y demo | Casos con oráculo independiente, evaluación y vídeo |
 
-| Rol | Responsabilidad | Zona principal |
-|-----|-----------------|----------------|
-| A | Ingesta y motor geométrico (la parte más crítica) | `backend/app/ingesta/`, `backend/app/geometria/` |
-| B | Herramientas, agente y validador | `backend/app/herramientas/`, `agente/`, `validador/` |
-| C | Frontend: tabla, traza en vivo, visor three.js | `frontend/` |
-| D | Planos de prueba, pitch y plan B de la demo (si hay 4º) | `data/planos_demo/`, documentación |
+El reparto y los puntos de integración se detallan en [ORGANIZACION.md](../ORGANIZACION.md).
 
-**Zona compartida:** `backend/app/contratos/` (modelos Pydantic de piezas y contornos). Solo se cambia con acuerdo entre A y B, avisando a C.
+## Registro de integrantes
 
-## Integrantes
+No hay integrantes registrados en este paquete. Añadir un enlace a `team/<nombre>.md` únicamente después de que la persona se identifique y autorice su creación, o designe explícitamente un archivo existente. No crear `ana.md`, `persona-a.md` ni otros nombres ficticios para aparentar autorización.
 
-<!-- Añade una fila al crear tu archivo. -->
+## Protocolo de sesión
 
-| Persona | Rol | Archivo | Tarea actual |
-|---------|-----|---------|--------------|
-| _(nadie registrado aún)_ | | | |
+1. Leer este índice y todos los archivos personales existentes, salvo la plantilla.
+2. Identificar al usuario por su declaración explícita y comprobar su archivo antes de editar código.
+3. Comparar la tarea con el alcance reservado; señalar solapes antes de escribir.
+4. Mantener el archivo propio actualizado al terminar cada bloque, incluyendo dependencias y avisos.
+5. Registrar cambios del contrato únicamente tras acuerdo explícito A/B y aviso a C.
+
+Plantilla: [_TEMPLATE.md](_TEMPLATE.md). Su existencia no concede una reserva. Leer, revisar y trabajar en documentación sigue el alcance definido por `CLAUDE.md`; esta entrega documental no ha requerido crear un archivo personal ni modificar código de producto.
+
+## Acuerdos compartidos pendientes
+
+- [ ] Asignar personas a los roles.
+- [ ] Elegir el primer DXF y el fixture de despiece propio.
+- [ ] Seleccionar pares de mobiliario entrada pobre/referencia e histórico para T11–T13; acordar evaluación antes de ejecutar.
+- [ ] Revisar [CONTRATOS_DATOS.md](../docs/CONTRATOS_DATOS.md) entre A/B y avisar a C.
+- [ ] Registrar versión y fecha del acuerdo; aún no existe un contrato implementado aprobado.
+- [ ] Decidir si el piloto PDF entra después del recorrido DXF; ver [ADAPTACION_DATASET.md](../docs/ADAPTACION_DATASET.md).
+
+Cada participante registra en su archivo la evidencia de los acuerdos que le afectan. Una sesión de IA no puede atribuir una aprobación a otra persona por deducción.

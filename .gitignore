@@ -1,0 +1,8 @@
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Local source archive; extracted documentation is versioned
+/Vexplorer_documentacion_hackathon.zip

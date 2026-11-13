@@ -1,42 +1,58 @@
-# <Nombre> — <Rol (A/B/C/D)>
+# <nombre> — coordinación de trabajo
 
-> Copia este archivo a `team/<nombre>.md`. Un archivo por persona. Solo su dueño lo edita; el resto lo lee.
-> Claude no edita código sin que exista este archivo (o sin que designes uno existente). Ver `CLAUDE.md`.
+> Plantilla sin identidad ni reserva. Copiar solo cuando el usuario autorice crear su archivo e indique nombre, rol, tarea y alcance. Sustituir todos los marcadores antes de usarla.
 
-## Responsable
+## Identidad y autorización
 
-- **Nombre:**
-- **Rol:** (A: ingesta + motor geométrico · B: herramientas + agente + validador · C: frontend · D: planos de prueba + pitch + plan B)
+- Nombre declarado por el usuario: <nombre>
+- Rol: <A / B / C / D / combinación acordada>
+- Archivo creado o designado explícitamente: <instrucción del usuario y fecha>
+- Última actualización: <fecha y hora>
 
-## Tarea actual
+## Tarea de la sesión
 
-<Una o dos frases: qué se está construyendo ahora y para qué.>
+- Objetivo concreto: <comportamiento o entregable>
+- Referencia del plan: <T1–T13 u otra tarea acordada>
+- Estado: <pendiente / en curso / bloqueado / terminado>
 
-## Alcance (qué archivos/carpetas voy a tocar)
+## Alcance y reservas
 
-- `backend/app/...`
+- Archivos o carpetas que puedo editar: <rutas exactas>
+- Dependencias que solo leeré: <rutas>
+- Archivos compartidos que requieren coordinación: <rutas y personas>
+- Solapes detectados y acuerdo para resolverlos: <ninguno comprobado / detalle>
 
-## Fuera de alcance (qué NO toco)
+## Hecho en el último bloque
 
-- ...
+- <cambio y propósito>
+- <resultado verificable>
 
-## Estado
+## Siguiente bloque
 
-- [ ] Pendiente: ...
-- [ ] En curso: ...
-- [x] Hecho: ...
+- <siguiente acción concreta>
 
-**Última actualización:** AAAA-MM-DD
+## Decisiones
 
-## Decisiones tomadas
+| Fecha | Decisión | Motivo | Evidencia del acuerdo, si se necesita |
+|---|---|---|---|
+| <fecha> | <decisión> | <motivo> | <referencia> |
 
-- ...
+## Dependencias / avisos
 
-## Dependencias / avisos a otros integrantes
+- Necesito de: <persona, interfaz, estado>
+- Afecta a: <persona, endpoint, contrato o herramienta>
+- Aviso realizado: <qué, a quién y cuándo>
+- Cambio de `contratos/`: <no aplica / acuerdo explícito de A y B y aviso a C>
 
-- Necesito de <persona>: ...
-- Afecta a <persona>: ...
+## Pruebas y revisión
 
-## Bloqueos
+| Caso | Comando ejecutado | Resultado observado | Limitación |
+|---|---|---|---|
+| <caso> | <comando real> | <fallo esperado / pasa / falla / pendiente> | <detalle> |
 
-- Ninguno.
+## Bloqueos y cierre
+
+- Bloqueos: <detalle o ninguno>
+- Pendientes: <detalle>
+- Reservas liberadas: <rutas y fecha, si procede>
+- Entrega a otra persona: <interfaz, fixture, evidencia y limitaciones>
