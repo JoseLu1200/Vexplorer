@@ -69,6 +69,8 @@ def test_parts_descriptor_is_v2_and_legacy_v1_does_not_accept_new_semantics() ->
 def test_conflicts_and_derived_numbers_require_structured_provenance() -> None:
     with pytest.raises(ValidationError, match="conflict dimension requires"):
         ObservedPartDimension(value_mm=None, state="conflict", view_ids=("view-1",), evidence_ids=("evidence-1",))
+    conflict = ObservedPartDimension(value_mm=None, state="conflict", measurement_ids=("dimension-1",), view_ids=("view-1",), evidence_ids=("evidence-geometry", "evidence-annotation"))
+    assert conflict.state == "conflict"
     with pytest.raises(ValidationError, match="passing constraint requires"):
         AssemblyConstraint(id="constraint-1", kind="exterior_from_parts", operation="sum", dimension="assembled_width", operand_refs=("part-1.length", "part-2.thickness"), result_mm=900, status="pass", evidence_ids=())
     with pytest.raises(ValidationError, match="unknown or conflict constraint"):
