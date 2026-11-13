@@ -9,7 +9,7 @@
 
 ## Tarea y alcance
 
-- Estado: en curso.
+- Estado: terminado.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
@@ -46,8 +46,11 @@
 | Fixture e aislamiento reproducible | mismo comando tras generar | 9 pasan; dos procesos generan bytes idénticos | Todavía sin backend integrado |
 | E2E rojo previo a integración | `python -m pytest tests/test_demo_e2e.py -q` | error de colección esperado: backend agéntico/API aún ausente en esta rama | Resuelto al integrar B |
 | E2E contra API real integrada | desde raíz: `.venv\Scripts\python.exe -m pytest .worktrees/evaluacion/tests/test_demo_e2e.py -q` | 2 pasan; 1 aviso deprecación TestClient/httpx | Oráculo económico manual suma todas las piezas: 127,84 EUR |
+| Suite D integrada | desde raíz: `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py tests/test_demo_e2e.py -q` | 11 pasan; 1 aviso deprecación | Incluye aislamiento estático y dinámico |
+| Suite Python integrada | desde raíz: `.venv\Scripts\python.exe -m pytest -q` | 51 pasan; 1 aviso deprecación | No se ejecutó navegador; corresponde al coordinador |
 
-## Siguiente bloque
+## Cierre
 
-- Ejecutar y ajustar el E2E independiente ya escrito contra el backend integrado: salida congelada, revisión versionada, cálculo ligado a revisión, exportación sin duplicar y auditoría dinámica de accesos a referencia.
+- Entrega completada dentro de las rutas asignadas; sin despliegue, `push` ni datos de terceros.
+- Pendiente del coordinador: recorrido de navegador real y cualquier validación con técnico. Este fixture de desarrollo no acredita precisión industrial ni benchmark ciego.
 
