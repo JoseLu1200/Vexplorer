@@ -10,8 +10,8 @@ export class SceneViewer {
     this.scene.background = new THREE.Color(0xf6f5f0);
     this.camera = new THREE.PerspectiveCamera(40, 1, 1, 50000);
     this.camera.position.set(1800, 1400, 1800);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power" });
+    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     root.replaceChildren(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -21,7 +21,7 @@ export class SceneViewer {
     this.scene.add(this.group, new THREE.HemisphereLight(0xffffff, 0x4b5563, 2.2));
     const directional = new THREE.DirectionalLight(0xffffff, 2.5); directional.position.set(1, 2, 3); this.scene.add(directional);
     this.renderer.domElement.addEventListener("pointerdown", (event) => this.pick(event));
-    this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(root);
+    this.boundResize = () => this.resize(); window.addEventListener("resize", this.boundResize, { passive: true }); this.resize();
   }
 
   setScene(raw) {
@@ -76,5 +76,5 @@ export class SceneViewer {
 
   draw() { this.renderer.render(this.scene, this.camera); }
   clearGroup() { this.group.children.slice().forEach((mesh) => { mesh.geometry?.dispose(); mesh.material?.dispose(); mesh.children.forEach((child)=>{ child.geometry?.dispose(); child.material?.dispose(); }); this.group.remove(mesh); }); }
-  dispose() { this.observer.disconnect(); this.clearGroup(); this.controls.dispose(); this.renderer.dispose(); }
+  dispose() { window.removeEventListener("resize", this.boundResize); this.clearGroup(); this.controls.dispose(); this.renderer.dispose(); }
 }

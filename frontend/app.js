@@ -6,18 +6,21 @@ import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin,
 import { buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
+import { createRequestFence } from "./core/request-fence.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
 const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null };
 let sceneViewer;
+const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), uploadFence=createRequestFence();
 
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
 function unlock(id) { $(`#${id}`)?.classList.remove("is-locked"); }
 function setMessage(value, error = false) { const node = $("#global-message"); text(node, value); node.classList.toggle("is-error", error); }
 
 function emptyParagraph(value) { const node = document.createElement("p"); node.className = "empty-copy"; node.textContent = value; return node; }
+function toggleHidden(node, hidden) { node?.toggleAttribute("hidden", Boolean(hidden)); }
 
 function resetEstimateUi() {
   $("#estimate-lines").replaceChildren(emptyParagraph("La revisión actual todavía no tiene estimación. Calcula una nueva para evitar reutilizar importes anteriores."));
@@ -27,6 +30,7 @@ function resetEstimateUi() {
 }
 
 function resetRunUi() {
+  runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate();
   state.eventSource?.close();
   Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null });
   clearRunSession(localStorage, location, history);
@@ -114,10 +118,10 @@ function renderDrawing() {
 function activateView(viewId, button) {
   state.activeView = viewId;
   $$(".view-tab").forEach((tab) => tab.setAttribute("aria-selected", String(tab === button)));
-  $("#drawing-viewer").hidden = viewId === "original" || viewId === "3d";
-  $("#original-view").hidden = viewId !== "original";
-  $("#scene-viewer").hidden = viewId !== "3d";
-  $("#explode-control").hidden = viewId !== "3d";
+  toggleHidden($("#drawing-viewer"), viewId === "original" || viewId === "3d");
+  toggleHidden($("#original-view"), viewId !== "original");
+  toggleHidden($("#scene-viewer"), viewId !== "3d");
+  toggleHidden($("#explode-control"), viewId !== "3d");
   $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", !["all", node.dataset.viewId].includes(viewId)));
   if (viewId === "3d") loadScene();
   else if (!["original"].includes(viewId)) fitDrawing();
@@ -199,13 +203,16 @@ function renderEvidence(component, contourId) {
 async function loadScene() {
   const warning = $("#scene-warning"); warning.hidden = true;
   if (!state.runId || !Number.isInteger(state.snapshot?.result_revision)) { warning.hidden = false; text(warning, "3D no disponible: registra una revisión con medidas completas."); return; }
+  const identity=`${state.runId}:${state.snapshot.result_revision}`, token=sceneFence.issue(identity);
   try {
-    const raw = await api.getScene(state.runId, state.snapshot.result_revision); state.scene = raw;
-    if (!sceneViewer) { const { SceneViewer } = await import("./components/SceneViewer.js"); sceneViewer = new SceneViewer($("#scene-viewer"), { onSelect: (item) => { const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    const raw = await api.getScene(state.runId, state.snapshot.result_revision);
+    if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
+    state.scene = raw;
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
     const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
-  } catch (error) { state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
+  } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
 }
 
 function renderPartsAndReview() {
@@ -274,6 +281,7 @@ function connectEvents(runId) {
   state.eventSource?.close(); state.eventLedger = createEventLedger(runId);
   const source = new EventSource(`/api/v1/runs/${encodeURIComponent(runId)}/events`); state.eventSource = source;
   ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance","human_review_committed","estimate_committed"].forEach((type) => source.addEventListener(type, (message) => {
+    if (state.runId !== runId) return;
     try { const envelope = JSON.parse(message.data); if (state.eventLedger.append(envelope)) renderTrace(); if (type === "run_finished") refreshRun(); } catch { setMessage("La traza recibió un evento no válido.", true); }
   }));
   source.onerror = () => { if (state.snapshot && ["completed","needs_review","failed","cancelled","timed_out"].includes(state.snapshot.state)) source.close(); else text($("#service-status"), "Reconectando la traza"); };
@@ -281,50 +289,55 @@ function connectEvents(runId) {
 
 async function refreshTraceHistory() {
   if (!state.runId) return;
-  if (!state.eventLedger) state.eventLedger = createEventLedger(state.runId);
-  const body = await api.getEventHistory(state.runId);
-  parseEventStream(body).forEach((event) => state.eventLedger.append(event));
+  const runId=state.runId; if (!state.eventLedger) state.eventLedger = createEventLedger(runId);
+  const ledger=state.eventLedger, body = await api.getEventHistory(runId); if(state.runId!==runId||state.eventLedger!==ledger)return;
+  parseEventStream(body).forEach((event) => ledger.append(event));
   renderTrace();
 }
 
 async function refreshRun() {
   if (!state.runId) return;
-  state.snapshot = normaliseRunPayload(await api.getRun(state.runId));
+  const requestedRun=state.runId, token=runFence.issue(requestedRun);
+  const snapshot=normaliseRunPayload(await api.getRun(requestedRun));
+  if (!runFence.isCurrent(token,state.runId)) return;
+  state.snapshot = snapshot;
   state.documentId = state.snapshot.document_id ?? state.snapshot.document?.document_id ?? state.documentId;
   if (state.documentId) $("#original-preview").src = api.documentPreviewUrl(state.documentId);
   const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
-  try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
-  try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
+  try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
+  try { const ledger=await api.getLedger(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.ledger=ledger; } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   renderPartsAndReview();
   await loadRevisionContext();
+  if(!runFence.isCurrent(token,state.runId))return;
   if (state.activeView === "3d") await loadScene();
   if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi();
-  if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(); unlock("estimate-stage"); }
+  if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }
 }
 
 async function loadRevisionContext() {
   if (!state.runId) return;
-  const revision = state.snapshot?.result_revision;
+  sceneFence.invalidate();
+  const runId=state.runId, revision = state.snapshot?.result_revision, identity=`${runId}:${revision}`, token=contextFence.issue(identity);
   try {
-    const raw = await api.getRevisions(state.runId); const revisions = raw.revisions ?? raw.items ?? raw ?? [];
+    const raw = await api.getRevisions(runId); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; const revisions = raw.revisions ?? raw.items ?? raw ?? [];
     const root = $("#revisions-list"); root.replaceChildren();
     revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.review?.reviewer_name ?? "Sistema"} · ${item.review?.selected_scenario_id ?? item.state ?? "sin escenario"}`; card.append(title,detail); root.append(card); });
     if (!revisions.length) root.append(emptyParagraph("Sin revisiones registradas."));
   } catch { /* endpoint aditivo: el resto del visor sigue operativo */ }
-  try { renderLibraryEntries(await api.getLibrary()); } catch { /* biblioteca aditiva */ }
+  try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
   if (Number.isInteger(revision)) {
-    try { state.explanations = await api.getExplanations(state.runId, revision); } catch { state.explanations = null; }
+    try { const explanations=await api.getExplanations(runId, revision); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.explanations = explanations; } catch { if(contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))state.explanations = null; }
     $("#save-library").disabled = false; $("#find-similar").disabled = false;
   } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
   state.scene = null;
   sceneViewer?.setScene({ state: "unavailable", objects: [], warnings: ["Esperando reconstrucción de la revisión actual."] });
 }
 
-async function loadComparables() {
+async function loadComparables(requestedRun=state.runId, requestedRevision=state.snapshot?.result_revision) {
   try {
-    const response = await api.getComparables(state.runId); const items = response.comparables ?? response.items ?? response ?? [];
+    const response = await api.getComparables(requestedRun); if(state.runId!==requestedRun||state.snapshot?.result_revision!==requestedRevision)return; const items = response.comparables ?? response.items ?? response ?? [];
     const root = $("#comparables-list"); root.replaceChildren();
     if (!items.length) { const empty = document.createElement("p"); empty.className = "empty-copy"; empty.textContent = "No hay comparables admitidos para esta revisión."; root.append(empty); return; }
     items.forEach((item) => {
@@ -353,12 +366,13 @@ async function runUpload(event) {
   const mode = new FormData(event.currentTarget).get("mode");
   try {
     resetRunUi();
+    const uploadToken=uploadFence.issue(file);
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
-    const documentRecord = await api.upload(file); state.documentId = documentRecord.document_id ?? documentRecord.id;
+    const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id;
     $("#original-preview").src = api.documentPreviewUrl(state.documentId);
-    state.drawing = await api.getDocumentDrawing(state.documentId); renderDrawing();
+    state.drawing = await api.getDocumentDrawing(state.documentId); if(!uploadFence.isCurrent(uploadToken,file))return; renderDrawing();
     setMessage("Plano disponible. Iniciando análisis…");
-    const runPayload = await api.createRun(state.documentId, mode);
+    const runPayload = await api.createRun(state.documentId, mode); if(!uploadFence.isCurrent(uploadToken,file))return;
     state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
   } catch (error) { setMessage(error.message, true); text($("#upload-status"), "Error"); }
@@ -398,7 +412,7 @@ function setupWorkspaceControls() {
   const zoom=(factor)=>{ if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
   $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
   const viewport=$("#cad-viewport"); let drag=null;
-  new ResizeObserver(()=>{ applySvgTextScale(); sceneViewer?.resize(); }).observe(viewport);
+  new ResizeObserver(()=>applySvgTextScale()).observe(viewport);
   viewport.addEventListener("wheel",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
   viewport.addEventListener("pointerdown",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
   viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
