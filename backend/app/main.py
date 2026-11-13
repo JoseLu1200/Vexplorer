@@ -20,6 +20,7 @@ from backend.app.agente.tools import tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest
 from backend.app.estimacion.service import estimate_result
 from backend.app.geometria import extract_drawing
+from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
@@ -41,6 +42,7 @@ class RequestModel(BaseModel):
 class RunRequest(RequestModel):
     document_id: str = Field(pattern=r"^doc-[0-9a-f]{32}$")
     mode: Literal["live", "geometry_only", "recorded_replay"]
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
 
 
 class EstimateRequest(RequestModel):
@@ -105,14 +107,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok({"document_id": document_id, "original_filename": filename, "size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "source_kind": "uploaded"}, 201)
 
     @app.get("/api/v1/documents/{document_id}/drawing")
-    def get_document_drawing(document_id: str):
+    def get_document_drawing(
+        document_id: str,
+        input_kind: Literal["mounted_views_legacy", "separated_part_views"] = Query(
+            default="mounted_views_legacy"
+        ),
+    ):
         if re.fullmatch(r"doc-[0-9a-f]{32}", document_id) is None:
             return _error(422, "invalid_document_id", "Identificador de documento inválido.")
         path = documents_dir / f"{document_id}.dxf"
         if not path.is_file():
             return _error(404, "document_not_found", "Documento inexistente.")
         try:
-            extraction = extract_drawing(path)
+            extraction = extract_drawing(path, input_kind=input_kind)
         except Exception as exc:
             return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
         return _ok(extraction.model_dump(mode="json"))
@@ -141,14 +148,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         if not path.is_file():
             return _error(404, "document_not_found", "Documento inexistente.")
         try:
-            extraction = extract_drawing(path)
-            scenarios = derive_decomposition_scenarios(extraction)
+            extraction = extract_drawing(path, input_kind=request.input_kind)
+            if request.input_kind == "separated_part_views":
+                part_analysis = extract_separated_parts(extraction)
+                assembly_candidates = derive_assembly_candidates(part_analysis)
+                scenarios = ()
+            else:
+                part_analysis = None
+                assembly_candidates = ()
+                scenarios = derive_decomposition_scenarios(extraction)
         except Exception as exc:
             return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
-        if not scenarios:
+        if request.input_kind == "mounted_views_legacy" and not scenarios:
             return _error(422, "unsupported_geometry", "Las vistas no respaldan escenarios rectangulares coherentes.")
         trace_events: tuple[dict, ...] = ()
         agent_selected_scenario_id = None
+        if request.mode == "live" and request.input_kind == "separated_part_views":
+            return _error(409, "parts_live_unavailable", "El bucle live para piezas separadas no está disponible en esta revisión.")
         if request.mode == "live":
             try:
                 outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits())
@@ -158,7 +174,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             agent_selected_scenario_id = outcome.selected_scenario_id
             trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary, "selected_scenario_id": action.selected_scenario_id} for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
-        run = repository.create_run(run_id, request.mode, extraction, scenarios, trace_events, agent_selected_scenario_id, request.document_id)
+        run = repository.create_run(
+            run_id,
+            request.mode,
+            extraction,
+            scenarios,
+            trace_events,
+            agent_selected_scenario_id,
+            request.document_id,
+            part_analysis,
+            assembly_candidates,
+        )
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.get("/api/v1/runs/{run_id}")
@@ -180,6 +206,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         return _ok([item.model_dump(mode="json") for item in values])
+
+    @app.get("/api/v1/runs/{run_id}/parts")
+    def get_parts(run_id: str, result_revision: int = Query(..., gt=0)):
+        try:
+            result = repository.get_result(run_id, result_revision)
+        except KeyError:
+            return _error(404, "result_not_found", "Revisión inexistente.")
+        if result.input_semantics != "separated_part_views" or result.part_analysis is None:
+            return _error(409, "parts_analysis_unavailable", "La ejecución no contiene vistas de piezas separadas.")
+        return _ok({
+            "part_analysis": result.part_analysis.model_dump(mode="json"),
+            "assembly_candidates": [item.model_dump(mode="json") for item in result.assembly_candidates],
+            "selected_assembly_candidate_id": result.selected_assembly_candidate_id,
+        })
 
     @app.get("/api/v1/runs/{run_id}/explanations")
     def get_explanations(run_id: str, result_revision: int = Query(..., gt=0)):
