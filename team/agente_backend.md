@@ -49,6 +49,7 @@ Vertical slice backend completo y verificado; pendiente únicamente integrar los
 - Acuerdo explícito A/B 0.3 previo a código: `DrawingText`, `DimensionGraphic`, campos aditivos retrocompatibles de `DrawingExtraction`, `SceneObject`, `ReconstructionScene` y `reconstruct_scene(extraction, result)`. C y D avisados antes de implementar.
 - Descriptor canónico versionado sin IDs/rutas/nombre/traslación; vector geométrico etiquetado separado del embedding real. Biblioteca conserva la última revisión de cada run y excluye duplicados de revisión.
 - Embeddings OpenAI explícitos con `text-embedding-3-small`, dimensión configurable, caché por descriptor/modelo/dimensión/versión y errores visibles. El modo offline nunca se presenta como embedding semántico.
+- Cierre 0.4: A/B acuerdan que `FurnitureDescriptorV2.part_features` representa por campo `observed|confirmed|unknown`; una revisión puede completar cantidad/espesor en el descriptor efectivo sin alterar `SeparatedPartObservation`, agregando allocations por observación sin doble conteo.
 - Estado inicial: documentación obligatoria y guía oficial de embeddings leídas; contrato acordado y endpoints propuestos; todavía sin cambios de producto.
 
 ## Cambio de fundamento `parts-only` — 2026-11-14

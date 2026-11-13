@@ -64,8 +64,15 @@ def _build_parts_descriptor(result: Result) -> FurnitureDescriptorV2:
     family = _consensus([item.family for item in candidates]) or "unknown"
     layout = _consensus([item.layout for item in candidates]) or "unknown"
     structure = {"between_sides": "top_base_between_sides", "cap_sides": "top_base_cap_sides"}.get(layout, "unknown")
-    role_options = [_candidate_roles(item) for item in candidates]
-    roles = _consensus(role_options) or ()
+    if selected is not None and result.review is not None and result.pieces:
+        role_quantities: dict[str, int | None] = {}
+        for piece in result.pieces:
+            current = role_quantities.get(piece.role)
+            role_quantities[piece.role] = None if piece.quantity is None or (piece.role in role_quantities and current is None) else (current or 0) + piece.quantity
+        roles = tuple(RoleQuantity(role=role, quantity=quantity) for role, quantity in sorted(role_quantities.items()))
+    else:
+        role_options = [_candidate_roles(item) for item in candidates]
+        roles = _consensus(role_options) or ()
     dimensions_by_candidate = [{item.axis: item.value_mm if item.state == "derived" else None for item in candidate.derived_dimensions} for candidate in candidates]
     dimensions = DescriptorDimensions(
         width_mm=_consensus([item.get("width") for item in dimensions_by_candidate]),
@@ -94,10 +101,54 @@ def _build_parts_descriptor(result: Result) -> FurnitureDescriptorV2:
     classification_status = "confirmed" if selected is not None and result.review is not None else "hypothesis"
     features = []
     if result.part_analysis is not None:
+        pieces_by_observation: dict[str, list] = {}
+        for piece in result.pieces:
+            for observation_id in piece.source_part_observation_ids:
+                pieces_by_observation.setdefault(observation_id, []).append(piece)
         for observation in result.part_analysis.observations:
-            values = {"length_mm": observation.dimensions.length.value_mm, "width_mm": observation.dimensions.width.value_mm, "thickness_mm": observation.dimensions.thickness.value_mm, "quantity": observation.quantity.value}
-            features.append(DescriptorPartFeature(**values, unknown_fields=tuple(field for field, value in values.items() if value is None)))
-    features.sort(key=lambda item: tuple((value is None, value or 0) for value in (item.length_mm, item.width_mm, item.thickness_mm, item.quantity)))
+            resolved = pieces_by_observation.get(observation.id, [])
+            observed_values = {
+                "length_mm": observation.dimensions.length.value_mm,
+                "width_mm": observation.dimensions.width.value_mm,
+                "thickness_mm": observation.dimensions.thickness.value_mm,
+                "quantity": observation.quantity.value,
+            }
+            values = dict(observed_values)
+            states = {
+                "length_mm": "observed" if observed_values["length_mm"] is not None else "unknown",
+                "width_mm": "observed" if observed_values["width_mm"] is not None else "unknown",
+                "thickness_mm": "observed" if observed_values["thickness_mm"] is not None else "unknown",
+                "quantity": "observed" if observed_values["quantity"] is not None else "unknown",
+            }
+            if resolved:
+                for field in ("length_mm", "width_mm", "thickness_mm"):
+                    effective = {getattr(piece, field) for piece in resolved if getattr(piece, field) is not None}
+                    values[field] = next(iter(effective)) if len(effective) == 1 else None
+                    piece_states = {piece.field_states[field] for piece in resolved}
+                    states[field] = "confirmed" if values[field] is not None and "confirmed" in piece_states else "observed" if values[field] is not None else "unknown"
+                quantities = [piece.quantity for piece in resolved]
+                values["quantity"] = sum(quantities) if quantities and all(value is not None for value in quantities) else None
+                quantity_states = {piece.field_states["quantity"] for piece in resolved}
+                states["quantity"] = "confirmed" if values["quantity"] is not None and "confirmed" in quantity_states else "observed" if values["quantity"] is not None else "unknown"
+                if selected is not None:
+                    for use in selected.uses:
+                        if use.part_observation_id != observation.id:
+                            continue
+                        for field, value in values.items():
+                            if value is not None:
+                                unknowns.discard(f"uses.{use.id}.{field.removesuffix('_mm')}")
+            features.append(DescriptorPartFeature(
+                **values,
+                unknown_fields=tuple(field for field, value in values.items() if value is None),
+                field_states=states,
+            ))
+    if result.review is not None and result.pieces and all(piece.role != "unknown" for piece in result.pieces):
+        unknowns.discard("roles.top_panel")
+        unknowns.discard("roles.base_panel")
+    features.sort(key=lambda item: (
+        tuple((value is None, value or 0) for value in (item.length_mm, item.width_mm, item.thickness_mm, item.quantity)),
+        tuple(item.field_states.get(field, "") for field in ("length_mm", "width_mm", "thickness_mm", "quantity")),
+    ))
     return FurnitureDescriptorV2(family=family, dimensions=dimensions, roles=roles, structure=structure, material=material, finish=finish, thicknesses_mm=tuple(thicknesses), classification_status=classification_status, part_features=tuple(features), unknown_fields=tuple(sorted(unknowns)))
 
 
@@ -142,7 +193,13 @@ def semantic_text(descriptor: Descriptor) -> str:
     dimensions = descriptor.dimensions
     parts_suffix = ""
     if isinstance(descriptor, FurnitureDescriptorV2):
-        feature_text = "|".join(f"L:{item.length_mm},W:{item.width_mm},T:{item.thickness_mm},Q:{item.quantity}" for item in descriptor.part_features)
+        feature_text = "|".join(
+            f"L:{item.length_mm}:{item.field_states.get('length_mm', 'legacy')},"
+            f"W:{item.width_mm}:{item.field_states.get('width_mm', 'legacy')},"
+            f"T:{item.thickness_mm}:{item.field_states.get('thickness_mm', 'legacy')},"
+            f"Q:{item.quantity}:{item.field_states.get('quantity', 'legacy')}"
+            for item in descriptor.part_features
+        )
         parts_suffix = f"; thicknesses_mm:{','.join(f'{item:g}' for item in descriptor.thicknesses_mm) or 'unknown'}; classification_status={descriptor.classification_status}; part_features={feature_text or 'none'}"
     return (
         f"descriptor={descriptor.descriptor_version}; family={descriptor.family}; structure={descriptor.structure}; "

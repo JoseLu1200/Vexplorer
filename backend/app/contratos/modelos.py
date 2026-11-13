@@ -623,6 +623,17 @@ class DescriptorPartFeature(StrictModel):
     thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     quantity: int | None = Field(default=None, gt=0)
     unknown_fields: tuple[Literal["length_mm", "width_mm", "thickness_mm", "quantity"], ...] = ()
+    field_states: dict[
+        Literal["length_mm", "width_mm", "thickness_mm", "quantity"],
+        Literal["observed", "confirmed", "unknown"],
+    ] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def complete_field_states_when_present(self) -> "DescriptorPartFeature":
+        expected = {"length_mm", "width_mm", "thickness_mm", "quantity"}
+        if self.field_states and set(self.field_states) != expected:
+            raise ValueError("field_states must cover every canonical part feature field")
+        return self
 
 
 class FurnitureDescriptorV2(StrictModel):
