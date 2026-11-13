@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { availableModes, componentsForSnapshot, normaliseRunPayload, presentEstimate } from "../core/presentation.js";
+import { availableModes, componentsForSnapshot, fieldOrigin, normaliseRunPayload, presentEstimate, runStatusPresentation } from "../core/presentation.js";
 
 test("geometry only stays available while unconfigured provider modes stay disabled", () => {
   assert.deepEqual(availableModes({ live_available: false, replay_available: false }), [
@@ -53,6 +53,20 @@ test("canonical cost concepts expose their factors and hours without client reca
   assert.equal(presented.hoursLabel, "7,5 h");
 });
 
+test("economic factors keep enough precision to explain the backend amount", () => {
+  const presented = presentEstimate({ concepts: [{ factor: 1.464, base_amount: 60, amount: 87.84, explanation: "Tarifa sintética 28.50 EUR/m²" }], assumptions: ["Tarifas sintéticas"] });
+  assert.equal(presented.items[0].quantityLabel, "Factor 1,464");
+  assert.equal(presented.items[0].explanation, "Tarifa sintética 28.50 EUR/m²");
+  assert.deepEqual(presented.assumptions, ["Tarifas sintéticas"]);
+});
+
+test("field states map each value to its own information class", () => {
+  assert.equal(fieldOrigin("observed"), "observed");
+  assert.equal(fieldOrigin("calculated"), "derived");
+  assert.equal(fieldOrigin("confirmed"), "human_confirmed");
+  assert.equal(fieldOrigin("unknown"), "unknown");
+});
+
 test("initial result shows scenario proposals when reviewed pieces are still empty", () => {
   const proposal = { id: "proposal-side", label: "Lateral" };
   const model = componentsForSnapshot({
@@ -68,4 +82,9 @@ test("reviewed pieces replace hypotheses after a human decision", () => {
     result: { pieces: [piece], scenarios: [{ id: "scenario-a", components: [{ id: "proposal-side" }] }] },
   });
   assert.deepEqual(model.components, [piece]);
+});
+
+test("terminal review state no longer reads as processing", () => {
+  assert.deepEqual(runStatusPresentation("needs_review"), { label: "Revisión necesaria", message: "Geometría extraída. Revisa las hipótesis antes de exportar." });
+  assert.deepEqual(runStatusPresentation("completed"), { label: "Completado", message: "Resultado revisado y listo para estimar o exportar." });
 });

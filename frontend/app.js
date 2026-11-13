@@ -2,7 +2,7 @@ import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
-import { availableModes, componentsForSnapshot, normaliseRunPayload, presentEstimate } from "./core/presentation.js";
+import { availableModes, componentsForSnapshot, fieldOrigin, normaliseRunPayload, presentEstimate, runStatusPresentation } from "./core/presentation.js";
 import { buildScenarioReviewPayload } from "./core/review.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -128,9 +128,15 @@ function renderPartsAndReview() {
     const dimensions = component.dimensions_mm ?? component.dimensions ?? { length: component.length_mm, width: component.width_mm, thickness: component.thickness_mm };
     const origin = component.human_confirmation ? "human_confirmed" : (component.origin ?? component.information_class ?? component.status ?? "hypothesis");
     const values = [component.name ?? component.label ?? "Componente propuesto", sourceLabel(origin), component.quantity, dimensions.length, dimensions.width, dimensions.thickness];
+    const fieldNames = [null, null, "quantity", "length_mm", "width_mm", "thickness_mm"];
     values.forEach((value, index) => {
       const cell = document.createElement("td");
-      if (index >= 2) cell.textContent = index === 2 ? (value ?? "Desconocida") : formatMeasurement(value, "mm"); else cell.textContent = value;
+      const valueText = index >= 2 ? (index === 2 ? (value ?? "Desconocida") : formatMeasurement(value, "mm")) : value;
+      cell.textContent = valueText;
+      const fieldState = component.field_states?.[fieldNames[index]];
+      if (fieldState) {
+        const source = document.createElement("small"); source.className = "cell-origin"; source.dataset.origin = fieldOrigin(fieldState); source.textContent = sourceLabel(fieldOrigin(fieldState)); cell.append(source);
+      }
       if (value === null || value === undefined) cell.className = "unknown";
       if (index === 1) cell.dataset.origin = origin;
       row.append(cell);
@@ -139,12 +145,13 @@ function renderPartsAndReview() {
     row.addEventListener("keydown", (event) => { if (event.key === "Enter") selectComponent(component); });
     body.append(row);
   });
-  text($("#scenario-status"), scenarios.length ? "Hipótesis pendiente" : (state.snapshot?.result?.state === "completed" ? "Resultado revisado" : "Sin propuesta respaldada"));
+  text($("#scenario-status"), state.snapshot?.result?.pieces?.length ? "Resultado revisado" : (scenarios.length ? "Hipótesis pendiente" : "Sin propuesta respaldada"));
   const options = $("#scenario-options"); options.replaceChildren();
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; options.append(legend);
   scenarios.forEach((scenario, index) => {
     const label = document.createElement("label"); label.className = "scenario-option";
-    const input = document.createElement("input"); input.type = "radio"; input.name = "scenario"; input.value = scenario.id; input.checked = index === 0;
+    const input = document.createElement("input"); input.type = "radio"; input.name = "scenario"; input.value = scenario.id; input.checked = scenario.id === (state.snapshot.preview_scenario_id ?? state.snapshot.result?.review?.selected_scenario_id ?? scenarios[0]?.id);
+    input.addEventListener("change", () => { state.snapshot.preview_scenario_id = scenario.id; renderPartsAndReview(); });
     const content = document.createElement("span");
     const title = document.createElement("b"); title.textContent = scenario.title ?? scenario.name ?? scenario.label ?? `Escenario ${index + 1}`;
     const detail = document.createElement("small"); detail.textContent = (scenario.assumptions ?? []).join(" · ") || scenario.description || scenario.rationale || "Interpretación de montaje pendiente de confirmación";
@@ -182,6 +189,8 @@ function connectEvents(runId) {
 async function refreshRun() {
   if (!state.runId) return;
   state.snapshot = normaliseRunPayload(await api.getRun(state.runId));
+  const status = runStatusPresentation(state.snapshot.state);
+  text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
@@ -207,9 +216,10 @@ async function loadComparables() {
 }
 
 function renderEstimate(raw) {
-  const estimate = presentEstimate(raw); text($("#estimate-revision"), estimate.revisionLabel); text($("#estimate-total"), estimate.totalLabel);
+  const estimate = presentEstimate(raw); text($("#estimate-revision"), `${estimate.revisionLabel} · Horas ${estimate.hoursLabel}`); text($("#estimate-total"), estimate.totalLabel);
   const root = $("#estimate-lines"); root.replaceChildren();
-  estimate.items.forEach((item) => { const row = document.createElement("div"); row.className = "estimate-line"; const left = document.createElement("span"); const name = document.createElement("b"); name.textContent = item.label ?? item.name ?? "Concepto"; const detail = document.createElement("small"); detail.textContent = `${item.quantityLabel} × ${item.rateLabel}`; left.append(name, detail); const amount = document.createElement("b"); amount.textContent = item.amountLabel; row.append(left, amount); root.append(row); });
+  estimate.items.forEach((item) => { const row = document.createElement("div"); row.className = "estimate-line"; const left = document.createElement("span"); const name = document.createElement("b"); name.textContent = item.label ?? item.name ?? "Concepto"; const detail = document.createElement("small"); detail.textContent = `${item.quantityLabel} × ${item.rateLabel}`; const explanation = document.createElement("small"); explanation.textContent = item.explanation ?? "Sin explicación adicional"; left.append(name, detail, explanation); const amount = document.createElement("b"); amount.textContent = item.amountLabel; row.append(left, amount); root.append(row); });
+  [...estimate.assumptions, ...estimate.exclusions].forEach((value) => { const note = document.createElement("p"); note.className = "estimate-note"; note.textContent = value; root.append(note); });
   $$("[data-export]").forEach((button) => { button.disabled = false; }); unlock("estimate-stage");
 }
 
