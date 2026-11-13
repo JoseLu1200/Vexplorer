@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createEventLedger, eventLabel, parseEventStream } from "../core/events.js";
+import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "../core/events.js";
 
 test("duplicate events are ignored while event order is preserved", () => {
   const ledger = createEventLedger("run-1");
@@ -30,4 +30,8 @@ test("persisted SSE history includes human review and estimate events after run 
   assert.deepEqual(events.map((item) => item.sequence), [3, 4, 5]);
   assert.equal(eventLabel(events[1]), "Revisión humana registrada");
   assert.equal(eventLabel(events[2]), "Estimación guardada");
+});
+
+test("event timestamp reads the canonical nested data field", () => {
+  assert.equal(eventTimestamp({ data: { timestamp: "2026-11-13T22:45:00Z" } }), "2026-11-13T22:45:00Z");
 });

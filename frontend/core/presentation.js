@@ -21,7 +21,7 @@ export function normaliseRunPayload(payload = {}) {
   };
 }
 
-export function runStatusPresentation(state) {
+function statusPresentation(state) {
   const states = {
     needs_review: { label: "Revisión necesaria", message: "Geometría extraída. Revisa las hipótesis antes de exportar." },
     completed: { label: "Completado", message: "Resultado revisado y listo para estimar o exportar." },
@@ -30,6 +30,14 @@ export function runStatusPresentation(state) {
     timed_out: { label: "Tiempo agotado", message: "La ejecución superó el tiempo disponible." },
   };
   return states[state] ?? { label: "En proceso", message: "Extrayendo geometría y evidencia." };
+}
+
+export function snapshotStatusPresentation(snapshot = {}) {
+  return statusPresentation(snapshot.result?.state ?? snapshot.state);
+}
+
+export function executionModeLabel(mode) {
+  return ({ geometry_only: "Ejecución: solo geometría", live: "Ejecución: agente en vivo", recorded_replay: "Ejecución: replay grabado" })[mode] ?? "Ejecución sin identificar";
 }
 
 export function componentsForSnapshot(snapshot = {}, ledger = {}) {

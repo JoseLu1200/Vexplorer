@@ -39,3 +39,7 @@ export function parseEventStream(body) {
     try { return [JSON.parse(data.slice(5).trim())]; } catch { return []; }
   });
 }
+
+export function eventTimestamp(event) {
+  return event?.timestamp ?? event?.data?.timestamp ?? null;
+}

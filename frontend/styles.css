@@ -52,6 +52,7 @@ h3 { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
 .status-chip, .synthetic-tag { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px; border-radius: 999px; color: var(--green); background: #d9ece3; font-size: 12px; font-weight: 700; }
 .status-chip--muted { color: var(--muted); background: var(--paper-2); }
 .status-chip--warning, .synthetic-tag { color: #824508; background: #f3dfbd; }
+.chip-cluster { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .upload-grid, .drawing-layout, .estimate-grid, .review-grid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.55fr); gap: 24px; }
 .dropzone { min-height: 280px; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed #8c9295; border-radius: 16px; background: rgba(255,255,255,.48); text-align: center; cursor: pointer; transition: transform 500ms var(--ease), background-color 300ms var(--ease); }
 .dropzone:hover { transform: translateY(-2px); background: var(--white); }
