@@ -240,6 +240,8 @@ Los comandos siguientes se ejecutan **cuando exista el proyecto**, desde `backen
 
 ## T13 — Evaluación y demo de negocio
 
+Seguir [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md) para comparar reglas, modelo visual, modelo con herramientas y herramientas con histórico. La [selección de datasets](docs/INVESTIGACION_Y_DATASETS.md) distingue candidatos de mobiliario, corpus técnico y acceso pendiente.
+
 - [ ] Congelar familias reservadas, referencias, histórico permitido, tolerancias y criterios antes de ejecutar; seguir [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md).
 - [ ] Comparar geometría/reglas, harness y revisión humana con la misma entrada pobre. Medir componentes, cantidades, dimensiones, abstenciones y tiempo de corrección.
 - [ ] Comparar recuperación por atributos y embeddings; medir coste y horas solo donde exista referencia real y compatible.

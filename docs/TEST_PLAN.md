@@ -107,3 +107,7 @@ Para presentar P0 se propone ejecutar y superar sus casos con evidencia, navegar
 | NEG-10: evaluación con técnico | Comparar tiempo/correcciones y calidad frente a lectura manual; separar reales/sintéticos |
 
 Estos casos son especificaciones pendientes, no pruebas ejecutadas. Medir los indicadores y admitir varias construcciones plausibles conforme a [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Pasar la suite técnica no basta para afirmar cumplimiento de la transcripción.
+
+## Comparación de reglas, visión, herramientas e histórico
+
+Aplicar [COMPARATIVA_METODOS](COMPARATIVA_METODOS.md): separar representación común de comparación del flujo completo; controlar información, particiones por familia, abstenciones, tiempo humano y recursos. El piloto actual es desarrollo. Histórico y coste quedan no evaluados mientras falten referencias adecuadas.

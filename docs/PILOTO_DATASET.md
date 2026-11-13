@@ -59,3 +59,7 @@ Usar estos casos para probar primero extracción y abstención. Después conecta
 ## Revisión independiente
 
 Revisión del cambio `6d6229d..c8f1f63`: sin incidencias críticas o importantes; confirmó 13 pruebas y 68 hashes. Mejora menor aplazada: los ZIP incluyen fechas de generación, por lo que no son idénticos byte a byte entre ejecuciones. El procedimiento y contenido son reproducibles; los hashes documentan la integridad de cada generación concreta.
+
+## Complemento de mobiliario
+
+La [selección de nuevos datasets](INVESTIGACION_Y_DATASETS.md) propone PlankAssembly para tableros/vistas y IKEA-Manual para montaje. No sustituye ni modifica este corpus verificado. El protocolo de [cuatro métodos](COMPARATIVA_METODOS.md) describe cómo usar el piloto sin confundir preparación con resultados de inferencia.

@@ -78,3 +78,7 @@ No se ha medido ahorro de tiempo, precisión semántica, despiece correcto de mu
 Fuente primaria de requisitos: [transcripcion-contexto-poc.md](../transcripcion-contexto-poc.md). El paquete extraído cubría extracción y revisión técnica, pero no desarrollaba recuperación histórica, estimación económica ni una evaluación completa desde planos pobres. Se añaden T11–T13 y [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md) para cubrir esas necesidades.
 
 Decisión documental: conservar el alcance técnico 0.1.0 como primer hito y exigir inferencia, histórico y estimación para la prueba de concepto completa. No se declara código implementado, dataset nuevo descargado ni contratos aprobados. La transcripción se conserva sin corregir sus errores de reconocimiento para no alterar la fuente.
+
+## Investigación y admisión de nuevos datos
+
+La [comparación actualizada de investigación y datasets](INVESTIGACION_Y_DATASETS.md) registra fuentes primarias, cifras, límites y acceso comprobado. El [protocolo de cuatro métodos](COMPARATIVA_METODOS.md) separa reglas, visión directa, herramientas e histórico. Son propuestas de evaluación; no resultados ejecutados.

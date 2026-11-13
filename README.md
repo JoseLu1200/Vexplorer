@@ -80,3 +80,5 @@ La primera integración debe mostrar una medida con su evidencia de origen. La s
 Una persona carga un plano pobre admitido, revisa propuestas de piezas y secciones, consulta muebles históricos similares y exporta una ficha de despiece y estimación con procedencia y supuestos. La evaluación compara con despieces reservados y presupuestos/horas de referencia donde existan, además de medir la corrección humana necesaria. Si faltan datos, sabe cuáles faltan. `completed` describe el resultado de las comprobaciones implementadas, no una certificación de fabricación.
 
 La auditoría de archivos y las pruebas del preparador del dataset se han ejecutado; las pruebas de la aplicación siguen **pendientes de implementar**. Los CAD de terceros y las respuestas de referencia no se incluyen en este paquete Markdown. Fecha: **13 de noviembre de 2026, UTC**.
+
+Investigación: [referencias y selección de datasets](docs/INVESTIGACION_Y_DATASETS.md), con [protocolo de comparación de cuatro métodos](docs/COMPARATIVA_METODOS.md).
