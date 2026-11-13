@@ -122,7 +122,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             contour_id = f"contour-{entity.id}"
             contours.append({"id": contour_id, "view_id": f"view-{view_label.lower()}", "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})
-        if entity.kind == "DIMENSION":
+        if entity.kind == "DIMENSION" and entity.measurement is not None:
             evidence_id = f"evidence-dimension-{entity.id}"
             value_mm = entity.measurement * drawing.unit_scale_to_mm if entity.measurement is not None and drawing.unit_scale_to_mm is not None else None
             evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": "Linear dimension annotation observed in drawing"})
