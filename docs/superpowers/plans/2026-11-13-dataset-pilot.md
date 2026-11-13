@@ -34,7 +34,7 @@
 - [x] Generate three PDF cases: assembled 2D view only; Jaw Pad two orthographic views with cotas; Jaw Pad front only without thickness view. Record exact crops, source hashes, limitations and reference mapping privately.
 - [x] Include the 14 indexed DXF copies with neutral filenames and task extraction, along with evaluator-only publisher sidecars and uncertainty notes. No source scripts are executed.
 - [x] Produce one ZIP per case, agent_inputs.zip for transport only, and evaluator_reference.zip containing references/provenance. Verify ZIP hashes and expected entries, reopen PDFs and inspect rendered pages.
-- [x] Document actual observed checks and commands, run pytest and git diff --check, obtain a fresh review, commit the tooling and report (review pending at this checkpoint). Keep generated dataset outside Git.
+- [x] Document actual observed checks and commands, run pytest and git diff --check, obtain a fresh review, commit the tooling and report (fresh review completed; no critical/important findings). Keep generated dataset outside Git.
 
 ## Execution record
 
@@ -44,3 +44,5 @@
 
 - Visual QA found a clipped 25.40 annotation: expanded left crop margin from 85 to 70 PDF points.
 - Added per-case ZIPs because a full control and its degraded variant must not share an agent context. Both new archive tests failed first, then implementation followed.
+
+- Final review: no Critical/Important findings; minor deferred: ZIP timestamps prevent byte-identical archive hashes across generations. Content and per-run integrity remain verified.

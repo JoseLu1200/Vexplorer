@@ -50,7 +50,12 @@ El directorio de salida debe ser nuevo y no solaparse con la fuente. No se sobre
 - Verificación independiente de los 68 hashes de salida, archivos de cada ZIP, ausencia de texto/adjuntos/título de fuente en los PDF y suma de la BOM de referencia.
 - Renderizado con Poppler y revisión visual de los cuatro recortes. Se corrigió el margen izquierdo para evitar cortar la cota 25,40.
 - Fuente revalidada después de generar: 421/421 hashes correctos.
+- Empaquetado Python comprobado con `pip wheel --no-deps --no-build-isolation`; 167 enlaces locales de documentación resueltos.
 
 ## Alcance y siguiente integración
 
 Usar estos casos para probar primero extracción y abstención. Después conectar una ejecución aislada del harness por caso y un evaluador independiente. Los resultados de esta entrega son de preparación e integridad, no precisión de interpretación, utilidad en mobiliario ni calidad de presupuestos. Los datos y referencias generados quedan fuera de Git; se versionan la herramienta, pruebas y procedimiento.
+
+## Revisión independiente
+
+Revisión del cambio `6d6229d..c8f1f63`: sin incidencias críticas o importantes; confirmó 13 pruebas y 68 hashes. Mejora menor aplazada: los ZIP incluyen fechas de generación, por lo que no son idénticos byte a byte entre ejecuciones. El procedimiento y contenido son reproducibles; los hashes documentan la integridad de cada generación concreta.
