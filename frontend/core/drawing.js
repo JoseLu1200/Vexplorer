@@ -1,13 +1,16 @@
 function finitePoint(point) {
-  return Array.isArray(point) && point.length >= 2 && point.slice(0, 2).every(Number.isFinite);
+  return (Array.isArray(point) && point.length >= 2 && point.slice(0, 2).every(Number.isFinite))
+    || (point && Number.isFinite(point.x) && Number.isFinite(point.y));
 }
+
+function pointTuple(point) { return Array.isArray(point) ? point.slice(0, 2) : [point.x, point.y]; }
 
 export function safeText(value) {
   return String(value ?? "");
 }
 
 export function normaliseDrawing(extraction) {
-  const metric = extraction?.source_unit !== "unknown" && Number.isFinite(extraction?.unit_scale_to_mm);
+  const metric = extraction?.coordinate_unit === "mm" || (extraction?.source_unit !== "unknown" && Number.isFinite(extraction?.unit_scale_to_mm));
   const paths = (extraction?.contours ?? []).flatMap((contour) => {
     const points = metric ? contour.points_mm : (contour.source_points ?? contour.points_source);
     if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return [];
@@ -15,7 +18,7 @@ export function normaliseDrawing(extraction) {
       id: contour.id,
       viewId: contour.view_id ?? contour.view,
       entityIds: [...(contour.source_entity_ids ?? [])],
-      points: points.map((point) => point.slice(0, 2)),
+      points: points.map(pointTuple),
       closed: Boolean(contour.closed),
     }];
   });
@@ -44,5 +47,5 @@ export function selectionForComponent(component, drawing) {
 
 export function svgPath(points, closed = false) {
   if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return "";
-  return `${points.map((point, index) => `${index ? "L" : "M"} ${point[0]} ${-point[1]}`).join(" ")}${closed ? " Z" : ""}`;
+  return `${points.map((raw, index) => { const point = pointTuple(raw); return `${index ? "L" : "M"} ${point[0]} ${-point[1]}`; }).join(" ")}${closed ? " Z" : ""}`;
 }

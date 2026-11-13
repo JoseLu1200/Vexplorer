@@ -20,6 +20,14 @@ test("unknown units use source coordinates and do not expose metric coordinates"
   assert.equal(model.unitLabel, "Unidad sin resolver");
 });
 
+test("Pydantic point objects become safe numeric SVG points", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    contours: [{ ...unknownDrawing.contours[0], source_points: undefined, points_source: [{ x: 0, y: 10 }, { x: 120, y: 10 }] }],
+  });
+  assert.deepEqual(model.paths[0].points, [[0, 10], [120, 10]]);
+});
+
 test("component selection follows stable contour and evidence identifiers", () => {
   const selected = selectionForComponent({
     id: "component-1",

@@ -19,12 +19,14 @@ test("review decisions require a written reason", () => {
 test("scenario review sends technical premises without calculating dimensions in the browser", () => {
   assert.deepEqual(buildScenarioReviewPayload({ result_revision: 2 }, {
     scenario_id: "between-sides",
+    reviewer_name: "Marta Ruiz",
     confirmed_thickness_mm: "18",
     material: "Melamina blanca",
     finish: "Canto ABS",
     notes: "Montaje confirmado por el responsable de taller",
   }), {
     base_result_revision: 2,
+    reviewer_name: "Marta Ruiz",
     scenario_id: "between-sides",
     confirmed_thickness_mm: 18,
     material: "Melamina blanca",
@@ -34,5 +36,5 @@ test("scenario review sends technical premises without calculating dimensions in
 });
 
 test("scenario review rejects a missing or non positive thickness", () => {
-  assert.throws(() => buildScenarioReviewPayload({ result_revision: 1 }, { scenario_id: "a", confirmed_thickness_mm: "0", notes: "motivo" }), /espesor/i);
+  assert.throws(() => buildScenarioReviewPayload({ result_revision: 1 }, { scenario_id: "a", reviewer_name: "Marta", confirmed_thickness_mm: "0", notes: "motivo" }), /espesor/i);
 });
