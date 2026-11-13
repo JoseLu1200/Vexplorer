@@ -216,13 +216,8 @@ def build_all(output_dir: Path) -> None:
             "local_axes": ["FRONT=(L,W)", "TOP=(L,T)", "SIDE=(T,W)"],
         },
         "cases": {
-            "piezas_completo.dxf": {"purpose": "complete_visible_evidence"},
-            "piezas_qty_desconocida.dxf": {"purpose": "one_missing_qty_annotation"},
-            "piezas_espesor_desconocido.dxf": {"purpose": "one_missing_thickness_view_pair"},
-            "piezas_dimensiones_variante.dxf": {"purpose": "changed_local_dimensions"},
-            "piezas_espesor_36.dxf": {"purpose": "changed_visible_thickness"},
-            "piezas_ids_trasladados.dxf": {"purpose": "changed_keys_and_global_translation"},
-            "piezas_ambigua_sin_id.dxf": {"purpose": "views_without_grouping_key"},
+            filename: {"purpose": "separate_part_views_development_case"}
+            for filename in FIXTURES
         },
     }
     (output_dir / "piezas_manifest.json").write_text(
