@@ -59,12 +59,14 @@
 | Biblioteca con traslación | `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py -q` | 22 pasan | Descriptor/API pendientes de B |
 | Aceptación preview/escena, TDD rojo | `.venv\Scripts\python.exe -m pytest tests/test_demo_workbench.py -q` | 3 fallos HTTP 404 esperados | Endpoints 0.3 todavía no integrados |
 | Aceptación biblioteca/similitud, TDD rojo | mismo comando tras ampliar | 4 fallos 404/405 esperados | API escena/biblioteca todavía no integrada en esta rama |
+| Aceptación 0.3 contra backend candidato | desde la rama B: `.venv\Scripts\python.exe -m pytest .worktrees/evaluacion/tests/test_demo_workbench.py -q` | 4 pasan; 1 aviso deprecación | Falta repetir tras integrar el commit B en raíz |
+| Suite D contra backend candidato | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Verificación cruzada; no sustituye la suite final en raíz |
 
 ## Siguiente bloque
 
-- Escribir primero regresiones de generación parametrizada y biblioteca pública; observar fallo.
-- Implementar los nuevos DXF y referencias privadas, manteniendo reproducibilidad y aislamiento.
-- Tras acuerdo A/B, añadir aceptación API de escena, exportación versionada, descriptor sin fugas, similitud invariante y grupos offline reproducibles.
+- Repetir la aceptación 0.3 y la suite D sobre la raíz cuando el backend publique e integre las rutas.
+- Confirmar que la exportación integrada conserva escena, explicaciones, descriptor y elemento de biblioteca para la revisión exacta.
+- Entregar al coordinador los commits D y la evidencia final, sin despliegue ni `push`.
 
 ## Cierre de la fase anterior
 
