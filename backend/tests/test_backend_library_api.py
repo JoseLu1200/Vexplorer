@@ -71,3 +71,37 @@ def test_offline_groups_are_reproducible_and_explain_threshold(tmp_path: Path, m
     assert len(first) == 1 and len(first[0]["member_ids"]) == 3
     assert first[0]["threshold"] == 0.9
     assert first[0]["method"] == "geometric"
+
+
+def test_semantic_groups_use_compatible_cached_embeddings_without_fallback(tmp_path: Path, monkeypatch) -> None:
+    from backend.app.semantic.embeddings import EmbeddingResult
+
+    class FakeEmbeddingProvider:
+        model = "text-embedding-3-small"
+        dimensions = 2
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(vector=(0.8, 0.6), model=self.model, dimensions=self.dimensions)
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = TestClient(create_app(data_dir=tmp_path, embedding_provider=FakeEmbeddingProvider()))
+    for label in ("semantic-a", "semantic-b"):
+        run_id = _reviewed_run(client, label)
+        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "openai"})
+        assert saved.status_code == 201
+
+    response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.99})
+    assert response.status_code == 200
+    groups = response.json()["data"]
+    assert len(groups) == 1 and len(groups[0]["member_ids"]) == 2
+    assert groups[0]["method"] == "semantic"
+    assert groups[0]["score_kind"] == "cosine_similarity"
+
+
+def test_semantic_groups_reject_missing_embeddings_explicitly(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    run_id = _reviewed_run(client, "offline")
+    client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": "Offline", "embedding_mode": "offline"})
+    response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.8})
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "semantic_embedding_missing"

@@ -97,3 +97,37 @@ def geometric_groups(items: tuple[LibraryItem, ...], threshold: float) -> tuple[
         digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
         groups.append(SimilarityGroup(id=f"group-geometric-{digest}", member_ids=tuple(members), method="geometric", score_kind="geometric_similarity", threshold=threshold, explanation="Componente conexo reproducible: cada enlace alcanza el umbral geométrico; no demuestra identidad ni intercambiabilidad."))
     return tuple(groups)
+
+
+def semantic_groups(items: tuple[LibraryItem, ...], vectors: dict[str, tuple[float, ...]], threshold: float) -> tuple[SimilarityGroup, ...]:
+    ordered = tuple(sorted(items, key=lambda item: item.id))
+    if any(item.embedding is None or item.id not in vectors for item in ordered):
+        raise ValueError("semantic_embedding_missing")
+    spaces = {(item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version) for item in ordered if item.embedding is not None}
+    if len(spaces) > 1:
+        raise ValueError("embedding_space_incompatible")
+    parent = {item.id: item.id for item in ordered}
+
+    def find(value: str) -> str:
+        while parent[value] != value:
+            parent[value] = parent[parent[value]]
+            value = parent[value]
+        return value
+
+    def union(left: str, right: str) -> None:
+        a, b = find(left), find(right)
+        if a != b:
+            parent[max(a, b)] = min(a, b)
+
+    for index, left in enumerate(ordered):
+        for right in ordered[index + 1:]:
+            if left.run_id != right.run_id and cosine_similarity(vectors[left.id], vectors[right.id]) >= threshold:
+                union(left.id, right.id)
+    components: dict[str, list[str]] = {}
+    for item in ordered:
+        components.setdefault(find(item.id), []).append(item.id)
+    groups = []
+    for members in sorted(tuple(sorted(values)) for values in components.values() if len(values) >= 2):
+        digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
+        groups.append(SimilarityGroup(id=f"group-semantic-{digest}", member_ids=tuple(members), method="semantic", score_kind="cosine_similarity", threshold=threshold, explanation="Componente conexo reproducible por coseno en un mismo espacio de embedding; el score no es probabilidad ni demuestra identidad."))
+    return tuple(groups)
