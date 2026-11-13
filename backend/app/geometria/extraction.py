@@ -3,12 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import dist, hypot
 from pathlib import Path
-from typing import Any
+import re
+from typing import Any, Literal
 
 from backend.app.ingesta.dxf_reader import ParsedDrawing, ParsedEntity, parse_dxf
 
 
 VIEW_LABELS = {"FRONT": "FRONT", "TOP": "TOP", "RIGHT": "SIDE", "SIDE": "SIDE"}
+PART_VIEW_LABEL = re.compile(
+    r"^PART\s+(?P<key>[A-Za-z0-9_-]+)\s+(?P<role>FRONT|TOP|SIDE)(?:\s+QTY\s+[1-9]\d*)?$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -42,13 +47,32 @@ def _bounds(points: list[tuple[float, float]]) -> dict[str, float]:
     return {"min_x": min(xs), "min_y": min(ys), "max_x": max(xs), "max_y": max(ys)}
 
 
-def _view_labels(drawing: ParsedDrawing) -> list[tuple[str, tuple[float, float]]]:
+def _view_labels(
+    drawing: ParsedDrawing,
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"],
+) -> list[tuple[str, tuple[float, float]]]:
     labels = []
     for entity in drawing.entities:
-        normalized = (entity.text or "").strip().upper()
-        if normalized in VIEW_LABELS:
-            labels.append((VIEW_LABELS[normalized], entity.points[0]))
+        text = (entity.text or "").strip()
+        if input_kind == "separated_part_views":
+            match = PART_VIEW_LABEL.fullmatch(text)
+            if match:
+                labels.append((f"part-{match.group('key').lower()}-{match.group('role').lower()}", entity.points[0]))
+        else:
+            normalized = text.upper()
+            if normalized in VIEW_LABELS:
+                labels.append((VIEW_LABELS[normalized], entity.points[0]))
     return labels
+
+
+def _view_id(view_key: str) -> str:
+    return f"view-{view_key.lower()}"
+
+
+def _view_role(view_key: str) -> str:
+    if view_key.startswith("part-"):
+        return view_key.rsplit("-", 1)[1].upper()
+    return view_key
 
 
 def _view_regions(
@@ -164,9 +188,13 @@ def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, 
     return tuple(sorted((lengths[0], lengths[1]), reverse=True))
 
 
-def extraction_payload(path: Path) -> dict[str, Any]:
+def extraction_payload(
+    path: Path,
+    *,
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy",
+) -> dict[str, Any]:
     drawing = parse_dxf(path)
-    labels = _view_labels(drawing)
+    labels = _view_labels(drawing, input_kind)
     regions = _view_regions(drawing, labels)
     evidence: list[dict[str, Any]] = []
     entities: list[dict[str, Any]] = []
@@ -187,12 +215,16 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             position_source, position_mm = _point_payload(entity.points[0], drawing.unit_scale_to_mm)
             texts.append({
                 "id": f"text-{entity.id}", "source_entity_id": entity.id,
-                "view_id": f"view-{view_label.lower()}", "layer": entity.layer, "text": entity.text,
+                "view_id": _view_id(view_label), "layer": entity.layer, "text": entity.text,
                 "position_source": position_source, "position_mm": position_mm,
+            })
+            evidence.append({
+                "id": f"evidence-text-{entity.id}", "kind": "annotation",
+                "source_entity_ids": [entity.id], "description": "Public text annotation observed in drawing",
             })
         if entity.kind == "LWPOLYLINE" and entity.closed and len(entity.points) >= 4:
             contour_id = f"contour-{entity.id}"
-            contours.append({"id": contour_id, "view_id": f"view-{view_label.lower()}", "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
+            contours.append({"id": contour_id, "view_id": _view_id(view_label), "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})
         if entity.kind == "DIMENSION" and entity.measurement is not None:
             evidence_id = f"evidence-dimension-{entity.id}"
@@ -203,7 +235,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             dimensions.append({
                 "id": dimension_id, "kind": "annotation", "value_mm": value_mm,
                 "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed",
-                "view_id": f"view-{view_label.lower()}", "graphic_id": graphic_id,
+                "view_id": _view_id(view_label), "graphic_id": graphic_id,
             })
             if entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None:
                 start_a_source, start_a_mm = _point_payload(entity.extension_starts[0], drawing.unit_scale_to_mm)
@@ -213,7 +245,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
                 text_position_source, text_position_mm = _point_payload(entity.text_position, drawing.unit_scale_to_mm)
                 dimension_graphics.append({
                     "id": graphic_id, "dimension_id": dimension_id, "source_entity_id": entity.id,
-                    "view_id": f"view-{view_label.lower()}", "layer": entity.layer,
+                    "view_id": _view_id(view_label), "layer": entity.layer,
                     "display_text": entity.display_text, "raw_text": entity.text or "",
                     "extension_start_a_source": start_a_source, "extension_start_a_mm": start_a_mm,
                     "extension_start_b_source": start_b_source, "extension_start_b_mm": start_b_mm,
@@ -231,7 +263,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             contour_id = f"contour-lines-{view_label.lower()}-{index}"
             source_ids = [line.id for line in component]
             contours.append({
-                "id": contour_id, "view_id": f"view-{view_label.lower()}", "source_entity_ids": source_ids,
+                "id": contour_id, "view_id": _view_id(view_label), "source_entity_ids": source_ids,
                 "points_source": [{"x": x, "y": y} for x, y in rectangle],
                 "points_mm": _scaled(rectangle, drawing.unit_scale_to_mm), "closed": True,
             })
@@ -248,7 +280,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             continue
         bounds_source = _bounds(view_points)
         bounds_mm = {key: value * drawing.unit_scale_to_mm for key, value in bounds_source.items()} if drawing.unit_scale_to_mm is not None else None
-        views.append({"id": f"view-{label.lower()}", "label": label, "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
+        views.append({"id": _view_id(label), "label": _view_role(label), "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
     status = "needs_review" if drawing.unit_scale_to_mm is None or any(
         warning.startswith("unsupported_") or "conflict" in warning or "override" in warning
@@ -263,7 +295,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
             "dimension_ids": [item["id"] for item in dimensions if set(item["source_entity_ids"]) & set(view["entity_ids"])],
         })
     return {
-        "drawing_id": drawing.drawing_id, "status": status, "source_unit": drawing.source_unit,
+        "drawing_id": drawing.drawing_id, "input_kind": input_kind, "status": status, "source_unit": drawing.source_unit,
         "unit_scale_to_mm": drawing.unit_scale_to_mm,
         "coordinate_unit": "mm" if drawing.unit_scale_to_mm is not None else "source",
         "synthetic": "planos_demo" in path.parts, "warnings": list(drawing.warnings), "entities": entities,
@@ -272,11 +304,15 @@ def extraction_payload(path: Path) -> dict[str, Any]:
     }
 
 
-def extract_drawing(path: Path) -> Any:
+def extract_drawing(
+    path: Path,
+    *,
+    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy",
+) -> Any:
     """Return the contract-owned Pydantic model without duplicating its schema here."""
     from backend.app.contratos.modelos import DrawingExtraction
 
-    return DrawingExtraction.model_validate(extraction_payload(path))
+    return DrawingExtraction.model_validate(extraction_payload(path, input_kind=input_kind))
 
 
 def derive_rectangular_hypotheses(extraction: Any) -> tuple[GeometryHypothesis, ...]:

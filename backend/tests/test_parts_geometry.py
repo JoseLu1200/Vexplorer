@@ -1,0 +1,129 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import ezdxf
+
+from backend.app.geometria.extraction import extract_drawing
+from backend.app.geometria.parts import extract_separated_parts
+
+
+def _parts_drawing(
+    tmp_path: Path,
+    *,
+    unit_code: int = 4,
+    top_length: float = 800.0,
+    quantity: int | None = 2,
+    translation: tuple[float, float] = (0.0, 0.0),
+) -> Path:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = unit_code
+    modelspace = document.modelspace()
+    tx, ty = translation
+    views = (
+        ("FRONT", 800.0, 300.0, 0.0),
+        ("TOP", top_length, 18.0, 1200.0),
+        ("SIDE", 18.0, 300.0, 2400.0),
+    )
+    for role, width, height, offset in views:
+        x, y = tx + offset, ty
+        modelspace.add_lwpolyline(
+            [(x, y), (x + width, y), (x + width, y + height), (x, y + height)],
+            close=True,
+        )
+        modelspace.add_text(f"PART P01 {role}").set_placement((x + width / 2, y + height / 2))
+    if quantity is not None:
+        modelspace.add_text(f"QTY P01 {quantity}").set_placement((tx + 400, ty + 100))
+    path = tmp_path / "parts.dxf"
+    document.saveas(path)
+    return path
+
+
+def test_parts_mode_exposes_distinct_explicitly_keyed_views(tmp_path: Path) -> None:
+    extraction = extract_drawing(
+        _parts_drawing(tmp_path), input_kind="separated_part_views",
+    )
+
+    assert extraction.input_kind == "separated_part_views"
+    assert [(view.id, view.label) for view in extraction.views] == [
+        ("view-part-p01-front", "FRONT"),
+        ("view-part-p01-side", "SIDE"),
+        ("view-part-p01-top", "TOP"),
+    ]
+
+
+def test_separated_part_views_resolve_local_axes_and_explicit_quantity(tmp_path: Path) -> None:
+    extraction = extract_drawing(
+        _parts_drawing(tmp_path), input_kind="separated_part_views",
+    )
+
+    parts = extract_separated_parts(extraction)
+
+    assert len(parts.observations) == 1
+    observation = parts.observations[0]
+    assert observation.part_key == "P01"
+    assert observation.association_basis == "explicit_key"
+    assert [(view.role, view.local_bounds_mm.model_dump()) for view in observation.views] == [
+        ("FRONT", {"min_x": 0.0, "min_y": 0.0, "max_x": 800.0, "max_y": 300.0}),
+        ("SIDE", {"min_x": 0.0, "min_y": 0.0, "max_x": 18.0, "max_y": 300.0}),
+        ("TOP", {"min_x": 0.0, "min_y": 0.0, "max_x": 800.0, "max_y": 18.0}),
+    ]
+    assert observation.dimensions.length.value_mm == 800.0
+    assert observation.dimensions.width.value_mm == 300.0
+    assert observation.dimensions.thickness.value_mm == 18.0
+    assert observation.quantity.value == 2
+    assert observation.quantity.state == "observed"
+    assert observation.status == "complete"
+
+
+def test_views_never_supply_quantity_and_unknown_units_never_supply_mm(tmp_path: Path) -> None:
+    extraction = extract_drawing(
+        _parts_drawing(tmp_path, unit_code=0, quantity=None),
+        input_kind="separated_part_views",
+    )
+
+    observation = extract_separated_parts(extraction).observations[0]
+
+    assert observation.quantity.value is None
+    assert observation.quantity.state == "unknown"
+    assert all(
+        dimension.value_mm is None and dimension.state == "unknown"
+        for dimension in (
+            observation.dimensions.length,
+            observation.dimensions.width,
+            observation.dimensions.thickness,
+        )
+    )
+    assert observation.status == "partial"
+
+
+def test_disagreeing_views_preserve_dimension_conflict(tmp_path: Path) -> None:
+    extraction = extract_drawing(
+        _parts_drawing(tmp_path, top_length=810.0),
+        input_kind="separated_part_views",
+    )
+
+    observation = extract_separated_parts(extraction).observations[0]
+
+    assert observation.dimensions.length.value_mm is None
+    assert observation.dimensions.length.state == "conflict"
+    assert len(observation.dimensions.length.view_ids) == 2
+    assert len(observation.dimensions.length.evidence_ids) == 2
+    assert "dimension_conflict:P01:length" in observation.warnings
+
+
+def test_translation_changes_source_origins_but_not_local_part_analysis(tmp_path: Path) -> None:
+    first = extract_separated_parts(extract_drawing(
+        _parts_drawing(tmp_path), input_kind="separated_part_views",
+    ))
+    translated_dir = tmp_path / "translated"
+    translated_dir.mkdir()
+    second = extract_separated_parts(extract_drawing(
+        _parts_drawing(translated_dir, translation=(5000.0, 2500.0)),
+        input_kind="separated_part_views",
+    ))
+
+    assert first.candidate_revision == second.candidate_revision
+    assert first.observations[0].dimensions == second.observations[0].dimensions
+    assert first.observations[0].views[0].local_origin_source != second.observations[0].views[0].local_origin_source
+    assert first.observations[0].views[0].local_bounds_source == second.observations[0].views[0].local_bounds_source
