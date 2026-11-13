@@ -129,3 +129,163 @@ class DrawingExtraction(StrictModel):
         elif self.unit_scale_to_mm is None or self.coordinate_unit != "mm":
             raise ValueError("resolved units require scale and mm coordinates")
         return self
+
+
+class ComponentProposal(StrictModel):
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    role: Literal["side_panel", "shelf", "top_panel", "base_panel", "back_panel", "door", "divider", "unknown"] = "unknown"
+    quantity: int | None = Field(default=None, gt=0)
+    length_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    length_derivation: Literal["direct_observation", "overall_width_minus_two_thickness", "overall_height_minus_two_thickness"] = "direct_observation"
+    length_basis_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    source_observation_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...]
+    source_entity_ids: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...]
+    assumptions: tuple[str, ...] = Field(min_length=1)
+    information_class: Literal["hypothesis"] = "hypothesis"
+
+
+class DecompositionScenario(StrictModel):
+    id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    components: tuple[ComponentProposal, ...]
+    assumptions: tuple[str, ...] = Field(min_length=1)
+    incompatible_with: tuple[str, ...] = ()
+    state: Literal["hypothesis"] = "hypothesis"
+
+
+class ReviewDecision(StrictModel):
+    proposal_id: str = Field(min_length=1)
+    action: Literal["confirm", "reject"]
+    role: Literal["side_panel", "shelf", "top_panel", "base_panel", "back_panel", "door", "divider", "unknown"] = "unknown"
+    quantity: int | None = Field(default=None, gt=0)
+    length_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    material: str | None = None
+    finish: str | None = None
+    notes: str = Field(min_length=1)
+
+
+class ReviewRequest(StrictModel):
+    base_result_revision: int = Field(gt=0)
+    reviewer_name: str = Field(min_length=1)
+    decisions: tuple[ReviewDecision, ...] = ()
+    scenario_id: str | None = None
+    confirmed_thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    material: str | None = None
+    finish: str | None = None
+    notes: str | None = None
+
+    @model_validator(mode="after")
+    def unique_proposals(self) -> "ReviewRequest":
+        if not self.decisions and self.scenario_id is None:
+            raise ValueError("a scenario selection or explicit decisions are required")
+        if self.scenario_id is not None and (self.confirmed_thickness_mm is None or not self.notes):
+            raise ValueError("scenario selection requires thickness and notes")
+        ids = [item.proposal_id for item in self.decisions]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate proposal decisions")
+        return self
+
+
+class ResolvedPiece(StrictModel):
+    id: str
+    proposal_id: str
+    label: str
+    role: str
+    quantity: int | None
+    length_mm: float | None
+    width_mm: float | None
+    thickness_mm: float | None
+    material: str | None
+    finish: str | None
+    source_observation_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    human_confirmation: str
+    field_states: dict[str, Literal["observed", "calculated", "confirmed", "unknown"]]
+
+
+class HumanReview(StrictModel):
+    reviewer_name: str
+    reason: str
+    timestamp: str
+    selected_scenario_id: str | None
+
+
+class Result(StrictModel):
+    schema_version: Literal["0.2.0"] = SCHEMA_VERSION
+    run_id: str
+    result_revision: int = Field(gt=0)
+    state: Literal["completed", "needs_review"]
+    scenarios: tuple[DecompositionScenario, ...]
+    pieces: tuple[ResolvedPiece, ...]
+    rejected_proposal_ids: tuple[str, ...] = ()
+    created_at: str
+    review: HumanReview | None = None
+
+
+class RunSnapshot(StrictModel):
+    schema_version: Literal["0.2.0"] = SCHEMA_VERSION
+    id: str
+    mode: Literal["live", "geometry_only"]
+    state: Literal["completed", "needs_review", "failed", "cancelled", "timed_out"]
+    reason_code: str | None = None
+    candidate_revision: str
+    result_revision: int | None
+    created_at: str
+
+
+class Comparable(StrictModel):
+    id: str
+    name: str
+    family: str
+    width_mm: float
+    depth_mm: float
+    height_mm: float
+    material: str
+    finish: str
+    score: float = Field(ge=0, le=1)
+    differences: tuple[str, ...]
+    fixed_cost_eur: float = Field(ge=0)
+    material_cost_eur: float = Field(ge=0)
+    reference_area_mm2: float = Field(gt=0)
+    hours: float | None = Field(default=None, ge=0)
+    synthetic: Literal[True] = True
+
+
+class CostConcept(StrictModel):
+    id: str
+    label: str
+    cost_type: Literal["fixed", "material", "labor", "finish"]
+    base_amount: float = Field(ge=0)
+    factor: float = Field(gt=0)
+    amount: float = Field(ge=0)
+    explanation: str
+    comparable_id: str
+
+
+class Estimate(StrictModel):
+    schema_version: Literal["0.2.0"] = SCHEMA_VERSION
+    run_id: str
+    result_revision: int = Field(gt=0)
+    currency: Literal["EUR"] = "EUR"
+    concepts: tuple[CostConcept, ...]
+    total: float = Field(ge=0)
+    hours: float | None = Field(default=None, ge=0)
+    assumptions: tuple[str, ...]
+    comparable_ids: tuple[str, ...]
+    synthetic: Literal[True] = True
+
+
+class InspectEvidenceArgs(StrictModel):
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class SelectScenarioArgs(StrictModel):
+    scenario_id: str = Field(min_length=1)
