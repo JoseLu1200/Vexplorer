@@ -41,3 +41,12 @@ Vertical slice backend completo y verificado; pendiente únicamente integrar los
 - Catálogo, costes y tarifas son sintéticos y se etiquetan como tales; horas permanecen desconocidas.
 - `recorded_replay` se rechaza hasta disponer de una grabación real autorizada.
 - Persistencia SQLite local de un host; sin promesa de alta disponibilidad ni autenticación multiusuario en esta demo.
+
+## Ampliación visor, reconstrucción y similitud — 2026-11-13
+
+- Rama propia `demo/viewer-backend`, base `56faba4`.
+- Propiedad B: contratos (único escritor), API, harness, repositorio, explicaciones, descriptor semántico y similitud. Fuera de alcance: `decomposition.py` y `reconstruction.py` (A), frontend (C) y fixture/evaluación (D).
+- Acuerdo explícito A/B 0.3 previo a código: `DrawingText`, `DimensionGraphic`, campos aditivos retrocompatibles de `DrawingExtraction`, `SceneObject`, `ReconstructionScene` y `reconstruct_scene(extraction, result)`. C y D avisados antes de implementar.
+- Descriptor canónico versionado sin IDs/rutas/nombre/traslación; vector geométrico etiquetado separado del embedding real. Biblioteca conserva la última revisión de cada run y excluye duplicados de revisión.
+- Embeddings OpenAI explícitos con `text-embedding-3-small`, dimensión configurable, caché por descriptor/modelo/dimensión/versión y errores visibles. El modo offline nunca se presenta como embedding semántico.
+- Estado inicial: documentación obligatoria y guía oficial de embeddings leídas; contrato acordado y endpoints propuestos; todavía sin cambios de producto.
