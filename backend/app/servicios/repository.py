@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from backend.app.contratos.modelos import (
+    AssemblyCandidate,
     DecompositionScenario,
     DrawingExtraction,
     Estimate,
@@ -15,6 +16,7 @@ from backend.app.contratos.modelos import (
     Result,
     ReviewRequest,
     RunSnapshot,
+    SeparatedPartsExtraction,
 )
 
 
@@ -61,19 +63,23 @@ class DemoRepository:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_scenario_id TEXT")
             if "document_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN document_id TEXT")
+            if "input_kind" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN input_kind TEXT NOT NULL DEFAULT 'mounted_views_legacy'")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = ()) -> RunSnapshot:
         created_at = _now()
-        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id)
+        input_semantics = extraction.input_kind
+        candidate_revision = part_analysis.candidate_revision if part_analysis is not None else extraction.drawing_id
+        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id, input_semantics=input_semantics, part_analysis=part_analysis, assembly_candidates=assembly_candidates)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?)",
-                (run_id, mode, extraction.drawing_id, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?)",
+                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -92,7 +98,7 @@ class DemoRepository:
             row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if row is None:
             raise KeyError(run_id)
-        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], document_id=row["document_id"])
+        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], document_id=row["document_id"], input_kind=row["input_kind"])
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -121,6 +127,8 @@ class DemoRepository:
         if request.base_result_revision != run.result_revision:
             raise ValueError("stale_result_revision")
         previous = self.get_result(run_id)
+        if previous.input_semantics == "separated_part_views":
+            return self._review_parts(run_id, previous, request)
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
         proposal_scenarios = {proposal.id: scenario.id for scenario in previous.scenarios for proposal in scenario.components}
         pieces: list[ResolvedPiece] = []
@@ -180,6 +188,53 @@ class DemoRepository:
         timestamp = _now()
         reason = request.notes or "; ".join(item.notes for item in request.decisions)
         result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=selected_scenario_id), agent_selected_scenario_id=previous.agent_selected_scenario_id)
+        with self._connect() as db:
+            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
+            if reserved.rowcount != 1:
+                raise ValueError("stale_result_revision")
+            db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
+        return result
+
+    def _review_parts(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
+        if request.assembly_candidate_id is None or previous.part_analysis is None:
+            raise ValueError("assembly_candidate_required")
+        candidate = next((item for item in previous.assembly_candidates if item.id == request.assembly_candidate_id), None)
+        if candidate is None:
+            raise ValueError("unknown_assembly_candidate")
+        observations = {item.id: item for item in previous.part_analysis.observations}
+        covered = {item.part_observation_id for item in candidate.uses} | set(candidate.unassigned_part_observation_ids)
+        if covered != set(observations):
+            raise ValueError("incomplete_part_coverage")
+        decisions = {item.proposal_id: item for item in request.decisions}
+        if not set(decisions) <= {item.part_observation_id for item in candidate.uses}:
+            raise ValueError("unknown_proposal")
+        pieces: list[ResolvedPiece] = []
+        rejected: list[str] = []
+        for use in candidate.uses:
+            observation = observations[use.part_observation_id]
+            if use.quantity_source == "observed_annotation":
+                if observation.quantity.state != "observed" or use.quantity != observation.quantity.value or set(use.evidence_ids) != set(observation.quantity.evidence_ids):
+                    raise ValueError("quantity_source_mismatch")
+            elif use.quantity_source == "human_confirmed":
+                raise ValueError("candidate_cannot_preconfirm_quantity")
+            decision = decisions.get(use.part_observation_id)
+            if decision is not None and decision.action == "reject":
+                rejected.append(use.part_observation_id)
+                continue
+            dimensions = observation.dimensions
+            quantity = decision.quantity if decision and decision.quantity is not None else use.quantity
+            length = decision.length_mm if decision and decision.length_mm is not None else dimensions.length.value_mm
+            width = decision.width_mm if decision and decision.width_mm is not None else dimensions.width.value_mm
+            thickness = decision.thickness_mm if decision and decision.thickness_mm is not None else dimensions.thickness.value_mm
+            material = decision.material if decision and decision.material is not None else request.material
+            finish = decision.finish if decision and decision.finish is not None else request.finish
+            notes = decision.notes if decision else request.notes or ""
+            pieces.append(ResolvedPiece(id=f"piece-{observation.id}", proposal_id=observation.id, label=observation.part_key or observation.id, role=decision.role if decision and decision.role != "unknown" else use.role, quantity=quantity, length_mm=length, width_mm=width, thickness_mm=thickness, material=material, finish=finish, source_observation_ids=(), source_contour_ids=tuple(contour_id for view in observation.views for contour_id in view.contour_ids), evidence_ids=observation.evidence_ids, source_part_observation_ids=(observation.id,), human_confirmation=notes, field_states={"quantity": "confirmed" if decision and decision.quantity is not None else ("observed" if quantity is not None else "unknown"), "length_mm": "confirmed" if decision and decision.length_mm is not None else dimensions.length.state if dimensions.length.state != "conflict" else "unknown", "width_mm": "confirmed" if decision and decision.width_mm is not None else dimensions.width.state if dimensions.width.state != "conflict" else "unknown", "thickness_mm": "confirmed" if decision and decision.thickness_mm is not None else dimensions.thickness.state if dimensions.thickness.state != "conflict" else "unknown", "material": "confirmed" if material else "unknown", "finish": "confirmed" if finish else "unknown"}))
+        dimensions_complete = all(item.quantity is not None and item.length_mm is not None and item.width_mm is not None and item.thickness_mm is not None for item in pieces)
+        assembly_complete = candidate.family != "unknown" and candidate.layout != "unknown" and not candidate.unassigned_part_observation_ids and not rejected and len(pieces) == len(candidate.uses) and all(item.status == "pass" for item in candidate.constraints) and {item.axis for item in candidate.derived_dimensions} == {"width", "height", "depth"} and all(item.state == "derived" for item in candidate.derived_dimensions)
+        revision = request.base_result_revision + 1
+        timestamp = _now()
+        result = Result(run_id=run_id, result_revision=revision, state="completed" if dimensions_complete and assembly_complete else "needs_review", scenarios=(), pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=request.notes or "; ".join(item.notes for item in request.decisions), timestamp=timestamp, selected_scenario_id=None, selected_assembly_candidate_id=candidate.id), input_semantics="separated_part_views", part_analysis=previous.part_analysis, assembly_candidates=previous.assembly_candidates, selected_assembly_candidate_id=candidate.id)
         with self._connect() as db:
             reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
             if reserved.rowcount != 1:
