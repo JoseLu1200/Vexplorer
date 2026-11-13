@@ -1,0 +1,1031 @@
+{
+  "audit_schema": "vexplorer-api-audit-1",
+  "capabilities": {
+    "document_upload": {
+      "evidence": "valid DXF stored with matching SHA-256 and size",
+      "state": "works"
+    },
+    "drawing_and_svg_preview": {
+      "evidence": "metric, unknown-unit and trapezoid previews observed",
+      "state": "works"
+    },
+    "dwg_pdf_and_non_rectangular_decomposition": {
+      "evidence": "upload accepts DXF only; trapezoid run rejected",
+      "state": "not_implemented_for_demo"
+    },
+    "economy": {
+      "evidence": "three synthetic comparables; repeat estimate 127.84 EUR without duplicated concepts",
+      "state": "synthetic_demo_only"
+    },
+    "live_agent": {
+      "evidence": "provider configuration was read but live mode was intentionally not called",
+      "state": "not_exercised"
+    },
+    "offline_library_and_geometric_similarity": {
+      "evidence": "own translated/dimensional/structural controls located among shared library state",
+      "state": "works"
+    },
+    "reconstruction": {
+      "evidence": "six physical occurrences and independent volume matched",
+      "state": "works_after_review"
+    },
+    "recorded_replay": {
+      "evidence": "explicit recorded_replay_unavailable response",
+      "state": "not_implemented"
+    },
+    "rectangular_decomposition": {
+      "evidence": "geometry_only created two-scenario runs; trapezoid abstained",
+      "state": "works_for_declared_demo_subset"
+    },
+    "revision_history_and_stale_guard": {
+      "evidence": "revisions 1/2 preserved; stale write returned 409",
+      "state": "works"
+    },
+    "semantic_similarity": {
+      "evidence": "offline item returned semantic_embedding_missing; no provider call made",
+      "state": "not_exercised"
+    },
+    "separate_piece_views_without_mounted_model": {
+      "evidence": "audited workflow derives assembly scenarios from a mounted furniture drawing; it does not accept the newly requested piece-only multi-view quantity contract",
+      "state": "not_implemented"
+    }
+  },
+  "checks": [
+    {
+      "endpoint": "GET /api/v1/health",
+      "expected": {
+        "data.status": "ok",
+        "status": 200
+      },
+      "name": "service.health",
+      "observed": {
+        "data": {
+          "status": "ok"
+        },
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/config",
+      "expected": {
+        "credential_fields": false,
+        "geometry_only": true,
+        "status": 200
+      },
+      "name": "service.config_safe_shape",
+      "observed": {
+        "live_available": true,
+        "modes": [
+          "geometry_only",
+          "live"
+        ],
+        "semantic_available": true,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "code": "unsupported_format",
+        "status": 415
+      },
+      "name": "negative.unsupported_upload_format",
+      "observed": {
+        "code": "unsupported_format",
+        "status": 415
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "negative.invalid_dxf_upload_is_stored_not_interpreted",
+      "observed": {
+        "document_id": true,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/drawing",
+      "expected": {
+        "code": "invalid_dxf",
+        "status": 422
+      },
+      "name": "negative.invalid_dxf_rejected_by_drawing",
+      "observed": {
+        "code": "invalid_dxf",
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/preview.svg",
+      "expected": {
+        "code": "invalid_dxf",
+        "status": 422
+      },
+      "name": "negative.invalid_dxf_rejected_by_preview",
+      "observed": {
+        "code": "invalid_dxf",
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.original",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "9884c7f8b3100a536d85421dfea25496df5ec6d70296e9ecc963cc83b3e2ac3c",
+        "size_bytes": 53918
+      },
+      "name": "upload.original.integrity",
+      "observed": {
+        "sha256": "9884c7f8b3100a536d85421dfea25496df5ec6d70296e9ecc963cc83b3e2ac3c",
+        "size_bytes": 53918
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/drawing",
+      "expected": {
+        "dimensions": 4,
+        "source_unit": "mm",
+        "status": 200,
+        "views": 3
+      },
+      "name": "drawing.original_observations",
+      "observed": {
+        "dimensions": 4,
+        "source_unit": "mm",
+        "status": 200,
+        "views": 3
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/preview.svg",
+      "expected": {
+        "csp": "default-src 'none'",
+        "nosniff": true,
+        "status": 200,
+        "svg": true
+      },
+      "name": "preview.original_svg_security",
+      "observed": {
+        "bytes": 14011,
+        "content_type": "image/svg+xml",
+        "csp": "default-src 'none'; style-src 'unsafe-inline'",
+        "nosniff": "nosniff",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.unknown_units",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d",
+        "size_bytes": 53918
+      },
+      "name": "upload.unknown_units.integrity",
+      "observed": {
+        "sha256": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d",
+        "size_bytes": 53918
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/drawing",
+      "expected": {
+        "coordinate_unit": "source",
+        "metric_values": 0,
+        "source_unit": "unknown"
+      },
+      "name": "drawing.unknown_units_preserved",
+      "observed": {
+        "coordinate_unit": "source",
+        "metric_graphic_values": 0,
+        "source_unit": "unknown",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/documents/{document_id}/preview.svg",
+      "expected": {
+        "nonempty_svg": true,
+        "status": 200
+      },
+      "name": "preview.unknown_units_still_visible",
+      "observed": {
+        "bytes": 14011,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.trapezoid",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "b397e4b8ceddae74f0e017b729b2d0bfb2b2af1de8bcfdfb5722082186f94453",
+        "size_bytes": 50640
+      },
+      "name": "upload.trapezoid.integrity",
+      "observed": {
+        "sha256": "b397e4b8ceddae74f0e017b729b2d0bfb2b2af1de8bcfdfb5722082186f94453",
+        "size_bytes": 50640
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "code": "unsupported_geometry",
+        "drawing": 200,
+        "preview": 200,
+        "run": 422
+      },
+      "name": "drawing.trapezoid_visible_but_not_decomposed",
+      "observed": {
+        "code": "unsupported_geometry",
+        "drawing": 200,
+        "preview": 200,
+        "run": 422
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.incomplete",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "8e4d14fda4d2f992f24eee580ecb773fb8da24933bad9b5fb287fc4dd849d2f2",
+        "size_bytes": 51235
+      },
+      "name": "upload.incomplete.integrity",
+      "observed": {
+        "sha256": "8e4d14fda4d2f992f24eee580ecb773fb8da24933bad9b5fb287fc4dd849d2f2",
+        "size_bytes": 51235
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "mode": "geometry_only",
+        "status": 201
+      },
+      "name": "run.incomplete.create",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/scene?result_revision=1",
+      "expected": {
+        "scene_objects": 0,
+        "state": "needs_review",
+        "thicknesses": "all null"
+      },
+      "name": "run.incomplete_keeps_unknown_and_has_no_solids",
+      "observed": {
+        "scene_objects": 0,
+        "scene_state": "unavailable",
+        "state": "needs_review",
+        "thickness_values": [
+          "None"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "mode": "geometry_only",
+        "status": 201
+      },
+      "name": "run.primary.create",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/scene?result_revision=1",
+      "expected": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "name": "scene.pre_review_unavailable",
+      "observed": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "result_revision": 2,
+        "status": 201
+      },
+      "name": "review.primary",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "code": "stale_result_revision",
+        "current_revision": 2,
+        "status": 409
+      },
+      "name": "review.stale_rejected_without_mutation",
+      "observed": {
+        "code": "stale_result_revision",
+        "current_revision": 2,
+        "status": 409
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/revisions",
+      "expected": {
+        "revisions": [
+          1,
+          2
+        ]
+      },
+      "name": "review.history_preserved",
+      "observed": {
+        "revisions": [
+          1,
+          2
+        ],
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/scene?result_revision=2",
+      "expected": {
+        "roles": {
+          "base_panel": 1,
+          "shelf": 2,
+          "side_panel": 2,
+          "top_panel": 1
+        },
+        "state": "ready",
+        "volume_mm3": 31622400.0
+      },
+      "name": "scene.reviewed_physical_occurrences",
+      "observed": {
+        "roles": {
+          "base_panel": 1,
+          "shelf": 2,
+          "side_panel": 2,
+          "top_panel": 1
+        },
+        "state": "ready",
+        "status": 200,
+        "volume_mm3": 31622400.0
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/explanations?result_revision=2",
+      "expected": {
+        "evidence": true,
+        "formula": "overall_width_mm - 2 * confirmed_thickness_mm",
+        "result_mm": 864.0
+      },
+      "name": "explanations.shelf_formula_and_sources",
+      "observed": {
+        "evidence_count": 3,
+        "formula": "overall_width_mm - 2 * confirmed_thickness_mm",
+        "result_mm": 864.0,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/comparables",
+      "expected": {
+        "all_synthetic": true,
+        "count": 3,
+        "status": 200
+      },
+      "name": "economy.synthetic_comparables_identified",
+      "observed": {
+        "all_synthetic": true,
+        "count": 3,
+        "ids": [
+          "hist-syn-1",
+          "hist-syn-3",
+          "hist-syn-2"
+        ],
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/estimate",
+      "expected": {
+        "concept_ids": [
+          "setup",
+          "material"
+        ],
+        "statuses": [
+          201,
+          201
+        ],
+        "total_eur": 127.84
+      },
+      "name": "economy.estimate_idempotent_without_double_concepts",
+      "observed": {
+        "concept_ids": [
+          "setup",
+          "material"
+        ],
+        "concept_sum": 127.84,
+        "responses_equal": true,
+        "statuses": [
+          201,
+          201
+        ],
+        "total": 127.84
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/library",
+      "expected": {
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.primary.save_offline",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.translated",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "6edb7769af3decab2a8a480cb8a548d236b52fd7946b3592025a5dd62aca3c7f",
+        "size_bytes": 54173
+      },
+      "name": "upload.translated.integrity",
+      "observed": {
+        "sha256": "6edb7769af3decab2a8a480cb8a548d236b52fd7946b3592025a5dd62aca3c7f",
+        "size_bytes": 54173
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "mode": "geometry_only",
+        "status": 201
+      },
+      "name": "run.translated.create",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "result_revision": 2,
+        "status": 201
+      },
+      "name": "review.translated",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/library",
+      "expected": {
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.translated.save_offline",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.dimensional",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "cb7386106fc9a5c2969114c38d956a5430a45ad6c97c1508462b915c0e15cfe5",
+        "size_bytes": 53943
+      },
+      "name": "upload.dimensional.integrity",
+      "observed": {
+        "sha256": "cb7386106fc9a5c2969114c38d956a5430a45ad6c97c1508462b915c0e15cfe5",
+        "size_bytes": 53943
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "mode": "geometry_only",
+        "status": 201
+      },
+      "name": "run.dimensional.create",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "result_revision": 2,
+        "status": 201
+      },
+      "name": "review.dimensional",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/library",
+      "expected": {
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.dimensional.save_offline",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "status": 201
+      },
+      "name": "upload.structural",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "sha256": "efb1d775e5527205ff1231b410827c32e987492258838c02358d6a56f0cc3989",
+        "size_bytes": 53614
+      },
+      "name": "upload.structural.integrity",
+      "observed": {
+        "sha256": "efb1d775e5527205ff1231b410827c32e987492258838c02358d6a56f0cc3989",
+        "size_bytes": 53614
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "mode": "geometry_only",
+        "status": 201
+      },
+      "name": "run.structural.create",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "result_revision": 2,
+        "status": 201
+      },
+      "name": "review.structural",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/library",
+      "expected": {
+        "embedding": null,
+        "status": 201
+      },
+      "name": "library.structural.save_offline",
+      "observed": {
+        "error": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor_equal": true,
+        "fingerprint_equal": true
+      },
+      "name": "library.translated_descriptor_invariance",
+      "observed": {
+        "descriptor_equal": true,
+        "fingerprint_equal": true
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "forbidden_fragments_found": []
+      },
+      "name": "library.descriptor_has_no_ids_paths_or_private_answers",
+      "observed": {
+        "forbidden_fragments_found": []
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/library",
+      "expected": {
+        "own_embeddings": "all null",
+        "own_items_present": 4
+      },
+      "name": "library.list_contains_own_offline_items_without_assuming_empty_state",
+      "observed": {
+        "library_total": 20,
+        "own_items_present": 4,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/similarity",
+      "expected": {
+        "dimensional_gt_structural": true,
+        "translated_score": 1.0
+      },
+      "name": "library.geometric_similarity_ranks_own_controls",
+      "observed": {
+        "all_match_count": 19,
+        "own_scores": {
+          "dimensional": 0.944135,
+          "structural": 0.817315,
+          "translated": 1.0
+        },
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/similarity",
+      "expected": {
+        "code": "semantic_embedding_missing",
+        "status": 409
+      },
+      "name": "library.offline_item_does_not_fallback_to_semantic",
+      "observed": {
+        "code": "semantic_embedding_missing",
+        "status": 409
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/library/groups",
+      "expected": {
+        "own_pair_grouped": true,
+        "responses_equal": true,
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "name": "library.geometric_groups_reproducible_for_own_controls",
+      "observed": {
+        "group_count": 3,
+        "own_pair_group_id": "group-geometric-c9050e7945f932d1",
+        "responses_equal": true,
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/exports?format=json",
+      "expected": {
+        "required_sections": "coherent",
+        "revision": 2,
+        "status": 200
+      },
+      "name": "export.revision_bound_complete_bundle",
+      "observed": {
+        "library_item_id": "library-run-0244df67a9b4494a835b5d22841bb4bf",
+        "revision": 2,
+        "scene_state": "ready",
+        "sections": [
+          "comparables",
+          "descriptor",
+          "estimate",
+          "events",
+          "explanations",
+          "library_item",
+          "result",
+          "result_revision",
+          "scene",
+          "schema_version"
+        ],
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/exports?format=csv",
+      "expected": {
+        "content_type": "text/csv",
+        "revision": 2,
+        "status": 200
+      },
+      "name": "export.csv_available_and_revision_marked",
+      "observed": {
+        "bytes": 902,
+        "content_type": "text/csv; charset=utf-8",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/events",
+      "expected": {
+        "events": [
+          "human_review_committed",
+          "estimate_committed",
+          "library_item_saved"
+        ],
+        "status": 200
+      },
+      "name": "events.audit_actions_visible",
+      "observed": {
+        "contains_estimate": true,
+        "contains_library": true,
+        "contains_review": true,
+        "content_type": "text/event-stream; charset=utf-8",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": null,
+        "status": 422
+      },
+      "name": "negative.invalid_document_id",
+      "observed": {
+        "code": null,
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": "document_not_found",
+        "status": 404
+      },
+      "name": "negative.missing_document",
+      "observed": {
+        "code": "document_not_found",
+        "status": 404
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": null,
+        "status": [
+          404,
+          422
+        ]
+      },
+      "name": "negative.encoded_traversal",
+      "observed": {
+        "code": null,
+        "status": 404
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": "recorded_replay_unavailable",
+        "status": 409
+      },
+      "name": "negative.recorded_replay_explicitly_unavailable",
+      "observed": {
+        "code": "recorded_replay_unavailable",
+        "status": 409
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": null,
+        "status": 422
+      },
+      "name": "negative.extra_request_field_rejected",
+      "observed": {
+        "code": null,
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": null,
+        "status": 422
+      },
+      "name": "negative.invalid_export_format",
+      "observed": {
+        "code": null,
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "code": "result_not_found",
+        "status": 404
+      },
+      "name": "negative.missing_revision",
+      "observed": {
+        "code": "result_not_found",
+        "status": 404
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/config + GET /openapi.json",
+      "expected": {
+        "private_fragments_found": [],
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "name": "privacy.config_and_openapi_do_not_expose_private_paths_or_secrets",
+      "observed": {
+        "private_fragments_found": [],
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "statuses": [
+          404,
+          404
+        ]
+      },
+      "name": "privacy.reference_routes_not_served",
+      "observed": {
+        "statuses": [
+          404,
+          404
+        ]
+      },
+      "status": "pass"
+    }
+  ],
+  "findings": [],
+  "generated_at": "2026-11-13T23:19:53.410990+00:00",
+  "policy": {
+    "assumes_empty_library": false,
+    "embedding_mode": "offline",
+    "private_reference_reads": false,
+    "provider_calls": false,
+    "run_mode": "geometry_only",
+    "transport": "real_http"
+  },
+  "resources": {
+    "documents": {
+      "dimensional": "doc-a00029aabced468ebca25e67eaf3faef",
+      "incomplete": "doc-701b964b37db4d438fb18da5c4db10a3",
+      "original": "doc-d12d119edb494f79a9d5635ff5317da5",
+      "structural": "doc-9876bdb2678347598facf9c4d977ad7e",
+      "translated": "doc-d5c0831311b846aaae3db315ce37be85",
+      "trapezoid": "doc-435f6ae8a00d424d9e321b25e0582c88",
+      "unknown_units": "doc-d5d546a7bda54511af5955947867abea"
+    },
+    "library_items": {
+      "dimensional": "library-run-ff9bcbc2e2e74103aed6ee2277fb8bd6",
+      "primary": "library-run-0244df67a9b4494a835b5d22841bb4bf",
+      "structural": "library-run-f9f4f6efacd043cf9523110f93634e98",
+      "translated": "library-run-134661aeadd3428099184b23a51148b8"
+    },
+    "runs": {
+      "dimensional": "run-ff9bcbc2e2e74103aed6ee2277fb8bd6",
+      "incomplete": "run-3da90cd8ba344f8da8a7f15698600dce",
+      "primary": "run-0244df67a9b4494a835b5d22841bb4bf",
+      "structural": "run-f9f4f6efacd043cf9523110f93634e98",
+      "translated": "run-134661aeadd3428099184b23a51148b8"
+    }
+  },
+  "summary": {
+    "duration_ms": 1116,
+    "failed": 0,
+    "passed": 64,
+    "result": "pass"
+  },
+  "target": "http://127.0.0.1:8767"
+}

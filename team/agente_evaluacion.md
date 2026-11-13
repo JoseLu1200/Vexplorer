@@ -9,11 +9,12 @@
 
 ## Tarea y alcance
 
-- Estado: en curso para la ampliación de plano, reconstrucción y similitud del 2026-11-13.
+- Estado: auditoría independiente de API HTTP real del 2026-11-14, sin modificar producto.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
+- Propiedad adicional autorizada para esta auditoría: `tools/audit_api.py` y `docs/auditoria/2026-11-14/api.json`.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
-- Objetivo actual: biblioteca propia parametrizada con variantes de dimensiones/estructura, oráculos privados y aceptación de escena física, descriptores, similitud y agrupación mediante la API integrada.
+- Objetivo actual: ejecutar carga, preview, inferencia geométrica, revisión, historial, escena, economía, biblioteca y errores mediante HTTP real contra una instancia aislada; producir evidencia JSON saneada y reproducible.
 
 ## Hecho
 
@@ -42,6 +43,7 @@
 - No hay cambio de `contratos/` por D.
 - Nueva fase: A/B deben comunicar el contrato aditivo de escena, descriptor/similitud y agrupación antes de cerrar las pruebas E2E; D no escribirá esos contratos ni duplicará sus pruebas unitarias.
 - Los fixtures nuevos solo comunican vistas/cotas públicas. BOM, montaje de referencia y grupos esperados del evaluador permanecen fuera del runtime.
+- La auditoría usa exclusivamente fixtures públicos y no habilita proveedor real. El coordinador administra la instancia aislada en `127.0.0.1:8767` y su runtime; D no corrige hallazgos durante la auditoría.
 
 ## Pruebas
 
@@ -63,12 +65,16 @@
 | Suite D contra backend candidato | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Verificación cruzada; no sustituye la suite final en raíz |
 | Suite D en raíz integrada | fixture, aislamiento, E2E previo y workbench | 28 pasan; 1 aviso deprecación | Backend, escena, biblioteca y tests D integrados |
 | Suite Python en raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 113 pasan; 1 aviso deprecación | Incluye hardening de argumentos nativos; no incluye JavaScript ni navegador |
+| Primer pase auditoría HTTP | `python tools/audit_api.py --base-url http://127.0.0.1:8767` | 61 pasan, 3 hallazgos encadenados | La revisión de auditoría usó material/acabado fuera del catálogo sintético; estimación 422, export sin estimación y sin evento económico. No fue fallo de producto |
+| Auditoría HTTP final | mismo comando tras usar la premisa pública compatible | 64 pasan, 0 fallan; evidencia en `docs/auditoria/2026-11-14/api.json` | `geometry_only` y embeddings offline; ningún proveedor real ni referencia privada |
+| Suite Python de auditoría | `..\..\.venv\Scripts\python.exe -m pytest -q` | 119 pasan; 1 aviso deprecación | La primera ejecución detectó la ruta privada literal en el runner; se eliminó de la superficie runtime y se repitió completa |
+| Suite JavaScript de auditoría | `npm test --prefix frontend` | 46 pasan, 0 fallan | Pruebas automatizadas; el recorrido de navegador corresponde al coordinador |
 
 ## Siguiente bloque
 
-- Repetir la aceptación 0.3 y la suite D sobre la raíz cuando el backend publique e integre las rutas.
-- Confirmar que la exportación integrada conserva escena, explicaciones, descriptor y elemento de biblioteca para la revisión exacta.
-- Entregar al coordinador los commits D y la evidencia final, sin despliegue ni `push`.
+- Entregar al coordinador el runner, la evidencia saneada y los IDs observados, sin corregir producto ni hacer `push`.
+- Registrar como no implementado el nuevo objetivo de entrada compuesta solo por vistas separadas de piezas, sin mueble montado.
+- Esperar el contrato exacto A/B antes de crear el futuro fixture de piezas, sus variantes u oráculos.
 
 ## Cierre de la fase anterior
 
