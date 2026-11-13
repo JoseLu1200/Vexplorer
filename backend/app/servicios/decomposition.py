@@ -3,11 +3,27 @@ from __future__ import annotations
 from backend.app.contratos.modelos import ComponentProposal, DecompositionScenario, DrawingContour, DrawingExtraction
 
 
-def _size(contour: DrawingContour) -> tuple[float, float]:
-    assert contour.points_mm is not None
+def _axis_aligned_rectangle_size(contour: DrawingContour, tolerance_mm: float = 1e-6) -> tuple[float, float] | None:
+    """Accept only a closed four-corner rectangle supported by source entities."""
+    if not contour.closed or not contour.source_entity_ids or contour.points_mm is None or len(contour.points_mm) != 4:
+        return None
     xs = [point.x for point in contour.points_mm]
     ys = [point.y for point in contour.points_mm]
-    return max(xs) - min(xs), max(ys) - min(ys)
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    if max_x - min_x <= tolerance_mm or max_y - min_y <= tolerance_mm:
+        return None
+    expected = ((min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y))
+    for x, y in expected:
+        if not any(abs(point.x - x) <= tolerance_mm and abs(point.y - y) <= tolerance_mm for point in contour.points_mm):
+            return None
+    for index, point in enumerate(contour.points_mm):
+        following = contour.points_mm[(index + 1) % 4]
+        horizontal = abs(point.y - following.y) <= tolerance_mm
+        vertical = abs(point.x - following.x) <= tolerance_mm
+        if horizontal == vertical:
+            return None
+    return max_x - min_x, max_y - min_y
 
 
 def resolve_orthographic_dimensions(front: tuple[float, float], top: tuple[float, float], side: tuple[float, float], tolerance_mm: float = 0.1) -> tuple[float, float, float] | None:
@@ -25,14 +41,16 @@ def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[Decom
     view_labels = {view.id: view.label for view in extraction.views}
     by_label: dict[str, list[DrawingContour]] = {}
     for contour in extraction.contours:
-        if contour.points_mm:
+        if _axis_aligned_rectangle_size(contour) is not None:
             by_label.setdefault(view_labels.get(contour.view_id, "UNKNOWN"), []).append(contour)
     if not all(by_label.get(label) for label in ("FRONT", "TOP", "SIDE")):
         return ()
-    front = max(by_label["FRONT"], key=lambda item: _size(item)[0] * _size(item)[1])
-    top = max(by_label["TOP"], key=lambda item: _size(item)[0] * _size(item)[1])
-    side = max(by_label["SIDE"], key=lambda item: _size(item)[0] * _size(item)[1])
-    resolved = resolve_orthographic_dimensions(_size(front), _size(top), _size(side))
+    front = max(by_label["FRONT"], key=lambda item: _axis_aligned_rectangle_size(item)[0] * _axis_aligned_rectangle_size(item)[1])
+    top = max(by_label["TOP"], key=lambda item: _axis_aligned_rectangle_size(item)[0] * _axis_aligned_rectangle_size(item)[1])
+    side = max(by_label["SIDE"], key=lambda item: _axis_aligned_rectangle_size(item)[0] * _axis_aligned_rectangle_size(item)[1])
+    resolved = resolve_orthographic_dimensions(
+        _axis_aligned_rectangle_size(front), _axis_aligned_rectangle_size(top), _axis_aligned_rectangle_size(side)
+    )
     if resolved is None:
         return ()
     overall_width, overall_height, depth = resolved
