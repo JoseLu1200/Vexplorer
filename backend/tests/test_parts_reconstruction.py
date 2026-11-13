@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from backend.app.contratos.modelos import ReviewRequest
+from backend.app.contratos.modelos import ReviewDecision, ReviewRequest
 from backend.app.geometria.extraction import extract_drawing
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.servicios.reconstruction import reconstruct_parts_scene
@@ -116,3 +116,45 @@ def test_observed_thickness_changes_panel_sizes_without_changing_outer_width(tmp
     top = next(item for item in scene.objects if item.role == "top_panel")
     assert top.dimensions_mm.x == 828.0
     assert max(item.bbox_mm.max.x for item in scene.objects) == 900.0
+
+
+def test_human_confirmed_quantity_creates_occurrences_missing_from_original_candidate(tmp_path: Path) -> None:
+    extraction, parts, candidate, repository = _run(tmp_path, "piezas_qty_desconocida.dxf")
+    unknown_use = next(
+        use for use in candidate.uses
+        if use.part_observation_id == "part-observation-k3" and use.role == "shelf"
+    )
+    revision_two = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=1, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id, notes="Conserva cantidad K3 desconocida",
+        ),
+    )
+    assert revision_two.state == "needs_review"
+    assert unknown_use.occurrence_indices == ()
+
+    revision_three = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=2, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id,
+            decisions=(ReviewDecision(
+                proposal_id=unknown_use.id, action="confirm", role="shelf", quantity=2,
+                length_mm=864, width_mm=300, thickness_mm=18,
+                notes="Confirma dos ocurrencias físicas K3",
+            ),),
+            notes="Completa cantidad y medidas mediante revisión humana",
+        ),
+    )
+
+    scene = reconstruct_parts_scene(extraction, parts, revision_three)
+
+    assert revision_three.state == "completed"
+    assert scene.state == "ready"
+    assert len(scene.objects) == 6
+    confirmed_piece = next(piece for piece in revision_three.pieces if piece.proposal_id == unknown_use.id)
+    assert confirmed_piece.field_states["quantity"] == "confirmed"
+    occurrences = [item for item in scene.objects if item.piece_id == confirmed_piece.id]
+    assert [item.occurrence_index for item in occurrences] == [1, 2]
+    assert all(item.evidence_ids == confirmed_piece.evidence_ids for item in occurrences)
