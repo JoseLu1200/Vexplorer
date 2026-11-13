@@ -2,13 +2,13 @@
   "baseline": "dab7ce5",
   "transport": "TestClient, real app and temporary repository; no network server",
   "request": {
-    "document_id": "doc-294c0ad8f7df42e7b3d75205fe565528",
+    "document_id": "doc-6debe7e27136467daf18aa86c1b10020",
     "mode": "geometry_only"
   },
   "idempotency_key": "audit-same-request",
   "first_status": 201,
   "second_status": 201,
-  "first_run_id": "run-ff91fac535b14930a454dcd43168f77a",
-  "second_run_id": "run-9d04abc6b4e2412f8b600d088ccb1d6d",
+  "first_run_id": "run-52401176052947c28a5ede60ef5605ce",
+  "second_run_id": "run-28244ba537994acf963a1eca81d358e1",
   "duplicates_created": true
 }
