@@ -5,7 +5,7 @@ from pathlib import Path
 import ezdxf
 
 from backend.app.geometria.extraction import extract_drawing
-from backend.app.geometria.parts import extract_separated_parts
+from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 
 
 def _parts_drawing(
@@ -31,6 +31,10 @@ def _parts_drawing(
             [(x, y), (x + width, y), (x + width, y + height), (x, y + height)],
             close=True,
         )
+        horizontal = modelspace.add_linear_dim(base=(x, y - 40), p1=(x, y), p2=(x + width, y))
+        horizontal.render()
+        vertical = modelspace.add_linear_dim(base=(x - 40, y), p1=(x, y), p2=(x, y + height), angle=90)
+        vertical.render()
         modelspace.add_text(f"PART P01 {role}").set_placement((x + width / 2, y + height / 2))
     if quantity is not None:
         modelspace.add_text(f"QTY P01 {quantity}").set_placement((tx + 400, ty + 100))
@@ -108,7 +112,7 @@ def test_disagreeing_views_preserve_dimension_conflict(tmp_path: Path) -> None:
     assert observation.dimensions.length.value_mm is None
     assert observation.dimensions.length.state == "conflict"
     assert len(observation.dimensions.length.view_ids) == 2
-    assert len(observation.dimensions.length.evidence_ids) == 2
+    assert len(observation.dimensions.length.evidence_ids) >= 2
     assert "dimension_conflict:P01:length" in observation.warnings
 
 
@@ -158,3 +162,79 @@ def test_views_without_keys_remain_three_unassociated_observations() -> None:
     assert all(len(item.views) == 1 for item in parts.observations)
     assert all(item.quantity.value is None and item.quantity.state == "unknown" for item in parts.observations)
     assert any(warning.startswith("unassociated_quantity_annotation:") for warning in parts.warnings)
+
+
+def test_complete_types_preserve_all_role_and_layout_hypotheses() -> None:
+    parts = extract_separated_parts(extract_drawing(
+        Path("data/planos_demo/piezas_completo.dxf"), input_kind="separated_part_views",
+    ))
+
+    candidates = derive_assembly_candidates(parts)
+
+    assert len(candidates) == 12
+    assert {item.layout for item in candidates} == {"between_sides", "cap_sides"}
+    assert all(item.family == "rectangular_shelving" and item.needs_review for item in candidates)
+    assert all({use.part_observation_id for use in item.uses} == {part.id for part in parts.observations} for item in candidates)
+    assert all(sum(use.allocated_quantity or 0 for use in item.uses) == 6 for item in candidates)
+    assert all({dimension.axis for dimension in item.derived_dimensions} == {"width", "height", "depth"} for item in candidates)
+    split_candidates = [
+        item for item in candidates
+        if any(use.part_observation_id == "part-observation-k2" and use.role == "top_panel" for use in item.uses)
+    ]
+    assert split_candidates
+    assert all(
+        {(use.role, use.occurrence_indices) for use in item.uses if use.part_observation_id == "part-observation-k2"}
+        == {("top_panel", (1,)), ("base_panel", (2,))}
+        for item in split_candidates
+    )
+
+
+def test_unknown_quantity_remains_null_in_candidates() -> None:
+    parts = extract_separated_parts(extract_drawing(
+        Path("data/planos_demo/piezas_qty_desconocida.dxf"), input_kind="separated_part_views",
+    ))
+
+    candidates = derive_assembly_candidates(parts)
+
+    assert candidates
+    uses = [
+        use for item in candidates for use in item.uses
+        if use.part_observation_id == "part-observation-k3"
+    ]
+    assert uses
+    assert all(
+        use.source_quantity is None
+        and use.allocated_quantity is None
+        and use.occurrence_indices == ()
+        and use.quantity_source == "unknown"
+        for use in uses
+    )
+
+
+def test_unassociated_views_do_not_create_an_assembly_candidate() -> None:
+    parts = extract_separated_parts(extract_drawing(
+        Path("data/planos_demo/piezas_ambigua_sin_id.dxf"), input_kind="separated_part_views",
+    ))
+
+    assert derive_assembly_candidates(parts) == ()
+
+
+def test_conflicting_dimension_annotation_blocks_bbox_from_becoming_a_part_measurement(tmp_path: Path) -> None:
+    path = _parts_drawing(tmp_path, quantity=1)
+    document = ezdxf.readfile(path)
+    dimension = document.modelspace().add_linear_dim(
+        base=(0, -50), p1=(0, 0), p2=(800, 0), override={"dimlfac": 2},
+    )
+    dimension.render()
+    document.saveas(path)
+
+    parts = extract_separated_parts(extract_drawing(
+        path, input_kind="separated_part_views",
+    ))
+
+    length = parts.observations[0].dimensions.length
+    assert length.value_mm is None
+    assert length.state == "conflict"
+    assert length.measurement_ids
+    assert len(length.evidence_ids) >= 2
+    assert "dimension_annotation_conflict:P01:length" in parts.observations[0].warnings

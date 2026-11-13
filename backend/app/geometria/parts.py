@@ -4,12 +4,14 @@ import hashlib
 import json
 import re
 from collections import defaultdict
+from itertools import permutations
 from math import hypot
 
 from backend.app.contratos.modelos import (
-    Bounds2D, DrawingContour, DrawingExtraction, ObservedPartDimension,
-    ObservedQuantity, PartDimensions, PartViewReference, Point2D,
-    SeparatedPartObservation, SeparatedPartsExtraction,
+    AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, Bounds2D,
+    DerivedAssemblyDimension, DrawingContour, DrawingExtraction,
+    ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference,
+    Point2D, SeparatedPartObservation, SeparatedPartsExtraction,
 )
 
 
@@ -43,16 +45,25 @@ def _local_bounds(bounds: Bounds2D) -> Bounds2D:
     return Bounds2D(min_x=0, min_y=0, max_x=bounds.max_x - bounds.min_x, max_y=bounds.max_y - bounds.min_y)
 
 
-def _resolve_dimension(candidates: list[tuple[float, str, tuple[str, ...]]]) -> ObservedPartDimension:
+def _resolve_dimension(candidates: list[tuple[float, str, tuple[str, ...], tuple[str, ...]]]) -> ObservedPartDimension:
     if not candidates:
         return ObservedPartDimension(value_mm=None, state="unknown")
     ordered = sorted(candidates, key=lambda item: item[1])
     view_ids = tuple(item[1] for item in ordered)
     evidence_ids = tuple(sorted({evidence_id for item in ordered for evidence_id in item[2]}))
+    measurement_ids = tuple(sorted({measurement_id for item in ordered for measurement_id in item[3]}))
     values = [item[0] for item in ordered]
     if max(values) - min(values) > DIMENSION_TOLERANCE_MM:
-        return ObservedPartDimension(value_mm=None, state="conflict", view_ids=view_ids, evidence_ids=evidence_ids)
-    return ObservedPartDimension(value_mm=values[0], state="observed", view_ids=view_ids, evidence_ids=evidence_ids)
+        if measurement_ids:
+            return ObservedPartDimension(
+                value_mm=None, state="conflict", measurement_ids=measurement_ids,
+                view_ids=view_ids, evidence_ids=evidence_ids,
+            )
+        return ObservedPartDimension(value_mm=None, state="unknown")
+    return ObservedPartDimension(
+        value_mm=values[0], state="observed", measurement_ids=measurement_ids,
+        view_ids=view_ids, evidence_ids=evidence_ids,
+    )
 
 
 def _candidate_revision(observations: tuple[SeparatedPartObservation, ...]) -> str:
@@ -103,12 +114,21 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
     for evidence in extraction.evidence:
         for entity_id in evidence.source_entity_ids:
             evidence_by_entity[entity_id].add(evidence.id)
+    graphics_by_id = {item.id: item for item in extraction.dimension_graphics}
+    dimensions_by_view: dict[str, list[tuple[str, object]]] = defaultdict(list)
+    for dimension in extraction.dimensions:
+        graphic = graphics_by_id.get(dimension.graphic_id or "")
+        if dimension.view_id is not None and graphic is not None:
+            dx = abs(graphic.extension_start_b_source.x - graphic.extension_start_a_source.x)
+            dy = abs(graphic.extension_start_b_source.y - graphic.extension_start_a_source.y)
+            dimensions_by_view[dimension.view_id].append(("x" if dx >= dy else "y", dimension))
 
     observations: list[SeparatedPartObservation] = []
     extraction_warnings: list[str] = []
     for key in sorted(labels_by_key, key=str.casefold):
         view_refs: list[PartViewReference] = []
-        dimension_candidates: dict[str, list[tuple[float, str, tuple[str, ...]]]] = defaultdict(list)
+        dimension_candidates: dict[str, list[tuple[float, str, tuple[str, ...], tuple[str, ...]]]] = defaultdict(list)
+        dimension_conflicts: dict[str, tuple[set[str], set[str], set[str]]] = {}
         source_entity_ids: set[str] = set()
         observation_evidence: set[str] = set()
         warnings: list[str] = []
@@ -136,7 +156,24 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
             if metric_bounds:
                 extents = {"x": metric_bounds.max_x - metric_bounds.min_x, "y": metric_bounds.max_y - metric_bounds.min_y}
                 for axis, coordinate in AXES_BY_ROLE[role]:
-                    dimension_candidates[axis].append((extents[coordinate], view_id, evidence_ids))
+                    annotations = [item for annotation_axis, item in dimensions_by_view.get(view_id, ()) if annotation_axis == coordinate]
+                    annotation_evidence = tuple(sorted({
+                        evidence_id for item in annotations for evidence_id in item.evidence_ids
+                    }))
+                    dimension_candidates[axis].append((
+                        extents[coordinate], view_id,
+                        tuple(sorted(set(evidence_ids) | set(annotation_evidence))),
+                        tuple(sorted(item.id for item in annotations)),
+                    ))
+                    if annotations and any(
+                        item.value_mm is None or abs(item.value_mm - extents[coordinate]) > DIMENSION_TOLERANCE_MM
+                        for item in annotations
+                    ):
+                        views, measurements, conflict_evidence = dimension_conflicts.setdefault(axis, (set(), set(), set()))
+                        views.add(view_id)
+                        measurements.update(item.id for item in annotations)
+                        conflict_evidence.update(evidence_ids)
+                        conflict_evidence.update(evidence_id for item in annotations for evidence_id in item.evidence_ids)
 
         quantities = quantities_by_key.get(key, [])
         if not quantities:
@@ -152,6 +189,14 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
             width=_resolve_dimension(dimension_candidates["width"]),
             thickness=_resolve_dimension(dimension_candidates["thickness"]),
         )
+        dimension_values = dict(dimensions)
+        for axis, (views, measurements, conflict_evidence) in dimension_conflicts.items():
+            dimension_values[axis] = ObservedPartDimension(
+                value_mm=None, state="conflict", measurement_ids=tuple(sorted(measurements)),
+                view_ids=tuple(sorted(views)), evidence_ids=tuple(sorted(conflict_evidence)),
+            )
+            warnings.append(f"dimension_annotation_conflict:{key}:{axis}")
+        dimensions = PartDimensions(**dimension_values)
         for name, dimension in dimensions:
             if dimension.state == "conflict":
                 warnings.append(f"dimension_conflict:{key}:{name}")
@@ -235,3 +280,126 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         drawing_id=extraction.drawing_id, candidate_revision=_candidate_revision(result),
         observations=result, warnings=tuple(extraction_warnings),
     )
+
+
+def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[AssemblyCandidate, ...]:
+    observations = tuple(sorted(parts.observations, key=lambda item: item.id))
+    if len(observations) != 3 or any(item.association_basis != "explicit_key" for item in observations):
+        return ()
+
+    def use(
+        observation: SeparatedPartObservation,
+        role: str,
+        occurrence_indices: tuple[int, ...] | None,
+    ) -> AssemblyPartUse:
+        source_quantity = observation.quantity.value
+        if observation.quantity.state != "observed" or source_quantity is None or occurrence_indices is None:
+            return AssemblyPartUse(
+                id=f"use-{observation.id}-{role}", part_observation_id=observation.id,
+                role=role, source_quantity=None, allocated_quantity=None, occurrence_indices=(),
+                quantity_source="unknown", evidence_ids=observation.quantity.evidence_ids,
+            )
+        return AssemblyPartUse(
+            id=f"use-{observation.id}-{role}", part_observation_id=observation.id,
+            role=role, source_quantity=source_quantity, allocated_quantity=len(occurrence_indices),
+            occurrence_indices=occurrence_indices, quantity_source="observed_annotation",
+            evidence_ids=observation.quantity.evidence_ids,
+        )
+
+    def constraint(
+        candidate_id: str,
+        name: str,
+        kind: str,
+        operation: str,
+        dimension: str,
+        operands: tuple[tuple[str, ObservedPartDimension], ...],
+        result: float | None,
+    ) -> AssemblyConstraint:
+        refs = tuple(ref for ref, _ in operands)
+        evidence = tuple(sorted({evidence_id for _, value in operands for evidence_id in value.evidence_ids}))
+        states = {value.state for _, value in operands}
+        status = "pass" if result is not None and states == {"observed"} else "conflict" if "conflict" in states else "unknown"
+        return AssemblyConstraint(
+            id=f"constraint-{candidate_id}-{name}", kind=kind, operation=operation,
+            dimension=dimension, operand_refs=refs, result_mm=result if status == "pass" else None,
+            status=status, evidence_ids=evidence,
+        )
+
+    candidates = []
+    for side, horizontal, shelf in permutations(observations):
+        for layout in ("between_sides", "cap_sides"):
+            candidate_id = f"assembly-{layout}-{side.id}-{horizontal.id}-{shelf.id}"
+            if horizontal.quantity.state == "observed" and horizontal.quantity.value == 2:
+                uses = (
+                    use(side, "side_panel", tuple(range(1, (side.quantity.value or 0) + 1)) if side.quantity.state == "observed" else None),
+                    use(horizontal, "top_panel", (1,)), use(horizontal, "base_panel", (2,)),
+                    use(shelf, "shelf", tuple(range(1, (shelf.quantity.value or 0) + 1)) if shelf.quantity.state == "observed" else None),
+                )
+            else:
+                uses = (
+                    use(side, "side_panel", tuple(range(1, (side.quantity.value or 0) + 1)) if side.quantity.state == "observed" else None),
+                    use(horizontal, "unknown", None),
+                    use(shelf, "shelf", tuple(range(1, (shelf.quantity.value or 0) + 1)) if shelf.quantity.state == "observed" else None),
+                )
+
+            depth_values = [item.dimensions.width.value_mm for item in (side, horizontal, shelf)]
+            thickness_values = [item.dimensions.thickness.value_mm for item in (side, horizontal, shelf)]
+            horizontal_lengths = [horizontal.dimensions.length.value_mm, shelf.dimensions.length.value_mm]
+            common_depth = depth_values[0] if all(value is not None and abs(value - depth_values[0]) <= DIMENSION_TOLERANCE_MM for value in depth_values) else None
+            common_thickness = thickness_values[0] if all(value is not None and abs(value - thickness_values[0]) <= DIMENSION_TOLERANCE_MM for value in thickness_values) else None
+            common_horizontal = horizontal_lengths[0] if all(value is not None and abs(value - horizontal_lengths[0]) <= DIMENSION_TOLERANCE_MM for value in horizontal_lengths) else None
+            side_length = side.dimensions.length.value_mm
+            exterior_width = (
+                common_horizontal + 2 * common_thickness
+                if layout == "between_sides" and common_horizontal is not None and common_thickness is not None
+                else common_horizontal if layout == "cap_sides" else None
+            )
+            exterior_height = (
+                side_length if layout == "between_sides"
+                else side_length + 2 * common_thickness
+                if side_length is not None and common_thickness is not None else None
+            )
+            constraints = (
+                constraint(candidate_id, "depth", "equal_dimensions", "equal", "width", tuple(
+                    (f"{item.id}.dimensions.width", item.dimensions.width) for item in (side, horizontal, shelf)
+                ), common_depth),
+                constraint(candidate_id, "thickness", "equal_dimensions", "equal", "thickness", tuple(
+                    (f"{item.id}.dimensions.thickness", item.dimensions.thickness) for item in (side, horizontal, shelf)
+                ), common_thickness),
+                constraint(candidate_id, "horizontal", "role_compatibility", "compatibility", "length", (
+                    (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+                    (f"{shelf.id}.dimensions.length", shelf.dimensions.length),
+                ), common_horizontal),
+                constraint(candidate_id, "assembled-width", "exterior_from_parts", "sum" if layout == "between_sides" else "equal", "assembled_width", (
+                    (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+                    (f"{side.id}.dimensions.thickness", side.dimensions.thickness),
+                ), exterior_width),
+                constraint(candidate_id, "assembled-height", "exterior_from_parts", "equal" if layout == "between_sides" else "sum", "assembled_height", (
+                    (f"{side.id}.dimensions.length", side.dimensions.length),
+                    (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
+                ), exterior_height),
+            )
+            width_constraint = next(item for item in constraints if item.dimension == "assembled_width")
+            height_constraint = next(item for item in constraints if item.dimension == "assembled_height")
+            depth_constraint = constraints[0]
+            derived = (
+                DerivedAssemblyDimension(axis="width", value_mm=exterior_width, state="derived", operand_refs=width_constraint.operand_refs, constraint_id=width_constraint.id) if exterior_width is not None else DerivedAssemblyDimension(axis="width", value_mm=None, state="unknown", operand_refs=width_constraint.operand_refs),
+                DerivedAssemblyDimension(axis="height", value_mm=exterior_height, state="derived", operand_refs=height_constraint.operand_refs, constraint_id=height_constraint.id) if exterior_height is not None else DerivedAssemblyDimension(axis="height", value_mm=None, state="unknown", operand_refs=height_constraint.operand_refs),
+                DerivedAssemblyDimension(axis="depth", value_mm=common_depth, state="derived", operand_refs=depth_constraint.operand_refs, constraint_id=depth_constraint.id) if common_depth is not None else DerivedAssemblyDimension(axis="depth", value_mm=None, state="unknown", operand_refs=depth_constraint.operand_refs),
+            )
+            unknown_fields = tuple(sorted(
+                [f"uses.{item.id}.quantity" for item in uses if item.quantity_source == "unknown"]
+                + [f"dimensions.{item.axis}" for item in derived if item.state != "derived"]
+                + (["roles.top_panel", "roles.base_panel"] if any(item.role == "unknown" for item in uses) else [])
+            ))
+            evidence_ids = tuple(sorted({evidence_id for item in observations for evidence_id in item.evidence_ids}))
+            candidates.append(AssemblyCandidate(
+                id=candidate_id, family="rectangular_shelving", layout=layout, uses=uses,
+                constraints=constraints, derived_dimensions=derived, unknown_fields=unknown_fields,
+                assumptions=(
+                    "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+                    "Assembly layout is not observed and requires human review.",
+                    "No back, hardware, material, or manufacturing detail is inferred.",
+                ), evidence_ids=evidence_ids,
+            ))
+    return tuple(sorted(candidates, key=lambda item: item.id))
