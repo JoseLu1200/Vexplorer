@@ -89,6 +89,9 @@ def test_agent_explains_revision_one_hypothesis_with_deterministic_sources() -> 
 
     outcome = run_agent(extraction, scenarios, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
 
+    initial_context = json.loads(provider.inputs[0][0]["content"])
+    assert initial_context["result_revision"] == 1
+    assert {"id": proposal.id, "role": proposal.role, "label": proposal.label} in initial_context["scenarios"][0]["components"]
     tool_output = json.loads(provider.inputs[1][0]["output"])
     assert tool_output["ok"] is True
     explanation = tool_output["explanation"]
