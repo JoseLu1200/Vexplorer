@@ -344,15 +344,31 @@ def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[Assembl
 
             depth_values = [item.dimensions.width.value_mm for item in (side, horizontal, shelf)]
             thickness_values = [item.dimensions.thickness.value_mm for item in (side, horizontal, shelf)]
-            horizontal_lengths = [horizontal.dimensions.length.value_mm, shelf.dimensions.length.value_mm]
+            horizontal_length = horizontal.dimensions.length.value_mm
+            shelf_length = shelf.dimensions.length.value_mm
             common_depth = depth_values[0] if all(value is not None and abs(value - depth_values[0]) <= DIMENSION_TOLERANCE_MM for value in depth_values) else None
             common_thickness = thickness_values[0] if all(value is not None and abs(value - thickness_values[0]) <= DIMENSION_TOLERANCE_MM for value in thickness_values) else None
-            common_horizontal = horizontal_lengths[0] if all(value is not None and abs(value - horizontal_lengths[0]) <= DIMENSION_TOLERANCE_MM for value in horizontal_lengths) else None
+            if all(value is not None for value in depth_values) and common_depth is None:
+                continue
+            if all(value is not None for value in thickness_values) and common_thickness is None:
+                continue
+            if side.quantity.state == "observed" and side.quantity.value != 2:
+                continue
+            if horizontal.quantity.state == "observed" and horizontal.quantity.value != 2:
+                continue
+            expected_shelf_length = (
+                horizontal_length if layout == "between_sides"
+                else horizontal_length - 2 * common_thickness
+                if horizontal_length is not None and common_thickness is not None else None
+            )
+            if shelf_length is not None and expected_shelf_length is not None and abs(shelf_length - expected_shelf_length) > DIMENSION_TOLERANCE_MM:
+                continue
+            compatible_horizontal = horizontal_length if shelf_length is not None and expected_shelf_length is not None else None
             side_length = side.dimensions.length.value_mm
             exterior_width = (
-                common_horizontal + 2 * common_thickness
-                if layout == "between_sides" and common_horizontal is not None and common_thickness is not None
-                else common_horizontal if layout == "cap_sides" else None
+                horizontal_length + 2 * common_thickness
+                if layout == "between_sides" and horizontal_length is not None and common_thickness is not None
+                else horizontal_length if layout == "cap_sides" else None
             )
             exterior_height = (
                 side_length if layout == "between_sides"
@@ -369,7 +385,7 @@ def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[Assembl
                 constraint(candidate_id, "horizontal", "role_compatibility", "compatibility", "length", (
                     (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
                     (f"{shelf.id}.dimensions.length", shelf.dimensions.length),
-                ), common_horizontal),
+                ), compatible_horizontal),
                 constraint(candidate_id, "assembled-width", "exterior_from_parts", "sum" if layout == "between_sides" else "equal", "assembled_width", (
                     (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
                     (f"{side.id}.dimensions.thickness", side.dimensions.thickness),

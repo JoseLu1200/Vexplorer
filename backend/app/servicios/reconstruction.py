@@ -9,6 +9,7 @@ from backend.app.contratos.modelos import (
     Result,
     SceneObject,
     Size3D,
+    SeparatedPartsExtraction,
 )
 
 
@@ -21,6 +22,7 @@ def _scene_object(
     position: tuple[float, float, float],
     dimensions: tuple[float, float, float],
     placement_basis: str,
+    part_observation_id: str | None = None,
 ) -> SceneObject:
     point = Point3D(x=position[0], y=position[1], z=position[2])
     size = Size3D(x=dimensions[0], y=dimensions[1], z=dimensions[2])
@@ -33,7 +35,7 @@ def _scene_object(
             max=Point3D(x=point.x + size.x, y=point.y + size.y, z=point.z + size.z),
         ),
         source_contour_ids=piece.source_contour_ids, evidence_ids=piece.evidence_ids,
-        placement_basis=placement_basis,
+        placement_basis=placement_basis, part_observation_id=part_observation_id,
     )
 
 
@@ -209,4 +211,139 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
         run_id=result.run_id, result_revision=result.result_revision,
         state="incomplete" if warnings else "ready", selected_scenario_id=scenario_id,
         objects=tuple(objects), warnings=tuple(warnings), assumptions=assumptions,
+    )
+
+
+def reconstruct_parts_scene(
+    extraction: DrawingExtraction,
+    parts: SeparatedPartsExtraction,
+    result: Result,
+) -> ReconstructionScene:
+    candidate_id = result.selected_assembly_candidate_id
+    if (
+        result.input_semantics != "separated_part_views"
+        or result.review is None
+        or result.review.selected_assembly_candidate_id is None
+        or candidate_id is None
+    ):
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
+            warnings=("assembly_review_required",),
+            assumptions=("No part solid is created before explicit assembly-candidate review.",),
+        )
+    if extraction.coordinate_unit != "mm" or extraction.drawing_id != parts.drawing_id:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
+            selected_scenario_id=candidate_id, warnings=("metric_parts_geometry_required",),
+        )
+    candidate = next((item for item in result.assembly_candidates if item.id == candidate_id), None)
+    if candidate is None:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
+            selected_scenario_id=candidate_id, warnings=("selected_assembly_candidate_missing",),
+        )
+    uses = {item.id: item for item in candidate.uses}
+    pieces = {item.proposal_id: item for item in result.pieces}
+    warnings = []
+    for use in candidate.uses:
+        piece = pieces.get(use.id)
+        if piece is None or any(value is None for value in (piece.quantity, piece.length_mm, piece.width_mm, piece.thickness_mm)):
+            warnings.append(f"incomplete_piece:{use.id}")
+    if result.state != "completed" or warnings:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=candidate_id, warnings=tuple(warnings or ("assembly_constraints_incomplete",)),
+            assumptions=tuple(candidate.assumptions),
+        )
+    if any(item.status != "pass" for item in candidate.constraints) or any(item.state != "derived" for item in candidate.derived_dimensions):
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=candidate_id, warnings=("assembly_constraints_incomplete",),
+            assumptions=tuple(candidate.assumptions),
+        )
+    dimensions = {item.axis: item.value_mm for item in candidate.derived_dimensions}
+    width, height, depth = dimensions.get("width"), dimensions.get("height"), dimensions.get("depth")
+    if width is None or height is None or depth is None:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=candidate_id, warnings=("assembly_dimensions_incomplete",),
+            assumptions=tuple(candidate.assumptions),
+        )
+
+    by_role = {role: [pieces[use.id] for use in candidate.uses if use.role == role] for role in SUPPORTED_ROLES}
+    if len(by_role["side_panel"]) != 1 or len(by_role["top_panel"]) != 1 or len(by_role["base_panel"]) != 1:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=candidate_id, warnings=("envelope_pieces_missing",),
+            assumptions=tuple(candidate.assumptions),
+        )
+    side, top, base = by_role["side_panel"][0], by_role["top_panel"][0], by_role["base_panel"][0]
+    shelf = by_role["shelf"][0] if len(by_role["shelf"]) == 1 else None
+    thickness = side.thickness_mm
+    assert thickness is not None
+    all_pieces = (side, top, base) + ((shelf,) if shelf else ())
+    if any(piece.width_mm != depth or piece.thickness_mm != thickness for piece in all_pieces):
+        warnings.append("inconsistent_panel_dimensions")
+    if candidate.layout == "between_sides":
+        horizontal_x, side_y = thickness, 0.0
+        expected_side_length, expected_horizontal_length = height, width - 2 * thickness
+    elif candidate.layout == "cap_sides":
+        horizontal_x, side_y = 0.0, thickness
+        expected_side_length, expected_horizontal_length = height - 2 * thickness, width
+    else:
+        warnings.append("unsupported_mounting_scenario")
+        expected_side_length = expected_horizontal_length = -1.0
+        horizontal_x = side_y = 0.0
+    expected_shelf_length = width - 2 * thickness
+    if side.length_mm != expected_side_length or top.length_mm != expected_horizontal_length or base.length_mm != expected_horizontal_length:
+        warnings.append("inconsistent_resolved_dimensions")
+    if shelf is not None and shelf.length_mm != expected_shelf_length:
+        warnings.append("shelf_width_inconsistent")
+    if side.quantity != 2 or top.quantity != 1 or base.quantity != 1:
+        warnings.append("unsupported_envelope_quantity")
+    if warnings:
+        return ReconstructionScene(
+            run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
+            selected_scenario_id=candidate_id, warnings=tuple(warnings),
+            assumptions=tuple(candidate.assumptions),
+        )
+
+    objects = []
+    for use in candidate.uses:
+        piece = pieces[use.id]
+        observation_id = use.part_observation_id
+        indices = use.occurrence_indices
+        if piece.role == "side_panel":
+            for occurrence_index, x in zip(indices, (0.0, width - thickness), strict=True):
+                objects.append(_scene_object(
+                    piece, occurrence_index, (x, side_y, 0.0), (thickness, piece.length_mm, depth),
+                    f"{candidate.id}: reviewed side placement", observation_id,
+                ))
+        elif piece.role == "top_panel":
+            objects.append(_scene_object(
+                piece, indices[0], (horizontal_x, height - thickness, 0.0),
+                (piece.length_mm, thickness, depth), f"{candidate.id}: reviewed top placement", observation_id,
+            ))
+        elif piece.role == "base_panel":
+            objects.append(_scene_object(
+                piece, indices[0], (horizontal_x, 0.0, 0.0),
+                (piece.length_mm, thickness, depth), f"{candidate.id}: reviewed base placement", observation_id,
+            ))
+        elif piece.role == "shelf":
+            count = len(indices)
+            for rank, occurrence_index in enumerate(indices, start=1):
+                level = (height - thickness) * rank / (count + 1)
+                objects.append(_scene_object(
+                    piece, occurrence_index, (thickness, level, 0.0),
+                    (piece.length_mm, thickness, depth),
+                    f"{candidate.id}: schematic evenly spaced shelf placement; height not observed", observation_id,
+                ))
+    assumptions = tuple(candidate.assumptions) + (
+        "Boxes are schematic reviewed panel occurrences, not manufacturing solids.",
+        "Shelf heights are schematic evenly spaced hypotheses because separate part views do not observe assembly levels.",
+        "Collision checking is not certified and remains not_evaluated.",
+    )
+    return ReconstructionScene(
+        run_id=result.run_id, result_revision=result.result_revision, state="ready",
+        selected_scenario_id=candidate_id, objects=tuple(objects), assumptions=assumptions,
     )
