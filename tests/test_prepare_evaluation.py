@@ -6,6 +6,7 @@ from pathlib import Path
 import fitz
 import pytest
 
+import tools.prepare_evaluation as prep
 from tools.prepare_evaluation import archive_case, audit_dataset, prepare_dataset, render_crops
 
 
@@ -120,3 +121,56 @@ def test_single_case_archive_rejects_altered_input(tmp_path):
     with pytest.raises(ValueError, match="hash"):
         archive_case(tmp_path, {"file": "poor.pdf", "sha256": "0" * 64}, tmp_path / "one.zip")
     assert not (tmp_path / "one.zip").exists()
+
+
+def test_public_case_metadata_uses_same_generic_instruction_without_answer_leak(tmp_path):
+    metadata = prep.public_input_metadata(
+        case_id="visual-003", file="visual-003.pdf", task="read_dimensions_with_abstention",
+        split="development", format="raster_pdf", unit="mm", digest="a" * 64,
+    )
+    archive_root = tmp_path / "inputs"
+    archive_root.mkdir()
+    (archive_root / "visual-003.pdf").write_bytes(b"raster only")
+    metadata["sha256"] = hashlib.sha256(b"raster only").hexdigest()
+    archive = tmp_path / "visual-003.zip"
+    archive_case(archive_root, metadata, archive)
+
+    with zipfile.ZipFile(archive) as package:
+        public = json.loads(package.read("case.json"))
+    assert public["limitation"] == prep.PUBLIC_INPUT_INSTRUCTION
+    assert "thickness" not in json.dumps(public).lower()
+    assert "quantity are unknown" not in json.dumps(public).lower()
+    assert "abstention" not in json.dumps(public).lower()
+    assert prep.VISUAL_CASES[2].limitation != public["limitation"]
+
+
+def test_verified_read_rejects_bytes_changed_after_manifest_snapshot(tmp_path):
+    root = fixture_dataset(tmp_path)
+    entries = prep.read_manifest(root)
+    (root / "drawing.dxf").write_bytes(b"tampered after audit")
+
+    with pytest.raises(ValueError, match="hash mismatch"):
+        prep.read_verified(root, entries, "drawing.dxf")
+
+
+def test_verified_read_rejects_path_not_in_manifest(tmp_path):
+    root = fixture_dataset(tmp_path)
+    (root / "bench_vise_reference.json").write_text("{}")
+    entries = prep.read_manifest(root)
+
+    with pytest.raises(ValueError, match="manifest"):
+        prep.read_verified(root, entries, "bench_vise_reference.json")
+
+
+def test_manifest_rewrite_cannot_authorize_tampered_bytes_after_snapshot(tmp_path):
+    root = fixture_dataset(tmp_path)
+    entries = prep.read_manifest(root)
+    changed = b"changed with rewritten manifest"
+    (root / "drawing.dxf").write_bytes(changed)
+    new_digest = hashlib.sha256(changed).hexdigest()
+    manifest = (root / "SHA256SUMS").read_text()
+    old_digest = entries["drawing.dxf"]
+    (root / "SHA256SUMS").write_text(manifest.replace(old_digest, new_digest))
+
+    with pytest.raises(ValueError, match="hash mismatch"):
+        prep.read_verified(root, entries, "drawing.dxf")
