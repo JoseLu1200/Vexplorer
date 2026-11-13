@@ -363,9 +363,8 @@ def test_parts_api_exposes_only_keyed_local_observations_and_hypotheses(
 
     observation_ids = {item["id"] for item in observations.values()}
     assert len(snapshot["assembly_candidates"]) >= 2
-    assert {item["layout"] for item in snapshot["assembly_candidates"]} >= {
-        "between_sides",
-        "cap_sides",
+    assert {item["layout"] for item in snapshot["assembly_candidates"]} == {
+        "between_sides"
     }
     for candidate in snapshot["assembly_candidates"]:
         used = {item["part_observation_id"] for item in candidate["uses"]}
@@ -623,7 +622,10 @@ def test_reviewed_parts_scene_export_and_cost_use_frozen_public_observations(
         observations["K3"]["id"]: 2,
     }
     assert all(item["placement_status"] == "human_selected" for item in scene["objects"])
-    assert all(item["placement_constraint_ids"] for item in scene["objects"])
+    assert all(
+        candidate["id"] in item["placement_basis"] and item["part_observation_id"]
+        for item in scene["objects"]
+    )
 
     assert comparables_response.status_code == 200, comparables_response.text
     assert all(item["synthetic"] is True for item in comparables_response.json()["data"])

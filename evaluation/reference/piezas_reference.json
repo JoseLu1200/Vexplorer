@@ -43,9 +43,8 @@
       "hours": null
     }
   },
-  "acceptable_alternative_assemblies": [
-    "between_sides",
-    "cap_sides"
+  "acceptable_assembly_hypotheses": [
+    "between_sides"
   ],
   "descriptor_controls": {
     "same_after_key_and_translation_change": [
@@ -63,6 +62,7 @@
     "compare_only_after_outputs_are_frozen": true,
     "roles_and_assembly_are_private": true,
     "views_never_imply_quantity": true,
+    "role_permutation_ambiguity": true,
     "unique_assembly_claimed": false
   }
 }
