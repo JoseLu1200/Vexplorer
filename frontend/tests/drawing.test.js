@@ -28,6 +28,19 @@ test("Pydantic point objects become safe numeric SVG points", () => {
   assert.deepEqual(model.paths[0].points, [[0, 10], [120, 10]]);
 });
 
+test("unclaimed source entities remain visible as construction evidence", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    entities: [
+      ...unknownDrawing.entities,
+      { id: "inner-shelf", kind: "LINE", source_points: [{ x: 0, y: 40 }, { x: 120, y: 40 }], points_mm: null },
+    ],
+  });
+  const shelf = model.paths.find((path) => path.id === "entity:inner-shelf");
+  assert.deepEqual(shelf.points, [[0, 40], [120, 40]]);
+  assert.deepEqual(shelf.entityIds, ["inner-shelf"]);
+});
+
 test("component selection follows stable contour and evidence identifiers", () => {
   const selected = selectionForComponent({
     id: "component-1",

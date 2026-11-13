@@ -11,7 +11,8 @@ export function safeText(value) {
 
 export function normaliseDrawing(extraction) {
   const metric = extraction?.coordinate_unit === "mm" || (extraction?.source_unit !== "unknown" && Number.isFinite(extraction?.unit_scale_to_mm));
-  const paths = (extraction?.contours ?? []).flatMap((contour) => {
+  const contours = extraction?.contours ?? [];
+  const paths = contours.flatMap((contour) => {
     const points = metric ? contour.points_mm : (contour.source_points ?? contour.points_source);
     if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return [];
     return [{
@@ -21,6 +22,13 @@ export function normaliseDrawing(extraction) {
       points: points.map(pointTuple),
       closed: Boolean(contour.closed),
     }];
+  });
+  const claimedEntities = new Set(contours.flatMap((contour) => contour.source_entity_ids ?? []));
+  (extraction?.entities ?? []).forEach((entity) => {
+    if (claimedEntities.has(entity.id)) return;
+    const points = metric ? entity.points_mm : entity.source_points;
+    if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
+    paths.push({ id: `entity:${entity.id}`, viewId: null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
   });
   return {
     drawingId: extraction?.drawing_id,
