@@ -75,3 +75,13 @@ test("0.3 endpoints preserve exact revision and similarity modes", async () => {
   assert.equal(requests[2][0], "/api/v1/runs/run-1/explanations?result_revision=3");
   assert.deepEqual(JSON.parse(requests[3][1].body), { result_revision: 3, mode: "geometric", limit: 5 });
 });
+
+test("parts-only run is explicit and parts convenience endpoint is revisioned by run", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "key" });
+  await client.createRun("doc-1", "geometry_only", "separated_part_views");
+  await client.getParts("run parts");
+  assert.deepEqual(JSON.parse(requests[0][1].body), { document_id: "doc-1", mode: "geometry_only", input_kind: "separated_part_views" });
+  assert.equal(requests[1][0], "/api/v1/runs/run%20parts/parts");
+});

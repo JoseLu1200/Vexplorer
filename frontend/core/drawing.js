@@ -31,13 +31,16 @@ export function normaliseDrawing(extraction) {
     }];
   });
   const claimedEntities = new Set(contours.flatMap((contour) => contour.source_entity_ids ?? []));
+  const entityViews = new Map();
+  (extraction?.views ?? []).forEach((view) => (view.entity_ids ?? []).forEach((id) => entityViews.set(id, [...(entityViews.get(id) ?? []), view.id])));
   const dimensionEntityIds = new Set((extraction?.dimension_graphics ?? []).map((item) => item.source_entity_id).filter(Boolean));
   (extraction?.entities ?? []).forEach((entity) => {
     if (claimedEntities.has(entity.id)) return;
     if (String(entity.kind).toUpperCase() === "DIMENSION" && ((extraction?.dimension_graphics?.length ?? 0) > 0 || dimensionEntityIds.has(entity.id))) return;
     const points = metric ? entity.points_mm : entity.source_points;
     if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
-    paths.push({ id: `entity:${entity.id}`, viewId: null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
+    const viewIds = entityViews.get(entity.id) ?? [];
+    paths.push({ id: `entity:${entity.id}`, viewId: viewIds.length === 1 ? viewIds[0] : null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
   });
   const texts = (extraction?.texts ?? []).flatMap((item) => {
     const position = resolvedPoint(item, "position", metric);
@@ -53,7 +56,7 @@ export function normaliseDrawing(extraction) {
     if (!segments.length && !position) return [];
     return [{ id: item.id, dimensionId: item.dimension_id, viewId: item.view_id, label: safeText(item.display_text ?? item.raw_text), segments, position }];
   });
-  return {
+  const model = {
     drawingId: extraction?.drawing_id,
     coordinateUnit: metric ? "mm" : "source",
     unitLabel: metric ? "Milímetros" : "Unidad sin resolver",
@@ -63,6 +66,15 @@ export function normaliseDrawing(extraction) {
     dimensions,
     warnings: extraction?.warnings ?? [],
   };
+  model.pointsForViews = (viewIds) => {
+    const allowed = (viewId) => !viewIds || viewIds.has(viewId);
+    return [
+      ...model.paths.filter((item) => allowed(item.viewId)).flatMap((item) => item.points),
+      ...model.texts.filter((item) => allowed(item.viewId)).map((item) => item.position),
+      ...model.dimensions.filter((item) => allowed(item.viewId)).flatMap((item) => item.segments.flat()),
+    ];
+  };
+  return model;
 }
 
 export function selectionForComponent(component, drawing) {

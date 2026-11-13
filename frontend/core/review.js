@@ -27,3 +27,13 @@ export function buildScenarioReviewPayload(snapshot, values) {
     notes,
   };
 }
+
+export function buildAssemblyReviewPayload(snapshot, values) {
+  if (!Number.isInteger(snapshot?.result_revision)) throw new TypeError("Falta la revisión base del resultado.");
+  if (!values?.assembly_candidate_id) throw new TypeError("Selecciona una hipótesis de montaje.");
+  const reviewerName = String(values.reviewer_name ?? "").trim();
+  if (!reviewerName) throw new TypeError("Indica el nombre de la persona revisora.");
+  const notes = String(values.notes ?? "").trim();
+  if (!notes) throw new TypeError("La decisión necesita notas técnicas.");
+  return { base_result_revision: snapshot.result_revision, reviewer_name: reviewerName, assembly_candidate_id: values.assembly_candidate_id, notes };
+}

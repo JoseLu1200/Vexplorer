@@ -81,3 +81,21 @@ test("dimension entities are not drawn as defpoint zigzags when graphics exist",
   });
   assert.equal(model.paths.some((path)=>path.id === "entity:dim-entity"), false);
 });
+
+test("unclaimed interior entities inherit their explicit drawing view", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    entities: [...unknownDrawing.entities, { id: "shelf-line", kind: "LINE", source_points: [[0, 40], [120, 40]] }],
+    views: [{ ...unknownDrawing.views[0], entity_ids: ["entity-1", "shelf-line"] }],
+  });
+  assert.equal(model.paths.find((path) => path.id === "entity:shelf-line").viewId, "view-1");
+});
+
+test("drawing exposes points scoped to selected part views for fit", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    entities: [...unknownDrawing.entities, { id: "far-line", kind: "LINE", source_points: [[1000, 0], [1100, 0]] }],
+    views: [unknownDrawing.views[0], { id: "view-2", label: "SIDE", entity_ids: ["far-line"], bounds_source: [1000, 0, 1100, 80], bounds_mm: null }],
+  });
+  assert.deepEqual(model.pointsForViews(new Set(["view-1"])), [[0, 0], [120, 0]]);
+});

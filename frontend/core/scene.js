@@ -15,7 +15,8 @@ export function normaliseScene(raw = {}) {
       key: `${pieceId}:${item.occurrence_index ?? index}`,
       pieceId, proposalId: item.proposal_id, role: item.role, label: item.label ?? item.role ?? pieceId,
       position, dimensions, evidenceIds: [...(item.evidence_ids ?? [])], contourIds: [...(item.source_contour_ids ?? item.contour_ids ?? [])],
-      placementBasis: item.placement_basis ?? null,
+      placementBasis: item.placement_basis ?? null, partObservationId: item.part_observation_id ?? null,
+      placementStatus: item.placement_status ?? "human_selected", placementConstraintIds: [...(item.placement_constraint_ids ?? [])],
     }];
   });
   if (objects.length < (raw.objects ?? []).length && !warnings.some((item) => /dimension|medida|grosor/i.test(item))) warnings.push("No se representan objetos con posición o medidas incompletas.");
