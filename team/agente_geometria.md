@@ -15,7 +15,8 @@
 
 ## Alcance y reservas
 
-- Puedo editar: `backend/app/ingesta/`, `backend/app/geometria/`, `backend/tests/test_geometry.py` y este archivo.
+- Puedo editar: `backend/app/ingesta/`, `backend/app/geometria/`, `backend/tests/test_geometry.py`, `tools/prepare_evaluation.py`, `tests/test_prepare_evaluation.py` y este archivo.
+- La ampliación para los dos archivos del preparador fue autorizada explícitamente el 2026-11-13; ningún otro agente los edita durante esta tarea.
 - Solo leeré: contratos, API, frontend, fixture público de evaluación y documentación.
 - `backend/app/contratos/` pertenece exclusivamente al agente B.
 - Solapes detectados: ninguno; la interfaz con B debe acordarse antes de implementación contractual.
@@ -30,6 +31,7 @@
 - Implementadas vistas neutrales, contornos trazables, observaciones, evidencias y propuestas rectangulares genéricas con cantidad y espesor desconocidos.
 - Verificados ambos DXF públicos de D sin abrir `evaluation/reference/**`: tres vistas y tres contornos; la variante incompleta expone una cota menos, sin completar el dato.
 - Endurecida la honestidad: cotas angulares quedan fuera con warning; override textual o escala conflictiva conserva warning y `value_mm=null`; trapecios no producen hipótesis rectangulares; límite de 100.000 entidades se aplica antes del análisis.
+- Endurecido el preparador: metadata pública uniforme sin diagnóstico de respuesta, sidecar Bench Vise sujeto a ruta segura/manifiesto/hash y lecturas fuente verificadas contra un snapshot inmutable para detectar TOCTOU.
 
 ## Siguiente bloque
 
@@ -59,11 +61,14 @@
 | Suite completa tras fixture | `python -m pytest -q` | 30 passed | Incluye 8 pruebas de aislamiento/fixture de D |
 | Regresiones de revisión | `python -m pytest backend/tests/test_geometry.py -q` | 10 passed | Angular, texto/escala, trapecio y límite cubiertos |
 | Suite final | `python -m pytest -q` | 35 passed | Ejecución fresca tras correcciones |
+| Preparador | `python -m pytest tests/test_prepare_evaluation.py -q` | 17 passed | Incluye ZIP público y tamper de bytes/ruta/manifiesto |
+| Suite tras preparador | `python -m pytest -q` | 39 passed | Baseline, geometría y demo permanecen verdes |
+| Auditoría corpus local | `python -m tools.prepare_evaluation --source ../../../engineering_dataset --audit-only` | 421 archivos, 65 casos, 93 rutas; manifiesto `60b45a…` | Solo auditoría; no se regeneró ni publicó corpus |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 
 ## Bloqueos y cierre
 
 - Bloqueos: ninguno para el alcance propio.
-- Pendientes: adaptación B de hipótesis a escenarios en integración.
+- Pendientes: adaptación B de hipótesis a escenarios en integración; root integra este endurecimiento.
 - Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal sin override/escala conflictivos; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Los contornos de líneas detectan rectángulos axis-aligned con lados completos.
 - Reservas liberadas: ninguna.
