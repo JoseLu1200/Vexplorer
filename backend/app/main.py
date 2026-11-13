@@ -27,7 +27,7 @@ from backend.app.salida.drawing_preview import render_drawing_preview
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 from backend.app.servicios.explanations import explain_result
 from backend.app.servicios.repository import DemoRepository
-from backend.app.servicios.reconstruction import reconstruct_scene
+from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
@@ -237,7 +237,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             extraction = repository.get_extraction(run_id)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        return _ok(reconstruct_scene(extraction, result).model_dump(mode="json"))
+        scene = (
+            reconstruct_parts_scene(extraction, result.part_analysis, result)
+            if result.input_semantics == "separated_part_views" and result.part_analysis is not None
+            else reconstruct_scene(extraction, result)
+        )
+        return _ok(scene.model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/ledger")
     @app.get("/api/v1/runs/{run_id}/drawing")
@@ -388,7 +393,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     library_item = None
             except KeyError:
                 library_item = None
-            bundle = {"schema_version": "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "scene": reconstruct_scene(extraction, result).model_dump(mode="json"), "explanations": explain_result(extraction, result).model_dump(mode="json"), "descriptor": descriptor.model_dump(mode="json"), "library_item": library_item.model_dump(mode="json") if library_item else None, "comparables": [item.model_dump(mode="json") for item in find_comparables(result)], "estimate": estimate_value, "events": list(repository.get_events(run_id))}
+            scene = (
+                reconstruct_parts_scene(extraction, result.part_analysis, result)
+                if result.input_semantics == "separated_part_views" and result.part_analysis is not None
+                else reconstruct_scene(extraction, result)
+            )
+            bundle = {"schema_version": "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "scene": scene.model_dump(mode="json"), "explanations": explain_result(extraction, result).model_dump(mode="json"), "descriptor": descriptor.model_dump(mode="json"), "library_item": library_item.model_dump(mode="json") if library_item else None, "comparables": [item.model_dump(mode="json") for item in find_comparables(result)], "estimate": estimate_value, "events": list(repository.get_events(run_id))}
             payload, media = json.dumps(bundle, ensure_ascii=False, indent=2), "application/json"
         else:
             payload, media = export_csv(result), "text/csv; charset=utf-8"
