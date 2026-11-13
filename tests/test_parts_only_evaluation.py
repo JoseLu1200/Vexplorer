@@ -379,6 +379,18 @@ def test_parts_api_exposes_only_keyed_local_observations_and_hypotheses(
         assert candidate["family_status"] == "hypothesis"
         assert candidate["layout_status"] == "hypothesis"
         assert all(item["role_status"] == "hypothesis" for item in candidate["uses"])
+        for observation_id in used:
+            allocations = [
+                item for item in candidate["uses"] if item["part_observation_id"] == observation_id
+            ]
+            source_quantities = {item["source_quantity"] for item in allocations}
+            occurrence_indices = [
+                index for item in allocations for index in item["occurrence_indices"]
+            ]
+            assert source_quantities == {2}
+            assert sum(item["allocated_quantity"] for item in allocations) == 2
+            assert sorted(occurrence_indices) == [1, 2]
+            assert all(item["quantity_source"] == "observed_annotation" for item in allocations)
 
 
 def test_unknown_and_unkeyed_parts_stay_unknown_and_do_not_create_solids(
@@ -594,7 +606,7 @@ def test_reviewed_parts_scene_export_and_cost_use_frozen_public_observations(
     observations = {
         item["part_key"]: item for item in initial["part_analysis"]["observations"]
     }
-    assert len(reviewed["pieces"]) == 3
+    assert len(reviewed["pieces"]) == 4
     assert all(len(item["source_part_observation_ids"]) == 1 for item in reviewed["pieces"])
     assert {item["source_part_observation_ids"][0] for item in reviewed["pieces"]} == {
         item["id"] for item in observations.values()
