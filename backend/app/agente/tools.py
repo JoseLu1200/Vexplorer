@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from backend.app.contratos.modelos import ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs
+from backend.app.contratos.modelos import (
+    ExplainPieceArgs,
+    InspectEvidenceArgs,
+    InspectSeparatedPartArgs,
+    SelectAssemblyCandidateArgs,
+    SelectScenarioArgs,
+)
 
 
 def _schema(name: str, description: str, model) -> dict:
@@ -12,4 +18,19 @@ def tool_schemas() -> list[dict]:
         _schema("inspeccionar_evidencia", "Consulta evidencias por ID dentro del ledger autorizado del run actual.", InspectEvidenceArgs),
         _schema("entregar_despiece", "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas.", SelectScenarioArgs),
         _schema("explicar_pieza", "Devuelve fuentes, estados, premisas y desconocidos de una hipótesis de componente en la revisión 1; no la confirma ni revela razonamiento interno.", ExplainPieceArgs),
+    ]
+
+
+def parts_tool_schemas() -> list[dict]:
+    return [
+        _schema(
+            "inspeccionar_pieza",
+            "Consulta una observación de pieza separada del ledger actual, incluidas vistas, medidas, cantidad, fuentes y desconocidos.",
+            InspectSeparatedPartArgs,
+        ),
+        _schema(
+            "entregar_candidato_montaje",
+            "Entrega por ID un candidato de montaje ya calculado; no confirma el montaje ni permite aportar medidas o cantidades.",
+            SelectAssemblyCandidateArgs,
+        ),
     ]

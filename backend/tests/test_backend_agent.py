@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 
 from backend.app.agente.provider import ProviderResponse, ToolCall
-from backend.app.agente.runner import AgentLimits, run_agent
-from backend.app.agente.tools import tool_schemas
+from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
+from backend.app.agente.tools import parts_tool_schemas, tool_schemas
 from backend.app.geometria import extract_drawing
+from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 
 
@@ -124,3 +125,37 @@ def test_agent_rejects_unknown_or_unavailable_explanation(arguments, expected_er
 
     tool_output = json.loads(provider.inputs[1][0]["output"])
     assert tool_output == {"ok": False, "error": expected_error}
+
+
+def test_parts_agent_inspects_grounded_part_and_selects_existing_candidate() -> None:
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "piezas_completo.dxf"
+    extraction = extract_drawing(fixture, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+    candidates = derive_assembly_candidates(parts)
+    observation = parts.observations[0]
+    selected = candidates[0]
+    provider = FakeProvider([
+        ProviderResponse(id="parts-1", tool_calls=(ToolCall(
+            call_id="inspect", name="inspeccionar_pieza",
+            arguments={"candidate_revision": parts.candidate_revision, "part_observation_id": observation.id},
+        ),)),
+        ProviderResponse(id="parts-2", tool_calls=(ToolCall(
+            call_id="select", name="entregar_candidato_montaje",
+            arguments={"candidate_revision": parts.candidate_revision, "assembly_candidate_id": selected.id},
+        ),)),
+    ])
+
+    outcome = run_parts_agent(extraction, parts, candidates, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+
+    context = json.loads(provider.inputs[0][0]["content"])
+    assert context["input_kind"] == "separated_part_views"
+    assert {item["id"] for item in context["part_observations"]} == {item.id for item in parts.observations}
+    assert context["assembly_candidates"][0]["id"] == candidates[0].id
+    assert all("value_mm" not in item for item in context["assembly_candidates"])
+    inspected = json.loads(provider.inputs[1][0]["output"])
+    assert inspected["ok"] is True
+    assert inspected["part_observation"]["id"] == observation.id
+    assert inspected["part_observation"]["dimensions"]["length"]["value_mm"] is not None
+    assert outcome.selected_assembly_candidate_id == selected.id
+    assert [item.tool_name for item in outcome.actions] == ["inspeccionar_pieza", "entregar_candidato_montaje"]
+    assert {item["name"] for item in parts_tool_schemas()} == {"inspeccionar_pieza", "entregar_candidato_montaje"}

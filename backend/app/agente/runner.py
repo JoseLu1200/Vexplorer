@@ -5,8 +5,18 @@ import time
 from dataclasses import dataclass
 from typing import Protocol
 
-from backend.app.agente.tools import tool_schemas
-from backend.app.contratos.modelos import DecompositionScenario, DrawingExtraction, ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs
+from backend.app.agente.tools import parts_tool_schemas, tool_schemas
+from backend.app.contratos.modelos import (
+    AssemblyCandidate,
+    DecompositionScenario,
+    DrawingExtraction,
+    ExplainPieceArgs,
+    InspectEvidenceArgs,
+    InspectSeparatedPartArgs,
+    SelectAssemblyCandidateArgs,
+    SelectScenarioArgs,
+    SeparatedPartsExtraction,
+)
 from backend.app.servicios.explanations import explain_proposal
 from pydantic import ValidationError
 
@@ -35,6 +45,14 @@ class AgentAction:
 @dataclass(frozen=True)
 class AgentOutcome:
     selected_scenario_id: str
+    model_calls: int
+    tool_calls: int
+    actions: tuple[AgentAction, ...]
+
+
+@dataclass(frozen=True)
+class PartsAgentOutcome:
+    selected_assembly_candidate_id: str
     model_calls: int
     tool_calls: int
     actions: tuple[AgentAction, ...]
@@ -112,6 +130,112 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                 details = exc.errors(include_url=False, include_input=False) if isinstance(exc, ValidationError) else []
                 data = {"ok": False, "error": "invalid_arguments", "details": details}
                 actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Argumentos de herramienta inválidos rechazados."))
+                if repairs > limits.max_validation_repairs:
+                    raise RuntimeError("validation_repair_budget_exhausted") from exc
+            outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
+        input_items = outputs
+    raise RuntimeError("model_call_budget_exhausted")
+
+
+def run_parts_agent(
+    extraction: DrawingExtraction,
+    parts: SeparatedPartsExtraction,
+    candidates: tuple[AssemblyCandidate, ...],
+    provider: Provider,
+    limits: AgentLimits = AgentLimits(),
+) -> PartsAgentOutcome:
+    started = time.monotonic()
+    model_calls = 0
+    tool_calls = 0
+    repairs = 0
+    previous_response_id = None
+    observations = {item.id: item for item in parts.observations}
+    candidate_ids = {item.id for item in candidates}
+    input_items = [{"role": "user", "content": json.dumps({
+        "input_kind": "separated_part_views",
+        "candidate_revision": parts.candidate_revision,
+        "warnings": parts.warnings,
+        "part_observations": [{
+            "id": item.id,
+            "association_basis": item.association_basis,
+            "view_roles": [view.role for view in item.views],
+            "quantity_state": item.quantity.state,
+            "status": item.status,
+        } for item in parts.observations],
+        "assembly_candidates": [{
+            "id": item.id,
+            "family": item.family,
+            "layout": item.layout,
+            "uses": [{
+                "id": use.id,
+                "part_observation_id": use.part_observation_id,
+                "role": use.role,
+                "allocated_quantity": use.allocated_quantity,
+            } for use in item.uses],
+            "unassigned_part_observation_ids": item.unassigned_part_observation_ids,
+            "assumptions": item.assumptions,
+            "needs_review": item.needs_review,
+        } for item in candidates],
+    }, ensure_ascii=False)}]
+    actions: list[AgentAction] = []
+    while model_calls < limits.max_model_calls:
+        remaining = limits.timeout_s - (time.monotonic() - started)
+        if remaining <= 0:
+            raise TimeoutError("agent_deadline_exceeded")
+        model_calls += 1
+        response = provider.create_response(
+            input_items=input_items,
+            tools=parts_tool_schemas(),
+            previous_response_id=previous_response_id,
+            timeout_s=remaining,
+        )
+        previous_response_id = response.id
+        if not response.tool_calls:
+            input_items = [{"role": "user", "content": "Debes usar una herramienta permitida."}]
+            continue
+        if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
+            raise RuntimeError("tool_call_budget_exhausted")
+        outputs = []
+        for call in response.tool_calls:
+            tool_calls += 1
+            try:
+                arguments = json.loads(call.arguments_json) if call.arguments_json is not None else call.arguments
+                if not isinstance(arguments, dict):
+                    raise TypeError("tool arguments must be an object")
+                if call.name == "inspeccionar_pieza":
+                    args = InspectSeparatedPartArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    if args.candidate_revision != parts.candidate_revision:
+                        data = {"ok": False, "error": "candidate_revision_mismatch"}
+                        actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
+                    elif args.part_observation_id not in observations:
+                        data = {"ok": False, "error": "unknown_reference"}
+                        actions.append(AgentAction(call.name, False, (), "Observación de pieza desconocida rechazada."))
+                    else:
+                        observation = observations[args.part_observation_id]
+                        data = {"ok": True, "part_observation": observation.model_dump(mode="json")}
+                        actions.append(AgentAction(call.name, True, observation.evidence_ids, "Observación de pieza y sus fuentes inspeccionadas."))
+                elif call.name == "entregar_candidato_montaje":
+                    args = SelectAssemblyCandidateArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    if args.candidate_revision != parts.candidate_revision:
+                        data = {"ok": False, "error": "candidate_revision_mismatch"}
+                        actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
+                    elif args.assembly_candidate_id not in candidate_ids:
+                        data = {"ok": False, "error": "unknown_reference"}
+                        actions.append(AgentAction(call.name, False, (), "Candidato de montaje desconocido rechazado."))
+                    else:
+                        actions.append(AgentAction(
+                            call.name, True, (), "Candidato hipotético entregado para revisión humana.",
+                            selected_scenario_id=args.assembly_candidate_id,
+                        ))
+                        return PartsAgentOutcome(args.assembly_candidate_id, model_calls, tool_calls, tuple(actions))
+                else:
+                    data = {"ok": False, "error": "unknown_tool"}
+                    actions.append(AgentAction(call.name, False, (), "Herramienta no autorizada rechazada."))
+            except (ValidationError, json.JSONDecodeError, TypeError) as exc:
+                repairs += 1
+                details = exc.errors(include_url=False, include_input=False) if isinstance(exc, ValidationError) else []
+                data = {"ok": False, "error": "invalid_arguments", "details": details}
+                actions.append(AgentAction(call.name, False, (), "Argumentos de herramienta inválidos rechazados."))
                 if repairs > limits.max_validation_repairs:
                     raise RuntimeError("validation_repair_budget_exhausted") from exc
             outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
