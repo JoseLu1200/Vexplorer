@@ -37,7 +37,7 @@ Run `run-23303f6ef7c8412c81cca2f70eb2c157`, modo `live`, configuración `gpt-6.1
 
 El script de auditoría tuvo inicialmente un error propio de lectura de `run_id` en vez de `id`, después del 201. Se corrigió el script y se continuó mediante `--reuse-live-run`, sin repetir la llamada live. No fue un fallo de la API.
 
-Se guardaron original, variante dimensional y original trasladado. Original/traslado comparten huella y caché; la variante genera otro vector. En navegador, búsqueda semántica mostró puntuaciones 1,000 para equivalentes y aproximadamente 0,999 para la variante, con diferencias dimensionales. Agrupación semántica con umbral 0,70 produjo un grupo de cuatro revisiones cuando todas tenían embedding. **No demuestra calidad de clasificación entre familias ni un umbral comercial útil**: se probaron solo estanterías muy similares. Las puntuaciones no son probabilidades.
+El script guardó tres casos: original, variante dimensional y original trasladado. Original/traslado comparten huella y caché; la variante genera otro vector. La sesión del navegador añadió una cuarta entrada (el run revisado desde la interfaz). La búsqueda mostró puntuaciones 1,000 para equivalentes y aproximadamente 0,999 para la variante, con diferencias dimensionales. Agrupación semántica con umbral 0,70 produjo un grupo de esas cuatro revisiones cuando todas tenían embedding. Estas observaciones del DOM, separadas de las llamadas del script, se conservan en [browser.json](auditoria/2026-11-14/browser.json). **No demuestra calidad de clasificación entre familias ni un umbral comercial útil**: se probaron solo estanterías muy similares. Las puntuaciones no son probabilidades.
 
 ## Navegador: recorrido observado
 
@@ -67,8 +67,8 @@ Capturas: [Alzado sin líneas interiores](auditoria/2026-11-14/browser-front-mis
 
 | ID | Prioridad | Reproducción / impacto | Localización |
 |---|---|---|---|
-| A01 | Alta | LINE con Z distintos y polilíneas OCS fuera de XY se aplanan. Tres proyecciones OCS producen dos escenarios aunque no pertenecen al plano XY admitido | `geometria/dxf_reader.py`, `extraction.py` y `servicios/decomposition.py`; repro geométrico |
-| A02 | Alta | DIMLFAC=2 con tramo 600: ledger abstiene, texto CAD dice 1200, gráfico simplificado dice 600 mm. La cota visible resulta engañosa | `geometria/dxf_reader.py`; repro geométrico |
+| A01 | Alta | LINE con Z distintos y polilíneas OCS fuera de XY se aplanan. Tres proyecciones OCS producen dos escenarios aunque no pertenecen al plano XY admitido | `backend/app/ingesta/dxf_reader.py`, `backend/app/geometria/extraction.py` y `backend/app/servicios/decomposition.py`; repro geométrico |
+| A02 | Alta | DIMLFAC=2 con tramo 600: ledger abstiene, texto CAD dice 1200, gráfico simplificado dice 600 mm. La cota visible resulta engañosa | `backend/app/ingesta/dxf_reader.py`; repro geométrico |
 | A03 | Alta | Espesor 18/largo horizontal 864 y espesor 36/largo 828, ambos coherentes, generan descriptor/texto/huella idénticos | `semantic/descriptor.py`, contratos; repro geométrico. El espesor ni su ausencia están representados |
 | A04 | Alta | Abrir fixture montada → Alzado: desaparecen líneas interiores. Encajar no ajusta la vista seleccionada | `frontend/core/drawing.js:33`, `frontend/app.js:125`; captura y DOM real |
 | A05 | Media | Guardar biblioteca → abrir Traza: falta el evento que sí aparece en SSE; recargar lo recupera | `frontend/app.js:449`; 6 eventos UI frente a 7 API |

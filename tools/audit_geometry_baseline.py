@@ -5,7 +5,7 @@ from pathlib import Path
 
 import ezdxf
 
-from backend.app.contratos.modelos import Result
+from backend.app.contratos.modelos import Result, ReviewRequest
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.extraction import derive_rectangular_hypotheses
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
@@ -112,12 +112,19 @@ dimension = next(entity for entity in doc.modelspace() if entity.dxftype() == "D
 print("dimlfac virtual text", [(e.dxftype(), e.dxf.text) for e in dimension.virtual_entities() if e.dxftype() in {"TEXT", "MTEXT"}])
 
 base = reviewed_result()
-payload = deepcopy(base.model_dump(mode="json"))
-for piece in payload["pieces"]:
-    piece["thickness_mm"] = 36.0
-    if piece["role"] in {"top_panel", "base_panel", "shelf"}:
-        piece["length_mm"] = 828.0
-thick = Result.model_validate(payload)
+thick = DemoRepository(OUT / "descriptor.sqlite3").review(
+    base.run_id,
+    ReviewRequest(
+        base_result_revision=base.result_revision,
+        reviewer_name="Agente auditor",
+        scenario_id="scenario-between-sides",
+        confirmed_thickness_mm=36,
+        material="Tablero",
+        finish="Melamina",
+        notes="Segunda revisión real para auditar dependencia del espesor.",
+    ),
+)
+print("36mm reviewed lengths", [(piece.role, piece.length_mm) for piece in thick.pieces])
 print("36mm scene", reconstruct_scene(extract_drawing(ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"), thick).state)
 material_payload = deepcopy(base.model_dump(mode="json"))
 for piece in material_payload["pieces"]:
@@ -127,4 +134,3 @@ for label, value in (("18mm", base), ("36mm", thick), ("material-acero", materia
     descriptor = build_descriptor(value)
     print(label, descriptor.model_dump(mode="json"))
     print(label, descriptor_fingerprint(descriptor), semantic_text(descriptor))
-

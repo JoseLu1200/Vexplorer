@@ -905,7 +905,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "severity": "critical",
                     "check": "audit_runner",
-                    "observed": f"{type(exc).__name__}: {exc}",
+                    "observed": type(exc).__name__,
                 }
             ],
         }

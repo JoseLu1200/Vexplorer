@@ -1,0 +1,201 @@
+{
+  "audit_schema": "vexplorer-browser-observations-1",
+  "baseline": "dab7ce5",
+  "local_date": "2026-11-14",
+  "source": "Observed Chrome actions and evaluate_script outputs, transcribed into this artifact. This is not an automated browser test suite.",
+  "base_url": "http://127.0.0.1:8767",
+  "run_id": "run-bbd9cded5fd94648866c0814478b4f3d",
+  "observations": [
+    {
+      "id": "B01",
+      "action": "Upload actual DXF bytes through file input and click Abrir",
+      "status": "PASS",
+      "file_bytes": 53918,
+      "proposal_rows": 4,
+      "physical_quantity_sum": 6,
+      "observed_dimension_texts": [
+        "900 mm",
+        "1200 mm",
+        "300 mm",
+        "18 mm"
+      ],
+      "thickness_before_review": null
+    },
+    {
+      "id": "B02",
+      "action": "Select Tapa row",
+      "status": "PASS",
+      "selected_contours": 3,
+      "inspector_title": "Tapa",
+      "formula_text": "overall_width_minus_two_thickness",
+      "unknown_fields": [
+        "finish",
+        "length",
+        "material",
+        "thickness"
+      ]
+    },
+    {
+      "id": "B03",
+      "action": "Todas -> Alzado",
+      "status": "FAIL",
+      "visible_paths_after": 1,
+      "viewbox_before": "-3001.971834220138 -1568.7254901960785 7383.943668440276 2402.450980392157",
+      "viewbox_after": "-3001.971834220138 -1568.7254901960785 7383.943668440276 2402.450980392157",
+      "screenshot": "browser-front-missing-lines.png"
+    },
+    {
+      "id": "B04",
+      "action": "Register synthetic test review with thickness 18 and between-sides",
+      "status": "PASS",
+      "revision": 2,
+      "horizontal_length_mm": 864,
+      "scene_canvas": {
+        "width": 1198,
+        "height": 390
+      },
+      "scene_warning": "Colisiones no evaluadas.",
+      "scope": "Render observed; orbit and raycaster picking not exhaustively exercised."
+    },
+    {
+      "id": "B05",
+      "action": "Estimate incompatible finish; then review with exact synthetic tariff and estimate",
+      "status": "PASS",
+      "rejected_ui_message": "No hay evidencia suficiente para estimar.",
+      "accepted_revision": 3,
+      "setup_eur": 40,
+      "material_eur": 87.84,
+      "total_eur": 127.84,
+      "hours": null
+    },
+    {
+      "id": "B06",
+      "action": "Save browser revision with real semantic mode, search and group",
+      "status": "PASS",
+      "mode": "semantic",
+      "threshold": 0.7,
+      "group_id": "group-semantic-d36b084fd72fccb4",
+      "member_run_ids": [
+        "run-b54839cb25c747a6970276e809d4e9dc",
+        "run-bbd9cded5fd94648866c0814478b4f3d",
+        "run-d931eb59736c4ae0b1dd7500d06b35ad",
+        "run-dd88042c3ab34a7699c7089dc12e4556"
+      ],
+      "search_scores_displayed": [
+        "1.000",
+        "1.000",
+        "0.999"
+      ],
+      "scope": "Four entries all embedded at time of observation, before API audit added offline entries. live.json separately covers only three scripted cases."
+    },
+    {
+      "id": "B07",
+      "action": "Open trace after saving library; compare actual SSE endpoint",
+      "status": "FAIL",
+      "ui_count": 6,
+      "api_count": 7,
+      "missing_ui_event": "library_item_saved",
+      "after_reload_count": 7
+    },
+    {
+      "id": "B08",
+      "action": "Click JSON/CSV/trace export, inspect generated Blob without suppressing original download",
+      "status": "PASS",
+      "json_bytes": 37002,
+      "json_result_revision": 3,
+      "json_keys": [
+        "schema_version",
+        "result_revision",
+        "result",
+        "scene",
+        "explanations",
+        "descriptor",
+        "library_item",
+        "comparables",
+        "estimate",
+        "events"
+      ],
+      "csv_bytes": 902,
+      "csv_lines": 5,
+      "trace_bytes": 2200,
+      "trace_events": 7,
+      "disk_download_location_verified": false
+    },
+    {
+      "id": "B09",
+      "action": "Upload units-unknown fixture",
+      "status": "PASS",
+      "url_after": "http://127.0.0.1:8767/",
+      "message": "Las vistas no respaldan escenarios rectangulares coherentes.",
+      "unit": "Unidad sin resolver",
+      "svg_visible": true,
+      "paths": 11,
+      "dimension_labels": [
+        "900 source-unit",
+        "1200 source-unit",
+        "300 source-unit",
+        "18 source-unit"
+      ],
+      "pieces": 0
+    },
+    {
+      "id": "B10",
+      "action": "Resize narrow browser and measure actual CSS viewport",
+      "status": "FAIL",
+      "viewport_css": {
+        "width": 501,
+        "height": 575
+      },
+      "body_scroll_width": 619,
+      "open_button_rect": {
+        "left": 531.9930419921875,
+        "right": 589.4722099304199
+      },
+      "screenshot": "browser-overflow.png",
+      "note": "Tool requested 390x844 but actual CSS viewport differs; only measured size claimed."
+    },
+    {
+      "id": "B11",
+      "action": "Reload reviewed run",
+      "status": "PASS",
+      "revision": 3,
+      "total_displayed": "127,84 €",
+      "trace_events": 7
+    },
+    {
+      "id": "B12",
+      "action": "Read live-run UI trace",
+      "status": "PASS",
+      "run_id": "run-23303f6ef7c8412c81cca2f70eb2c157",
+      "mode_label": "Ejecución: agente en vivo",
+      "tool_sequence": [
+        "inspeccionar_evidencia",
+        "explicar_pieza",
+        "explicar_pieza",
+        "entregar_despiece"
+      ],
+      "selected_candidate": "scenario-cap-sides",
+      "revision": 1
+    },
+    {
+      "id": "B13",
+      "action": "Open CAD original",
+      "status": "PASS",
+      "image_loaded": true,
+      "natural_width": 6125
+    },
+    {
+      "id": "B14",
+      "action": "Disable dimensions layer; click zoom-in",
+      "status": "PASS",
+      "visible_dimension_elements_disabled": 0,
+      "zoomed_viewbox": "-2263.5774673761107 -1328.4803921568628 5907.154934752221 1921.9607843137255"
+    }
+  ],
+  "limitations": [
+    "No independent industrial reviewer",
+    "No exhaustively validated browser keyboard accessibility or delayed-response races",
+    "No universal furniture recognition",
+    "Only public synthetic fixtures"
+  ]
+}
