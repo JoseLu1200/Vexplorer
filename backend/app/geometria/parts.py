@@ -363,6 +363,29 @@ def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[Assembl
                 else side_length + 2 * common_thickness
                 if side_length is not None and common_thickness is not None else None
             )
+            horizontal_constraint_operands = (
+                (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+                (f"{shelf.id}.dimensions.length", shelf.dimensions.length),
+            ) if layout == "between_sides" else (
+                (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+                (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
+                (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
+                (f"{shelf.id}.dimensions.length", shelf.dimensions.length),
+            )
+            width_operands = (
+                (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+                (f"{side.id}.dimensions.thickness", side.dimensions.thickness),
+                (f"{side.id}.dimensions.thickness", side.dimensions.thickness),
+            ) if layout == "between_sides" else (
+                (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
+            )
+            height_operands = (
+                (f"{side.id}.dimensions.length", side.dimensions.length),
+            ) if layout == "between_sides" else (
+                (f"{side.id}.dimensions.length", side.dimensions.length),
+                (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
+                (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
+            )
             constraints = (
                 constraint(candidate_id, "depth", "equal_dimensions", "equal", "width", tuple(
                     (f"{item.id}.dimensions.width", item.dimensions.width) for item in (side, horizontal, shelf)
@@ -370,18 +393,9 @@ def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[Assembl
                 constraint(candidate_id, "thickness", "equal_dimensions", "equal", "thickness", tuple(
                     (f"{item.id}.dimensions.thickness", item.dimensions.thickness) for item in (side, horizontal, shelf)
                 ), common_thickness),
-                constraint(candidate_id, "horizontal", "role_compatibility", "compatibility", "length", (
-                    (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
-                    (f"{shelf.id}.dimensions.length", shelf.dimensions.length),
-                ), compatible_horizontal),
-                constraint(candidate_id, "assembled-width", "exterior_from_parts", "sum" if layout == "between_sides" else "equal", "assembled_width", (
-                    (f"{horizontal.id}.dimensions.length", horizontal.dimensions.length),
-                    (f"{side.id}.dimensions.thickness", side.dimensions.thickness),
-                ), exterior_width),
-                constraint(candidate_id, "assembled-height", "exterior_from_parts", "equal" if layout == "between_sides" else "sum", "assembled_height", (
-                    (f"{side.id}.dimensions.length", side.dimensions.length),
-                    (f"{horizontal.id}.dimensions.thickness", horizontal.dimensions.thickness),
-                ), exterior_height),
+                constraint(candidate_id, "horizontal", "role_compatibility", "equal" if layout == "between_sides" else "difference", "length", horizontal_constraint_operands, compatible_horizontal),
+                constraint(candidate_id, "assembled-width", "exterior_from_parts", "sum" if layout == "between_sides" else "equal", "assembled_width", width_operands, exterior_width),
+                constraint(candidate_id, "assembled-height", "exterior_from_parts", "equal" if layout == "between_sides" else "sum", "assembled_height", height_operands, exterior_height),
             )
             width_constraint = next(item for item in constraints if item.dimension == "assembled_width")
             height_constraint = next(item for item in constraints if item.dimension == "assembled_height")

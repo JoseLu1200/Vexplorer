@@ -178,6 +178,10 @@ def test_complete_types_preserve_only_dimensionally_compatible_role_hypotheses()
     assert all({use.part_observation_id for use in item.uses} == {part.id for part in parts.observations} for item in candidates)
     assert all(sum(use.allocated_quantity or 0 for use in item.uses) == 6 for item in candidates)
     assert all({dimension.axis for dimension in item.derived_dimensions} == {"width", "height", "depth"} for item in candidates)
+    assert all(
+        len(next(constraint for constraint in item.constraints if constraint.dimension == "assembled_width").operand_refs) == 3
+        for item in candidates
+    )
     split_candidates = [
         item for item in candidates
         if any(use.part_observation_id == "part-observation-k2" and use.role == "top_panel" for use in item.uses)
