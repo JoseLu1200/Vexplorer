@@ -6,6 +6,7 @@ import { buildAssemblyReviewPayload } from "../core/review.js";
 
 const snapshot = {
   result_revision: 1,
+  agent_selected_scenario_id: "assembly-between",
   result: {
     input_semantics: "separated_part_views",
     part_analysis: {
@@ -32,7 +33,7 @@ const snapshot = {
       layout: "between_sides", layout_status: "hypothesis", state: "hypothesis", needs_review: true,
       uses: [{ id: "use-shelves", part_observation_id: "part-obs-A", role: "shelf", role_status: "hypothesis", source_quantity: null, allocated_quantity: null, occurrence_indices: [], quantity_source: "unknown", evidence_ids: ["ev-a"] }],
       unassigned_part_observation_ids: [], constraints: [], derived_dimensions: [], unknown_fields: ["quantity", "thickness"],
-      assumptions: ["Montaje por confirmar"], evidence_ids: ["ev-a"],
+      assumptions: ["Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics."], evidence_ids: ["ev-a"],
     }],
   },
 };
@@ -53,11 +54,14 @@ test("part selection exposes only its explicitly associated views", () => {
 });
 
 test("assembly candidates remain hypotheses with unknowns and premises visible", () => {
-  const candidate = normalisePartsWorkspace(snapshot).candidates[0];
+  const workspace = normalisePartsWorkspace(snapshot);
+  const candidate = workspace.candidates[0];
+  assert.equal(workspace.suggestedCandidateId, "assembly-between");
   assert.equal(candidate.familyState, "hypothesis");
   assert.equal(candidate.layoutState, "hypothesis");
   assert.deepEqual(candidate.unknownFields, ["quantity", "thickness"]);
-  assert.deepEqual(candidate.assumptions, ["Montaje por confirmar"]);
+  assert.deepEqual(candidate.assumptions, ["La asignación de roles es una hipótesis dimensional; las claves de pieza no indican su función."]);
+  assert.equal(candidate.assignmentLabel, "Pieza A → Balda");
   assert.equal(candidate.uses[0].id, "use-shelves");
   assert.deepEqual(candidate.uses[0].sourceQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
   assert.deepEqual(candidate.uses[0].allocatedQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });

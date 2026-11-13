@@ -1,6 +1,18 @@
 const FAMILY_LABELS = { rectangular_shelving: "Estantería rectangular", unknown: "Familia desconocida" };
 const LAYOUT_LABELS = { between_sides: "Tapa y base entre laterales", cap_sides: "Tapa y base cubren laterales", unknown: "Montaje desconocido" };
 const FIELD_LABELS = { quantity: "Cantidad", length: "Largo", width: "Ancho", thickness: "Grosor", material: "Material", finish: "Acabado" };
+const ROLE_LABELS = { side_panel: "Lateral", shelf: "Balda", top_panel: "Tapa", base_panel: "Base", back_panel: "Trasera", door: "Puerta", divider: "Divisor", unknown: "Rol desconocido" };
+const ASSUMPTION_LABELS = {
+  "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.": "La asignación de roles es una hipótesis dimensional; las claves de pieza no indican su función.",
+  "Assembly layout is not observed and requires human review.": "La disposición de montaje no está observada y requiere revisión humana.",
+  "No back, hardware, material, or manufacturing detail is inferred.": "No se infieren trasera, herrajes, material ni detalles de fabricación.",
+  "Boxes are schematic reviewed panel occurrences, not manufacturing solids.": "Los volúmenes son ocurrencias esquemáticas revisadas, no sólidos de fabricación.",
+  "Shelf heights are schematic evenly spaced hypotheses because separate part views do not observe assembly levels.": "Las alturas de las baldas son hipótesis esquemáticas equidistantes: las vistas separadas no observan niveles de montaje.",
+  "Collision checking is not certified and remains not_evaluated.": "Las colisiones no están evaluadas ni certificadas.",
+  "No part solid is created before explicit assembly-candidate review.": "No se crea ningún sólido antes de revisar explícitamente el montaje.",
+};
+
+export function translateAssumption(value) { return ASSUMPTION_LABELS[value] ?? value; }
 
 function dimension(value = {}) {
   return { value: value.value_mm ?? null, state: value.state ?? "unknown", evidenceIds: [...(value.evidence_ids ?? [])], measurementIds: [...(value.measurement_ids ?? [])], viewIds: [...(value.view_ids ?? [])] };
@@ -18,10 +30,8 @@ export function normalisePartsWorkspace(snapshot = {}) {
     quantity: { value: item.quantity?.value ?? null, state: item.quantity?.state ?? "unknown", evidenceIds: [...(item.quantity?.evidence_ids ?? [])] },
     sourceEntityIds: [...(item.source_entity_ids ?? [])], evidenceIds: [...(item.evidence_ids ?? [])], warnings: [...(item.warnings ?? [])],
   }));
-  const candidates = (result.assembly_candidates ?? []).map((item) => ({
-    id: item.id, family: item.family, familyLabel: FAMILY_LABELS[item.family] ?? item.family, familyState: item.family_status,
-    layout: item.layout, layoutLabel: LAYOUT_LABELS[item.layout] ?? item.layout, layoutState: item.layout_status,
-    uses: (item.uses ?? []).map((use) => ({
+  const candidates = (result.assembly_candidates ?? []).map((item) => {
+    const uses = (item.uses ?? []).map((use) => ({
       id: use.id,
       partObservationId: use.part_observation_id,
       role: use.role,
@@ -29,11 +39,21 @@ export function normalisePartsWorkspace(snapshot = {}) {
       sourceQuantity: { value: use.source_quantity ?? null, state: use.quantity_source, evidenceIds: [...(use.evidence_ids ?? [])] },
       allocatedQuantity: { value: use.allocated_quantity ?? null, state: use.quantity_source, evidenceIds: [...(use.evidence_ids ?? [])] },
       occurrenceIndices: [...(use.occurrence_indices ?? [])],
-    })),
+    }));
+    const assignments = new Map();
+    uses.forEach((use) => {
+      const label = observations.find((observation) => observation.id === use.partObservationId)?.label ?? use.partObservationId;
+      assignments.set(label, [...(assignments.get(label) ?? []), ROLE_LABELS[use.role] ?? use.role]);
+    });
+    return ({
+    id: item.id, family: item.family, familyLabel: FAMILY_LABELS[item.family] ?? item.family, familyState: item.family_status,
+    layout: item.layout, layoutLabel: LAYOUT_LABELS[item.layout] ?? item.layout, layoutState: item.layout_status,
+    uses,
+    assignmentLabel: [...assignments].map(([label, roles]) => `${label} → ${[...new Set(roles)].join(" / ")}`).join(" · "),
     unassignedObservationIds: [...(item.unassigned_part_observation_ids ?? [])], constraints: [...(item.constraints ?? [])], derivedDimensions: [...(item.derived_dimensions ?? [])],
-    unknownFields: [...(item.unknown_fields ?? [])], assumptions: [...(item.assumptions ?? [])], evidenceIds: [...(item.evidence_ids ?? [])], state: item.state, needsReview: item.needs_review !== false,
-  }));
-  return { isPartsOnly: result.input_semantics === "separated_part_views" && Boolean(analysis), candidateRevision: analysis?.candidate_revision ?? null, observations, candidates, warnings: [...(analysis?.warnings ?? [])], selectedCandidateId: result.selected_assembly_candidate_id ?? null };
+    unknownFields: [...(item.unknown_fields ?? [])], assumptions: (item.assumptions ?? []).map(translateAssumption), evidenceIds: [...(item.evidence_ids ?? [])], state: item.state, needsReview: item.needs_review !== false,
+  });});
+  return { isPartsOnly: result.input_semantics === "separated_part_views" && Boolean(analysis), candidateRevision: analysis?.candidate_revision ?? null, observations, candidates, warnings: [...(analysis?.warnings ?? [])], selectedCandidateId: result.selected_assembly_candidate_id ?? null, suggestedCandidateId: snapshot.agent_selected_scenario_id ?? null };
 }
 
 export function partSelectionViewIds(workspace, selection) {

@@ -3,7 +3,7 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
-import { normalisePartsWorkspace, partSelectionViewIds, presentDescriptorV2 } from "./core/parts.js";
+import { normalisePartsWorkspace, partSelectionViewIds, presentDescriptorV2, translateAssumption } from "./core/parts.js";
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
@@ -42,6 +42,7 @@ function resetRunUi() {
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
   const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 7; cell.textContent = "Todavía no hay observaciones. El plano seguirá disponible aunque el análisis quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
   text($("#parts-summary"), "Sin observaciones"); text($("#classification-summary"), "Las hipótesis aparecerán después de analizar las piezas."); text($("#scene-context"), "2D fuente · sin montaje inferido");
+  toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren();
   text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
   $("#review-form").reset(); $("#review-submit").disabled = true; text($("#review-message"), "");
@@ -79,7 +80,7 @@ function renderDrawing() {
   const svg = $("#drawing-viewer"); svg.replaceChildren();
   const allPoints = model.pointsForViews(null).map(([x,y]) => [x,-y]);
   const rect = $("#cad-viewport").getBoundingClientRect();
-  state.fittedViewport = fitViewport(boundsForPoints(allPoints), rect.width || 900, rect.height || 520, 28);
+  state.fittedViewport = fitViewport(boundsForPoints(allPoints), rect.width || 900, rect.height || 520, model.fitPaddingForViews(null));
   state.viewport = { ...state.fittedViewport }; applyViewport();
   model.paths.forEach((path) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -130,7 +131,7 @@ function activateView(viewId, button) {
   const allowed=partId?partSelectionViewIds(state.partsWorkspace,partId):null;
   $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", viewId!=="all" && (allowed ? !allowed.has(node.dataset.viewId) : node.dataset.viewId!==viewId)));
   if (viewId === "3d") loadScene();
-  else if (!["original"].includes(viewId)) fitDrawing();
+  else { text($("#scene-context"),viewId==="original"?"CAD original · representación visual":"2D fuente · evidencia observada"); if (!["original"].includes(viewId)) fitDrawing(); }
 }
 
 function applyViewport() { if (state.viewport) { $("#drawing-viewer").setAttribute("viewBox", `${state.viewport.x} ${state.viewport.y} ${state.viewport.width} ${state.viewport.height}`); applySvgTextScale(); } }
@@ -141,13 +142,14 @@ function applySvgTextScale() {
   $$(".drawing-text,.dimension-text").forEach((node)=>{ node.style.fontSize=`${unitPerPixel*12}px`; node.style.strokeWidth=`${unitPerPixel*2.5}px`; });
 }
 function fitDrawing() {
+  if(state.activeView==="3d"){sceneViewer?.fit(); sceneViewer?.draw(); return;}
   if (!state.drawingModel) return;
   const partId=state.activeView.startsWith("part:")?state.activeView.slice(5):null;
   const viewIds=partId?partSelectionViewIds(state.partsWorkspace,partId):(state.activeView==="all"?null:new Set([state.activeView]));
   const points=state.drawingModel.pointsForViews(viewIds).map(([x,y])=>[x,-y]);
   if (!points.length) return;
   const rect=$("#cad-viewport").getBoundingClientRect();
-  state.viewport=fitViewport(boundsForPoints(points),rect.width||900,rect.height||520,28);
+  state.viewport=fitViewport(boundsForPoints(points),rect.width||900,rect.height||520,state.drawingModel.fitPaddingForViews(viewIds));
   if(state.activeView==="all")state.fittedViewport={...state.viewport};
   applyViewport();
 }
@@ -260,8 +262,9 @@ async function loadScene() {
     state.scene = raw;
     if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
-    const assumptions=(raw.assumptions??model.assumptions??[]).join(" · ");
-    text($("#scene-context"),`3D · revisión ${state.snapshot.result_revision} · ${assumptions||"colocación según candidato revisado"}`);
+    const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
+    text($("#scene-context"),`3D revisado · colocación ${assumptions.length?"esquemática":"según candidato"}`);
+    const premises=$("#scene-premises-list"); premises.replaceChildren(); assumptions.forEach((value)=>{const line=document.createElement("p"); line.textContent=value; premises.append(line);}); toggleHidden($("#scene-premises"),!assumptions.length);
     const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
   } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
@@ -270,6 +273,17 @@ async function loadScene() {
 const partStateLabel=(value)=>({observed:"Observado",unknown:"Desconocido",conflict:"Conflicto",ambiguous:"Ambigua",complete:"Completa",partial:"Parcial",hypothesis:"Hipótesis",human_confirmed:"Confirmado"})[value]??value;
 const roleLabel=(value)=>({side_panel:"Lateral",shelf:"Balda",top_panel:"Tapa",base_panel:"Base",back_panel:"Trasera",door:"Puerta",divider:"Divisor",unknown:"Rol desconocido"})[value]??value;
 const unknownFieldLabel=(value)=>({quantity:"cantidad",length:"largo",length_mm:"largo",width:"ancho",width_mm:"ancho",thickness:"grosor",thickness_mm:"grosor",material:"material",finish:"acabado",family:"familia",layout:"montaje"})[value]??value;
+
+function renderDerivedDimensions(candidate, root) {
+  const axisLabel={width:"Ancho",height:"Alto",depth:"Fondo"};
+  const resolveOperand=(reference)=>{const match=String(reference).match(/^(.+)\.dimensions\.(length|width|thickness)$/); if(!match)return null; return state.partsWorkspace.observations.find((item)=>item.id===match[1])?.dimensions?.[match[2]]?.value??null;};
+  candidate.derivedDimensions.forEach((dimension)=>{
+    const constraint=candidate.constraints.find((item)=>item.id===dimension.constraint_id), refs=constraint?.operand_refs??dimension.operand_refs??[], values=refs.map(resolveOperand), known=values.length&&values.every(Number.isFinite);
+    const card=document.createElement("div"); card.className="derived-dimension"; const heading=document.createElement("b"); heading.textContent=`${axisLabel[dimension.axis]??dimension.axis}: ${formatMeasurement(dimension.value_mm,"mm")} · ${dimension.state==="derived"?"Calculado":partStateLabel(dimension.state)}`;
+    const explanation=document.createElement("code"); const symbol=constraint?.operation==="sum"?" + ":constraint?.operation==="difference"?" − ":" = "; explanation.textContent=known?`${values.map((value)=>formatMeasurement(value,"mm")).join(symbol)} = ${formatMeasurement(dimension.value_mm,"mm")}`:`Operación ${constraint?.operation??"documentada"} · ${refs.join(" · ")}`;
+    card.append(heading,explanation); root.append(card);
+  });
+}
 
 function renderPartDecisionFields(candidate) {
   const root=$("#part-decisions"); root.replaceChildren();
@@ -306,16 +320,16 @@ function renderSeparatedPartsAndReview() {
   if(!workspace.observations.length){ const row=document.createElement("tr"); row.className="empty-row"; const cell=document.createElement("td"); cell.colSpan=7; cell.textContent="No se observaron piezas. No se inventa un despiece."; row.append(cell); body.append(row); }
   text($("#scenario-status"),workspace.selectedCandidateId?"Montaje revisado":workspace.candidates.length?"Clasificación hipotética":"Sin hipótesis de montaje");
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Hipótesis de familia y montaje"; options.append(legend);
-  const selectedId=workspace.selectedCandidateId??state.snapshot.preview_assembly_candidate_id??workspace.candidates[0]?.id;
+  const selectedId=workspace.selectedCandidateId??state.snapshot.preview_assembly_candidate_id??workspace.suggestedCandidateId??workspace.candidates[0]?.id;
   workspace.candidates.forEach((candidate)=>{
     const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="assembly-candidate"; input.value=candidate.id; input.checked=candidate.id===selectedId;
     input.addEventListener("change",()=>{state.snapshot.preview_assembly_candidate_id=candidate.id; renderSeparatedPartsAndReview();});
-    const content=document.createElement("span"); const title=document.createElement("b"); title.textContent=`${candidate.familyLabel} · ${candidate.layoutLabel}`; const detail=document.createElement("small"); const unknown=candidate.unknownFields.length?`Desconocidos: ${candidate.unknownFields.map(unknownFieldLabel).join(", ")}`:"Sin campos desconocidos"; detail.textContent=`Hipótesis · ${candidate.assumptions.join(" · ")} · ${unknown}`; content.append(title,detail); label.append(input,content); options.append(label);
+    const content=document.createElement("span"); const title=document.createElement("b"); title.textContent=candidate.assignmentLabel||`${candidate.familyLabel} · ${candidate.layoutLabel}`; const detail=document.createElement("small"); const unknown=candidate.unknownFields.length?`Desconocidos: ${candidate.unknownFields.map(unknownFieldLabel).join(", ")}`:"Sin faltantes dimensionales o de cantidad"; detail.textContent=`${candidate.familyLabel} · ${candidate.layoutLabel} · Hipótesis · ${candidate.assumptions.join(" · ")} · ${unknown}`; content.append(title,detail); label.append(input,content); options.append(label);
   });
   if(!workspace.candidates.length)options.append(emptyParagraph("No hay una clasificación o montaje respaldado para revisar."));
   const selected=workspace.candidates.find((item)=>item.id===selectedId);
   const summary=$("#classification-summary"); summary.replaceChildren();
-  if(selected){ const title=document.createElement("b"); title.textContent=`${selected.familyLabel} · ${selected.layoutLabel}`; const status=document.createElement("p"); status.textContent="Clasificación y roles: hipótesis pendientes de decisión humana."; summary.append(title,status); selected.uses.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId); const line=document.createElement("p"); const source=use.sourceQuantity.value??"desconocida", allocated=use.allocatedQuantity.value??"desconocida", occurrences=use.occurrenceIndices.length?` · ocurrencias ${use.occurrenceIndices.join(", ")}`:""; line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · fuente ${source} · asignadas ${allocated}${occurrences} · ${partStateLabel(use.roleState)}`; summary.append(line);}); if(selected.unassignedObservationIds.length){const warning=document.createElement("p"); warning.className="unknown"; warning.textContent=`Sin asignar: ${selected.unassignedObservationIds.join(", ")}`; summary.append(warning);} }
+  if(selected){ const title=document.createElement("b"); title.textContent=`${selected.familyLabel} · ${selected.layoutLabel}`; const status=document.createElement("p"); const reviewed=workspace.selectedCandidateId===selected.id; status.textContent=reviewed?`Hipótesis seleccionada en revisión ${state.snapshot.result_revision}; reconstrucción condicionada a sus premisas.`:"Clasificación y roles: hipótesis pendientes de decisión humana."; summary.append(title,status); selected.uses.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId); const line=document.createElement("p"); const source=use.sourceQuantity.value??"desconocida", allocated=use.allocatedQuantity.value??"desconocida", occurrences=use.occurrenceIndices.length?` · ocurrencias ${use.occurrenceIndices.join(", ")}`:""; line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · fuente ${source} · asignadas ${allocated}${occurrences} · ${partStateLabel(use.roleState)}`; summary.append(line);}); renderDerivedDimensions(selected,summary); if(selected.unassignedObservationIds.length){const warning=document.createElement("p"); warning.className="unknown"; warning.textContent=`Sin asignar: ${selected.unassignedObservationIds.join(", ")}`; summary.append(warning);} }
   else summary.append(emptyParagraph("Las observaciones siguen disponibles sin clasificación de montaje."));
   renderPartDecisionFields(selected);
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.candidates.length;
@@ -444,6 +458,7 @@ async function loadRevisionContext() {
     $("#save-library").disabled = false; $("#find-similar").disabled = false;
   } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
   state.scene = null;
+  toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren(); text($("#scene-context"),"2D fuente · sin reconstrucción cargada");
   sceneViewer?.setScene({ state: "unavailable", objects: [], warnings: ["Esperando reconstrucción de la revisión actual."] });
 }
 
@@ -529,7 +544,7 @@ function setupWorkspaceControls() {
   $$('[data-panel]').forEach((button)=>button.addEventListener("click",()=>{ $$('[data-panel]').forEach((item)=>item.classList.toggle("is-active",item===button)); $$('[data-panel-content]').forEach((panel)=>panel.classList.toggle("is-active",panel.dataset.panelContent===button.dataset.panel)); }));
   ["entities","texts","dimensions"].forEach((name)=>$(`#toggle-${name}`).addEventListener("change",applyLayerVisibility));
   $("#fit-view").addEventListener("click",fitDrawing); $("#reset-view").addEventListener("click",fitDrawing);
-  const zoom=(factor)=>{ if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
+  const zoom=(factor)=>{ if(state.activeView==="3d"){sceneViewer?.zoom(factor); return;} if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
   $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
   const viewport=$("#cad-viewport"); let drag=null;
   new ResizeObserver(()=>applySvgTextScale()).observe(viewport);

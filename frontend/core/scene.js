@@ -26,3 +26,7 @@ export function normaliseScene(raw = {}) {
 export function sceneMeshCenter(item) {
   return item.position.map((value, index) => value + item.dimensions[index] / 2);
 }
+
+export function cameraZoomPosition(position, target, factor) {
+  return position.map((value, index) => target[index] + (value - target[index]) * factor);
+}

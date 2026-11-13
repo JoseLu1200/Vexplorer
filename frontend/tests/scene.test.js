@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normaliseScene, sceneMeshCenter } from "../core/scene.js";
+import { cameraZoomPosition, normaliseScene, sceneMeshCenter } from "../core/scene.js";
 
 test("scene refuses objects with incomplete dimensions instead of inventing geometry", () => {
   const scene = normaliseScene({ state: "incomplete", warnings: ["Falta grosor"], objects: [
@@ -30,4 +30,8 @@ test("parts-only scene preserves observation, placement state and assumptions", 
   assert.equal(scene.objects[0].placementStatus, "hypothesis");
   assert.deepEqual(scene.objects[0].placementConstraintIds, ["constraint-1"]);
   assert.deepEqual(scene.assumptions, ["Reconstrucción derivada"]);
+});
+
+test("3D toolbar zoom keeps the orbit target and moves the camera", () => {
+  assert.deepEqual(cameraZoomPosition([100, 50, 100], [20, 10, 20], .5), [60, 30, 60]);
 });

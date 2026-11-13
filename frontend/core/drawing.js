@@ -74,6 +74,15 @@ export function normaliseDrawing(extraction) {
       ...model.dimensions.filter((item) => allowed(item.viewId)).flatMap((item) => item.segments.flat()),
     ];
   };
+  model.fitPaddingForViews = (viewIds) => {
+    const allowed = (viewId) => !viewIds || viewIds.has(viewId);
+    const labels = [
+      ...model.texts.filter((item) => allowed(item.viewId)).map((item) => item.text),
+      ...model.dimensions.filter((item) => allowed(item.viewId)).map((item) => item.label),
+    ];
+    const longest = labels.reduce((length, label) => Math.max(length, String(label ?? "").length), 0);
+    return Math.min(180, Math.max(28, longest * 8 + 16));
+  };
   return model;
 }
 
