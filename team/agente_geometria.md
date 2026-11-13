@@ -17,6 +17,7 @@
 
 - Puedo editar: `backend/app/ingesta/`, `backend/app/geometria/`, `backend/tests/test_geometry.py`, `tools/prepare_evaluation.py`, `tests/test_prepare_evaluation.py` y este archivo.
 - La ampliación para los dos archivos del preparador fue autorizada explícitamente el 2026-11-13; ningún otro agente los edita durante esta tarea.
+- Transferencia puntual autorizada tras revisión Astra: también `backend/app/servicios/decomposition.py` y la prueba nueva `backend/tests/test_decomposition_geometry.py`; B fue informado para no solapar.
 - Solo leeré: contratos, API, frontend, fixture público de evaluación y documentación.
 - `backend/app/contratos/` pertenece exclusivamente al agente B.
 - Solapes detectados: ninguno; la interfaz con B debe acordarse antes de implementación contractual.
@@ -32,6 +33,7 @@
 - Verificados ambos DXF públicos de D sin abrir `evaluation/reference/**`: tres vistas y tres contornos; la variante incompleta expone una cota menos, sin completar el dato.
 - Endurecida la honestidad: cotas angulares quedan fuera con warning; override textual o escala conflictiva conserva warning y `value_mm=null`; trapecios no producen hipótesis rectangulares; límite de 100.000 entidades se aplica antes del análisis.
 - Endurecido el preparador: metadata pública uniforme sin diagnóstico de respuesta, sidecar Bench Vise sujeto a ruta segura/manifiesto/hash y lecturas fuente verificadas contra un snapshot inmutable para detectar TOCTOU.
+- Corregido el servicio de descomposición: solo contornos cerrados con cuatro esquinas axis-aligned y evidencia fuente atraviesan el gate de estantería; cajas coherentes de trapecios se abstienen.
 
 ## Siguiente bloque
 
@@ -64,6 +66,8 @@
 | Preparador | `python -m pytest tests/test_prepare_evaluation.py -q` | 17 passed | Incluye ZIP público y tamper de bytes/ruta/manifiesto |
 | Suite tras preparador | `python -m pytest -q` | 39 passed | Baseline, geometría y demo permanecen verdes |
 | Auditoría corpus local | `python -m tools.prepare_evaluation --source ../../../engineering_dataset --audit-only` | 421 archivos, 65 casos, 93 rutas; manifiesto `60b45a…` | Solo auditoría; no se regeneró ni publicó corpus |
+| Gate de descomposición | `python -m pytest backend/tests/test_decomposition_geometry.py backend/tests/test_backend_flow.py -q` | 6 passed | Rechaza tres trapecios coherentes y mantiene W/D/H rectangular existente |
+| Suite tras gate | `python -m pytest -q` | 50 passed | Incluye backend integrado; creó `.vexplorer-data/` local no versionado |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 
 ## Bloqueos y cierre
