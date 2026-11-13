@@ -29,7 +29,7 @@ from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_scene
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
-from backend.app.similarity.service import geometric_groups, geometric_match, semantic_match
+from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
@@ -300,8 +300,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     @app.post("/api/v1/library/groups")
     def groups(request: GroupRequest):
         if request.mode == "semantic":
-            return _error(409, "semantic_embedding_missing", "La biblioteca no tiene embeddings semánticos compatibles.")
-        values = geometric_groups(repository.get_library_items(), request.threshold)
+            items = repository.get_library_items()
+            try:
+                vectors = {
+                    item.id: repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
+                    for item in items if item.embedding is not None
+                }
+                values = semantic_groups(items, vectors, request.threshold)
+            except KeyError:
+                return _error(409, "semantic_embedding_missing", "La biblioteca no tiene todos los embeddings semánticos requeridos.")
+            except (ValueError, EmbeddingProviderError) as exc:
+                code = str(exc)
+                return _error(409, code, "Los embeddings faltan, son inválidos o pertenecen a espacios incompatibles.")
+        else:
+            values = geometric_groups(repository.get_library_items(), request.threshold)
         return _ok([item.model_dump(mode="json") for item in values])
 
     @app.post("/api/v1/runs/{run_id}/estimate")
