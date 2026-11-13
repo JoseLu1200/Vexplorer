@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
@@ -21,6 +22,7 @@ from backend.app.geometria import extract_drawing
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
+from backend.app.servicios.explanations import explain_result
 from backend.app.servicios.repository import DemoRepository
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
@@ -75,6 +77,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
         (documents_dir / f"{document_id}.dxf").write_bytes(content)
         return _ok({"document_id": document_id, "original_filename": filename, "size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "source_kind": "uploaded"}, 201)
 
+    @app.get("/api/v1/documents/{document_id}/drawing")
+    def get_document_drawing(document_id: str):
+        if re.fullmatch(r"doc-[0-9a-f]{32}", document_id) is None:
+            return _error(422, "invalid_document_id", "Identificador de documento inválido.")
+        path = documents_dir / f"{document_id}.dxf"
+        if not path.is_file():
+            return _error(404, "document_not_found", "Documento inexistente.")
+        try:
+            extraction = extract_drawing(path)
+        except Exception as exc:
+            return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
+        return _ok(extraction.model_dump(mode="json"))
+
     @app.post("/api/v1/runs")
     def create_run(request: RunRequest):
         if request.mode == "recorded_replay":
@@ -116,6 +131,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None) -
         except KeyError:
             estimate = None
         return _ok({"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json"), "estimate": estimate})
+
+    @app.get("/api/v1/runs/{run_id}/revisions")
+    def get_revisions(run_id: str):
+        try:
+            values = repository.get_results(run_id)
+        except KeyError:
+            return _error(404, "run_not_found", "Ejecución inexistente.")
+        return _ok([item.model_dump(mode="json") for item in values])
+
+    @app.get("/api/v1/runs/{run_id}/explanations")
+    def get_explanations(run_id: str, result_revision: int = Query(..., gt=0)):
+        try:
+            result = repository.get_result(run_id, result_revision)
+            extraction = repository.get_extraction(run_id)
+        except KeyError:
+            return _error(404, "result_not_found", "Revisión inexistente.")
+        return _ok(explain_result(extraction, result).model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/ledger")
     @app.get("/api/v1/runs/{run_id}/drawing")
