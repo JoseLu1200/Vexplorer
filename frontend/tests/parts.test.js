@@ -30,7 +30,7 @@ const snapshot = {
     assembly_candidates: [{
       id: "assembly-between", family: "rectangular_shelving", family_status: "hypothesis",
       layout: "between_sides", layout_status: "hypothesis", state: "hypothesis", needs_review: true,
-      uses: [{ part_observation_id: "part-obs-A", role: "shelf", role_status: "hypothesis", quantity: null, quantity_source: "unknown", evidence_ids: ["ev-a"] }],
+      uses: [{ id: "use-shelves", part_observation_id: "part-obs-A", role: "shelf", role_status: "hypothesis", source_quantity: null, allocated_quantity: null, occurrence_indices: [], quantity_source: "unknown", evidence_ids: ["ev-a"] }],
       unassigned_part_observation_ids: [], constraints: [], derived_dimensions: [], unknown_fields: ["quantity", "thickness"],
       assumptions: ["Montaje por confirmar"], evidence_ids: ["ev-a"],
     }],
@@ -58,7 +58,20 @@ test("assembly candidates remain hypotheses with unknowns and premises visible",
   assert.equal(candidate.layoutState, "hypothesis");
   assert.deepEqual(candidate.unknownFields, ["quantity", "thickness"]);
   assert.deepEqual(candidate.assumptions, ["Montaje por confirmar"]);
-  assert.equal(candidate.uses[0].quantity.value, null);
+  assert.equal(candidate.uses[0].id, "use-shelves");
+  assert.deepEqual(candidate.uses[0].sourceQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
+  assert.deepEqual(candidate.uses[0].allocatedQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
+  assert.deepEqual(candidate.uses[0].occurrenceIndices, []);
+});
+
+test("assembly review decisions address use ids and preserve only human supplied values", () => {
+  assert.deepEqual(buildAssemblyReviewPayload(snapshot, {
+    assembly_candidate_id: "assembly-between", reviewer_name: "Ana", notes: "Cantidad confirmada en taller.",
+    decisions: [{ use_id: "use-shelves", role: "shelf", quantity: 2, length_mm: 900, width_mm: 300, thickness_mm: 18, notes: "Dos ocurrencias" }],
+  }), {
+    base_result_revision: 1, reviewer_name: "Ana", assembly_candidate_id: "assembly-between", notes: "Cantidad confirmada en taller.",
+    decisions: [{ proposal_id: "use-shelves", action: "confirm", role: "shelf", quantity: 2, length_mm: 900, width_mm: 300, thickness_mm: 18, material: null, finish: null, notes: "Dos ocurrencias" }],
+  });
 });
 
 test("assembly review selects a candidate without inventing thickness or quantities", () => {

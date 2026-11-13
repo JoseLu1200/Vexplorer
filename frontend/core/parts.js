@@ -21,7 +21,15 @@ export function normalisePartsWorkspace(snapshot = {}) {
   const candidates = (result.assembly_candidates ?? []).map((item) => ({
     id: item.id, family: item.family, familyLabel: FAMILY_LABELS[item.family] ?? item.family, familyState: item.family_status,
     layout: item.layout, layoutLabel: LAYOUT_LABELS[item.layout] ?? item.layout, layoutState: item.layout_status,
-    uses: (item.uses ?? []).map((use) => ({ partObservationId: use.part_observation_id, role: use.role, roleState: use.role_status, quantity: { value: use.quantity ?? null, state: use.quantity_source, evidenceIds: [...(use.evidence_ids ?? [])] } })),
+    uses: (item.uses ?? []).map((use) => ({
+      id: use.id,
+      partObservationId: use.part_observation_id,
+      role: use.role,
+      roleState: use.role_status,
+      sourceQuantity: { value: use.source_quantity ?? null, state: use.quantity_source, evidenceIds: [...(use.evidence_ids ?? [])] },
+      allocatedQuantity: { value: use.allocated_quantity ?? null, state: use.quantity_source, evidenceIds: [...(use.evidence_ids ?? [])] },
+      occurrenceIndices: [...(use.occurrence_indices ?? [])],
+    })),
     unassignedObservationIds: [...(item.unassigned_part_observation_ids ?? [])], constraints: [...(item.constraints ?? [])], derivedDimensions: [...(item.derived_dimensions ?? [])],
     unknownFields: [...(item.unknown_fields ?? [])], assumptions: [...(item.assumptions ?? [])], evidenceIds: [...(item.evidence_ids ?? [])], state: item.state, needsReview: item.needs_review !== false,
   }));

@@ -28,6 +28,7 @@ export function eventLabel(event) {
     provenance: "Procedencia registrada",
     human_review_committed: "Revisión humana registrada",
     estimate_committed: "Estimación guardada",
+    library_item_saved: "Revisión guardada en biblioteca",
   };
   return labels[event?.event_type] ?? "Actividad registrada";
 }

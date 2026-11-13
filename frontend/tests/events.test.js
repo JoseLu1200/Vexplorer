@@ -35,3 +35,7 @@ test("persisted SSE history includes human review and estimate events after run 
 test("event timestamp reads the canonical nested data field", () => {
   assert.equal(eventTimestamp({ data: { timestamp: "2026-11-13T22:45:00Z" } }), "2026-11-13T22:45:00Z");
 });
+
+test("library saves have a visible audit label", () => {
+  assert.equal(eventLabel({ event_type: "library_item_saved" }), "Revisión guardada en biblioteca");
+});

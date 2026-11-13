@@ -3,7 +3,8 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
-import { buildScenarioReviewPayload } from "./core/review.js";
+import { normalisePartsWorkspace, partSelectionViewIds, presentDescriptorV2 } from "./core/parts.js";
+import { buildAssemblyReviewPayload, buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
@@ -11,9 +12,10 @@ import { createRequestFence } from "./core/request-fence.js";
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
-const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), uploadFence=createRequestFence();
+const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
+const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
 
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
 function unlock(id) { $(`#${id}`)?.classList.remove("is-locked"); }
@@ -30,15 +32,16 @@ function resetEstimateUi() {
 }
 
 function resetRunUi() {
-  runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate();
+  runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
   state.eventSource?.close();
-  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() });
+  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
   text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#run-mode-label"), "Sin ejecución");
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
-  const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 6; cell.textContent = "Todavía no hay propuestas. El plano seguirá disponible aunque el despiece quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
+  const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 7; cell.textContent = "Todavía no hay observaciones. El plano seguirá disponible aunque el análisis quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
+  text($("#parts-summary"), "Sin observaciones"); text($("#classification-summary"), "Las hipótesis aparecerán después de analizar las piezas."); text($("#scene-context"), "2D fuente · sin montaje inferido");
   text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
   $("#review-form").reset(); $("#review-submit").disabled = true; text($("#review-message"), "");
@@ -74,7 +77,7 @@ function renderDrawing() {
   text($("#drawing-id"), model.drawingId ?? "Dibujo procesado");
   $("#drawing-empty").hidden = model.paths.length > 0;
   const svg = $("#drawing-viewer"); svg.replaceChildren();
-  const allPoints = [...model.paths.flatMap((path) => path.points), ...model.texts.map((item) => item.position), ...model.dimensions.flatMap((item) => item.segments.flat())].map(([x,y]) => [x,-y]);
+  const allPoints = model.pointsForViews(null).map(([x,y]) => [x,-y]);
   const rect = $("#cad-viewport").getBoundingClientRect();
   state.fittedViewport = fitViewport(boundsForPoints(allPoints), rect.width || 900, rect.height || 520, 28);
   state.viewport = { ...state.fittedViewport }; applyViewport();
@@ -98,13 +101,14 @@ function renderDrawing() {
   model.texts.forEach((item) => { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", item.position[0]); label.setAttribute("y", -item.position[1]); label.setAttribute("class", "drawing-text layer-texts"); label.dataset.viewId = item.viewId ?? ""; label.textContent = item.text; svg.append(label); });
   const tabs = $("#view-tabs");
   tabs.replaceChildren();
-  const all = document.createElement("button"); all.type = "button"; all.className = "view-tab"; all.dataset.view = "all"; all.setAttribute("aria-selected", "true"); all.textContent = "Todas"; all.addEventListener("click", () => activateView("all", all)); tabs.append(all);
-  (model.views ?? []).forEach((view) => {
+  const all = document.createElement("button"); all.type = "button"; all.className = "view-tab"; all.dataset.view = "all"; all.setAttribute("aria-selected", "true"); all.textContent = state.partsWorkspace?.isPartsOnly ? "Todas las piezas" : "Todas"; all.addEventListener("click", () => activateView("all", all)); tabs.append(all);
+  const viewTabs = state.partsWorkspace?.isPartsOnly ? state.partsWorkspace.observations.map((observation) => ({ id: `part:${observation.id}`, label: `${observation.label} · ${observation.viewIds.length} ${observation.viewIds.length === 1 ? "vista" : "vistas"}`, observation })) : (model.views ?? []);
+  viewTabs.forEach((view) => {
     const button = document.createElement("button");
     button.type = "button"; button.className = "view-tab"; button.role = "tab";
     button.setAttribute("aria-selected", "false");
-    button.textContent = ({ FRONT: "Alzado", TOP: "Planta", SIDE: "Lateral", UNKNOWN: "Sin orientar" })[view.label] ?? view.label;
-    button.addEventListener("click", () => activateView(view.id, button));
+    button.textContent = view.observation ? view.label : (({ FRONT: "Alzado", TOP: "Planta", SIDE: "Lateral", UNKNOWN: "Sin orientar" })[view.label] ?? view.label);
+    button.addEventListener("click", () => { activateView(view.id, button); if (view.observation) selectPartObservation(view.observation); });
     tabs.append(button);
   });
   if (state.documentId) { const original = document.createElement("button"); original.type="button"; original.className="view-tab"; original.textContent="CAD original"; original.setAttribute("aria-selected","false"); original.addEventListener("click",()=>activateView("original",original)); tabs.append(original); }
@@ -122,7 +126,9 @@ function activateView(viewId, button) {
   toggleHidden($("#original-view"), viewId !== "original");
   toggleHidden($("#scene-viewer"), viewId !== "3d");
   toggleHidden($("#explode-control"), viewId !== "3d");
-  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", !["all", node.dataset.viewId].includes(viewId)));
+  const partId=viewId.startsWith("part:")?viewId.slice(5):null;
+  const allowed=partId?partSelectionViewIds(state.partsWorkspace,partId):null;
+  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", viewId!=="all" && (allowed ? !allowed.has(node.dataset.viewId) : node.dataset.viewId!==viewId)));
   if (viewId === "3d") loadScene();
   else if (!["original"].includes(viewId)) fitDrawing();
 }
@@ -134,10 +140,25 @@ function applySvgTextScale() {
   const unitPerPixel=svgUnitPerPixel(state.viewport,rect.width,rect.height);
   $$(".drawing-text,.dimension-text").forEach((node)=>{ node.style.fontSize=`${unitPerPixel*12}px`; node.style.strokeWidth=`${unitPerPixel*2.5}px`; });
 }
-function fitDrawing() { if (state.fittedViewport) { state.viewport = { ...state.fittedViewport }; applyViewport(); } }
+function fitDrawing() {
+  if (!state.drawingModel) return;
+  const partId=state.activeView.startsWith("part:")?state.activeView.slice(5):null;
+  const viewIds=partId?partSelectionViewIds(state.partsWorkspace,partId):(state.activeView==="all"?null:new Set([state.activeView]));
+  const points=state.drawingModel.pointsForViews(viewIds).map(([x,y])=>[x,-y]);
+  if (!points.length) return;
+  const rect=$("#cad-viewport").getBoundingClientRect();
+  state.viewport=fitViewport(boundsForPoints(points),rect.width||900,rect.height||520,28);
+  if(state.activeView==="all")state.fittedViewport={...state.viewport};
+  applyViewport();
+}
 function applyLayerVisibility() { [["entities","#toggle-entities"],["texts","#toggle-texts"],["dimensions","#toggle-dimensions"]].forEach(([name,id]) => $$(`.layer-${name}`).forEach((node)=>node.classList.toggle("is-layer-hidden", !$(id).checked))); }
 
 function selectContour(contourId) {
+  if(state.partsWorkspace?.isPartsOnly){
+    const path=state.drawingModel?.paths.find((item)=>item.id===contourId);
+    const observation=state.partsWorkspace.observations.find((item)=>item.views.some((view)=>view.contourIds.includes(contourId))||path?.entityIds.some((id)=>item.sourceEntityIds.includes(id)));
+    if(observation)return selectPartObservation(observation);
+  }
   const { components } = extractComponents();
   const component = components.find((item) => (item.source_contour_ids ?? item.contour_ids ?? []).includes(contourId));
   if (component) return selectComponent(component);
@@ -151,6 +172,35 @@ function selectComponent(component) {
   applySelection();
   renderEvidence(component);
   sceneViewer?.select(component.id);
+}
+
+function selectPartObservation(observation) {
+  const contourIds=new Set(observation.views.flatMap((view)=>view.contourIds));
+  state.selected={ componentId:observation.id, contourIds, evidenceIds:new Set(observation.evidenceIds), entityIds:new Set(observation.sourceEntityIds) };
+  applySelection();
+  renderPartEvidence(observation);
+}
+
+function renderPartEvidence(observation) {
+  text($("#evidence-title"), observation.label);
+  const summary=$("#piece-summary"); summary.replaceChildren();
+  const dimensionLabel=(name)=>({length:"Largo",width:"Ancho",thickness:"Grosor"})[name];
+  Object.entries(observation.dimensions).forEach(([name,dimension])=>{
+    const line=document.createElement("p"); line.textContent=`${dimensionLabel(name)}: ${dimension.value==null?"Desconocido":formatMeasurement(dimension.value,"mm")} · ${sourceLabel(dimension.state)}`; summary.append(line);
+  });
+  const quantity=document.createElement("p"); quantity.textContent=`Cantidad: ${observation.quantity.value??"Desconocida"} · ${sourceLabel(observation.quantity.state)}`; summary.append(quantity);
+  const views=document.createElement("p"); views.textContent=`Vistas asociadas: ${observation.views.map((view)=>({FRONT:"Alzado",TOP:"Planta",SIDE:"Lateral",UNKNOWN:"Sin orientar"})[view.role]??view.role).join(" · ")}`; summary.append(views);
+  const root=$("#evidence-detail"); root.replaceChildren();
+  const basis=document.createElement("div"); basis.className="detail-item"; const title=document.createElement("b"); title.textContent="Asociación de vistas"; const detail=document.createElement("span"); detail.textContent=observation.associationBasis==="explicit_key"?"Clave PART explícita del plano":observation.associationBasis==="ambiguous"?"Asociación ambigua conservada":"Vista sin asociación; no se agrupó por proximidad"; basis.append(title,detail); root.append(basis);
+  const evidence=(state.drawing?.evidence??state.ledger?.evidence??[]).filter((item)=>observation.evidenceIds.includes(item.id));
+  evidence.forEach((item)=>{const card=document.createElement("div"); card.className="detail-item"; const heading=document.createElement("b"); heading.textContent=({geometry:"Geometría de respaldo",annotation:"Anotación del plano",view_association:"Asociación de vista"})[item.kind]??"Evidencia vinculada"; const copy=document.createElement("span"); copy.textContent=item.description??item.kind??"Evidencia geométrica"; const id=document.createElement("code"); id.textContent=item.id; card.append(heading,copy,id); root.append(card);});
+  observation.warnings.forEach((warning)=>{ const card=document.createElement("div"); card.className="detail-item detail-item--warning"; const heading=document.createElement("b"); heading.textContent="Advertencia"; const copy=document.createElement("span"); copy.textContent=warning; card.append(heading,copy); root.append(card); });
+  if(!evidence.length&&!observation.warnings.length)root.append(emptyParagraph("Sin advertencias; la procedencia se conserva en los IDs de entidades y vistas."));
+  const explanationRoot=$("#explanation-detail"); explanationRoot.replaceChildren();
+  const note=document.createElement("p"); note.textContent="Esta ficha describe la pieza observada. Familia, rol y montaje se revisan aparte como hipótesis."; explanationRoot.append(note);
+  const explanations=state.explanations?.pieces??state.explanations?.items??[];
+  const explanation=explanations.find((item)=>item.part_observation_id===observation.id);
+  if(explanation){[explanation.summary,...(explanation.premises??[]),...(explanation.unknown_fields??[]).map((field)=>`Desconocido: ${unknownFieldLabel(field)}`)].filter(Boolean).forEach((value)=>{const line=document.createElement("p"); line.textContent=String(value); explanationRoot.append(line);});}
 }
 
 function applySelection() {
@@ -208,14 +258,75 @@ async function loadScene() {
     const raw = await api.getScene(state.runId, state.snapshot.result_revision);
     if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
     state.scene = raw;
-    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
+    const assumptions=(raw.assumptions??model.assumptions??[]).join(" · ");
+    text($("#scene-context"),`3D · revisión ${state.snapshot.result_revision} · ${assumptions||"colocación según candidato revisado"}`);
     const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
   } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
 }
 
+const partStateLabel=(value)=>({observed:"Observado",unknown:"Desconocido",conflict:"Conflicto",ambiguous:"Ambigua",complete:"Completa",partial:"Parcial",hypothesis:"Hipótesis",human_confirmed:"Confirmado"})[value]??value;
+const roleLabel=(value)=>({side_panel:"Lateral",shelf:"Balda",top_panel:"Tapa",base_panel:"Base",back_panel:"Trasera",door:"Puerta",divider:"Divisor",unknown:"Rol desconocido"})[value]??value;
+const unknownFieldLabel=(value)=>({quantity:"cantidad",length:"largo",length_mm:"largo",width:"ancho",width_mm:"ancho",thickness:"grosor",thickness_mm:"grosor",material:"material",finish:"acabado",family:"familia",layout:"montaje"})[value]??value;
+
+function renderPartDecisionFields(candidate) {
+  const root=$("#part-decisions"); root.replaceChildren();
+  const uncertain=candidate?.uses.filter((use)=>{const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId); return use.allocatedQuantity.value==null||Object.values(observation?.dimensions??{}).some((dimension)=>dimension.value==null);})??[];
+  if(!uncertain.length)return;
+  const heading=document.createElement("p"); heading.className="eyebrow"; heading.textContent="Datos que requieren confirmación"; root.append(heading);
+  uncertain.forEach((use)=>{
+    const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId);
+    const block=document.createElement("fieldset"); block.className="allocation-decision"; block.dataset.useId=use.id; block.dataset.role=use.role;
+    const legend=document.createElement("legend"); legend.textContent=`${observation?.label??"Pieza"} como ${roleLabel(use.role).toLowerCase()}`;
+    const numericField=(labelText,field,step)=>{const label=document.createElement("label"); label.textContent=labelText; const input=document.createElement("input"); input.type="number"; input.min=step; input.step=step; input.dataset.decisionField=field; label.append(input); return label;};
+    const fields=[];
+    if(use.allocatedQuantity.value==null)fields.push(numericField("Cantidad confirmada","quantity","1"));
+    if(observation?.dimensions.length.value==null)fields.push(numericField("Largo confirmado (mm)","length",".1"));
+    if(observation?.dimensions.width.value==null)fields.push(numericField("Ancho confirmado (mm)","width",".1"));
+    if(observation?.dimensions.thickness.value==null)fields.push(numericField("Grosor confirmado (mm)","thickness",".1"));
+    const note=document.createElement("small"); note.textContent="Déjalo vacío si no está comprobado; el sistema conservará el desconocido.";
+    block.append(legend,...fields,note); root.append(block);
+  });
+}
+
+function renderSeparatedPartsAndReview() {
+  const workspace=state.partsWorkspace, body=$("#parts-body"); body.replaceChildren();
+  $("#parts-head").innerHTML="<tr><th>Pieza</th><th>Asociación</th><th>Vistas</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th></tr>";
+  text($("#parts-summary"),`${workspace.observations.length} ${workspace.observations.length===1?"observación":"observaciones"} · varias vistas no aumentan la cantidad`);
+  workspace.observations.forEach((observation)=>{
+    const row=document.createElement("tr"); row.dataset.componentId=observation.id; row.tabIndex=0;
+    const association=observation.associationBasis==="explicit_key"?"Clave explícita":observation.associationBasis==="ambiguous"?"Ambigua":"Sin asociar";
+    const views=observation.views.map((view)=>({FRONT:"Alzado",TOP:"Planta",SIDE:"Lateral",UNKNOWN:"Sin orientar"})[view.role]??view.role).join(" · ");
+    const fields=[observation.label,association,views,observation.quantity,...Object.values(observation.dimensions)];
+    fields.forEach((field,index)=>{ const cell=document.createElement("td"); if(index<3)cell.textContent=field; else { const isQuantity=index===3; cell.textContent=field.value==null?(isQuantity?"Desconocida":"Desconocido"):(isQuantity?field.value:formatMeasurement(field.value,"mm")); const badge=document.createElement("small"); badge.className="cell-origin"; badge.dataset.origin=field.state==="observed"?"observed":field.state==="human_confirmed"?"human_confirmed":"hypothesis"; badge.textContent=partStateLabel(field.state); cell.append(badge); if(field.value==null)cell.classList.add("unknown"); } row.append(cell); });
+    row.addEventListener("click",()=>selectPartObservation(observation)); row.addEventListener("keydown",(event)=>{if(event.key==="Enter")selectPartObservation(observation);}); body.append(row);
+  });
+  if(!workspace.observations.length){ const row=document.createElement("tr"); row.className="empty-row"; const cell=document.createElement("td"); cell.colSpan=7; cell.textContent="No se observaron piezas. No se inventa un despiece."; row.append(cell); body.append(row); }
+  text($("#scenario-status"),workspace.selectedCandidateId?"Montaje revisado":workspace.candidates.length?"Clasificación hipotética":"Sin hipótesis de montaje");
+  const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Hipótesis de familia y montaje"; options.append(legend);
+  const selectedId=workspace.selectedCandidateId??state.snapshot.preview_assembly_candidate_id??workspace.candidates[0]?.id;
+  workspace.candidates.forEach((candidate)=>{
+    const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="assembly-candidate"; input.value=candidate.id; input.checked=candidate.id===selectedId;
+    input.addEventListener("change",()=>{state.snapshot.preview_assembly_candidate_id=candidate.id; renderSeparatedPartsAndReview();});
+    const content=document.createElement("span"); const title=document.createElement("b"); title.textContent=`${candidate.familyLabel} · ${candidate.layoutLabel}`; const detail=document.createElement("small"); const unknown=candidate.unknownFields.length?`Desconocidos: ${candidate.unknownFields.map(unknownFieldLabel).join(", ")}`:"Sin campos desconocidos"; detail.textContent=`Hipótesis · ${candidate.assumptions.join(" · ")} · ${unknown}`; content.append(title,detail); label.append(input,content); options.append(label);
+  });
+  if(!workspace.candidates.length)options.append(emptyParagraph("No hay una clasificación o montaje respaldado para revisar."));
+  const selected=workspace.candidates.find((item)=>item.id===selectedId);
+  const summary=$("#classification-summary"); summary.replaceChildren();
+  if(selected){ const title=document.createElement("b"); title.textContent=`${selected.familyLabel} · ${selected.layoutLabel}`; const status=document.createElement("p"); status.textContent="Clasificación y roles: hipótesis pendientes de decisión humana."; summary.append(title,status); selected.uses.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId); const line=document.createElement("p"); const qty=use.allocatedQuantity.value??"desconocida"; line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · cantidad asignada ${qty} · ${partStateLabel(use.roleState)}`; summary.append(line);}); if(selected.unassignedObservationIds.length){const warning=document.createElement("p"); warning.className="unknown"; warning.textContent=`Sin asignar: ${selected.unassignedObservationIds.join(", ")}`; summary.append(warning);} }
+  else summary.append(emptyParagraph("Las observaciones siguen disponibles sin clasificación de montaje."));
+  renderPartDecisionFields(selected);
+  toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.candidates.length;
+  text($("#input-kind-label"),"Entrada: piezas separadas"); text($("#revision-label"),Number.isInteger(state.snapshot?.result_revision)?`Revisión ${state.snapshot.result_revision}`:"Revisión pendiente");
+  unlock("parts-stage"); unlock("review-stage");
+}
+
 function renderPartsAndReview() {
+  if(state.partsWorkspace?.isPartsOnly)return renderSeparatedPartsAndReview();
+  $("#parts-head").innerHTML="<tr><th>Pieza</th><th>Origen</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th></tr>";
+  toggleHidden($("#legacy-review-fields"),false); $("#review-thickness").required=true; $("#part-decisions").replaceChildren(); text($("#input-kind-label"),"Entrada: vistas montadas legacy");
   const { scenarios, components } = extractComponents();
   const body = $("#parts-body"); body.replaceChildren();
   if (!components.length) {
@@ -280,7 +391,7 @@ function renderTrace() {
 function connectEvents(runId) {
   state.eventSource?.close(); state.eventLedger = createEventLedger(runId);
   const source = new EventSource(`/api/v1/runs/${encodeURIComponent(runId)}/events`); state.eventSource = source;
-  ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance","human_review_committed","estimate_committed"].forEach((type) => source.addEventListener(type, (message) => {
+  ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance","human_review_committed","estimate_committed","library_item_saved"].forEach((type) => source.addEventListener(type, (message) => {
     if (state.runId !== runId) return;
     try { const envelope = JSON.parse(message.data); if (state.eventLedger.append(envelope)) renderTrace(); if (type === "run_finished") refreshRun(); } catch { setMessage("La traza recibió un evento no válido.", true); }
   }));
@@ -301,6 +412,7 @@ async function refreshRun() {
   const snapshot=normaliseRunPayload(await api.getRun(requestedRun));
   if (!runFence.isCurrent(token,state.runId)) return;
   state.snapshot = snapshot;
+  state.partsWorkspace = normalisePartsWorkspace(snapshot);
   state.documentId = state.snapshot.document_id ?? state.snapshot.document?.document_id ?? state.documentId;
   if (state.documentId) $("#original-preview").src = api.documentPreviewUrl(state.documentId);
   const status = snapshotStatusPresentation(state.snapshot);
@@ -364,6 +476,7 @@ async function runUpload(event) {
   event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un archivo DXF.", true);
   if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un DXF más pequeño.", true);
   const mode = new FormData(event.currentTarget).get("mode");
+  const inputKind=new FormData(event.currentTarget).get("input_kind");
   let uploadToken;
   try {
     resetRunUi();
@@ -371,28 +484,34 @@ async function runUpload(event) {
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
     const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id;
     $("#original-preview").src = api.documentPreviewUrl(state.documentId);
-    state.drawing = await api.getDocumentDrawing(state.documentId); if(!uploadFence.isCurrent(uploadToken,file))return; renderDrawing();
+    state.drawing = await api.getDocumentDrawing(state.documentId,inputKind); if(!uploadFence.isCurrent(uploadToken,file))return; renderDrawing();
     setMessage("Plano disponible. Iniciando análisis…");
-    const runPayload = await api.createRun(state.documentId, mode); if(!uploadFence.isCurrent(uploadToken,file))return;
+    const runPayload = await api.createRun(state.documentId, mode, inputKind); if(!uploadFence.isCurrent(uploadToken,file))return;
     state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
     connectEvents(state.runId); await refreshRun();
   } catch (error) { if(uploadToken&&!uploadFence.isCurrent(uploadToken,file))return; setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
 
 async function submitReview(event) {
-  event.preventDefault(); const scenario = $("input[name='scenario']:checked"); if (!scenario) return;
+  event.preventDefault(); const parts=state.partsWorkspace?.isPartsOnly; const scenario = $(parts?"input[name='assembly-candidate']:checked":"input[name='scenario']:checked"); if (!scenario) return;
+  const identity=actionIdentity(), token=actionFence.issue(identity);
   try {
-    const payload = buildScenarioReviewPayload(state.snapshot, {
+    const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const value=(field)=>$("[data-decision-field='"+field+"']",block)?.value??""; const quantity=value("quantity"),length=value("length"),width=value("width"),thickness=value("thickness"); return quantity||length||width||thickness?[{use_id:block.dataset.useId,role:block.dataset.role,quantity,length_mm:length,width_mm:width,thickness_mm:thickness,material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}]:[];}):[];
+    const values = {
       scenario_id: scenario.value,
+      assembly_candidate_id: scenario.value,
       reviewer_name: $("#reviewer-name").value,
       confirmed_thickness_mm: $("#review-thickness").value,
       material: $("#review-material").value,
       finish: $("#review-finish").value,
       notes: $("#review-reason").value,
-    });
-    const result = await api.review(state.runId, payload); state.snapshot = { ...state.snapshot, ...result };
+      decisions,
+    };
+    const payload = parts?buildAssemblyReviewPayload(state.snapshot,values):buildScenarioReviewPayload(state.snapshot, values);
+    const result = await api.review(state.runId, payload); if(!actionFence.isCurrent(token,actionIdentity()))return; state.snapshot = { ...state.snapshot, ...result };
     text($("#review-message"), "Decisión registrada en una nueva revisión."); await refreshRun(); await refreshTraceHistory();
   } catch (error) {
+    if(!actionFence.isCurrent(token,actionIdentity()))return;
     text($("#review-message"), error.code === "stale_result_revision" ? "La revisión cambió. Se han recargado los datos antes de sobrescribir." : error.message);
     if (error.code === "stale_result_revision") await refreshRun();
   }
@@ -429,7 +548,7 @@ function renderLibraryResults(raw, mode) {
 
 function renderLibraryEntries(raw) {
   const items=raw.items??raw??[]; state.libraryItems=new Map(items.map((item)=>[item.id,item])); const root=$("#library-list"); root.replaceChildren();
-  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
+  items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); if(descriptor.descriptor_version==="furniture-v2"){const presented=presentDescriptorV2(descriptor); detail.textContent=`Revisión ${item.result_revision} · ${presented.familyLabel} · ${presented.structureLabel} · ${presented.thicknessLabel} · Clasificación ${presented.classificationLabel.toLowerCase()}${presented.unknownLabels.length?` · Desconocidos: ${presented.unknownLabels.join(", ")}`:""}`;} else detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
   if(!items.length)root.append(emptyParagraph("La biblioteca técnica está vacía."));
 }
 
@@ -438,17 +557,22 @@ function libraryRunLink(item) {
   const label=document.createElement("span"); label.textContent=item.label; const action=document.createElement("b"); action.textContent=`Abrir rev. ${item.result_revision}`; link.append(label,action); return link;
 }
 
+async function estimateCurrentRevision(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
+async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
+async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
+async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value); try{const result=await api.groupLibrary({mode,threshold}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
+
 async function boot() {
   setupWorkspaceControls();
   $("#upload-form").addEventListener("submit", runUpload); $("#review-form").addEventListener("submit", submitReview);
   $("#drawing-file").addEventListener("change", (event) => text($("#file-name"), event.target.files[0]?.name ?? "Ningún archivo seleccionado"));
   $("#trace-toggle").addEventListener("click", () => toggleTrace(true)); $("#trace-close").addEventListener("click", () => toggleTrace(false)); $("#scrim").addEventListener("click", () => toggleTrace(false));
-  $("#estimate-button").addEventListener("click", async () => { try { renderEstimate(await api.estimate(state.runId, { result_revision: state.snapshot?.result_revision })); await refreshTraceHistory(); } catch (error) { setMessage(error.message, true); } });
+  $("#estimate-button").addEventListener("click", estimateCurrentRevision);
   $$("[data-export]").forEach((button) => button.addEventListener("click", () => exportResult(button.dataset.export)));
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
-  $("#save-library").addEventListener("click",async()=>{ try { const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline"}); renderLibraryEntries(await api.getLibrary()); text($("#semantic-note"),"Revisión guardada en la biblioteca técnica."); } catch(error){ text($("#semantic-note"),error.message); } });
-  $("#find-similar").addEventListener("click",async()=>{ const mode=$("#similarity-mode").value; try { renderLibraryResults(await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6}),mode); } catch(error){ const root=$("#library-list"); root.replaceChildren(emptyParagraph(error.message)); } });
-  $("#group-library").addEventListener("click",async()=>{ const selected=$("#similarity-mode").value; const mode=selected==="semantic"?"semantic":"geometric", threshold=Number($("#group-threshold").value); try { renderLibraryResults(await api.groupLibrary({mode,threshold}),mode); } catch(error){ $("#library-list").replaceChildren(emptyParagraph(error.message)); } });
+  $("#save-library").addEventListener("click",saveCurrentToLibrary);
+  $("#find-similar").addEventListener("click",findSimilarCurrent);
+  $("#group-library").addEventListener("click",groupCurrentLibrary);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
   const restoredRunId = restoreRunId(location, localStorage);
   if (restoredRunId) {

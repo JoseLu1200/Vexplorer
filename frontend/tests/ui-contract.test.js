@@ -1,0 +1,19 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+test("upload defaults explicitly to separated part views and keeps legacy opt-in", () => {
+  assert.match(html, /name="input_kind"/);
+  assert.match(html, /value="separated_part_views" selected/);
+  assert.match(html, /value="mounted_views_legacy"/);
+});
+
+test("technical workspace has dedicated parts, classification and scene premise regions", () => {
+  assert.match(html, /id="parts-summary"/);
+  assert.match(html, /id="classification-summary"/);
+  assert.match(html, /id="scene-context"/);
+  assert.match(html, /id="legacy-review-fields"/);
+  assert.match(html, /id="part-decisions"/);
+});
