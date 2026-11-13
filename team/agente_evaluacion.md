@@ -22,6 +22,8 @@
 - La gramática visible usa `PART <key> FRONT|TOP|SIDE` y `QTY <key> <n>`; FRONT=(L,W), TOP=(L,T), SIDE=(T,W). Un `QTY` suelto no se asocia.
 - Separada la nueva referencia de ensamblaje, roles y economía en `evaluation/reference/piezas_reference.json`; el generador no la importa ni la lee.
 - Neutralizado el manifiesto público tras detectar que sus propósitos describían faltas de evidencia; todos los casos comparten ahora una descripción genérica.
+- El control t36 conserva la misma envolvente derivable de 900 mm mediante horizontales de 828 mm; diferencia espesor sin confundirlo con un cambio exterior.
+- La referencia privada conserva ambigüedad de permutación de roles K2/K3, no reclama `cap_sides`: con dos horizontales de 864 mm esa disposición no es dimensionalmente compatible.
 - Creado fixture propio de estantería rectangular montada, en DXF R2010 y mm, con vistas `FRONT`, `TOP`, `RIGHT`, cotas generales y sin nombres de piezas/BOM.
 - Creada variante incompleta que elimina evidencia de espesor y exige conservarlo desconocido.
 - Separada la construcción revisada en `evaluation/reference/`, con dos escenarios plausibles y política que no reclama solución única.
@@ -73,6 +75,8 @@
 | Parts-only fixture + aislamiento | `python -m pytest tests/test_parts_only_evaluation.py tests/test_demo_isolation.py -q` | 17 pasan | API 0.4 todavía no integrada; solo contrato público de entrada y aislamiento |
 | Manifiesto neutral TDD | test focalizado antes/después de eliminar propósitos diagnósticos | 1 fallo esperado, después 1 pasa | Filenames de demo permanecen; no entran al modelo/descriptor |
 | Aceptación 0.4 TDD roja | `python -m pytest tests/test_parts_only_evaluation.py -q` | 15 pasan; 4 fallan porque la API 0.3 rechaza `input_kind` | Fallo esperado previo a integrar extractor/orquestación/API 0.4 |
+| Aceptación 0.4 contra backend candidato | desde rama B HEAD `81efa93`: parts-only | 19 pasan; 1 aviso deprecación | TestClient real; referencia privada bloqueada durante runtime |
+| Suite D contra backend candidato 0.4 | parts-only + fixtures/aislamiento/E2E/workbench legacy | 47 pasan; 1 aviso deprecación | Falta repetir sobre raíz integrada y HTTP real 8768 |
 
 ## Siguiente bloque
 
