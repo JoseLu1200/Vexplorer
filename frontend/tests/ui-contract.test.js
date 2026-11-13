@@ -3,11 +3,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
 test("upload defaults explicitly to separated part views and keeps legacy opt-in", () => {
   assert.match(html, /name="input_kind"/);
   assert.match(html, /value="separated_part_views" selected/);
   assert.match(html, /value="mounted_views_legacy"/);
+});
+
+test("responsive header never hides the active execution mode", () => {
+  assert.doesNotMatch(css, /\.session-meta span:not\(:last-child\)\{display:none\}/);
+  assert.match(css, /#run-mode-label\{display:inline-flex/);
 });
 
 test("technical workspace has dedicated parts, classification and scene premise regions", () => {
