@@ -11,11 +11,11 @@ Identidad: agente de IA frontend; no representa a una persona. Autorización: so
 
 ## Tarea actual
 
-Construir una interfaz JS/HTML local para la familia de estantería rectangular que permita cargar DXF, inspeccionar vistas 2D y evidencia, revisar propuestas, registrar una decisión humana de montaje ambiguo, consultar un histórico sintético pequeño, revisar una estimación provisional por conceptos y exportar ficha y traza.
+Ampliar la interfaz a un espacio CAD técnico compacto: vistas 2D con cotas dibujadas y herramientas de navegación, inspector pieza a evidencia, reconstrucción 3D local con Three.js y biblioteca de revisiones/similares con modo semántico real u offline geométrico explícito.
 
 ## Decisiones
 
-- Prioridad al plano 2D y a la trazabilidad; no se dedicará el recorrido principal a 3D.
+- Prioridad al plano 2D y a la trazabilidad; 3D es una vista técnica enlazada y nunca sustituye evidencia ausente.
 - Estética de cuaderno técnico industrial, con información densa pero jerarquía clara y alto contraste.
 - Las clases `observado`, `calculado`, `hipótesis` y `confirmado por una persona` se muestran separadas visual y semánticamente.
 - La selección se conserva por IDs estables de API, nunca por índice de tabla.
@@ -24,11 +24,12 @@ Construir una interfaz JS/HTML local para la familia de estantería rectangular 
 
 ## Estado
 
-Implementación completa e integrada por el coordinador en `demo/first-executable`. La UI consume el contrato canónico 0.2, muestra propuestas de los dos escenarios de montaje, registra la revisión humana, consulta comparables y presenta la estimación y exportaciones del backend.
+Nueva fase en curso sobre `demo/viewer-frontend`, base `56faba4`. Contratos de visor/reconstrucción y biblioteca/similitud solicitados a A/B antes de cablear consumidores.
 
 ## Dependencias / avisos
 
 - Contrato 0.2 acordado por A/B y consumido por IDs estables de entidad, contorno, evidencia y propuesta.
+- Pendiente aviso A/B de ampliaciones para anclajes de cotas, colocaciones 3D, revisiones y recuperación semántica/geométrica.
 - FastAPI sirve `frontend/` desde el mismo origen; las rutas de recursos son `/styles.css`, `/app.js` y módulos relativos.
 - El frontend no incluirá mocks prefijados que se presenten como inferencia. Los tests podrán usar fixtures contractuales explícitos y la UI mostrará estados vacíos o errores cuando la API no aporte datos.
 
