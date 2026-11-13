@@ -15,8 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
-from backend.app.agente.runner import AgentLimits, run_agent
-from backend.app.agente.tools import tool_schemas
+from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
+from backend.app.agente.tools import parts_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest
 from backend.app.estimacion.service import estimate_result
 from backend.app.geometria import extract_drawing
@@ -74,12 +74,13 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
 
 
-def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None) -> FastAPI:
+def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None) -> FastAPI:
     root = data_dir or Path(".vexplorer-data")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
     repository = DemoRepository(root / "vexplorer.sqlite3")
     settings = ProviderSettings.from_env()
+    live_available = agent_provider is not None or settings.available
     embedding_settings = EmbeddingSettings.from_env()
     semantic_provider = embedding_provider
     if semantic_provider is None and embedding_settings.available:
@@ -92,7 +93,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @app.get("/api/v1/config")
     def config():
-        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": settings.available, "unavailable_reason": settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if settings.available else []), "modality": "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in tool_schemas()], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        all_tools = tool_schemas() + parts_tool_schemas()
+        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.post("/api/v1/documents")
     async def upload_document(file: UploadFile = File(...)):
@@ -142,7 +144,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def create_run(request: RunRequest):
         if request.mode == "recorded_replay":
             return _error(409, "recorded_replay_unavailable", "No existe una grabación real autorizada para replay.")
-        if request.mode == "live" and not settings.available:
+        if request.mode == "live" and not live_available:
             return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
         path = documents_dir / f"{request.document_id}.dxf"
         if not path.is_file():
@@ -163,16 +165,30 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, "unsupported_geometry", "Las vistas no respaldan escenarios rectangulares coherentes.")
         trace_events: tuple[dict, ...] = ()
         agent_selected_scenario_id = None
-        if request.mode == "live" and request.input_kind == "separated_part_views":
-            return _error(409, "parts_live_unavailable", "El bucle live para piezas separadas no está disponible en esta revisión.")
         if request.mode == "live":
             try:
-                outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits())
+                provider = agent_provider or OpenAIResponsesProvider(settings)
+                if request.input_kind == "separated_part_views":
+                    outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, AgentLimits())
+                    assembly_candidates = tuple(sorted(
+                        assembly_candidates,
+                        key=lambda item: item.id != outcome.selected_assembly_candidate_id,
+                    ))
+                    agent_selected_scenario_id = outcome.selected_assembly_candidate_id
+                else:
+                    outcome = run_agent(extraction, scenarios, provider, AgentLimits())
+                    scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
+                    agent_selected_scenario_id = outcome.selected_scenario_id
             except Exception as exc:
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
-            scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
-            agent_selected_scenario_id = outcome.selected_scenario_id
-            trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary, "selected_scenario_id": action.selected_scenario_id} for action in outcome.actions)
+            trace_events = tuple({
+                "tool_name": action.tool_name,
+                "ok": action.ok,
+                "evidence_ids": action.evidence_ids,
+                "summary": action.summary,
+                "selected_scenario_id": action.selected_scenario_id if request.input_kind == "mounted_views_legacy" else None,
+                "selected_assembly_candidate_id": action.selected_scenario_id if request.input_kind == "separated_part_views" else None,
+            } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
         run = repository.create_run(
             run_id,
