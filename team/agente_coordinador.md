@@ -32,3 +32,10 @@ En curso. Contrato y fixture aún pendientes de acuerdo; ninguna capacidad de ap
 - Entorno virtual nuevo instalado con .venv/Scripts/python.exe -m pip install -e '.[test]'. Suite integrada: 30 passed antes del último filtro de cotas; pendiente nueva ejecución con regresiones.
 - Coordinador mantiene además requirements-demo.txt como restricciones del entorno comprobado (Python 3.14 Windows), sin rutas locales ni secretos.
 
+
+## Aceptación en curso
+- Backend df184a9/a7ce394/d9d6c7e y frontend hasta e360efd integrados. Suite actual52Python/28JS, navegador real8765 probado; smoke live real con gpt-6.1-sol.
+- Revisiones53? No: número de tests y revisiones se registran por separado en docs/VERIFICACION_DEMO.md.
+- Ampliación A autorizada: tools/prepare_evaluation.py y tests/test_prepare_evaluation.py para hallazgos del usuario; fix8501ded integrado, sin solapes.
+- Astra revisa código integrado; cierre pendiente de dictamen y regresiones finales.
+

@@ -1,87 +1,82 @@
-# Vexplorer — del plano al despiece y presupuesto revisables
+# Vexplorer — primera demo local
 
-**Estado: documentación, plan y herramienta de preparación del dataset. La aplicación todavía no está implementada.**
+Vexplorer convierte un plano DXF pobre de una **estantería rectangular** en dos propuestas de montaje, permite revisarlas y calcula una estimación provisional con histórico y tarifas sintéticos. La demo usa un caso propio de desarrollo; no acredita precisión industrial ni ahorro de tiempo con técnicos.
 
-El [piloto del dataset](docs/PILOTO_DATASET.md) ya se ha generado: 14 DXF y 3 casos PDF de vistas 2D, con referencias separadas y un ZIP independiente por caso. Incluye comandos y verificaciones reproducibles.
+Recorrido implementado: **plano 2D → evidencia → hipótesis de piezas → revisión humana → comparables → estimación explicada → ficha JSON/CSV y traza**.
 
-Vexplorer ayuda a interpretar planos de mobiliario: localiza elementos, extrae medidas con código determinista, propone nombres y agrupaciones y presenta un despiece revisable cuando la evidencia permite obtenerlo. La selección de una pieza enlaza con los contornos que la justifican. Lo desconocido permanece visible; una medida no aparece por la suposición de un modelo.
+## Instalación y arranque (PowerShell)
 
-La arquitectura acordada usa **Python 3.11+, FastAPI, Pydantic, ezdxf, tool use nativo, un bucle propio, HTTP/SSE y frontend JS/HTML con three.js**. El detalle propuesto para implementar está en estos documentos y requiere el acuerdo de contrato indicado en `CLAUDE.md`.
+Desde la raíz del repositorio, con Python 3.11 o posterior:
 
-El objetivo completo, según la [transcripción](transcripcion-contexto-poc.md), es **inferir piezas y secciones desde planos 2D pobres y estimar costes y tiempos con muebles históricos similares**. El plan original del ZIP cubría sobre todo extracción; se amplía en T11–T13 con hipótesis separadas de hechos, un corpus de entrada/referencia sin fugas y comparables explicados. Véase [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md).
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[test]"
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8765
+```
 
-## Datasets de trabajo actuales
+Abrir **http://127.0.0.1:8765**. FastAPI sirve también el frontend JS/HTML: no hay otro proceso ni compilación de assets. `geometry_only` funciona sin credenciales. Se han comprobado estos comandos en Windows con Python 3.14.2; [requirements-demo.txt](requirements-demo.txt) registra las versiones de ese entorno. Para repetir esas versiones en un entorno compatible, instalar con `-c requirements-demo.txt`.
 
-**PlankAssembly ya está descargado, extraído y auditado:** 26.707 modelos de mobiliario en las particiones oficiales, más 985 JSON no listados. Es la fuente prioritaria para preparar pares de vistas 2D y despiece de tableros. Las vistas aún no están generadas: el ZIP contiene programas JSON, no planos DWG/DXF. Unidades, estructura, licencia CC BY-NC-ND 4.0, anomalías y tareas pendientes en [PLANKASSEMBLY](docs/PLANKASSEMBLY.md).
+Los documentos, resultados y revisiones se conservan en `.vexplorer-data/`, ignorado por Git. Instancia local de un operador, sin autenticación multiusuario; mantener el bind en `127.0.0.1`. No se ha desplegado al VPS.
 
-Se adopta **`engineering-drawings-harness.zip` como corpus auxiliar de pruebas técnicas**, pendiente de admitir cada caso para el comportamiento que realmente evalúe. Sustituye al corpus anterior de bloques de mobiliario, descartado por no aportar despiece y cotas de componentes.
+## Guion de demo
 
-| Subcolección | Contenido comprobado | Uso propuesto |
-|---|---|---|
-| OrlaMechCAD-Nano | 14 piezas individuales, cada una con DXF, DWG, PDF y STEP; registros estructurados de cotas | Extracción CAD y trazabilidad de medidas. No son 14 conjuntos despiezados. |
-| Mechanical Bench Vise | Un conjunto en PDF con BOM de 12 referencias y 22 unidades; 9 planos individuales | Piloto de asociación conjunto–pieza. La referencia dimensional revisada es Jaw Pad. |
-| Julius de Waal | 50 paquetes PDF de conjuntos, 158 páginas | Ampliar variedad de listas de piezas, detalles y cotas tras anotación. |
+1. Cargar [estanteria_montada.dxf](data/planos_demo/estanteria_montada.dxf) y pulsar **Analizar DXF** en modo **Solo geometría**.
+2. Seleccionar **Baldas interiores**. Revisar sus regiones de origen, las tres vistas y las cotas observadas. Las propuestas son hipótesis; el espesor y los largos que dependen del montaje permanecen desconocidos.
+3. Comparar **Tapa y base entre laterales** con **Tapa y base cubren laterales**. Son escenarios excluyentes.
+4. Para el ensayo, elegir el primero, indicar persona revisora, espesor `18`, material `tablero sintético`, acabado `melamina sintética` y motivo. Estos valores son una decisión técnica de demostración, no datos añadidos por el modelo.
+5. Registrar la decisión. La revisión 2 conserva la 1 y calcula `900 − 2 × 18 = 864 mm` para tapa, base y baldas. Cambiar el espesor o el montaje crea otra revisión.
+6. Consultar los tres comparables y calcular la estimación. En ese escenario: área total `1,7568 m²`, material a `50 EUR/m²` = `87,84 EUR`; preparación fija `40 EUR`, aplicada una sola vez. Total provisional **127,84 EUR**. Las horas permanecen desconocidas.
+7. Exportar **ficha JSON** para conservar resultado, revisión, comparables, estimación y acciones. El CSV ofrece la tabla de piezas. Abrir la traza para revisar las acciones.
+8. Cargar [estanteria_incompleta.dxf](data/planos_demo/estanteria_incompleta.dxf). Falta la observación corta: el espesor permanece desconocido hasta que se aporte una confirmación humana.
 
-El ZIP tiene 422 archivos. La evidencia concreta, el alcance de la auditoría y la procedencia están en [DATASET.md](docs/DATASET.md). Sus planos son mecánicos: permiten probar capacidades transferibles, pero **no validan por sí solos un despiece de muebles**.
+La entrada no contiene una BOM ni nombres de piezas. La referencia propia está en [evaluation/reference](evaluation/reference/README.md), reservada a las pruebas del evaluador; las herramientas y endpoints del producto no la sirven ni la leen. El caso es de desarrollo inspeccionado, no un benchmark ciego. El test congela la salida antes de abrir la referencia.
 
-El plano Jaw Pad muestra **69,85 × 44,45 × 5 mm**; la cantidad **2** procede de la BOM del conjunto. Se verificaron esos documentos visualmente. Las demás dimensiones de la referencia Bench Vise permanecen sin revisar. No se confunde cantidad de vistas con cantidad de piezas.
+## Modos
 
-## Primer hito técnico (T1–T10)
+- **geometry_only**: reglas geométricas y dos escenarios explícitos de la familia admitida; no llama a un proveedor.
+- **live**: OpenAI Responses con herramientas nativas `inspeccionar_evidencia` y `entregar_despiece`, bucle propio y validación local. El modelo inspecciona datos vectoriales estructurados y propone uno de los escenarios disponibles. **No recibe imágenes ni demuestra visión directa o descomposición libre de cualquier mueble.**
+- **recorded_replay**: no habilitado; el servidor lo rechaza porque no existe un mecanismo de replay admitido con grabaciones verificadas.
 
-1. Abrir un DXF admitido, resolver unidades y mostrar geometría y cotas con su origen.
-2. Generar candidatas y conservar su identidad y campos desconocidos.
-3. Permitir al agente inspeccionar evidencia, proponer nombres y entregar mediante `entregar_despiece`.
-4. Validar, persistir y mostrar tabla, traza y selección bidireccional con el plano.
-5. Exportar JSON/CSV y representar cajas esquemáticas únicamente con dimensiones justificadas.
+Para live, configurar `OPENAI_API_KEY` en un `.env` local ignorado por Git. [`.env.example`](.env.example) muestra los nombres, sin credenciales. Con la clave ya configurada:
 
-El recorrido de despiece de paneles se verifica con un **fixture propio, explícitamente sintético y revisado**. El nuevo corpus aporta pruebas reales de CAD. El conjunto Bench Vise permite preparar un piloto PDF P1; no se declara compatible con el lector DXF. [ADAPTACION_DATASET.md](docs/ADAPTACION_DATASET.md) explica la separación y qué exigir para ampliar el alcance.
+```powershell
+$env:OPENAI_MODEL="gpt-6.1-sol"
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8765 --env-file .env
+```
 
-## Prueba de concepto de negocio (T11–T13)
+Los errores de proveedor se muestran como tales; no se convierten en resultados geométricos etiquetados live. Límites: 15 llamadas de modelo, 30 herramientas, 2 reparaciones estructurales y 120 segundos para la fase del agente. Nunca incorporar `.env` a Git.
 
-Preparar planos pobres de mobiliario con despiece de referencia reservado al evaluador; proponer componentes y alternativas revisables; recuperar proyectos históricos por atributos y embeddings; calcular una estimación provisional con ajustes documentados de dimensiones, materiales y acabados. La ficha exportada distingue medidas observadas, cálculos, hipótesis y confirmaciones humanas. Ya hay referencias paramétricas de mobiliario en PlankAssembly. Faltan su adaptación a entradas 2D auditadas, planos pobres reales de la empresa e histórico económico para validar la utilidad industrial; los fixtures sintéticos solo prueban el mecanismo.
+## Verificación
 
-## Orden de lectura
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+npm test --prefix frontend
+.\.venv\Scripts\python.exe -m compileall -q backend tools
+```
 
-| Documento | Propósito |
-|---|---|
-| [CLAUDE.md](CLAUDE.md) | Instrucciones del equipo, stack y permisos de edición |
-| [initial-plan.md](initial-plan.md) | Objetivo, arquitectura inicial y decisiones de alcance |
-| [docs/DATASET.md](docs/DATASET.md) | Inventario de corpus y auditoría mecánica |
-| [docs/PLANKASSEMBLY.md](docs/PLANKASSEMBLY.md) | Descarga de mobiliario verificada y preparación 2D pendiente |
-| [docs/CONTRATOS_DATOS.md](docs/CONTRATOS_DATOS.md) | Propuesta de modelos; acuerdo A/B pendiente, aviso C |
-| [ORGANIZACION.md](ORGANIZACION.md) | Reparto, dependencias e integración |
-| [PLAN.md](PLAN.md) | Tareas concretas, rutas futuras y criterios de aceptación |
+Node solo es necesario para las pruebas JavaScript. La aplicación no necesita npm para arrancar. Resultados observados, recorrido de navegador y revisión final en [VERIFICACION_DEMO.md](docs/VERIFICACION_DEMO.md).
 
-## Documentación técnica
+Los DXF propios se pueden regenerar con:
 
-| Archivo | Contenido |
-|---|---|
-| [ARQUITECTURA](docs/ARQUITECTURA.md) | Componentes, flujo, estados y límites |
-| [GEOMETRIA_Y_PLANOS](docs/GEOMETRIA_Y_PLANOS.md) | Unidades, transformaciones, contornos, cotas y vistas |
-| [SEMANTICA](docs/SEMANTICA.md) | Significado, similitud, identidad y agrupación |
-| [HARNESS](docs/HARNESS.md) | Herramientas, bucle, reparación, límites y contingencias |
-| [VALIDACION](docs/VALIDACION.md) | Comprobaciones deterministas y abstención |
-| [API_Y_EVENTOS](docs/API_Y_EVENTOS.md) | API, geometría para el visor, SSE y revisión |
-| [EJEMPLOS_CONTRATO](docs/EJEMPLOS_CONTRATO.md) | Ejemplo documental de tres vistas y una pieza |
-| [TDD](docs/TDD.md) | Desarrollo por comportamiento con oráculos independientes |
-| [TEST_PLAN](docs/TEST_PLAN.md) | Casos positivos, negativos y criterios de evaluación |
-| [DEMO_Y_OPERACION](docs/DEMO_Y_OPERACION.md) | Guion, operación y modos de contingencia |
-| [FUENTES_Y_DECISIONES](docs/FUENTES_Y_DECISIONES.md) | Fuentes primarias y registro de decisiones |
-| [team/README](team/README.md) y [plantilla](team/_TEMPLATE.md) | Coordinación sin identidades ni reservas ficticias |
-| [AGENTS](AGENTS.md) | Guía de navegación subordinada a `CLAUDE.md` |
+```powershell
+.\.venv\Scripts\python.exe -m tools.build_demo_fixture
+```
 
-**Pydantic será la única fuente de verdad del formato JSON.** El esquema que ve el proveedor se generará desde los modelos; estos Markdown son una propuesta previa. No se entrega un segundo esquema mantenido a mano ni se afirma un acuerdo A/B que no se ha producido.
+Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas conflictivas, referencias aisladas, revisiones, geometría variable y cálculo económico independiente. Las pruebas del proveedor usan un doble de la frontera HTTP; no sustituyen el motor ni se presentan como inferencia live.
 
-## Primera hora
+## Alcance y trabajo pendiente
 
-A y B revisan el contrato y registran su acuerdo; C recibe las interfaces del plano y del resultado. D, si existe, selecciona un caso CAD de desarrollo y registra las medidas esperadas fuera del sistema. Cada integrante se identifica y designa su archivo personal antes de editar código, conforme a `CLAUDE.md`.
+- Subconjunto DXF: modelspace, LINE, LWPOLYLINE recta, TEXT/MTEXT y cotas lineales admitidas. Se requieren vistas FRONT/TOP/SIDE o RIGHT coherentes y reconocibles. No hay lector general de croquis, PDF, DWG, bloques, curvas o muebles arbitrarios.
+- La revisión permite elegir montaje, cambiar espesor y aportar material/acabado; dividir/unir componentes y confirmar elementos ocultos desde la interfaz quedan pendientes.
+- Histórico de tres ejemplos inventados, recuperación por atributos y cálculo de material/preparación. Sin embeddings, tiempos industriales, operaciones de mecanizado, acabado cotizado, impuestos ni precisión empresarial validada. No es un presupuesto de fabricación completo.
+- Ejecución local síncrona y traza persistida; no se afirma procesamiento distribuido ni streaming de tokens o imágenes.
+- PlankAssembly sigue separado: no se han publicado datos ni derivados. Su adaptación futura exige preservar índices, excluir la envolvente, manejar normales ausentes y resolver condiciones de uso; ver [PLANKASSEMBLY](docs/PLANKASSEMBLY.md).
+- La comparación de métodos, evaluación con técnicos y medición de ahorro siguen pendientes; ver [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md).
 
-La primera integración debe mostrar una medida con su evidencia de origen. La siguiente añade revisión y resultado persistido. La IA y el visor 3D se incorporan sobre ese recorrido comprobable.
+## Documentación y coordinación
 
-## Criterio de éxito
+[Diseño e integración de esta demo](docs/DEMO_IMPLEMENTACION.md), [registro coordinador](team/agente_coordinador.md), [A geometría](team/agente_geometria.md), [B backend](team/agente_backend.md), [C frontend](team/agente_frontend.md), [D evaluación](team/agente_evaluacion.md).
 
-Una persona carga un plano pobre admitido, revisa propuestas de piezas y secciones, consulta muebles históricos similares y exporta una ficha de despiece y estimación con procedencia y supuestos. La evaluación compara con despieces reservados y presupuestos/horas de referencia donde existan, además de medir la corrección humana necesaria. Si faltan datos, sabe cuáles faltan. `completed` describe el resultado de las comprobaciones implementadas, no una certificación de fabricación.
+Los documentos [initial-plan.md](initial-plan.md), [PLAN.md](PLAN.md), [ARQUITECTURA](docs/ARQUITECTURA.md) y [CONTRATOS_DATOS](docs/CONTRATOS_DATOS.md) conservan el diseño amplio y sus pendientes. El contrato ejecutable de esta demo es **0.2.0**, acordado por A/B y comunicado a C; su fuente única es [modelos.py](backend/app/contratos/modelos.py). No todas las tareas T1–T13 del plan amplio están terminadas.
 
-La auditoría de archivos y las pruebas del preparador del dataset se han ejecutado; las pruebas de la aplicación siguen **pendientes de implementar**. Los CAD de terceros y las respuestas de referencia no se incluyen en este paquete Markdown. Fecha: **13 de noviembre de 2026, UTC**.
-
-Investigación: [referencias y selección de datasets](docs/INVESTIGACION_Y_DATASETS.md), con [protocolo de comparación de cuatro métodos](docs/COMPARATIVA_METODOS.md).
+El preparador mecánico anterior continúa disponible. Esta entrega elimina sus diagnósticos de abstención del contexto público, verifica la referencia contra el manifiesto y consume los bytes verificados; los pilotos antiguos requieren regeneración para incorporar esas correcciones. No se ha redistribuido ni regenerado aquí el corpus externo. Véase [PILOTO_DATASET](docs/PILOTO_DATASET.md).
