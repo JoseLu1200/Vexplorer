@@ -30,6 +30,12 @@ def _scaled(points: tuple[tuple[float, float], ...], scale: float | None) -> lis
     return [{"x": x * scale, "y": y * scale} for x, y in points]
 
 
+def _point_payload(point: tuple[float, float], scale: float | None) -> tuple[dict[str, float], dict[str, float] | None]:
+    source = {"x": point[0], "y": point[1]}
+    metric = {"x": point[0] * scale, "y": point[1] * scale} if scale is not None else None
+    return source, metric
+
+
 def _bounds(points: list[tuple[float, float]]) -> dict[str, float]:
     xs = [point[0] for point in points]
     ys = [point[1] for point in points]
@@ -45,9 +51,41 @@ def _view_labels(drawing: ParsedDrawing) -> list[tuple[str, tuple[float, float]]
     return labels
 
 
-def _assign_view(entity: ParsedEntity, labels: list[tuple[str, tuple[float, float]]]) -> str:
+def _view_regions(
+    drawing: ParsedDrawing, labels: list[tuple[str, tuple[float, float]]]
+) -> list[tuple[str, tuple[float, float, float, float]]]:
+    regions = []
+    for entity in drawing.entities:
+        if entity.kind != "LWPOLYLINE" or not entity.closed or len(entity.points) < 4:
+            continue
+        center = (
+            sum(point[0] for point in entity.points) / len(entity.points),
+            sum(point[1] for point in entity.points) / len(entity.points),
+        )
+        label = min(labels, key=lambda item: (dist(center, item[1]), item[0]))[0] if labels else "UNKNOWN"
+        bounds = _bounds(list(entity.points))
+        regions.append((label, (bounds["min_x"], bounds["min_y"], bounds["max_x"], bounds["max_y"])))
+    return regions
+
+
+def _assign_view(
+    entity: ParsedEntity,
+    labels: list[tuple[str, tuple[float, float]]],
+    regions: list[tuple[str, tuple[float, float, float, float]]],
+) -> str:
     if not labels or not entity.points:
         return "UNKNOWN"
+    if entity.kind == "DIMENSION" and entity.extension_starts and regions:
+        def distance_to_region(region: tuple[float, float, float, float]) -> float:
+            min_x, min_y, max_x, max_y = region
+            total = 0.0
+            for x, y in entity.extension_starts or ():
+                dx = max(min_x - x, 0.0, x - max_x)
+                dy = max(min_y - y, 0.0, y - max_y)
+                total += hypot(dx, dy)
+            return total
+
+        return min(regions, key=lambda item: (distance_to_region(item[1]), item[0]))[0]
     center = (sum(p[0] for p in entity.points) / len(entity.points), sum(p[1] for p in entity.points) / len(entity.points))
     return min(labels, key=lambda item: (dist(center, item[1]), item[0]))[0]
 
@@ -128,28 +166,60 @@ def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, 
 def extraction_payload(path: Path) -> dict[str, Any]:
     drawing = parse_dxf(path)
     labels = _view_labels(drawing)
+    regions = _view_regions(drawing, labels)
     evidence: list[dict[str, Any]] = []
     entities: list[dict[str, Any]] = []
     contours: list[dict[str, Any]] = []
     dimensions: list[dict[str, Any]] = []
+    texts: list[dict[str, Any]] = []
+    dimension_graphics: list[dict[str, Any]] = []
     by_view: dict[str, list[str]] = {label: [] for label, _ in labels}
     by_view.setdefault("UNKNOWN", [])
 
     for entity in drawing.entities:
-        view_label = _assign_view(entity, labels)
+        view_label = _assign_view(entity, labels, regions)
         points_source = [{"x": x, "y": y} for x, y in entity.points]
         points_mm = _scaled(entity.points, drawing.unit_scale_to_mm)
         entities.append({"id": entity.id, "kind": entity.kind, "layer": entity.layer, "source_points": points_source, "points_mm": points_mm})
         by_view.setdefault(view_label, []).append(entity.id)
+        if entity.kind in {"TEXT", "MTEXT"} and entity.text is not None:
+            position_source, position_mm = _point_payload(entity.points[0], drawing.unit_scale_to_mm)
+            texts.append({
+                "id": f"text-{entity.id}", "source_entity_id": entity.id,
+                "view_id": f"view-{view_label.lower()}", "layer": entity.layer, "text": entity.text,
+                "position_source": position_source, "position_mm": position_mm,
+            })
         if entity.kind == "LWPOLYLINE" and entity.closed and len(entity.points) >= 4:
             contour_id = f"contour-{entity.id}"
             contours.append({"id": contour_id, "view_id": f"view-{view_label.lower()}", "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})
         if entity.kind == "DIMENSION" and entity.measurement is not None:
             evidence_id = f"evidence-dimension-{entity.id}"
+            dimension_id = f"dimension-{entity.id}"
+            graphic_id = f"graphic-{entity.id}"
             value_mm = entity.measurement * drawing.unit_scale_to_mm if not entity.dimension_conflict and drawing.unit_scale_to_mm is not None else None
             evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": "Linear dimension annotation observed in drawing"})
-            dimensions.append({"id": f"dimension-{entity.id}", "kind": "annotation", "value_mm": value_mm, "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed"})
+            dimensions.append({
+                "id": dimension_id, "kind": "annotation", "value_mm": value_mm,
+                "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed",
+                "view_id": f"view-{view_label.lower()}", "graphic_id": graphic_id,
+            })
+            if entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None:
+                start_a_source, start_a_mm = _point_payload(entity.extension_starts[0], drawing.unit_scale_to_mm)
+                start_b_source, start_b_mm = _point_payload(entity.extension_starts[1], drawing.unit_scale_to_mm)
+                dimension_start_source, dimension_start_mm = _point_payload(entity.dimension_line[0], drawing.unit_scale_to_mm)
+                dimension_end_source, dimension_end_mm = _point_payload(entity.dimension_line[1], drawing.unit_scale_to_mm)
+                text_position_source, text_position_mm = _point_payload(entity.text_position, drawing.unit_scale_to_mm)
+                dimension_graphics.append({
+                    "id": graphic_id, "dimension_id": dimension_id, "source_entity_id": entity.id,
+                    "view_id": f"view-{view_label.lower()}", "layer": entity.layer,
+                    "display_text": entity.display_text, "raw_text": entity.text or "",
+                    "extension_start_a_source": start_a_source, "extension_start_a_mm": start_a_mm,
+                    "extension_start_b_source": start_b_source, "extension_start_b_mm": start_b_mm,
+                    "dimension_start_source": dimension_start_source, "dimension_start_mm": dimension_start_mm,
+                    "dimension_end_source": dimension_end_source, "dimension_end_mm": dimension_end_mm,
+                    "text_position_source": text_position_source, "text_position_mm": text_position_mm,
+                })
 
     for view_label in sorted(by_view):
         view_lines = [entity for entity in drawing.entities if entity.kind == "LINE" and entity.id in by_view[view_label]]
@@ -197,7 +267,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
         "coordinate_unit": "mm" if drawing.unit_scale_to_mm is not None else "source",
         "synthetic": "planos_demo" in path.parts, "warnings": list(drawing.warnings), "entities": entities,
         "views": views, "contours": contours, "dimensions": dimensions, "evidence": evidence,
-        "observations": observations,
+        "observations": observations, "texts": texts, "dimension_graphics": dimension_graphics,
     }
 
 
