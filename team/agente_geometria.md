@@ -37,6 +37,7 @@
 - Corregido el servicio de descomposición: solo contornos cerrados con cuatro esquinas axis-aligned y evidencia fuente atraviesan el gate de estantería; cajas coherentes de trapecios se abstienen.
 - Enriquecida la extracción con textos públicos planos, capas/posiciones, cotas lineales segmentadas y ancladas, unidades explícitas y asociación geométrica de vistas.
 - Implementada reconstrucción 3D esquemática por ocurrencia física tras revisión: montaje entre/cubriendo laterales, niveles de balda observados, bbox y evidencia; estados incompletos sin sólidos inventados.
+- Endurecida la escena revisada: rechaza roles duplicados, longitudes de tapa/base incoherentes y grosor/profundidad discordantes; el nivel observado se declara como cara inferior de balda.
 
 ## Siguiente bloque
 
@@ -76,6 +77,8 @@
 | Contrato y dibujo 0.3 | `python -m pytest backend/tests/test_geometry.py backend/tests/test_backend_contract.py backend/tests/test_backend_contract_viewer.py -q` | 23 passed | Texto se conserva como dato; el frontend debe usar `textContent` |
 | Reconstrucción | `python -m pytest backend/tests/test_reconstruction.py backend/tests/test_geometry.py -q` | 20 passed | Cajas esquemáticas, colisiones no evaluadas |
 | Suite fase visor | `python -m pytest -q` | 69 passed | Ejecución fresca antes de commits A |
+| Hardening escena | `python -m pytest backend/tests/test_reconstruction.py -q` | 8 passed | Incluye cambio de montaje en revisión 3 e incoherencias de revisión |
+| Suite final A | `python -m pytest -q` | 72 passed | Ejecución fresca tras hardening |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 
 ## Bloqueos y cierre
