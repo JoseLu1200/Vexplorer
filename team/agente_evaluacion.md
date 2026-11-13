@@ -47,7 +47,7 @@
 | E2E rojo previo a integración | `python -m pytest tests/test_demo_e2e.py -q` | error de colección esperado: backend agéntico/API aún ausente en esta rama | Resuelto al integrar B |
 | E2E contra API real integrada | desde raíz: `.venv\Scripts\python.exe -m pytest .worktrees/evaluacion/tests/test_demo_e2e.py -q` | 2 pasan; 1 aviso deprecación TestClient/httpx | Oráculo económico manual suma todas las piezas: 127,84 EUR |
 | Suite D integrada | desde raíz: `.venv\Scripts\python.exe -m pytest tests/test_demo_fixture.py tests/test_demo_isolation.py tests/test_demo_e2e.py -q` | 11 pasan; 1 aviso deprecación | Incluye aislamiento estático y dinámico |
-| Suite Python integrada | desde raíz: `.venv\Scripts\python.exe -m pytest -q` | 51 pasan; 1 aviso deprecación | No se ejecutó navegador; corresponde al coordinador |
+| Suite Python integrada | desde raíz: `.venv\Scripts\python.exe -m pytest -q` | 52 pasan; 1 aviso deprecación tras hardening del bundle | No se ejecutó navegador; corresponde al coordinador |
 
 ## Cierre
 
