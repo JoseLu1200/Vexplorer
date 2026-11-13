@@ -5,6 +5,13 @@ function finitePoint(point) {
 
 function pointTuple(point) { return Array.isArray(point) ? point.slice(0, 2) : [point.x, point.y]; }
 
+function resolvedPoint(record, name, metric) {
+  const point = metric
+    ? (record?.[`${name}_mm`] ?? record?.[name]?.mm)
+    : (record?.[`${name}_source`] ?? record?.[name]?.source ?? record?.[name]);
+  return finitePoint(point) ? pointTuple(point) : null;
+}
+
 export function safeText(value) {
   return String(value ?? "");
 }
@@ -24,11 +31,27 @@ export function normaliseDrawing(extraction) {
     }];
   });
   const claimedEntities = new Set(contours.flatMap((contour) => contour.source_entity_ids ?? []));
+  const dimensionEntityIds = new Set((extraction?.dimension_graphics ?? []).map((item) => item.source_entity_id).filter(Boolean));
   (extraction?.entities ?? []).forEach((entity) => {
     if (claimedEntities.has(entity.id)) return;
+    if (String(entity.kind).toUpperCase() === "DIMENSION" && ((extraction?.dimension_graphics?.length ?? 0) > 0 || dimensionEntityIds.has(entity.id))) return;
     const points = metric ? entity.points_mm : entity.source_points;
     if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
     paths.push({ id: `entity:${entity.id}`, viewId: null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
+  });
+  const texts = (extraction?.texts ?? []).flatMap((item) => {
+    const position = resolvedPoint(item, "position", metric);
+    return position ? [{ id: item.id, viewId: item.view_id, text: safeText(item.text), position }] : [];
+  });
+  const dimensions = (extraction?.dimension_graphics ?? []).flatMap((item) => {
+    const a = resolvedPoint(item, "extension_start_a", metric);
+    const b = resolvedPoint(item, "extension_start_b", metric);
+    const start = resolvedPoint(item, "dimension_start", metric);
+    const end = resolvedPoint(item, "dimension_end", metric);
+    const position = resolvedPoint(item, "text_position", metric);
+    const segments = [[a, start], [b, end], [start, end]].filter((segment) => segment.every(Boolean));
+    if (!segments.length && !position) return [];
+    return [{ id: item.id, dimensionId: item.dimension_id, viewId: item.view_id, label: safeText(item.display_text ?? item.raw_text), segments, position }];
   });
   return {
     drawingId: extraction?.drawing_id,
@@ -36,6 +59,8 @@ export function normaliseDrawing(extraction) {
     unitLabel: metric ? "Milímetros" : "Unidad sin resolver",
     views: extraction?.views ?? [],
     paths,
+    texts,
+    dimensions,
     warnings: extraction?.warnings ?? [],
   };
 }

@@ -55,3 +55,29 @@ test("component selection follows stable contour and evidence identifiers", () =
 test("hostile DXF text remains plain text", () => {
   assert.equal(safeText('<img src=x onerror="globalThis.pwned=true">'), '<img src=x onerror="globalThis.pwned=true">');
 });
+
+test("0.3 drawing text and dimension graphics use explicit safe anchors", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    source_unit: "mm",
+    unit_scale_to_mm: 1,
+    texts: [{ id: "txt-1", view_id: "view-1", text: "900 <script>", position_mm: { x: 60, y: 90 } }],
+    dimension_graphics: [{
+      id: "dg-1", dimension_id: "dim-1", view_id: "view-1", display_text: "900 mm",
+      extension_start_a_mm: { x: 0, y: 80 }, extension_start_b_mm: { x: 0, y: 90 },
+      dimension_start_mm: { x: 0, y: 90 }, dimension_end_mm: { x: 120, y: 90 }, text_position_mm: { x: 60, y: 94 },
+    }],
+  });
+  assert.deepEqual(model.texts[0], { id: "txt-1", viewId: "view-1", text: "900 <script>", position: [60, 90] });
+  assert.equal(model.dimensions[0].label, "900 mm");
+  assert.deepEqual(model.dimensions[0].segments[2], [[0, 90], [120, 90]]);
+});
+
+test("dimension entities are not drawn as defpoint zigzags when graphics exist", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    entities: [...unknownDrawing.entities, { id: "dim-entity", kind: "DIMENSION", source_points: [[0,0],[10,20],[30,40]] }],
+    dimension_graphics: [{ id: "dg", source_entity_id: "dim-entity", dimension_id: "dim", view_id: "view-1", display_text: "120", dimension_start_source: [0,0], dimension_end_source: [120,0], text_position_source: [60,5] }],
+  });
+  assert.equal(model.paths.some((path)=>path.id === "entity:dim-entity"), false);
+});

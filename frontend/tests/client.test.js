@@ -52,3 +52,26 @@ test("event history reads the persisted SSE snapshot as text", async () => {
   const client = createApiClient({ fetchImpl });
   assert.equal(await client.getEventHistory("run-1"), "id: 1\nevent: run_finished\ndata: {}\n\n");
 });
+
+test("document drawing and preview stay available before a run", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => { urls.push(url); return response(200, { data: { drawing_id: "d-1" } }); };
+  const client = createApiClient({ fetchImpl });
+  assert.deepEqual(await client.getDocumentDrawing("doc 1"), { drawing_id: "d-1" });
+  assert.equal(client.documentPreviewUrl("doc 1"), "/api/v1/documents/doc%201/preview.svg");
+  assert.deepEqual(urls, ["/api/v1/documents/doc%201/drawing"]);
+});
+
+test("0.3 endpoints preserve exact revision and similarity modes", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: [] }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "key" });
+  await client.getRevisions("run-1");
+  await client.getScene("run-1", 3);
+  await client.getExplanations("run-1", 3);
+  await client.findSimilar("run-1", { result_revision: 3, mode: "geometric", limit: 5 });
+  assert.equal(requests[0][0], "/api/v1/runs/run-1/revisions");
+  assert.equal(requests[1][0], "/api/v1/runs/run-1/scene?result_revision=3");
+  assert.equal(requests[2][0], "/api/v1/runs/run-1/explanations?result_revision=3");
+  assert.deepEqual(JSON.parse(requests[3][1].body), { result_revision: 3, mode: "geometric", limit: 5 });
+});

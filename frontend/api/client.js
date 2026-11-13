@@ -59,9 +59,18 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
       return json("/api/v1/documents", { method: "POST", headers: { "Idempotency-Key": idFactory() }, body: form });
     },
     createRun: (documentId, mode) => post("/api/v1/runs", { document_id: documentId, mode }),
+    getDocumentDrawing: (documentId) => json(`/api/v1/documents/${encodeURIComponent(documentId)}/drawing`),
+    documentPreviewUrl: (documentId) => `/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`,
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),
     getDrawing: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/drawing`),
     getLedger: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/ledger`),
+    getRevisions: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/revisions`),
+    getExplanations: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/explanations?result_revision=${encodeURIComponent(revision)}`),
+    getScene: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/scene?result_revision=${encodeURIComponent(revision)}`),
+    getLibrary: () => json("/api/v1/library"),
+    saveToLibrary: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/library`, body),
+    findSimilar: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/similarity`, body),
+    groupLibrary: (body) => post("/api/v1/library/groups", body),
     async getEventHistory(runId) {
       const response = await fetchImpl(`/api/v1/runs/${encodeURIComponent(runId)}/events`);
       if (!response.ok) throw new ApiError("No se pudo recuperar la traza.", { status: response.status, code: "event_history_unavailable" });
