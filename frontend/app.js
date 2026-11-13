@@ -185,6 +185,7 @@ async function refreshRun() {
   try { state.drawing = await api.getDrawing(state.runId); renderDrawing(); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   try { state.ledger = await api.getLedger(state.runId); } catch (error) { if (!(error instanceof ApiError) || error.status !== 409) throw error; }
   renderPartsAndReview();
+  if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate);
   if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(); unlock("estimate-stage"); }
 }
 
