@@ -49,7 +49,7 @@ Registra en `METODOS` de `tools/evaluar_recuperacion.py` una función `(consulta
 
 ## Juicios derivados de PlankAssembly (`derived_reference`)
 
-`origen: "derived_reference"` marca juicios calculados por una regla determinista sobre la referencia privada de un corpus, sin revisión humana. `tools/evaluar_recuperacion.py` los acepta y añade un `aviso` al informe: miden acuerdo con la regla, no preferencia del técnico. No se versionan aquí (derivan de PlankAssembly, CC BY-NC-ND 4.0): se generan fuera del repositorio.
+`origen: "derived_reference"` marca juicios calculados por una regla determinista sobre la referencia privada de un corpus, sin revisión humana. `tools/evaluar_recuperacion.py` los acepta y añade un `aviso` al informe: miden acuerdo con la regla, no preferencia del técnico. No se versionan aquí (derivan de PlankAssembly, CC BY-NC-ND 4.0): se generan fuera de cualquier repositorio Git.
 
 ```powershell
 hf download manycore-research/PlankAssembly --repo-type dataset --revision d1d4308f0ee0aac2f9f407b3533ff83ecee22d34 --local-dir ../plankassembly_dataset
@@ -58,7 +58,8 @@ python -m tools.plankassembly_corpus --source ../plankassembly_dataset --public-
 python -m tools.evaluar_recuperacion --biblioteca <biblioteca.json> --juicios ../plankassembly_corpus_private/juicios/juicios_test.json --k 5 --metodo geometrico
 ```
 
-- Archivos: `juicios_test.json` (similitud graduada, consultas = test), `juicios_test_<tipo>.json` (consultas empobrecidas) y `juicios_identidad_<tipo>.json` (identidad entre vistas: solo el mueble completo propio es relevante).
-- La biblioteca debe contener todos los casos completos con `id` = id del caso y `run_id` distinto por caso. En `juicios_test_<tipo>` la variante lleva `run_id` = id de su base; en `juicios_identidad_<tipo>`, uno distinto. Detalle de la regla, particiones y limitaciones: [PLANKASSEMBLY](../../docs/PLANKASSEMBLY.md#corpus-de-evaluación-por-particiones-y-juicios-derivados).
-- Son densos (`cobertura_juicios` 1,0) salvo con `--zeros-per-query`. Las consultas de test nunca tienen entre sus candidatos su propio duplicado: el generador descarta duplicados entre particiones y deja un representante por grupo.
+- Archivos: `juicios_test.json` (similitud graduada, consultas = test), `juicios_test_<tipo>.json` (consultas empobrecidas; las variantes candidatas heredan el grado de su base) y `juicios_identidad_<tipo>.json` (identidad entre vistas: solo el mueble completo propio es relevante).
+- **La biblioteca depende del archivo.** `juicios/bibliotecas.json` indica, por archivo, los `case_ids` que debe contener la biblioteca y los `run_id_overrides` (por defecto `run_id` = id). Con esa biblioteca cada archivo es denso (`cobertura_juicios` 1,0, sin `candidatos_sin_juicio`). Con otra biblioteca (p. ej. completas + variantes de varios tipos) habrá candidatos sin juicio y la cobertura bajará. En `juicios_test_<tipo>` la variante lleva `run_id` = id de su base; en `juicios_identidad_<tipo>`, el suyo propio.
+- Las consultas de test nunca tienen entre sus candidatos su propio duplicado: el generador descarta duplicados entre particiones y deja un representante por grupo. Los ids son opacos y no revelan qué variante pertenece a qué base; esa relación está solo en `references.json` (privado).
+- Con `--zeros-per-query` la cobertura baja de forma deliberada. Detalle de la regla, particiones, auditoría y limitaciones: [PLANKASSEMBLY](../../docs/PLANKASSEMBLY.md#corpus-de-evaluación-por-particiones-y-juicios-derivados).
 - Revisa una muestra con dos personas (sección anterior) antes de tratarlos como evidencia.
