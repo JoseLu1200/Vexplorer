@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pydantic import BaseModel, ConfigDict, Field
 
 from .artifacts import export_package
-from .models import AssemblyProposal
+from .models import AssemblyProposal, RefinementRequest
 from .service import ReconstructionError, reconstruct
 
 
@@ -120,12 +120,7 @@ def create_reconstruction_router(
             if d.value_mm is not None
         ]
         unit = "mm" if dimensions else "relative"
-        if not executor.reserve():
-            raise HTTPException(429, "job_queue_full")
-        job_id = uuid4().hex
-        dest = store / job_id
         state = {
-            "job_id": job_id,
             "run_id": run_id,
             "ledger_revision": context.ledger_revision,
             "status": "queued",
@@ -135,10 +130,39 @@ def create_reconstruction_router(
             "unit": unit,
             "intended_use_from_user": body.intended_use,
             "certified_for_manufacturing": False,
+            "parent_job_id": None,
+            "revision": 1,
+            "clarifications": [],
+            "envelope_mm": {},
+        }
+        return enqueue(
+            content,
+            state,
+            {
+                "dimensions": dimensions,
+                "allowed_component_source_refs": ["input"],
+                "composite_views": layout,
+            },
+        )
+
+    def enqueue(content, metadata, source_context):
+        if not executor.reserve():
+            raise HTTPException(429, "job_queue_full")
+        job_id = uuid4().hex
+        dest = store / job_id
+        state = {
+            **metadata,
+            "job_id": job_id,
+            "status": "queued",
+            "refinement_supported": True,
+            "context_sha256": sha256(
+                json.dumps(source_context, sort_keys=True, ensure_ascii=False).encode()
+            ).hexdigest(),
         }
         try:
             dest.mkdir()
             (dest / "source.png").write_bytes(content)
+            _write(dest / "input-context.json", source_context)
             _write(dest / "status.json", state)
         except Exception:
             executor.release()
@@ -150,13 +174,11 @@ def create_reconstruction_router(
                 outcome = reconstruct(
                     content,
                     provider=provider,
-                    known_unit=unit,
-                    intended_use=body.intended_use,
-                    source_context={
-                        "dimensions": dimensions,
-                        "allowed_component_source_refs": ["input"],
-                        "composite_views": layout,
-                    },
+                    known_unit=state["unit"],
+                    intended_use=state["intended_use_from_user"],
+                    source_context=source_context,
+                    clarifications=state["clarifications"],
+                    envelope_mm=state["envelope_mm"],
                     on_baseline=lambda p: _write(dest / "baseline.json", p),
                 )
                 _write(dest / "outcome.json", outcome)
@@ -200,6 +222,75 @@ def create_reconstruction_router(
 
         executor.submit_reserved(process)
         return state
+
+    @router.post("/api/v1/reconstruction/{job_id}/refine", status_code=202)
+    def refine(job_id: str, body: RefinementRequest):
+        if provider is None:
+            raise HTTPException(503, "reconstruction_model_unavailable")
+        dest = folder(job_id)
+        parent = _read(dest / "status.json")
+        if parent["status"] in ("queued", "running"):
+            raise HTTPException(409, "parent_not_finished")
+        if (
+            not parent.get("refinement_supported")
+            or not (dest / "input-context.json").exists()
+        ):
+            raise HTTPException(409, "regenerate_original_to_enable_refinement")
+        if parent.get("revision", 1) >= 11:
+            raise HTTPException(409, "refinement_limit_reached")
+        proposal = (
+            (parent.get("outcome") or {}).get("proposal")
+            or parent.get("baseline")
+            or {}
+        )
+        questions = set(proposal.get("missing_information", []))
+        if any(answer.question not in questions for answer in body.answers):
+            raise HTTPException(422, "question_not_in_parent")
+        answers = {a["question"]: a["answer"] for a in parent.get("clarifications", [])}
+        answers.update({a.question: a.answer for a in body.answers})
+        if len(answers) > 32:
+            raise HTTPException(422, "too_many_accumulated_answers")
+        try:
+            content = (dest / "source.png").read_bytes()
+            source_context = _read(dest / "input-context.json")
+        except (OSError, ValueError):
+            raise HTTPException(409, "frozen_input_unavailable") from None
+        context_hash = sha256(
+            json.dumps(source_context, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+        if sha256(content).hexdigest() != parent[
+            "source_sha256"
+        ] or context_hash != parent.get("context_sha256"):
+            raise HTTPException(409, "frozen_input_changed")
+        envelope = {
+            **parent.get("envelope_mm", {}),
+            **body.envelope_mm.model_dump(exclude_none=True),
+        }
+        metadata = {
+            key: parent[key]
+            for key in (
+                "run_id",
+                "ledger_revision",
+                "source_sha256",
+                "source_refs",
+                "original_image_sha256",
+            )
+        }
+        metadata.update(
+            {
+                "unit": "mm" if envelope else parent["unit"],
+                "intended_use_from_user": body.intended_use
+                or parent.get("intended_use_from_user", ""),
+                "parent_job_id": job_id,
+                "revision": parent.get("revision", 1) + 1,
+                "clarifications": [
+                    {"question": q, "answer": a} for q, a in answers.items()
+                ],
+                "envelope_mm": envelope,
+                "certified_for_manufacturing": False,
+            }
+        )
+        return enqueue(content, metadata, source_context)
 
     @router.get("/api/v1/reconstruction/{job_id}")
     def status(job_id: str):

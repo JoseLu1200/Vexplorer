@@ -93,3 +93,61 @@ def test_provider_error_does_not_become_abstention():
     with pytest.raises(ReconstructionError, match="provider_failed") as e:
         reconstruct(png(), provider=Bad(), known_unit="relative")
     assert "sensitive" not in str(e.value)
+
+
+def test_user_dimensions_are_checked_and_repaired_not_silently_ignored():
+    import json
+
+    class Repair(Provider):
+        def create_response(self, **kwargs):
+            if self.calls:
+                self.data["components"][0]["size_mm"][0] = 120
+            return super().create_response(**kwargs)
+
+    provider = Repair(payload())
+    result = reconstruct(
+        png(),
+        provider=provider,
+        known_unit="mm",
+        review=False,
+        clarifications=[{"question": "Uso", "answer": "Panel divisorio"}],
+        envelope_mm={"width": 120},
+    )
+    assert len(provider.calls) == 2
+    first = json.loads(provider.calls[0]["input_items"][1]["content"][0]["text"])
+    assert first["user_declarations"]["answers"][0]["answer"] == "Panel divisorio"
+    assert first["user_declarations"]["is_observed_in_drawing"] is False
+    feedback = json.loads(provider.calls[1]["input_items"][1]["content"][0]["text"])[
+        "feedback"
+    ]
+    assert "width" in str(feedback) and "120" in str(feedback)
+    assert result["proposal"]["components"][0]["size_mm"][0] == 120
+    assert result["user_declarations"]["envelope_mm"] == {"width": 120}
+
+
+def test_dimensions_cannot_pass_unrepaired_or_promote_relative_output():
+    with pytest.raises(ReconstructionError, match="invalid_proposal"):
+        reconstruct(
+            png(),
+            provider=Provider(payload()),
+            known_unit="mm",
+            envelope_mm={"width": 120},
+        )
+    with pytest.raises(ValueError, match="metric_constraints_require_mm"):
+        reconstruct(
+            png(),
+            provider=Provider(payload("relative")),
+            known_unit="relative",
+            envelope_mm={"width": 120},
+        )
+
+
+@pytest.mark.parametrize("field", ["label", "intended_use"])
+def test_whitespace_names_rejected(field):
+    from pydantic import ValidationError
+    from backend.app.reconstruction3d.models import AssemblyProposal
+
+    p = payload()
+    (p["components"][0] if field == "label" else p)[field] = "   "
+    with pytest.raises(ValidationError):
+        AssemblyProposal.model_validate(p)

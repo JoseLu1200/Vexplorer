@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class Component(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,64}$")
     label: str = Field(min_length=1, max_length=160)
     size_mm: list[float] = Field(min_length=3, max_length=3)
@@ -33,7 +33,7 @@ class Component(BaseModel):
 
 
 class AssemblyProposal(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     status: Literal["proposed", "insufficient_evidence", "unsupported"]
     intended_use: str = Field(min_length=1, max_length=240)
     unit: Literal["mm", "relative"]
@@ -61,4 +61,36 @@ class AssemblyProposal(BaseModel):
             raise ValueError("abstention_requires_reason_and_no_parts")
         if self.status == "proposed" and not self.assumptions:
             raise ValueError("construction_requires_explicit_assumptions")
+        return self
+
+
+class ClarificationAnswer(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    question: str = Field(min_length=1, max_length=2000)
+    answer: str = Field(min_length=1, max_length=2000)
+
+
+class EnvelopeConstraints(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    width: float | None = Field(default=None, gt=0, le=100_000)
+    depth: float | None = Field(default=None, gt=0, le=100_000)
+    height: float | None = Field(default=None, gt=0, le=100_000)
+
+
+class RefinementRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    answers: list[ClarificationAnswer] = Field(default_factory=list, max_length=32)
+    intended_use: str | None = Field(default=None, min_length=1, max_length=240)
+    envelope_mm: EnvelopeConstraints = Field(default_factory=EnvelopeConstraints)
+
+    @model_validator(mode="after")
+    def meaningful(self):
+        if not (
+            self.answers
+            or self.intended_use
+            or self.envelope_mm.model_dump(exclude_none=True)
+        ):
+            raise ValueError("refinement_requires_information")
+        if len({a.question for a in self.answers}) != len(self.answers):
+            raise ValueError("duplicate_question")
         return self

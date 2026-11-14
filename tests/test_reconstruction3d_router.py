@@ -152,3 +152,196 @@ def test_restart_marks_interrupted_and_disabled_model(tmp_path):
             == 503
         )
     executor.shutdown()
+
+
+class InlineExecutor:
+    def reserve(self):
+        return True
+
+    def release(self):
+        pass
+
+    def submit_reserved(self, fn):
+        fn()
+
+
+def test_refinement_freezes_source_inherits_answers_and_preserves_parent(tmp_path):
+    import json
+
+    calls = []
+
+    def load(run):
+        calls.append(run)
+        return context(run)
+
+    provider = Provider(payload())
+    app = FastAPI()
+    app.include_router(
+        create_reconstruction_router(
+            root=tmp_path,
+            context_loader=load,
+            provider=provider,
+            executor=InlineExecutor(),
+        )
+    )
+    with TestClient(app) as client:
+        root = client.post("/api/v1/runs/run-test/reconstruction", json={}).json()[
+            "job_id"
+        ]
+        original = client.get(f"/api/v1/reconstruction/{root}").json()
+        r = client.post(
+            f"/api/v1/reconstruction/{root}/refine",
+            json={
+                "answers": [
+                    {"question": "function", "answer": "Separador de escritorio"}
+                ],
+                "envelope_mm": {"width": 100},
+                "intended_use": "Separador",
+            },
+        )
+        assert r.status_code == 202, r.text
+        child = client.get(f"/api/v1/reconstruction/{r.json()['job_id']}").json()
+        assert child["status"] == "needs_review"
+        assert child["parent_job_id"] == root and child["revision"] == 2
+        assert child["source_sha256"] == original["source_sha256"]
+        assert child["clarifications"][0]["answer"] == "Separador de escritorio"
+        assert child["envelope_mm"] == {"width": 100}
+        r2 = client.post(
+            f"/api/v1/reconstruction/{child['job_id']}/refine",
+            json={"intended_use": "Separador móvil"},
+        )
+        assert r2.status_code == 202
+        next_state = client.get(f"/api/v1/reconstruction/{r2.json()['job_id']}").json()
+        assert next_state["clarifications"] == child["clarifications"]
+        assert next_state["envelope_mm"] == child["envelope_mm"]
+        assert calls == ["run-test"], "Refine must not load possibly changed source"
+        assert client.get(f"/api/v1/reconstruction/{root}").json() == original
+        assert json.loads(
+            (tmp_path / "reconstruction" / root / "input-context.json").read_text()
+        )
+
+
+def test_refinement_rejects_bad_questions_blank_answers_and_changed_source(tmp_path):
+    provider = Provider(payload())
+    app = FastAPI()
+    app.include_router(
+        create_reconstruction_router(
+            root=tmp_path,
+            context_loader=context,
+            provider=provider,
+            executor=InlineExecutor(),
+        )
+    )
+    with TestClient(app) as client:
+        job = client.post("/api/v1/runs/run-test/reconstruction", json={}).json()[
+            "job_id"
+        ]
+        n = len(provider.calls)
+        url = f"/api/v1/reconstruction/{job}/refine"
+        for body in (
+            {},
+            {"answers": [{"question": "function", "answer": " "}]},
+            {"answers": [{"question": "unknown", "answer": "yes"}]},
+            {"envelope_mm": {"width": -1}},
+            {
+                "answers": [
+                    {"question": "function", "answer": "a"},
+                    {"question": "function", "answer": "b"},
+                ]
+            },
+        ):
+            assert client.post(url, json=body).status_code == 422
+        (tmp_path / "reconstruction" / job / "source.png").write_bytes(b"tampered")
+        assert client.post(url, json={"intended_use": "desk"}).status_code == 409
+        assert len(provider.calls) == n
+
+
+def test_refinement_unscaled_abstention_can_gain_user_scale(tmp_path):
+    provider = Provider(
+        {
+            "status": "insufficient_evidence",
+            "intended_use": "desconocido",
+            "unit": "relative",
+            "components": [],
+            "assumptions": [],
+            "missing_information": ["function"],
+            "functional_notes": [],
+        }
+    )
+
+    def unscaled(run):
+        c = context(run)
+        c.extraction.dimensions = []
+        return c
+
+    app = FastAPI()
+    app.include_router(
+        create_reconstruction_router(
+            root=tmp_path,
+            context_loader=unscaled,
+            provider=provider,
+            executor=InlineExecutor(),
+        )
+    )
+    with TestClient(app) as client:
+        job = client.post("/api/v1/runs/run-test/reconstruction", json={}).json()[
+            "job_id"
+        ]
+        provider.data = payload("relative")
+        response = client.post(
+            f"/api/v1/reconstruction/{job}/refine", json={"intended_use": "Panel"}
+        )
+        child = client.get(f"/api/v1/reconstruction/{response.json()['job_id']}").json()
+        assert child["unit"] == "relative" and "assembly.glb" not in child["artifacts"]
+        provider.data = payload()
+        response = client.post(
+            f"/api/v1/reconstruction/{job}/refine", json={"envelope_mm": {"width": 100}}
+        )
+        metric = client.get(
+            f"/api/v1/reconstruction/{response.json()['job_id']}"
+        ).json()
+        assert metric["unit"] == "mm" and metric["status"] == "needs_review"
+        assert metric["outcome"]["user_declarations"]["is_observed_in_drawing"] is False
+        assert metric["certified_for_manufacturing"] is False
+
+
+def test_refinement_rejects_active_legacy_context_tamper_and_revision_limit(tmp_path):
+    import json
+
+    provider = Provider(payload())
+    app = FastAPI()
+    app.include_router(
+        create_reconstruction_router(
+            root=tmp_path,
+            context_loader=context,
+            provider=provider,
+            executor=InlineExecutor(),
+        )
+    )
+    with TestClient(app) as client:
+        job = client.post("/api/v1/runs/run-test/reconstruction", json={}).json()[
+            "job_id"
+        ]
+        dest = tmp_path / "reconstruction" / job
+        initial = json.loads((dest / "status.json").read_text())
+        n = len(provider.calls)
+        for changes, code in [
+            ({"status": "running"}, "parent_not_finished"),
+            (
+                {"refinement_supported": False},
+                "regenerate_original_to_enable_refinement",
+            ),
+            ({"revision": 11}, "refinement_limit_reached"),
+        ]:
+            (dest / "status.json").write_text(json.dumps({**initial, **changes}))
+            r = client.post(
+                f"/api/v1/reconstruction/{job}/refine", json={"intended_use": "desk"}
+            )
+            assert r.status_code == 409 and r.json()["detail"] == code
+        (dest / "status.json").write_text(json.dumps(initial))
+        (dest / "input-context.json").write_text("{}")
+        r = client.post(
+            f"/api/v1/reconstruction/{job}/refine", json={"intended_use": "desk"}
+        )
+        assert r.status_code == 409 and r.json()["detail"] == "frozen_input_changed"
+        assert len(provider.calls) == n
