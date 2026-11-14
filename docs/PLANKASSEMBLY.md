@@ -70,3 +70,56 @@ El corpus permite preparar búsqueda por geometría con separación de proyectos
 La [ficha del dataset](https://huggingface.co/datasets/manycore-research/PlankAssembly/blob/main/README.md) declara **CC BY-NC-ND 4.0**. El código declara AGPL-3.0; son condiciones de artefactos diferentes. La autorización de descarga en HF no acredita permiso adicional para uso comercial o publicación de derivados. No se ha documentado una autorización específica para la PoC empresarial o su redistribución; resolver ese alcance antes de esos usos. No se ha publicado el ZIP en Git ni en un endpoint nuevo.
 
 La auditoría resuelve la disponibilidad y el formato. Quedan pendientes las vistas, la admisión semántica, el control de duplicados y las evaluaciones del sistema. [DATASET](DATASET.md) conserva el corpus mecánico auxiliar; [PILOTO_DATASET](PILOTO_DATASET.md) documenta los 17 casos ya preparados de ese corpus. Ninguno contiene resultados de inferencia de Vexplorer.
+
+## Corpus de evaluación por particiones y juicios derivados
+
+`tools/plankassembly_corpus.py` amplía el adaptador de muestra (`tools/prepare_plankassembly.py`, cuyas salidas `plank-*.dxf` y `plankassembly_adapter_*`, y por tanto los consumidores del laboratorio semántico y la galería 3D, no cambian). Genera un corpus a escala con el split oficial, auditoría de duplicados y juicios para [`tools/evaluar_recuperacion.py`](../evaluation/recuperacion/README.md). No ejecuta inferencia ni descarga datos. Los resultados no cuentan como prueba ciega hasta que los casos se congelen y no se usen para ajustar prompts o reglas.
+
+### Ejecución con el dataset real
+
+```powershell
+hf download manycore-research/PlankAssembly --repo-type dataset --revision d1d4308f0ee0aac2f9f407b3533ff83ecee22d34 --local-dir ../plankassembly_dataset
+# Extraer data.zip en ../plankassembly_dataset/extracted/ (deben existir extracted/data/model y extracted/data/splits).
+python -m tools.plankassembly_corpus --source ../plankassembly_dataset `
+  --public-output ../plankassembly_corpus_public --private-output ../plankassembly_corpus_private `
+  --seed 20261114 --train 2000 --valid 200 --test 200 --poor-variants `
+  --source-revision d1d4308f0ee0aac2f9f407b3533ff83ecee22d34
+```
+
+Las salidas deben estar **fuera del repositorio** (la herramienta rechaza destinos dentro de él): son derivados de datos CC BY-NC-ND 4.0. Los destinos no pueden existir (no se sobrescribe) ni estar anidados entre sí. Tamaños por defecto: 200/50/50. `--source-revision` solo se registra; no se puede verificar sin conexión. Otros parámetros: `--tolerance-mm` y `--scale-step` (duplicados), `--max-pairs` y `--zeros-per-query` (tamaño de los juicios), `--category-field` (ver abajo).
+
+Con 3.000 modelos sintéticos, 700 casos y sus variantes, el generador tardó unos 54 s. Sobre los 26.707 modelos reales la auditoría lee todos los JSON listados; no se ha medido ese tiempo.
+
+### Qué hace
+
+1. **Split oficial.** Lee `train.txt`, `valid.txt` y `test.txt`. Un modelo listado y ausente, o presente en dos particiones, es un error. Los JSON no listados (985 esperados) no se muestrean ni entran en la auditoría; se cuentan en `audit.json`. Un JSON inválido se registra en `invalid_models` y se omite.
+2. **Auditoría de duplicados** sobre **todos** los modelos válidos listados. Se agrupan por unión de claves: (a) tableros exactos en mm, invariantes a la traslación; (b) mismas dimensiones por tablero dentro de `--tolerance-mm`; (c) reescalado isótropo (dimensiones normalizadas por la mayor extensión, `--scale-step`). (b) y (c) usan dos rejillas desplazadas medio paso. Es una heurística: acota, no demuestra, la ausencia de casi duplicados, y no detecta variantes paramétricas anisótropas (mismo diseño con otra anchura). Estas últimas son vecinos legítimos para la recuperación, no duplicados.
+3. **Política de particiones.** El split oficial no se redefine: cada caso conserva su partición. Un grupo que toca varias particiones se conserva solo en la primera según `train > valid > test` (se descontamina valid/test y train queda íntegro) y cada partición conserva un único representante por grupo (el menor nombre de archivo). Así el duplicado propio de una consulta no puede estar entre sus candidatos. Los descartes se listan en `audit.json`.
+4. **Muestreo.** Orden ascendente por SHA-256 de `semilla|partición|archivo` y corte al tamaño pedido: determinista, independiente del orden del sistema de archivos y estable por prefijo (ampliar el tamaño conserva los casos anteriores). Ids opacos `pa-<partición>-<nº>`; nunca nombres de archivo.
+5. **Separación física.** La parte pública contiene solo `dxf/`, `agent_cases/<id>.zip`, `cases.json`, `manifest.json` y `SHA256SUMS`: DXF con capas `ORTHO_*`, sin textos, programa, `normal`, categoría ni BOM. La privada contiene `references.json` (componentes, hashes, `group_id`, familia, características), `audit.json`, `manifest.json`, `juicios/` y `SHA256SUMS`. Los juicios son privados porque son la respuesta de evaluación.
+6. **Variantes empobrecidas** (`--poor-variants`, solo partición test): `solo_frontal` y `frontal_y_planta`, que eliminan vistas sin mover las restantes. Son casos con id `<base>-<tipo>`, `variant: "empobrecida"`, `poor_kind`, `variant_of` y `view_kind: assembled_orthographic_partial`. El generador no dibuja cotas ni textos, así que no hay cotas que quitar: la ausencia de cotas es la norma de este corpus.
+
+### Formato del manifiesto
+
+`manifest.json` público: `generator_version` (`plankassembly-corpus-1`), `seed`, `source_dataset`, `source_revision`, `partitions` (por partición: `requested`, `available_after_audit`, `sampled`), `complete_cases`, `poor_variant_cases`, `poor_variants`, `view_kind`, `inference_evaluated: false`, `redistribution_authorized: false`, `license_notice` y `cases_sha256`. El privado añade `source_split_sha256` (de cada lista oficial), `audit_summary`, `unlisted_json_excluded`, `sampled_without_normal`, `sampling`, `duplicate_policy`, `relevance_rule`, `judgments` (archivos, nº de consultas, consultas sin relevantes, contrato de biblioteca) y los hashes del manifiesto y de `cases.json` públicos. No hay marcas de tiempo: las mismas entradas dan los mismos bytes. `cases.json` público: `id`, `partition`, `file`, `format`, `unit`, `view_kind`, `variant`, `poor_kind`, `variant_of`, `sha256`, `instruction`.
+
+### Juicios derivados
+
+PlankAssembly **no tiene clase semántica** verificada, así que la regla es estructural. Para cada consulta de test y cada caso completo del corpus (salvo ella misma) calcula un grado 0/1/2 con características de la referencia privada: nº de tableros, envolvente ancho/fondo/alto en mm, histograma de horizontales y verticales inferido del eje más delgado de cada cuboide (no usa `normal`) y una familia. La familia es estructural (`perfil` alto/medio/bajo + `con_trasera`/`abierto`, con la suposición x=ancho, y=fondo, z=alto) salvo que se pase `--category-field` con un campo de categoría cuya existencia se haya verificado; entonces se usa su valor. Umbrales (`ReglaRelevancia`, también en `manifest.json` y en la `descripcion` de cada archivo): grado 2 = misma familia, envolvente a ≤10 % por eje, |Δtableros| ≤1 y L1 del histograma ≤2; grado 1 = no es 2, envolvente ≤25 %, |Δtableros| ≤3 y (misma familia o L1 ≤2); grado 0 = el resto.
+
+- `juicios/juicios_test.json`: similitud graduada, `origen: "derived_reference"`, densa (`cobertura_juicios` 1,0). Si consultas × candidatos supera `--max-pairs` el generador falla. `--zeros-per-query N` conserva los grados ≥1 y los N ceros más cercanos: la cobertura baja, las métricas no cambian porque lo no juzgado cuenta como 0.
+- `juicios/juicios_test_<tipo>.json`: consultas empobrecidas con los grados de su caso completo.
+- `juicios/juicios_identidad_<tipo>.json`: tarea entre vistas. La consulta es la variante empobrecida y solo su mueble completo es relevante (grado 2, resto 0). Recoge la dificultad registrada por el laboratorio semántico (Hit@1 = 0,30 entre vistas del mismo mueble) en lugar de medir solo casos fáciles.
+
+Los grados miden el acuerdo con esta regla, no la preferencia de un técnico. Un método que use las mismas magnitudes (dimensiones, número de piezas) queda favorecido por construcción, y no hay histórico económico. Antes de usarlos como evidencia hay que revisar una muestra por personas (`team_reviewed`, véase el README de `evaluation/recuperacion`).
+
+### Contrato de la biblioteca para evaluar
+
+`tools/evaluar_recuperacion.py` busca las consultas por id en la biblioteca. Para estos juicios: `LibraryItem.id` = id del caso, un único `descriptor_version`, `run_id` distinto por caso, y la biblioteca debe contener **todos los casos completos** (train, valid y test). Las variantes empobrecidas se añaden como consultas. En `juicios_test_<tipo>` la variante usa `run_id` = id de su caso base (el evaluador excluye así el propio mueble completo); en `juicios_identidad_<tipo>` su `run_id` debe diferir del de la base. El descriptor debe construirse a partir de la vista pública, no de `references.json`: usar la referencia daría al método información reservada.
+
+### Limitaciones
+
+- Verificado solo con fixtures sintéticos (`tests/test_plankassembly_corpus.py`). No se ha ejecutado con el dataset real ni se ha comprobado qué claves tienen sus JSON aparte de `planks`, `attach` y `normal`.
+- El auditor de duplicados es heurístico (rejillas) y puede dejar pasar o sobreeliminar variantes.
+- Los juicios densos crecen con consultas × candidatos.
+- Las vistas son rectángulos de cuboides: sintéticas, no planos de fabricación.

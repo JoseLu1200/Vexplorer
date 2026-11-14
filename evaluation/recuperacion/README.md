@@ -46,3 +46,19 @@ El archivo está marcado `synthetic`. Sus ids pertenecen a una biblioteca invent
 ## Punto de extensión
 
 Registra en `METODOS` de `tools/evaluar_recuperacion.py` una función `(consulta, candidatos) -> ((id, score), ...)`. Puede ser el score híbrido de la idea 2.3, que todavía no está implementado. Orden y exclusiones son comunes a todos los métodos.
+
+## Juicios derivados de PlankAssembly (`derived_reference`)
+
+`origen: "derived_reference"` marca juicios calculados por una regla determinista sobre la referencia privada de un corpus, sin revisión humana. `tools/evaluar_recuperacion.py` los acepta y añade un `aviso` al informe: miden acuerdo con la regla, no preferencia del técnico. No se versionan aquí (derivan de PlankAssembly, CC BY-NC-ND 4.0): se generan fuera del repositorio.
+
+```powershell
+hf download manycore-research/PlankAssembly --repo-type dataset --revision d1d4308f0ee0aac2f9f407b3533ff83ecee22d34 --local-dir ../plankassembly_dataset
+# extraer data.zip en ../plankassembly_dataset/extracted/
+python -m tools.plankassembly_corpus --source ../plankassembly_dataset --public-output ../plankassembly_corpus_public --private-output ../plankassembly_corpus_private --seed 20261114 --train 2000 --valid 200 --test 200 --poor-variants
+python -m tools.evaluar_recuperacion --biblioteca <biblioteca.json> --juicios ../plankassembly_corpus_private/juicios/juicios_test.json --k 5 --metodo geometrico
+```
+
+- Archivos: `juicios_test.json` (similitud graduada, consultas = test), `juicios_test_<tipo>.json` (consultas empobrecidas) y `juicios_identidad_<tipo>.json` (identidad entre vistas: solo el mueble completo propio es relevante).
+- La biblioteca debe contener todos los casos completos con `id` = id del caso y `run_id` distinto por caso. En `juicios_test_<tipo>` la variante lleva `run_id` = id de su base; en `juicios_identidad_<tipo>`, uno distinto. Detalle de la regla, particiones y limitaciones: [PLANKASSEMBLY](../../docs/PLANKASSEMBLY.md#corpus-de-evaluación-por-particiones-y-juicios-derivados).
+- Son densos (`cobertura_juicios` 1,0) salvo con `--zeros-per-query`. Las consultas de test nunca tienen entre sus candidatos su propio duplicado: el generador descarta duplicados entre particiones y deja un representante por grupo.
+- Revisa una muestra con dos personas (sección anterior) antes de tratarlos como evidencia.
