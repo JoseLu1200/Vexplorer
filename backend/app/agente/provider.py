@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.prompts import SYSTEM_PROMPT
+from backend.app.agente.prompts import SYSTEM_PROMPT, VISION_SYSTEM_PROMPT
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ class OpenAIResponsesProvider:
     def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
         payload: dict[str, Any] = {
             "model": self.settings.model,
-            "instructions": SYSTEM_PROMPT,
+            "instructions": VISION_SYSTEM_PROMPT if self.settings.vision_enabled else SYSTEM_PROMPT,
             "input": input_items,
             "tools": tools,
             "tool_choice": "required",

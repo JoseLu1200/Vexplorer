@@ -25,6 +25,7 @@ from backend.app.contratos.modelos import (
     SelectScenarioArgs,
     SeparatedPartsExtraction,
     TableProgramProposal,
+    VisualizeTableViewArgs,
 )
 from backend.app.servicios.explanations import explain_proposal
 from pydantic import ValidationError
@@ -316,58 +317,26 @@ def run_table_agent(
         },
     }
     actions: list[AgentAction] = []
+    visualized_view_ids: set[str] = set()
+    visual_view_ids: set[str] = set()
     if vision_enabled:
         label_order = {"FRONT": 0, "TOP": 1, "SIDE": 2, "UNKNOWN": 3}
         selected_views = sorted(extraction.views, key=lambda item: (label_order[item.label], item.id))[:3]
         if not selected_views:
             raise RuntimeError("vision_geometry_unavailable")
-        rendered = []
-        for view in selected_views:
-            try:
-                artifact = render_view(extraction, view.id)
-            except ValueError as exc:
-                raise RuntimeError(str(exc)) from exc
-            rendered.append(artifact)
-            actions.append(AgentAction(
-                tool_name="renderizar_contexto_visual",
-                ok=True,
-                evidence_ids=(),
-                summary="Vista PNG Set-of-Mark derivada del ledger para contexto visual; no es fuente de medidas.",
-                artifact_sha256=artifact.sha256,
-                mark_count=len(artifact.marks),
-                view_id=artifact.view_id,
-            ))
+        visual_view_ids = {item.id for item in selected_views}
         context["vision"] = {
             "authority": "context_only_not_measurement_source",
-            "views": [
-                {
-                    "view_id": artifact.view_id,
-                    "sha256": artifact.sha256,
-                    "width_px": artifact.width_px,
-                    "height_px": artifact.height_px,
-                    "marks": [
-                        {"mark_id": mark.mark_id, "source_kind": mark.source_kind, "source_id": mark.source_id}
-                        for mark in artifact.marks
-                    ],
-                }
-                for artifact in rendered
-            ],
+            "available_views": [{"view_id": item.id, "label": item.label} for item in selected_views],
+            "instruction": "Solicita visualizar_vista por ID cuando el contexto visual ayude; usa las herramientas vectoriales para cualquier medida.",
         }
-        content = [{"type": "input_text", "text": json.dumps(context, ensure_ascii=False)}]
-        content.extend({
-            "type": "input_image",
-            "image_url": f"data:{artifact.media_type};base64,{b64encode(artifact.png).decode('ascii')}",
-            "detail": "high",
-        } for artifact in rendered)
-        input_items = [{"role": "user", "content": content}]
-    else:
-        input_items = [{"role": "user", "content": json.dumps(context, ensure_ascii=False)}]
+    input_items = [{"role": "user", "content": json.dumps(context, ensure_ascii=False)}]
     while model_calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
             raise TimeoutError("agent_deadline_exceeded")
         model_calls += 1
-        response = provider.create_response(input_items=input_items, tools=table_tool_schemas(), previous_response_id=previous_response_id, timeout_s=remaining)
+        response = provider.create_response(input_items=input_items, tools=table_tool_schemas(include_vision=vision_enabled), previous_response_id=previous_response_id, timeout_s=remaining)
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [{"role": "user", "content": "Debes inspeccionar IDs o proponer un programa mediante una herramienta permitida."}]
@@ -375,6 +344,7 @@ def run_table_agent(
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
             raise RuntimeError("tool_call_budget_exhausted")
         outputs = []
+        visual_inputs = []
         for call in response.tool_calls:
             tool_calls += 1
             try:
@@ -397,6 +367,51 @@ def run_table_agent(
                     if unknown:
                         data["details"] = _valid_reference_details(measures)
                     actions.append(AgentAction(call.name, not unknown, tuple(evidence_id for item in selected for evidence_id in item.evidence_ids), "Medidas y fuentes del ledger inspeccionadas." if not unknown else "Referencia de medida desconocida rechazada."))
+                elif call.name == "visualizar_vista" and vision_enabled:
+                    args = VisualizeTableViewArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    if args.view_id not in visual_view_ids:
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(visual_view_ids)}
+                        actions.append(AgentAction(call.name, False, (), "Referencia de vista desconocida rechazada."))
+                    elif args.view_id in visualized_view_ids:
+                        data = {"ok": False, "error": "view_already_visualized"}
+                        actions.append(AgentAction(call.name, False, (), "Vista ya visualizada en esta ejecución."))
+                    elif len(visualized_view_ids) >= 3:
+                        data = {"ok": False, "error": "vision_call_budget_exhausted"}
+                        actions.append(AgentAction(call.name, False, (), "Presupuesto de vistas visuales agotado."))
+                    else:
+                        try:
+                            artifact = render_view(extraction, args.view_id)
+                        except ValueError as exc:
+                            code = str(exc) if str(exc) in {"unknown_view", "vision_budget_exceeded", "vision_geometry_unavailable"} else "vision_geometry_unavailable"
+                            data = {"ok": False, "error": code}
+                            actions.append(AgentAction(call.name, False, (), "No se pudo renderizar la vista solicitada dentro de los límites."))
+                            outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
+                            continue
+                        visualized_view_ids.add(args.view_id)
+                        marks = [
+                            {"mark_id": mark.mark_id, "source_kind": mark.source_kind, "source_id": mark.source_id}
+                            for mark in artifact.marks
+                        ]
+                        data = {
+                            "ok": True,
+                            "view_id": artifact.view_id,
+                            "sha256": artifact.sha256,
+                            "width_px": artifact.width_px,
+                            "height_px": artifact.height_px,
+                            "marks": marks,
+                            "authority": "context_only_not_measurement_source",
+                        }
+                        visual_inputs.append({"role": "user", "content": [
+                            {"type": "input_text", "text": json.dumps({"view_id": artifact.view_id, "sha256": artifact.sha256, "marks": marks, "authority": "context_only_not_measurement_source"}, ensure_ascii=False)},
+                            {"type": "input_image", "image_url": f"data:{artifact.media_type};base64,{b64encode(artifact.png).decode('ascii')}", "detail": "high"},
+                        ]})
+                        actions.append(AgentAction(
+                            call.name, True, (),
+                            "Vista PNG Set-of-Mark solicitada y derivada del ledger; no es fuente de medidas.",
+                            artifact_sha256=artifact.sha256,
+                            mark_count=len(artifact.marks),
+                            view_id=artifact.view_id,
+                        ))
                 elif call.name == "proponer_descomposicion":
                     args = ProposeTableProgramArgs.model_validate_json(json.dumps(arguments), strict=True)
                     referenced_measures = {operand.ref_id for binding in args.bindings for operand in binding.operand_refs if operand.ref_type == "measure"}
@@ -425,5 +440,5 @@ def run_table_agent(
                 if repairs > limits.max_validation_repairs:
                     raise RuntimeError("validation_repair_budget_exhausted") from exc
             outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
-        input_items = outputs
+        input_items = [*outputs, *visual_inputs]
     raise RuntimeError("model_call_budget_exhausted")

@@ -657,6 +657,10 @@ class InspectTableMeasuresArgs(StrictModel):
         return self
 
 
+class VisualizeTableViewArgs(StrictModel):
+    view_id: str = Field(min_length=1, max_length=160)
+
+
 class TableReviewDecision(StrictModel):
     target_kind: Literal["program", "component", "premise"]
     target_id: str = Field(min_length=1)
