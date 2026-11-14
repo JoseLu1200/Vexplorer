@@ -91,6 +91,8 @@ def test_unavailable_live_and_unrecorded_replay_are_explicit_errors(tmp_path: Pa
     assert config["live_available"] is False
     assert config["unavailable_reason"]
     assert config["recorded_replay_available"] is False
+    assert config["vision"]["enabled"] is False
+    assert config["vision"]["authority"] == "context_only_not_measurement_source"
     assert all("path" not in str(tool).lower() for tool in config["tools"])
 
 

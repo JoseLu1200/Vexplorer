@@ -10,6 +10,7 @@ class ProviderSettings:
     model: str | None
     base_url: str = "https://api.openai.com/v1"
     max_output_tokens: int = 4096
+    vision_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "ProviderSettings":
@@ -17,7 +18,8 @@ class ProviderSettings:
             max_output_tokens = int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "4096"))
         except ValueError:
             max_output_tokens = 0
-        return cls(api_key=os.getenv("OPENAI_API_KEY"), model=os.getenv("OPENAI_MODEL"), base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"), max_output_tokens=max_output_tokens)
+        vision_enabled = os.getenv("OPENAI_VISION_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+        return cls(api_key=os.getenv("OPENAI_API_KEY"), model=os.getenv("OPENAI_MODEL"), base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"), max_output_tokens=max_output_tokens, vision_enabled=vision_enabled)
 
     @property
     def available(self) -> bool:
