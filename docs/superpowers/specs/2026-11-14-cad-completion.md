@@ -38,10 +38,10 @@ El cierre exige ejecutar el harness real, inspeccionar visualmente los planos re
 
 ## Propiedad
 
-- Backend general: contrato Pydantic único, parámetros, materialización, herramientas/prompt y crítica/reparación, integración de derivados.
+- Backend general: contrato Pydantic único, parámetros, materialización, herramientas/prompt de propuesta e integración de derivados.
 - Consistencia (agente economy): `construction_validation.py` y pruebas deterministas.
 - Planos (agente ingestion): planner/renderer de conjunto y piezas, cotas/detalles y sus pruebas.
-- Integración: persistencia, router, main, snapshots y eventos del recorrido.
+- Integración: persistencia, router, main, snapshots, eventos, `review.py` y crítica/reparación en `autonomous.py` (transferencia confirmada antes de editar).
 - Interfaz: presentación 2D, selección de piezas, explicación y descargas.
 - Evaluación: fixtures propios y comprobación independiente de utilidad constructiva.
 - Coordinación: integración, ejecución real, inspección visual, commits y documentación.
