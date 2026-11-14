@@ -10,31 +10,27 @@ from fastapi.testclient import TestClient
 from backend.app.estimacion.table_costs import get_table_cost_catalog
 from backend.app.main import create_app
 
-RUTAS_PRECEDENTES = [
-    ("POST", "/api/v1/precedentes/sugerencias"),
-    ("POST", "/api/v1/precedentes/presupuesto-analogia"),
-    ("POST", "/api/v1/precedentes/similares-hibrido"),
-    ("POST", "/api/v1/precedentes/embeddings/regenerar"),
-    ("POST", "/api/v1/precedentes/embeddings/espacio/verificar"),
-    ("GET", "/api/v1/precedentes/embeddings/espacio"),
-    ("POST", "/api/v1/precedentes/embeddings/espacio/rotar"),
-    ("GET", "/api/v1/precedentes/embeddings/espacio/historico"),
-    ("POST", "/api/v1/precedentes/piezas/gemelas"),
-    ("POST", "/api/v1/precedentes/piezas/lotes"),
-    ("POST", "/api/v1/precedentes/busqueda"),
-    ("POST", "/api/v1/precedentes/imagen/indexar"),
-    ("POST", "/api/v1/precedentes/imagen/similares"),
-    ("POST", "/api/v1/precedentes/decisiones"),
-    ("GET", "/api/v1/precedentes/decisiones/resumen"),
-    ("POST", "/api/v1/precedentes/herrajes/registros"),
-    ("GET", "/api/v1/precedentes/herrajes/registros"),
-    ("POST", "/api/v1/precedentes/herrajes/sugerencias"),
-]
+PREFIJO_PRECEDENTES = "/api/v1/precedentes"
+
+
+def _rutas_precedentes(app) -> list[tuple[str, str]]:
+    """Todas las rutas (método, ruta) que la app publica bajo el prefijo de precedentes (según su OpenAPI)."""
+    return sorted(
+        (metodo.upper(), ruta)
+        for ruta, operaciones in app.openapi()["paths"].items()
+        if ruta == PREFIJO_PRECEDENTES or ruta.startswith(PREFIJO_PRECEDENTES + "/")
+        for metodo in operaciones
+        if metodo.upper() in {"GET", "POST", "PUT", "PATCH", "DELETE"}
+    )
 
 
 def test_rutas_de_precedentes_registradas_en_local(tmp_path: Path) -> None:
-    client = TestClient(create_app(data_dir=tmp_path / "data", frontend_dir=tmp_path / "none"))
-    for method, path in RUTAS_PRECEDENTES:
+    app = create_app(data_dir=tmp_path / "data", frontend_dir=tmp_path / "none")
+    rutas = _rutas_precedentes(app)
+    assert ("GET", "/api/v1/precedentes/embeddings/mantenimiento") in rutas
+    assert len(rutas) >= 19
+    client = TestClient(app)
+    for method, path in rutas:
         response = client.request(method, path)
         assert response.status_code not in (404, 405), (method, path, response.status_code)
 
@@ -54,8 +50,9 @@ def test_precedentes_bloqueados_en_acceso_publico(tmp_path: Path, monkeypatch: p
     monkeypatch.setenv("VEXPLORER_ENV", "production")
     monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
     monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
-    with TestClient(create_app(data_dir=tmp_path / "data")) as client:
-        for method, path in RUTAS_PRECEDENTES:
+    app = create_app(data_dir=tmp_path / "data")
+    with TestClient(app) as client:
+        for method, path in _rutas_precedentes(app):
             response = client.request(method, path)
             assert response.status_code == 403, (path, response.text)
             assert response.json()["error"]["code"] == "private_feature_unavailable"
