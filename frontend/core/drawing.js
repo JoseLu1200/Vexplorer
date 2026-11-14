@@ -12,6 +12,24 @@ function resolvedPoint(record, name, metric) {
   return finitePoint(point) ? pointTuple(point) : null;
 }
 
+function cleanNumber(value) { return Math.abs(value) < 1e-10 ? 0 : Number(value.toFixed(10)); }
+function circlePoint(center, radius, angleDeg) { const radians=angleDeg*Math.PI/180; return [cleanNumber(center[0]+radius*Math.cos(radians)),cleanNumber(center[1]+radius*Math.sin(radians))]; }
+function positiveSweep(start,end){const delta=((end-start)%360+360)%360;return delta||360;}
+
+function resolvedCircular(entity,metric){
+  const raw=entity?.circular,kind=String(raw?.kind??"").toLowerCase(),center=resolvedPoint(raw,"center",metric),radius=metric?raw?.radius_mm:raw?.radius_source;
+  if(!["circle","arc"].includes(kind)||!center||!Number.isFinite(radius)||radius<=0)return null;
+  if(kind==="arc"&&(!Number.isFinite(raw.start_angle_deg)||!Number.isFinite(raw.end_angle_deg)))return null;
+  return {kind,center,radius,startAngle:raw.start_angle_deg??null,endAngle:raw.end_angle_deg??null};
+}
+
+function circularFitPoints(circular){
+  if(circular.kind==="circle")return [0,90,180,270].map((angle)=>circlePoint(circular.center,circular.radius,angle));
+  const delta=positiveSweep(circular.startAngle,circular.endAngle),angles=[circular.startAngle];
+  [0,90,180,270].forEach((angle)=>{const relative=((angle-circular.startAngle)%360+360)%360;if(relative>1e-9&&relative<delta-1e-9)angles.push(angle);});
+  angles.push(circular.endAngle);return angles.map((angle)=>circlePoint(circular.center,circular.radius,angle));
+}
+
 export function safeText(value) {
   return String(value ?? "");
 }
@@ -37,9 +55,10 @@ export function normaliseDrawing(extraction) {
   (extraction?.entities ?? []).forEach((entity) => {
     if (claimedEntities.has(entity.id)) return;
     if (String(entity.kind).toUpperCase() === "DIMENSION" && ((extraction?.dimension_graphics?.length ?? 0) > 0 || dimensionEntityIds.has(entity.id))) return;
-    const points = metric ? entity.points_mm : entity.source_points;
-    if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
+    const circular=resolvedCircular(entity,metric),points = metric ? entity.points_mm : entity.source_points;
     const viewIds = entityViews.get(entity.id) ?? [];
+    if(circular){paths.push({id:`entity:${entity.id}`,viewId:viewIds.length===1?viewIds[0]:null,entityIds:[entity.id],points:circularFitPoints(circular),closed:circular.kind==="circle",kind:entity.kind,circular});return;}
+    if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
     paths.push({ id: `entity:${entity.id}`, viewId: viewIds.length === 1 ? viewIds[0] : null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
   });
   const texts = (extraction?.texts ?? []).flatMap((item) => {
@@ -102,4 +121,13 @@ export function selectionForComponent(component, drawing) {
 export function svgPath(points, closed = false) {
   if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return "";
   return `${points.map((raw, index) => { const point = pointTuple(raw); return `${index ? "L" : "M"} ${point[0]} ${-point[1]}`; }).join(" ")}${closed ? " Z" : ""}`;
+}
+
+export function svgCircularPath(circular){
+  if(!circular?.center||!Number.isFinite(circular.radius)||circular.radius<=0)return "";
+  const [cx,cy]=circular.center,r=circular.radius;
+  if(circular.kind==="circle")return `M ${cleanNumber(cx+r)} ${cleanNumber(-cy)} A ${r} ${r} 0 1 0 ${cleanNumber(cx-r)} ${cleanNumber(-cy)} A ${r} ${r} 0 1 0 ${cleanNumber(cx+r)} ${cleanNumber(-cy)} Z`;
+  if(circular.kind!=="arc"||!Number.isFinite(circular.startAngle)||!Number.isFinite(circular.endAngle))return "";
+  const start=circlePoint(circular.center,r,circular.startAngle),end=circlePoint(circular.center,r,circular.endAngle),large=positiveSweep(circular.startAngle,circular.endAngle)>180?1:0;
+  return `M ${start[0]} ${cleanNumber(-start[1])} A ${r} ${r} 0 ${large} 0 ${end[0]} ${cleanNumber(-end[1])}`;
 }

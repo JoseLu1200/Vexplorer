@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normaliseDrawing, selectionForComponent, safeText } from "../core/drawing.js";
+import { normaliseDrawing, selectionForComponent, safeText, svgCircularPath } from "../core/drawing.js";
 
 const unknownDrawing = {
   drawing_id: "d-1",
@@ -39,6 +39,27 @@ test("unclaimed source entities remain visible as construction evidence", () => 
   const shelf = model.paths.find((path) => path.id === "entity:inner-shelf");
   assert.deepEqual(shelf.points, [[0, 40], [120, 40]]);
   assert.deepEqual(shelf.entityIds, ["inner-shelf"]);
+});
+
+test("typed circles and arcs remain exact curves instead of source-point chords", () => {
+  const model = normaliseDrawing({
+    ...unknownDrawing,
+    source_unit: "mm",
+    unit_scale_to_mm: 1,
+    contours: [],
+    entities: [
+      { id: "circle-1", kind: "CIRCLE", source_points: [[20, 20]], points_mm: [[20, 20]], circular: { kind: "circle", center_source: [10, 20], center_mm: { x: 10, y: 20 }, radius_source: 10, radius_mm: 10 } },
+      { id: "arc-1", kind: "ARC", source_points: [[10, 0], [0, 10]], points_mm: [[10, 0], [0, 10]], circular: { kind: "arc", center_source: [0, 0], center_mm: { x: 0, y: 0 }, radius_source: 10, radius_mm: 10, start_angle_deg: 0, end_angle_deg: 90 } },
+    ],
+    views: [{ id: "view-1", label: "FRONT", entity_ids: ["circle-1", "arc-1"] }],
+  });
+
+  const circle = model.paths.find((item) => item.id === "entity:circle-1");
+  const arc = model.paths.find((item) => item.id === "entity:arc-1");
+  assert.equal(svgCircularPath(circle.circular), "M 20 -20 A 10 10 0 1 0 0 -20 A 10 10 0 1 0 20 -20 Z");
+  assert.equal(svgCircularPath(arc.circular), "M 10 0 A 10 10 0 0 0 0 -10");
+  assert.deepEqual(circle.points, [[20, 20], [10, 30], [0, 20], [10, 10]]);
+  assert.deepEqual(arc.points, [[10, 0], [0, 10]]);
 });
 
 test("component selection follows stable contour and evidence identifiers", () => {
