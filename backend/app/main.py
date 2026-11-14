@@ -1790,10 +1790,53 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
-    def create_run(request: RunRequest):
+    def create_run(
+        request: RunRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
         if environment == "production":
             return _error(409, "use_jobs_endpoint", "Producción requiere el endpoint durable de trabajos.")
-        return _execute_run(request)
+        actor = getattr(http_request.state, "actor", None)
+        request_hash = ""
+        conflict_message = "Idempotency-Key ya utilizada con parámetros distintos."
+        if idempotency_key is not None:
+            if len(idempotency_key) > 128 or not idempotency_key.strip():
+                return _error(422, "invalid_idempotency_key", "Idempotency-Key inválida.")
+            idempotency_key = idempotency_key.strip()
+            request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+            try:
+                existing_run_id = repository.get_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                raise
+            if existing_run_id is not None:
+                run = repository.get_run(existing_run_id)
+                result = repository.get_result(existing_run_id, 1)
+                return _ok(
+                    {"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json")},
+                    201,
+                )
+        response = _execute_run(request, actor=actor)
+        if idempotency_key is not None and response.status_code == 201:
+            run_id = json.loads(response.body)["data"]["run"]["id"]
+            try:
+                repository.save_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                    run_id=run_id,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                raise
+        return response
 
     class PublicJobAdmissionDenied(ValueError):
         def __init__(self, decision) -> None:
