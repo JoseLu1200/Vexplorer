@@ -37,9 +37,10 @@ Fase 0.5 implementada sobre el contrato A/B congelado: carga de mesa montada, le
 
 ## Verificación
 
-- `cd frontend; npm test`: 77 pruebas aprobadas, 0 fallos en el último ciclo local, incluidas identidad de láminas y filtrado de slots no bloqueantes.
+- `cd frontend; npm test`: 82 pruebas aprobadas, 0 fallos en el último ciclo local, incluidas identidad de láminas, filtrado de slots no bloqueantes y curvas circulares tipadas.
 - Smoke aislado en navegador contra `http://127.0.0.1:8768`: revisión 1→2, plano general, dos planos por componente, despiece, enlaces SVG/DXF, escena 3D y coste parcial de 126,32 EUR con tarifa explícita. Los GET opcionales de manifiesto/coste aún no generados devuelven 404 y el frontend los trata como estado vacío.
 - Responsive comprobado en navegador a 1042 px y 501 px: sin solape ni ancho horizontal; todos los controles de carga permanecen accesibles.
+- Planos derivados comprobados con SVG 1600×1541: zoom vectorial, pan, encaje y modo ampliado 992×452; Escape restaura la vista compacta. El ledger 2D dibuja círculos y arcos exactos desde centro/radio/ángulos publicados, sin convertir puntos auxiliares en cuerdas.
 
 - `cd frontend; npm test`: 46 pruebas, 46 aprobadas, 0 fallos en el último ciclo local, incluidas respuestas/rechazos diferidos que no pueden pisar una sesión nueva.
 - `node --check app.js` y `node --check components/SceneViewer.js`: sin errores de sintaxis.
