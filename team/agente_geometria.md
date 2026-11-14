@@ -9,9 +9,9 @@
 
 ## Tarea de la sesión
 
-- Objetivo: enriquecer el plano con textos y cotas ancladas y generar una escena 3D determinista, trazable y explícitamente incompleta cuando falten revisión, dimensiones o posiciones.
-- Referencia: ampliación autorizada de plano, reconstrucción y similitud del 2026-11-13.
-- Estado: implementación 0.3 terminada para integración.
+- Objetivo actual: analizar vistas ortográficas montadas de una mesa rectangular, evaluar programas generativos acotados y reconstruir únicamente componentes respaldados y revisados.
+- Referencia: diseño y plan `mesa-planos-derivados` del 2026-11-14, base `main` `164356b`.
+- Estado: acuerdo explícito A/B 0.5 cerrado; B materializa los modelos Pydantic y el documento antes del código dependiente de A.
 
 ## Alcance y reservas
 
@@ -22,6 +22,10 @@
 - Solo leeré: contratos, API, frontend, fixture público de evaluación y documentación.
 - `backend/app/contratos/` pertenece exclusivamente al agente B.
 - Solapes detectados: ninguno; la interfaz con B debe acordarse antes de implementación contractual.
+- Nueva propiedad autorizada para mesa: nuevo `backend/app/geometria/mounted_table.py`, nuevo `backend/app/servicios/table_reconstruction.py`, el programa geométrico determinista asociado y pruebas nuevas propias de geometría/reconstrucción de mesa.
+- `backend/app/salida/technical_drawings.py` pertenece al apoyo de planos y queda fuera de mi alcance; consumirá planes geométricos acordados con A/B.
+- Delegación autorizada del coordinador: `/root/research_viewer` actúa como apoyo subordinado de A y posee exclusivamente el nuevo `backend/app/salida/technical_drawings.py` y sus pruebas. A coordina su interfaz y recibe sus logs, pero no edita el renderer.
+- B conserva propiedad exclusiva de modelos Pydantic, API, repositorio, revisión y harness. D conserva fixtures y referencia; A no leerá `evaluation/reference/**`.
 
 ## Hecho en el último bloque
 
@@ -59,6 +63,11 @@
 - Aviso realizado: contrato final comunicado a frontend y fixture coordinado con evaluación el 2026-11-13.
 - Aviso realizado: contrato aditivo 0.3 comunicado a frontend y evaluación el 2026-11-13.
 - Cambio de `contratos/`: acuerdo A/B explícito 0.3; B es único escritor, A solo importa modelos.
+- Mesa 0.5: antes de implementar, A/B deben acordar medidas, bindings, componentes, reglas de cantidad/placement, estados y recálculo desde revisión efectiva; A avisará a C, D y al apoyo de planos con las firmas finales.
+- Acuerdo A/B mesa 0.5: entrada `mounted_orthographic_views` y perfil `rectangular_table_v1` explícitos; `analyze_mounted_table`, `evaluate_table_program(..., decisions)`, `derive_table_drawing_plan` y `reconstruct_table_scene`. El programa no aporta números: bindings `copy|add|subtract` referencian medidas/bindings previos; servidor valida cobertura, DAG, positividad y máximos. Dos specs de tipo (tablero + un sistema de soportes) usan registros versionados `top_one`, `two_side_supports` o `four_corner_supports` y placements asociados. Raw/normalizado/hash, evidencias y premisas quedan separados. La revisión apunta a targets exactos, recalcula una copia efectiva y no muta el ledger. Desconocidos, conflictos o medidas admitidas sin asignar bloquean completitud/escena.
+- Delta A/B aceptado: `catalog_table_programs(analysis)` genera exactamente dos alternativas `catalog_baseline` incompatibles (soportes laterales o de esquina), ninguna elegida por apariencia. Los espesores/secciones ausentes son slots/premisas unknown del programa, no medidas CAD ficticias ni mediciones sin asignar.
+- Adendum A/B 0.5 aceptado: todos los slots numéricos son `TableMeasure`; los requeridos por perfil se distinguen como unknown/no observados y sólo `TableConfirmedValue` humano puede resolverlos. Catálogo requiere `table_template_id` explícito. El evaluador deriva cobertura/disposiciones y bloquea conflictos; no confía en cobertura declarada por modelo. Hash topológico canónico conserva semántica de resta. Premisas y aceptaciones de programa/componente/premisa son separadas; rechazo bloquea dependientes. Cost scope y descriptor V3 quedan tipados y versionados por B.
+- Cierre del adendum: antes de Review todos los bindings/componentes/placements son `proposed`, incluso si copian observaciones. Aceptar el programa valida topología/bindings y permite `calculated`, pero no acepta componentes ni premisas. Las premisas iniciales son siempre requeridas por registry; perfil, revisión de ledger y origen los inyecta servidor, no la herramienta del modelo.
 
 ## Pruebas y revisión
 
