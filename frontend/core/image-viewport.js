@@ -19,3 +19,12 @@ export function zoomImageViewport(viewport, multiplier, anchor) {
 export function panImageViewport(viewport, dx, dy) {
   return { ...viewport, x: viewport.x + dx, y: viewport.y + dy };
 }
+
+export function imageViewportStyle(viewport) {
+  return {
+    width: `${viewport.scale * 100}%`,
+    height: `${viewport.scale * 100}%`,
+    left: `${viewport.x}px`,
+    top: `${viewport.y}px`,
+  };
+}

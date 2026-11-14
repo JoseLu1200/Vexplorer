@@ -7,7 +7,7 @@ import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, pr
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
-import { fitImageViewport, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
+import { fitImageViewport, imageViewportStyle, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
 import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "./core/table.js";
 
@@ -43,6 +43,7 @@ function resetRunUi() {
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
   $("#derived-drawing-image").removeAttribute("src"); $("#derived-drawing-view").hidden=true; $("#derived-drawing-sheet").replaceChildren(); $("#derived-drawing-downloads").replaceChildren(); artifactFence.invalidate();
+  $("#derived-drawing-view").classList.remove("is-expanded"); $("#derived-drawing-expand").setAttribute("aria-pressed","false"); text($("#derived-drawing-expand"),"Ampliar");
   toggleHidden($("#table-cost-scope"),true); $$('[data-artifact-view]').forEach((tab)=>{if(tab.dataset.artifactView!=="source")tab.disabled=true;});
   text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#run-mode-label"), "Sin ejecución");
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
@@ -143,6 +144,7 @@ function activateView(viewId, button) {
 
 function showSourceArtifact(){
   state.activeArtifact="source";
+  $("#derived-drawing-view").classList.remove("is-expanded"); $("#derived-drawing-expand").setAttribute("aria-pressed","false"); text($("#derived-drawing-expand"),"Ampliar");
   $$('[data-artifact-view]').forEach((tab)=>tab.setAttribute("aria-selected",String(tab.dataset.artifactView==="source")));
   toggleHidden($("#derived-drawing-view"),true);
   const viewId=state.activeView;
@@ -150,15 +152,16 @@ function showSourceArtifact(){
   ["#zoom-out","#zoom-in","#fit-view","#reset-view","#toggle-entities","#toggle-texts","#toggle-dimensions"].forEach((selector)=>$(selector).disabled=false);
 }
 
-function applyDerivedImageViewport(){const view=state.derivedImageViewport??fitImageViewport(); $("#derived-drawing-image").style.transform=`translate(${view.x}px, ${view.y}px) scale(${view.scale})`;}
+function applyDerivedImageViewport(){Object.assign($("#derived-drawing-image").style,imageViewportStyle(state.derivedImageViewport??fitImageViewport()));}
 function fitDerivedDrawing(){state.derivedImageViewport=fitImageViewport();applyDerivedImageViewport();}
+function toggleDerivedExpanded(){const view=$("#derived-drawing-view"),expanded=view.classList.toggle("is-expanded"),button=$("#derived-drawing-expand"); button.setAttribute("aria-pressed",String(expanded)); text(button,expanded?"Reducir":"Ampliar"); requestAnimationFrame(fitDerivedDrawing);}
 
 function tableDrawingSheets(kind){return state.tableDrawings?.byKind?.[kind]??[];}
 function selectDerivedSheet(sheet){
   if(!sheet||!state.runId)return;
   const format=sheet.formats.includes("svg")?"svg":sheet.formats[0], identity=artifactRequestIdentity({runId:state.runId,revision:sheet.revision,programHash:sheet.programHash,sheetId:sheet.id,format}),token=artifactFence.issue(identity),image=$("#derived-drawing-image");
   text($("#derived-drawing-title"),sheet.title); text($("#derived-drawing-meta"),`Revisión ${sheet.revision} · ${sheet.status==="ready"?"lista":"incompleta"} · programa ${sheet.programHash.slice(0,10)}`); text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");
-  const source=sheet.formatLinks?.[format]??api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; fitDerivedDrawing(); image.onload=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
+  const source=sheet.formatLinks?.[format]??api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; fitDerivedDrawing(); image.onload=async()=>{try{await image.decode();}catch{} if(artifactFence.isCurrent(token,identity)){fitDerivedDrawing();text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
   const downloads=$("#derived-drawing-downloads"); downloads.replaceChildren(); sheet.formats.forEach((itemFormat)=>{const link=document.createElement("a"); link.className="button"; link.textContent=`${itemFormat.toUpperCase()}`; link.href=sheet.formatLinks?.[itemFormat]??api.tableDrawingUrl(state.runId,sheet.id,itemFormat,sheet.revision,sheet.programHash); link.download=""; downloads.append(link);});
 }
 function renderDerivedSheetKind(kind){
@@ -640,11 +643,13 @@ function setupWorkspaceControls() {
   const zoom=(factor)=>{ if(state.activeArtifact!=="source"){const rect=$("#derived-drawing-canvas").getBoundingClientRect();state.derivedImageViewport=zoomImageViewport(state.derivedImageViewport,1/factor,{x:rect.width/2,y:rect.height/2});applyDerivedImageViewport();return;} if(state.activeView==="3d"){sceneViewer?.zoom(factor); return;} if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
   $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
   const viewport=$("#cad-viewport"); let drag=null;
-  new ResizeObserver(()=>applySvgTextScale()).observe(viewport);
+  new ResizeObserver(()=>{applySvgTextScale();if(state.activeArtifact!=="source")fitDerivedDrawing();}).observe(viewport);
   viewport.addEventListener("wheel",(event)=>{ if(state.activeArtifact!=="source"){event.preventDefault();const rect=$("#derived-drawing-canvas").getBoundingClientRect();state.derivedImageViewport=zoomImageViewport(state.derivedImageViewport,event.deltaY>0?.9:1.12,{x:event.clientX-rect.left,y:event.clientY-rect.top});applyDerivedImageViewport();return;} if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
   viewport.addEventListener("pointerdown",(event)=>{ if(state.activeArtifact!=="source"){drag={kind:"derived",x:event.clientX,y:event.clientY,viewport:{...state.derivedImageViewport}};viewport.setPointerCapture(event.pointerId);return;} if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={kind:"source",x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
   viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; if(drag.kind==="derived"){state.derivedImageViewport=panImageViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);applyDerivedImageViewport();return;} const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
   viewport.addEventListener("pointerup",()=>{drag=null;}); viewport.addEventListener("pointercancel",()=>{drag=null;});
+  $("#derived-drawing-expand").addEventListener("click",toggleDerivedExpanded);
+  document.addEventListener("keydown",(event)=>{if(event.key==="Escape"&&$("#derived-drawing-view").classList.contains("is-expanded"))toggleDerivedExpanded();});
   $("#explode-scene").addEventListener("change",(event)=>sceneViewer?.setExploded(event.target.checked));
 }
 
