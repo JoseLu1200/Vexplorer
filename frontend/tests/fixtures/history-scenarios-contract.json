@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0.0",
+  "data": {
+    "run_id": "run-fixture",
+    "proposal_revision": 2,
+    "review_revision": 1,
+    "status": "provisional",
+    "label": "conditional_provisional_not_quote",
+    "assumptions": [
+      {"code": "provisional_bom", "label": "Provisional auto-reviewed BOM", "detail": "Geometry and component counts remain machine-reviewed hypotheses; they are not promoted to confirmed drawing facts.", "state": "provisional"},
+      {"code": "one_finished_item", "label": "One conditional finished item", "detail": "Every scenario prices one finished item. This is a scenario condition, not a physical occurrence inferred from the drawing.", "state": "conditional"}
+    ],
+    "scenarios": [
+      {
+        "scenario_id": "provisional:run-fixture:2:1:published-table-1",
+        "label": "conditional_provisional_not_quote",
+        "comparable_id": "published-table-1",
+        "source_effective_date": "2026-10-31",
+        "condition": {"furniture_quantity": 1, "family": "table", "material": "oak veneer", "finish": "clear lacquer", "currency": "EUR", "cost_scope": ["material", "labor"], "hours_scope": ["material", "labor"]},
+        "currency": "EUR",
+        "scaling_basis": {
+          "component_ids": ["panel-1"],
+          "scenario_occurrence_ids": ["occ-1", "occ-2"],
+          "length_mm": 2000.0,
+          "area_mm2": 2000000.0,
+          "volume_mm3": 40000000.0,
+          "units": "mm_mm2_mm3",
+          "source_refs": ["visual:page-1", "dimension:length", "dimension:width", "premise:two", "binding:length", "binding:width", "binding:thickness"]
+        },
+        "assumptions": [
+          {"code": "provisional_bom", "label": "Provisional auto-reviewed BOM", "detail": "Geometry and component counts remain machine-reviewed hypotheses; they are not promoted to confirmed drawing facts.", "state": "provisional"},
+          {"code": "one_finished_item", "label": "One conditional finished item", "detail": "Every scenario prices one finished item. This is a scenario condition, not a physical occurrence inferred from the drawing.", "state": "conditional"},
+          {"code": "reference_family", "label": "Reference family condition", "detail": "This scenario applies only if the furniture belongs to the historical reference family 'table'.", "state": "conditional"},
+          {"code": "reference_material", "label": "Reference material condition", "detail": "This scenario assumes the historical reference material 'oak veneer'.", "state": "conditional"},
+          {"code": "reference_finish", "label": "Reference finish condition", "detail": "This scenario assumes the historical reference finish 'clear lacquer'.", "state": "conditional"},
+          {"code": "reference_economic_context", "label": "Reference economic context", "detail": "Currency and metric scopes come only from reference 'published-table-1' (published/budget); this result is not a quote.", "state": "conditional"}
+        ],
+        "contributors": [
+          {"concept_id": "material", "kind": "material", "comparable_ids": ["published-table-1"], "formula": "base * target_finished_item_quantity / historical_finished_item_quantity * target_area_per_item / historical_area_per_item", "base_cost": 200.0, "base_hours": 2.0, "quantity_factor": 1.0, "consumption_factor": 1.0, "unit_rate_factor": 1.0, "estimated_cost": 200.0, "estimated_hours": 2.0, "evidence": "concept_breakdown", "missing_data": []},
+          {"concept_id": "assembly", "kind": "labor", "comparable_ids": ["published-table-1"], "formula": "base * target_finished_item_quantity / historical_finished_item_quantity", "base_cost": 100.0, "base_hours": 8.0, "quantity_factor": 1.0, "consumption_factor": 1.0, "unit_rate_factor": 1.0, "estimated_cost": 100.0, "estimated_hours": 8.0, "evidence": "concept_breakdown", "missing_data": []}
+        ],
+        "result_provenance": [
+          {"record_id": "published-table-1", "origin": "published", "source": "https://example.org/published-budget", "source_date": "2026-10-31", "cost_basis": "budget", "contributes_cost": true, "contributes_hours": true, "cost_scope": ["material", "labor"], "hours_scope": ["material", "labor"]}
+        ],
+        "cost_subtotal": 300.0,
+        "manufacturing_hours": 10.0,
+        "cost_range": null,
+        "hours_range": null,
+        "cost_uncertainty": "high",
+        "hours_uncertainty": "medium",
+        "missing_data": []
+      }
+    ],
+    "missing_data": []
+  },
+  "error": null
+}

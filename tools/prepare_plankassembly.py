@@ -142,23 +142,26 @@ def prepare_plankassembly(
     private_destination: Path,
     *,
     split: str = "valid",
+    offset: int = 0,
     limit: int = 6,
 ) -> dict[str, object]:
-    """Prepare 1–10 cases without loading or copying the full source corpus."""
+    """Prepare 1–50 consecutive cases without loading the full source corpus."""
     source = source.resolve()
     public_destination = public_destination.resolve()
     private_destination = private_destination.resolve()
     split = _safe_split_name(split)
-    if not 1 <= limit <= 10:
-        raise ValueError("limit must be between 1 and 10")
+    if not 1 <= limit <= 50:
+        raise ValueError("limit must be between 1 and 50")
+    if offset < 0:
+        raise ValueError("offset must be non-negative")
     if public_destination == private_destination or public_destination.is_relative_to(private_destination) or private_destination.is_relative_to(public_destination):
         raise ValueError("public and private destinations must be separate")
     if public_destination.exists() or private_destination.exists():
         raise ValueError("destination exists")
     split_path = source / "extracted" / "data" / "splits" / f"{split}.txt"
     filenames = [line.strip() for line in split_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if len(filenames) < limit:
-        raise ValueError("source split has fewer models than requested")
+    if len(filenames) < offset + limit:
+        raise ValueError("source split has fewer models than requested offset and limit")
 
     public_destination.parent.mkdir(parents=True, exist_ok=True)
     private_destination.parent.mkdir(parents=True, exist_ok=True)
@@ -168,7 +171,7 @@ def prepare_plankassembly(
         (public_stage / "agent_cases").mkdir()
         cases: list[dict[str, object]] = []
         references: list[dict[str, object]] = []
-        for position, filename in enumerate(filenames[:limit], 1):
+        for position, filename in enumerate(filenames[offset:offset + limit], offset + 1):
             model, source_bytes = _load_model(source, filename)
             planks = model["planks"]
             normal = model.get("normal")
@@ -190,7 +193,17 @@ def prepare_plankassembly(
                 "sha256": input_hash,
             }
             cases.append(metadata)
-            _archive_case(public_stage / file_name, metadata, public_stage / "agent_cases" / f"{case_id}.zip")
+            agent_metadata = {
+                key: metadata[key]
+                for key in (
+                    "id", "file", "format", "unit", "view_kind", "instruction", "sha256"
+                )
+            }
+            _archive_case(
+                public_stage / file_name,
+                agent_metadata,
+                public_stage / "agent_cases" / f"{case_id}.zip",
+            )
             references.append({
                 "id": case_id,
                 "source_file": filename,
@@ -213,7 +226,8 @@ def prepare_plankassembly(
             "generator_version": GENERATOR_VERSION,
             "case_count": len(cases),
             "source_split": split,
-            "selection": "first_n_in_publisher_split_for_local_adapter_trial",
+            "source_offset": offset,
+            "selection": "consecutive_range_in_publisher_split_for_local_adapter_trial",
             "inference_evaluated": False,
             "redistribution_authorized": False,
         }
@@ -238,6 +252,7 @@ def main() -> None:
     parser.add_argument("--public-output", type=Path, required=True)
     parser.add_argument("--private-output", type=Path, required=True)
     parser.add_argument("--split", default="valid")
+    parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=6)
     args = parser.parse_args()
     try:
@@ -246,6 +261,7 @@ def main() -> None:
             args.public_output,
             args.private_output,
             split=args.split,
+            offset=args.offset,
             limit=args.limit,
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:

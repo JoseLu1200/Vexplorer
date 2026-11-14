@@ -1,0 +1,114 @@
+{
+  "records": {
+    "schema_version": "1.0.0",
+    "data": {
+      "items": [
+        {
+          "record_id": "actual",
+          "project_id": "p1",
+          "revision": "r1",
+          "family": "cabinet",
+          "area_mm2": 1000000.0,
+          "quantity": 1,
+          "material": "oak",
+          "finish": "clear",
+          "currency": "EUR",
+          "actual_cost": 300.0,
+          "cost_basis": "actual",
+          "manufacturing_hours": 8.0,
+          "origin": "actual",
+          "provenance": {"source": "ERP", "source_date": "2026-11-01"},
+          "concepts": [{"concept_id": "material", "kind": "material", "driver": "area", "cost": 300.0, "hours": 8.0, "material": "oak"}],
+          "components": [],
+          "included_scope": ["material"],
+          "cost_scope": ["material"],
+          "hours_scope": ["material"]
+        },
+        {
+          "record_id": "synthetic",
+          "project_id": "p2",
+          "revision": "r1",
+          "family": "cabinet",
+          "area_mm2": 1000000.0,
+          "quantity": 1,
+          "material": "oak",
+          "finish": "clear",
+          "currency": "EUR",
+          "actual_cost": 400.0,
+          "cost_basis": "budget",
+          "manufacturing_hours": 12.0,
+          "origin": "synthetic",
+          "provenance": {"source": "demo", "source_date": "2026-11-01"},
+          "concepts": [{"concept_id": "material", "kind": "material", "driver": "area", "cost": 400.0, "hours": 12.0, "material": "oak"}],
+          "components": [],
+          "included_scope": ["material"],
+          "cost_scope": ["material"],
+          "hours_scope": ["material"]
+        }
+      ],
+      "total": 2,
+      "limit": 50,
+      "offset": 0
+    },
+    "error": null
+  },
+  "comparables": {
+    "schema_version": "1.0.0",
+    "data": {
+      "retrieval_method": "attribute",
+      "items": [
+        {
+          "record": {
+            "record_id": "actual", "project_id": "p1", "revision": "r1", "family": "cabinet", "area_mm2": 1000000.0, "quantity": 1, "material": "oak", "finish": "clear", "currency": "EUR", "actual_cost": 300.0, "cost_basis": "actual", "manufacturing_hours": 8.0, "origin": "actual", "provenance": {"source": "ERP", "source_date": "2026-11-01"}, "concepts": [{"concept_id": "material", "kind": "material", "driver": "area", "cost": 300.0, "hours": 8.0, "material": "oak"}], "components": [], "included_scope": ["material"], "cost_scope": ["material"], "hours_scope": ["material"]
+          },
+          "score": 0.9,
+          "score_components": {"area_mm2": 0.9},
+          "differences": ["area_mm2 differs"],
+          "missing_fields": []
+        },
+        {
+          "record": {
+            "record_id": "synthetic", "project_id": "p2", "revision": "r1", "family": "cabinet", "area_mm2": 1000000.0, "quantity": 1, "material": "oak", "finish": "clear", "currency": "EUR", "actual_cost": 400.0, "cost_basis": "budget", "manufacturing_hours": 12.0, "origin": "synthetic", "provenance": {"source": "demo", "source_date": "2026-11-01"}, "concepts": [{"concept_id": "material", "kind": "material", "driver": "area", "cost": 400.0, "hours": 12.0, "material": "oak"}], "components": [], "included_scope": ["material"], "cost_scope": ["material"], "hours_scope": ["material"]
+          },
+          "score": 0.8,
+          "score_components": {"area_mm2": 0.8},
+          "differences": ["synthetic fixture"],
+          "missing_fields": []
+        }
+      ],
+      "embedding_space": null
+    },
+    "error": null
+  },
+  "estimate": {
+    "schema_version": "1.0.0",
+    "data": {
+      "basis_revision": "fixture:r1",
+      "currency": "EUR",
+      "effective_cost_scope": ["material"],
+      "effective_hours_scope": ["material"],
+      "comparable_ids": ["actual", "synthetic"],
+      "result_provenance": [
+        {"record_id": "actual", "origin": "actual", "source": "ERP", "source_date": "2026-11-01", "cost_basis": "actual", "contributes_cost": true, "contributes_hours": true, "cost_scope": ["material"], "hours_scope": ["material"]},
+        {"record_id": "synthetic", "origin": "synthetic", "source": "demo", "source_date": "2026-11-01", "cost_basis": "budget", "contributes_cost": true, "contributes_hours": true, "cost_scope": ["material"], "hours_scope": ["material"]}
+      ],
+      "contributors": [
+        {"concept_id": "material", "kind": "material", "comparable_ids": ["actual"], "formula": "base * target_finished_item_quantity / historical_finished_item_quantity * target_area_per_item / historical_area_per_item", "base_cost": 300.0, "base_hours": 8.0, "quantity_factor": 1.0, "consumption_factor": 1.2, "unit_rate_factor": 1.0, "estimated_cost": 360.0, "estimated_hours": 9.6, "evidence": "concept_breakdown", "missing_data": []}
+      ],
+      "scenarios": [
+        {"record_id": "actual", "weight": 0.9, "contributors": [], "cost_total": 300.0, "hours_total": 8.0},
+        {"record_id": "synthetic", "weight": 0.8, "contributors": [], "cost_total": 400.0, "hours_total": 12.0}
+      ],
+      "cost_subtotal": 347.06,
+      "manufacturing_hours": 11.6,
+      "cost_range": [300.0, 400.0],
+      "hours_range": [9.2, 14.0],
+      "uncertainty": "high",
+      "cost_uncertainty": "high",
+      "hours_uncertainty": "high",
+      "missing_data": [],
+      "assumptions": ["Synthetic fixture is explicitly labeled."]
+    },
+    "error": null
+  }
+}

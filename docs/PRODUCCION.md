@@ -45,10 +45,15 @@ VEXPLORER_MAX_STORAGE_BYTES=1073741824
 VEXPLORER_RECORDING_MAX_COUNT=1000
 VEXPLORER_RECORDING_MAX_BYTES=268435456
 OPENAI_MODEL=gpt-6.1-sol
-OPENAI_MAX_OUTPUT_TOKENS=4096
+OPENAI_MAX_OUTPUT_TOKENS=16384
 OPENAI_VISION_ENABLED=false
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_EMBEDDING_DIMENSIONS=256
+VEXPLORER_GENERAL_REVIEW_MODEL=gpt-6-astra
+VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS=16384
+VEXPLORER_GENERAL_REVIEW_MAX_CALLS=5
+VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS=2
+VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS=300
 ```
 
 La clave de proveedor está en el env privado; no se pasa en argv ni se copia al release. La unidad instalada liga solo `127.0.0.1:18792`, usa un worker y permite escritura persistente exclusivamente en `shared/data`; `PrivateTmp=yes` proporciona además un `/tmp` efímero y aislado. En el gestor de usuario systemd 255 de este host se omiten deliberadamente `PrivateDevices=yes` y `ProtectKernelModules=yes`: ambas fallan por separado con `status=218/CAPABILITIES`. El resto de directivas de endurecimiento se probó conjuntamente y la unidad arrancó correctamente.
@@ -132,7 +137,7 @@ Las grabaciones live tienen una política separada de los límites por ejecució
 
 No se borran grabaciones automáticamente: pueden estar referenciadas por replays y auditorías. Al alcanzar capacidad, las ejecuciones geométricas y replays existentes continúan disponibles; el operador debe respaldar los datos y revisar el presupuesto antes de aumentar estos límites. La cuota de transcripts no incluye el resto de SQLite, los documentos ni las copias: revisar también el espacio real del disco. El perfil soportado mantiene un único proceso de aplicación; el arranque recupera las reservas interrumpidas junto con los trabajos sin reintentar llamadas pagadas.
 
-En el host activo, los datos persistentes están en `/home/kripta/apps/vexplorer/shared/data`: contiene `vexplorer.sqlite3`, `documents/` y los artefactos gestionados. Cambiar el enlace `current` o reiniciar `vexplorer.service` no elimina ese directorio. En la alternativa Docker, `VEXPLORER_DATA_VOLUME` nombra el volumen que se monta como `/var/lib/vexplorer/data`.
+En el host activo, los datos persistentes están en `/home/kripta/apps/vexplorer/shared/data`: contiene `vexplorer.sqlite3`, `general_furniture.sqlite3`, `history.sqlite3`, `documents/` y los artefactos gestionados. Las bases opcionales aparecen cuando se usan sus módulos. Cambiar el enlace `current` o reiniciar `vexplorer.service` no elimina ese directorio. En la alternativa Docker, `VEXPLORER_DATA_VOLUME` nombra el volumen que se monta como `/var/lib/vexplorer/data`.
 
 Antes de actualizar el host venv activo:
 
@@ -148,10 +153,14 @@ Las migraciones de esquema pertenecen al backend. No edite SQLite manualmente ni
 
 ## Copia consistente
 
-`tools.backup` usa la API online de backup de SQLite, ejecuta `PRAGMA integrity_check`, incluye documentos de upload y escribe un ZIP con manifiesto, tamaños y SHA-256. Los documentos gestionados por la aplicación son inmutables; si otro proceso puede modificarlos, detenga la aplicación durante la copia. El ZIP cubre exactamente:
+`tools.backup` usa la API online de backup para cada SQLite, ejecuta `PRAGMA integrity_check`, incluye documentos de upload y escribe un ZIP v2 con manifiesto, tamaños y SHA-256. La restauración conserva compatibilidad con los ZIP v1 del release anterior. Los documentos gestionados por la aplicación son inmutables; si otro proceso puede modificarlos, detenga la aplicación durante la copia. El ZIP cubre exactamente:
 
-- base SQLite: runs, revisiones, trabajos, eventos, estimaciones y artefactos almacenados;
-- `documents/`: uploads conservados por la aplicación.
+- `vexplorer.sqlite3`: runs, revisiones, trabajos, eventos, estimaciones y artefactos existentes;
+- `general_furniture.sqlite3`, si existe: propuestas, revisiones y derivados del recorrido general;
+- `history.sqlite3`, si existe: registros históricos, comparables e información económica importada;
+- `documents/` recursivo: originales DXF/DWG/PDF, normalizados, previews y metadatos/manifiestos de conversión conservados por la aplicación.
+
+Si `VEXPLORER_HISTORY_DB` apunta fuera de `VEXPLORER_DATA_DIR`, la copia debe declararlo de forma explícita con `--database history=/ruta/real/history.sqlite3`. Los alias solo admiten nombres seguros y dos alias no pueden apuntar al mismo archivo. No copie una SQLite activa ni sus ficheros WAL con `cp`: esa operación no sustituye la API online ni la verificación de integridad.
 
 No cubre identidades, catálogo, claves de proveedor, configuración de Caddy ni certificados. En el host activo, custodie por separado `/home/kripta/apps/vexplorer/shared/secrets/users.json`, `/home/kripta/apps/vexplorer/shared/config/cost-catalog.json` y `/home/kripta/apps/vexplorer/shared/production.env`. En la alternativa Docker, custodie los archivos equivalentes y `/srv/vexplorer/production.env`. Guárdelos en un almacén cifrado con control de acceso y restáurelos antes de iniciar el modo privado.
 
@@ -164,6 +173,14 @@ PYTHONPATH=/home/kripta/apps/vexplorer/current \
   --data-dir /home/kripta/apps/vexplorer/shared/data \
   --output /home/kripta/apps/vexplorer/shared/backups/vexplorer-AAAA-MM-DDTHHMMSSZ.zip
 ```
+
+Con un histórico externo, añada al mismo comando:
+
+```console
+  --database history=/ruta/real/history.sqlite3
+```
+
+La restauración segura coloca ese alias como `DESTINO/history.sqlite3`; valide la copia allí y apunte `VEXPLORER_HISTORY_DB` a la ruta restaurada solo durante el ensayo. No sobrescriba el histórico externo activo.
 
 Para la alternativa Docker, prepare `/srv/vexplorer/backups` para UID `10001` y use:
 
@@ -193,7 +210,17 @@ PYTHONPATH=/home/kripta/apps/vexplorer/current \
 
 La alternativa Docker puede restaurar de igual forma a un volumen nuevo montado en una ruta de destino vacía.
 
-Restaure también usuarios, catálogo y env desde su custodia separada. Valide identidad, historial, trabajos, documentos y exportaciones antes de cambiar la ruta activa. En Docker, cambie `VEXPLORER_DATA_VOLUME` solo tras validar el volumen nuevo. Si falla, conserve la ruta o volumen anterior; no copie archivos parcialmente sobre ellos.
+Restaure también usuarios, catálogo y env desde su custodia separada. Consulte con SQLite datos reales en `vexplorer.sqlite3`, `general_furniture.sqlite3` y `history.sqlite3` cuando estén presentes; valide además identidad, historial, trabajos, originales, previews, conversiones y exportaciones antes de cambiar la ruta activa. En Docker, cambie `VEXPLORER_DATA_VOLUME` solo tras validar el volumen nuevo. Si falla, conserve la ruta o volumen anterior; no copie archivos parcialmente sobre ellos.
+
+## Preparación DWG
+
+El runtime selecciona `VEXPLORER_DWG_CONVERTER=libredwg|oda|auto`. Para GNU LibreDWG configure también la ruta absoluta `VEXPLORER_DWG2DXF_EXECUTABLE`; para ODA use `VEXPLORER_ODA_EXECUTABLE`. Una variable configurada no acredita soporte DWG. Antes de habilitar un proveedor, operaciones debe comprobar que el binario es ejecutable por la unidad endurecida y ejecutar un smoke con un DWG genuino autorizado. El smoke debe conservar original, DXF normalizado, hashes y manifiesto, y el DXF debe superar el lector real. Un ejecutable falso o un fixture que simule la frontera solo prueba manejo de errores.
+
+La descarga comunitaria de ODA File Converter está limitada por ODA a usos no comerciales para no miembros. No se incluye en el release ni se instala automáticamente. Sin licencia aprobada y smoke genuino, el estado operativo correcto es `conversion_unavailable` y solicitar DXF; no sustituya ODA por otro binario bajo el mismo nombre sin adaptar y validar su contrato de proceso.
+
+GNU LibreDWG 0.14 es GPLv3 y su `dwg2dxf` es un proceso externo. El candidato debe fijar versión y SHA-256, conservar su licencia y avisos, y validar cada salida con el lector DXF del producto. La comprobación operativa compara unidades, clases de entidades y límites contra un DXF emparejado, pero no demuestra fidelidad universal de DWG: amplíe el corpus y mantenga `conversion_unavailable` si el binario no está instalado.
+
+En el host privado se preparó, sin activar el servicio, LibreDWG 0.14 bajo `/home/kripta/apps/vexplorer/tools/libredwg-0.14`; el ejecutable configurable es `/home/kripta/apps/vexplorer/tools/libredwg-0.14/bin/dwg2dxf`. La activación del siguiente release debe añadir `VEXPLORER_DWG_CONVERTER=libredwg` y `VEXPLORER_DWG2DXF_EXECUTABLE` al env solo después del backup/restore y smoke del release candidato. El binario preparado no altera el release actual ni demuestra por sí solo que su API esté montada.
 
 ## Comprobaciones periódicas
 

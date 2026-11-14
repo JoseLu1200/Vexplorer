@@ -33,6 +33,11 @@ test("the API client keeps a specific backend error for the interface", async ()
   });
 });
 
+test("FastAPI detail errors remain actionable in the interface", async () => {
+  const client=createApiClient({fetchImpl:async()=>response(422,{detail:"confirmed_value_requires_human_provenance"})});
+  await assert.rejects(()=>client.reviewGeneralFurniture("run-1",{}),(error)=>error.status===422&&error.code==="confirmed_value_requires_human_provenance"&&error.message==="confirmed_value_requires_human_provenance");
+});
+
 test("review requests send the base revision and an idempotency key", async () => {
   let request;
   const fetchImpl = async (url, init) => {
@@ -159,4 +164,55 @@ test("table runs and revisioned artifacts preserve the frozen 0.5 request fields
   assert.equal(requests[5][0], "/api/v1/runs/run%20table/table-costs?result_revision=2");
   assert.equal(requests[6][0], "/api/v1/table-cost-catalog");
   assert.equal(client.tableDrawingUrl("run table", "sheet/1", "svg", 2, "hash +1"), "/api/v1/runs/run%20table/table-drawings/sheet%2F1.svg?result_revision=2&program_hash=hash+%2B1");
+});
+
+test("general furniture endpoints keep proposal and review revisions explicit", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "general-key" });
+
+  await client.createGeneralProposal("run general", { mode: "live", base_proposal_revision: 0 });
+  await client.getGeneralFurniture("run general");
+  await client.reviewGeneralFurniture("run general", { base_proposal_revision: 2, operations: [] });
+  await client.getGeneralDerived("run general", 3, 2);
+
+  assert.equal(requests[0][0], "/api/v1/runs/run%20general/general/proposals");
+  assert.deepEqual(JSON.parse(requests[0][1].body), { mode: "live", base_proposal_revision: 0 });
+  assert.equal(requests[1][0], "/api/v1/runs/run%20general/general");
+  assert.equal(requests[2][0], "/api/v1/runs/run%20general/general/reviews");
+  assert.equal(requests[2][1].headers["Idempotency-Key"], "general-key");
+  assert.deepEqual(JSON.parse(requests[2][1].body), { base_proposal_revision: 2, operations: [] });
+  assert.equal(requests[3][0], "/api/v1/runs/run%20general/general/derived?proposal_revision=3&review_revision=2");
+  assert.equal(client.generalArtifactUrl("run general","bom/1",3,2),"/api/v1/runs/run%20general/general/artifacts/bom%2F1?proposal_revision=3&review_revision=2");
+});
+
+test("historical imports, records, comparables and estimates have visible client operations", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "history-key" });
+  const file = new Blob(["project,cost\nA,12"], { type: "text/csv" });
+
+  await client.importHistory(file, { dryRun: false });
+  await client.getHistory({ origin: "actual", limit: 25 });
+  await client.getHistoricalComparables({ run_id: "run-1", result_revision: 2 });
+  await client.estimateFromHistory({ run_id: "run-1", result_revision: 2 });
+  await client.getHistoricalScenarios({ run_id:"run-1",proposal_revision:2,review_revision:1,retrieval_method:"attribute" });
+
+  assert.equal(requests[0][0], "/api/v1/history/imports?dry_run=false");
+  assert.equal(requests[0][1].method, "POST");
+  assert.ok(requests[0][1].body instanceof FormData);
+  assert.equal(requests[1][0], "/api/v1/history?origin=actual&limit=25");
+  assert.equal(requests[2][0], "/api/v1/history/comparables");
+  assert.equal(requests[3][0], "/api/v1/history/estimate");
+  assert.equal(requests[4][0], "/api/v1/history/scenarios");
+  assert.deepEqual(JSON.parse(requests[4][1].body),{run_id:"run-1",proposal_revision:2,review_revision:1,retrieval_method:"attribute"});
+});
+
+test("a PDF page normalization creates an immutable child document with explicit scale", async () => {
+  let request;
+  const client = createApiClient({ fetchImpl: async (url, init) => { request=[url,init]; return response(201,{data:{document_id:"child-1"}}); }, idFactory:()=>"pdf-key" });
+  await client.normalizePdfPage("parent 1",2,{mm_per_pdf_point:0.3528,confirmed_by:"ana",reason:"Escala 1:1 confirmada en cajetín"});
+  assert.equal(request[0],"/api/v1/documents/parent%201/pdf-pages/2/normalize");
+  assert.equal(request[1].headers["Idempotency-Key"],"pdf-key");
+  assert.deepEqual(JSON.parse(request[1].body),{mm_per_pdf_point:0.3528,confirmed_by:"ana",reason:"Escala 1:1 confirmada en cajetín"});
 });

@@ -1,8 +1,8 @@
 # Vexplorer — planos, piezas y reconstrucción revisable
 
-Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. Admite dos recorridos acotados: **mesa rectangular desde alzado, planta y perfil del conjunto**, y **estantería desde vistas de piezas separadas con identificadores explícitos**. La geometría mide; el modelo propone asociaciones y operaciones; una revisión registra las premisas aceptadas y los datos aportados.
+Vexplorer convierte planos DXF, DWG y PDF en propuestas de piezas y medidas revisables. El recorrido **Mueble general** permite proponer paneles, elementos lineales, herrajes y componentes pendientes de identificar, sin limitar la entrada a mesa o estantería. Conserva también los recorridos especializados de mesa rectangular y piezas separadas. La geometría mide; un proponente multimodal interpreta el plano y un segundo pase visual contrasta y corrige la propuesta. La edición humana es opcional.
 
-Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca usa atributos geométricos o embeddings reales. El incremento privado permite un catálogo económico propio con fuente y fecha; el catálogo de demostración se mantiene identificado como sintético. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
+Recorrido general: **plano → propuesta visual → crítica y corrección automáticas → BOM, SVG/DXF y esquema 3D → comparables → estimación de costes y horas**. El histórico admite JSON/CSV con procedencia, fecha, moneda, materiales, acabado y alcance económico; recupera por atributos o embeddings reales y estima por conceptos compatibles. Distingue registros empresariales, fuentes publicadas y datos sintéticos. La evaluación técnica no acredita precisión industrial ni ahorro medido con técnicos.
 
 **Aplicación privada del equipo:** [abrir Vexplorer](https://gex-dashboard.hopto.org/vexplorer/). Requiere credenciales individuales. El despliegue del 2026-11-14 incluye API, almacenamiento persistente, inferencia live y replay verificado; se comprobaron reinicio y recuperación de copia. Las tarifas iniciales son demo. Evidencia y límites en la [verificación privada](docs/VERIFICACION_PRIVADA_2026-11-14.md).
 
@@ -10,7 +10,7 @@ El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [ve
 
 ## Auditoría e incremento privado
 
-La [auditoría completa](docs/AUDITORIA_COMPLETA_2026-11-14.md) recorre los 495 commits accesibles al comenzar, la documentación y los módulos propios; identifica defectos que la suite anterior no detectaba. La [verificación privada](docs/VERIFICACION_PRIVADA_2026-11-14.md) recoge 423 pruebas Python, 108 JavaScript, CI, navegador y el SHIP de Astra. El [diseño privado](docs/superpowers/specs/2026-11-14-private-production-design.md) y el [plan](docs/superpowers/plans/2026-11-14-private-production.md) registran sus criterios de aceptación. La guía [PRODUCCION](docs/PRODUCCION.md) incluye usuarios, catálogo, despliegue y copias. El alcance sigue siendo el perfil de mesa y los recorridos acotados descritos abajo; validación industrial y aceptación con técnicos se informan por separado.
+La [verificación de esta ampliación](docs/VERIFICACION_TRANSCRIPCION_2026-11-14.md) registra integración, navegador, inferencia real y límites observados. El [diseño](docs/superpowers/specs/2026-11-14-transcript-completion-design.md) y el [plan](docs/superpowers/plans/2026-11-14-transcript-completion.md) describen el incremento implementado por agentes GPT-6.1 Sol y revisado por GPT-6 Astra. La guía [PRODUCCION](docs/PRODUCCION.md) incluye despliegue y copias. La [auditoría anterior](docs/AUDITORIA_COMPLETA_2026-11-14.md) y la [verificación privada anterior](docs/VERIFICACION_PRIVADA_2026-11-14.md) conservan sus resultados históricos; no sustituyen la aceptación actual.
 
 ## Instalación y arranque local (PowerShell)
 
@@ -32,6 +32,17 @@ La biblioteca puede conservar descriptores v1/v2/v3. La interfaz de mesa filtra 
 ```powershell
 .\.venv\Scripts\python.exe -c "from pathlib import Path; from dotenv import load_dotenv; load_dotenv(); import uvicorn; from backend.app.main import create_app; uvicorn.run(create_app(data_dir=Path('.runtime/demo-parts')),host='127.0.0.1',port=8765)"
 ```
+
+## Guion de mueble general e histórico
+
+1. Cargar DXF, DWG o PDF y elegir **Mueble general**. DWG necesita LibreDWG u ODA configurado; en PDF seleccionar una página y confirmar su escala cuando se conozca. Sin escala, las dimensiones métricas permanecen desconocidas. Una página raster puede aportar evidencia visual al agente, pero sus píxeles no se convierten en cotas.
+2. Ejecutar **Agente en vivo** para proponer y revisar automáticamente mediante herramientas nativas e imágenes del plano. La crítica utiliza un contexto separado y un ciclo acotado de reparación. Cada dimensión conserva su referencia; una asignación inferida continúa siendo hipótesis aunque la medida geométrica sea precisa. **Solo geometría** sigue disponible para inspección sin proveedor.
+3. Consultar las comprobaciones y correcciones automáticas. El resultado conserva incógnitas y separa las ocurrencias provisionales de escenario de las confirmadas; tres vistas no cuentan como tres piezas. No hay aprobación humana obligatoria. Opcionalmente se pueden editar, dividir, combinar o descartar componentes con una decisión registrada; las versiones anteriores permanecen disponibles.
+4. Abrir **Esquema general** y descargar los SVG/DXF acotados. El despiece automático identifica sus escenarios y cantidades provisionales; no representa uniones, mecanizados ni una colocación certificada para fabricación.
+5. Importar históricos propios en JSON/CSV con procedencia, moneda, fecha y alcances separados de costes y horas. El flujo automático puede calcular escenarios condicionales por referencia usando el despiece provisional: muestra expresamente el supuesto de una unidad y el material, acabado y alcance heredados del comparable. No transforma esos supuestos en atributos observados del plano.
+6. Consultar los escenarios y su procedencia, o buscar comparables por atributos o embeddings. Cada escenario conserva su moneda y alcance; no se promedian referencias incompatibles. Los costes fijos se cuentan una vez y los variables se escalan por su unidad; las horas proceden de conceptos históricos de tiempo. El presupuesto basado en datos confirmados sigue disponible por separado. La opción de datos sintéticos está desactivada por defecto; las fuentes públicas y los presupuestos se identifican por separado.
+
+Contratos y ejemplos en [MUEBLE_GENERAL](docs/MUEBLE_GENERAL.md), [HISTORICO_REAL](docs/HISTORICO_REAL.md) y [EVALUACION_INTEGRAL](docs/EVALUACION_INTEGRAL.md). La [auditoría de datasets locales](docs/DATASETS_INTEGRALES.md) y las [fuentes económicas públicas](docs/FUENTES_HISTORICO_PUBLICO.md) explican qué datos se admitieron y qué conclusiones permiten.
 
 ## Guion de mesa desde vistas montadas
 
@@ -63,8 +74,8 @@ La entrada no contiene una BOM ni nombres de piezas. La referencia propia está 
 
 ## Modos
 
-- **geometry_only**: extracción y candidatos deterministas compatibles de la familia admitida; no llama a un proveedor.
-- **live**: OpenAI Responses con herramientas nativas, bucle propio y validación local. En mesa genera bindings y componentes dentro del perfil acotado; en los otros recorridos inspecciona y elige hipótesis existentes. Las explicaciones conservan fuentes, fórmulas y premisas. El canal predeterminado es evidencia vectorial estructurada; no demuestra descomposición libre de cualquier mueble.
+- **geometry_only**: extracción determinista sin proveedor; en el recorrido general permite elaborar una propuesta manual a partir de esa evidencia.
+- **live**: OpenAI Responses con herramientas nativas, bucle propio y validación local. En mueble general propone componentes y asigna referencias geométricas; en mesa genera el programa especializado. Las explicaciones conservan fuentes, fórmulas y premisas. Puede usar la página raster como evidencia visual sin inventar medidas. La inferencia general sigue sujeta a revisión y cobertura empírica.
 - **recorded_replay**: reproduce offline una ejecución live grabada por el servidor con la misma entrada y configuración. Verifica transcript y resultados de herramientas, conserva procedencia y no importa decisiones humanas. Si no existe una grabación válida coincidente, lo comunica y rechaza la ejecución. No admite grabaciones subidas por el cliente.
 
 Para live, configurar `OPENAI_API_KEY` en un `.env` local ignorado por Git. [`.env.example`](.env.example) muestra los nombres, sin credenciales. Con la clave ya configurada:
@@ -78,7 +89,7 @@ Los errores de proveedor se muestran como tales; no se convierten en resultados 
 
 La visión está **desactivada por defecto**. En mesa live, `OPENAI_VISION_ENABLED=1` habilita la herramienta nativa `visualizar_vista`; el modelo debe consultar al menos una vista antes de entregar su programa. Se permiten tres intentos en total, con PNG locales del ledger de hasta 1024 px y 2 MB por vista. Las marcas identifican contornos o entidades; los píxeles no aportan medidas. La traza conserva vista, hash y número de marcas. Esta opción se probó contra la API real y sigue sin acreditar reconocimiento general de muebles. La lectura CAD y las herramientas vectoriales siguen siendo la fuente numérica.
 
-Los embeddings son independientes del modo de análisis del DXF. Usan `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small` y `OPENAI_EMBEDDING_DIMENSIONS=256` por defecto. Se generan mediante una acción explícita de guardado semántico. La caché distingue descriptor, modelo y dimensiones; se rechazan vectores corruptos o incompatibles. Los ejemplos de la misma familia tienen cosenos muy altos: la utilidad de esa agrupación sobre un histórico variado sigue pendiente de evaluación.
+Los embeddings son independientes del modo de análisis del DXF. Usan `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small` y `OPENAI_EMBEDDING_DIMENSIONS=256` por defecto. La biblioteca los genera al guardar en modo semántico; el histórico los genera y cachea al solicitar recuperación semántica explícita. La caché distingue descriptor, modelo y dimensiones; se rechazan vectores corruptos o incompatibles. Los ejemplos de la misma familia tienen cosenos muy altos: la utilidad de esa agrupación sobre un histórico variado sigue pendiente de evaluación.
 
 ## Verificación
 
@@ -88,7 +99,7 @@ npm test --prefix frontend
 .\.venv\Scripts\python.exe -m compileall -q backend tools
 ```
 
-Node prepara los módulos locales de Three.js y ejecuta las pruebas JavaScript; el servidor de uso es Python. Resultados actuales y comandos de auditoría HTTP/proveedor en [VERIFICACION_MESA_CAD_2026-11-14.md](docs/VERIFICACION_MESA_CAD_2026-11-14.md); antecedentes en [VERIFICACION_PIEZAS_SEPARADAS.md](docs/VERIFICACION_PIEZAS_SEPARADAS.md).
+Node prepara los módulos locales de Three.js y ejecuta las pruebas JavaScript; el servidor de uso es Python. Resultados actuales y auditoría HTTP/proveedor en [VERIFICACION_TRANSCRIPCION_2026-11-14.md](docs/VERIFICACION_TRANSCRIPCION_2026-11-14.md); antecedentes en [VERIFICACION_MESA_CAD_2026-11-14.md](docs/VERIFICACION_MESA_CAD_2026-11-14.md).
 
 Los DXF propios se pueden regenerar con:
 
@@ -102,12 +113,12 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 
 ## Alcance y trabajo pendiente
 
-- Lectura DXF: modelspace, bloques anidados y atributos, líneas y polilíneas rectas, círculos/arcos tipados, textos y cotas lineales o por ordenadas. ELLIPSE/SPLINE son aproximaciones visuales declaradas; no generan paneles ni medidas exactas. Se detectan filas regulares de círculos y líneas ocultas como evidencia neutral y se contrasta un catálogo de taller que por defecto no está confirmado. DXF recuperados requieren revisión. Límites: 100.000 entidades, 20.000 puntos por entidad y 200.000 por dibujo. Paperspace se clasifica y limita: anotaciones informativas, cotas que requieren revisión y no se proyectan a modelspace. HATCH, bulges y ARC con OCS negativo quedan fuera. No hay lector general de croquis, PDF, DWG ni muebles arbitrarios.
-- La revisión de piezas separadas permite elegir asignación y completar cantidad o dimensiones desconocidas, con material/acabado y motivo. Dividir/unir componentes y crear elementos ocultos arbitrarios desde la interfaz quedan pendientes.
-- Biblioteca geométrica/semántica de revisiones guardadas, separada del histórico económico de tres ejemplos inventados. Agrupación por componentes conexos y umbral, sin evaluación estadística de relevancia. No se infieren tiempos industriales, mecanizados, acabado cotizado ni impuestos. No es un presupuesto de fabricación completo.
+- Lectura DXF: modelspace, bloques anidados y atributos, líneas y polilíneas rectas, círculos/arcos tipados, textos y cotas lineales o por ordenadas. ELLIPSE/SPLINE son aproximaciones visuales declaradas; no generan paneles ni medidas exactas. Se detectan filas regulares de círculos y líneas ocultas como evidencia neutral y se contrasta un catálogo de taller que por defecto no está confirmado. DXF recuperados requieren revisión. Límites: 100.000 entidades, 20.000 puntos por entidad y 200.000 por dibujo. Paperspace se clasifica y limita: anotaciones informativas, cotas que requieren revisión y no se proyectan a modelspace. HATCH, bulges y ARC con OCS negativo quedan fuera. DWG se convierte mediante LibreDWG u ODA; PDF conserva originales y páginas vectoriales/raster. Estas entradas no garantizan reconocimiento de toda construcción ni fidelidad universal del CAD.
+- La revisión general permite reemplazar, dividir, combinar y descartar componentes. Los elementos ocultos o desconocidos necesitan evidencia y decisiones explícitas; la herramienta no garantiza una interpretación única del plano.
+- Biblioteca geométrica/semántica e histórico importable de costes y horas. La estimación conserva procedencia, fórmulas, cobertura y faltantes; no añade impuestos, inflación ni conceptos no declarados. La relevancia de recuperación y el error económico requieren un histórico representativo.
 - Reconstrucción por cajas de tableros según montaje revisado y niveles observados, sin traseras ocultas añadidas, mecanizados, uniones detalladas ni certificación de colisiones. Las ejecuciones antiguas se abren, pero para obtener cotas enriquecidas y vínculo al CAD original deben analizarse de nuevo.
 - El endpoint legado local conserva ejecución síncrona. El perfil privado incorpora trabajos persistidos y seguimiento mediante polling; no se afirma procesamiento distribuido ni streaming de tokens o imágenes.
-- PlankAssembly sigue separado y no se han publicado datos ni derivados. El incremento de evaluación añade un preparador local de muestra; conserva índices, excluye envolvente y trata normales ausentes. Preparar vistas no demuestra inferencia ni resuelve por sí solo las condiciones de uso; ver [PLANKASSEMBLY](docs/PLANKASSEMBLY.md) y la aceptación de producción.
+- PlankAssembly y los originales de terceros permanecen fuera de Git. Se ejecutó inferencia real sobre seis casos diagnósticos y diez casos nuevos, congelando resultados antes de la puntuación. Los informes separan cobertura dimensional, cantidades, ocurrencias y escenarios; no equivalen a validación con técnicos. Ver [EVALUACION_INTEGRAL](docs/EVALUACION_INTEGRAL.md).
 - La comparación de métodos, evaluación con técnicos y medición de ahorro siguen pendientes; ver [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md).
 
 ## Documentación y coordinación

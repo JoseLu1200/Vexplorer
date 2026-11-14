@@ -33,6 +33,10 @@ export function eventLabel(event) {
     library_item_saved: "Revisión guardada en biblioteca",
     table_drawings_committed: "Planos de mesa guardados",
     table_cost_committed: "Costes de mesa guardados",
+    general_auto_review_started: "Revisión visual automática iniciada",
+    general_auto_review_tool_completed: "Comprobación automática completada",
+    general_auto_review_completed: "Revisión automática guardada",
+    general_auto_review_abstained: "Revisión automática abstenida",
   };
   return labels[event?.event_type] ?? "Actividad registrada";
 }

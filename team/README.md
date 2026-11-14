@@ -1,5 +1,9 @@
 # Equipo de agentes de Vexplorer
 
+## Ampliación de la transcripción — sesión actual
+
+El usuario renueva el swarm GPT-6.1 Sol con GPT-6 Astra como revisor. Base `4209510`, rama `feat/transcript-completion`. Los registros históricos siguientes conservan su contexto; para este incremento la propiedad activa pasa a los registros nuevos: [coordinación](agente_coordinacion_integral.md), [ingesta](agente_ingesta_general.md), [mueble general](agente_mueble_general.md), [histórico](agente_historico_real.md), [evaluación](agente_evaluacion_integral.md), [interfaz](agente_interfaz_integral.md), [integración](agente_integracion_integral.md) , [operación](agente_operacion_integral.md) , [fuentes públicas](agente_fuentes_datos.md) y [asociación de proyecciones](agente_proyecciones.md). Cada agente mantiene solo su registro. Los contratos tienen un único escritor, mueble general, tras acuerdo con ingesta y aviso a interfaz/integración. El [plan](../docs/superpowers/plans/2026-11-14-transcript-completion.md) documenta tareas y comprobaciones; su existencia no acredita su terminación.
+
 Estado: swarm autorizado por el usuario el 2026-11-13 para la primera demo ejecutable. Las identidades siguientes son agentes de IA; no representan personas. Las reglas generales están en [CLAUDE.md](../CLAUDE.md), con la autorización específica de la solicitud del usuario registrada en cada archivo.
 
 | Rol | Registro propio | Propiedad principal |

@@ -26,7 +26,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["tools*", "backend*"]
+include = ["tools*", "backend*", "evaluation*"]
 
 [tool.setuptools.package-data]
 "backend.app.validador" = ["*.json"]

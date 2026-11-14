@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from math import isfinite
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -165,7 +165,7 @@ class DrawingObservation(StrictModel):
 class DrawingExtraction(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     drawing_id: str = Field(min_length=1)
-    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views", "general_furniture"] = "mounted_views_legacy"
     status: Literal["ready", "needs_review"]
     source_unit: Literal["mm", "cm", "m", "in", "unknown"]
     unit_scale_to_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
@@ -456,7 +456,7 @@ class ComponentProposal(StrictModel):
     length_derivation: Literal["direct_observation", "overall_width_minus_two_thickness", "overall_height_minus_two_thickness"] = "direct_observation"
     length_basis_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     source_observation_ids: tuple[str, ...]
-    source_contour_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...] = ()
     source_entity_ids: tuple[str, ...] = ()
     evidence_ids: tuple[str, ...]
     source_part_observation_ids: tuple[str, ...] = ()
@@ -471,6 +471,594 @@ class DecompositionScenario(StrictModel):
     assumptions: tuple[str, ...] = Field(min_length=1)
     incompatible_with: tuple[str, ...] = ()
     state: Literal["hypothesis"] = "hypothesis"
+
+
+GeneralInformationState = Literal["observed", "derived", "hypothesis", "confirmed", "unknown", "conflict"]
+GeneralEconomicScope = Annotated[
+    str,
+    Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_-]+$"),
+]
+GeneralMachineTargetRef = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=200,
+        pattern=r"^component:.+\.(length|width|thickness|quantity|material|finish)$",
+    ),
+]
+
+
+class GeneralValue(StrictModel):
+    value_mm: float | None = Field(default=None, gt=0, le=1_000_000, allow_inf_nan=False)
+    unit: Literal["mm"] = "mm"
+    state: GeneralInformationState
+    dependency_refs: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    dimension_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def provenance_matches_state(self) -> "GeneralValue":
+        if self.state in ("unknown", "conflict"):
+            if self.value_mm is not None:
+                raise ValueError("unknown or conflict value must be null")
+        elif self.value_mm is None:
+            raise ValueError("resolved value requires a numeric value")
+        if self.state == "observed" and not ((self.evidence_ids and self.dimension_ids) or self.dependency_refs):
+            raise ValueError("observed value requires drawing provenance")
+        if self.state == "derived" and not self.dependency_refs:
+            raise ValueError("derived value requires dependency references")
+        return self
+
+
+class GeneralQuantity(StrictModel):
+    value: int | None = Field(default=None, gt=0, le=1000)
+    state: GeneralInformationState
+    dependency_refs: tuple[str, ...] = Field(
+        default=(),
+        description="A hypothesis quantity must cite declared proposal premises as premise:<id>; confirmed quantities receive canonical human provenance on the server.",
+    )
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def provenance_matches_state(self) -> "GeneralQuantity":
+        if self.state in ("unknown", "conflict"):
+            if self.value is not None:
+                raise ValueError("unknown or conflict quantity must be null")
+        elif self.value is None:
+            raise ValueError("resolved quantity requires a value")
+        if self.state == "observed" and not self.evidence_ids:
+            raise ValueError("observed quantity requires drawing provenance")
+        if self.state == "derived" and not self.dependency_refs:
+            raise ValueError("derived quantity requires dependency references")
+        if self.state == "hypothesis" and not self.dependency_refs:
+            raise ValueError("hypothesis quantity requires premise references")
+        return self
+
+
+class GeneralBinding(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    operation: Literal["copy", "add", "subtract"]
+    operand_refs: tuple[str, ...] = Field(
+        min_length=1,
+        max_length=8,
+        description="References are exactly dimension:<dimension_id>, measurement:<geometry_measurement_id>, or binding:<prior_binding_id>. Geometry measurement IDs are announced in geometric_measures and may be copied as hypotheses.",
+    )
+
+    @model_validator(mode="after")
+    def operation_arity(self) -> "GeneralBinding":
+        if self.operation == "copy" and len(self.operand_refs) != 1:
+            raise ValueError("copy requires exactly one operand")
+        if self.operation in ("add", "subtract") and len(self.operand_refs) < 2:
+            raise ValueError(f"{self.operation} requires at least two operands")
+        return self
+
+
+class GeneralPremise(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    description: str = Field(min_length=1, max_length=500)
+    required: bool = True
+    blocking: bool = True
+
+
+class GeneralComponentProposal(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=200)
+    kind: Literal["panel", "linear_member", "hardware", "unknown"]
+    role: str = Field(min_length=1, max_length=120)
+    length_binding_id: str | None = Field(default=None, min_length=1, description="Binding assigning a measured or derived value to length as a hypothesis; null only when no supported assignment exists.")
+    width_binding_id: str | None = Field(default=None, min_length=1, description="Binding assigning a measured or derived value to width as a hypothesis; null only when no supported assignment exists.")
+    thickness_binding_id: str | None = Field(default=None, min_length=1, description="Binding assigning a measured or derived value to thickness as a hypothesis; null only when no supported assignment exists.")
+    quantity: GeneralQuantity
+    premise_ids: tuple[str, ...] = Field(min_length=1)
+    source_view_ids: tuple[str, ...] = ()
+    source_observation_ids: tuple[str, ...] = ()
+    source_contour_ids: tuple[str, ...] = ()
+    source_evidence_ids: tuple[str, ...] = ()
+    source_dimension_ids: tuple[str, ...] = ()
+    source_document_refs: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = Field(min_length=1)
+    unknown_fields: tuple[str, ...] = ()
+
+
+class GeneralFurnitureProposal(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    id: str = Field(min_length=1, max_length=120)
+    drawing_id: str = Field(min_length=1)
+    ledger_revision: str = Field(min_length=1)
+    proposal_origin: Literal["native_tool", "human"]
+    bindings: tuple[GeneralBinding, ...] = ()
+    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
+    premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
+    assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+
+    @model_validator(mode="after")
+    def references_are_closed(self) -> "GeneralFurnitureProposal":
+        binding_ids = [item.id for item in self.bindings]
+        component_ids = [item.id for item in self.components]
+        premise_ids = [item.id for item in self.premises]
+        if len(binding_ids) != len(set(binding_ids)) or len(component_ids) != len(set(component_ids)) or len(premise_ids) != len(set(premise_ids)):
+            raise ValueError("general proposal ids must be unique by kind")
+        binding_set = set(binding_ids)
+        premise_set = set(premise_ids)
+        for component in self.components:
+            refs = {value for value in (component.length_binding_id, component.width_binding_id, component.thickness_binding_id) if value is not None}
+            if not refs <= binding_set:
+                raise ValueError("component references an unknown binding")
+            if not set(component.premise_ids) <= premise_set:
+                raise ValueError("component references an unknown premise")
+            if component.quantity.state == "hypothesis":
+                quantity_premise_ids = {
+                    reference.removeprefix("premise:")
+                    for reference in component.quantity.dependency_refs
+                    if reference.startswith("premise:")
+                }
+                if len(quantity_premise_ids) != len(component.quantity.dependency_refs) or not quantity_premise_ids <= set(component.premise_ids):
+                    raise ValueError("component references an unknown quantity premise")
+        return self
+
+
+class ProposeGeneralFurnitureArgs(StrictModel):
+    bindings: tuple[GeneralBinding, ...] = Field(max_length=128)
+    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
+    premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
+    assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+
+
+class InspectGeneralContextArgs(StrictModel):
+    evidence_ids: tuple[str, ...] = Field(max_length=16)
+    view_ids: tuple[str, ...] = Field(max_length=4)
+    measurement_ids: tuple[str, ...] = Field(default=(), max_length=64)
+    query_measurements: bool = False
+    measurement_offset: int = Field(default=0, ge=0, le=4096)
+    measurement_limit: int = Field(default=64, ge=1, le=64)
+
+    @model_validator(mode="after")
+    def has_a_target(self) -> "InspectGeneralContextArgs":
+        if not self.evidence_ids and not self.view_ids and not self.measurement_ids and not self.query_measurements:
+            raise ValueError("at least one evidence or view id is required")
+        return self
+
+
+class GeneralTextValue(StrictModel):
+    value: str | None = Field(default=None, min_length=1, max_length=300)
+    state: GeneralInformationState
+    dependency_refs: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def provenance_matches_state(self) -> "GeneralTextValue":
+        if self.state in ("unknown", "conflict"):
+            if self.value is not None:
+                raise ValueError("unknown or conflict text value must be null")
+        elif self.value is None:
+            raise ValueError("resolved text value requires a value")
+        if self.state == "observed" and not self.evidence_ids:
+            raise ValueError("observed text value requires drawing provenance")
+        if self.state == "derived" and not self.dependency_refs:
+            raise ValueError("derived text value requires dependency references")
+        return self
+
+
+class GeneralComponentReview(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=200)
+    kind: Literal["panel", "linear_member", "hardware", "unknown"]
+    role: str = Field(min_length=1, max_length=120)
+    length: GeneralValue
+    width: GeneralValue
+    thickness: GeneralValue
+    quantity: GeneralQuantity
+    material: GeneralTextValue
+    finish: GeneralTextValue
+    replaces_component_ids: tuple[str, ...] = Field(min_length=1)
+    source_view_ids: tuple[str, ...] = ()
+    source_observation_ids: tuple[str, ...] = ()
+    source_contour_ids: tuple[str, ...] = ()
+    source_evidence_ids: tuple[str, ...] = ()
+    source_dimension_ids: tuple[str, ...] = ()
+    source_document_refs: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    unknown_fields: tuple[str, ...] = ()
+
+
+class GeneralReviewOperation(StrictModel):
+    kind: Literal["replace", "split", "merge", "drop"]
+    source_component_ids: tuple[str, ...] = Field(min_length=1)
+    result_component_ids: tuple[str, ...] = ()
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def cardinality_matches_kind(self) -> "GeneralReviewOperation":
+        if self.kind == "replace" and (len(self.source_component_ids) != 1 or len(self.result_component_ids) != 1):
+            raise ValueError("replace requires one source and one result")
+        if self.kind == "split" and (len(self.source_component_ids) != 1 or len(self.result_component_ids) < 2):
+            raise ValueError("split requires one source and multiple results")
+        if self.kind == "merge" and (len(self.source_component_ids) < 2 or len(self.result_component_ids) != 1):
+            raise ValueError("merge requires multiple sources and one result")
+        if self.kind == "drop" and (len(self.source_component_ids) != 1 or self.result_component_ids):
+            raise ValueError("drop requires one source and no result")
+        return self
+
+
+class GeneralFurnitureReviewRequest(StrictModel):
+    base_proposal_revision: int = Field(gt=0)
+    base_review_revision: int = Field(ge=0)
+    reviewer_name: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=1, max_length=1000)
+    operations: tuple[GeneralReviewOperation, ...] = Field(min_length=1)
+    components: tuple[GeneralComponentReview, ...] = Field(max_length=256)
+    furniture_quantity: GeneralQuantity = GeneralQuantity(value=None, state="unknown")
+    currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    required_cost_scope: tuple[GeneralEconomicScope, ...] = ()
+    required_hours_scope: tuple[GeneralEconomicScope, ...] = ()
+
+    @model_validator(mode="after")
+    def operations_cover_components(self) -> "GeneralFurnitureReviewRequest":
+        component_ids = [item.id for item in self.components]
+        if len(component_ids) != len(set(component_ids)):
+            raise ValueError("duplicate reviewed component ids")
+        result_ids = [item for operation in self.operations for item in operation.result_component_ids]
+        if len(result_ids) != len(set(result_ids)) or set(result_ids) != set(component_ids):
+            raise ValueError("review operations must exactly produce reviewed components")
+        by_id = {item.id: item for item in self.components}
+        for operation in self.operations:
+            for result_id in operation.result_component_ids:
+                if set(by_id[result_id].replaces_component_ids) != set(operation.source_component_ids):
+                    raise ValueError("component replacement lineage must match review operation")
+        if len(self.required_cost_scope) != len(set(self.required_cost_scope)):
+            raise ValueError("duplicate required_cost_scope entry")
+        if len(self.required_hours_scope) != len(set(self.required_hours_scope)):
+            raise ValueError("duplicate required_hours_scope entry")
+        return self
+
+
+class GeneralOccurrence(StrictModel):
+    id: str = Field(min_length=1)
+    component_id: str = Field(min_length=1)
+    occurrence_index: int = Field(gt=0)
+
+
+class GeneralMachineProvenance(StrictModel):
+    model: str = Field(min_length=1, max_length=128)
+    policy_version: str = Field(min_length=1, max_length=128)
+    response_ids: tuple[str, ...] = Field(min_length=1, max_length=5)
+    review_relation: Literal["separate_model", "self_review"]
+
+    @model_validator(mode="after")
+    def response_ids_are_unique(self) -> "GeneralMachineProvenance":
+        if len(self.response_ids) != len(set(self.response_ids)):
+            raise ValueError("duplicate machine response ids")
+        return self
+
+
+class GeneralAutoReviewCheck(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    kind: Literal["geometry_match", "cross_view_identity", "duplicate_scan", "quantity_basis", "dimension_binding", "visual_consistency"]
+    outcome: Literal["pass", "fail", "unknown"]
+    method: Literal["deterministic", "model_visual"]
+    target_refs: tuple[GeneralMachineTargetRef, ...] = Field(min_length=1, max_length=32)
+    source_refs: tuple[str, ...] = Field(max_length=32)
+    summary: str = Field(min_length=1, max_length=500)
+
+
+class GeneralModelVisualCheck(GeneralAutoReviewCheck):
+    kind: Literal["cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"]
+    method: Literal["model_visual"] = "model_visual"
+
+
+class GeneralMachineFieldReview(StrictModel):
+    target_ref: GeneralMachineTargetRef
+    status: Literal["accepted", "rejected", "conflict", "abstained"]
+    check_ids: tuple[str, ...] = Field(min_length=1, max_length=16)
+
+
+class GeneralAutoReviewArgs(StrictModel):
+    scenario_id: str = Field(min_length=1, max_length=120)
+    operations: tuple[GeneralReviewOperation, ...] = Field(min_length=1, max_length=256)
+    components: tuple[GeneralComponentReview, ...] = Field(max_length=256)
+    checks: tuple[GeneralModelVisualCheck, ...] = Field(max_length=512)
+    field_reviews: tuple[GeneralMachineFieldReview, ...] = Field(max_length=1024)
+    unresolved: tuple[str, ...] = Field(max_length=256)
+    status: Literal["accepted", "incomplete", "conflict", "abstained"]
+
+    @model_validator(mode="after")
+    def status_matches_findings(self) -> "GeneralAutoReviewArgs":
+        if self.status == "accepted" and (
+            self.unresolved
+            or not self.field_reviews
+            or any(item.outcome != "pass" for item in self.checks)
+            or any(item.status != "accepted" for item in self.field_reviews)
+        ):
+            raise ValueError("accepted auto review requires complete passing coverage")
+        if self.status == "conflict" and not (
+            any(item.outcome == "fail" for item in self.checks)
+            or any(item.status == "conflict" for item in self.field_reviews)
+        ):
+            raise ValueError("conflict auto review requires a conflicting finding")
+        return self
+
+
+class GeneralScenarioOccurrence(StrictModel):
+    id: str = Field(min_length=1)
+    component_id: str = Field(min_length=1)
+    occurrence_index: int = Field(gt=0)
+    scenario_id: str = Field(min_length=1)
+    quantity_target_ref: str = Field(min_length=1)
+    check_ids: tuple[str, ...] = Field(min_length=2)
+    premise_refs: tuple[str, ...] = Field(min_length=1)
+    source_refs: tuple[str, ...] = Field(min_length=1)
+    state: Literal["provisional"] = "provisional"
+
+
+class GeneralFurnitureReview(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    run_id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    reviewer_name: str = Field(min_length=1)
+    reviewer_kind: Literal["human", "machine"] = "human"
+    machine_provenance: GeneralMachineProvenance | None = None
+    reason: str = Field(min_length=1)
+    reviewed_at: str = Field(min_length=1)
+    operations: tuple[GeneralReviewOperation, ...]
+    components: tuple[GeneralComponentReview, ...]
+    occurrences: tuple[GeneralOccurrence, ...]
+    scenario_occurrences: tuple[GeneralScenarioOccurrence, ...] = ()
+    machine_checks: tuple[GeneralAutoReviewCheck, ...] = ()
+    machine_field_reviews: tuple[GeneralMachineFieldReview, ...] = ()
+    auto_review_status: Literal["accepted", "incomplete", "conflict", "abstained"] | None = None
+    furniture_quantity: GeneralQuantity = GeneralQuantity(value=None, state="unknown")
+    currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    required_cost_scope: tuple[GeneralEconomicScope, ...] = ()
+    required_hours_scope: tuple[GeneralEconomicScope, ...] = ()
+    status: Literal["approved", "reviewed_incomplete"]
+
+    @model_validator(mode="after")
+    def machine_metadata_matches_reviewer(self) -> "GeneralFurnitureReview":
+        machine_values = bool(self.machine_checks or self.machine_field_reviews or self.scenario_occurrences or self.auto_review_status is not None)
+        if self.reviewer_kind == "machine" and (self.machine_provenance is None or not machine_values):
+            raise ValueError("machine review requires provenance and review metadata")
+        if self.reviewer_kind == "human" and (self.machine_provenance is not None or machine_values):
+            raise ValueError("human review cannot claim machine review metadata")
+        check_ids = [item.id for item in self.machine_checks]
+        if len(check_ids) != len(set(check_ids)):
+            raise ValueError("duplicate machine check ids")
+        checks = {item.id: item for item in self.machine_checks}
+        field_targets = [item.target_ref for item in self.machine_field_reviews]
+        if len(field_targets) != len(set(field_targets)):
+            raise ValueError("duplicate machine field review targets")
+        for field_review in self.machine_field_reviews:
+            valid_targets = {
+                f"component:{component.id}.{field}"
+                for component in self.components
+                for field in ("length", "width", "thickness", "quantity", "material", "finish")
+            }
+            if field_review.target_ref not in valid_targets:
+                raise ValueError("machine field review targets an unknown component field")
+            if any(check_id not in checks or field_review.target_ref not in checks[check_id].target_refs for check_id in field_review.check_ids):
+                raise ValueError("machine field review has an invalid check reference")
+        component_by_id = {item.id: item for item in self.components}
+        occurrence_ids = [item.id for item in self.scenario_occurrences]
+        if len(occurrence_ids) != len(set(occurrence_ids)):
+            raise ValueError("duplicate provisional occurrence ids")
+        for occurrence in self.scenario_occurrences:
+            component = component_by_id.get(occurrence.component_id)
+            selected_checks = [checks.get(check_id) for check_id in occurrence.check_ids]
+            if component is None or occurrence.quantity_target_ref != f"component:{occurrence.component_id}.quantity":
+                raise ValueError("provisional occurrence references an unknown quantity field")
+            if component.quantity.state != "hypothesis" or component.quantity.value is None or occurrence.occurrence_index > component.quantity.value:
+                raise ValueError("provisional occurrence requires a bounded hypothesis quantity")
+            if any(check is None or check.outcome != "pass" for check in selected_checks):
+                raise ValueError("provisional occurrence requires passing checks")
+            if not {"quantity_basis", "duplicate_scan"} <= {check.kind for check in selected_checks if check is not None}:
+                raise ValueError("provisional occurrence requires quantity and duplicate checks")
+        return self
+
+
+class GeneralDraftComponent(StrictModel):
+    id: str
+    label: str
+    kind: Literal["panel", "linear_member", "hardware", "unknown"]
+    role: str
+    length: GeneralValue
+    width: GeneralValue
+    thickness: GeneralValue
+    quantity: GeneralQuantity
+    premise_ids: tuple[str, ...]
+    source_view_ids: tuple[str, ...]
+    source_observation_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...] = ()
+    source_evidence_ids: tuple[str, ...]
+    source_dimension_ids: tuple[str, ...]
+    source_document_refs: tuple[str, ...]
+    assumptions: tuple[str, ...]
+    unknown_fields: tuple[str, ...]
+
+
+class GeneralFurnitureDraft(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    proposal_id: str
+    drawing_id: str
+    ledger_revision: str
+    components: tuple[GeneralDraftComponent, ...]
+    premises: tuple[GeneralPremise, ...]
+    assumptions: tuple[str, ...]
+    status: Literal["needs_review"] = "needs_review"
+
+
+class GeneralBomRow(StrictModel):
+    component_id: str
+    label: str
+    kind: str
+    role: str
+    occurrence_ids: tuple[str, ...]
+    scenario_occurrence_ids: tuple[str, ...] = ()
+    occurrence_status: Literal["confirmed", "provisional", "unknown"] = "unknown"
+    quantity: GeneralQuantity
+    length: GeneralValue
+    width: GeneralValue
+    thickness: GeneralValue
+    material: GeneralTextValue
+    finish: GeneralTextValue
+    source_view_ids: tuple[str, ...]
+    source_observation_ids: tuple[str, ...]
+    source_contour_ids: tuple[str, ...]
+    source_evidence_ids: tuple[str, ...]
+    source_dimension_ids: tuple[str, ...]
+    source_document_refs: tuple[str, ...]
+
+
+class GeneralSceneItem(StrictModel):
+    id: str
+    component_id: str
+    occurrence_ids: tuple[str, ...]
+    scenario_occurrence_ids: tuple[str, ...] = ()
+    occurrence_status: Literal["confirmed", "provisional", "unknown"] = "unknown"
+    length: GeneralValue
+    width: GeneralValue
+    thickness: GeneralValue
+    position_mm: Point3D | None = None
+    status: Literal["schematic_unplaced", "unavailable"]
+
+
+class GeneralScene(StrictModel):
+    status: Literal["schematic_incomplete", "schematic_ready", "unavailable"]
+    items: tuple[GeneralSceneItem, ...]
+    warnings: tuple[str, ...]
+
+
+class GeneralCostBasisContributor(StrictModel):
+    component_id: str
+    occurrence_ids: tuple[str, ...]
+    area_m2: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    volume_m3: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    material: GeneralTextValue
+    finish: GeneralTextValue
+    missing_data: tuple[str, ...]
+
+
+class GeneralCostBasis(StrictModel):
+    status: Literal["complete", "partial", "unavailable"]
+    contributors: tuple[GeneralCostBasisContributor, ...]
+    missing_data: tuple[str, ...]
+
+
+class GeneralDerivedArtifact(StrictModel):
+    id: str
+    kind: Literal["bom_csv", "bom_json", "drawing_svg", "drawing_dxf"]
+    status: Literal["ready", "incomplete"]
+    review_revision: int = Field(gt=0)
+    filename: str
+    media_type: str
+    incomplete_reasons: tuple[str, ...] = ()
+    content: bytes
+
+
+class GeneralDerivedPackage(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    run_id: str
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    status: Literal["ready", "incomplete"]
+    bom_rows: tuple[GeneralBomRow, ...]
+    artifacts: tuple[GeneralDerivedArtifact, ...]
+    scene: GeneralScene
+    cost_basis: GeneralCostBasis
+
+
+class GeneralFurnitureRecord(StrictModel):
+    run_id: str
+    status: Literal["needs_review", "reviewed_incomplete", "approved"]
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(ge=0)
+    proposal: GeneralFurnitureProposal
+    draft: GeneralFurnitureDraft
+    review: GeneralFurnitureReview | None = None
+
+
+class GeneralProposalRequest(StrictModel):
+    mode: Literal["live", "manual"]
+    base_proposal_revision: int = Field(ge=0)
+    proposal: GeneralFurnitureProposal | None = None
+
+    @model_validator(mode="after")
+    def proposal_matches_mode(self) -> "GeneralProposalRequest":
+        if (self.mode == "manual") != (self.proposal is not None):
+            raise ValueError("manual mode requires exactly one proposal")
+        return self
+
+
+class GeneralAutoReviewRequest(StrictModel):
+    base_proposal_revision: int = Field(gt=0)
+    base_review_revision: int = Field(ge=0)
+
+
+class GeneralHistoricalTarget(StrictModel):
+    family: str | None = None
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    depth_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    height_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    area_mm2: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    length_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    volume_mm3: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    quantity: int | None = Field(default=None, gt=0)
+    material: str | None = None
+    finish: str | None = None
+    currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    required_cost_scope: tuple[GeneralEconomicScope, ...] = ()
+    required_hours_scope: tuple[GeneralEconomicScope, ...] = ()
+    basis_revision: str
+    exclude_project_id: str | None = None
+    exclude_record_ids: tuple[str, ...] = ()
+
+
+class GeneralDerivedResponse(StrictModel):
+    package: GeneralDerivedPackage
+    historical_target: GeneralHistoricalTarget
+
+
+class GeneralFurnitureEnvelope(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    data: GeneralFurnitureRecord
+
+
+class GeneralDerivedEnvelope(StrictModel):
+    schema_version: Literal["0.6.0"] = "0.6.0"
+    data: GeneralDerivedResponse
+
+
+class GeneralLedgerMeasure(StrictModel):
+    id: str
+    semantic: Literal["contour_span_x", "contour_span_y"]
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    source_value: float = Field(gt=0, allow_inf_nan=False)
+    state: Literal["observed", "unknown"]
+    view_id: str
+    source_contour_ids: tuple[str, ...] = Field(min_length=1)
+    source_entity_ids: tuple[str, ...] = ()
+    closed: bool
+    vertex_count: int = Field(gt=0)
 
 
 TableValueState = Literal["observed", "calculated", "confirmed", "proposed", "unknown", "conflict"]
@@ -939,7 +1527,7 @@ class Result(StrictModel):
     created_at: str
     review: HumanReview | None = None
     agent_selected_scenario_id: str | None = None
-    input_semantics: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    input_semantics: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views", "general_furniture"] = "mounted_views_legacy"
     part_analysis: SeparatedPartsExtraction | None = None
     assembly_candidates: tuple[AssemblyCandidate, ...] = ()
     selected_assembly_candidate_id: str | None = None
@@ -1465,7 +2053,7 @@ class RunSnapshot(StrictModel):
     agent_selected_assembly_candidate_id: str | None = None
     agent_selected_table_program_id: str | None = None
     document_id: str | None = None
-    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views", "general_furniture"] = "mounted_views_legacy"
     replay_source: ReplaySource | None = None
 
     @model_validator(mode="after")
@@ -1478,13 +2066,21 @@ class RunSnapshot(StrictModel):
 class RunRequest(StrictModel):
     document_id: str = Field(pattern=r"^doc-[0-9a-f]{32}$")
     mode: Literal["live", "geometry_only", "recorded_replay"]
-    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views", "general_furniture"] = "mounted_views_legacy"
     table_profile: Literal["rectangular_table_v1"] | None = None
     proposal_mode: Literal["none", "catalog_baseline", "model_generated"] = "none"
     table_template_id: Literal["side_supports_v1", "corner_supports_v1"] | None = None
 
     @model_validator(mode="after")
     def table_options_match_mode(self) -> "RunRequest":
+        if self.input_kind == "general_furniture":
+            if self.table_profile is not None or self.table_template_id is not None:
+                raise ValueError("general furniture does not accept a table profile or template")
+            if self.mode in {"live", "recorded_replay"} and self.proposal_mode != "model_generated":
+                raise ValueError("live general furniture requires model_generated")
+            if self.mode == "geometry_only" and self.proposal_mode != "none":
+                raise ValueError("geometry_only general furniture cannot generate a model proposal")
+            return self
         if self.input_kind != "mounted_orthographic_views":
             if self.table_profile is not None or self.proposal_mode != "none" or self.table_template_id is not None:
                 raise ValueError("table options require mounted orthographic views")

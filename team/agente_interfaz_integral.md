@@ -1,0 +1,82 @@
+# Agente interfaz integral — cierre de brechas de producto
+
+## Identidad y autorización
+
+- Nombre declarado por el usuario: agente de IA frontend integral; no representa a una persona.
+- Rol: interfaz web para integrar las brechas de la transcripción en el swarm GPT-6.1 Sol.
+- Archivo creado y designado explícitamente: `team/agente_interfaz_integral.md`, delegación del coordinador del 2026-11-14.
+- Última actualización: 2026-11-14.
+
+## Tarea de la sesión
+
+- Objetivo concreto: exponer flujos operativos de mueble general, revisión editable, BOM y exportaciones, carga PDF/DWG, histórico real y estimaciones de coste/horas, y superficie de evaluación si existe.
+- Referencia del plan: brechas T11–T13 de `initial-plan.md` y transcripción; integración coordinada con los agentes de backend general, economía, ingesta y evaluación.
+- Estado: implementado y verificado; pendiente solo del cierre coordinado del swarm.
+
+## Alcance y reservas
+
+- Archivos o carpetas que puedo editar: `frontend/`, nuevas pruebas frontend y este registro.
+- Dependencias que solo leeré: `backend/`, `evaluation/`, documentación y registros de equipo.
+- Archivos compartidos que requieren coordinación: contratos y rutas de `backend/app/main.py`; los integra el coordinador/backend, no este agente.
+- Solapes detectados y acuerdo para resolverlos: el agente frontend anterior conserva trabajo histórico terminado; la delegación actual asigna a este agente la ampliación integral y exige conservar el diseño vigente. Ningún otro agente actual editará `frontend/`.
+
+## Hecho en el último bloque
+
+- Leídas las reglas, el plan inicial, la transcripción, los registros de equipo y las guías de diseño/TDD aplicables.
+- Auditada la superficie actual: el cuaderno técnico ya resuelve plano, revisión especializada, biblioteca y costes; las brechas son de acceso a capacidades nuevas, no de rediseño.
+- Baseline frontend ejecutado antes del primer RED: 108 pruebas aprobadas.
+- Publicado el plan UI al coordinador y acordadas necesidades de shape con backend general, economía, ingesta e integración.
+- Evaluación confirmó que su referencia sigue deliberadamente offline y privada: no se añadirá una superficie de producto ni se expondrá el oráculo.
+- Integrados carga y procedencia de DXF/DWG/PDF, selección de página PDF y escala explícita mediante documento hijo inmutable.
+- Integrado mueble general con propuesta manual/live versionada, edición replace/split/merge/drop, continuidad explícita de componentes no editados, segunda revisión, cantidad de muebles terminados y moneda ISO separadas de la BOM.
+- Expuestos BOM CSV/JSON, descargas SVG/DXF ligadas a propuesta/revisión y esquema SVG dentro del visor técnico existente.
+- Integrados importación/listado de histórico real, comparables por atributos y estimación autoritativa de costes/horas con procedencia, fórmulas, incertidumbre y datos ausentes.
+- Añadida selección explícita de comparables por atributos o embeddings reales, con modelo/dimensiones visibles, y opt-in sintético desactivado por defecto y propagado a comparables/estimación.
+- Añadidos alcances humanos separados de coste/horas, bases actual/cotización/presupuesto/sintética y fechas de fuente visibles sin afirmar actualización temporal.
+- Separadas procedencias `actual`, `published` y `synthetic`: una fuente académica publicada se muestra como pública/presupuesto y nunca como ejecución empresarial real.
+- Añadidos fixtures JSON generados desde Pydantic para contratos general e histórico; no se mantiene un schema paralelo inventado por frontend.
+- Convertido el recorrido general live en un único trabajo durable con propuesta generada y verificación visual automática; la interfaz distingue actor, modelo, política, comprobaciones visuales/deterministas y abstenciones de cualquier corrección humana opcional.
+- Separadas incertidumbre, procedencias contribuyentes, alcances y fechas de coste y horas; una fuente que solo aporta presupuesto no se presenta como base de horas.
+- Habilitada la página PDF raster como entrada visual de mueble general live sin DXF ni escala: mantiene esas propiedades desconocidas y no habilita por error los recorridos métricos.
+- Afinada la semántica de máquina a revisión de coherencia de hipótesis, mostrando si intervino un modelo separado o auto-revisión; no se presenta como confirmación factual.
+- Añadidas estimaciones económicas condicionales automáticas por comparable y snapshot exacto: 1 mueble, material/acabado/moneda/alcances de referencia, supuestos, fórmulas, procedencia y coste/horas con incertidumbres separadas; quedan explícitamente fuera de cotización y del histórico confirmado.
+- Alineado el CSV BOM local con el artefacto backend: estado de cantidad, estado de ocurrencia, ocurrencias físicas y ocurrencias provisionales de escenario permanecen separadas y visibles.
+- Sincronizado el estado vacío con la entrada recomendada y formatos DXF/DWG/PDF; el histórico publicado queda seleccionado inicialmente y resume registros con coste/presupuesto frente a registros con horas.
+
+## Siguiente bloque
+
+- Retest final de navegador por el coordinador sobre el servidor compartido y cierre de la entrega integral.
+
+## Decisiones
+
+| Fecha | Decisión | Motivo | Evidencia del acuerdo, si se necesita |
+|---|---|---|---|
+| 2026-11-14 | Integración aditiva sobre el cuaderno técnico existente | Conservar accesibilidad, densidad y recorridos ya verificados sin rediseño innecesario | Delegación del coordinador |
+| 2026-11-14 | Datos ausentes, sintéticos o no verificados se muestran como tales | Evitar vender demostraciones como histórico real o completar medidas sin evidencia | Reglas del repositorio y solicitud actual |
+
+## Dependencias / avisos
+
+- Necesito de: contratos finales de mueble general, economía, ingesta PDF/DWG y evaluación.
+- Afecta a: visibilidad y operación de esos endpoints desde la interfaz.
+- Aviso realizado: coordinación iniciada el 2026-11-14 antes de cambios de producto.
+- Cambio de `contratos/`: no aplica; este agente solo consume contratos acordados.
+
+## Pruebas y revisión
+
+| Caso | Comando ejecutado | Resultado observado | Limitación |
+|---|---|---|---|
+| Baseline frontend | `cd frontend; npm test` | 108 passed, 0 failed | Sin navegador ni backend nuevo todavía |
+| Suite frontend final | `cd frontend; npm test` | 145 passed, 0 failed | DOM cubierto por contratos estáticos y funciones puras; smoke interactivo coordinado aparte |
+| Sintaxis de aplicación | `node --check frontend/app.js` | exit 0 | No sustituye el navegador |
+| Contratos backend focales | `python -m pytest backend/tests/test_general_furniture_router.py backend/tests/test_general_furniture_review.py backend/tests/test_general_furniture_derivations.py backend/tests/test_integral_api_integration.py backend/tests/test_real_history.py -q` | 45 passed, 0 failed | No ejecuta toda la suite del repositorio |
+| Contratos scope/histórico finales | `python -m pytest backend/tests/test_general_furniture_router.py backend/tests/test_general_furniture_review.py backend/tests/test_general_furniture_derivations.py backend/tests/test_real_history.py -q` | 36 passed, 0 failed | Focal tras congelar scopes separados |
+| Contratos autónomos finales | `python -m pytest backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_router.py backend/tests/test_real_history.py -q` | 35 passed, 0 failed | Cruce Pydantic/rutas tras incorporar verificación machine e incertidumbre por métrica |
+| Integración HTTP multiformato final | `python -m pytest backend/tests/test_integral_api_integration.py -q` | 11 passed, 0 failed | Incluye PDF raster seleccionado → job visual general → revisión automática |
+| Integración HTTP + escenarios económicos | `python -m pytest backend/tests/test_integral_api_integration.py backend/tests/test_real_history.py -q` | 54 passed, 0 failed | Incluye ruta `/history/scenarios`, snapshot exacto y exclusión de sintéticos |
+
+## Bloqueos y cierre
+
+- Bloqueos: ninguno conocido.
+- Pendientes: último recorrido de navegador compartido y verificación global a cargo del coordinador.
+- Reservas liberadas: `frontend/` al coordinador tras esta entrega.
+- Entrega a otra persona: `/root`, con contratos y comandos de verificación comunicados.

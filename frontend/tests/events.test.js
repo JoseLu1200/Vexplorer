@@ -52,3 +52,10 @@ test("production table commits have visible audit labels", () => {
   assert.equal(eventLabel({ event_type: "table_drawings_committed" }), "Planos de mesa guardados");
   assert.equal(eventLabel({ event_type: "table_cost_committed" }), "Costes de mesa guardados");
 });
+
+test("automatic visual verification events are labeled as machine decisions", () => {
+  assert.equal(eventLabel({event_type:"general_auto_review_started"}),"Revisión visual automática iniciada");
+  assert.equal(eventLabel({event_type:"general_auto_review_tool_completed"}),"Comprobación automática completada");
+  assert.equal(eventLabel({event_type:"general_auto_review_completed"}),"Revisión automática guardada");
+  assert.equal(eventLabel({event_type:"general_auto_review_abstained"}),"Revisión automática abstenida");
+});

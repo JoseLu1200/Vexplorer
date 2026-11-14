@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-fixture", "status": "needs_review", "proposal_revision": 1, "review_revision": 0,
+    "proposal": {
+      "schema_version": "0.6.0", "id": "proposal-1", "drawing_id": "drawing-1", "ledger_revision": "ledger-1", "proposal_origin": "native_tool",
+      "bindings": [{"id": "width", "operation": "copy", "operand_refs": ["dimension:dim-width"]}],
+      "components": [{"id": "panel", "label": "Panel", "kind": "panel", "role": "unknown", "length_binding_id": "width", "width_binding_id": null, "thickness_binding_id": null, "quantity": {"value": null, "state": "unknown", "dependency_refs": [], "evidence_ids": []}, "premise_ids": ["p1"], "source_view_ids": ["view-front"], "source_observation_ids": ["observation-front"], "source_contour_ids": [], "source_evidence_ids": ["evidence-width"], "source_dimension_ids": ["dim-width"], "source_document_refs": [], "assumptions": ["Rol pendiente."], "unknown_fields": ["width", "thickness", "quantity"]}],
+      "premises": [{"id": "p1", "description": "Panel rectangular hipotético.", "required": true, "blocking": true}], "assumptions": ["No implica aptitud industrial."]
+    },
+    "draft": {
+      "schema_version": "0.6.0", "proposal_id": "proposal-1", "drawing_id": "drawing-1", "ledger_revision": "ledger-1",
+      "components": [{"id": "panel", "label": "Panel", "kind": "panel", "role": "unknown", "length": {"value_mm": 800.0, "unit": "mm", "state": "hypothesis", "dependency_refs": ["binding:width"], "evidence_ids": ["evidence-width"], "dimension_ids": ["dim-width"]}, "width": {"value_mm": null, "unit": "mm", "state": "unknown", "dependency_refs": [], "evidence_ids": [], "dimension_ids": []}, "thickness": {"value_mm": null, "unit": "mm", "state": "unknown", "dependency_refs": [], "evidence_ids": [], "dimension_ids": []}, "quantity": {"value": null, "state": "unknown", "dependency_refs": [], "evidence_ids": []}, "premise_ids": ["p1"], "source_view_ids": ["view-front"], "source_observation_ids": ["observation-front"], "source_contour_ids": [], "source_evidence_ids": ["evidence-width"], "source_dimension_ids": ["dim-width"], "source_document_refs": [], "assumptions": ["Rol pendiente."], "unknown_fields": ["width", "thickness", "quantity"]}],
+      "premises": [{"id": "p1", "description": "Panel rectangular hipotético.", "required": true, "blocking": true}], "assumptions": ["No implica aptitud industrial."], "status": "needs_review"
+    },
+    "review": null
+  }
+}

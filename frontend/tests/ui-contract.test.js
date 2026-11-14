@@ -16,6 +16,14 @@ test("upload defaults to mounted table views and keeps parts and legacy opt-ins"
   assert.match(html, /value="corner_supports_v1"/);
 });
 
+test("empty workspace mirrors the selected input and names every supported document format",()=>{
+  assert.match(app,/Entrada: mueble general/);
+  assert.match(app,/Abre un plano DXF, DWG o PDF/);
+  assert.match(app,/published\.selected=true/);
+  assert.match(app,/con coste o presupuesto/);
+  assert.match(app,/con horas publicadas/);
+});
+
 test("technical viewer exposes source and derived drawing tabs without replacing the source", () => {
   assert.match(html, /id="artifact-tabs"/);
   assert.match(html, /data-artifact-view="source"[^>]*aria-selected="true"/);
@@ -82,4 +90,58 @@ test("static assets remain relative for a prefixed private deployment", () => {
   assert.match(html, /src="\.\/app\.js"/);
   assert.match(html, /"three":"\.\/vendor\/three\/three\.module\.js"/);
   assert.doesNotMatch(html, /(?:href|src)="\/(?:styles\.css|app\.js|vendor\/)/);
+});
+
+test("upload exposes supported drawing formats and an honest general furniture workflow", () => {
+  assert.match(html, /accept="[^"]*\.dxf[^"]*\.dwg[^"]*\.pdf/);
+  assert.match(html, /value="general_furniture"/);
+  assert.match(html, /id="document-provenance"[^>]*role="status"/);
+  assert.match(html, /id="general-review-operations"/);
+  assert.match(html, /id="general-derived-status"[^>]*role="status"/);
+  assert.match(html, /data-export="bom_csv"/);
+  assert.match(html, /data-export="bom_json"/);
+});
+
+test("real history import and estimates are reachable without presenting synthetic data as actual", () => {
+  assert.match(html, /id="history-import-form"/);
+  assert.match(html, /id="history-file"[^>]*accept="\.csv"/);
+  assert.match(html, /id="history-provenance"/);
+  assert.match(html, /value="actual"/);
+  assert.match(html, /id="history-import-status"[^>]*role="status"/);
+  assert.match(html, /id="estimate-uncertainty"/);
+  assert.match(html, /id="estimate-missing-data"/);
+  assert.doesNotMatch(html, /data-panel="evaluation"/);
+});
+
+test("historical estimates expose explicit retrieval and synthetic-data choices", () => {
+  assert.match(app,/history-retrieval-method/);
+  assert.match(app,/Atributos verificables/);
+  assert.match(app,/Embeddings reales/);
+  assert.match(app,/history-include-synthetic/);
+  assert.match(app,/Incluir datos sintéticos para prueba/);
+  assert.match(app,/history-retrieval-note/);
+});
+
+test("general furniture leads with automatic visual review and keeps human edits optional", () => {
+  assert.match(app,/Revisión visual automática/);
+  assert.match(app,/No confirma la hipótesis como hecho/);
+  assert.match(app,/auto-revisión del mismo modelo/);
+  assert.match(app,/Corrección humana avanzada/);
+  assert.match(app,/generalRunOptions/);
+  assert.match(app,/general-auto-review/);
+});
+
+test("automatic general review exposes conditional historical scenarios separately from confirmed estimates",()=>{
+  assert.match(app,/Estimaciones por escenario/);
+  assert.match(app,/historical-scenarios-button/);
+  assert.match(app,/no son cotizaciones ni hechos confirmados/);
+  assert.match(app,/Estimar desde histórico confirmado/);
+});
+
+test("PDF pages require an explicit page and optional confirmed scale before analysis", () => {
+  assert.match(html, /id="pdf-page-controls"[^>]*hidden/);
+  assert.match(html, /id="pdf-page-select"/);
+  assert.match(html, /id="pdf-mm-per-point"[^>]*min="0"/);
+  assert.match(html, /id="pdf-scale-reason"[^>]*required/);
+  assert.match(html, /id="pdf-normalize"/);
 });

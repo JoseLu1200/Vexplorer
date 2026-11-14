@@ -74,6 +74,12 @@ def test_prepares_assembled_views_and_private_reference_without_leaking_componen
             assert set(archive.namelist()) == {"input.dxf", "case.json"}
             assert archive.testzip() is None
             assert b"revealing-source-name" not in archive.read("input.dxf")
+            agent_metadata = json.loads(archive.read("case.json"))
+            assert set(agent_metadata) == {
+                "file", "format", "id", "instruction", "sha256", "unit", "view_kind"
+            }
+            assert "family_hash" not in agent_metadata
+            assert "split" not in agent_metadata
 
     references = json.loads((private / "references.json").read_text(encoding="utf-8"))
     assert references[0]["components"] == [
@@ -97,7 +103,16 @@ def test_output_is_reproducible_and_rejects_unsafe_scope(tmp_path: Path):
 
     assert _tree_hash(first_public) == _tree_hash(second_public)
     assert _tree_hash(first_private) == _tree_hash(second_private)
-    with pytest.raises(ValueError, match="between 1 and 10"):
-        prepare_plankassembly(source, tmp_path / "too-many", tmp_path / "private-many", split="valid", limit=11)
+    offset_public, offset_private = tmp_path / "offset", tmp_path / "offset-private"
+    manifest = prepare_plankassembly(
+        source, offset_public, offset_private, split="valid", offset=1, limit=1
+    )
+    assert manifest["source_offset"] == 1
+    assert json.loads((offset_public / "cases.json").read_text(encoding="utf-8"))[0]["id"] == "plank-002"
+
+    with pytest.raises(ValueError, match="between 1 and 50"):
+        prepare_plankassembly(source, tmp_path / "too-many", tmp_path / "private-many", split="valid", limit=51)
+    with pytest.raises(ValueError, match="offset"):
+        prepare_plankassembly(source, tmp_path / "bad-offset", tmp_path / "private-offset", split="valid", offset=-1, limit=1)
     with pytest.raises(ValueError, match="separate"):
         prepare_plankassembly(source, tmp_path / "same", tmp_path / "same", split="valid", limit=2)

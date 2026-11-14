@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import re
+import shutil
 import time
 from dataclasses import asdict
 from contextlib import asynccontextmanager
@@ -14,10 +16,11 @@ from typing import Literal
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Header, Query, Request, UploadFile
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
@@ -32,7 +35,7 @@ from backend.app.agente.replay import (
 )
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
+from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -40,6 +43,14 @@ from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_t
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.ingesta.dxf_reader import parse_dxf
 from backend.app.historico.service import find_comparables
+from backend.app.historico.real_service import HistoricalStore
+from backend.app.historico.models import ProvisionalDimension, ProvisionalQuantity, ProvisionalScenarioRow, ProvisionalScenarioSnapshot, ProvisionalText
+from backend.app.api.history import create_history_router
+from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralVisualPage, run_general_furniture_agent
+from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
+from backend.app.general_furniture.repository import GeneralFurnitureRepository
+from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
+from backend.app.general_furniture.visual_evidence import render_visual_evidence
 from backend.app.salida.service import export_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
 from backend.app.salida.table_cutlist import export_table_cutlist_csv
@@ -57,6 +68,87 @@ from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
 from backend.app.operacion.jobs import BoundedJobExecutor
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+DOCUMENT_ID_PATTERN = re.compile(r"doc-[0-9a-f]{32}\Z")
+MAX_JSON_BODY_BYTES = 5 * 1024 * 1024
+
+
+class NormalizedDxfUnavailable(FileNotFoundError):
+    pass
+
+
+class BoundedJsonBodyMiddleware:
+    def __init__(self, app: ASGIApp, *, max_bytes: int = MAX_JSON_BODY_BYTES) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        headers = {key.lower(): value for key, value in scope.get("headers", ())}
+        bounded = (
+            scope.get("type") == "http"
+            and scope.get("method") in {"POST", "PUT", "PATCH"}
+            and headers.get(b"content-type", b"").split(b";", 1)[0].strip().lower() == b"application/json"
+        )
+        if not bounded:
+            await self.app(scope, receive, send)
+            return
+        chunks: list[bytes] = []
+        consumed = 0
+        while True:
+            message = await receive()
+            if message.get("type") != "http.request":
+                continue
+            chunk = message.get("body", b"")
+            consumed += len(chunk)
+            if consumed > self.max_bytes:
+                if scope.get("path") == "/api/v1/history/import/json":
+                    response = JSONResponse(
+                        {"schema_version": "1.0.0", "data": None, "error": {"code": "history_import_too_large", "message": "El cuerpo JSON supera 5 MiB.", "retryable": False}},
+                        status_code=413,
+                    )
+                else:
+                    response = _error(413, "json_body_too_large", "El cuerpo JSON supera 5 MiB.")
+                await response(scope, receive, send)
+                return
+            chunks.append(chunk)
+            if not message.get("more_body", False):
+                break
+        delivered = False
+
+        async def replay_receive():
+            nonlocal delivered
+            if delivered:
+                return {"type": "http.request", "body": b"", "more_body": False}
+            delivered = True
+            return {"type": "http.request", "body": b"".join(chunks), "more_body": False}
+
+        await self.app(scope, replay_receive, send)
+
+
+def _document_media_type(format_name: str, supplied: str | None = None) -> str:
+    if format_name == "pdf":
+        return "application/pdf"
+    if format_name == "dxf":
+        return "application/dxf"
+    if format_name == "dwg":
+        return supplied if supplied in {"application/acad", "application/x-acad"} else "application/octet-stream"
+    return "application/octet-stream"
+
+
+def _json_safe(value):
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def _module_available(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ModuleNotFoundError):
+        return False
 
 
 class RequestModel(BaseModel):
@@ -95,6 +187,12 @@ class TableDerivedRequest(RequestModel):
     result_revision: int = Field(gt=0)
 
 
+class PdfPageSelectionRequest(RequestModel):
+    mm_per_pdf_point: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    confirmed_by: str | None = Field(default=None, min_length=1, max_length=120)
+    reason: str = Field(min_length=1, max_length=500)
+
+
 def _ok(data, status_code: int = 200):
     return JSONResponse({"schema_version": "0.2.0", "data": data}, status_code=status_code)
 
@@ -103,7 +201,7 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
 
 
-def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None) -> FastAPI:
+def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
@@ -134,14 +232,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
         recording_max_count = int(os.getenv("VEXPLORER_RECORDING_MAX_COUNT", str(DEFAULT_RECORDING_MAX_COUNT)))
         recording_max_bytes = int(os.getenv("VEXPLORER_RECORDING_MAX_BYTES", str(DEFAULT_RECORDING_MAX_BYTES)))
+        general_job_timeout_s = float(os.getenv("VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS", "300"))
+        general_review_max_calls = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5"))
+        general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
+        general_review_max_output_tokens = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS", "16384"))
     except ValueError as exc:
         raise ValueError("invalid_numeric_production_limit") from exc
     if max_storage_bytes < MAX_UPLOAD_BYTES:
         raise ValueError("max_storage_below_upload_limit")
     if recording_max_count <= 0 or recording_max_bytes < MAX_RECORDED_TRANSCRIPT_BYTES:
         raise ValueError("invalid_recording_storage_policy")
+    if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
+        raise ValueError("invalid_general_review_policy")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
+    staging_dir = root / ".document-staging"
+    staging_dir.mkdir(parents=True, exist_ok=True)
     upload_lock = Lock()
     repository = DemoRepository(root / "vexplorer.sqlite3")
     repository.interrupt_unfinished_jobs()
@@ -156,6 +262,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     semantic_provider = embedding_provider
     if semantic_provider is None and embedding_settings.available:
         semantic_provider = OpenAIEmbeddingProvider(api_key=embedding_settings.api_key or "", model=embedding_settings.model, dimensions=embedding_settings.dimensions, base_url=embedding_settings.base_url)
+    history_db = Path(os.getenv("VEXPLORER_HISTORY_DB", str(root / "history.sqlite3")))
+    historical_store = HistoricalStore(history_db, embedding_provider=semantic_provider)
+    general_furniture_db = root / "general_furniture.sqlite3"
+    general_furniture_repository = GeneralFurnitureRepository(general_furniture_db)
+    general_agent_provider = agent_provider
+    if general_agent_provider is None and settings.available:
+        general_agent_provider = OpenAIResponsesProvider(settings, instructions=GENERAL_FURNITURE_SYSTEM_PROMPT)
+    review_model = os.getenv("VEXPLORER_GENERAL_REVIEW_MODEL") or settings.model
+    review_settings = ProviderSettings(
+        api_key=settings.api_key, model=review_model, base_url=settings.base_url,
+        max_output_tokens=general_review_max_output_tokens, vision_enabled=True,
+    )
+    general_review_provider = general_reviewer_provider
+    if general_review_provider is None and agent_provider is not None:
+        general_review_provider = agent_provider
+    if general_review_provider is None and review_settings.available:
+        general_review_provider = OpenAIResponsesProvider(review_settings, instructions=GENERAL_AUTO_REVIEW_PROMPT)
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         yield
@@ -165,7 +288,304 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.root_path = root_path
     app.state.repository = repository
     app.state.job_executor = job_executor
+    app.state.historical_store = historical_store
+    app.state.history_db = history_db
+    app.state.general_furniture_repository = general_furniture_repository
+    app.state.general_furniture_db = general_furniture_db
+    app.state.general_review_model = review_model
     authentication_failures: dict[str, list[float]] = {}
+    app.add_middleware(BoundedJsonBodyMiddleware)
+
+    def document_manifest_path(document_id: str) -> Path:
+        return documents_dir / f"{document_id}.manifest.json"
+
+    def load_document_manifest(document_id: str) -> dict | None:
+        if DOCUMENT_ID_PATTERN.fullmatch(document_id) is None:
+            return None
+        path = document_manifest_path(document_id)
+        if path.is_file():
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                return None
+            return value if isinstance(value, dict) else None
+        legacy = documents_dir / f"{document_id}.dxf"
+        if not legacy.is_file():
+            return None
+        digest = hashlib.sha256(legacy.read_bytes()).hexdigest()
+        return {
+            "document_id": document_id,
+            "original_filename": legacy.name,
+            "size_bytes": legacy.stat().st_size,
+            "sha256": digest,
+            "source_kind": "uploaded",
+            "source": {"filename": legacy.name, "media_type": "application/dxf", "format": "dxf", "size_bytes": legacy.stat().st_size, "sha256": digest, "unit": "unknown"},
+            "ingestion": {"state": "ready", "capabilities": {"geometry_analysis": True}, "warnings": [], "errors": []},
+            "artifacts": {
+                "original": {"url": f"/api/v1/documents/{document_id}/original", "media_type": "application/dxf"},
+                "normalized_dxf": {"url": f"/api/v1/documents/{document_id}/normalized.dxf", "media_type": "application/dxf", "sha256": digest},
+                "preview": {"url": f"/api/v1/documents/{document_id}/preview.svg", "media_type": "image/svg+xml"},
+            },
+            "audit": {"uploaded_by": None},
+        }
+
+    def normalized_document_path(document_id: str) -> Path | None:
+        manifest = load_document_manifest(document_id)
+        if manifest is None or manifest.get("artifacts", {}).get("normalized_dxf") is None:
+            return None
+        path = documents_dir / f"{document_id}.dxf"
+        return path if path.is_file() else None
+
+    def used_document_storage_bytes() -> int:
+        return sum(
+            item.stat().st_size
+            for item in documents_dir.rglob("*")
+            if item.is_file() and not item.name.endswith(".manifest.json")
+        )
+
+    def general_visual_pages(document_id: str | None, extraction: DrawingExtraction) -> tuple[GeneralVisualPage, ...]:
+        if document_id is None:
+            return ()
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return ()
+        source = manifest.get("source", {})
+        source_refs = (f"document:{document_id}",)
+        if source.get("format") == "pdf":
+            page_number = source.get("page_number") or manifest.get("ingestion", {}).get("selected_page")
+            parent_id = source.get("parent_document_id", document_id)
+            if not isinstance(page_number, int) or DOCUMENT_ID_PATTERN.fullmatch(str(parent_id)) is None:
+                return ()
+            source_path = documents_dir / f"{parent_id}.source.pdf"
+            artifacts = render_visual_evidence(
+                source_path, selected_pdf_page=page_number, source_document_refs=source_refs,
+                max_artifacts=4, max_total_png_bytes=16 * 1024 * 1024,
+            )
+        else:
+            source_path = normalized_document_path(document_id)
+            if source_path is None:
+                return ()
+            artifacts = render_visual_evidence(
+                source_path, extraction=extraction, source_document_refs=source_refs,
+                max_artifacts=4, max_total_png_bytes=16 * 1024 * 1024,
+            )
+        return tuple(GeneralVisualPage(
+            reference=item.reference, media_type=item.media_type,
+            sha256=item.image_sha256, content=item.content,
+            source_view_ids=item.source_view_ids,
+            source_contour_ids=item.source_contour_ids,
+            source_document_refs=item.source_document_refs,
+            crop_bounds_source=item.crop_bounds_source,
+            marks=item.marks,
+            warnings=item.warnings,
+        ) for item in artifacts)
+
+    def general_furniture_context(run_id: str) -> GeneralFurnitureContext:
+        run = repository.get_run(run_id)
+        if run.input_kind != "general_furniture":
+            raise KeyError(run_id)
+        extraction = repository.get_extraction(run_id)
+        return GeneralFurnitureContext(
+            run_id=run_id, extraction=extraction, ledger_revision=run.candidate_revision,
+            visual_pages=general_visual_pages(run.document_id, extraction),
+        )
+
+    def execute_general_live(context: GeneralFurnitureContext):
+        if general_agent_provider is None:
+            raise RuntimeError("general_live_unavailable")
+        return run_general_furniture_agent(
+            context.extraction, ledger_revision=context.ledger_revision,
+            provider=general_agent_provider, visual_pages=context.visual_pages,
+        )
+
+    def execute_general_autonomous(
+        context: GeneralFurnitureContext, proposal_outcome, *, timeout_s: float,
+        proposal_revision: int = 1, previous_review=None, checkpoint_sink=None,
+    ):
+        if general_review_provider is None:
+            raise RuntimeError("general_auto_review_unavailable")
+        proposer_model = next(
+            (item.get("provider_model") for item in reversed(proposal_outcome.trace) if item.get("provider_model")),
+            settings.model or f"injected:{type(general_agent_provider).__name__}",
+        )
+        return run_general_autonomous(
+            context, proposal_outcome, reviewer_provider=general_review_provider,
+            proposer_model=proposer_model,
+            limits=AutoReviewLimits(
+                max_model_calls=general_review_max_calls,
+                max_tool_calls=general_review_max_calls,
+                max_validation_repairs=general_review_max_repairs,
+                max_semantic_repairs=1,
+                timeout_s=timeout_s,
+            ),
+            proposal_revision=proposal_revision,
+            previous_review=previous_review,
+            checkpoint_sink=checkpoint_sink,
+        )
+
+    def record_general_live_events(run_id: str, proposal_revision: int, outcome) -> None:
+        for item in outcome.trace:
+            repository.append_event(run_id, "general_tool_completed", {
+                "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
+                "summary": item.get("summary"), "proposal_origin": outcome.proposal.proposal_origin,
+                "provider_response_id": item.get("provider_response_id"),
+                "provider_model": item.get("provider_model"),
+                "provider_call_id": item.get("provider_call_id"),
+                "provider_duration_ms": item.get("provider_duration_ms"),
+                "provider_input_tokens": item.get("provider_input_tokens"),
+                "provider_output_tokens": item.get("provider_output_tokens"),
+                "provider_total_tokens": item.get("provider_total_tokens"),
+            })
+        repository.append_event(run_id, "general_proposal_committed", {
+            "proposal_id": outcome.proposal.id, "proposal_revision": proposal_revision,
+            "proposal_origin": outcome.proposal.proposal_origin,
+            "provider_model": settings.model or f"injected:{type(general_agent_provider).__name__}",
+            "model_calls": outcome.model_calls, "tool_calls": outcome.tool_calls,
+        })
+
+    def record_general_auto_review_events(run_id: str, outcome) -> None:
+        provenance = outcome.review.machine_provenance
+        for item in outcome.trace:
+            event_payload = {
+                "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
+                "summary": item.get("summary"), "reviewer_kind": "machine",
+                "phase": item.get("phase"), "status": item.get("status"),
+                "provider_response_id": item.get("provider_response_id"),
+                "provider_model": item.get("provider_model"),
+                "provider_call_id": item.get("provider_call_id"),
+                "provider_input_tokens": item.get("provider_input_tokens"),
+                "provider_output_tokens": item.get("provider_output_tokens"),
+                "provider_total_tokens": item.get("provider_total_tokens"),
+            }
+            repository.append_event(run_id, "general_auto_review_tool_completed", event_payload)
+            if item.get("phase") in {"general_auto_critique", "general_auto_semantic_repair", "general_auto_review"}:
+                repository.append_event(run_id, item["phase"], event_payload)
+        event_type = "general_auto_review_abstained" if outcome.status == "abstained" else "general_auto_review_completed"
+        repository.append_event(run_id, event_type, {
+            "proposal_revision": outcome.review.proposal_revision,
+            "review_revision": outcome.review.review_revision,
+            "status": outcome.status, "reviewer_kind": "machine",
+            "provider_model": provenance.model if provenance else None,
+            "review_relation": provenance.review_relation if provenance else None,
+            "model_calls": outcome.model_calls, "tool_calls": outcome.tool_calls,
+            "semantic_repairs": outcome.semantic_repairs,
+            "cost_tracking": "token_usage_only",
+        })
+
+    def record_general_auto_review_failure(run_id: str, exc: GeneralAutonomousError) -> None:
+        for item in exc.trace:
+            repository.append_event(run_id, "general_auto_review_tool_completed", {
+                "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
+                "summary": item.get("summary"), "phase": item.get("phase"),
+                "provider_response_id": item.get("provider_response_id"),
+                "provider_model": item.get("provider_model"),
+                "provider_call_id": item.get("provider_call_id"),
+                "provider_input_tokens": item.get("provider_input_tokens"),
+                "provider_output_tokens": item.get("provider_output_tokens"),
+                "provider_total_tokens": item.get("provider_total_tokens"),
+                "reviewer_kind": "machine",
+            })
+        repository.append_event(run_id, "general_auto_review_failed", {
+            "code": exc.code, "reviewer_kind": "machine",
+            "model_calls": exc.model_calls, "tool_calls": exc.tool_calls,
+        })
+
+    def persist_general_auto_checkpoint(run_id: str, checkpoint) -> None:
+        event = checkpoint.trace_event
+        repository.append_event(run_id, f"general_auto_{checkpoint.phase}_checkpoint", {
+            "proposal_revision": checkpoint.proposal_revision,
+            "tool_name": event.get("tool"), "ok": bool(event.get("ok")),
+            "summary": event.get("summary"), "phase": event.get("phase"),
+            "provider_response_id": event.get("provider_response_id"),
+            "provider_model": event.get("provider_model"),
+            "provider_call_id": event.get("provider_call_id"),
+            "status": event.get("status"), "actor_kind": "machine",
+        })
+        if checkpoint.phase == "semantic_repair":
+            saved_revision = general_furniture_repository.save_proposal(
+                run_id, checkpoint.proposal_outcome.proposal, checkpoint.proposal_outcome.draft,
+                base_proposal_revision=checkpoint.proposal_revision - 1,
+            )
+            if saved_revision != checkpoint.proposal_revision:
+                raise ValueError("general_auto_review_revision_mismatch")
+            repository.append_event(run_id, "general_auto_semantic_repair_committed", {
+                "proposal_id": checkpoint.proposal_outcome.proposal.id,
+                "proposal_revision": saved_revision,
+                "proposal_origin": checkpoint.proposal_outcome.proposal.proposal_origin,
+                "actor_kind": "machine",
+            })
+
+    def run_general_live(context: GeneralFurnitureContext):
+        return execute_general_live(context)
+
+    def run_general_auto_review(context, proposal_outcome, *, proposal_revision, previous_review):
+        return execute_general_autonomous(
+            context, proposal_outcome, timeout_s=general_job_timeout_s,
+            proposal_revision=proposal_revision, previous_review=previous_review,
+        )
+
+    def load_provisional_scenario_snapshot(run_id: str, proposal_revision: int, review_revision: int) -> ProvisionalScenarioSnapshot:
+        record = general_furniture_repository.get(run_id, proposal_revision=proposal_revision, review_revision=review_revision)
+        package = general_furniture_repository.get_derived(run_id, proposal_revision=proposal_revision, review_revision=review_revision)
+        if record is None or record.review is None or package is None:
+            raise KeyError(run_id)
+        review = record.review
+        if (record.proposal_revision, record.review_revision, package.proposal_revision, package.review_revision) != (proposal_revision, review_revision, proposal_revision, review_revision):
+            raise ValueError("general_scenario_snapshot_revision_conflict")
+        if review.reviewer_kind != "machine" or review.auto_review_status is None:
+            raise ValueError("general_scenario_machine_review_required")
+        checks = {item.id: item for item in review.machine_checks}
+        field_reviews = {item.target_ref: item for item in review.machine_field_reviews}
+        bom_rows = {item.component_id: item for item in package.bom_rows}
+        by_component: dict[str, list] = {}
+        for occurrence in review.scenario_occurrences:
+            by_component.setdefault(occurrence.component_id, []).append(occurrence)
+
+        def metadata(component_id: str, name: str):
+            item = field_reviews.get(f"component:{component_id}.{name}")
+            return (item.status, item.check_ids) if item is not None else ("abstained", ())
+
+        rows = []
+        for component in review.components:
+            occurrences = by_component.get(component.id, [])
+            if not occurrences or component.quantity.state != "hypothesis":
+                continue
+            bom = bom_rows.get(component.id)
+            occurrence_ids = tuple(item.id for item in occurrences)
+            if bom is None or bom.occurrence_status != "provisional" or set(bom.scenario_occurrence_ids) != set(occurrence_ids):
+                raise ValueError("general_scenario_snapshot_derived_mismatch")
+
+            def dimension(name: str) -> ProvisionalDimension:
+                value = getattr(component, name)
+                status, check_ids = metadata(component.id, name)
+                return ProvisionalDimension(value_mm=value.value_mm, state=value.state, review_status=status, check_ids=check_ids, dependency_refs=value.dependency_refs, evidence_ids=value.evidence_ids)
+
+            def text_value(name: str) -> ProvisionalText:
+                value = getattr(component, name)
+                status, check_ids = metadata(component.id, name)
+                return ProvisionalText(value=value.value, state=value.state, review_status=status, check_ids=check_ids, dependency_refs=value.dependency_refs, evidence_ids=value.evidence_ids)
+
+            quantity_status, field_check_ids = metadata(component.id, "quantity")
+            occurrence_check_ids = tuple(dict.fromkeys(check_id for item in occurrences for check_id in item.check_ids))
+            check_ids = tuple(dict.fromkeys((*field_check_ids, *occurrence_check_ids)))
+            premise_refs = tuple(dict.fromkeys(ref for item in occurrences for ref in item.premise_refs))
+            occurrence_sources = tuple(dict.fromkeys(ref for item in occurrences for ref in item.source_refs))
+            source_refs = tuple(dict.fromkeys((
+                *occurrence_sources,
+                *(f"view:{value}" for value in component.source_view_ids),
+                *(f"observation:{value}" for value in component.source_observation_ids),
+                *(f"contour:{value}" for value in component.source_contour_ids),
+                *(f"evidence:{value}" for value in component.source_evidence_ids),
+                *(f"dimension:{value}" for value in component.source_dimension_ids),
+                *component.source_document_refs,
+            )))
+            rows.append(ProvisionalScenarioRow(
+                component_id=component.id, occurrence_status="provisional", scenario_occurrence_ids=occurrence_ids,
+                quantity=ProvisionalQuantity(value=component.quantity.value, state=component.quantity.state, review_status=quantity_status, check_ids=check_ids, check_kinds=tuple(dict.fromkeys(checks[item].kind for item in check_ids if item in checks)), premise_refs=premise_refs, source_refs=occurrence_sources),
+                length=dimension("length"), width=dimension("width"), thickness=dimension("thickness"),
+                material=text_value("material"), finish=text_value("finish"), source_refs=source_refs,
+            ))
+        return ProvisionalScenarioSnapshot(run_id=run_id, proposal_revision=proposal_revision, review_revision=review_revision, auto_review_status=review.auto_review_status, rows=tuple(rows))
 
     @app.middleware("http")
     async def private_access(request: Request, call_next):
@@ -221,56 +641,361 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             else settings.unavailable_reason if not live_available
             else "recording_storage_exhausted:maintenance_or_increase_quota_required"
         )
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        semantic_capability = {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
+        capabilities = {
+            "live_available": effective_live_available,
+            "recorded_replay_available": replay_available,
+            "replay_available": replay_available,
+            "semantic": semantic_capability,
+            "documents": {"formats": ["dxf", "dwg", "pdf"], "preserves_original": True, "normalized_dxf_formats": ["dxf", "dwg"], "pdf": {"normalization": "per_vector_page", "measurement": "requires_confirmed_scale", "raster_manual_review": True}},
+            "general_furniture": {
+                "available": True, "live_available": general_agent_provider is not None,
+                "visual_pdf_pages": True,
+                "autonomous_review": {
+                    "available": general_review_provider is not None,
+                    "default_for_model_generated_live": True,
+                    "reviewer_model": review_model or (f"injected:{type(general_review_provider).__name__}" if general_review_provider is not None else None),
+                    "human_required": False, "cost_tracking": "token_usage_only",
+                    "max_visual_artifacts": 4, "max_png_bytes_per_artifact": 4 * 1024 * 1024,
+                    "limits": {
+                        "max_model_calls": general_review_max_calls,
+                        "max_validation_repairs": general_review_max_repairs,
+                        "job_timeout_s": general_job_timeout_s,
+                    },
+                },
+            },
+            "history": {"available": _module_available("backend.app.api.history")},
+            "evaluation": {"available": False, "reason": "offline_private_reference"},
+        }
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
         return _ok(table_cost_catalog_value.model_dump(mode="json"))
 
+    app.include_router(create_history_router(
+        historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
+    ))
+    app.include_router(create_general_furniture_router(
+        repository=general_furniture_repository,
+        context_loader=general_furniture_context,
+        live_runner=run_general_live if general_agent_provider is not None else None,
+        event_sink=record_general_live_events if general_agent_provider is not None else None,
+        direct_live_enabled=False,
+        auto_review_runner=run_general_auto_review if general_review_provider is not None else None,
+        auto_review_event_sink=record_general_auto_review_events if general_review_provider is not None else None,
+        direct_auto_review_enabled=False,
+    ))
+
     @app.post("/api/v1/documents")
-    async def upload_document(file: UploadFile = File(...)):
+    async def upload_document(http_request: Request, file: UploadFile = File(...)):
         filename = Path(file.filename or "").name
-        if Path(filename).suffix.lower() != ".dxf":
-            return _error(415, "unsupported_format", "La demo admite exclusivamente DXF.")
+        format_name = Path(filename).suffix.lower().removeprefix(".")
+        if format_name not in {"dxf", "dwg", "pdf"}:
+            return _error(415, "unsupported_format", "Se admiten archivos DXF, DWG y PDF.")
         content = await file.read(MAX_UPLOAD_BYTES + 1)
         if len(content) > MAX_UPLOAD_BYTES:
             return _error(413, "upload_too_large", "El archivo supera 20 MiB.")
         document_id = f"doc-{uuid4().hex}"
-        path = documents_dir / f"{document_id}.dxf"
-        temporary = documents_dir / f".{document_id}.upload.dxf"
-        def persist() -> str:
-            with upload_lock:
-                used_bytes = sum(item.stat().st_size for item in documents_dir.glob("*.dxf"))
-                if used_bytes + len(content) > max_storage_bytes:
-                    return "quota"
-                temporary.write_bytes(content)
-                try:
-                    parse_dxf(temporary)
-                    temporary.replace(path)
-                except Exception:
-                    temporary.unlink(missing_ok=True)
-                    return "invalid"
-                return "stored"
+        stage = staging_dir / document_id
+        source_media_type = _document_media_type(format_name, file.content_type)
+        source_sha256 = hashlib.sha256(content).hexdigest()
 
-        persisted = await run_in_threadpool(persist)
+        def ingest_and_persist() -> tuple[str, dict | None]:
+            shutil.rmtree(stage, ignore_errors=True)
+            stage.mkdir(parents=True)
+            source = stage / f"source.{format_name}"
+            source.write_bytes(content)
+            artifact_stage = stage / "artifacts"
+            normalized_stage: Path | None = None
+            preview: dict | None = None
+            pages: list[dict] = []
+            warnings: list[str] = []
+            state = "ready"
+            source_unit = "unknown"
+            try:
+                if format_name == "dxf":
+                    parse_dxf(source)
+                    normalized_stage = source
+                    preview = {"url": f"/api/v1/documents/{document_id}/preview.svg", "media_type": "image/svg+xml"}
+                elif format_name == "dwg":
+                    from backend.app.ingesta import convert_dwg_to_dxf
+
+                    artifact_stage.mkdir()
+                    result = convert_dwg_to_dxf(
+                        source,
+                        artifact_stage,
+                    )
+                    normalized_stage = Path(result.dxf_path)
+                    warnings.extend(result.warnings)
+                    preview = {"url": f"/api/v1/documents/{document_id}/preview.svg", "media_type": "image/svg+xml"}
+                else:
+                    from backend.app.ingesta import ingest_pdf
+
+                    artifact_stage.mkdir()
+                    result = ingest_pdf(source, artifact_stage)
+                    state = result.status
+                    source_unit = result.source_unit
+                    warnings.extend(result.warnings)
+                    for page in result.pages:
+                        page_number = page.page_number
+                        page_value = {
+                            "page_number": page_number,
+                            "width_points": page.width_points,
+                            "height_points": page.height_points,
+                            "width_mm": page.width_mm,
+                            "height_mm": page.height_mm,
+                            "rotation": page.rotation,
+                            "content_kind": page.content_kind,
+                            "vector_path_count": len(page.vector_paths),
+                            "text_block_count": len(page.text_blocks),
+                            "image_count": page.image_count,
+                            "warnings": list(page.warnings),
+                            "preview": {"url": f"/api/v1/documents/{document_id}/pages/{page_number}/preview.png", "media_type": "image/png"},
+                            "normalized_dxf": ({"url": f"/api/v1/documents/{document_id}/pages/{page_number}/normalized.dxf", "media_type": "application/dxf", "unit": source_unit} if page.normalized_dxf_path is not None else None),
+                        }
+                        pages.append(page_value)
+                    if pages:
+                        preview = pages[0]["preview"]
+            except Exception as exc:
+                shutil.rmtree(stage, ignore_errors=True)
+                code = str(exc)
+                if format_name == "dxf":
+                    return "invalid_dxf", None
+                if format_name == "dwg":
+                    error_name = type(exc).__name__
+                    mapped = {"DwgConverterUnavailable": "dwg_converter_unavailable", "DwgConversionFailed": "dwg_conversion_failed", "DwgOutputInvalid": "dwg_output_invalid"}
+                    return mapped.get(error_name, "dwg_conversion_failed"), None
+                return "invalid_pdf", None
+
+            artifact_bytes = sum(item.stat().st_size for item in stage.rglob("*") if item.is_file())
+            if format_name == "dwg" and normalized_stage is not None:
+                artifact_bytes += normalized_stage.stat().st_size
+            with upload_lock:
+                if used_document_storage_bytes() + artifact_bytes > max_storage_bytes:
+                    shutil.rmtree(stage, ignore_errors=True)
+                    return "quota", None
+                final_source = documents_dir / (f"{document_id}.dxf" if format_name == "dxf" else f"{document_id}.source.{format_name}")
+                final_artifacts = documents_dir / f"{document_id}-artifacts"
+                try:
+                    source.replace(final_source)
+                    if artifact_stage.exists():
+                        artifact_stage.replace(final_artifacts)
+                    if normalized_stage is not None and format_name != "dxf":
+                        normalized_relative = normalized_stage.resolve().relative_to(artifact_stage.resolve())
+                        normalized_final = final_artifacts / normalized_relative
+                        shutil.copyfile(normalized_final, documents_dir / f"{document_id}.dxf")
+                except Exception:
+                    final_source.unlink(missing_ok=True)
+                    (documents_dir / f"{document_id}.dxf").unlink(missing_ok=True)
+                    shutil.rmtree(final_artifacts, ignore_errors=True)
+                    shutil.rmtree(stage, ignore_errors=True)
+                    return "persistence_failed", None
+                finally:
+                    shutil.rmtree(stage, ignore_errors=True)
+
+                original_url = f"/api/v1/documents/{document_id}/original"
+                normalized = None
+                normalized_path = documents_dir / f"{document_id}.dxf"
+                if normalized_path.is_file():
+                    normalized = {"url": f"/api/v1/documents/{document_id}/normalized.dxf", "media_type": "application/dxf", "sha256": hashlib.sha256(normalized_path.read_bytes()).hexdigest()}
+                manifest = {
+                    "document_id": document_id,
+                    "original_filename": filename,
+                    "size_bytes": len(content),
+                    "sha256": source_sha256,
+                    "source_kind": "uploaded",
+                    "source": {"filename": filename, "media_type": source_media_type, "format": format_name, "size_bytes": len(content), "sha256": source_sha256, "unit": source_unit},
+                    "ingestion": {"state": state, "capabilities": {"geometry_analysis": normalized is not None and format_name != "pdf", "page_geometry_analysis": any(page.get("normalized_dxf") is not None for page in pages), "page_review": format_name == "pdf"}, "warnings": warnings, "errors": []},
+                    "artifacts": {"original": {"url": original_url, "media_type": source_media_type}, "normalized_dxf": normalized, "preview": preview, "pages": pages},
+                    "audit": {"uploaded_by": http_request.state.actor, "uploaded_at": datetime.now(UTC).isoformat()},
+                }
+                document_manifest_path(document_id).write_text(json.dumps(_json_safe(manifest), ensure_ascii=False, sort_keys=True), encoding="utf-8")
+                return "stored", manifest
+
+        persisted, manifest = await run_in_threadpool(ingest_and_persist)
         if persisted == "quota":
             return _error(507, "storage_quota_exceeded", "La cuota persistente de documentos está agotada.")
-        if persisted == "invalid":
+        if persisted == "invalid_dxf":
             return _error(422, "invalid_dxf", "El archivo no es un DXF válido dentro de los límites admitidos.")
-        return _ok({"document_id": document_id, "original_filename": filename, "size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "source_kind": "uploaded"}, 201)
+        if persisted != "stored":
+            status = 503 if persisted in {"dwg_converter_unavailable", "dwg_conversion_timeout"} else 422
+            return _error(status, persisted, "No se pudo ingerir el documento.", status == 503)
+        return _ok(manifest, 201)
+
+    @app.get("/api/v1/documents/{document_id}")
+    def get_document(document_id: str):
+        if DOCUMENT_ID_PATTERN.fullmatch(document_id) is None:
+            return _error(422, "invalid_document_id", "Identificador de documento inválido.")
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        return _ok(manifest)
+
+    @app.get("/api/v1/documents/{document_id}/original")
+    def get_document_original(document_id: str):
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        format_name = manifest["source"]["format"]
+        source_document_id = manifest["source"].get("parent_document_id", document_id)
+        if DOCUMENT_ID_PATTERN.fullmatch(source_document_id) is None:
+            return _error(409, "document_provenance_invalid", "La procedencia del documento no es válida.")
+        path = documents_dir / (f"{source_document_id}.dxf" if format_name == "dxf" else f"{source_document_id}.source.{format_name}")
+        if not path.is_file():
+            return _error(404, "document_artifact_not_found", "El original no está disponible.")
+        return FileResponse(path, media_type=manifest["source"]["media_type"], filename=manifest["source"]["filename"], headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.get("/api/v1/documents/{document_id}/normalized.dxf")
+    def get_document_normalized(document_id: str):
+        path = normalized_document_path(document_id)
+        if path is None:
+            return _error(404, "normalized_dxf_unavailable", "El documento no tiene un DXF normalizado.")
+        return FileResponse(path, media_type="application/dxf", filename=f"{document_id}.dxf", headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.get("/api/v1/documents/{document_id}/pages/{page_number}/preview.png")
+    def get_pdf_page_preview(document_id: str, page_number: int):
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        pages = manifest.get("artifacts", {}).get("pages", [])
+        if not any(page.get("page_number") == page_number for page in pages):
+            return _error(404, "document_page_not_found", "Página inexistente.")
+        path = documents_dir / f"{document_id}-artifacts" / f"page-{page_number:04d}.png"
+        if not path.is_file():
+            return _error(404, "document_artifact_not_found", "La previsualización no está disponible.")
+        return FileResponse(path, media_type="image/png", headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.get("/api/v1/documents/{document_id}/pages/{page_number}/normalized.dxf")
+    def get_pdf_page_dxf(document_id: str, page_number: int):
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        pages = manifest.get("artifacts", {}).get("pages", [])
+        page = next((item for item in pages if item.get("page_number") == page_number), None)
+        if page is None or page.get("normalized_dxf") is None:
+            return _error(404, "normalized_dxf_unavailable", "La página no tiene un DXF normalizado.")
+        path = documents_dir / f"{document_id}-artifacts" / f"page-{page_number:04d}.dxf"
+        if not path.is_file():
+            return _error(404, "document_artifact_not_found", "El artefacto de página no está disponible.")
+        return FileResponse(path, media_type="application/dxf", filename=f"{document_id}-page-{page_number}.dxf", headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.post("/api/v1/documents/{document_id}/pages/{page_number}/select")
+    @app.post("/api/v1/documents/{document_id}/pdf-pages/{page_number}/normalize")
+    def select_pdf_page(document_id: str, page_number: int, selection: PdfPageSelectionRequest, http_request: Request):
+        manifest = load_document_manifest(document_id)
+        if manifest is None:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        if manifest.get("source", {}).get("format") != "pdf":
+            return _error(409, "pdf_page_selection_required", "La selección de página solo se aplica a PDF.")
+        actor = http_request.state.actor or selection.confirmed_by
+        if selection.mm_per_pdf_point is not None and not actor:
+            return _error(422, "scale_confirmation_actor_required", "La escala requiere una persona responsable.")
+        current_pages = manifest.get("artifacts", {}).get("pages", [])
+        selected_page = next((page for page in current_pages if page.get("page_number") == page_number), None)
+        if selected_page is None:
+            return _error(404, "document_page_not_found", "Página inexistente.")
+
+        def select() -> tuple[str, dict | None]:
+            child_id = f"doc-{uuid4().hex}"
+            parent_artifact_dir = documents_dir / f"{document_id}-artifacts"
+            selected_path = parent_artifact_dir / f"page-{page_number:04d}.dxf"
+            child_page = dict(selected_page)
+            scale_provenance = None
+            generated_artifacts: Path | None = None
+            if selection.mm_per_pdf_point is not None:
+                from backend.app.ingesta import PdfScaleConfirmation, ingest_pdf
+
+                source = documents_dir / f"{document_id}.source.pdf"
+                scale_provenance = {
+                    "mm_per_pdf_point": selection.mm_per_pdf_point,
+                    "confirmed_by": actor,
+                    "confirmed_at": datetime.now(UTC).isoformat(),
+                }
+                generated_artifacts = staging_dir / f"{document_id}-scale-{uuid4().hex}"
+                try:
+                    result = ingest_pdf(
+                        source,
+                        generated_artifacts,
+                        scale=PdfScaleConfirmation(
+                            mm_per_pdf_point=selection.mm_per_pdf_point,
+                            confirmed_by=actor or "",
+                            confirmed_at=datetime.now(UTC),
+                        ),
+                    )
+                except Exception:
+                    shutil.rmtree(generated_artifacts, ignore_errors=True)
+                    return "invalid_pdf", None
+                scaled_page = next(page for page in result.pages if page.page_number == page_number)
+                child_page = {
+                    "page_number": scaled_page.page_number,
+                    "width_points": scaled_page.width_points,
+                    "height_points": scaled_page.height_points,
+                    "width_mm": scaled_page.width_mm,
+                    "height_mm": scaled_page.height_mm,
+                    "rotation": scaled_page.rotation,
+                    "content_kind": scaled_page.content_kind,
+                    "vector_path_count": len(scaled_page.vector_paths),
+                    "text_block_count": len(scaled_page.text_blocks),
+                    "image_count": scaled_page.image_count,
+                    "warnings": list(scaled_page.warnings),
+                    "preview": selected_page["preview"],
+                    "normalized_dxf": ({"url": f"/api/v1/documents/{child_id}/normalized.dxf", "media_type": "application/dxf", "unit": "mm"} if scaled_page.normalized_dxf_path is not None else None),
+                }
+                selected_path = generated_artifacts / f"page-{page_number:04d}.dxf"
+            has_vector_dxf = selected_path.is_file()
+            selected_size = selected_path.stat().st_size if has_vector_dxf else 0
+            with upload_lock:
+                if used_document_storage_bytes() + selected_size > max_storage_bytes:
+                    if generated_artifacts is not None:
+                        shutil.rmtree(generated_artifacts, ignore_errors=True)
+                    return "quota", None
+                child_normalized = documents_dir / f"{child_id}.dxf"
+                normalized = None
+                if has_vector_dxf:
+                    temporary_normalized = documents_dir / f".{child_id}.selected.dxf"
+                    shutil.copyfile(selected_path, temporary_normalized)
+                    temporary_normalized.replace(child_normalized)
+                    normalized_sha = hashlib.sha256(child_normalized.read_bytes()).hexdigest()
+                    normalized = {"url": f"/api/v1/documents/{child_id}/normalized.dxf", "media_type": "application/dxf", "sha256": normalized_sha, "source_page": page_number, "unit": "mm" if scale_provenance else "unknown"}
+                child = {
+                    "document_id": child_id,
+                    "original_filename": manifest["original_filename"],
+                    "size_bytes": manifest["size_bytes"],
+                    "sha256": manifest["sha256"],
+                    "source_kind": "pdf_page_derivative",
+                    "source": {**manifest["source"], "parent_document_id": document_id, "page_number": page_number, "unit": "mm" if selection.mm_per_pdf_point is not None else "unknown"},
+                    "ingestion": {"state": "ready" if scale_provenance is not None and has_vector_dxf else "needs_review", "capabilities": {"geometry_analysis": has_vector_dxf, "visual_general_review": True, "page_review": True}, "warnings": list(child_page.get("warnings", [])), "errors": [], "selected_page": page_number, "scale_provenance": scale_provenance},
+                    "artifacts": {"original": {"url": f"/api/v1/documents/{child_id}/original", "media_type": "application/pdf"}, "normalized_dxf": normalized, "preview": child_page["preview"], "pages": [child_page]},
+                    "audit": {"uploaded_by": manifest.get("audit", {}).get("uploaded_by"), "selected_by": actor, "selected_at": datetime.now(UTC).isoformat(), "selection_reason": selection.reason},
+                }
+                document_manifest_path(child_id).write_text(json.dumps(_json_safe(child), ensure_ascii=False, sort_keys=True), encoding="utf-8")
+                if generated_artifacts is not None:
+                    shutil.rmtree(generated_artifacts, ignore_errors=True)
+                return "selected", child
+
+        state, updated = select()
+        if state == "quota":
+            return _error(507, "storage_quota_exceeded", "La cuota persistente de documentos está agotada.")
+        if state != "selected":
+            return _error(422, state, "No se pudo seleccionar la página PDF.")
+        return _ok(updated)
 
     @app.get("/api/v1/documents/{document_id}/drawing")
     def get_document_drawing(
         document_id: str,
-        input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = Query(
+        input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views", "general_furniture"] = Query(
             default="mounted_views_legacy"
         ),
     ):
         if re.fullmatch(r"doc-[0-9a-f]{32}", document_id) is None:
             return _error(422, "invalid_document_id", "Identificador de documento inválido.")
-        path = documents_dir / f"{document_id}.dxf"
-        if not path.is_file():
+        manifest = load_document_manifest(document_id)
+        path = normalized_document_path(document_id)
+        if manifest is None:
             return _error(404, "document_not_found", "Documento inexistente.")
+        if path is None:
+            return _error(409, "normalized_dxf_unavailable", "El documento requiere revisión y no puede entrar al análisis DXF.")
         try:
             extraction = extract_drawing(path, input_kind=input_kind)
         except Exception as exc:
@@ -281,9 +1006,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def get_document_preview(document_id: str):
         if re.fullmatch(r"doc-[0-9a-f]{32}", document_id) is None:
             return _error(422, "invalid_document_id", "Identificador de documento inválido.")
-        path = documents_dir / f"{document_id}.dxf"
-        if not path.is_file():
+        manifest = load_document_manifest(document_id)
+        path = normalized_document_path(document_id)
+        if manifest is None:
             return _error(404, "document_not_found", "Documento inexistente.")
+        if path is None:
+            return _error(409, "normalized_dxf_unavailable", "El documento no tiene una previsualización vectorial DXF.")
         try:
             svg = render_drawing_preview(path)
         except ValueError as exc:
@@ -294,10 +1022,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def _prepare_run(request: RunRequest):
         if request.mode == "live" and not live_available:
             raise RuntimeError("live_provider_unavailable")
-        path = documents_dir / f"{request.document_id}.dxf"
-        if not path.is_file():
+        manifest = load_document_manifest(request.document_id)
+        if manifest is None:
             raise FileNotFoundError(request.document_id)
-        extraction = extract_drawing(path, input_kind=request.input_kind)
+        path = normalized_document_path(request.document_id)
+        if path is None and request.input_kind != "general_furniture":
+            raise NormalizedDxfUnavailable(request.document_id)
+        if path is None:
+            extraction = DrawingExtraction(
+                drawing_id=f"drawing-{manifest['sha256'][:16]}", input_kind="general_furniture",
+                status="needs_review", source_unit="unknown", unit_scale_to_mm=None,
+                coordinate_unit="source", entities=(), views=(), contours=(), dimensions=(),
+                evidence=(), observations=(), warnings=("raster_or_unconverted_source_visual_review_only",),
+            )
+            document_sha256 = manifest["sha256"]
+        else:
+            extraction = extract_drawing(path, input_kind=request.input_kind)
+            document_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
         if request.input_kind == "separated_part_views":
             part_analysis = extract_separated_parts(extraction)
             assembly_candidates = derive_assembly_candidates(part_analysis)
@@ -319,6 +1060,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 raise ValueError("table_template_unavailable")
             evaluated_table_program = evaluate_table_program(table_analysis, table_programs[0]) if table_programs else None
             schemas = table_tool_schemas(include_vision=settings.vision_enabled)
+        elif request.input_kind == "general_furniture":
+            part_analysis = None
+            assembly_candidates = ()
+            scenarios = ()
+            table_analysis = None
+            table_programs = ()
+            evaluated_table_program = None
+            comparison_candidates = ()
+            schemas = ()
         else:
             part_analysis = None
             assembly_candidates = ()
@@ -331,7 +1081,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         limits = AgentLimits()
         fingerprint = recording_fingerprint({
             "request": request.model_copy(update={"mode": "live"}).model_dump(mode="json"),
-            "document_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "document_sha256": document_sha256,
             "extraction": extraction.model_dump(mode="json"),
             "part_analysis": part_analysis.model_dump(mode="json") if part_analysis else None,
             "assembly_candidates": [item.model_dump(mode="json") for item in assembly_candidates],
@@ -352,8 +1102,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def replay_availability(request: RunRequest):
         if request.mode != "recorded_replay":
             return _error(422, "recorded_replay_mode_required", "La consulta requiere mode recorded_replay.")
+        if request.input_kind == "general_furniture":
+            return _ok({"available": False, "document_id": request.document_id, "input_kind": request.input_kind, "reason": "general_furniture_replay_unavailable"})
         try:
             *_, fingerprint = _prepare_run(request)
+        except NormalizedDxfUnavailable:
+            return _error(409, "normalized_dxf_unavailable", "El documento no tiene un DXF normalizado utilizable.")
         except FileNotFoundError:
             return _error(404, "document_not_found", "Documento inexistente.")
         except Exception as exc:
@@ -367,6 +1121,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         try:
             (extraction, part_analysis, assembly_candidates, scenarios, table_analysis,
              table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint) = _prepare_run(request)
+        except NormalizedDxfUnavailable:
+            return _error(409, "normalized_dxf_unavailable", "El documento no tiene un DXF normalizado utilizable.")
         except FileNotFoundError:
             return _error(404, "document_not_found", "Documento inexistente.")
         except ValueError as exc:
@@ -384,7 +1140,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         recording_draft = None
         source_recording = None
         recording_reservation_id = None
-        if request.mode in {"live", "recorded_replay"}:
+        if request.mode in {"live", "recorded_replay"} and request.input_kind != "general_furniture":
             try:
                 if request.mode == "live":
                     recording_reservation_id = f"recording-reservation-{uuid4().hex}"
@@ -465,6 +1221,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 "source_result_revision": source_recording.source_result_revision if source_recording else None,
             } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
+        general_outcome = None
+        general_auto_outcome = None
+        general_started = None
+        if request.input_kind == "general_furniture" and request.mode == "live":
+            general_started = time.monotonic()
+            general_context = GeneralFurnitureContext(
+                run_id=run_id, extraction=extraction, ledger_revision=extraction.drawing_id,
+                visual_pages=general_visual_pages(request.document_id, extraction),
+            )
+            try:
+                general_outcome = execute_general_live(general_context)
+            except Exception as exc:
+                return _error(502, "general_live_provider_failed", f"La propuesta general live falló: {type(exc).__name__}.", True)
         try:
             run = repository.create_run(
                 run_id,
@@ -491,6 +1260,52 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             if recording_reservation_id is not None:
                 repository.release_agent_recording_reservation(recording_reservation_id)
             raise
+        if general_outcome is not None:
+            general_revision = general_furniture_repository.save_proposal(
+                run_id, general_outcome.proposal, general_outcome.draft,
+                base_proposal_revision=0,
+            )
+            record_general_live_events(run_id, general_revision, general_outcome)
+            repository.append_event(run_id, "general_auto_review_started", {
+                "proposal_revision": general_revision, "reviewer_kind": "machine",
+                "reviewer_model": review_model or f"injected:{type(general_review_provider).__name__}",
+                "visual_artifacts": [{
+                    "reference": item.reference, "sha256": item.sha256,
+                    "source_view_ids": item.source_view_ids,
+                    "source_contour_ids": item.source_contour_ids,
+                    "crop_bounds_source": item.crop_bounds_source,
+                    "marks": [asdict(mark) for mark in item.marks],
+                } for item in general_context.visual_pages],
+            })
+            remaining = general_job_timeout_s - (time.monotonic() - (general_started or time.monotonic()))
+            if remaining <= 0:
+                error = {"code": "general_auto_review_failed", "message": "La revisión autónoma agotó el plazo total del trabajo.", "retryable": True, "run_id": run_id}
+                repository.append_event(run_id, "general_auto_review_failed", error)
+                return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=504)
+            try:
+                general_auto_outcome = execute_general_autonomous(
+                    general_context, general_outcome, timeout_s=remaining,
+                    checkpoint_sink=lambda checkpoint: persist_general_auto_checkpoint(run_id, checkpoint),
+                )
+            except GeneralAutonomousError as exc:
+                record_general_auto_review_failure(run_id, exc)
+                error = {"code": exc.code, "message": "La revisión autónoma falló de forma acotada.", "retryable": True, "run_id": run_id}
+                return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=502)
+            except Exception as exc:
+                code = "general_auto_review_unavailable" if str(exc) == "general_auto_review_unavailable" else "general_auto_review_failed"
+                status = 503 if code == "general_auto_review_unavailable" else 502
+                error = {"code": code, "message": f"La revisión autónoma falló: {type(exc).__name__}.", "retryable": True, "run_id": run_id}
+                repository.append_event(run_id, "general_auto_review_failed", {"code": code, "reviewer_kind": "machine"})
+                return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=status)
+            if general_auto_outcome is not None:
+                if general_auto_outcome.semantic_repairs:
+                    general_revision += general_auto_outcome.semantic_repairs
+                    if general_revision != general_auto_outcome.review.proposal_revision:
+                        raise ValueError("general_auto_review_revision_mismatch")
+                general_furniture_repository.save_review(
+                    run_id, general_auto_outcome.review, general_auto_outcome.derived,
+                )
+                record_general_auto_review_events(run_id, general_auto_outcome)
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
@@ -546,7 +1361,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 if response.status_code == 201:
                     repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
                 else:
-                    repository.finish_job(job_id, error=payload.get("error") or {
+                    repository.finish_job(job_id, run_id=payload.get("run_id"), error=payload.get("error") or {
                         "code": "job_failed", "message": "El trabajo no terminó.", "retryable": False
                     })
             except Exception as exc:

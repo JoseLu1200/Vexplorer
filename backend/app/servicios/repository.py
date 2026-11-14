@@ -397,7 +397,9 @@ class DemoRepository:
     def finish_job(
         self, job_id: str, *, run_id: str | None = None, error: dict | None = None
     ) -> None:
-        state = "succeeded" if run_id is not None else "failed"
+        state = "failed" if error is not None else "succeeded"
+        if state == "succeeded" and run_id is None:
+            raise ValueError("successful_job_requires_run_id")
         with self._connect() as db:
             changed = db.execute(
                 "UPDATE jobs SET state=?,run_id=?,error_json=?,updated_at=? WHERE id=? AND state='running'",

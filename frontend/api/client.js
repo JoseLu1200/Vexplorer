@@ -18,9 +18,10 @@ async function readJson(response) {
   }
   if (!response.ok) {
     const error = envelope?.error ?? {};
-    throw new ApiError(error.message ?? `La solicitud falló con estado ${response.status}.`, {
+    const detail=typeof envelope?.detail==="string"?envelope.detail:Array.isArray(envelope?.detail)?envelope.detail.map((item)=>item.msg??item.message).filter(Boolean).join(" "):null;
+    throw new ApiError(error.message ?? detail ?? `La solicitud falló con estado ${response.status}.`, {
       status: response.status,
-      code: error.code ?? "request_failed",
+      code: error.code ?? (typeof envelope?.detail==="string"?envelope.detail:"request_failed"),
       details: error.details ?? {},
       retryable: Boolean(error.retryable),
     });
@@ -90,6 +91,7 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     getReplayAvailability: (request) => post("/api/v1/replay-availability", request, { idempotent: false }),
     getDocumentDrawing: (documentId, inputKind) => json(`/api/v1/documents/${encodeURIComponent(documentId)}/drawing${inputKind ? `?input_kind=${encodeURIComponent(inputKind)}` : ""}`),
     documentPreviewUrl: (documentId) => resourceUrl(`/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`),
+    normalizePdfPage: (documentId, pageNumber, body) => post(`/api/v1/documents/${encodeURIComponent(documentId)}/pdf-pages/${encodeURIComponent(pageNumber)}/normalize`, body),
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),
     getDrawing: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/drawing`),
     getLedger: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/ledger`),
@@ -105,6 +107,14 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     generateTableCosts: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs`, body),
     getTableCosts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
     getTableCostCatalog: () => json("/api/v1/table-cost-catalog"),
+    createGeneralProposal: (runId, body = {}) => post(`/api/v1/runs/${encodeURIComponent(runId)}/general/proposals`, body),
+    getGeneralFurniture: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/general`),
+    reviewGeneralFurniture: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/general/reviews`, body),
+    getGeneralDerived: (runId, proposalRevision, reviewRevision) => { const query=new URLSearchParams({proposal_revision:String(requiredRevision(proposalRevision)),review_revision:String(requiredRevision(reviewRevision))}); return json(`/api/v1/runs/${encodeURIComponent(runId)}/general/derived?${query}`); },
+    generalArtifactUrl: (runId, artifactId, proposalRevision, reviewRevision) => {
+      const query = new URLSearchParams({ proposal_revision: String(requiredRevision(proposalRevision)), review_revision: String(requiredRevision(reviewRevision)) });
+      return resourceUrl(`/api/v1/runs/${encodeURIComponent(runId)}/general/artifacts/${encodeURIComponent(artifactId)}?${query}`);
+    },
     getExplanations: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/explanations?result_revision=${encodeURIComponent(revision)}`),
     getScene: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/scene?result_revision=${encodeURIComponent(revision)}`),
     getLibrary: () => json("/api/v1/library"),
@@ -117,6 +127,14 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
       return response.text();
     },
     getComparables: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/comparables`),
+    async importHistory(file, { dryRun = false } = {}) {
+      const form = new FormData(); form.append("file", file);
+      return json(`/api/v1/history/imports?dry_run=${dryRun ? "true" : "false"}`, { method: "POST", headers: { "Idempotency-Key": idFactory() }, body: form });
+    },
+    getHistory: (filters = {}) => { const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== undefined && value !== null && value !== "").map(([key, value]) => [key, String(value)])); return json(`/api/v1/history${query.size ? `?${query}` : ""}`); },
+    getHistoricalComparables: (body) => post("/api/v1/history/comparables", body),
+    estimateFromHistory: (body) => post("/api/v1/history/estimate", body),
+    getHistoricalScenarios: (body) => post("/api/v1/history/scenarios", body),
     estimate: (runId, body = {}) => post(`/api/v1/runs/${encodeURIComponent(runId)}/estimate`, body),
     review: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/reviews`, body),
     cancel: (runId) => post(`/api/v1/runs/${encodeURIComponent(runId)}/cancel`, {}, { idempotent: false }),

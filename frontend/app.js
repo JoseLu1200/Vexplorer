@@ -12,11 +12,14 @@ import { createRequestFence } from "./core/request-fence.js";
 import { jobStatusLabel, pollJob } from "./core/jobs.js";
 import { nextFocusTarget } from "./core/focus.js";
 import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "./core/table.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalRunOptions, normaliseGeneralWorkspace, presentGeneralDerived, serialiseGeneralBom } from "./core/general.js";
+import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
+import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
@@ -32,6 +35,8 @@ function resetEstimateUi() {
   $("#estimate-lines").replaceChildren(emptyParagraph("La revisión actual todavía no tiene estimación. Calcula una nueva para evitar reutilizar importes anteriores."));
   text($("#estimate-revision"), state.snapshot?.result_revision ? `Revisión ${state.snapshot.result_revision} · Sin estimación` : "Sin revisión");
   text($("#estimate-total"), "Pendiente");
+  text($("#estimate-uncertainty"), "");
+  $("#estimate-missing-data")?.replaceChildren();
   $$("[data-export]").forEach((button) => { button.disabled = true; });
 }
 
@@ -40,14 +45,14 @@ function configureExportActions(){const table=state.tableWorkspace?.isTable===tr
 function resetRunUi() {
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
   state.jobAbort?.abort();
-  Object.assign(state, { documentId: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
   $("#derived-drawing-image").removeAttribute("src"); $("#derived-drawing-view").hidden=true; $("#derived-drawing-sheet").replaceChildren(); $("#derived-drawing-downloads").replaceChildren(); artifactFence.invalidate();
   $("#derived-drawing-view").classList.remove("is-expanded"); $("#derived-drawing-expand").setAttribute("aria-pressed","false"); text($("#derived-drawing-expand"),"Ampliar");
   toggleHidden($("#table-cost-scope"),true); $$('[data-artifact-view]').forEach((tab)=>{if(tab.dataset.artifactView!=="source")tab.disabled=true;});
-  text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#run-mode-label"), "Sin ejecución"); text($("#replay-source"),""); toggleHidden($("#replay-source"),true);
+  text($("#drawing-id"), "Sin dibujo"); text($("#unit-label"), "Pendiente"); text($("#document-provenance"), "Fuente pendiente"); text($("#run-mode-label"), "Sin ejecución"); text($("#replay-source"),""); toggleHidden($("#replay-source"),true);
   text($("#evidence-title"), "Sin selección"); $("#evidence-detail").replaceChildren(emptyParagraph("Selecciona una fila o un contorno para consultar su procedencia."));
   const row = document.createElement("tr"); row.className = "empty-row"; const cell = document.createElement("td"); cell.colSpan = 7; cell.textContent = "Todavía no hay observaciones. El plano seguirá disponible aunque el análisis quede vacío."; row.append(cell); $("#parts-body").replaceChildren(row);
   text($("#parts-summary"), "Sin observaciones"); text($("#classification-summary"), "Las hipótesis aparecerán después de analizar las piezas."); text($("#scene-context"), "2D fuente · sin montaje inferido");
@@ -56,6 +61,7 @@ function resetRunUi() {
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
   $("#review-form").reset(); if(state.session?.authenticated&&state.session.username)$("#reviewer-name").value=state.session.username; $("#review-submit").disabled = true; text($("#review-message"), "");
   $("#comparables-list").replaceChildren(emptyParagraph("Sin comparables disponibles."));
+  toggleHidden($("#historical-scenarios"),true);$("#historical-scenarios-list")?.replaceChildren(emptyParagraph("La auto-revisión aún no tiene un snapshot consultable."));
   resetEstimateUi(); $("#estimate-button").disabled = true;
   $("#trace-export").disabled = true;
   $("#trace-list").replaceChildren(emptyParagraph("No hay eventos todavía."));
@@ -74,7 +80,29 @@ function configureModes(config = {}) {
   const semanticOption = $("#similarity-mode option[value='semantic']");
   const semanticAvailable = Boolean(semantic.available ?? config.semantic_available);
   if (semanticOption) semanticOption.disabled = !semanticAvailable;
+  const historySemanticOption = $('#history-retrieval-method option[value="semantic"]');
+  if(historySemanticOption)historySemanticOption.disabled=!semanticAvailable;
   text($("#semantic-note"), semanticAvailable ? `Semántico real · ${semantic.model ?? config.semantic_model ?? "modelo configurado"}` : "Semántico no disponible: usa el descriptor geométrico offline.");
+  const historyNote=$("#history-retrieval-note");if(historyNote)text(historyNote,semanticAvailable?`Registros empresariales y fuentes públicas por defecto; sin fixtures · embeddings disponibles: ${semantic.model??"modelo configurado"} · ${semantic.dimensions??"dimensiones no publicadas"}.`: `Registros empresariales y fuentes públicas por defecto; sin fixtures · embeddings no disponibles${semantic.unavailable_reason?`: ${semantic.unavailable_reason}`:""}.`);
+  const generalCapability=config.general_furniture??config.capabilities?.general_furniture??{},liveAvailable=Boolean(config.live_available??config.capabilities?.live_available),autonomousReview=generalCapability.autonomous_review,automaticAvailable=typeof autonomousReview==="object"?autonomousReview.available!==false:autonomousReview!==false;
+  if(liveAvailable&&automaticAvailable&&!$("#upload-form").dataset.userConfigured){$("#upload-form").elements.input_kind.value="general_furniture";$("#upload-form").elements.mode.value="live";updateTableRunControls();text($("#global-message"),"Modo recomendado: mueble general con revisión visual automática de hipótesis.");}
+}
+
+function createHistoryEstimateControls(){
+  if($("#history-estimate-controls"))return;const root=document.createElement("fieldset"),legend=document.createElement("legend"),methodLabel=document.createElement("label"),method=document.createElement("select"),attribute=document.createElement("option"),semantic=document.createElement("option"),syntheticLabel=document.createElement("label"),synthetic=document.createElement("input"),syntheticText=document.createElement("span"),note=document.createElement("p");root.id="history-estimate-controls";root.className="history-estimate-controls";root.hidden=true;legend.textContent="Origen y método";methodLabel.textContent="Método";method.id="history-retrieval-method";attribute.value="attribute";attribute.textContent="Atributos verificables";semantic.value="semantic";semantic.textContent="Embeddings reales";method.append(attribute,semantic);methodLabel.append(method);syntheticLabel.className="check-field";synthetic.id="history-include-synthetic";synthetic.type="checkbox";syntheticText.textContent="Incluir datos sintéticos para prueba";syntheticLabel.append(synthetic,syntheticText);note.id="history-retrieval-note";note.className="field-note";note.setAttribute("role","status");note.textContent="Solo datos reales · comparación por atributos.";root.append(legend,methodLabel,syntheticLabel,note);$("#comparables-list").before(root);
+  const scenarios=document.createElement("section"),heading=document.createElement("h3"),description=document.createElement("p"),button=document.createElement("button"),cards=document.createElement("div");scenarios.id="historical-scenarios";scenarios.className="historical-scenarios";scenarios.hidden=true;heading.textContent="Estimaciones por escenario";description.id="historical-scenarios-note";description.className="field-note";description.textContent="Condiciones automáticas sobre comparables publicados; no son cotizaciones ni hechos confirmados.";button.id="historical-scenarios-button";button.type="button";button.className="button";button.textContent="Consultar escenarios";button.disabled=true;cards.id="historical-scenarios-list";cards.className="scenario-estimate-list";cards.append(emptyParagraph("La auto-revisión aún no tiene un snapshot consultable."));scenarios.append(heading,description,button,cards);root.before(scenarios);
+}
+
+function historicalRetrievalOptions(){return{retrievalMethod:$("#history-retrieval-method")?.value??"attribute",includeSynthetic:Boolean($("#history-include-synthetic")?.checked)};}
+
+function renderDocumentIngestion(record) {
+  const presented=presentDocumentIngestion(record); state.documentIngestion=presented;
+  text($("#document-provenance"),`${presented.format} · ${presented.summary}`); $("#document-provenance").title=[presented.summary,...presented.warnings].join(" · ");
+  const controls=$("#pdf-page-controls"),select=$("#pdf-page-select"); toggleHidden(controls,presented.format!=="PDF"); select.replaceChildren();
+  presented.pages.forEach((page)=>{const option=document.createElement("option");option.value=String(page.page);option.textContent=`Página ${page.page} · ${page.content_kind??"contenido sin clasificar"}${page.previewOnly?" · solo vista previa":" · vector disponible"}`;option.dataset.previewPath=page.previewUrl??"";select.append(option);});
+  const showPagePreview=()=>{const path=select.selectedOptions[0]?.dataset.previewPath??presented.previewUrl;if(path)$("#original-preview").src=api.resourceUrl(path);}; select.onchange=showPagePreview;
+  if(presented.format==="PDF"&&presented.pages.length)showPagePreview();
+  return presented;
 }
 
 function extractComponents() {
@@ -171,8 +199,14 @@ function selectDerivedSheet(sheet){
 function renderDerivedSheetKind(kind){
   const sheets=tableDrawingSheets(kind),select=$("#derived-drawing-sheet"); select.replaceChildren(); sheets.forEach((sheet)=>{const option=document.createElement("option"); option.value=sheet.id; option.textContent=`${sheet.page}. ${sheet.title}${sheet.status==="incomplete"?" · incompleto":""}`; select.append(option);}); select.disabled=sheets.length<2; select.onchange=()=>selectDerivedSheet(sheets.find((sheet)=>sheet.id===select.value)); if(sheets[0])selectDerivedSheet(sheets[0]); else {$("#derived-drawing-image").removeAttribute("src"); text($("#derived-drawing-warning"),"La revisión no contiene una lámina de este tipo.");}
 }
+function activateGeneralArtifactView(button){
+  const derived=state.generalDerived,svg=derived?.artifacts.find((item)=>item.kind==="drawing_svg"),dxf=derived?.artifacts.find((item)=>item.kind==="drawing_dxf");if(!derived||!svg)return;
+  state.activeArtifact="general";$$('[data-artifact-view]').forEach((tab)=>tab.setAttribute("aria-selected",String(tab===button)));toggleHidden($("#drawing-viewer"),true);toggleHidden($("#original-view"),true);toggleHidden($("#scene-viewer"),true);toggleHidden($("#derived-drawing-view"),false);["#zoom-out","#zoom-in","#fit-view","#reset-view"].forEach((selector)=>$(selector).disabled=false);["#toggle-entities","#toggle-texts","#toggle-dimensions"].forEach((selector)=>$(selector).disabled=true);
+  text($("#derived-drawing-title"),"Esquema general revisado");text($("#derived-drawing-meta"),`Propuesta ${derived.proposalRevision} · revisión ${derived.reviewRevision} · ${svg.status==="ready"?"listo":"incompleto"}`);text($("#derived-drawing-warning"),svg.incompleteReasons.length?`Pendiente: ${svg.incompleteReasons.join(" · ")}`:"Esquema revisado; no certifica fabricación.");const source=api.generalArtifactUrl(state.runId,svg.id,derived.proposalRevision,derived.reviewRevision),image=$("#derived-drawing-image");image.src=source;image.alt="Esquema general derivado de la revisión";fitDerivedDrawing();const select=$("#derived-drawing-sheet");select.replaceChildren(new Option("Esquema de componentes",svg.id));select.disabled=true;const downloads=$("#derived-drawing-downloads");downloads.replaceChildren();[svg,dxf].filter(Boolean).forEach((artifact)=>{const link=document.createElement("a");link.className="button";link.textContent=artifact.kind.endsWith("svg")?"SVG":"DXF";link.href=api.generalArtifactUrl(state.runId,artifact.id,derived.proposalRevision,derived.reviewRevision);link.download=artifact.filename??"";downloads.append(link);});text($("#scene-context"),`Esquema general · revisión ${derived.reviewRevision}`);
+}
 async function activateArtifactView(kind,button){
   if(kind==="source"){showSourceArtifact();return;}
+  if(state.generalWorkspace?.isGeneral&&kind==="general"){activateGeneralArtifactView(button);return;}
   const runId=state.runId,revision=state.snapshot?.result_revision; if(!runId||!Number.isInteger(revision))return;
   let manifest=state.tableDrawings;
   if(!manifest){const identity=`${runId}:${revision}:manifest:${kind}`,token=artifactFence.issue(identity); text($("#derived-drawing-warning"),"Generando planos técnicos de esta revisión…"); try{const raw=await api.generateTableDrawings(runId,{result_revision:revision}); if(!artifactFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}:manifest:${kind}`))return; manifest=normaliseTableDrawingManifest(raw); state.tableDrawings=manifest;}catch(error){if(artifactFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}:manifest:${kind}`))setMessage(error.message,true);return;}}
@@ -180,7 +214,7 @@ async function activateArtifactView(kind,button){
 }
 
 function updateArtifactTabs(){
-  const available=state.tableWorkspace?.isTable&&Boolean(state.tableWorkspace.evaluated); $$('[data-artifact-view]').forEach((tab)=>{if(tab.dataset.artifactView!=="source")tab.disabled=!available;});
+  const tableAvailable=state.tableWorkspace?.isTable&&Boolean(state.tableWorkspace.evaluated),generalAvailable=Boolean(state.generalDerived?.artifacts.some((item)=>item.kind==="drawing_svg")); $$('[data-artifact-view]').forEach((tab)=>{if(tab.dataset.artifactView==="source")return;tab.disabled=tab.dataset.artifactView==="general"?!(tableAvailable||generalAvailable):!tableAvailable;});
 }
 
 function applyViewport() { if (state.viewport) { $("#drawing-viewer").setAttribute("viewBox", `${state.viewport.x} ${state.viewport.y} ${state.viewport.width} ${state.viewport.height}`); applySvgTextScale(); } }
@@ -419,8 +453,58 @@ function renderTableAndReview(){
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-submit").disabled=!program; text($("#revision-label"),Number.isInteger(state.snapshot?.result_revision)?`Revisión ${state.snapshot.result_revision}`:"Revisión pendiente"); unlock("parts-stage"); unlock("review-stage");
 }
 
+function generalFieldValue(field) { return field?.value == null ? "Desconocido" : `${field.value}${field.unit ? ` ${field.unit}` : ""}`; }
+function generalStatusLabel(value){return({needs_review:"Revisión necesaria",reviewed_incomplete:"Revisado con datos pendientes",approved:"Aprobado",ready:"Listo",incomplete:"Incompleto",complete:"Completa",partial:"Parcial",unavailable:"No disponible"})[value]??String(value??"Desconocido");}
+function generalArtifactLabel(value){return({bom_csv:"BOM CSV",bom_json:"BOM JSON",drawing_svg:"Esquema SVG",drawing_dxf:"Esquema DXF"})[value]??String(value??"Artefacto");}
+
+function appendGeneralResultEditor(root, component={}) {
+  const card=document.createElement("fieldset");card.className="general-component-editor";card.dataset.resultId=component.resultId??`${component.id??"component"}-reviewed-${root.children.length+1}`;
+  card._sourceComponent=component;
+  const title=document.createElement("legend");title.textContent=component.label??"Nuevo componente";card.append(title);
+  [["label","Nombre",component.label,"text",null],["kind","Tipo",component.kind??"unknown","text",null],["role","Rol",component.role??"unknown","text",null],["quantity","Cantidad",component.quantity?.value,"number",component.quantity],["length","Largo mm",component.dimensions?.length?.value,"number",component.dimensions?.length],["width","Ancho mm",component.dimensions?.width?.value,"number",component.dimensions?.width],["thickness","Grosor mm",component.dimensions?.thickness?.value,"number",component.dimensions?.thickness],["material","Material",component.material?.value,"text",component.material],["finish","Acabado",component.finish?.value,"text",component.finish]].forEach(([name,labelText,value,type,original])=>{const label=document.createElement("label"),input=document.createElement("input");label.textContent=labelText;input.type=type;input.dataset.generalField=name;input.dataset.originalValue=value??"";input.dataset.originalState=original?.state??"unknown";input.value=value??"";if(type==="number"){input.min="0";input.step=name==="quantity"?"1":"0.1";}label.append(input);card.append(label);});
+  const remove=document.createElement("button");remove.type="button";remove.className="button";remove.textContent="Quitar resultado";remove.addEventListener("click",()=>card.remove());card.append(remove);root.append(card);
+}
+
+function appendGeneralScopeControls(root,workspace){
+  const choices=[["fixed","Fijo"],["material","Material"],["labor","Mano de obra"],["machining","Mecanizado"],["finish","Acabado"],["other","Otro"]];
+  [["cost",workspace.requiredCostScope,"Alcance requerido de coste"],["hours",workspace.requiredHoursScope,"Alcance requerido de horas"]].forEach(([kind,current,title])=>{const fieldset=document.createElement("fieldset"),legend=document.createElement("legend");legend.textContent=title;fieldset.append(legend);choices.forEach(([value,labelText])=>{const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.value=value;input.dataset.historyScope=kind;input.checked=current.includes(value);label.append(input,document.createTextNode(` ${labelText}`));fieldset.append(label);});const customLabel=document.createElement("label"),custom=document.createElement("input");customLabel.textContent="Identificadores adicionales (separados por coma)";custom.dataset.historyScopeCustom=kind;custom.value=current.filter((item)=>!choices.some(([value])=>value===item)).join(", ");customLabel.append(custom);fieldset.append(customLabel);root.append(fieldset);});
+}
+function generalScopeValues(kind){const checked=$$(`[data-history-scope="${kind}"]:checked`).map((input)=>input.value),custom=($(`[data-history-scope-custom="${kind}"]`)?.value??"").split(",").map((item)=>item.trim()).filter(Boolean);return[...new Set([...checked,...custom])];}
+function renderGeneralOperationEditors(workspace,root){
+  root.replaceChildren();
+  const furniture=document.createElement("label"),furnitureInput=document.createElement("input");furniture.textContent="Unidades del mueble terminado (no piezas BOM)";furnitureInput.id="general-furniture-quantity";furnitureInput.type="number";furnitureInput.min="1";furnitureInput.step="1";furnitureInput.value=workspace.furnitureQuantity?.value??"";furniture.append(furnitureInput);
+  const currency=document.createElement("label"),currencySelect=document.createElement("select");currency.textContent="Moneda explícita para el histórico";currencySelect.id="general-review-currency";[["","Sin seleccionar"],["EUR","EUR"],["USD","USD"],["GBP","GBP"]].forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;option.selected=value===workspace.currency;currencySelect.append(option);});currency.append(currencySelect);root.append(furniture,currency);appendGeneralScopeControls(root,workspace);
+  const sources=document.createElement("fieldset"),legend=document.createElement("legend");sources.className="general-source-list";legend.textContent="Componentes de origen";sources.append(legend);workspace.components.forEach((component,index)=>{const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=index===0;input.dataset.generalSource=component.id;label.append(input,document.createTextNode(` ${component.label} · ${component.id}`));sources.append(label);});root.append(sources);
+  const results=document.createElement("div");results.className="general-results";results.dataset.generalResults="";if(workspace.components[0])appendGeneralResultEditor(results,workspace.components[0]);root.append(results);const add=document.createElement("button");add.type="button";add.className="button";add.textContent="Añadir componente resultante";add.addEventListener("click",()=>appendGeneralResultEditor(results,{}));root.append(add);
+}
+
+async function createManualGeneralProposal(){try{const label=$("#general-manual-label").value,kind=$("#general-manual-kind").value,role=$("#general-manual-role").value,reason=$("#general-manual-reason").value,proposal=buildManualGeneralProposal({drawingId:state.drawing?.drawing_id??state.generalWorkspace?.drawingId,ledgerRevision:state.snapshot?.candidate_revision??state.generalWorkspace?.ledgerRevision,label,kind,role,reason});await api.createGeneralProposal(state.runId,{mode:"manual",base_proposal_revision:state.generalWorkspace?.proposalRevision??0,proposal});text($("#review-message"),"Propuesta manual opcional creada con medidas desconocidas. Puedes corregirla o lanzar la verificación automática.");await refreshRun();}catch(error){text($("#review-message"),error.message);}}
+
+function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-review-operations"),!visible);toggleHidden($("#review-form > .form-grid"),!visible);toggleHidden($("#review-submit"),!visible);}
+async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent;if(button){button.disabled=true;button.textContent="Iniciando nueva ejecución…";}try{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
+
+function renderGeneralFurniture() {
+  const workspace=state.generalWorkspace;
+  text($("#review-stage > .eyebrow"),"Revisión automática"); text($("#input-kind-label"),"Entrada: mueble general · revisión visual automática"); text($("#parts-title"),"Componentes auto-revisados · hipótesis"); text($("#parts-summary"),`${workspace.components.length} componentes · ledger ${workspace.ledgerRevision??"sin revisión"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
+  $("#parts-head").innerHTML="<tr><th>Componente</th><th>Tipo</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th><th>Desconocidos</th></tr>";
+  const body=$("#parts-body"); body.replaceChildren();
+  workspace.components.forEach((component)=>{const row=document.createElement("tr");row.dataset.componentId=component.id;row.tabIndex=0;const values=[component.label,component.kind,generalFieldValue(component.quantity),generalFieldValue(component.dimensions.length),generalFieldValue(component.dimensions.width),generalFieldValue(component.dimensions.thickness),component.unknownFields.join(", ")||"Ninguno"];values.forEach((value,index)=>{const cell=document.createElement("td");cell.textContent=value;if(index>1&&value==="Desconocido")cell.className="unknown";row.append(cell);});row.addEventListener("click",()=>{state.selected={type:"general",id:component.id};renderEvidence(component);});body.append(row);});
+  if(!workspace.components.length){const row=document.createElement("tr"),cell=document.createElement("td");row.className="empty-row";cell.colSpan=7;cell.textContent="No hay componentes propuestos. El plano y los avisos siguen disponibles.";row.append(cell);body.append(row);}
+  const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend");legend.textContent="Revisión visual automática de hipótesis";options.append(legend);const provenance=workspace.machineProvenance,autoStatus=({accepted:"coherencia aceptada",incomplete:"coherencia incompleta",conflict:"coherencia en conflicto",abstained:"abstención"})[workspace.autoReviewStatus]??"sin estado publicado",reviewRelation=({separate_model:"modelo revisor separado",self_review:"auto-revisión del mismo modelo"})[provenance?.review_relation]??"relación entre modelos no publicada",summary=emptyParagraph(workspace.reviewerKind==="machine"?`Revisión de máquina · ${autoStatus} · ${provenance?.model??workspace.reviewerName??"modelo configurado"} · ${reviewRelation} · política ${provenance?.policy_version??"no publicada"}. No confirma la hipótesis como hecho.`:`La revisión automática no publicó un resultado. Las incógnitas permanecen visibles y no bloquean el plano fuente.`);options.append(summary);workspace.autoChecks.forEach((check)=>{const item=document.createElement("p");item.textContent=`Comprobación de coherencia (${check.method==="model_visual"?"modelo visual":"determinista"}): ${check.summary??check.id??check.kind} · ${check.outcome??"sin resultado"}`;options.append(item);});const actions=document.createElement("div");actions.className="library-actions";const retry=document.createElement("button");retry.type="button";retry.id="general-auto-review";retry.className="button button--primary";retry.textContent="Nueva ejecución con auto-revisión";retry.disabled=!state.documentId;retry.addEventListener("click",requestGeneralAutoReview);const advanced=document.createElement("button");advanced.type="button";advanced.className="button";advanced.textContent="Corrección humana avanzada";advanced.setAttribute("aria-expanded","false");advanced.addEventListener("click",()=>{const visible=advanced.getAttribute("aria-expanded")!=="true";advanced.setAttribute("aria-expanded",String(visible));advanced.textContent=visible?"Ocultar corrección humana":"Corrección humana avanzada";setGeneralManualCorrectionVisible(visible);});actions.append(retry,advanced);options.append(actions);
+  const controls=$("#general-operation-components");if(workspace.components.length)renderGeneralOperationEditors(workspace,controls);else{controls.replaceChildren();const manual=document.createElement("fieldset");manual.className="general-manual-proposal";const title=document.createElement("legend");title.textContent="Crear propuesta manual sin inventar medidas";manual.append(title);[["general-manual-label","Nombre del componente","text",""],["general-manual-kind","Tipo","text","panel"],["general-manual-role","Rol","text","unknown"],["general-manual-reason","Motivo técnico","text",""]].forEach(([id,labelText,type,value])=>{const label=document.createElement("label"),input=document.createElement("input");label.textContent=labelText;input.id=id;input.type=type;input.value=value;label.append(input);manual.append(label);});const create=document.createElement("button");create.type="button";create.className="button button--primary";create.textContent="Crear propuesta manual";create.addEventListener("click",createManualGeneralProposal);manual.append(create);controls.append(manual);}
+  setGeneralManualCorrectionVisible(false); toggleHidden($("#legacy-review-fields"),true); toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.components.length;text($("#review-message"),workspace.status==="reviewed_incomplete"?"El modelo se abstuvo en los campos sin respaldo suficiente. BOM, esquema y descargas conservan esas incógnitas; la corrección humana es opcional.":"La revisión automática publicó el resultado de coherencia actual. La corrección humana sigue disponible como opción avanzada.");
+  text($("#revision-label"),Number.isInteger(workspace.proposalRevision)?`Propuesta ${workspace.proposalRevision}`:"Propuesta pendiente");
+  const derived=state.generalDerived; const derivedStatus=$("#general-derived-status");toggleHidden(derivedStatus,!derived);if(derived){derivedStatus.replaceChildren(document.createTextNode(`${derived.bom.length} filas BOM · ${derived.artifacts.filter((item)=>item.status==="incomplete").length} artefactos incompletos · base de coste ${generalStatusLabel(derived.costBasis.status)}. `));derived.artifacts.forEach((artifact)=>{const link=document.createElement("a");link.className="button";link.href=api.generalArtifactUrl(state.runId,artifact.id,derived.proposalRevision,derived.reviewRevision);link.download=artifact.filename??"";link.textContent=`${generalArtifactLabel(artifact.kind)} · ${generalStatusLabel(artifact.status)}`;derivedStatus.append(link);});}
+  $("#integral-controls").hidden=false; const exportActions=$(".export-actions"); if(exportActions&&!$("#general-export-actions",exportActions))exportActions.append($("#general-export-actions")); $("#general-export-actions").hidden=false; $$('[data-export="bom_csv"],[data-export="bom_json"]').forEach((button)=>button.disabled=!derived?.bom.length);
+  unlock("parts-stage");unlock("review-stage");
+}
+
 function renderPartsAndReview() {
+  text($("#review-stage > .eyebrow"),"Decisión humana");
+  toggleHidden($("#review-form > .form-grid"),false);toggleHidden($("#review-submit"),false);
   toggleHidden($("#review-material").closest("label"),false); toggleHidden($("#review-finish").closest("label"),false);
+  if(state.generalWorkspace?.isGeneral)return renderGeneralFurniture();
+  toggleHidden($("#general-review-operations"),true); toggleHidden($("#general-derived-status"),true);
   if(state.tableWorkspace?.isTable)return renderTableAndReview();
   if(state.partsWorkspace?.isPartsOnly)return renderSeparatedPartsAndReview();
   $("#parts-head").innerHTML="<tr><th>Pieza</th><th>Origen</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th></tr>";
@@ -505,23 +589,32 @@ async function refreshRun() {
   state.snapshot = snapshot;
   state.partsWorkspace = normalisePartsWorkspace(snapshot);
   state.tableWorkspace = normaliseTableWorkspace(snapshot);
+  state.generalWorkspace=null; state.generalDerived=null;
   state.tableDrawings=null; showSourceArtifact(); updateArtifactTabs();
   state.documentId = state.snapshot.document_id ?? state.snapshot.document?.document_id ?? state.documentId;
-  if (state.documentId) $("#original-preview").src = api.documentPreviewUrl(state.documentId);
+  if (state.documentId) $("#original-preview").src = state.documentIngestion?.previewUrl ? api.resourceUrl(state.documentIngestion.previewUrl) : api.documentPreviewUrl(state.documentId);
   const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
   const replay=presentReplaySource(state.snapshot),replaySource=$("#replay-source"),replayText=replay.available?`${replay.summary} · ${replay.detail}`:""; toggleHidden(replaySource,!replay.available); text(replaySource,replayText); replaySource.title=replayText;
   try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   try { const ledger=await api.getLedger(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.ledger=ledger; } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
-  renderPartsAndReview();
+  if(snapshot.input_kind==="general_furniture"){
+    let general;
+    try{general=await api.getGeneralFurniture(requestedRun);}catch(error){if(!(error instanceof ApiError)||error.status!==404)throw error;general={run_id:requestedRun,status:"reviewed_incomplete",proposal_revision:null,review_revision:0,draft:{drawing_id:state.drawing?.drawing_id??snapshot.document_id,ledger_revision:state.ledger?.ledger_revision??state.ledger?.revision??"pending",components:[]},automatic_review_unavailable:true};} if(!runFence.isCurrent(token,state.runId))return;
+    state.generalWorkspace=normaliseGeneralWorkspace(general);
+    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
+  }
+  renderPartsAndReview(); updateArtifactTabs();
   if(state.tableWorkspace.isTable&&Number.isInteger(state.snapshot.result_revision)){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
   await loadRevisionContext();
   if(!runFence.isCurrent(token,state.runId))return;
   if (state.activeView === "3d") await loadScene();
+  const scenarioReady=Boolean(state.generalWorkspace?.isGeneral&&state.generalWorkspace.reviewerKind==="machine"&&Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0);toggleHidden($("#historical-scenarios"),!scenarioReady);$("#historical-scenarios-button").disabled=!scenarioReady;
   toggleHidden($("#table-cost-scope"),!state.tableWorkspace.isTable); text($("#estimate-button"),state.tableWorkspace.isTable?"Calcular costes de mesa":"Calcular estimación");
-  if(state.tableWorkspace.isTable){resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph("Cargando componentes…")); try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;} $("#estimate-button").disabled=state.snapshot.result?.state!=="completed"||state.tableWorkspace.evaluated?.state!=="completed"; configureExportActions(); unlock("estimate-stage");}
-  else {if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi(); if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }}
+  if(state.tableWorkspace.isTable){toggleHidden($("#history-estimate-controls"),true);resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph("Cargando componentes…")); try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;} $("#estimate-button").disabled=state.snapshot.result?.state!=="completed"||state.tableWorkspace.evaluated?.state!=="completed"; configureExportActions(); unlock("estimate-stage");}
+  else if(state.generalWorkspace?.isGeneral){toggleHidden($("#history-estimate-controls"),false);resetEstimateUi();const target=state.generalDerived?.historicalTarget,scopeReady=Boolean(target?.required_cost_scope?.length||target?.required_hours_scope?.length),ready=Boolean(target?.currency&&scopeReady);$("#estimate-button").disabled=!ready;text($("#estimate-button"),"Estimar desde histórico confirmado");text($("#estimate-uncertainty"),ready?`Base confirmada ${target.basis_revision} · moneda ${target.currency} · alcance de coste ${target.required_cost_scope.join(", ")||"ninguno"} · alcance de horas ${target.required_hours_scope.join(", ")||"ninguno"}.`:`El histórico confirmado requiere moneda y alcance humanos. Los escenarios condicionales automáticos se muestran por separado.`);if(scenarioReady)await loadHistoricalScenarios();if(ready)await loadHistoricalComparables();unlock("estimate-stage");}
+  else {toggleHidden($("#history-estimate-controls"),true);if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi(); if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }}
 }
 
 async function loadRevisionContext() {
@@ -561,6 +654,14 @@ async function loadComparables(requestedRun=state.runId, requestedRevision=state
   } catch (error) { text($("#comparables-list"), error.message); }
 }
 
+async function loadHistoricalComparables(){const target=state.generalDerived?.historicalTarget;if(!target)return null;const {retrievalMethod,includeSynthetic}=historicalRetrievalOptions(),raw=await api.getHistoricalComparables({target,limit:5,retrieval_method:retrievalMethod,include_synthetic:includeSynthetic}),result=presentHistoricalComparables(raw),root=$("#comparables-list");text($("#history-retrieval-note"),`${includeSynthetic?"Registros empresariales, fuentes públicas y fixtures sintéticos":"Registros empresariales y fuentes públicas; sin fixtures sintéticos"} · ${result.methodLabel}${result.embeddingLabel?` · ${result.embeddingLabel}`:""}.`);root.replaceChildren();result.items.forEach((item)=>{const card=document.createElement("div");card.className="comparable";const title=document.createElement("b"),method=document.createElement("small"),difference=document.createElement("small");title.textContent=item.project_id??item.record_id??"Proyecto histórico";method.textContent=`${item.provenanceLabel} · ${result.methodLabel} · puntuación ${Number(item.score).toFixed(3)}`;difference.textContent=item.differences.join(" · ")||"Sin diferencias publicadas";card.append(title,method,difference);root.append(card);});if(!result.items.length)root.append(emptyParagraph(includeSynthetic?"No hay registros empresariales, fuentes públicas ni fixtures comparables para esta base.":"No hay registros empresariales ni fuentes públicas comparables. Activa los sintéticos solo para una prueba explícita."));return result;}
+
+function renderHistoricalScenarios(raw){const result=presentProvisionalScenarios(raw),root=$("#historical-scenarios-list");text($("#historical-scenarios-note"),`${result.labelText} · ${result.statusLabel}. Los fixtures sintéticos quedan excluidos.`);root.replaceChildren();result.assumptions.forEach((item)=>root.append(emptyParagraph(`Supuesto global (${item.state}): ${item.label} — ${item.detail}`)));result.scenarios.forEach((item)=>{const card=document.createElement("article"),title=document.createElement("b"),source=document.createElement("small"),condition=document.createElement("p"),metrics=document.createElement("div"),cost=document.createElement("p"),costValue=document.createElement("strong"),costDetail=document.createElement("span"),hours=document.createElement("p"),hoursValue=document.createElement("strong"),hoursDetail=document.createElement("span"),details=document.createElement("div");card.className="scenario-estimate-card";title.textContent=`${item.labelText} · comparable ${item.comparable_id}`;source.textContent=`Fuente: ${item.provenanceLabel} · fecha efectiva ${item.source_effective_date}`;condition.textContent=`Condición: ${item.conditionLabel}. ${item.scopeLabel}.`;metrics.className="scenario-estimate-metrics";costValue.textContent=item.costLabel;costDetail.textContent=`${item.costRangeLabel} · ${item.costUncertaintyLabel}`;cost.append(costValue,costDetail);hoursValue.textContent=item.hoursLabel;hoursDetail.textContent=`${item.hoursRangeLabel} · ${item.hoursUncertaintyLabel}`;hours.append(hoursValue,hoursDetail);metrics.append(cost,hours);details.className="scenario-estimate-details";item.assumptions.forEach((assumption)=>details.append(emptyParagraph(`Supuesto (${assumption.state}): ${assumption.label} — ${assumption.detail}`)));item.contributors.forEach((contributor)=>details.append(emptyParagraph(`Fórmula ${contributor.concept_id??contributor.kind??"contribuidor"}: ${contributor.formula??"no publicada"}`)));item.missingData.forEach((missing)=>details.append(emptyParagraph(`Dato ausente: ${missing}`)));card.append(title,source,condition,metrics,details);root.append(card);});result.missingData.forEach((missing)=>root.append(emptyParagraph(`No estimable: ${missing}`)));if(!result.scenarios.length)root.append(emptyParagraph("No hay comparables publicados suficientes para construir escenarios condicionales."));}
+
+async function loadHistoricalScenarios(){const workspace=state.generalWorkspace,button=$("#historical-scenarios-button");if(!state.runId||!Number.isInteger(workspace?.proposalRevision)||!(workspace.reviewRevision>0))return;button.disabled=true;text(button,"Consultando…");try{const method=$("#history-retrieval-method")?.value??"attribute",raw=await api.getHistoricalScenarios({run_id:state.runId,proposal_revision:workspace.proposalRevision,review_revision:workspace.reviewRevision,limit:3,retrieval_method:method});renderHistoricalScenarios(raw);}catch(error){$("#historical-scenarios-list").replaceChildren(emptyParagraph(error.message));text($("#historical-scenarios-note"),"No se sustituyó el escenario por una estimación inventada.");}finally{button.disabled=false;text(button,"Consultar escenarios");}}
+
+function renderHistoricalEstimate(raw){const estimate=presentHistoricalEstimate(raw);text($("#estimate-revision"),`${raw.basis_revision??"Revisión histórica"} · ${estimate.hoursLabel}`);text($("#estimate-total"),estimate.totalLabel);text($("#estimate-uncertainty"),`Coste — ${estimate.costUncertaintyLabel} · ${estimate.costProvenanceLabel} · ${estimate.costBasisLabel} · ${estimate.costScopeLabel} · ${estimate.costDateLabel}\nHoras — ${estimate.hoursUncertaintyLabel} · ${estimate.hoursProvenanceLabel} · ${estimate.hoursBasisLabel} · ${estimate.hoursDateLabel}`);const missing=$("#estimate-missing-data");missing.replaceChildren();estimate.missingData.forEach((item)=>missing.append(emptyParagraph(`Dato pendiente: ${item}`)));const root=$("#estimate-lines");root.replaceChildren();estimate.lines.forEach((item)=>{const row=document.createElement("div");row.className="estimate-line";const detail=document.createElement("span"),title=document.createElement("b"),formula=document.createElement("small"),amount=document.createElement("b");title.textContent=item.concept_id??item.kind??"Contribuidor";formula.textContent=`${item.formula??"Sin fórmula"}${item.missing_data?.length?` · faltan ${item.missing_data.join(", ")}`:""}`;amount.textContent=item.estimated_cost==null?"Coste desconocido":`${item.estimated_cost} ${raw.currency??"EUR"}`;detail.append(title,formula);row.append(detail,amount);root.append(row);});if(!estimate.lines.length)root.append(emptyParagraph("El histórico no permite desglosar una estimación."));}
+
 function renderEstimate(raw) {
   const estimate = presentEstimate(raw); text($("#estimate-revision"), `${estimate.revisionLabel} · Horas ${estimate.hoursLabel}`); text($("#estimate-total"), estimate.totalLabel);
   const root = $("#estimate-lines"); root.replaceChildren();
@@ -599,6 +700,20 @@ function runRequest(documentId, mode, inputKind, table = {}) {
   };
 }
 
+async function startRunForDocument({ documentId, mode, inputKind, runOptions = {}, stillCurrent = () => true }) {
+  try{state.drawing=await api.getDocumentDrawing(documentId,inputKind);if(!stillCurrent())return;renderDrawing();}
+  catch(error){if(!stillCurrent())return;if(inputKind!=="general_furniture"||!(error instanceof ApiError)||error.code!=="normalized_dxf_unavailable")throw error;state.drawing=null;state.activeView="original";showSourceArtifact();toggleHidden($("#drawing-viewer"),true);toggleHidden($("#original-view"),false);unlock("drawing-stage");text($("#scene-context"),"Vista previa fuente · geometría y escala desconocidas");}
+  setMessage("Plano disponible. Iniciando análisis…");
+  const request=runRequest(documentId,mode,inputKind,runOptions);
+  if(mode==="recorded_replay"){
+    const availability=await api.getReplayAvailability(request); if(!stillCurrent())return;
+    if(availability?.available!==true)throw new ApiError(availability?.message??"No hay una grabación live compatible con este documento y configuración.",{status:409,code:"recorded_replay_unavailable"});
+    setMessage("Grabación compatible localizada. Se reproducirá offline sin una inferencia nueva.");
+  }
+  if(state.config?.run_submission?.jobs===true){const job=await api.createJob(request);if(!stillCurrent())return;setMessage("Plano aceptado. El trabajo queda guardado y puede recuperarse tras recargar.");await followJob(job);}
+  else {setMessage("Modo local manual: esta instalación usa la ejecución síncrona compatible.");const runPayload=await api.createRun(documentId,mode,inputKind,runOptions);if(!stillCurrent())return;state.snapshot=normaliseRunPayload(runPayload);state.runId=state.snapshot.id;persistRunId(state.runId,localStorage,location,history);text($("#upload-status"),"En proceso");await refreshRun();await refreshTraceHistory();}
+}
+
 async function followJob(initialJob) {
   state.jobAbort?.abort();
   const controller = new AbortController(); state.jobAbort = controller; state.jobId = initialJob.id;
@@ -610,8 +725,8 @@ async function followJob(initialJob) {
     getJob: api.getJob,
     onUpdate: async (job) => {
       persistJob({ id: job.id, run_id: job.runId, state: job.state }, localStorage);
-      text($("#job-status"), `${jobStatusLabel(job)} · ${job.id}`);
-      text($("#upload-status"), jobStatusLabel(job));
+      const automatic=$("#upload-form").elements.input_kind.value==="general_furniture"&&$("#upload-form").elements.mode.value==="live",label=automatic&&["queued","running"].includes(job.state)?`Revisión visual automática · ${jobStatusLabel(job)}`:jobStatusLabel(job);text($("#job-status"), `${label} · ${job.id}`);
+      text($("#upload-status"), label);
       if (job.runId) {
         if (state.runId !== job.runId) { state.runId = job.runId; state.eventLedger = createEventLedger(job.runId); }
         try { await refreshTraceHistory(); } catch { text($("#trace-gap-status"), "La traza aún no está disponible; se volverá a consultar."); }
@@ -630,38 +745,43 @@ async function followJob(initialJob) {
 }
 
 async function runUpload(event) {
-  event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un archivo DXF.", true);
-  if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un DXF más pequeño.", true);
+  event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
+  if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un plano más pequeño.", true);
   const formData = new FormData(event.currentTarget);
   const mode = formData.get("mode");
   const inputKind=formData.get("input_kind");
-  const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,formData.get("table_template_id")):{};
+  const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,formData.get("table_template_id")):inputKind==="general_furniture"?generalRunOptions(mode):{};
   let uploadToken;
   try {
     resetRunUi();
     uploadToken=uploadFence.issue(file);
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
-    const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id;
-    $("#original-preview").src = api.documentPreviewUrl(state.documentId);
-    state.drawing = await api.getDocumentDrawing(state.documentId,inputKind); if(!uploadFence.isCurrent(uploadToken,file))return; renderDrawing();
-    setMessage("Plano disponible. Iniciando análisis…");
-    const request=runRequest(state.documentId,mode,inputKind,runOptions);
-    if(mode==="recorded_replay"){
-      const availability=await api.getReplayAvailability(request); if(!uploadFence.isCurrent(uploadToken,file))return;
-      if(availability?.available!==true)throw new ApiError(availability?.message??"No hay una grabación live compatible con este documento y configuración.",{status:409,code:"recorded_replay_unavailable"});
-      setMessage("Grabación compatible localizada. Se reproducirá offline sin una inferencia nueva.");
-    }
-    if(state.config?.run_submission?.jobs===true){
-      const job=await api.createJob(request); if(!uploadFence.isCurrent(uploadToken,file))return;
-      setMessage("Plano aceptado. El trabajo queda guardado y puede recuperarse tras recargar.");
-      await followJob(job);
-    } else {
-      setMessage("Modo local manual: esta instalación usa la ejecución síncrona compatible.");
-      const runPayload=await api.createRun(state.documentId,mode,inputKind,runOptions); if(!uploadFence.isCurrent(uploadToken,file))return;
-      state.snapshot=normaliseRunPayload(runPayload); state.runId=state.snapshot.id; persistRunId(state.runId,localStorage,location,history); text($("#upload-status"),"En proceso"); await refreshRun(); await refreshTraceHistory();
-    }
+    const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id; const ingestion=renderDocumentIngestion(documentRecord);
+    $("#original-preview").src = ingestion.previewUrl ? api.resourceUrl(ingestion.previewUrl) : api.documentPreviewUrl(state.documentId);
+    if(ingestion.format==="PDF"){setMessage("Selecciona una página PDF y confirma la escala solo si está documentada. Sin escala se conservará como desconocida.");text($("#upload-status"),"Revisión PDF");return;}
+    await startRunForDocument({documentId:state.documentId,mode,inputKind,runOptions,stillCurrent:()=>uploadFence.isCurrent(uploadToken,file)});
   } catch (error) { if(uploadToken&&!uploadFence.isCurrent(uploadToken,file))return; setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
+
+async function normalizePdfPage(event) {
+  event.preventDefault(); if(!state.documentId)return;
+  const page=Number($("#pdf-page-select").value),rawScale=$("#pdf-mm-per-point").value.trim(),reason=$("#pdf-scale-reason").value.trim();
+  if(!Number.isInteger(page)||page<1)return setMessage("Selecciona una página PDF válida.",true);
+  if(!reason)return setMessage("Explica por qué se prepara esta página y de dónde procede la escala.",true);
+  const mmPerPoint=rawScale===""?null:Number(rawScale); if(mmPerPoint!==null&&(!Number.isFinite(mmPerPoint)||mmPerPoint<=0))return setMessage("La escala debe ser positiva o quedar vacía si es desconocida.",true);
+  const identity=`pdf:${state.documentId}:${page}`,token=actionFence.issue(identity); text($("#upload-status"),"Preparando PDF");
+  try{const record=await api.normalizePdfPage(state.documentId,page,{...(mmPerPoint===null?{}:{mm_per_pdf_point:mmPerPoint}),...(state.session?.username?{confirmed_by:state.session.username}:{}),reason});if(!actionFence.isCurrent(token,identity))return;state.documentId=record.document_id??record.id;const ingestion=renderDocumentIngestion(record);toggleHidden($("#pdf-page-controls"),true);if(ingestion.previewUrl)$("#original-preview").src=api.resourceUrl(ingestion.previewUrl);const form=$("#upload-form"),inputKind=form.elements.input_kind.value,mode=form.elements.mode.value;if(!canStartDocumentAnalysis(ingestion,{inputKind,mode}))throw new ApiError("La página conserva escala desconocida o no contiene geometría vectorial normalizable. Selecciona mueble general live para revisar visualmente la vista previa sin afirmar medidas.",{status:409,code:"normalized_dxf_unavailable"});const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,form.elements.table_template_id.value):inputKind==="general_furniture"?generalRunOptions(mode):{};await startRunForDocument({documentId:state.documentId,mode,inputKind,runOptions,stillCurrent:()=>actionFence.isCurrent(token,identity)});}catch(error){if(actionFence.isCurrent(token,identity)){setMessage(error.message,true);text($("#upload-status"),"Revisión PDF");toggleHidden($("#pdf-page-controls"),false);}}
+}
+
+function renderHistoryRecords(raw) {
+  const root=$("#history-list"); if(!root)return; root.replaceChildren(); const items=raw.records??raw.items??raw??[];
+  const costRecords=items.filter((item)=>item.actual_cost!=null).length,hourRecords=items.filter((item)=>item.manufacturing_hours!=null).length,summary=document.createElement("p");summary.className="field-note";summary.textContent=`${raw.total??items.length} registros en esta procedencia · ${costRecords} con coste o presupuesto · ${hourRecords} con horas publicadas`;root.append(summary);
+  items.forEach((item)=>{const presented=presentHistoricalRecord(item),card=document.createElement("div");card.className="detail-item";const title=document.createElement("b"),detail=document.createElement("span"),source=document.createElement("span");title.textContent=item.name??item.project_name??item.project_id??item.record_id??item.id??"Registro histórico";detail.textContent=presented.provenanceLabel;source.textContent=`Fuente: ${item.provenance?.source??"sin fuente"}${item.provenance?.source_date?` · ${item.provenance.source_date}`:""}`;card.append(title,detail,source);root.append(card);}); if(!items.length)root.append(emptyParagraph("No hay registros con esta procedencia."));
+}
+
+async function refreshHistoryRecords(){try{const raw=await api.getHistory({origin:$("#history-provenance").value,limit:25,offset:0});renderHistoryRecords(raw);}catch(error){$("#history-list")?.replaceChildren(emptyParagraph(error.message));}}
+
+async function importHistory(event){event.preventDefault();const file=$("#history-file").files[0];if(!file)return text($("#history-import-status"),"Selecciona un CSV. Cada registro debe declarar su origen y su fuente.");try{const raw=await api.importHistory(file,{dryRun:false}),result=presentHistoryImport(raw);text($("#history-import-status"),`${result.summary}${result.errors.length?` · ${result.errors.join(" ")}`:""}`);await refreshHistoryRecords();}catch(error){text($("#history-import-status"),error.message);}}
 
 function tableReviewPayload(scenario, values) {
   const newId=(prefix)=>`${prefix}-${globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
@@ -673,9 +793,18 @@ function tableReviewPayload(scenario, values) {
 }
 
 async function submitReview(event) {
-  event.preventDefault(); const table=state.tableWorkspace?.isTable,parts=state.partsWorkspace?.isPartsOnly; const scenario = table?$("input[name='table-program']:checked"):$(parts?"input[name='assembly-candidate']:checked":"input[name='scenario']:checked"); if (!scenario) return;
+  event.preventDefault(); const general=state.generalWorkspace?.isGeneral,table=state.tableWorkspace?.isTable,parts=state.partsWorkspace?.isPartsOnly; const scenario = general?null:table?$("input[name='table-program']:checked"):$(parts?"input[name='assembly-candidate']:checked":"input[name='scenario']:checked"); if (!general&&!scenario) return;
   const identity=actionIdentity(), token=actionFence.issue(identity);
   try {
+    if(general){
+      const kind=$("#general-operation-type").value,sourceIds=$$("[data-general-source]:checked").map((input)=>input.dataset.generalSource),reason=$("#review-reason").value.trim(),resultCards=kind==="drop"?[]:$$('[data-general-results] .general-component-editor');
+      if((kind==="replace"&&(sourceIds.length!==1||resultCards.length!==1))||(kind==="split"&&(sourceIds.length!==1||resultCards.length<2))||(kind==="merge"&&(sourceIds.length<2||resultCards.length!==1))||(kind==="drop"&&(sourceIds.length!==1||resultCards.length)))throw new TypeError("La cantidad de componentes de origen y resultado no coincide con la operación seleccionada.");
+      const sourceComponents=sourceIds.map((id)=>state.generalWorkspace.components.find((item)=>item.id===id)).filter(Boolean),humanRef=`human:${$("#reviewer-name").value.trim()||"review"}`;
+      const components=resultCards.map((card)=>{const value=(name)=>$(`[data-general-field="${name}"]`,card)?.value.trim()??"";return buildGeneralReviewedComponent({sourceComponents,resultId:card.dataset.resultId,values:{label:value("label"),kind:value("kind"),role:value("role"),quantity:value("quantity"),length:value("length"),width:value("width"),thickness:value("thickness"),material:value("material"),finish:value("finish")},reason,humanRef});});
+      const complete=completeGeneralReviewSnapshot(state.generalWorkspace,{operations:[{kind,sourceComponentIds:sourceIds,resultComponentIds:components.map((item)=>item.id),reason}],components,reason,humanRef});
+      const payload=buildGeneralReviewPayload(state.generalWorkspace,{reviewerName:$("#reviewer-name").value,reason,operations:complete.operations,components:complete.components,furnitureQuantity:$("#general-furniture-quantity")?.value??"",currency:$("#general-review-currency")?.value??"",requiredCostScope:generalScopeValues("cost"),requiredHoursScope:generalScopeValues("hours"),humanRef});
+      const result=await api.reviewGeneralFurniture(state.runId,payload);if(!actionFence.isCurrent(token,actionIdentity()))return;state.generalWorkspace=normaliseGeneralWorkspace(result);text($("#review-message"),"Componentes guardados en una nueva propuesta versionada.");await refreshRun();await refreshTraceHistory();return;
+    }
     const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const inputs=$$("[data-decision-field]",block), current=Object.fromEntries(inputs.map((input)=>[input.dataset.decisionField,input.value])), original=Object.fromEntries(inputs.map((input)=>[input.dataset.decisionField,input.dataset.originalValue??""])), changed=changedReviewDecisionValues(current,original); if(!changed)return[]; return [{use_id:block.dataset.useId,role:block.dataset.role,quantity:changed.quantity??"",length_mm:changed.length??"",width_mm:changed.width??"",thickness_mm:changed.thickness??"",material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}];}):[];
     const values = {
       scenario_id: scenario.value,
@@ -700,6 +829,7 @@ async function submitReview(event) {
 function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename.replace(/[^a-z0-9._-]/gi,"_"); document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url); }
 
 async function exportResult(format) {
+  if(state.generalDerived&&(format==="bom_csv"||format==="bom_json")){const extension=format.endsWith("csv")?"csv":"json",type=extension==="csv"?"text/csv":"application/json";downloadBlob(new Blob([serialiseGeneralBom(state.generalDerived.bom,extension)],{type}),`vexplorer_${state.runId}_bom.${extension}`);return;}
   const requestedFormat=state.tableWorkspace?.isTable?tableExportFormat(format):format;
   try { const response = await fetch(api.exportUrl(state.runId, requestedFormat)); if (!response.ok) throw new Error("La exportación no está disponible."); downloadBlob(await response.blob(), `vexplorer_${state.runId}.${format}`); } catch (error) { setMessage(error.message, true); }
 }
@@ -745,6 +875,7 @@ function setupWorkspaceControls() {
 function updateTableRunControls() {
   const form=$("#upload-form"), inputKind=form.elements.input_kind.value, mode=form.elements.mode.value;
   toggleHidden($("#table-template-field"),inputKind!=="mounted_orthographic_views"||mode!=="geometry_only");
+  if(!state.runId)text($("#input-kind-label"),({general_furniture:"Entrada: mueble general",mounted_orthographic_views:"Entrada: mesa · vistas montadas",separated_part_views:"Entrada: piezas separadas",mounted_views_legacy:"Entrada: vistas montadas legacy"})[inputKind]??"Entrada pendiente");
 }
 
 function renderLibraryResults(raw, mode) {
@@ -766,7 +897,7 @@ function libraryRunLink(item) {
   const label=document.createElement("span"); label.textContent=item.label; const action=document.createElement("b"); action.textContent=`Abrir rev. ${item.result_revision}`; link.append(label,action); return link;
 }
 
-async function estimateCurrentRevision(){ if(state.tableWorkspace?.isTable)return estimateTableRevision(); const identity=actionIdentity(), token=actionFence.issue(identity); try{const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
+async function estimateCurrentRevision(){ if(state.tableWorkspace?.isTable)return estimateTableRevision(); const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral){const target=state.generalDerived?.historicalTarget;if(!target)throw new TypeError("La revisión general no tiene una base histórica autoritativa.");const {includeSynthetic}=historicalRetrievalOptions(),comparableResult=await loadHistoricalComparables();if(!actionFence.isCurrent(token,actionIdentity()))return;const comparableIds=(comparableResult?.items??[]).map((item)=>item.record_id);const estimate=await api.estimateFromHistory({target,comparable_ids:comparableIds,include_synthetic:includeSynthetic});if(!actionFence.isCurrent(token,actionIdentity()))return;renderHistoricalEstimate(estimate);return;}const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
 async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline",...(descriptor?{descriptor_version:descriptor}:{})}); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
 async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
@@ -787,11 +918,18 @@ async function restoreRunReference(runId) {
 
 async function boot() {
   setupWorkspaceControls();
+  createHistoryEstimateControls();
+  text($("#drawing-empty strong"),"Abre un plano DXF, DWG o PDF");
+  if(!$('#history-provenance option[value="published"]')){const published=document.createElement("option");published.value="published";published.textContent="Fuentes públicas publicadas";published.selected=true;$("#history-provenance").insertBefore(published,$('#history-provenance option[value="synthetic"]'));}
+  const estimateTotal=$(".estimate-total"),uncertainty=$("#estimate-uncertainty"),missing=$("#estimate-missing-data"); estimateTotal.after(uncertainty,missing);
+  const historyList=document.createElement("div");historyList.id="history-list";historyList.className="detail-stack";historyList.append(emptyParagraph("Cargando registros históricos…"));$("#history-import-form").after(historyList);
   $("#upload-form").addEventListener("submit", runUpload); $("#review-form").addEventListener("submit", submitReview);
-  $("#upload-form").elements.input_kind.addEventListener("change",updateTableRunControls); $("#upload-form").elements.mode.addEventListener("change",updateTableRunControls); updateTableRunControls();
+  $("#pdf-page-controls").addEventListener("submit",normalizePdfPage); $("#history-import-form").addEventListener("submit",importHistory); $("#history-provenance").addEventListener("change",refreshHistoryRecords); [$("#history-retrieval-method"),$("#history-include-synthetic")].forEach((control)=>control.addEventListener("change",async()=>{const target=state.generalDerived?.historicalTarget;if(!target?.currency||!(target.required_cost_scope?.length||target.required_hours_scope?.length))return;try{await loadHistoricalComparables();}catch(error){text($("#history-retrieval-note"),error.message);$("#comparables-list").replaceChildren(emptyParagraph("No se cambió automáticamente a otro método."));}}));
+  $("#upload-form").elements.input_kind.addEventListener("change",()=>{$("#upload-form").dataset.userConfigured="true";updateTableRunControls();}); $("#upload-form").elements.mode.addEventListener("change",()=>{$("#upload-form").dataset.userConfigured="true";updateTableRunControls();}); updateTableRunControls();
   $("#drawing-file").addEventListener("change", (event) => text($("#file-name"), event.target.files[0]?.name ?? "Ningún archivo seleccionado"));
   $("#trace-toggle").addEventListener("click", () => toggleTrace(true)); $("#trace-close").addEventListener("click", () => toggleTrace(false)); $("#scrim").addEventListener("click", () => toggleTrace(false));
   $("#estimate-button").addEventListener("click", estimateCurrentRevision);
+  $("#historical-scenarios-button").addEventListener("click",loadHistoricalScenarios);
   $$("[data-export]").forEach((button) => button.addEventListener("click", () => exportResult(button.dataset.export)));
   $("#trace-export").addEventListener("click", () => downloadBlob(new Blob([JSON.stringify(state.eventLedger?.events() ?? [], null, 2)], { type: "application/json" }), `vexplorer_${state.runId}_traza.json`));
   $("#save-library").addEventListener("click",saveCurrentToLibrary);
@@ -805,6 +943,7 @@ async function boot() {
     text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:"Local · identidad manual");
     if(authenticated){reviewer.value=state.session.username;reviewer.readOnly=true;}
   } catch { text($("#session-user"),"Local · identidad manual"); }
+  await refreshHistoryRecords();
   const restoredRunId = restoreRunId(location, localStorage);
   const restoredJob=new URLSearchParams(location.search).has("run")?null:restoreJob(localStorage);
   if (restoredJob) {

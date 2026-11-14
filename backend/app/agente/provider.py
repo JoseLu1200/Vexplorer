@@ -47,16 +47,17 @@ def _bounded_count(value: Any) -> int | None:
 
 
 class OpenAIResponsesProvider:
-    def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None) -> None:
+    def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None, instructions: str | None = None) -> None:
         if not settings.available:
             raise ValueError(settings.unavailable_reason)
         self.settings = settings
         self.client = client or httpx.Client()
+        self.instructions = instructions
 
     def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
         payload: dict[str, Any] = {
             "model": self.settings.model,
-            "instructions": VISION_SYSTEM_PROMPT if self.settings.vision_enabled else SYSTEM_PROMPT,
+            "instructions": self.instructions or (VISION_SYSTEM_PROMPT if self.settings.vision_enabled else SYSTEM_PROMPT),
             "input": input_items,
             "tools": tools,
             "tool_choice": "required",
