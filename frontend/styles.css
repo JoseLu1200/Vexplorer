@@ -35,3 +35,15 @@
 @media(max-width:620px){.session-meta{max-width:100%;overflow-x:auto;white-space:nowrap}}
 @media(max-width:980px){.workbench{grid-template-columns:minmax(0,1fr)}.quick-upload{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;flex:1 0 100%}.quick-upload .file-button{grid-column:1/-1;width:100%;min-width:0}.quick-upload select{width:100%;min-width:0;max-width:none}}
 @media(max-width:620px){.quick-upload{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.quick-upload>.button{grid-column:1/-1;width:100%}.navigator__head{flex:1 0 100%;width:100%}.session-meta{width:100%;min-width:0}.secondary-tabs{min-width:0}}
+
+/* Source and revisioned technical drawing workspace. */
+.cad-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center}
+.artifact-tabs,.view-tabs{display:flex;align-items:center;gap:3px;min-width:0;height:31px;overflow-x:auto;scrollbar-width:none}
+.artifact-tabs::-webkit-scrollbar,.view-tabs::-webkit-scrollbar{display:none}
+.artifact-tabs button{flex:none;height:29px;padding:0 9px;border:1px solid var(--line);border-radius:4px;color:#46545b;background:#f8f8f5;white-space:nowrap}
+.artifact-tabs button[aria-selected=true]{color:white;border-color:var(--shell);background:var(--shell)}
+.artifact-tabs button:disabled{opacity:.42;cursor:not-allowed}
+.cad-toolbar>.tool-group:not(.layer-toggles){grid-column:2;grid-row:2}.layer-toggles{grid-column:2;grid-row:1}
+.derived-drawing-view{position:absolute;inset:0;width:100%;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:12px;background:#fbfaf5}
+.derived-drawing-view>header{display:flex;align-items:center;gap:12px;min-width:0}.derived-drawing-view>header>div{display:grid;min-width:0}.derived-drawing-view small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.derived-drawing-view select{min-width:160px;margin-left:auto;padding:6px;border:1px solid var(--line);border-radius:4px;background:white}.derived-drawing-view img{width:100%;height:100%;object-fit:contain}.derived-drawing-view p{margin:0;color:var(--muted);font-size:12px}.derived-drawing-view nav{display:flex;gap:4px}
+@media(max-width:620px){.derived-drawing-view>header{align-items:stretch;flex-wrap:wrap}.derived-drawing-view select{width:100%;margin-left:0}.derived-drawing-view nav{margin-left:auto}}

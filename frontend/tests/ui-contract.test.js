@@ -5,10 +5,21 @@ import { readFile } from "node:fs/promises";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
-test("upload defaults explicitly to separated part views and keeps legacy opt-in", () => {
+test("upload defaults to mounted table views and keeps parts and legacy opt-ins", () => {
   assert.match(html, /name="input_kind"/);
-  assert.match(html, /value="separated_part_views" selected/);
+  assert.match(html, /value="mounted_orthographic_views" selected/);
+  assert.match(html, /value="separated_part_views"/);
   assert.match(html, /value="mounted_views_legacy"/);
+});
+
+test("technical viewer exposes source and derived drawing tabs without replacing the source", () => {
+  assert.match(html, /id="artifact-tabs"/);
+  assert.match(html, /data-artifact-view="source"[^>]*aria-selected="true"/);
+  assert.match(html, /data-artifact-view="general"/);
+  assert.match(html, /data-artifact-view="components"/);
+  assert.match(html, /data-artifact-view="cut_sheet"/);
+  assert.match(html, /id="derived-drawing-view"/);
+  assert.match(html, /id="derived-drawing-downloads"/);
 });
 
 test("responsive header never hides the active execution mode", () => {
