@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
+
 from backend.app.contratos.modelos import (
     EvaluatedTableComponent,
     EvaluatedTableProgram,
@@ -13,7 +16,10 @@ from backend.app.contratos.modelos import (
     TablePremise,
     TableProgramProposal,
 )
-from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
+from backend.app.estimacion.table_costs import (
+    estimate_table_costs,
+    get_table_cost_catalog,
+)
 
 
 def _field(value: float | None, state: str = "confirmed") -> TableFieldValue:
@@ -121,7 +127,9 @@ def _evaluated(
             evidence_ids=("evidence-supports",),
         ),
     )
-    occurrences = (TableOccurrence(id="top-1", component_id="top", occurrence_index=1),) + tuple(
+    occurrences = (
+        TableOccurrence(id="top-1", component_id="top", occurrence_index=1),
+    ) + tuple(
         TableOccurrence(
             id=f"support-{index}",
             component_id="supports",
@@ -180,40 +188,65 @@ def test_area_material_converts_mm2_to_m2_and_counts_each_occurrence_once():
 
 def test_volume_material_uses_thickness_and_supports_can_be_top_contributor():
     estimate = estimate_table_costs(
-        _evaluated(), result_revision=3,
+        _evaluated(),
+        result_revision=3,
         scope=TableCostScope(material_tariff_id="demo_solid_volume_v1"),
     )
 
     top = _concept(estimate, "material_volume", "top")
     supports = _concept(estimate, "material_volume", "supports")
     assert (top.quantity, top.quantity_unit, top.amount_eur) == (0.0252, "m3", 22.68)
-    assert (supports.quantity, supports.quantity_unit, supports.amount_eur) == (0.06048, "m3", 54.43)
-    contributions = [item for item in estimate.concepts if item.concept_type == "material_volume"]
-    assert max(contributions, key=lambda item: item.amount_eur or 0).component_id == "supports"
+    assert (supports.quantity, supports.quantity_unit, supports.amount_eur) == (
+        0.06048,
+        "m3",
+        54.43,
+    )
+    contributions = [
+        item for item in estimate.concepts if item.concept_type == "material_volume"
+    ]
+    assert (
+        max(contributions, key=lambda item: item.amount_eur or 0).component_id
+        == "supports"
+    )
 
 
 def test_fixed_preparation_is_once_and_edge_is_priced_only_when_scoped():
     without_edge = estimate_table_costs(
-        _evaluated(), result_revision=3,
+        _evaluated(),
+        result_revision=3,
         scope=TableCostScope(material_tariff_id="demo_board_area_v1"),
     )
     with_edge = estimate_table_costs(
-        _evaluated(), result_revision=3,
-        scope=TableCostScope(material_tariff_id="demo_board_area_v1", edge_scope="all_exposed"),
+        _evaluated(),
+        result_revision=3,
+        scope=TableCostScope(
+            material_tariff_id="demo_board_area_v1", edge_scope="all_exposed"
+        ),
     )
 
     fixed = [item for item in with_edge.concepts if item.concept_type == "fixed"]
     assert len(fixed) == 1
     assert (fixed[0].quantity, fixed[0].amount_eur) == (1.0, 25.0)
-    assert all(item.state == "not_applicable" for item in without_edge.concepts if item.concept_type == "edge")
-    assert (_concept(with_edge, "edge", "top").quantity, _concept(with_edge, "edge", "top").amount_eur) == (3.8, 9.5)
-    assert (_concept(with_edge, "edge", "supports").quantity, _concept(with_edge, "edge", "supports").amount_eur) == (5.68, 14.2)
+    assert all(
+        item.state == "not_applicable"
+        for item in without_edge.concepts
+        if item.concept_type == "edge"
+    )
+    assert (
+        _concept(with_edge, "edge", "top").quantity,
+        _concept(with_edge, "edge", "top").amount_eur,
+    ) == (3.8, 9.5)
+    assert (
+        _concept(with_edge, "edge", "supports").quantity,
+        _concept(with_edge, "edge", "supports").amount_eur,
+    ) == (5.68, 14.2)
     assert with_edge.known_subtotal_eur == 126.32
 
 
 def test_missing_dimension_and_unbased_work_stay_unknown_not_zero():
     estimate = estimate_table_costs(
-        _evaluated(supports=(720, 700, None)), result_revision=4,
+        _evaluated(supports=(720, 700, None)),
+        result_revision=4,
         scope=TableCostScope(
             material_tariff_id="demo_solid_volume_v1",
             operation_tariff_ids=("demo_machining_hour_v1", "external_operation"),
@@ -221,29 +254,57 @@ def test_missing_dimension_and_unbased_work_stay_unknown_not_zero():
     )
 
     support_material = _concept(estimate, "material_volume", "supports")
-    assert (support_material.state, support_material.quantity, support_material.amount_eur) == ("unknown", None, None)
-    pending_types = {item.concept_type for item in estimate.concepts if item.state == "unknown"}
+    assert (
+        support_material.state,
+        support_material.quantity,
+        support_material.amount_eur,
+    ) == ("unknown", None, None)
+    pending_types = {
+        item.concept_type for item in estimate.concepts if item.state == "unknown"
+    }
     assert {"material_volume", "operation", "labor", "finish"} <= pending_types
-    known_operation = next(item for item in estimate.concepts if item.id == "operation:demo_machining_hour_v1")
-    unknown_operation = next(item for item in estimate.concepts if item.id == "operation:external_operation")
-    assert (known_operation.rate_eur_per_unit, known_operation.amount_eur) == (36.0, None)
+    known_operation = next(
+        item
+        for item in estimate.concepts
+        if item.id == "operation:demo_machining_hour_v1"
+    )
+    unknown_operation = next(
+        item for item in estimate.concepts if item.id == "operation:external_operation"
+    )
+    assert (known_operation.rate_eur_per_unit, known_operation.amount_eur) == (
+        36.0,
+        None,
+    )
     assert unknown_operation.rate_eur_per_unit is None
-    assert (estimate.known_subtotal_eur, estimate.grand_total_eur, estimate.total_state) == (47.68, None, "partial")
+    assert (
+        estimate.known_subtotal_eur,
+        estimate.grand_total_eur,
+        estimate.total_state,
+    ) == (47.68, None, "partial")
 
 
 def test_catalog_and_result_identity_are_explicit_and_provisional():
     estimate = estimate_table_costs(
-        _evaluated(), result_revision=7,
+        _evaluated(),
+        result_revision=7,
         scope=TableCostScope(material_tariff_id="demo_board_area_v1"),
     )
 
     assert (estimate.result_revision, estimate.program_hash) == (7, "a" * 64)
-    assert (estimate.catalog_version, estimate.currency) == ("synthetic-table-costs-2026-11-14", "EUR")
+    assert (estimate.catalog_version, estimate.currency) == (
+        "synthetic-table-costs-2026-11-14",
+        "EUR",
+    )
     assert any("sintéticas" in warning for warning in estimate.warnings)
-    assert any("no representa precio de venta" in warning for warning in estimate.warnings)
+    assert any(
+        "no representa precio de venta" in warning for warning in estimate.warnings
+    )
     material = _concept(estimate, "material_area", "top")
     assert "date:2026-11-14" in material.dependency_refs
-    assert any(ref.startswith("source:synthetic development rates") for ref in material.dependency_refs)
+    assert any(
+        ref.startswith("source:synthetic development rates")
+        for ref in material.dependency_refs
+    )
 
 
 def test_occurrence_quantity_mismatch_is_rejected_instead_of_double_counted():
@@ -252,7 +313,8 @@ def test_occurrence_quantity_mismatch_is_rejected_instead_of_double_counted():
 
     try:
         estimate_table_costs(
-            malformed, result_revision=3,
+            malformed,
+            result_revision=3,
             scope=TableCostScope(material_tariff_id="demo_board_area_v1"),
         )
     except ValueError as error:
@@ -261,16 +323,12 @@ def test_occurrence_quantity_mismatch_is_rejected_instead_of_double_counted():
         raise AssertionError("quantity/occurrence mismatch must not be priced")
 
 
-def test_repeated_operation_tariff_does_not_duplicate_pending_concept():
-    estimate = estimate_table_costs(
-        _evaluated(), result_revision=3,
-        scope=TableCostScope(
+def test_repeated_operation_tariff_is_rejected_before_estimation():
+    with pytest.raises(ValidationError, match="duplicate operation tariff ids"):
+        TableCostScope(
             material_tariff_id="demo_board_area_v1",
             operation_tariff_ids=("demo_machining_hour_v1", "demo_machining_hour_v1"),
-        ),
-    )
-    operations = [item.id for item in estimate.concepts if item.concept_type == "operation"]
-    assert operations == ["operation:demo_machining_hour_v1"]
+        )
 
 
 def test_catalog_exposes_every_selectable_synthetic_tariff():
@@ -285,11 +343,19 @@ def test_catalog_exposes_every_selectable_synthetic_tariff():
         "demo_edge_exposed_v1",
         "demo_machining_hour_v1",
     }
-    assert (by_id["demo_board_area_v1"].scope, by_id["demo_board_area_v1"].rate_unit) == (
-        "material", "EUR/m2",
+    assert (
+        by_id["demo_board_area_v1"].scope,
+        by_id["demo_board_area_v1"].rate_unit,
+    ) == (
+        "material",
+        "EUR/m2",
     )
-    assert (by_id["demo_solid_volume_v1"].scope, by_id["demo_solid_volume_v1"].rate_unit) == (
-        "material", "EUR/m3",
+    assert (
+        by_id["demo_solid_volume_v1"].scope,
+        by_id["demo_solid_volume_v1"].rate_unit,
+    ) == (
+        "material",
+        "EUR/m3",
     )
     assert by_id["demo_edge_exposed_v1"].scope == "edge"
     assert by_id["demo_machining_hour_v1"].scope == "operation"
