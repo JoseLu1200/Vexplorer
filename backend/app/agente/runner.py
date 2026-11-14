@@ -40,12 +40,45 @@ class AgentOutcome:
     actions: tuple[AgentAction, ...]
 
 
+MAX_DIGEST_ITEMS = 60
+MAX_TEXT_CHARS = 120
+MAX_VALID_IDS = 100
+
+
+def _initial_context(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...]) -> dict:
+    """Ledger digest for the first message; the keys that existed before are unchanged, the rest is additive.
+
+    Drawing text is untrusted data and is kept apart under its own key; nothing here comes from private references.
+    """
+    linetypes: dict[str, int] = {}
+    for entity in extraction.entities:
+        if entity.kind == "LINE":
+            name = entity.linetype or "UNKNOWN"
+            linetypes[name] = linetypes.get(name, 0) + 1
+    return {
+        "drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings,
+        "evidence_ids": [item.id for item in extraction.evidence], "result_revision": 1,
+        "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios],
+        "source_unit": extraction.source_unit,
+        "views": [{"id": item.id, "label": item.label, "bounds_mm": item.bounds_mm.model_dump(mode="json") if item.bounds_mm else None} for item in extraction.views],
+        "dimensions": [{"id": item.id, "kind": item.kind, "value_mm": item.value_mm, "view_id": item.view_id, "evidence_ids": item.evidence_ids} for item in extraction.dimensions[:MAX_DIGEST_ITEMS]],
+        "evidence_catalog": [{"id": item.id, "kind": item.kind, "description": item.description} for item in extraction.evidence[:MAX_DIGEST_ITEMS]],
+        "line_linetypes": linetypes,
+        "untrusted_drawing_text": [{"id": item.id, "view_id": item.view_id, "text": item.text[:MAX_TEXT_CHARS]} for item in extraction.texts[:MAX_DIGEST_ITEMS]],
+        "proposal_details": [{"id": component.id, "scenario_id": item.id, "quantity": component.quantity, "length_mm": component.length_mm, "width_mm": component.width_mm, "length_derivation": component.length_derivation, "length_basis_mm": component.length_basis_mm, "observed_thickness_mm": component.observed_thickness_mm, "unconfirmed_thickness": component.thickness_mm is None} for item in scenarios for component in item.components],
+    }
+
+
+def _valid_ids(values) -> list[str]:
+    return sorted(values)[:MAX_VALID_IDS]
+
+
 def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits()) -> AgentOutcome:
     started = time.monotonic()
     model_calls = 0
     tool_calls = 0
     previous_response_id = None
-    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": [item.id for item in extraction.evidence], "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
+    input_items = [{"role": "user", "content": json.dumps(_initial_context(extraction, scenarios), ensure_ascii=False)}]
     evidence = {item.id: item for item in extraction.evidence}
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
@@ -60,7 +93,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
         response = provider.create_response(input_items=input_items, tools=tool_schemas(), previous_response_id=previous_response_id, timeout_s=remaining)
         previous_response_id = response.id
         if not response.tool_calls:
-            input_items = [{"role": "user", "content": "Debes usar una herramienta permitida."}]
+            input_items = [{"role": "user", "content": "Debes usar una herramienta permitida: " + ", ".join(tool["name"] for tool in tool_schemas()) + ". Termina con entregar_despiece y un scenario_id existente."}]
             continue
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
             raise RuntimeError("tool_call_budget_exhausted")
@@ -77,6 +110,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                     source_ids = {source_id for item in args.evidence_ids if item in evidence for source_id in evidence[item].source_entity_ids}
                     data = {
                         "ok": not unknown, "error": "unknown_reference" if unknown else None,
+                        **({"unknown_ids": unknown, "valid_evidence_ids": _valid_ids(evidence)} if unknown else {}),
                         "evidence": [evidence[item].model_dump(mode="json") for item in args.evidence_ids if item in evidence],
                         "entities": [entities[item].model_dump(mode="json") for item in source_ids if item in entities],
                         "contours": [item.model_dump(mode="json") for item in extraction.contours if set(item.source_entity_ids) & source_ids],
@@ -89,7 +123,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         data = {"ok": False, "error": "revision_not_available"}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Revisión no disponible en este bucle rechazada."))
                     elif args.piece_id not in proposals:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "valid_piece_ids": _valid_ids(proposals)}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Propuesta desconocida rechazada."))
                     else:
                         scenario, proposal = proposals[args.piece_id]
@@ -99,7 +133,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                 elif call.name == "entregar_despiece":
                     args = SelectScenarioArgs.model_validate_json(json.dumps(arguments), strict=True)
                     if args.scenario_id not in scenario_ids:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "valid_scenario_ids": _valid_ids(scenario_ids)}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Escenario desconocido rechazado."))
                     else:
                         actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana.", selected_scenario_id=args.scenario_id))
