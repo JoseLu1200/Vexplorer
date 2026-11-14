@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vexplorer Logo Cota</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Sofia+Sans+Semi+Condensed:wght@400;600&display=swap">
+<style>
+  :root { --bg: #ece6da; --ink: #1c2541; --ink-2: #4c5570; --line: rgba(28,37,65,.16); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131a2c; --ink: #e6e1d6; --ink-2: #a8aec0; --line: rgba(230,225,214,.14); } }
+  :root[data-theme="dark"] { --bg: #131a2c; --ink: #e6e1d6; --ink-2: #a8aec0; --line: rgba(230,225,214,.14); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Sofia Sans Semi Condensed", sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(56px, 9vw, 120px); line-height: .95; margin: 0 0 40px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); }
+  .big { aspect-ratio: 4/3; display: grid; place-items: center; border-bottom: 1px solid var(--line); }
+  .big svg { width: 56%; height: auto; overflow: visible; }
+  .row { display: flex; align-items: center; gap: 18px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .inv { --logo-bg: var(--ink); background: var(--ink); color: var(--bg); padding: 10px; display: inline-grid; }
+  .lock { display: inline-flex; align-items: center; gap: 10px; font-family: "Instrument Serif", serif; font-size: 34px; line-height: 1; }
+  .name { padding: 14px 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .name strong { font-family: "Instrument Serif", serif; font-weight: 400; font-size: 30px; }
+  .name span { color: var(--ink-2); font-size: 15px; text-align: right; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Logo cota</h1>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+// Bloques: paralelogramos con borde fino. La flecha nace en la esquina inferior izquierda del primero
+// y su vértice cae justo en una esquina del segundo; la punta es un ángulo recto, como la marca de una cota.
+const A = [[4,24],[20,24],[50,80],[34,80]];
+const B = [[28,24],[44,24],[74,80],[58,80]];
+const pts = p => p.map(q => q.join(",")).join(" ");
+function cota([x1,y1],[x2,y2], w, head) {
+  return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="currentColor" stroke-width="${w}" fill="none"/>` +
+    `<path d="M${x2-head} ${y2} L${x2} ${y2} L${x2} ${y2+head}" stroke="currentColor" stroke-width="${w}" fill="none" stroke-linejoin="miter" stroke-linecap="square"/>`;
+}
+// Fin de la flecha: x de la esquina inferior derecha del segundo bloque, y del borde superior de todo.
+const END = [B[2][0], A[0][1]];
+const hatch = id => `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(20)"><line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" stroke-width="1"/></pattern>`;
+let n = 0;
+// Bloque opaco del color del fondo: tapa la flecha, que solo asoma entre bloques y al salir.
+const blk = p => `<polygon points="${pts(p)}" fill="var(--logo-bg, var(--bg))" stroke="currentColor" stroke-width="2" stroke-linejoin="miter"/>`;
+const V = {
+  "Diagonal": [() => cota(A[3], END, 3.2, 14) + blk(A) + blk(B), "la flecha pasa por detrás de los bloques"],
+  "Rayado": [() => { const h = "h"+n++; return `<defs>${hatch(h)}</defs>` + cota(A[3], END, 3.2, 14) + blk(A) + `<polygon points="${pts(A)}" fill="url(#${h})" stroke="currentColor" stroke-width="2"/>` + blk(B); }, "el primer bloque en sección"],
+};
+const svg = (inner, size) => `<svg viewBox="0 0 100 100" ${size ? `width="${size}" height="${size}"` : ""} role="img" aria-label="Logo de Vexplorer">${inner}</svg>`;
+// En pestaña los bordes finos desaparecen: se engrosan para 32 y 16 px.
+const small = k => V[k][0]().replaceAll('stroke-width="2"', 'stroke-width="6"').replaceAll('stroke-width="3.2"', 'stroke-width="8"').replaceAll('stroke-width="3"', 'stroke-width="8"');
+document.getElementById("grid").innerHTML = Object.keys(V).map(k => `
+  <section class="card">
+    <div class="big">${svg(V[k][0]())}</div>
+    <div class="row">${svg(small(k), 32)}${svg(small(k), 16)}<span class="inv">${svg(V[k][0](), 40)}</span><span class="lock">${svg(V[k][0](), 36)}Vexplorer</span></div>
+    <div class="name"><strong>${k}</strong><span>${V[k][1]}</span></div>
+  </section>`).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"status":503,"body":{"schema_version":"0.2.0","error":{"code":"live_provider_unavailable","message":"missing_server_configuration:OPENAI_API_KEY,OPENAI_MODEL","retryable":true}}}

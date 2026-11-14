@@ -1,0 +1,1 @@
+{"status":409,"body":{"schema_version":"0.2.0","error":{"code":"semantic_embedding_missing","message":"La revisión no tiene un embedding semántico compatible.","retryable":false}}}

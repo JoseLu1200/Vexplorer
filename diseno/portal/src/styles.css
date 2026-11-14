@@ -1,0 +1,267 @@
+/*
+ * Vexplorer · interfaz de producto en la línea cobalto de la landing.
+ * Papel de plano como fondo, tinta azul noche, cobalto para el dibujo y el esquema 3D, tablero (wood) para la acción principal.
+ * Los datos van siempre sobre fondo liso: la única retícula es la de dibujo del lienzo del plano.
+ *
+ * Tipografía (incrustada, licencia SIL OFL 1.1, ver src/assets/fonts/LICENSE-*):
+ *   Sofia Sans Semi Condensed para la interfaz, Sofia Sans Extra Condensed para el logotipo y Martian Mono (wdth 87,5) para cifras, cotas e IDs.
+ * Espacio: 4 · 8 · 12 · 20 · 32 · 52 · 84 · 136, la misma escala que la landing (clases s1 a s8 de Tailwind).
+ * Clases de dato: Observado, Calculado, Hipótesis, Confirmado y Desconocido, con la muestra de tablero de la landing.
+ */
+@font-face {
+  font-family: "Sofia Sans Semi Condensed";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url("./assets/fonts/sofia-sans-semi-condensed-latin-wght-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Sofia Sans Extra Condensed";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url("./assets/fonts/sofia-sans-extra-condensed-latin-wght-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Martian Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  font-stretch: 75% 112.5%;
+  src: url("./assets/fonts/martian-mono-latin-standard-normal.woff2") format("woff2-variations");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Valores RGB sin alfa: los leen Tailwind, Scene.tsx (cssColor) y scripts/contraste.mjs. */
+:root {
+  --bg: 236 230 218;
+  --surface: 246 242 234;
+  --sunken: 227 220 205;
+  --line: 208 202 192;
+  --line-strong: 118 124 142;
+  --ink: 28 37 65;
+  --muted: 76 85 112;
+  --faint: 88 95 118;
+  --cobalt: 42 68 134;
+  --block: 42 68 134;
+  --on-block: 233 237 246;
+  --on-block-2: 185 195 221;
+  --wood: 199 154 104;
+  --wood-ink: 28 37 65;
+  --calc: 106 63 166;
+  --hip: 134 80 26;
+  --conf: 47 107 58;
+  --danger: 155 52 38;
+  --danger-soft: 244 226 218;
+  --canvas: 236 230 218;
+  --canvas-line: 221 216 207;
+  --canvas-ink: 42 68 134;
+  --dim: 42 68 134;
+  --unknown-bg: 227 220 205;
+  --unknown-ink: 76 85 112;
+  --select: 28 37 65;
+  --bar-h: 56px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: 19 26 44;
+    --surface: 27 35 56;
+    --sunken: 36 45 70;
+    --line: 55 62 80;
+    --line-strong: 110 117 138;
+    --ink: 230 225 214;
+    --muted: 168 174 192;
+    --faint: 148 155 176;
+    --cobalt: 169 187 230;
+    --block: 38 64 126;
+    --on-block: 233 237 246;
+    --on-block-2: 185 195 221;
+    --wood: 207 164 119;
+    --wood-ink: 19 26 44;
+    --calc: 195 166 255;
+    --hip: 224 168 102;
+    --conf: 143 209 158;
+    --danger: 240 140 122;
+    --danger-soft: 58 33 38;
+    --canvas: 19 26 44;
+    --canvas-line: 30 36 52;
+    --canvas-ink: 169 187 230;
+    --dim: 169 187 230;
+    --unknown-bg: 36 45 70;
+    --unknown-ink: 168 174 192;
+    --select: 230 225 214;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: 19 26 44;
+  --surface: 27 35 56;
+  --sunken: 36 45 70;
+  --line: 55 62 80;
+  --line-strong: 110 117 138;
+  --ink: 230 225 214;
+  --muted: 168 174 192;
+  --faint: 148 155 176;
+  --cobalt: 169 187 230;
+  --block: 38 64 126;
+  --on-block: 233 237 246;
+  --on-block-2: 185 195 221;
+  --wood: 207 164 119;
+  --wood-ink: 19 26 44;
+  --calc: 195 166 255;
+  --hip: 224 168 102;
+  --conf: 143 209 158;
+  --danger: 240 140 122;
+  --danger-soft: 58 33 38;
+  --canvas: 19 26 44;
+  --canvas-line: 30 36 52;
+  --canvas-ink: 169 187 230;
+  --dim: 169 187 230;
+  --unknown-bg: 36 45 70;
+  --unknown-ink: 168 174 192;
+  --select: 230 225 214;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: "Sofia Sans Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { text-wrap: balance; }
+/* Martian Mono a la anchura de la landing; cifras tabulares en toda cifra. */
+.font-mono { font-variation-settings: "wdth" 87.5; letter-spacing: 0; }
+.num, .font-mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.font-display { font-family: "Sofia Sans Extra Condensed", "Arial Narrow", sans-serif; }
+.eyebrow { font-size: 13px; line-height: 18px; color: rgb(var(--muted)); font-weight: 600; }
+
+:focus-visible { outline: 2px solid rgb(var(--select)); outline-offset: 2px; }
+::selection { background: rgb(var(--wood)); color: rgb(var(--wood-ink)); }
+
+/* Muestra de clase de dato, la misma que la landing: tablero con borde del color de la clase y relleno suave. */
+.swatch {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  border: 2px solid rgb(var(--c));
+  background: rgb(var(--c) / 0.3);
+}
+.swatch-unknown { background: repeating-linear-gradient(45deg, rgb(var(--c)) 0 1.5px, transparent 1.5px 4px); }
+
+/* Retícula de dibujo: solo en el lienzo del plano. */
+.plan-grid {
+  background-color: rgb(var(--canvas));
+  background-image:
+    linear-gradient(rgb(var(--canvas-line)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--canvas-line)) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: rgb(var(--line-strong)) transparent; }
+
+@keyframes vx-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes vx-draw { to { stroke-dashoffset: 0; } }
+@keyframes vx-skel { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes vx-toast { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes vx-boot-out { to { opacity: 0; visibility: hidden; } }
+/* Trazo que se dibuja: pathLength=1 en el path y el guion recorre la longitud entera. */
+.draw-in { stroke-dasharray: 1; stroke-dashoffset: 1; animation: vx-draw 650ms cubic-bezier(.3,.6,.3,1) forwards; }
+.thumb-draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: vx-draw 900ms ease-out forwards; }
+.skel { background: rgb(var(--sunken)); animation: vx-skel 1.3s ease-in-out infinite; }
+.toast-in { animation: vx-toast 180ms ease-out both; }
+/* Destino al arrastrar archivos o planos encima. */
+.is-drop-target { outline: 2px solid rgb(var(--ink)); outline-offset: -2px; background: rgb(var(--sunken)) !important; }
+/* Arranque: el logo se traza y la pantalla se retira. */
+.boot-mark .b { stroke-dasharray: 1; stroke-dashoffset: 1; animation: vx-draw 900ms cubic-bezier(.3,.6,.3,1) forwards; }
+.boot-mark .b2 { animation-delay: 240ms; }
+.boot-mark .b3 { animation-delay: 500ms; }
+.boot-mark .bf { animation: vx-in 300ms 750ms ease-out both; }
+.boot-word { animation: vx-in 360ms 550ms ease-out both; }
+.boot-out { animation: vx-boot-out 300ms ease-in forwards; }
+@keyframes vx-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+@keyframes vx-bar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+.anim-pulse { animation: vx-pulse 1.4s ease-in-out infinite; }
+.anim-in { animation: vx-in 180ms ease-out both; }
+.anim-bar { animation: vx-bar 1.6s cubic-bezier(.4,0,.2,1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .anim-pulse, .anim-in, .anim-bar, .skel, .toast-in, .boot-word { animation: none !important; }
+  .draw-in, .thumb-draw path, .boot-mark .b { animation: none !important; stroke-dashoffset: 0 !important; stroke-dasharray: none !important; }
+  .boot-mark .bf { animation: none !important; }
+  .boot-out { animation: none !important; opacity: 0; visibility: hidden; }
+  .btn-primary { transition: none !important; }
+}
+
+/* Botones: cantos rectos como la landing. El principal en tablero con tinta. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 20px; font-size: 15px; font-weight: 600;
+  border: 1px solid rgb(var(--ink)); background: transparent; color: rgb(var(--ink));
+  transition: background-color 120ms, border-color 120ms, color 120ms, box-shadow 200ms, transform 200ms;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: rgb(var(--sunken)); }
+.btn:disabled { color: rgb(var(--faint)); cursor: not-allowed; background: rgb(var(--sunken)); border-color: rgb(var(--line)); }
+.btn-primary { background: rgb(var(--wood)); border-color: rgb(var(--wood)); color: rgb(var(--wood-ink)); }
+.btn-primary:hover:not(:disabled) { background: rgb(var(--wood)); box-shadow: 3px 3px 0 0 rgb(var(--ink)); transform: translate(-1px, -1px); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover:not(:disabled) { background: rgb(var(--sunken)); }
+.btn-sm { height: 36px; padding: 0 12px; font-size: 14px; }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+
+.input {
+  height: 40px; padding: 0 12px; border: 1px solid rgb(var(--line-strong));
+  background: rgb(var(--surface)); color: rgb(var(--ink)); font-size: 15px; width: 100%;
+}
+.input:focus-visible { outline-offset: 0; }
+textarea.input { height: auto; padding: 8px 12px; line-height: 22px; resize: vertical; }
+/* El preflight de Tailwind pondría el gris 400 por defecto (2,3:1 sobre la hoja): el placeholder usa muted, 5,4:1 o más. */
+input::placeholder, textarea::placeholder { color: rgb(var(--muted)); opacity: 1; }
+.input:disabled { background: rgb(var(--sunken)); border-color: rgb(var(--line)); color: rgb(var(--faint)); cursor: not-allowed; }
+.input:disabled::placeholder { color: rgb(var(--faint)); }
+
+.panel { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); }
+
+/* Los textos sr-only de las celdas son absolutos: sin esto escapan del recorte del contenedor con scroll y ensanchan la página. */
+.overflow-x-auto:not(.absolute), .overflow-auto:not(.absolute) { position: relative; }
+
+.unknown { background: rgb(var(--unknown-bg)); color: rgb(var(--unknown-ink)); }
+/* Selección: contorno de tinta y papel oscuro, sin color de clase de dato. */
+.is-selected { outline: 2px solid rgb(var(--select)); outline-offset: -2px; background: rgb(var(--sunken)); }
+
+/* Rejilla común: mismo ancho máximo y mismo margen lateral en todas las pantallas. */
+.page {
+  width: 100%;
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 1024px) {
+  .page { padding-left: max(52px, env(safe-area-inset-left, 0px)); padding-right: max(52px, env(safe-area-inset-right, 0px)); }
+}
+/* Láminas: al imprimir solo sale la vista de piezas separadas, en papel blanco y sin la retícula. */
+@media print {
+  @page { margin: 12mm; }
+  html, body, #root { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body * { visibility: hidden !important; }
+  [data-noprint], [data-testid="queue"], [role="status"] { display: none !important; }
+  /* La mesa deja de ocupar la ventana para que la lista de piezas corra por las páginas. */
+  [data-testid="workbench"], [data-testid="workbench"] > div, [data-testid="workbench"] section { display: block !important; position: static !important; height: auto !important; overflow: visible !important; }
+  [data-print="laminas"], [data-print="laminas"] * { visibility: visible !important; }
+  [data-print="laminas"] { position: static !important; overflow: visible !important; padding: 0 !important; background: #fff !important; }
+  [data-print="laminas"] ul { padding: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-print="laminas"] li { break-inside: avoid; }
+  .sheet [data-print="laminas"] { display: block !important; }
+  .sheet { width: 100% !important; max-width: none !important; border: 0 !important; }
+  .sheet, .sheet * { position: static !important; overflow: visible !important; height: auto !important; max-height: none !important; box-shadow: none !important; }
+}
+/* Pantallas que se abren como panel encima de la mesa: sin ancho máximo y con el margen del panel. */
+.sheet .page { max-width: none; padding-left: 20px; padding-right: 20px; padding-top: 20px; }
