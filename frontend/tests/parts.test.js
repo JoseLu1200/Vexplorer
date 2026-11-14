@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalisePartsWorkspace, partSelectionViewIds, presentDescriptorV2 } from "../core/parts.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2 } from "../core/parts.js";
 import { buildAssemblyReviewPayload } from "../core/review.js";
 
 const snapshot = {
@@ -66,6 +66,18 @@ test("assembly candidates remain hypotheses with unknowns and premises visible",
   assert.deepEqual(candidate.uses[0].sourceQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
   assert.deepEqual(candidate.uses[0].allocatedQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
   assert.deepEqual(candidate.uses[0].occurrenceIndices, []);
+});
+
+test("parts live recommendation selects its candidate while human review stays authoritative", () => {
+  const live = structuredClone(snapshot);
+  live.agent_selected_assembly_candidate_id = "assembly-second";
+  live.result.assembly_candidates.push({ ...structuredClone(live.result.assembly_candidates[0]), id: "assembly-second" });
+  let workspace = normalisePartsWorkspace(live);
+  assert.equal(workspace.suggestedCandidateId, "assembly-second");
+  assert.equal(preferredCandidateId(workspace), "assembly-second");
+  live.result.selected_assembly_candidate_id = "assembly-between";
+  workspace = normalisePartsWorkspace(live);
+  assert.equal(preferredCandidateId(workspace), "assembly-between");
 });
 
 test("assembly review decisions address use ids and preserve only human supplied values", () => {

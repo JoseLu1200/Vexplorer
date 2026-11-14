@@ -3,7 +3,7 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
-import { normalisePartsWorkspace, partSelectionViewIds, presentDescriptorV2, translateAssumption } from "./core/parts.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, translateAssumption } from "./core/parts.js";
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
@@ -320,7 +320,7 @@ function renderSeparatedPartsAndReview() {
   if(!workspace.observations.length){ const row=document.createElement("tr"); row.className="empty-row"; const cell=document.createElement("td"); cell.colSpan=7; cell.textContent="No se observaron piezas. No se inventa un despiece."; row.append(cell); body.append(row); }
   text($("#scenario-status"),workspace.selectedCandidateId?"Montaje revisado":workspace.candidates.length?"Clasificación hipotética":"Sin hipótesis de montaje");
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Hipótesis de familia y montaje"; options.append(legend);
-  const selectedId=workspace.selectedCandidateId??state.snapshot.preview_assembly_candidate_id??workspace.suggestedCandidateId??workspace.candidates[0]?.id;
+  const selectedId=preferredCandidateId(workspace,state.snapshot.preview_assembly_candidate_id);
   workspace.candidates.forEach((candidate)=>{
     const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="assembly-candidate"; input.value=candidate.id; input.checked=candidate.id===selectedId;
     input.addEventListener("change",()=>{state.snapshot.preview_assembly_candidate_id=candidate.id; renderSeparatedPartsAndReview();});
