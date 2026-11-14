@@ -47,3 +47,7 @@ Límites observados: el primer intento de nueva inferencia EG2 falló por error 
 El usuario autorizó expresamente la fusión el 2026-11-14. Se verificó `main` local/remoto en `dbd1bb6`, sin cambios pendientes en su worktree, y se aplicó `git merge --ff-only feat/semantic-explorer` hasta `6ea3b64`. Incluye la base autónoma `83df72d`; no incorpora automáticamente los avances posteriores de otras ramas.
 
 Verificación ejecutada desde `.worktrees/semantic-main`: 721 pruebas Python aprobadas en 61,40 s y 151 JavaScript aprobadas. Se actualizó únicamente documentación después de esas pruebas. El worktree del explorador se conserva porque contiene el servidor local y artefactos de QA fuera de Git. No se despliega el servicio.
+
+## Reconciliación completa autorizada
+
+El usuario amplía explícitamente el alcance el 2026-11-14 a todas las ramas pendientes y al trabajo UX sin commit. Integración en `integration/reconcile-all` desde `4504adb`. Se permite resolver solapes de los cambios existentes, incluidos sus contratos ya desarrollados, sin diseñar contratos nuevos. Las reservas anteriores describen la fase del explorador; esta fase incluye CAD, reconstrucción, estimaciones, UX y pruebas. Se preservan los worktrees originales y sus índices. Las ramas activas se vuelven a comprobar antes de publicar.
