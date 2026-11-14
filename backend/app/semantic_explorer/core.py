@@ -2,20 +2,17 @@ from __future__ import annotations
 
 import numpy as np
 
+from backend.app.similarity.math_utils import cosine_matrix, normalize_matrix
+
 from .models import Bundle, Entry, digest
 
 PROJECTION_VERSION = "pca-centered-svd-v1"
 
 
 def unit_vectors(bundle: Bundle) -> np.ndarray:
-    matrix = np.asarray([e.vector for e in bundle.entries], dtype=np.float64).reshape(
-        (-1, bundle.space.dimensions)
+    return normalize_matrix(
+        [e.vector for e in bundle.entries], dimensions=bundle.space.dimensions
     )
-    if len(matrix):
-        # Scale first to avoid overflow on finite but very large vectors.
-        matrix = matrix / np.max(np.abs(matrix), axis=1, keepdims=True)
-        matrix /= np.linalg.norm(matrix, axis=1, keepdims=True)
-    return matrix
 
 
 def snapshot_id(bundle: Bundle, source: str) -> str:
@@ -80,7 +77,7 @@ def search(
     if query_index is None:
         raise KeyError(member_id)
     vectors = unit_vectors(bundle)
-    scores = np.clip(vectors @ vectors[query_index], -1, 1)
+    scores = cosine_matrix(vectors[query_index], vectors, normalized=True)
     query = bundle.entries[query_index]
     candidates = [
         i

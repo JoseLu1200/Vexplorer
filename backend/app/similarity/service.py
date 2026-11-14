@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import hashlib
-import math
-
 from backend.app.contratos.modelos import FurnitureDescriptor, FurnitureDescriptorV2, FurnitureDescriptorV3, LibraryItem, SimilarityDifference, SimilarityGroup, SimilarityMatch
+from backend.app.similarity.clustering import complete_linkage_groups
+from backend.app.similarity.math_utils import cosine_similarity as _cosine_similarity
 
 Descriptor = FurnitureDescriptor | FurnitureDescriptorV2 | FurnitureDescriptorV3
 
@@ -80,13 +79,7 @@ def geometric_match(query: Descriptor, candidate: LibraryItem) -> SimilarityMatc
 
 
 def cosine_similarity(left: tuple[float, ...], right: tuple[float, ...]) -> float:
-    if len(left) != len(right) or not left:
-        raise ValueError("embedding_space_incompatible")
-    left_norm = math.sqrt(sum(item * item for item in left))
-    right_norm = math.sqrt(sum(item * item for item in right))
-    if not left_norm or not right_norm:
-        raise ValueError("invalid_embedding")
-    return sum(a * b for a, b in zip(left, right, strict=True)) / (left_norm * right_norm)
+    return _cosine_similarity(left, right)
 
 
 def semantic_match(query: LibraryItem, query_vector: tuple[float, ...], candidate: LibraryItem, candidate_vector: tuple[float, ...]) -> SimilarityMatch:
@@ -99,32 +92,14 @@ def semantic_match(query: LibraryItem, query_vector: tuple[float, ...], candidat
 
 
 def geometric_groups(items: tuple[LibraryItem, ...], threshold: float) -> tuple[SimilarityGroup, ...]:
-    ordered = tuple(sorted(items, key=lambda item: item.id))
-    parent = {item.id: item.id for item in ordered}
-
-    def find(value: str) -> str:
-        while parent[value] != value:
-            parent[value] = parent[parent[value]]
-            value = parent[value]
-        return value
-
-    def union(left: str, right: str) -> None:
-        a, b = find(left), find(right)
-        if a != b:
-            parent[max(a, b)] = min(a, b)
-
-    for index, left in enumerate(ordered):
-        for right in ordered[index + 1:]:
-            if left.run_id != right.run_id and geometric_match(left.descriptor, right).score >= threshold:
-                union(left.id, right.id)
-    components: dict[str, list[str]] = {}
-    for item in ordered:
-        components.setdefault(find(item.id), []).append(item.id)
-    groups = []
-    for members in sorted(tuple(sorted(values)) for values in components.values() if len(values) >= 2):
-        digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
-        groups.append(SimilarityGroup(id=f"group-geometric-{digest}", member_ids=tuple(members), method="geometric", score_kind="geometric_similarity", threshold=threshold, explanation="Componente conexo reproducible: cada enlace alcanza el umbral geométrico; no demuestra identidad ni intercambiabilidad."))
-    return tuple(groups)
+    return complete_linkage_groups(
+        items=items,
+        threshold=threshold,
+        score_fn=lambda left, right: geometric_match(left.descriptor, right).score,
+        method="geometric",
+        score_kind="geometric_similarity",
+        explanation="Grupo compacto reproducible (enlace completo, sin encadenamiento): todos los pares alcanzan el umbral geométrico; no demuestra identidad ni intercambiabilidad.",
+    )
 
 
 def semantic_groups(items: tuple[LibraryItem, ...], vectors: dict[str, tuple[float, ...]], threshold: float) -> tuple[SimilarityGroup, ...]:
@@ -134,28 +109,11 @@ def semantic_groups(items: tuple[LibraryItem, ...], vectors: dict[str, tuple[flo
     spaces = {(item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version) for item in ordered if item.embedding is not None}
     if len(spaces) > 1:
         raise ValueError("embedding_space_incompatible")
-    parent = {item.id: item.id for item in ordered}
-
-    def find(value: str) -> str:
-        while parent[value] != value:
-            parent[value] = parent[parent[value]]
-            value = parent[value]
-        return value
-
-    def union(left: str, right: str) -> None:
-        a, b = find(left), find(right)
-        if a != b:
-            parent[max(a, b)] = min(a, b)
-
-    for index, left in enumerate(ordered):
-        for right in ordered[index + 1:]:
-            if left.run_id != right.run_id and cosine_similarity(vectors[left.id], vectors[right.id]) >= threshold:
-                union(left.id, right.id)
-    components: dict[str, list[str]] = {}
-    for item in ordered:
-        components.setdefault(find(item.id), []).append(item.id)
-    groups = []
-    for members in sorted(tuple(sorted(values)) for values in components.values() if len(values) >= 2):
-        digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
-        groups.append(SimilarityGroup(id=f"group-semantic-{digest}", member_ids=tuple(members), method="semantic", score_kind="cosine_similarity", threshold=threshold, explanation="Componente conexo reproducible por coseno en un mismo espacio de embedding; el score no es probabilidad ni demuestra identidad."))
-    return tuple(groups)
+    return complete_linkage_groups(
+        items=ordered,
+        threshold=threshold,
+        score_fn=lambda left, right: cosine_similarity(vectors[left.id], vectors[right.id]),
+        method="semantic",
+        score_kind="cosine_similarity",
+        explanation="Grupo compacto reproducible (enlace completo, sin encadenamiento): todos los pares alcanzan el umbral por coseno en un mismo espacio de embedding; el score no es probabilidad ni demuestra identidad.",
+    )

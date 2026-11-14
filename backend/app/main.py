@@ -64,6 +64,7 @@ from backend.app.servicios.table_reconstruction import derive_table_drawing_plan
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
+from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_similarity_threshold
 from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
 from backend.app.operacion.jobs import BoundedJobExecutor
 from backend.app.operacion.public_access import PublicAdmissionStore
@@ -171,11 +172,13 @@ class SimilarityRequest(RequestModel):
     mode: Literal["geometric", "semantic"]
     limit: int = Field(default=10, ge=1, le=50)
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
+    min_score: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
+    include_abstention: bool = False
 
 
 class GroupRequest(RequestModel):
     mode: Literal["geometric", "semantic"]
-    threshold: float = Field(default=0.8, ge=-1, le=1, allow_inf_nan=False)
+    threshold: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
 
 
@@ -200,6 +203,36 @@ def _ok(data, status_code: int = 200):
 
 def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
+
+
+def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings) -> None:
+    """Registra las funcionalidades de ``backend/app/precedentes`` (ideas 2.1-3.5 del brainstorming de embeddings).
+
+    En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca.
+    """
+    from backend.app.precedentes.api_analogia import crear_router_analogia
+    from backend.app.precedentes.api_busqueda import (
+        crear_proveedor_traductor,
+        crear_router_busqueda,
+    )
+    from backend.app.precedentes.api_decisiones import crear_router_decisiones
+    from backend.app.precedentes.api_embeddings import crear_router_embeddings
+    from backend.app.precedentes.api_herrajes import crear_router_herrajes
+    from backend.app.precedentes.api_imagen import crear_router_imagen
+    from backend.app.precedentes.api_piezas import crear_router_piezas
+    from backend.app.precedentes.api_sugerencias import crear_router_sugerencias
+    from backend.app.precedentes.decisiones import AlmacenDecisiones
+    from backend.app.precedentes.espacio import AlmacenEspacio
+    from backend.app.precedentes.herrajes import AlmacenHerrajes
+
+    app.include_router(crear_router_sugerencias(repository))
+    app.include_router(crear_router_analogia(historical_store))
+    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / "precedentes_espacio.sqlite3")))
+    app.include_router(crear_router_piezas(repository))
+    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")))
+    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0))
+    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None))
+    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
 
 
 def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
@@ -645,6 +678,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 path == "/api/v1/history" or path.startswith("/api/v1/history/")
                 or path == "/api/v1/library" or path.startswith("/api/v1/library/")
                 or path == "/api/v1/semantic-explorer/review"
+                or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
                 or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
             )
             if shared_feature:
@@ -744,6 +778,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
     ))
+    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings)
     from backend.app.reconstruction3d.router import create_reconstruction_router
     from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
     from dataclasses import replace
@@ -1856,11 +1891,13 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         descriptor_version = request.descriptor_version or build_descriptor(result).descriptor_version
         candidates = [item for item in all_candidates if item.descriptor.descriptor_version == descriptor_version]
         excluded_count = len(all_candidates) - len(candidates)
+        semantic_model: str | None = None
         if request.mode == "semantic":
             try:
                 query = repository.get_library_item(run_id)
                 if query.result_revision != request.result_revision or query.embedding is None:
                     raise KeyError(run_id)
+                semantic_model = query.embedding.model
                 query_vector = repository.get_embedding(query.embedding.cache_key, query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version)
                 matches = []
                 for item in candidates:
@@ -1878,6 +1915,24 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             descriptor = build_descriptor(result)
             matches = [geometric_match(descriptor, item) for item in candidates]
         matches.sort(key=lambda item: (-item.score, item.library_item_id))
+        if request.include_abstention:
+            threshold = (
+                request.min_score
+                if request.min_score is not None
+                else resolve_similarity_threshold(request.mode, descriptor_version, model=semantic_model)
+            )
+            abstention = evaluate_similarity_abstention(matches, threshold)
+            payload = [item.model_dump(mode="json") for item in abstention.filtered_matches[:request.limit]]
+            return _ok({
+                "matches": payload,
+                "abstained": abstention.abstained,
+                "abstention_reason": abstention.abstention_reason,
+                "threshold_used": abstention.threshold_used,
+                "descriptor_version": descriptor_version,
+                "excluded_count": excluded_count,
+            })
+        if request.min_score is not None:
+            matches = [item for item in matches if item.score >= request.min_score]
         payload = [item.model_dump(mode="json") for item in matches[:request.limit]]
         if request.descriptor_version is not None:
             return _ok({"matches": payload, "descriptor_version": descriptor_version, "excluded_count": excluded_count})
@@ -1888,13 +1943,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         all_items = repository.get_library_items()
         items = tuple(item for item in all_items if request.descriptor_version is None or item.descriptor.descriptor_version == request.descriptor_version)
         excluded_count = len(all_items) - len(items)
+        semantic_model = next((item.embedding.model for item in items if item.embedding is not None), None) if request.mode == "semantic" else None
+        threshold = (
+            request.threshold
+            if request.threshold is not None
+            else resolve_group_threshold(request.mode, request.descriptor_version, model=semantic_model)
+        )
         if request.mode == "semantic":
             try:
                 vectors = {
                     item.id: repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
                     for item in items if item.embedding is not None
                 }
-                values = semantic_groups(items, vectors, request.threshold)
+                values = semantic_groups(items, vectors, threshold)
             except KeyError:
                 return _error(409, "semantic_embedding_missing", "La biblioteca no tiene todos los embeddings semánticos requeridos.")
             except (ValueError, EmbeddingProviderError) as exc:
@@ -1902,7 +1963,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 return _error(409, code, "Los embeddings faltan, son inválidos o pertenecen a espacios incompatibles.")
         else:
             try:
-                values = geometric_groups(items, request.threshold)
+                values = geometric_groups(items, threshold)
             except ValueError as exc:
                 return _error(409, str(exc), "Los descriptores pertenecen a espacios incompatibles.")
         payload = [item.model_dump(mode="json") for item in values]

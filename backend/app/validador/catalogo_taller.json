@@ -10,5 +10,52 @@
       "hole_diameter_mm": 5.0,
       "setback_mm": 37.0
     }
-  ]
+  ],
+  "deflection_limits": {
+    "default_max_span_by_thickness_mm": [
+      {"min_thickness_mm": 30.0, "max_span_mm": 1400.0},
+      {"min_thickness_mm": 25.0, "max_span_mm": 1200.0},
+      {"min_thickness_mm": 19.0, "max_span_mm": 950.0},
+      {"min_thickness_mm": 18.0, "max_span_mm": 900.0},
+      {"min_thickness_mm": 16.0, "max_span_mm": 750.0}
+    ],
+    "material_overrides": {
+      "mdf": [
+        {"min_thickness_mm": 30.0, "max_span_mm": 1250.0},
+        {"min_thickness_mm": 25.0, "max_span_mm": 1050.0},
+        {"min_thickness_mm": 19.0, "max_span_mm": 850.0},
+        {"min_thickness_mm": 18.0, "max_span_mm": 800.0},
+        {"min_thickness_mm": 16.0, "max_span_mm": 650.0}
+      ],
+      "melamina": [
+        {"min_thickness_mm": 30.0, "max_span_mm": 1400.0},
+        {"min_thickness_mm": 25.0, "max_span_mm": 1200.0},
+        {"min_thickness_mm": 19.0, "max_span_mm": 950.0},
+        {"min_thickness_mm": 18.0, "max_span_mm": 900.0},
+        {"min_thickness_mm": 16.0, "max_span_mm": 750.0}
+      ],
+      "aglomerado": [
+        {"min_thickness_mm": 30.0, "max_span_mm": 1300.0},
+        {"min_thickness_mm": 25.0, "max_span_mm": 1100.0},
+        {"min_thickness_mm": 19.0, "max_span_mm": 880.0},
+        {"min_thickness_mm": 18.0, "max_span_mm": 820.0},
+        {"min_thickness_mm": 16.0, "max_span_mm": 700.0}
+      ],
+      "contrachapado": [
+        {"min_thickness_mm": 30.0, "max_span_mm": 1550.0},
+        {"min_thickness_mm": 25.0, "max_span_mm": 1350.0},
+        {"min_thickness_mm": 19.0, "max_span_mm": 1080.0},
+        {"min_thickness_mm": 18.0, "max_span_mm": 1020.0},
+        {"min_thickness_mm": 16.0, "max_span_mm": 850.0}
+      ],
+      "macizo": [
+        {"min_thickness_mm": 30.0, "max_span_mm": 1600.0},
+        {"min_thickness_mm": 25.0, "max_span_mm": 1400.0},
+        {"min_thickness_mm": 19.0, "max_span_mm": 1100.0},
+        {"min_thickness_mm": 18.0, "max_span_mm": 1050.0},
+        {"min_thickness_mm": 16.0, "max_span_mm": 900.0}
+      ]
+    },
+    "fallback_span_to_thickness_ratio": 45.0
+  }
 }
