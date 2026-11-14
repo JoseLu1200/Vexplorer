@@ -4,7 +4,10 @@ import json
 from pathlib import Path
 
 import pytest
+import httpx
 
+from backend.app.agente.config import ProviderSettings
+from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.prompts import SYSTEM_PROMPT
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
@@ -24,6 +27,20 @@ class FakeProvider:
         self.calls += 1
         self.inputs.append(input_items)
         return self.responses.pop(0)
+
+
+def test_provider_uses_configured_output_budget_without_exposing_secrets() -> None:
+    seen = {}
+
+    def handler(request: httpx.Request):
+        seen.update(json.loads(request.content))
+        return httpx.Response(200, json={"id": "response", "status": "completed", "output": []})
+
+    settings = ProviderSettings(api_key="secret-test-key", model="gpt-test", base_url="https://example.test/v1", max_output_tokens=4096)
+    provider = OpenAIResponsesProvider(settings, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
+    assert seen["max_output_tokens"] == 4096
+    assert "secret-test-key" not in json.dumps(seen)
 
 
 def test_agent_uses_native_tools_against_current_ledger_only() -> None:
@@ -125,7 +142,10 @@ def test_agent_rejects_unknown_or_unavailable_explanation(arguments, expected_er
     run_agent(extraction, scenarios, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
 
     tool_output = json.loads(provider.inputs[1][0]["output"])
-    assert tool_output == {"ok": False, "error": expected_error}
+    assert tool_output["ok"] is False and tool_output["error"] == expected_error
+    if expected_error == "unknown_reference":
+        assert tool_output["details"]["valid_ids"]
+        assert tool_output["details"]["valid_ids_total"] == sum(len(item.components) for item in scenarios)
 
 
 def test_parts_agent_inspects_grounded_part_and_selects_existing_candidate() -> None:
@@ -162,3 +182,18 @@ def test_parts_agent_inspects_grounded_part_and_selects_existing_candidate() -> 
     assert {item["name"] for item in parts_tool_schemas()} == {"inspeccionar_pieza", "entregar_candidato_montaje"}
     assert "vistas 2D de piezas separadas" in SYSTEM_PROMPT
     assert "no calculas medidas" in SYSTEM_PROMPT
+
+
+def test_parts_agent_unknown_reference_returns_valid_observation_ids() -> None:
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "piezas_completo.dxf"
+    extraction = extract_drawing(fixture, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+    candidates = derive_assembly_candidates(parts)
+    provider = FakeProvider([
+        ProviderResponse(id="parts-1", tool_calls=(ToolCall(call_id="bad", name="inspeccionar_pieza", arguments={"candidate_revision": parts.candidate_revision, "part_observation_id": "missing"}),)),
+        ProviderResponse(id="parts-2", tool_calls=(ToolCall(call_id="select", name="entregar_candidato_montaje", arguments={"candidate_revision": parts.candidate_revision, "assembly_candidate_id": candidates[0].id}),)),
+    ])
+    run_parts_agent(extraction, parts, candidates, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+    error = json.loads(provider.inputs[1][0]["output"])
+    assert error["error"] == "unknown_reference"
+    assert set(error["details"]["valid_ids"]) == {item.id for item in parts.observations}

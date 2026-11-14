@@ -94,3 +94,15 @@ def test_table_agent_inspects_source_values_then_proposes_reference_only_program
     assert outcome.program.table_template_id is None
     assert [item.tool_name for item in outcome.actions] == ["inspeccionar_medidas_mesa", "proponer_descomposicion"]
     assert {item["name"] for item in table_tool_schemas()} == {"inspeccionar_medidas_mesa", "proponer_descomposicion"}
+
+
+def test_table_agent_unknown_measure_returns_bounded_valid_ids_for_repair():
+    provider = FakeProvider([
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="bad", name="inspeccionar_medidas_mesa", arguments={"measurement_ids": ["missing"]}),)),
+        ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+    ])
+    outcome = run_table_agent(_extraction(), _analysis(), provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+    error = json.loads(provider.inputs[1][0]["output"])
+    assert error["error"] == "unknown_reference"
+    assert error["details"] == {"valid_ids": ["d", "h", "w"], "valid_ids_total": 3, "valid_ids_truncated": False}
+    assert outcome.program.id.startswith("table-program-")
