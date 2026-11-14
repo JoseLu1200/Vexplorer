@@ -82,6 +82,35 @@ def observe_side_thickness(extraction: DrawingExtraction, front: DrawingContour,
     return value, tuple(sorted(set(front_ids) | set(top_ids)))
 
 
+def side_hole_rows(extraction: DrawingExtraction, side: DrawingContour) -> tuple[str, ...]:
+    """Hole-row evidence whose circles all lie inside the SIDE outline.
+
+    Pure geometry, independent of any drilling catalog (that comparison is the validator's): the rows are attached
+    to side-panel proposals as evidence of a drilled side, never as a confirmation of the piece.
+    """
+    xs = [point.x for point in side.points_mm or ()]
+    ys = [point.y for point in side.points_mm or ()]
+    if not xs:
+        return ()
+    min_x, max_x, min_y, max_y = min(xs), max(xs), min(ys), max(ys)
+    entities = {entity.id: entity for entity in extraction.entities}
+    rows = []
+    for item in extraction.evidence:
+        if not item.id.startswith("evidence-holes-"):
+            continue
+        centers = []
+        for entity_id in item.source_entity_ids:
+            points = entities[entity_id].points_mm if entity_id in entities else None
+            if not points or len(points) < 4:
+                break
+            ring = points[:-1]
+            centers.append((sum(point.x for point in ring) / len(ring), sum(point.y for point in ring) / len(ring)))
+        else:
+            if centers and all(min_x < x < max_x and min_y < y < max_y for x, y in centers):
+                rows.append(item.id)
+    return tuple(sorted(rows))
+
+
 def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[DecompositionScenario, ...]:
     """Apply explicit rectangular-shelving hypotheses to observed mounted views."""
     view_labels = {view.id: view.label for view in extraction.views}
@@ -135,6 +164,7 @@ def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[Decom
     evidence_ids = tuple(item.id for item in extraction.evidence if set(item.source_entity_ids) & entity_ids)
     common = dict(source_observation_ids=observation_ids, source_contour_ids=contour_ids, evidence_ids=evidence_ids)
     observed_thickness = observe_side_thickness(extraction, front, top, overall_width)
+    hole_rows = side_hole_rows(extraction, side)
 
     def proposal(scenario: str, role: str, label: str, quantity: int | None, length: float | None, derivation: str, basis: float) -> ComponentProposal:
         assumptions = ["Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."]
@@ -142,10 +172,14 @@ def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[Decom
         if role == "side_panel" and observed_thickness is not None:
             thickness_fields = dict(observed_thickness_mm=observed_thickness[0], thickness_source_entity_ids=observed_thickness[1])
             assumptions.append(f"Espesor observado de {observed_thickness[0]:g} mm por líneas verticales interiores simétricas en alzado y repetidas en planta; es una observación de los laterales que una persona debe confirmar, no se aplica a otras piezas.")
+        evidence_fields: dict = {}
+        if role == "side_panel" and hole_rows:
+            evidence_fields = dict(evidence_ids=tuple(dict.fromkeys(common["evidence_ids"] + hole_rows)))
+            assumptions.append(f"{len(hole_rows)} fila(s) de taladros dibujadas dentro del alzado lateral: compatibles con un lateral taladrado; no confirman la pieza ni el sistema de taladro.")
         if quantity is None:
             assumptions.append("Cantidad de baldas interiores no respaldada por líneas horizontales suficientes.")
         source_entity_ids = tuple(matched_lines) if role == "shelf" else tuple(sorted(entity_ids))
-        return ComponentProposal(id=f"proposal-{scenario}-{role}", label=label, role=role, quantity=quantity, length_mm=length, width_mm=depth, thickness_mm=None, length_derivation=derivation, length_basis_mm=basis, assumptions=tuple(assumptions), source_entity_ids=source_entity_ids, **thickness_fields, **common)
+        return ComponentProposal(id=f"proposal-{scenario}-{role}", label=label, role=role, quantity=quantity, length_mm=length, width_mm=depth, thickness_mm=None, length_derivation=derivation, length_basis_mm=basis, assumptions=tuple(assumptions), source_entity_ids=source_entity_ids, **thickness_fields, **{**common, **evidence_fields})
 
     between_key = "between-sides"
     cap_key = "cap-sides"

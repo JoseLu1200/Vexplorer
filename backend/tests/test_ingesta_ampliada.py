@@ -211,17 +211,24 @@ def test_hatch_boundaries_are_entities_with_pattern_evidence(tmp_path: Path) -> 
     assert extraction.status == "needs_review"
 
 
-def test_paperspace_content_is_reported(tmp_path: Path) -> None:
+def test_paperspace_title_block_is_informative_but_dimensions_need_review(tmp_path: Path) -> None:
     document = _new_mm()
     document.modelspace().add_line((0, 0), (10, 0))
-    document.layout("Layout1").add_text("COTA 600")
+    layout = document.layout("Layout1")
+    layout.add_text("CAJETIN")
+    layout.add_lwpolyline([(0, 0), (420, 0), (420, 297), (0, 297)], close=True)
     path = tmp_path / "paperspace.dxf"
     document.saveas(path)
 
-    extraction = extract_drawing(path)
+    title_only = extract_drawing(path)
+    assert "paperspace_annotations:Layout1:2" in title_only.warnings
+    assert title_only.status == "ready"
 
-    assert "paperspace_content:Layout1:1" in extraction.warnings
-    assert extraction.status == "needs_review"
+    layout.add_linear_dim(base=(0, 20), p1=(0, 0), p2=(100, 0)).render()
+    document.saveas(path)
+    with_dimension = extract_drawing(path)
+    assert "paperspace_dimensions:Layout1:1" in with_dimension.warnings
+    assert with_dimension.status == "needs_review"
 
 
 def test_structurally_damaged_dxf_is_recovered_with_a_warning(tmp_path: Path) -> None:
