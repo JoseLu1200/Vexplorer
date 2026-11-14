@@ -9,25 +9,25 @@ Matching rules (documented because they are a choice):
 * Identity match: every known value of the predicted component is assigned to
   a distinct reference dimension slot (independent of field labels: an
   orthographic rectangle shows any two of a part's three dimensions) and every
-  value that lands on an *identifiable* slot must be within
+  value that lands on a slot not annotated unidentifiable must be within
   ``match_tolerance_mm``.  A value that lands on an unidentifiable slot does not
   block the match; it is scored afterwards as an invention.  At least two known
   values must fit.
 * ``matched_partial`` is published apart: pairs among the leftovers where two or
   more values fit but an identifiable one does not.  It never enters precision,
   recall, coverage or MAE.
-* Reference components with identical dimensions form one *class*.  Predicted
-  components go to classes greedily by (fit, content signature, class
-  dimensions); keys are never used, so equal answers score equally under any
-  naming.
-* Inside a class the assignment of predicted to reference components is solved
-  exactly (Hungarian algorithm, any class size) for the one most favourable to
-  the prediction: maximum number of valid matches, then fewest inventions, then
-  fewest resolvable fields left unknown, then least dimension error, then most
-  exact quantities.  That headline is optimistic inside ambiguous classes, so the
-  least favourable assignment is solved too and published as
-  ``abstention.lower_bound``; ``identity.ambiguous_class_pairs`` counts the pairs
-  resolved inside classes of more than one member.
+* The whole assignment of predicted to reference components is one exact
+  global problem (Hungarian algorithm, any size), ordered by content and never
+  by key, so equal answers score equally under any naming.  It takes the reading
+  most favourable to the prediction: maximum number of valid matches, then
+  fewest inventions, fewest resolvable fields left unknown, least dimension
+  error, most exact quantities.  Reference components with identical dimensions
+  form a *class*; inside one the favourable reading is optimistic, so the
+  least favourable assignment with the same number of matches is solved too and
+  published as ``abstention.lower_bound``; ``identity.ambiguous_class_pairs``
+  counts the pairs resolved inside classes of more than one member.
+* A field annotated ``identifiable=None`` filters the match like an identifiable
+  one (only ``identifiable=False`` fields are free).
 * Failed observations contribute their reference types and resolvable fields to
   the coverage/recall denominators (no prediction = nothing found); a labelled
   ``*_conditioned_on_ok`` view excludes them.  ``not_evaluated`` and
@@ -191,7 +191,7 @@ def _fit_strict(
             abs(value - reference.dimensions[slot].value)  # type: ignore[operator]
             for (_, value), slot in zip(known, chosen, strict=True)
         ]
-        if any(d > tolerance and reference.dimensions[slot].identifiable is True for d, slot in zip(diffs, chosen, strict=True)):
+        if any(d > tolerance and reference.dimensions[slot].identifiable is not False for d, slot in zip(diffs, chosen, strict=True)):
             continue
         fits = sum(d <= tolerance for d in diffs)
         if fits < MIN_KNOWN_DIMENSIONS:
@@ -202,17 +202,26 @@ def _fit_strict(
     return None if best is None else ((best[0][0], best[0][1]), best[1])
 
 
-# Integer weights keep the lexicographic order exact inside a linear assignment.
-_W_INVENTED = 10**18
-_W_LEFT_UNKNOWN = 10**12
-_UNMATCHED = 10**30
-_FORBIDDEN = 10**33
-_REVERSE = 10**21
+# Integer weights keep the lexicographic order exact inside a linear assignment:
+# invented > resolvable-left-unknown > dimension error > inexact quantity > total fit distance.
+_W_INVENTED = 10**28
+_W_LEFT_UNKNOWN = 10**22
+_W_ERROR = 10**12
+_W_INEXACT = 10**11
+_UNMATCHED = 10**40
+_FORBIDDEN = 10**43
+_REVERSE = 10**36
 
 
-def _scalar_cost(cost: tuple[Any, ...]) -> int:
+def _scalar_cost(cost: tuple[Any, ...], fit_distance: float) -> int:
     invented, left_unknown, error, minus_exact = cost
-    return invented * _W_INVENTED + left_unknown * _W_LEFT_UNKNOWN + round(error * 1000) * 2 + (1 + minus_exact)
+    return (
+        invented * _W_INVENTED
+        + left_unknown * _W_LEFT_UNKNOWN
+        + round(error * 1000) * _W_ERROR
+        + (1 + minus_exact) * _W_INEXACT
+        + round(fit_distance * 1000)
+    )
 
 
 def _hungarian(cost: list[list[int]]) -> list[int]:
@@ -267,55 +276,35 @@ def match_components(
     *,
     pessimistic: bool = False,
 ) -> list[tuple[Component, RefComponent, dict[str, str]]]:
-    """One-to-one identity matches.  ``pessimistic`` picks the least favourable assignment in a class."""
+    """One-to-one identity matches from one global exact assignment.
 
-    classes: dict[tuple[float, ...], list[RefComponent]] = {}
-    for ref in reference:
-        classes.setdefault(_ref_dims(ref), []).append(ref)
-    candidates = []
-    for pred in predicted:
-        for dims, members in classes.items():
-            seen: set[tuple[Any, ...]] = set()
-            best = None
-            for member in members:
-                signature = _ref_signature(member)
-                if signature in seen:
-                    continue
-                seen.add(signature)
-                fit = _fit_strict(pred, member, match_tolerance_mm)
-                if fit is not None and (best is None or fit[0] < best[0]):
-                    best = fit
-            if best is not None:
-                candidates.append((best[0], _signature(pred), dims, pred))
-    candidates.sort(key=lambda item: item[:3])
-    capacity = {dims: len(members) for dims, members in classes.items()}
-    taken: dict[tuple[float, ...], list[Component]] = {}
-    used: set[int] = set()
-    for _, _, dims, pred in candidates:
-        if id(pred) in used or capacity[dims] == 0:
-            continue
-        used.add(id(pred))
-        capacity[dims] -= 1
-        taken.setdefault(dims, []).append(pred)
+    The objective is lexicographic: most valid matches first, then (favourable
+    reading) fewest inventions, fewest resolvable fields left unknown, least
+    dimension error, most exact quantities.  ``pessimistic`` keeps the maximum
+    number of matches but takes the least favourable reading of the rest.
+    Rows and columns are ordered by content, never by key.
+    """
 
+    rows = sorted(predicted, key=_signature)
+    columns = sorted(reference, key=_ref_signature)
+    if not rows or not columns:
+        return []
+    fits = [[_fit_strict(p, r, match_tolerance_mm) for r in columns] for p in rows]
+    matrix = []
+    for row, p in zip(fits, rows, strict=True):
+        costs = []
+        for fit, r in zip(row, columns, strict=True):
+            if fit is None:
+                costs.append(_FORBIDDEN)
+                continue
+            scalar = _scalar_cost(_pair_cost(p, r, fit[1]), fit[0][1])
+            costs.append(_REVERSE - scalar if pessimistic else scalar)
+        matrix.append(costs + [_UNMATCHED] * len(rows))
     pairs: list[tuple[Component, RefComponent, dict[str, str]]] = []
-    for dims in sorted(taken):
-        members = sorted(classes[dims], key=_ref_signature)
-        chosen = sorted(taken[dims], key=_signature)
-        fits = [[_fit_strict(p, r, match_tolerance_mm) for r in members] for p in chosen]
-        matrix = []
-        for row, p in zip(fits, chosen, strict=True):
-            costs = []
-            for fit, r in zip(row, members, strict=True):
-                if fit is None:
-                    costs.append(_FORBIDDEN)
-                    continue
-                scalar = _scalar_cost(_pair_cost(p, r, fit[1]))
-                costs.append(_REVERSE - scalar if pessimistic else scalar)
-            matrix.append(costs + [_UNMATCHED] * len(chosen))
-        for row_index, column in enumerate(_hungarian(matrix)):
-            if column < len(members) and fits[row_index][column] is not None:
-                pairs.append((chosen[row_index], members[column], fits[row_index][column][1]))  # type: ignore[index]
+    for row_index, column in enumerate(_hungarian(matrix)):
+        fit = fits[row_index][column] if column < len(columns) else None
+        if fit is not None:
+            pairs.append((rows[row_index], columns[column], fit[1]))
     return pairs
 
 

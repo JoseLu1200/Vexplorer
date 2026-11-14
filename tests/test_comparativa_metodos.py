@@ -888,3 +888,34 @@ def test_markdown_shows_partial_matches_and_the_abstention_lower_bound(tmp_path:
     execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
     text = render_markdown(score_run(reader, tmp_path / "run"))
     assert "parciales (fuera de precision/recall)" in text and "cota inferior" in text
+
+
+# ------------------------------------- final fixes: global assignment, unannotated fields filter
+
+def test_global_assignment_finds_the_second_valid_class() -> None:
+    from evaluation.comparativa.model import ReferenceCase
+
+    def comp(key: str, thickness: float, identifiable: bool) -> RefComponent:
+        return RefComponent(key, {"length": RefField(864, True), "width": RefField(300, True),
+                                  "thickness": RefField(thickness, identifiable)}, RefField(1, True))
+
+    # A and E hide their thickness; B does not.  Both predictions carry an invented thickness,
+    # which can only be placed on A and on E: two matches exist and both must be found.
+    reference = ReferenceCase("c1", (comp("A", 18, False), comp("B", 18, True), comp("E", 10, False)))
+    answer = [_c("p1", 864, 300, 90, None), _c("p2", 864, 300, 91, None)]
+    m = _score([_out(answer)], reference)
+    assert m["identity"]["matched"] == 2 and m["identity"]["matched_partial"] == 0
+    assert m["abstention"]["asserted_unidentifiable"] == 2
+    assert m["identity"]["omissions"] == 1  # B stays unmatched
+
+
+def test_unannotated_fields_filter_the_match_like_identifiable_ones() -> None:
+    from evaluation.comparativa.model import ReferenceCase
+
+    reference = ReferenceCase("c1", (RefComponent(
+        "R", {"length": RefField(700, True), "width": RefField(500, True), "thickness": RefField(20, None)},
+        RefField(1, True)),))
+    off = _score([_out([_c("p", 700, 500, 999)])], reference)
+    assert off["identity"]["matched"] == 0 and off["identity"]["matched_partial"] == 1
+    ok = _score([_out([_c("p", 700, 500, 20)])], reference)
+    assert ok["identity"]["matched"] == 1 and ok["abstention"]["asserted_unidentifiable"] == 0
