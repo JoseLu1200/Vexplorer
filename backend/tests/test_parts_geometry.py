@@ -253,3 +253,46 @@ def test_conflicting_dimension_annotation_blocks_bbox_from_becoming_a_part_measu
     assert length.measurement_ids
     assert len(length.evidence_ids) >= 2
     assert "dimension_annotation_conflict:P01:length" in parts.observations[0].warnings
+
+
+def test_mixed_keyed_and_unkeyed_views_preserve_unassociated_geometry(tmp_path: Path) -> None:
+    path = _parts_drawing(tmp_path)
+    document = ezdxf.readfile(path)
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline(
+        [(4000, 0), (4500, 0), (4500, 200), (4000, 200)], close=True,
+    )
+    modelspace.add_text("FRONT").set_placement((4250, 230))
+    modelspace.add_text("QTY 2").set_placement((4250, 260))
+    document.saveas(path)
+
+    extraction = extract_drawing(path, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+
+    assert len(parts.observations) == 2
+    unassociated = next(item for item in parts.observations if item.part_key is None)
+    assert unassociated.association_basis == "unassociated"
+    assert unassociated.status == "ambiguous"
+    assert unassociated.quantity.value is None
+    assert any(warning.startswith("unassociated_quantity_annotation:") for warning in parts.warnings)
+    assert derive_assembly_candidates(parts) == ()
+
+
+def test_duplicate_key_and_role_is_ambiguous_instead_of_overwriting_a_view(tmp_path: Path) -> None:
+    path = _parts_drawing(tmp_path)
+    document = ezdxf.readfile(path)
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline(
+        [(4000, 0), (4800, 0), (4800, 300), (4000, 300)], close=True,
+    )
+    modelspace.add_text("PART P01 FRONT").set_placement((4400, 330))
+    document.saveas(path)
+
+    parts = extract_separated_parts(extract_drawing(path, input_kind="separated_part_views"))
+
+    assert len(parts.observations) == 1
+    observation = parts.observations[0]
+    assert observation.association_basis == "ambiguous"
+    assert observation.status == "ambiguous"
+    assert "duplicate_part_view:P01:FRONT" in observation.warnings
+    assert derive_assembly_candidates(parts) == ()
