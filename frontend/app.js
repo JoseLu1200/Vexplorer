@@ -16,6 +16,7 @@ import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGe
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
 import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, presentLibraryDifferences, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
+import { generalSceneSelection, sceneLoadPlan } from "./core/scene.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -362,20 +363,22 @@ function renderEvidence(component, contourId) {
 
 async function loadScene() {
   const warning = $("#scene-warning"); warning.hidden = true;
-  if (!state.runId || !Number.isInteger(state.snapshot?.result_revision)) { warning.hidden = false; text(warning, "3D no disponible: registra una revisión con medidas completas."); return; }
-  const identity=`${state.runId}:${state.snapshot.result_revision}`, token=sceneFence.issue(identity);
+  if (!state.runId) { warning.hidden = false; text(warning, "3D no disponible: todavía no hay una ejecución cargada."); return; }
+  const plan=sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived});
+  if(plan.kind==="legacy"&&!Number.isInteger(state.snapshot?.result_revision)){warning.hidden=false;text(warning,"3D no disponible: la ejecución actual no tiene una revisión geométrica consultable.");return;}
+  const identity=plan.identity,token=sceneFence.issue(identity),currentIdentity=()=>sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived}).identity;
   try {
-    const raw = await api.getScene(state.runId, state.snapshot.result_revision);
-    if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
+    const raw = plan.fetchLegacy ? await api.getScene(state.runId, state.snapshot.result_revision) : plan.scene;
+    if (!sceneFence.isCurrent(token,currentIdentity())) return;
     state.scene = raw;
-    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token,currentIdentity())) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=generalSceneSelection(state.generalWorkspace,item);if(generalComponent){state.selected={type:"general",id:generalComponent.id};renderEvidence(generalComponent);return;} const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
     const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
-    text($("#scene-context"),sceneContextLabel(state.snapshot,raw));
+    text($("#scene-context"),plan.kind==="general"?"3D de catálogo · piezas separadas · no es un montaje físico":sceneContextLabel(state.snapshot,raw));
     const premises=$("#scene-premises-list"); premises.replaceChildren(); assumptions.forEach((value)=>{const line=document.createElement("p"); line.textContent=value; premises.append(line);}); toggleHidden($("#scene-premises"),!assumptions.length);
-    const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
+    const messages = [...model.warnings, ...(plan.kind!=="general"&&model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
-  } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
+  } catch (error) { if(!sceneFence.isCurrent(token,currentIdentity()))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para el snapshot actual: ${error.message}`); }
 }
 
 const partStateLabel=(value)=>({observed:"Observado",unknown:"Desconocido",conflict:"Conflicto",ambiguous:"Ambigua",complete:"Completa",partial:"Parcial",hypothesis:"Hipótesis",human_confirmed:"Confirmado"})[value]??value;
