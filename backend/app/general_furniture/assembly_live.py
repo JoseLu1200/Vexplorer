@@ -382,7 +382,17 @@ def run_general_assembly_agent(
     started = clock()
     if len(context.extraction.contours) > limits.max_contours:
         raise AssemblyLiveError("assembly_contour_budget_exhausted")
-    if len(context.review.occurrences) > limits.max_instances:
+    confirmed_counts: dict[str, int] = {}
+    provisional_counts: dict[str, int] = {}
+    for occurrence in context.review.occurrences:
+        confirmed_counts[occurrence.component_id] = confirmed_counts.get(occurrence.component_id, 0) + 1
+    for occurrence in context.review.scenario_occurrences:
+        provisional_counts[occurrence.component_id] = provisional_counts.get(occurrence.component_id, 0) + 1
+    effective_instances = sum(
+        confirmed_counts.get(component.id) or provisional_counts.get(component.id, 0)
+        for component in context.review.components
+    )
+    if max(len(context.review.occurrences), effective_instances) > limits.max_instances:
         raise AssemblyLiveError("assembly_instance_budget_exhausted")
     if len(context.visual_pages) > 4 or any(
         len(getattr(page, "content", b"")) > 4 * 1024 * 1024
