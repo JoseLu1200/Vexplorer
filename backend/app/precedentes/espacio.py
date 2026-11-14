@@ -171,8 +171,8 @@ def resumir(huella: HuellaEspacio, incluir_vectores: bool = False) -> ResumenHue
 class AlmacenEspacio:
     """SQLite propio con una huella de referencia por (modelo, dimensiones, versión de frases)."""
 
-    def __init__(self, ruta: Path) -> None:
-        self._ruta = ruta
+    def __init__(self, ruta: Path, timeout_s: float = 5.0) -> None:
+        self._ruta, self._timeout_s = ruta, timeout_s
         ruta.parent.mkdir(parents=True, exist_ok=True)
         with self._conectar() as db:
             db.execute(
@@ -192,7 +192,7 @@ class AlmacenEspacio:
 
     @contextmanager
     def _conectar(self) -> Iterator[sqlite3.Connection]:
-        conexion = sqlite3.connect(self._ruta)
+        conexion = sqlite3.connect(self._ruta, timeout=self._timeout_s)
         try:
             with conexion:
                 yield conexion

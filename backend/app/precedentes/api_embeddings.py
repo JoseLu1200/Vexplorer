@@ -37,6 +37,7 @@ from backend.app.precedentes.mantenimiento import (
     NOMBRE_CANDADO_REGENERACION,
     TTL_ESPACIO_S,
     TTL_REGENERACION_S,
+    CandadoNoDisponible,
     CandadoPersistente,
     IntervaloNoCumplido,
     OperacionEnCurso,
@@ -113,6 +114,7 @@ def crear_router_embeddings(
     intervalo_minimo_verificacion_s: float = INTERVALO_MINIMO_VERIFICACION_S,
     reloj_monotono: Callable[[], float] = time.time,
     registro: RegistroEspacio | None = None,
+    candado_timeout_s: float = 30.0,
 ) -> APIRouter:
     """Las operaciones de pago (regenerar sin simular, verificar, rotar) se serializan con un candado
     persistente con lease en el SQLite de precedentes (409 ``operacion_en_curso``), válido entre
@@ -122,8 +124,11 @@ def crear_router_embeddings(
     ``reloj_monotono`` conserva su nombre por compatibilidad, pero debe ser un reloj de pared
     (``time.time``) porque se compara entre procesos."""
     router = APIRouter(prefix=PREFIJO_API, tags=["precedentes-embeddings"])
-    candado = CandadoPersistente(almacen_espacio.ruta, reloj_monotono)
+    candado = CandadoPersistente(almacen_espacio.ruta, reloj_monotono, candado_timeout_s)
     registro = registro or RegistroEspacio(almacen_espacio, ahora)
+
+    def _candado_no_disponible() -> JSONResponse:
+        return _error(503, "candado_no_disponible", "La base de candados no responde; reintenta en unos segundos.")
 
     def _ocupado() -> JSONResponse:
         return _error(409, "operacion_en_curso", "Ya hay una ejecución de esta operación en curso.")
@@ -197,7 +202,9 @@ def crear_router_embeddings(
                 informe = regenerar_obsoletos(repositorio, proveedor, False, solicitud.limite, ahora, registro, solicitud.incluir_sin_huella, lease.renovar)
         except OperacionEnCurso:
             return _ocupado()
-        return respuesta_ok(informe)
+        except CandadoNoDisponible:
+            return _candado_no_disponible()
+        return respuesta_ok(informe)  # si se perdió el candado a mitad, el informe es parcial (abortado=true)
 
     def _operacion_espacio(operacion: Callable[[], object]) -> object:
         if proveedor is None:
@@ -210,6 +217,8 @@ def crear_router_embeddings(
                     return _fallo_proveedor(exc)
         except OperacionEnCurso:
             return _ocupado()
+        except CandadoNoDisponible:
+            return _candado_no_disponible()
         except IntervaloNoCumplido as exc:
             return _error(429, "verificacion_reciente", f"Espera {exc.espera_s:.0f} s antes de volver a consultar el proveedor.")
 

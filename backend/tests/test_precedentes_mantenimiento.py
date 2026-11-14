@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -15,16 +16,17 @@ from backend.app.main import create_app
 from backend.app.precedentes import mantenimiento
 from backend.app.precedentes.api_embeddings import crear_router_embeddings
 from backend.app.precedentes.comun import PREFIJO_API
-from backend.app.precedentes.espacio import AlmacenEspacio
+from backend.app.precedentes.espacio import AlmacenEspacio, calcular_huella
 from backend.app.precedentes.mantenimiento import (
     VARIABLE_REGENERACION_AUTO,
+    CandadoNoDisponible,
     CandadoPerdido,
     CandadoPersistente,
     IntervaloNoCumplido,
     OperacionEnCurso,
     RegistroEspacio,
 )
-from backend.app.precedentes.regeneracion import estado_vector
+from backend.app.precedentes.regeneracion import estado_vector, regenerar_obsoletos
 from backend.app.semantic.embeddings import EmbeddingResult
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -219,7 +221,7 @@ def _entorno(tmp_path: Path, monkeypatch, proveedor: ProveedorFalso | None = Non
     proveedor = proveedor or ProveedorFalso()
     aplicacion = create_app(data_dir=tmp_path, embedding_provider=proveedor)
     router = FastAPI()
-    router.include_router(crear_router_embeddings(aplicacion.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ, intervalo_minimo_verificacion_s=0))
+    router.include_router(crear_router_embeddings(aplicacion.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), intervalo_minimo_verificacion_s=0))
     return TestClient(aplicacion), TestClient(router), aplicacion.state.repository, proveedor
 
 
@@ -307,10 +309,8 @@ def test_reemplazo_de_revision_marca_el_embedding_anterior(tmp_path: Path, monke
     primero = _guardar(principal, run_id, revision=1)["embedding"]["cache_key"]
     segundo = _guardar(principal, run_id, revision=2)["embedding"]["cache_key"]
     reemplazados = router.get(MANTENIMIENTO).json()["data"]["reemplazados"]
-    if primero != segundo:
-        assert [(r["cache_key"], r["library_item_id"], r["motivo"]) for r in reemplazados] == [(primero, f"library-{run_id}", "revision_reemplazada")]
-    else:
-        assert reemplazados == []
+    assert primero != segundo
+    assert [(r["cache_key"], r["library_item_id"], r["motivo"]) for r in reemplazados] == [(primero, f"library-{run_id}", "revision_reemplazada")]
     _guardar(principal, run_id, revision=2)  # misma clave: no se marca nada nuevo
     assert len(router.get(MANTENIMIENTO).json()["data"]["reemplazados"]) == len(reemplazados)
 
@@ -329,7 +329,7 @@ def _preparar_cache_retirada(principal, router, proveedor, monkeypatch):
 def test_regeneracion_tras_guardar_desactivada_por_defecto_no_llama_al_proveedor(tmp_path: Path, monkeypatch) -> None:
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda tarea: tarea())
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"]["status"] == "cache" and llamadas == 0
     assert len(_obsoletos(router)) == 2  # A y B siguen apuntando a la cache retirada
@@ -339,7 +339,7 @@ def test_regeneracion_tras_guardar_activada_regenera_solo_ese_elemento(tmp_path:
     principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda tarea: tarea())
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"]["status"] == "cache"
     assert llamadas == 1
@@ -352,7 +352,7 @@ def test_regeneracion_tras_guardar_se_salta_si_el_candado_esta_ocupado(tmp_path:
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda tarea: tarea())
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
     with CandadoPersistente(tmp_path / "precedentes_espacio.sqlite3").ocupar("regeneracion", 60):
         guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"] is not None and llamadas == 0
@@ -384,7 +384,7 @@ def test_guardado_en_modo_offline_no_toca_el_proveedor(tmp_path: Path, monkeypat
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda tarea: tarea())
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b, modo="offline"))
     assert guardado["embedding"] is None and llamadas == 0
 
@@ -398,3 +398,210 @@ def test_un_fallo_del_enganche_no_cambia_la_respuesta_201(tmp_path: Path, monkey
 
     monkeypatch.setattr(RegistroEspacio, "registrar_guardado", roto)
     assert _guardar(principal, run_id)["run_id"] == run_id
+
+
+# ---------------------------------------------------------------- correcciones de la revision independiente
+
+
+def test_auto_con_revision_antigua_no_reescribe_la_revision_guardada(tmp_path: Path, monkeypatch) -> None:
+    principal, _, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    run_id = _run_revisado(principal, "a")  # la revision vigente del run es la 2
+    monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
+    assert guardado["result_revision"] == 1
+    assert llamadas == 1  # solo el embedding del propio guardado: sin llamada de pago extra
+    assert repositorio.get_library_item(run_id).result_revision == 1
+    registro = RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"))
+    assert registro.revision_vigente(f"library-{run_id}") == 1
+
+
+def test_auto_con_revision_antigua_y_huella_retirada_regenera_sin_cambiar_la_revision(tmp_path: Path, monkeypatch) -> None:
+    principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    router.post(VERIFICAR)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id, revision=1)  # sellado con H1
+    proveedor.deriva = 0.5
+    assert router.post(ROTAR).status_code == 200
+    monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
+    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
+    assert guardado["embedding"]["status"] == "cache" and llamadas == 1
+    elemento = repositorio.get_library_item(run_id)
+    assert elemento.result_revision == 1 and elemento.embedding.cache_key == guardado["embedding"]["cache_key"]
+    registro = RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"))
+    assert registro.revision_vigente(f"library-{run_id}") == 1
+    assert registro.sello(elemento.embedding.cache_key) is not None
+
+
+def test_regeneracion_manual_mantiene_sincronizado_el_registro(tmp_path: Path, monkeypatch) -> None:
+    principal, router, _, _ = _entorno(tmp_path, monkeypatch)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id, revision=1, modo="offline")
+    router.post(REGENERAR, json={"simular": False})  # revision_obsoleta + embedding_ausente: pasa a la 2
+    registro = RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"))
+    assert registro.revision_vigente(f"library-{run_id}") == 2
+
+
+def test_salto_de_reloj_hacia_atras_no_deja_el_candado_colgado(tmp_path: Path) -> None:
+    reloj = RelojFalso(1000.0)
+    ruta = tmp_path / "espacio.sqlite3"
+    a, b = CandadoPersistente(ruta, reloj), CandadoPersistente(ruta, reloj)
+    caido = a.ocupar("espacio", 60, intervalo_minimo_s=60)
+    caido.__enter__()
+    reloj.t = 100.0  # el reloj de pared retrocede 900 s: expira_en - ahora (960) > ttl (60)
+    assert b.estado("espacio").ocupado is False
+    with b.ocupar("espacio", 60, intervalo_minimo_s=60):  # y el intervalo (ultima en el futuro) tampoco bloquea
+        pass
+
+
+def test_cola_de_fondo_acotada_deduplicada_y_cancelable() -> None:
+    mantenimiento.apagar_mantenimiento()
+    dentro, soltar = threading.Event(), threading.Event()
+    ejecutadas: list[str] = []
+    mantenimiento._encolar("bloqueante", lambda: (dentro.set(), soltar.wait(10)))
+    assert dentro.wait(5)
+    for clave in ("x", "x", "x", "y"):
+        mantenimiento._encolar(clave, lambda clave=clave: ejecutadas.append(clave))
+    assert mantenimiento.pendientes() == 2  # "x" deduplicada
+    for numero in range(100):
+        mantenimiento._encolar(f"k{numero}", lambda: None)
+    assert mantenimiento.pendientes() <= mantenimiento.COLA_MAXIMA
+    inicio = time.time()
+    mantenimiento.apagar_mantenimiento()  # cancela lo pendiente y no espera a la tarea en curso
+    assert time.time() - inicio < 2
+    soltar.set()
+    time.sleep(0.3)
+    assert ejecutadas == []
+    assert mantenimiento.pendientes() == 0
+
+
+def test_enganche_con_la_bd_bloqueada_no_retrasa_ni_rompe_el_201(tmp_path: Path, monkeypatch) -> None:
+    principal, _, _, _ = _entorno(tmp_path, monkeypatch)
+    run_id = _run_revisado(principal, "a")
+    monkeypatch.setattr(mantenimiento, "TIMEOUT_ENGANCHE_S", 0.2)
+    _guardar(principal, run_id, revision=1)  # crea el esquema
+    bloqueo = sqlite3.connect(tmp_path / "precedentes_espacio.sqlite3", isolation_level=None)
+    bloqueo.execute("BEGIN EXCLUSIVE")
+    try:
+        inicio = time.time()
+        guardado = _guardar(principal, run_id, revision=2)
+        assert time.time() - inicio < 5
+        assert guardado["result_revision"] == 2
+    finally:
+        bloqueo.execute("ROLLBACK")
+        bloqueo.close()
+
+
+def test_adquisicion_con_bd_bloqueada_es_una_respuesta_controlada(tmp_path: Path) -> None:
+    ruta = tmp_path / "precedentes_espacio.sqlite3"
+    candado = CandadoPersistente(ruta, timeout_s=0.2)
+    almacen = AlmacenEspacio(ruta)
+    app = FastAPI()
+    app.include_router(crear_router_embeddings(SinBiblioteca(), ProveedorFalso(), almacen, ahora=lambda: RELOJ, candado_timeout_s=0.2))
+    bloqueo = sqlite3.connect(ruta, isolation_level=None)
+    bloqueo.execute("BEGIN EXCLUSIVE")
+    try:
+        with pytest.raises(CandadoNoDisponible), candado.ocupar("espacio", 60):
+            pass
+        respuesta = TestClient(app).post(VERIFICAR)
+        assert respuesta.status_code == 503 and respuesta.json()["error"]["code"] == "candado_no_disponible"
+    finally:
+        bloqueo.execute("ROLLBACK")
+        bloqueo.close()
+
+
+def test_fallo_al_liberar_no_convierte_una_operacion_terminada_en_error(tmp_path: Path, monkeypatch) -> None:
+    candado = CandadoPersistente(tmp_path / "espacio.sqlite3")
+    original = mantenimiento._conexion
+    llamadas = [0]
+
+    def inestable(ruta, timeout_s=30.0):
+        llamadas[0] += 1
+        if llamadas[0] == 2:  # la liberacion
+            raise sqlite3.OperationalError("database is locked")
+        return original(ruta, timeout_s)
+
+    monkeypatch.setattr(mantenimiento, "_conexion", inestable)
+    with candado.ocupar("regeneracion", 60):
+        pass  # no lanza: el lease expirara solo
+
+
+def _dos_elementos_obsoletos(principal) -> list[str]:
+    ids = [_run_revisado(principal, nombre) for nombre in ("a", "b")]
+    for run_id in ids:
+        _guardar(principal, run_id, revision=2, modo="offline")
+    return ids
+
+
+def test_perdida_del_candado_devuelve_informe_parcial(tmp_path: Path, monkeypatch) -> None:
+    principal, _, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    ids = _dos_elementos_obsoletos(principal)
+    registro = RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"))
+    llamadas = [0]
+
+    def latido() -> None:
+        llamadas[0] += 1
+        if llamadas[0] == 4:  # 1: elemento 1; 2 y 3: fencing del elemento 1; 4: elemento 2
+            raise CandadoPerdido("regeneracion")
+
+    informe = regenerar_obsoletos(repositorio, proveedor, False, 10, contexto=registro, latido=latido)
+    assert informe.abortado is True
+    assert sorted(item.estado for item in informe.elementos) == ["omitido", "regenerado"]
+    assert [item.motivo_omision for item in informe.elementos if item.estado == "omitido"] == ["candado_perdido"]
+    assert sum(repositorio.get_library_item(run_id).embedding is not None for run_id in ids) == 1
+
+
+def test_fencing_no_guarda_el_elemento_si_el_candado_se_pierde_tras_el_embed(tmp_path: Path, monkeypatch) -> None:
+    principal, _, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    ids = _dos_elementos_obsoletos(principal)
+    llamadas = [0]
+
+    def latido() -> None:
+        llamadas[0] += 1
+        if llamadas[0] == 3:  # justo despues del embed, antes de guardar el elemento
+            raise CandadoPerdido("regeneracion")
+
+    informe = regenerar_obsoletos(repositorio, proveedor, False, 1, contexto=RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3")), latido=latido)
+    assert informe.abortado is True
+    assert all(repositorio.get_library_item(run_id).embedding is None and repositorio.get_library_item(run_id).result_revision == 2 for run_id in ids)
+
+
+def test_no_se_sella_si_la_referencia_cambia_entre_el_embed_y_el_sello(tmp_path: Path, monkeypatch) -> None:
+    principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    router.post(VERIFICAR)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id)
+    proveedor.deriva = 0.5
+    router.post(ROTAR)
+    proveedor.deriva = 1.0
+    otra = calcular_huella(proveedor)
+    proveedor.deriva = 0.5
+    almacen = AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3")
+    embed = proveedor.embed
+    primera = [True]
+
+    def embed_con_rotacion(texto: str) -> EmbeddingResult:
+        if primera[0]:
+            primera[0] = False
+            almacen.rotar(otra, RELOJ)  # otro proceso rota la referencia mientras se embebe
+        return embed(texto)
+
+    monkeypatch.setattr(proveedor, "embed", embed_con_rotacion)
+    router.post(REGENERAR, json={"simular": False})
+    clave = repositorio.get_library_item(run_id).embedding.cache_key
+    assert RegistroEspacio(almacen).sello(clave) is None  # desconocida, no sellada con una huella equivocada
+
+
+def test_version_de_frases_distinta_es_huella_desconocida_no_retirada(tmp_path: Path, monkeypatch) -> None:
+    principal, router, repositorio, _ = _entorno(tmp_path, monkeypatch)
+    router.post(VERIFICAR)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id)
+    clave = repositorio.get_library_item(run_id).embedding.cache_key
+    assert RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3")).sello(clave).version_frases == "control-v1"
+    with sqlite3.connect(tmp_path / "precedentes_espacio.sqlite3") as db:
+        db.execute("UPDATE sellos_embedding SET version_frases='control-v0'")
+    assert _obsoletos(router) == []
+    [elemento] = _obsoletos(router, incluir_sin_huella=True)
+    assert elemento["motivos"] == ["huella_desconocida"]

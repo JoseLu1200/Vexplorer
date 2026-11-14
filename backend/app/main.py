@@ -61,7 +61,7 @@ from backend.app.servicios.table_explanations import explain_table_result
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
-from backend.app.precedentes.mantenimiento import tras_guardar_biblioteca
+from backend.app.precedentes.mantenimiento import apagar_mantenimiento, tras_guardar_biblioteca
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
@@ -330,6 +330,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     async def lifespan(_: FastAPI):
         yield
         job_executor.shutdown()
+        apagar_mantenimiento()
 
     app = FastAPI(title="Vexplorer", version="0.2.0", lifespan=lifespan)
     app.root_path = root_path
