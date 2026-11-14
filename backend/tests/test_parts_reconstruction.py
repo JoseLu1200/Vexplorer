@@ -237,3 +237,53 @@ def test_human_confirmed_thickness_recomputes_candidate_without_mutating_observa
     scene = reconstruct_parts_scene(extraction, parts, completed)
     assert scene.state == "ready"
     assert len(scene.objects) == 6
+
+
+def test_cap_sides_review_exposes_complete_formula_operands_and_reconstructs(tmp_path: Path) -> None:
+    extraction, parts, candidate, repository = _run(tmp_path)
+    reviewed = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=1, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id, notes="Base para control CAP",
+        ),
+    )
+    cap_candidate = candidate.model_copy(update={"id": "assembly-cap-sides-audit", "layout": "cap_sides"})
+    cap_pieces = tuple(
+        piece.model_copy(update={
+            "length_mm": 1164.0 if piece.role == "side_panel" else 900.0 if piece.role in {"top_panel", "base_panel"} else 864.0,
+            "field_states": {**piece.field_states, "length_mm": "confirmed"},
+        })
+        for piece in reviewed.pieces
+    )
+    assert reviewed.review is not None
+    cap_result = reviewed.model_copy(update={
+        "state": "completed", "pieces": cap_pieces,
+        "assembly_candidates": (cap_candidate,),
+        "selected_assembly_candidate_id": cap_candidate.id,
+        "review": reviewed.review.model_copy(update={"selected_assembly_candidate_id": cap_candidate.id}),
+    })
+
+    effective = recompute_reviewed_assembly_candidate(
+        cap_candidate, parts, cap_pieces, result_revision=cap_result.result_revision,
+    )
+    horizontal = next(item for item in effective.constraints if item.kind == "role_compatibility")
+
+    assert horizontal.status == "pass"
+    assert horizontal.operation == "compatibility"
+    assert horizontal.result_mm == 864.0
+    assert len(horizontal.operand_refs) == 5
+    assert sum(ref.endswith(".thickness_mm") for ref in horizontal.operand_refs) == 2
+    assert {item.axis: item.value_mm for item in effective.derived_dimensions} == {
+        "width": 900.0, "height": 1200.0, "depth": 300.0,
+    }
+
+    scene = reconstruct_parts_scene(extraction, parts, cap_result)
+    assert scene.state == "ready"
+    assert len(scene.objects) == 6
+    sides = [item for item in scene.objects if item.role == "side_panel"]
+    assert all((item.position_mm.y, item.dimensions_mm.y) == (18.0, 1164.0) for item in sides)
+    top = next(item for item in scene.objects if item.role == "top_panel")
+    shelf = next(item for item in scene.objects if item.role == "shelf")
+    assert top.dimensions_mm.x == 900.0
+    assert shelf.dimensions_mm.x == 864.0
