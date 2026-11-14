@@ -1,0 +1,14 @@
+{
+  "source": "Valores públicos propuestos por Pablo Loureiro en 7bb29ae; pendientes de confirmación expresa del taller",
+  "confirmed_by_workshop": false,
+  "tolerance_mm": 0.1,
+  "drilling_systems": [
+    {
+      "id": "system32",
+      "label": "Sistema 32 mm",
+      "pitch_mm": 32.0,
+      "hole_diameter_mm": 5.0,
+      "setback_mm": 37.0
+    }
+  ]
+}
