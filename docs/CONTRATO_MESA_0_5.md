@@ -110,6 +110,8 @@ El renderer consume únicamente el `DrawingExtraction` ya autorizado: no abre el
 
 La imagen no es fuente de medidas: cualquier número, cantidad, binding o componente debe seguir respaldado por medidas y referencias vectoriales del ledger. Las trazas solo conservan tool name, view ID, SHA y número de marcas; nunca bytes, base64, prompt o argumentos crudos.
 
+Acuerdo explícito A/B 2026-11-14: A y B aceptan `VisualizeTableViewArgs`, el gate mesa-only opt-in, el renderer exclusivo desde ledger/`CircularGeometry`, los presupuestos anteriores y la obligación de visualizar al menos una vista antes de proponer cuando el modo está ON. No cambia las firmas geométricas de A.
+
 ## Coste
 
 El apoyo de costes implementa exclusivamente:
