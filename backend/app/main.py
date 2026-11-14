@@ -35,7 +35,7 @@ from backend.app.agente.replay import (
 )
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
+from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, Result, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -1837,10 +1837,53 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
-    def create_run(request: RunRequest):
+    def create_run(
+        request: RunRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
         if environment == "production":
             return _error(409, "use_jobs_endpoint", "Producción requiere el endpoint durable de trabajos.")
-        return _execute_run(request)
+        actor = getattr(http_request.state, "actor", None)
+        request_hash = ""
+        conflict_message = "Idempotency-Key ya utilizada con parámetros distintos."
+        if idempotency_key is not None:
+            if len(idempotency_key) > 128 or not idempotency_key.strip():
+                return _error(422, "invalid_idempotency_key", "Idempotency-Key inválida.")
+            idempotency_key = idempotency_key.strip()
+            request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+            try:
+                existing_run_id = repository.get_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                raise
+            if existing_run_id is not None:
+                run = repository.get_run(existing_run_id)
+                result = repository.get_result(existing_run_id, 1)
+                return _ok(
+                    {"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json")},
+                    201,
+                )
+        response = _execute_run(request, actor=actor)
+        if idempotency_key is not None and response.status_code == 201:
+            run_id = json.loads(response.body)["data"]["run"]["id"]
+            try:
+                repository.save_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                    run_id=run_id,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                raise
+        return response
 
     class PublicJobAdmissionDenied(ValueError):
         def __init__(self, decision) -> None:
@@ -2351,6 +2394,73 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
 
+    def _refresh_library_item_for_result(result: Result) -> None:
+        """Keep an existing library item synchronized with a newly reviewed revision."""
+        try:
+            existing = repository.get_library_item(result.run_id)
+        except KeyError:
+            return
+        if existing.result_revision >= result.result_revision:
+            return
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError:
+            return
+        fingerprint = descriptor_fingerprint(descriptor)
+        new_embedding: EmbeddingMetadata | None = None
+        if existing.embedding is not None and semantic_provider is not None:
+            model = semantic_provider.model
+            dimensions = semantic_provider.dimensions
+            text = semantic_text(descriptor)
+            cache_key = embedding_cache_key(descriptor.descriptor_version, model, dimensions, text)
+            try:
+                try:
+                    repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version)
+                    status: Literal["generated", "cache"] = "cache"
+                except KeyError:
+                    generated = semantic_provider.embed(text)
+                    if generated.model != model or generated.dimensions != dimensions:
+                        raise EmbeddingProviderError("embedding_space_incompatible")
+                    repository.save_embedding(
+                        cache_key,
+                        generated.model,
+                        generated.dimensions,
+                        descriptor.descriptor_version,
+                        generated.vector,
+                    )
+                    status = "generated"
+                new_embedding = EmbeddingMetadata(
+                    model=model,
+                    dimensions=dimensions,
+                    descriptor_version=descriptor.descriptor_version,
+                    cache_key=cache_key,
+                    status=status,
+                )
+            except (ValueError, EmbeddingProviderError):
+                # Never abort a committed human review if semantic refresh fails.
+                new_embedding = None
+        updated_item = LibraryItem(
+            id=existing.id,
+            run_id=result.run_id,
+            result_revision=result.result_revision,
+            label=existing.label,
+            descriptor=descriptor,
+            descriptor_fingerprint=fingerprint,
+            created_at=existing.created_at,
+            embedding=new_embedding,
+            publication=existing.publication,
+        )
+        repository.save_library_item(updated_item)
+        repository.append_event(
+            result.run_id,
+            "library_item_refreshed",
+            {
+                "library_item_id": existing.id,
+                "result_revision": result.result_revision,
+                "embedding_refreshed": new_embedding is not None,
+            },
+        )
+
     @app.post("/api/v1/runs/{run_id}/reviews")
     def review_run(
         run_id: str,
@@ -2367,12 +2477,13 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 idempotency_key=idempotency_key,
                 actor=http_request.state.actor,
             )
-            return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         except ValueError as exc:
             code = str(exc)
             return _error(409 if code in {"stale_result_revision", "idempotency_key_conflict"} else 422, code, "La revisión no es aplicable.")
+        _refresh_library_item_for_result(result)
+        return _ok(result.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/comparables")
     def comparables(run_id: str, limit: int = Query(default=3, ge=1, le=3)):
