@@ -14,7 +14,7 @@ El usuario autorizó explícitamente esta identidad, la creación de este archiv
 
 ## Estado
 
-Implementación del piloto, documentación y verificación completadas; entrega conservada en la rama local `feat/semantic-explorer`. El usuario amplió el alcance a los modelos y arquitecturas ensayados con mayor aporte por coste, delegando la selección. Remoto consultado: main `dbd1bb6`, integración `83df72d`. No se ha desplegado, fusionado ni publicado este incremento en remoto.
+Implementación del piloto, documentación y verificación completadas; entrega integrada en `main` tras autorización expresa del usuario. El usuario amplió el alcance a los modelos y arquitecturas ensayados con mayor aporte por coste, delegando la selección. Remoto consultado: main `dbd1bb6`, integración `83df72d`. La integración a `main` se registra al final; no se ha desplegado el servicio.
 
 Se leyeron los 112 Markdown versionados de la base, incluidos transcripción, contratos, planes y equipo; se contrastaron 38 ramas locales y ocho refs remotas. El [inventario con hashes](../docs/semantic-lab/INVENTARIO_DOCUMENTAL.md) fija qué se investigó. [Diseño y trazabilidad](../docs/semantic-lab/INTEGRACION_EXPLORADOR.md), [operación](../docs/semantic-lab/OPERACION_EXPLORADOR.md).
 
@@ -41,3 +41,9 @@ Datos locales fuera de Git: ocho espacios de 117 planos (EG2 texto/imagen/mixto 
 Artefactos de QA: `.runtime/semantic-explorer-qa/` contiene logs, capturas escritorio/móvil, exportación y SQLite local. Los corpus portables y clasificadores numéricos están en `D:/Vexplorer-semantic-lab/explorer-portable-20261114/`; no se incluyen planos, pesos ni bases en Git.
 
 Límites observados: el primer intento de nueva inferencia EG2 falló por error Windows 1455 (paginación insuficiente, C con unos 236 MiB libres). Un recorrido HTTP también encontró `MemoryError` transitorio; al repetirlo con más recursos pasó. No se cambió la paginación ni se eliminaron archivos/procesos ajenos. El segundo intento finalizó correctamente con pesos locales: dos DXF demo identificados como sintéticos, EG2 mixto 768d, `cache_status=miss`, 6,63 s de codificación (no incluye carga de pesos). El NPZ tiene SHA256 `aa204f37a7d110297b283d7686193b1dd6a2c0373f56d972b1d5f5791ea03aeb`. Publicados con clasificación kNN en `pilot-eg2-demo`: 119 entradas, release `d39469752d745212afa91ec2c5f05f594a34e97ec37f1ecca2cd5b5f97d07aa9`. Ambos recuperan diez vecinos por HTTP, incluidos planos CAD del catálogo. Esta es una prueba funcional, no una validación de relevancia. Al ampliar se detectó lectura redundante de cada render; se sustituyó por una transacción única y se comprobó hash, retirada y versión con regresión. La aceptación de carga y la calibración industrial siguen pendientes. Docker se verificó por archivos/dependencias, sin construir otra imagen en este equipo limitado.
+
+## Integración en main
+
+El usuario autorizó expresamente la fusión el 2026-11-14. Se verificó `main` local/remoto en `dbd1bb6`, sin cambios pendientes en su worktree, y se aplicó `git merge --ff-only feat/semantic-explorer` hasta `6ea3b64`. Incluye la base autónoma `83df72d`; no incorpora automáticamente los avances posteriores de otras ramas.
+
+Verificación ejecutada desde `.worktrees/semantic-main`: 721 pruebas Python aprobadas en 61,40 s y 151 JavaScript aprobadas. Se actualizó únicamente documentación después de esas pruebas. El worktree del explorador se conserva porque contiene el servidor local y artefactos de QA fuera de Git. No se despliega el servicio.

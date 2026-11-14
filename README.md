@@ -10,7 +10,7 @@ El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [ve
 
 ## Auditoría e incremento privado
 
-El [explorador semántico](docs/semantic-lab/INTEGRACION_EXPLORADOR.md) añade mapa 2D, vecinos por coseno, comparación de modelos y propuestas kNN/logística. Se habilita por instancia y reutiliza embeddings persistidos; [operación, publicación y rollback](docs/semantic-lab/OPERACION_EXPLORADOR.md). Este incremento está en una rama aislada, pendiente de integración y despliegue; no se atribuye a la aplicación privada enlazada arriba.
+El [explorador semántico](docs/semantic-lab/INTEGRACION_EXPLORADOR.md) añade mapa 2D, vecinos por coseno, comparación de modelos y propuestas kNN/logística. Se habilita por instancia y reutiliza embeddings persistidos; [operación, publicación y rollback](docs/semantic-lab/OPERACION_EXPLORADOR.md). Este incremento está integrado en `main`, pendiente de despliegue; no se atribuye a la aplicación privada enlazada arriba.
 
 La [verificación de esta ampliación](docs/VERIFICACION_TRANSCRIPCION_2026-11-14.md) registra integración, navegador, inferencia real y límites observados. El [diseño](docs/superpowers/specs/2026-11-14-transcript-completion-design.md) y el [plan](docs/superpowers/plans/2026-11-14-transcript-completion.md) describen el incremento implementado por agentes GPT-6.1 Sol y revisado por GPT-6 Astra. La guía [PRODUCCION](docs/PRODUCCION.md) incluye despliegue y copias. La [auditoría anterior](docs/AUDITORIA_COMPLETA_2026-11-14.md) y la [verificación privada anterior](docs/VERIFICACION_PRIVADA_2026-11-14.md) conservan sus resultados históricos; no sustituyen la aceptación actual.
 

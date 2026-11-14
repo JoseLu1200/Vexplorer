@@ -1,6 +1,6 @@
 # Diseño de arquitectura de producción para búsqueda semántica
 
-Fecha: **2026-11-14**. Estado: **arquitectura objetivo con un incremento de exploración implementado en rama aislada; no desplegado**. Las secciones 1–11 describen el diseño de `dbd1bb6`; la sección 12 distingue el incremento concreto y sus límites. La decisión que gobierna este diseño se documenta en [Decisión de arquitectura de producción](DECISION_ARQUITECTURA_PRODUCCION.md).
+Fecha: **2026-11-14**. Estado: **arquitectura objetivo con un incremento de exploración integrado en main; no desplegado**. Las secciones 1–11 describen el diseño de `dbd1bb6`; la sección 12 distingue el incremento concreto y sus límites. La decisión que gobierna este diseño se documenta en [Decisión de arquitectura de producción](DECISION_ARQUITECTURA_PRODUCCION.md).
 
 Este documento concreta cómo incorporar la evidencia del laboratorio al producto sin convertir resultados exploratorios en garantías industriales. Mantiene las reglas vigentes: la geometría y la estimación son deterministas, las medidas proceden del ledger y de revisión humana, las vistas no son cantidades, y Pydantic sigue siendo la única fuente de verdad de los contratos.
 

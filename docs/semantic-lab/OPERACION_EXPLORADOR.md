@@ -1,6 +1,6 @@
 # Operación del explorador semántico
 
-Implementación en rama aislada desde `83df72d`. No implica despliegue remoto. [Diseño](INTEGRACION_EXPLORADOR.md), [decisión](DECISION_ARQUITECTURA_PRODUCCION.md) y [arquitectura](DISENO_ARQUITECTURA_PRODUCCION.md).
+Implementación desde `83df72d`, integrada en `main` mediante `6ea3b64`. No implica despliegue remoto. [Diseño](INTEGRACION_EXPLORADOR.md), [decisión](DECISION_ARQUITECTURA_PRODUCCION.md) y [arquitectura](DISENO_ARQUITECTURA_PRODUCCION.md).
 
 ## Arrancar y explorar
 
