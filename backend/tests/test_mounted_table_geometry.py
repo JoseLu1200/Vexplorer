@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.contratos.modelos import TableConfirmedValue, TableReviewDecision
+from backend.app.contratos.modelos import TableConfirmedValue, TableProgramProposal, TableReviewDecision
 from backend.app.geometria.extraction import extract_drawing
 
 
@@ -243,4 +243,68 @@ def test_accepting_hypotheses_cannot_hide_a_missing_required_view() -> None:
 
     assert evaluated.state == "needs_review"
     assert any(item.code == "missing_required_view" and item.severity == "error" for item in evaluated.issues)
+
+
+def test_program_hash_ignores_arbitrary_ids_and_component_order() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    original = _catalog(analysis)[0]
+    binding_ids = {item.id: f"arbitrary-binding-{index}" for index, item in enumerate(original.bindings, start=1)}
+    premise_ids = {item.id: f"arbitrary-premise-{index}" for index, item in enumerate(original.premises, start=1)}
+    renamed_bindings = tuple(
+        item.model_copy(update={
+            "id": binding_ids[item.id],
+            "operand_refs": tuple(
+                operand.model_copy(update={"ref_id": binding_ids[operand.ref_id]})
+                if operand.ref_type == "binding" else operand
+                for operand in item.operand_refs
+            ),
+        })
+        for item in original.bindings
+    )
+    renamed_components = tuple(
+        item.model_copy(update={
+            "id": f"arbitrary-component-{index}",
+            "length_binding_id": binding_ids[item.length_binding_id],
+            "width_binding_id": binding_ids[item.width_binding_id],
+            "thickness_binding_id": binding_ids[item.thickness_binding_id],
+            "premise_ids": tuple(premise_ids[premise_id] for premise_id in item.premise_ids),
+        })
+        for index, item in enumerate(reversed(original.components), start=1)
+    )
+    renamed = TableProgramProposal.model_validate({
+        **original.model_dump(),
+        "id": "arbitrary-program-id",
+        "bindings": [item.model_dump() for item in renamed_bindings],
+        "components": [item.model_dump() for item in renamed_components],
+        "premises": [
+            item.model_copy(update={"id": premise_ids[item.id]}).model_dump()
+            for item in reversed(original.premises)
+        ],
+    })
+
+    assert _evaluate(analysis, renamed).program_hash == _evaluate(analysis, original).program_hash
+
+
+def test_human_overlay_resolves_effective_conflict_without_mutating_cad_measure() -> None:
+    _, analysis = _analyze("mesa_demo_004.dxf")
+    program = _catalog(analysis)[0]
+    width = next(item for item in analysis.measures if item.semantic == "overall_width")
+
+    conflicted = _evaluate(analysis, program, decisions=_accept_all(program))
+    resolved = _evaluate(
+        analysis,
+        program,
+        decisions=_accept_all(program),
+        confirmed_values=(TableConfirmedValue(
+            target_id=width.id, value_mm=1200.0,
+            reason="La persona resuelve el conflicto visible 1190/1200.",
+        ),),
+    )
+
+    assert conflicted.state == "needs_review"
+    assert any(item.state == "conflict" for item in conflicted.placements)
+    assert resolved.state == "completed"
+    assert resolved.overall_dimensions.width_mm == 1200.0
+    assert width.state == "conflict"
+    assert width.value_mm is None
 
