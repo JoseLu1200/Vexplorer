@@ -25,6 +25,32 @@ def test_cli_defaults_both_benchmark_phases_to_sol() -> None:
     assert args.reviewer_model == "gpt-6.1-sol"
 
 
+def test_cli_supports_explicit_codex_subscription_transport():
+    args = _parser().parse_args(['--input', 'public', '--output', 'run',
+                                '--dataset-id', 'cohort', '--provider', 'codex-subscription'])
+    assert args.provider == 'codex-subscription'
+
+
+def test_subscription_does_not_load_api_credentials(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'must-not-be-used')
+    monkeypatch.setattr(benchmark, 'load_dotenv', lambda *a: pytest.fail('subscription read .env'))
+    settings = benchmark.provider_settings('codex-subscription')
+    assert settings.api_key is None
+
+
+def test_cleanup_failure_does_not_change_frozen_outcome(tmp_path: Path):
+    class BrokenClose:
+        def close(self):
+            raise RuntimeError('untrusted operational detail')
+    (tmp_path / 'baseline.json').write_text('baseline frozen')
+    (tmp_path / 'final.json').write_text('final frozen')
+    traced = benchmark._TracedProvider(BrokenClose(), tmp_path, 'proposer')
+    traced.close()
+    assert (tmp_path / 'final.json').read_text() == 'final frozen'
+    assert not (tmp_path / 'failure.json').exists()
+    assert json.loads((tmp_path / 'proposer-cleanup-warning.json').read_text()) == {'failure_type': 'RuntimeError'}
+
+
 def _bundle(path: Path, *, case_id: str = "plank-011", metadata_extra: dict | None = None) -> None:
     metadata = {
         "id": case_id,

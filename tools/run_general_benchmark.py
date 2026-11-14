@@ -95,6 +95,7 @@ def tracked_code_fingerprints() -> dict[str, str]:
     paths = [
         *sorted((REPO / "backend" / "app").rglob("*.py")),
         Path(__file__).resolve(),
+        REPO / "tools" / "codex_subscription_provider.py",
         REPO / "pyproject.toml",
         REPO / "requirements-demo.txt",
     ]
@@ -388,6 +389,18 @@ class _TracedProvider:
         self.phase = phase
         self.calls = 0
 
+    def close(self) -> None:
+        try:
+            if hasattr(self.delegate, "close"):
+                self.delegate.close()
+        except Exception as exc:
+            # Cleanup is operational evidence, not a new inference result.
+            try:
+                _write_new(self.directory / f"{self.phase}-cleanup-warning.json",
+                           {"failure_type": type(exc).__name__})
+            except OSError:
+                pass
+
     def create_response(self, **kwargs: Any) -> Any:
         self.calls += 1
         started = time.monotonic()
@@ -419,6 +432,7 @@ def _run_case(
     total_timeout_s: float,
     max_review_calls: int,
     max_validation_repairs: int,
+    provider_kind: str = "openai",
 ) -> dict[str, Any]:
     case_dir = output / source.stem
     case_dir.mkdir()
@@ -439,13 +453,17 @@ def _run_case(
         "input_sha256": sha256(source.read_bytes()).hexdigest(),
         "visual_artifacts": visual_metadata,
     }
+    provider_class = OpenAIResponsesProvider
+    if provider_kind == "codex-subscription":
+        from tools.codex_subscription_provider import CodexSubscriptionProvider
+        provider_class = CodexSubscriptionProvider
     proposer = _TracedProvider(
-        OpenAIResponsesProvider(proposer_settings, instructions=GENERAL_FURNITURE_SYSTEM_PROMPT),
+        provider_class(proposer_settings, instructions=GENERAL_FURNITURE_SYSTEM_PROMPT),
         case_dir,
         "proposer",
     )
     reviewer = _TracedProvider(
-        OpenAIResponsesProvider(reviewer_settings, instructions=GENERAL_AUTO_REVIEW_PROMPT),
+        provider_class(reviewer_settings, instructions=GENERAL_AUTO_REVIEW_PROMPT),
         case_dir,
         "reviewer",
     )
@@ -482,13 +500,17 @@ def _run_case(
             ),
         )
 
-    return freeze_paired_outcome(
-        case_id=source.stem,
-        case_dir=case_dir,
-        metadata=metadata,
-        first_pass=first_pass,
-        critic=critic,
-    )
+    try:
+        return freeze_paired_outcome(
+            case_id=source.stem,
+            case_dir=case_dir,
+            metadata=metadata,
+            first_pass=first_pass,
+            critic=critic,
+        )
+    finally:
+        for traced in (proposer, reviewer):
+            traced.close()
 
 
 def _run_case_safely(
@@ -500,6 +522,7 @@ def _run_case_safely(
     total_timeout_s: float,
     max_review_calls: int,
     max_validation_repairs: int,
+    provider_kind: str = "openai",
 ) -> dict[str, Any]:
     started = time.monotonic()
     try:
@@ -511,6 +534,7 @@ def _run_case_safely(
             total_timeout_s=total_timeout_s,
             max_review_calls=max_review_calls,
             max_validation_repairs=max_validation_repairs,
+            provider_kind=provider_kind,
         )
     except Exception as exc:
         case_dir = output / source.stem
@@ -535,6 +559,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--cases", nargs="*")
     parser.add_argument("--workers", type=int, default=2, choices=(1, 2, 3))
     parser.add_argument("--strict-bundles", action="store_true")
+    parser.add_argument("--provider", choices=("openai", "codex-subscription"), default="openai")
     parser.add_argument("--proposer-model", default="gpt-6.1-sol")
     parser.add_argument("--reviewer-model", default="gpt-6.1-sol")
     parser.add_argument("--max-output-tokens", type=int, default=16384)
@@ -542,6 +567,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-validation-repairs", type=int, default=2)
     parser.add_argument("--total-timeout-s", type=float, default=300)
     return parser
+
+
+def provider_settings(kind: str) -> ProviderSettings:
+    if kind == "codex-subscription":
+        return ProviderSettings(api_key=None, model=None)
+    load_dotenv(REPO / ".env")
+    return ProviderSettings.from_env()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -568,8 +600,7 @@ def main(argv: list[str] | None = None) -> int:
     if not output.exists():
         output.mkdir(parents=True)
 
-    load_dotenv(REPO / ".env")
-    settings = ProviderSettings.from_env()
+    settings = provider_settings(args.provider)
     proposer = replace(settings, model=args.proposer_model, max_output_tokens=args.max_output_tokens)
     reviewer = replace(settings, model=args.reviewer_model, max_output_tokens=args.max_output_tokens)
     configuration = {
@@ -584,6 +615,8 @@ def main(argv: list[str] | None = None) -> int:
         "source_sha256": {source.stem: sha256(source.read_bytes()).hexdigest() for source in sources},
         "code_sha256": tracked_code_fingerprints(),
         "private_reference_access": False,
+        "provider_transport": args.provider,
+        "output_token_cap_enforced": args.provider == "openai",
     }
     _write_new(output / "configuration.json", configuration)
     results = []
@@ -598,6 +631,7 @@ def main(argv: list[str] | None = None) -> int:
                 total_timeout_s=args.total_timeout_s,
                 max_review_calls=args.max_review_calls,
                 max_validation_repairs=args.max_validation_repairs,
+                provider_kind=args.provider,
             )
             for source in sources
         ]

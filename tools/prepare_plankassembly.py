@@ -18,7 +18,7 @@ import zipfile
 import ezdxf
 
 
-GENERATOR_VERSION = "plankassembly-adapter-1"
+GENERATOR_VERSION = "plankassembly-adapter-2"
 PUBLIC_INSTRUCTION = (
     "Use only geometry visible in the assembled orthographic views. "
     "Keep unsupported identity, dimensions, roles and quantities unknown."
@@ -96,14 +96,15 @@ def _write_assembled_dxf(path: Path, physical_planks: list[list[float]]) -> None
     layers = ("ORTHO_FRONT", "ORTHO_TOP", "ORTHO_SIDE")
     for layer in layers:
         document.layers.add(layer, color=7)
-    extents = [
-        max(bounds[3] for bounds in physical_planks) - min(bounds[0] for bounds in physical_planks),
-        max(bounds[4] for bounds in physical_planks) - min(bounds[1] for bounds in physical_planks),
-    ]
-    offsets = (0.0, extents[0] + 100.0, extents[0] + extents[1] + 200.0)
+    origin = [min(bounds[axis] for bounds in physical_planks) for axis in range(3)]
+    width = max(bounds[3] for bounds in physical_planks) - origin[0]
+    # Front and top both occupy width, while side occupies depth.
+    offsets = (0.0, width + 100.0, 2 * width + 200.0)
     modelspace = document.modelspace()
     for bounds in physical_planks:
-        xmin, ymin, zmin, xmax, ymax, zmax = bounds
+        xmin, ymin, zmin, xmax, ymax, zmax = [
+            value - origin[index % 3] for index, value in enumerate(bounds)
+        ]
         _add_rectangle(modelspace, layers[0], offsets[0] + xmin, zmin, offsets[0] + xmax, zmax)
         _add_rectangle(modelspace, layers[1], offsets[1] + xmin, ymin, offsets[1] + xmax, ymax)
         _add_rectangle(modelspace, layers[2], offsets[2] + ymin, zmin, offsets[2] + ymax, zmax)
