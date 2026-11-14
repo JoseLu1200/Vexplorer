@@ -100,6 +100,16 @@ render_table_drawings(plan: TableDrawingPlan) -> TableDrawingExports
 
 La escena solo contiene sólidos para ocurrencias completas con placement de regla aceptada. Conserva program hash/dependencias/estado humano; no inventa piezas, espesores ni posiciones.
 
+## Visión opcional acotada
+
+La visión live es una ayuda contextual exclusiva de `mounted_orthographic_views`; no se expone en legacy ni parts-only. Está desactivada por defecto y solo se habilita con configuración explícita del servidor. Con el modo apagado se conserva el prompt de evidencia vectorial sin imágenes y no se anuncia ninguna herramienta visual.
+
+Con el modo activo, el esquema Pydantic `VisualizeTableViewArgs{view_id}` respalda la herramienta nativa `visualizar_vista`. El modelo debe solicitar una vista anunciada por ID; el servidor responde por el mismo `call_id` con SHA-256, dimensiones y marcas `Mnnn -> contour|entity ID`, y aporta un PNG Set-of-Mark en el siguiente input. No se preenvían imágenes. Hay un máximo de 3 intentos visuales por ejecución, incluidos duplicados y errores.
+
+El renderer consume únicamente el `DrawingExtraction` ya autorizado: no abre el DXF, paths, URLs, sidecars ni referencias privadas. Excluye `TEXT|MTEXT|ATTRIB|DIMENSION` de la geometría visual; representa `CIRCLE|ARC` desde `CircularGeometry` y nunca como chords de `points_mm`. Los límites previos a raster son 100 contornos, 500 entidades, 20.000 puntos teselados, lado máximo 1024 px y PNG máximo 2.000.000 bytes por vista. Los errores son explícitos (`unknown_view`, `vision_budget_exceeded`, `vision_geometry_unavailable`).
+
+La imagen no es fuente de medidas: cualquier número, cantidad, binding o componente debe seguir respaldado por medidas y referencias vectoriales del ledger. Las trazas solo conservan tool name, view ID, SHA y número de marcas; nunca bytes, base64, prompt o argumentos crudos.
+
 ## Coste
 
 El apoyo de costes implementa exclusivamente:
@@ -114,7 +124,7 @@ estimate_table_costs(
 get_table_cost_catalog() -> TableCostCatalog
 ```
 
-`TableCostScope` selecciona `material_tariff_id`, `edge_scope=none|all_exposed` y `operation_tariff_ids`; sin selección, los conceptos requeridos quedan unknown. El catálogo sintético pequeño vive en `table_costs.py`; su versión se expone. El cálculo usa ocurrencias, no vistas o tipos duplicados. Cada concepto conserva refs component/occurrence, fórmula, cantidad + `quantity_unit=m2|m3|m|unit|h`, tarifa + `rate_unit=EUR/m2|EUR/m3|EUR/m|EUR/unit|EUR/h`, importe y estado `resolved|unknown|not_applicable`. El fijo se aplica una vez; canteado solo con scope explícito; horas, operaciones y acabado ausentes siguen unknown.
+`TableCostScope` selecciona `material_tariff_id`, `edge_scope=none|all_exposed` y `operation_tariff_ids`; sin selección, los conceptos requeridos quedan unknown. El catálogo sintético pequeño vive en `table_costs.py`; su versión se expone. El cálculo usa ocurrencias, no vistas o tipos duplicados. Cada concepto conserva refs component/occurrence, fórmula, cantidad + `quantity_unit=m2|m3|m|unit|h`, tarifa + `rate_unit=EUR/m2|EUR/m3|EUR/m|EUR/unit|EUR/h`, importe y estado `resolved|unknown|not_applicable`. El fijo usa una tarifa catalogada con scope `preparation` y se aplica una vez; canteado solo con scope explícito; horas, operaciones y acabado ausentes siguen unknown.
 
 Se exponen `known_subtotal_eur` y `total_state=partial|complete`; si falta un concepto requerido, `grand_total_eur=null`. Todo queda ligado a revisión/hash. El módulo no crea modelos/API.
 
@@ -132,6 +142,8 @@ Solo una revisión aceptada puede guardarse. La mesa usa `FurnitureDescriptorV3`
 - `GET /api/v1/runs/{run_id}/table-drawings/{sheet_id}.{format}?result_revision=N&program_hash=...`: bytes SVG/DXF.
 - `POST /api/v1/runs/{run_id}/table-costs`: calcula revisión exacta; `GET .../table-costs?result_revision=N` solo lee persistido.
 - `GET /api/v1/table-cost-catalog`: catálogo sintético versionado de IDs/labels/tarifas para construir `TableCostScope`; la UI no codifica IDs.
+- `GET /api/v1/config`: declara si la visión está efectivamente habilitada, su autoridad contextual y límites; nunca expone secretos.
+- `GET /api/v1/runs/{run_id}/exports?format=table_cutlist`: CSV genérico revisionado de componentes/ocurrencias aceptados; declara `generic_not_certified` y conserva material/acabado/veta/cantos como unknown.
 - Export JSON incluye análisis/programa raw-normalizado/revisión y scene/drawings/cost/descriptor/procedencia disponibles.
 - `POST /library`, `/similarity` y `/groups` admiten `descriptor_version=furniture-v3`; consulta/grupos filtran exactamente ese espacio y pueden informar `excluded_count`. Sin filtro se conserva el comportamiento legacy, incluido el rechazo de mezcla incompatible.
 
