@@ -4,7 +4,7 @@ from datetime import date
 from math import isfinite
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SCHEMA_VERSION = "0.2.0"
 
@@ -483,7 +483,7 @@ GeneralMachineTargetRef = Annotated[
     Field(
         min_length=1,
         max_length=200,
-        pattern=r"^(component:.+\.(length|width|thickness|quantity|material|finish|existence|kind|role|geometry)|parameter:.+|constraint:.+|detail:.+|decision:.+)$",
+        pattern=r"^(component:.+\.(length|width|thickness|quantity|material|finish|existence|kind|role|geometry)|parameter:.+|constraint:.+|detail:.+|decision:.+|evidence_region:.+)$",
     ),
 ]
 
@@ -792,6 +792,19 @@ class GeneralComponentProposal(StrictModel):
     quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32, description="Must include at least one closed premise:<id>; may also cite exact ledger refs such as contour:<id>, observation:<id>, evidence:<id>, view:<id>, document:<id>, or visual:<id>.")
 
 
+class GeneralEvidenceDisposition(StrictModel):
+    candidate_region_id: str = Field(min_length=1, max_length=200)
+    kind: Literal["assigned", "duplicate_projection", "nonmaterial", "unresolved"]
+    component_id: str | None = Field(default=None, min_length=1, max_length=120)
+    duplicate_of_region_id: str | None = Field(default=None, min_length=1, max_length=200)
+    reason_code: Literal[
+        "hole", "cutout", "rabbet", "groove", "annotation", "drawing_frame",
+        "void", "other_unresolved",
+    ] | None = None
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    rationale: str = Field(min_length=1, max_length=500)
+
+
 class GeneralFurnitureProposal(StrictModel):
     schema_version: Literal["0.6.0"] = "0.6.0"
     id: str = Field(min_length=1, max_length=120)
@@ -808,6 +821,7 @@ class GeneralFurnitureProposal(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
 
     @model_validator(mode="after")
     def references_are_closed(self) -> "GeneralFurnitureProposal":
@@ -959,6 +973,7 @@ class ProposeGeneralFurnitureArgs(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
 
 
 class InspectGeneralContextArgs(StrictModel):
@@ -1317,6 +1332,7 @@ class GeneralFurnitureDraft(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     status: Literal["needs_review"] = "needs_review"
 
 
@@ -2554,6 +2570,21 @@ class EmbeddingMetadata(StrictModel):
     status: Literal["generated", "cache"]
 
 
+class LibraryPublicationProvenance(StrictModel):
+    source_kind: Literal["real_furniture"]
+    source_reference: str = Field(min_length=1, max_length=500)
+    approved_for_public_library: Literal[True]
+    attested_by: str = Field(min_length=1, max_length=120)
+    attested_at: str = Field(min_length=1)
+
+    @field_validator("source_reference")
+    @classmethod
+    def source_reference_is_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("source reference cannot be blank")
+        return value.strip()
+
+
 class LibraryItem(StrictModel):
     schema_version: Literal["0.3.0"] = "0.3.0"
     id: str = Field(min_length=1)
@@ -2564,6 +2595,7 @@ class LibraryItem(StrictModel):
     descriptor_fingerprint: str = Field(min_length=64, max_length=64)
     created_at: str = Field(min_length=1)
     embedding: EmbeddingMetadata | None = None
+    publication: LibraryPublicationProvenance | None = None
 
 
 class SimilarityDifference(StrictModel):
@@ -2580,8 +2612,21 @@ class SimilarityMatch(StrictModel):
     score: float = Field(ge=-1, le=1, allow_inf_nan=False)
     score_kind: Literal["geometric_similarity", "cosine_similarity"]
     score_components: dict[str, float]
+    technical_score: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    technical_score_kind: Literal["technical_similarity"] | None = None
+    technical_score_components: dict[str, float] = Field(default_factory=dict)
+    compatibility_warnings: tuple[str, ...] = ()
+    equivalent_record_ids: tuple[str, ...] = ()
+    duplicate_record_count: int = Field(default=0, ge=0)
     differences: tuple[SimilarityDifference, ...]
     embedding: EmbeddingMetadata | None = None
+
+    @model_validator(mode="after")
+    def duplicate_count_matches_equivalent_records(self) -> "SimilarityMatch":
+        expected = max(0, len(self.equivalent_record_ids) - 1)
+        if self.duplicate_record_count != expected:
+            raise ValueError("duplicate record count does not match equivalent records")
+        return self
 
 
 class SimilarityGroup(StrictModel):
@@ -2590,6 +2635,8 @@ class SimilarityGroup(StrictModel):
     method: Literal["geometric", "semantic"]
     score_kind: Literal["geometric_similarity", "cosine_similarity"]
     threshold: float = Field(ge=-1, le=1, allow_inf_nan=False)
+    linkage: Literal["complete"] = "complete"
+    minimum_pair_score: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     explanation: str = Field(min_length=1)
 
 

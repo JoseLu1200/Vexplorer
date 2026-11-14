@@ -1,0 +1,41 @@
+# Agente cobertura de despiece — propuesta live
+
+## Identidad y autorización
+
+- Identidad: agente IA `similarity_backend`, delegado por `/root` para esta corrección.
+- Rol: backend del proponente live y accounting de evidencia.
+- Fecha: 2026-11-14.
+
+## Tarea y alcance
+
+- Objetivo: evitar que el proponente omita evidencia candidata sin explicación y exponer fallos de cotas trazables, sin confundir contornos con piezas físicas.
+- Estado: implementación live y helper puro completados y verificados.
+- Propiedad final: `evidence_accounting.py`, `live.py`, propagación en `proposal.py`, prueba focal `test_general_furniture_evidence_accounting.py` y este registro, únicamente dentro de `.worktrees/similarity-public`.
+- Dependencias solo lectura: contratos, geometría, artefactos permitidos `.runtime/complex-visual-audit` del checkout raíz.
+- Fuera de alcance: contratos Pydantic, `main.py`, storage/API, frontend, referencias privadas/ground truth, commits y despliegue.
+- Transferencias explícitas: `context_payload.py` pertenece a `/root/public_integration`; `autonomous.py` y sus pruebas pertenecen a `/root/similarity_evaluation`; `storage.py` permanece en `/root/library_api`.
+
+## Diagnóstico
+
+- Los resultados parciales permitidos citan 36/40 y 21/31 contornos cerrados. Esos cocientes son solo diagnóstico de evidencia citada: no miden recall de piezas.
+- El contexto no publica cierre `eligible/assigned/unexplained`; el materializador valida referencias pero no cobertura.
+- El crítico solo revisa componentes ya propuestos y no exige existencia de paneles; ambos runs agotaron tiempo antes de producir snapshot crítico.
+- No se consultaron referencias reservadas ni se introducirán respuestas de casos concretos en runtime/prompts.
+
+## Diseño implementado
+
+- Deriva regiones candidatas deterministas de contornos cerrados no degenerados, con autoridad explícita `candidate_evidence_not_physical_piece`.
+- Exige una disposición tipada por región: `assigned`, `duplicate_projection`, `nonmaterial` o `unresolved`; valida cardinalidad, fuentes exactas y referencias de ledger.
+- Reporta dimensiones ausentes o sin trazabilidad y componentes que reclaman múltiples regiones; estos últimos requieren revisión dirigida de cada región para impedir que un único panel salde evidencia disjunta sin crítica.
+- `evidence_coverage` es accounting, nunca precisión/recall físico ni criterio de autoaceptación.
+- El proponente recibe reparación acotada. Si agota presupuesto, conserva la última propuesta/draft válida como incompleta junto al informe; no inventa cotas ni descarta todo el resultado.
+- La crítica autónoma y el contexto compacto se integran por sus propietarios transferidos; no se editaron aquí.
+
+## Pruebas y cierre
+
+| Caso | Comando | Resultado | Límite |
+|---|---|---|---|
+| Diagnóstico de artefactos | extracción local de conteos desde propuestas y DXF permitidos | 36/40 y 21/31 contornos citados | no es evaluación contra GT ni recall físico |
+| Accounting + live + materialización + contexto | `python -m pytest backend/tests/test_general_furniture_evidence_accounting.py backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_proposal.py backend/tests/test_general_furniture_context_payload.py -q` | 31 passed | suite focal; integración global corresponde a `/root` |
+
+- Sin commits ni despliegue. No se usaron respuestas privadas/GT ni reglas específicas para 030/016.

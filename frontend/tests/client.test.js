@@ -121,6 +121,14 @@ test("retrying a terminal job creates a linked durable execution without reuploa
   assert.equal(requests[0][1].headers["Idempotency-Key"],"retry-key");
 });
 
+test("resuming a saved proposal uses the dedicated review-only endpoint",async()=>{
+  const requests=[],client=createApiClient({fetchImpl:async(url,init={})=>{requests.push([url,init]);return response(202,{data:{id:"job-3",state:"queued",resume_of_job_id:"job-1"}});},idFactory:()=>"resume-key"});
+  await client.resumeJob("job 1");
+  assert.equal(requests[0][0],"/api/v1/jobs/job%201/resume");
+  assert.equal(requests[0][1].method,"POST");
+  assert.equal(requests[0][1].headers["Idempotency-Key"],"resume-key");
+});
+
 test("replay availability is checked with the exact server resolved run request", async () => {
   let request;
   const client = createApiClient({ fetchImpl: async (url, init) => { request = [url, init]; return response(200, { data: { available: true } }); } });

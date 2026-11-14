@@ -16,7 +16,7 @@ export async function pollJob(jobId, { getJob, onUpdate = () => {}, wait = (mill
     if (now()-startedAt>=timeoutMs) throw timeoutError();
     const raw = await getJob(jobId);
     if (signal?.aborted) throw abortError();
-    const job = { id: raw?.id ?? jobId, state: raw?.state ?? "failed", runId: raw?.run_id ?? null, error: raw?.error ?? null };
+    const job = { id: raw?.id ?? jobId, state: raw?.state ?? "failed", runId: raw?.run_id ?? null, error: raw?.error ?? null, cause:raw?.cause??raw?.error?.code??null, checkpoint:raw?.checkpoint??null, recovery:raw?.recovery??null };
     await onUpdate(job);
     if (TERMINAL_STATES.has(job.state)) return job;
     await wait(intervalMs);

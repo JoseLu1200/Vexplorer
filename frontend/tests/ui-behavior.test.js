@@ -57,17 +57,18 @@ test("pending table reviews do not request derived drawings or costs", () => {
   ), true);
 });
 
-test("public CAD capability hides private history, library and semantic actions without requiring login", () => {
+test("public CAD capability hides private history but exposes offline library actions", () => {
   assert.equal(typeof ui.publicFeatureAvailability, "function");
   assert.deepEqual(ui.publicFeatureAvailability({
     environment: "production",
     authenticated: false,
-    capabilities: { history: { available: false } },
+    capabilities: { history: { available: false }, library: { available: true } },
     semantic: { available: false, unavailable_reason: "private_feature_unavailable" },
   }), {
     history: false,
-    library: false,
+    library: true,
     semantic: false,
+    costs: false,
     publicCad: true,
     sessionLabel: "Acceso público · CAD disponible",
   });
@@ -100,6 +101,13 @@ test("restored runs replace the pending source badge with honest recovered metad
   assert.equal(ui.restoredSourceLabel({ source_unit: "unknown" }), "Plano restaurado · unidad sin resolver");
 });
 
+test("restored interrupted runs expose checkpoint phase and only the server safe recovery action",()=>{
+  assert.match(app,/runRecord\.latest_job/);
+  assert.match(app,/presentJobRecovery\(latestJob\)/);
+  assert.match(app,/recovery\.safeAction/);
+  assert.match(app,/api\.resumeJob\(sourceJobId\)/);
+});
+
 test("dynamic review controls receive stable form names", () => {
   assert.equal(typeof ui.formControlName, "function");
   assert.equal(ui.formControlName("table", "component", "component:top"), "table-component-component-top");
@@ -130,7 +138,8 @@ test("saving a reviewed table uses only fields accepted by LibrarySaveRequest", 
 });
 
 test("pending table revisions cannot invoke descriptor-backed library actions", () => {
-  assert.match(app, /const libraryReady=!state\.tableWorkspace\?\.isTable\|\|tableResourcesReady/);
+  assert.match(app, /const supportedDescriptor=!state\.generalWorkspace\?\.isGeneral/);
+  assert.match(app, /const libraryReady=supportedDescriptor&&\(!state\.tableWorkspace\?\.isTable\|\|tableResourcesReady/);
   assert.match(app, /save-library"\)\.disabled = !libraryReady/);
   assert.match(app, /find-similar"\)\.disabled = !libraryReady/);
 });

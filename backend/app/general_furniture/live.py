@@ -19,6 +19,11 @@ from backend.app.contratos.modelos import (
     ProposeGeneralFurnitureArgs,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.evidence_accounting import (
+    EvidenceAccountingReport,
+    build_evidence_accounting_report,
+    derive_relevant_candidate_regions,
+)
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
     query_compact_measurements,
@@ -44,6 +49,12 @@ Comprueba la estabilidad global de la construcción propuesta. Si la geometría 
 En quantity_basis_refs incluye al menos un premise:<id> declarado y, si existen, refs exactas contour:/observation:/evidence:/view: que sostienen el recuento. En decision.target_refs nunca uses IDs desnudos: usa component:<id> o component:<id>.<length|width|thickness|quantity|material|finish|existence|kind|role|geometry>, parameter:<id>, constraint:<id> o detail:<id>.
 Un contorno cerrado puede ser una cara material, un hueco, un rebaje o un límite interior: contrástalo con las regiones visuales y no conviertas automáticamente cada rectángulo en panel. Las correspondencias entre proyecciones son candidatas ambiguas, no piezas adicionales.
 Una vista no es una ocurrencia física. Una instancia visible en varias proyecciones puede sostener cantidad hypothesis=1 con premisa explícita; repetición u ocultación ambigua permanece unknown o como alternativa. La salida es revisable, nunca documentación industrial lista para fabricar."""
+
+
+class ProposalEvidenceAccountingError(ValueError):
+    def __init__(self, report: EvidenceAccountingReport) -> None:
+        super().__init__("proposal_evidence_accounting_incomplete")
+        self.report = report
 
 
 class GeneralFurnitureProvider(Protocol):
@@ -135,6 +146,28 @@ def _safe_live_error_code(error: Exception) -> str:
 
 
 def _safe_validation_details(error: Exception) -> list[dict[str, object]]:
+    if isinstance(error, ProposalEvidenceAccountingError):
+        report = error.report
+        return [{
+            "loc": ["evidence_dispositions"],
+            "msg": "proposal_evidence_accounting_incomplete",
+            "type": "value_error",
+            "unresolved_candidate_region_ids": list(report.unresolved_region_ids[:64]),
+            "invalid_candidate_region_ids": list(report.invalid_region_ids[:64]),
+            "missing_dimension_targets": list(report.missing_dimension_targets[:64]),
+            "untraceable_dimension_targets": list(
+                report.untraceable_dimension_targets[:64]
+            ),
+            "truncated": any(
+                len(values) > 64
+                for values in (
+                    report.unresolved_region_ids,
+                    report.invalid_region_ids,
+                    report.missing_dimension_targets,
+                    report.untraceable_dimension_targets,
+                )
+            ),
+        }]
     if isinstance(error, ValidationError):
         return [
             {
@@ -199,7 +232,7 @@ def general_furniture_tool_schemas(
         "length_binding_id/width_binding_id/thickness_binding_id=null y source_view_ids=[]. "
         "Cita source_document_refs solo desde allowed_source_document_refs; no midas píxeles."
         if raster_without_metric_ledger
-        else "Propone un escenario constructivo provisional completo usando IDs del ledger. Parámetros observed/deduced: binding_id obligatorio y nominal_mm/range_mm null; estimated: binding_id null y nominal_mm+rango+source_refs+premisas. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos crea un parámetro estimated separado con rango y premisa. quantity_basis_refs incluye premise:<id> y refs exactas; decision.target_refs usa namespaces tipados. Usa bindings copy/add/subtract/scale_rational; dependientes de estimate siguen estimated. Comprueba estabilidad global y, si hace falta, propone un detalle estimated explícito de estabilización o anclaje, no solo una nota pendiente."
+        else "Propone un escenario constructivo provisional completo usando IDs del ledger. Contabiliza cada candidate_region_id mediante evidence_dispositions tipadas: assigned debe concordar con un único componente; duplicate_projection conserva hipótesis y componente; nonmaterial usa reason_code específico; si no se puede decidir usa unresolved. No conviertas cada región o proyección en pieza. Parámetros observed/deduced: binding_id obligatorio y nominal_mm/range_mm null; estimated: binding_id null y nominal_mm+rango+source_refs+premisas. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos crea un parámetro estimated separado con rango y premisa. quantity_basis_refs incluye premise:<id> y refs exactas; decision.target_refs usa namespaces tipados. Usa bindings copy/add/subtract/scale_rational; dependientes de estimate siguen estimated. Comprueba estabilidad global y, si hace falta, propone un detalle estimated explícito de estabilización o anclaje, no solo una nota pendiente."
     )
     return [
         schema(
@@ -296,6 +329,18 @@ def run_general_furniture_agent(
         ).to_payload(),
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
+        "evidence_accounting": {
+            "candidate_regions": [
+                asdict(item) for item in derive_relevant_candidate_regions(extraction)
+            ],
+            "authority": "candidate_evidence_not_physical_piece_or_recall",
+            "required_dispositions": (
+                "Exactly one typed evidence_disposition per candidate_region_id. "
+                "assigned must match one component; duplicate_projection remains a "
+                "reviewable hypothesis; nonmaterial needs a specific reason and exact "
+                "source refs; otherwise use unresolved."
+            ),
+        },
         "evidence_ids": sorted(evidence),
         "instruction": "Propón un escenario constructivo coherente, no una plantilla. Parámetros observed/deduced: binding_id requerido, nominal_mm=null y range_mm=null. Parámetros estimated: binding_id=null, nominal+rango+método+source_refs+premise:<id>. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos usa un parámetro estimated separado. Dependientes de estimate conservan estimated. Comprueba estabilidad/vuelco/arriostramiento y, si procede, declara un detalle estimated explícito, no solo pendiente. Las cantidades provisionales requieren premisa y grupos físicos; nunca cuentes proyecciones como unidades.",
         "visual_pages": [
@@ -505,6 +550,30 @@ def run_general_furniture_agent(
                         proposal,
                         allowed_document_refs=allowed_document_refs,
                     )
+                    accounting = build_evidence_accounting_report(
+                        extraction,
+                        proposal,
+                        draft,
+                        projection_hypotheses=projection_hypotheses,
+                    )
+                    if not accounting.reviewable:
+                        if repairs < limits.max_validation_repairs:
+                            raise ProposalEvidenceAccountingError(accounting)
+                        trace.append(
+                            {
+                                "tool": call.name,
+                                "ok": False,
+                                "summary": (
+                                    "Proposal preserved as incomplete after bounded "
+                                    "evidence-accounting repairs."
+                                ),
+                                "evidence_accounting": accounting.to_payload(),
+                                **metadata,
+                            }
+                        )
+                        return GeneralFurnitureAgentOutcome(
+                            proposal, draft, calls, tool_calls, tuple(trace)
+                        )
                     trace.append(
                         {
                             "tool": call.name,

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -169,6 +169,47 @@ test("accepted estimated quantity remains visibly provisional",()=>{
   assert.equal(quantity.rangeDisplay,"1–3 uds.");
   assert.deepEqual(quantity.assumptionRefs,["assumption:pair"]);
   assert.equal(presentGeneralConstructionQuantity({...quantity,review_status:"rejected"}).value,null);
+});
+
+test("construction quantities distinguish cut pieces from estimated hardware",()=>{
+  const panel=presentGeneralConstructionQuantity({value:2,state:"deduced",component_kind:"panel"});
+  const hardware=presentGeneralConstructionQuantity({value:4,state:"estimated",component_kind:"hardware"});
+  assert.equal(panel.scopeLabel,"Piezas para corte");
+  assert.equal(hardware.scopeLabel,"Herrajes estimados");
+  assert.equal(hardware.display,"≈ 4 uds.");
+});
+
+test("derived construction keeps hardware quantity scope separate",()=>{
+  const derived=presentGeneralDerived({package:{bom_rows:[],artifacts:[],construction:{summary:{},pieces:[{piece_id:"hinge",component_id:"hinge",kind:"hardware",quantity:{value:4,state:"estimated"}}],placements:[],details:[],decisions:[],warnings:[],sheets:[]}}});
+  assert.equal(derived.construction.pieces[0].quantity.scopeLabel,"Herrajes estimados");
+});
+
+test("construction summary separates component types cut quantities hardware and unknowns",()=>{
+  assert.deepEqual(presentConstructionCounts([{kind:"panel",quantity:{value:2}},{kind:"linear_member",quantity:{value:3}},{kind:"hardware",quantity:{value:4,state:"estimated"}},{kind:"unknown",quantity:{value:1}},{kind:"panel",quantity:{value:null}}]),{typeCount:5,cutPieceCount:5,hardwareEstimated:4,unknownCount:2});
+  assert.equal(presentGeneralConstructionQuantity({value:1,component_kind:"unknown"}).scopeLabel,"Cantidad sin clasificar");
+});
+
+test("construction dimension display rounds floating noise but preserves raw numeric value",()=>{
+  const dimension=presentGeneralConstructionDimension({value_mm:17.999933,state:"observed"});
+  assert.equal(dimension.value,17.999933);
+  assert.equal(dimension.display,"18 mm");
+});
+
+test("recovery presentation distinguishes saved proposal from completed review",()=>{
+  const recovery=presentJobRecovery({state:"interrupted",cause:"provider_timeout",checkpoint:{phase:"proposal",proposal_saved:true,proposal_id:"proposal-1",proposal_revision:2,review_revision:0},recovery:{safe_action:"resume_review",endpoint:"/api/v1/jobs/job-1/resume"}});
+  assert.equal(recovery.phaseLabel,"Propuesta 2 recuperada; revisión automática pendiente");
+  assert.match(recovery.message,/agotó el tiempo/i);
+  assert.equal(recovery.actionLabel,"Reanudar revisión sin repetir la propuesta");
+  assert.match(recovery.message,/no equivale a una revisión aprobada/i);
+});
+
+test("recovery translates real timeout codes and autonomous review phase",()=>{
+  for(const code of ["provider_request_timeout","agent_deadline_exceeded","general_auto_review_timeout"]){
+    const recovery=presentJobRecovery({state:"failed",error:{code,phase:"autonomous_review"},checkpoint:{phase:"autonomous_review",proposal_saved:true,proposal_id:"proposal-prior",proposal_revision:1,review_revision:0},recovery:{safe_action:"resume_review",endpoint:"/api/v1/jobs/job-prior/resume"}});
+    assert.match(recovery.message,/tiempo|interrumpió/i);
+    assert.doesNotMatch(recovery.message,new RegExp(code));
+    assert.match(recovery.phaseLabel,/revisión automática pendiente/i);
+  }
 });
 
 test("derived BOM and CSV retain construction basis, range and references",()=>{
