@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from backend.app.estimacion.table_costs import get_table_cost_catalog
-from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.agente.provider import ProviderError, ProviderResponse, ToolCall
 from backend.app.main import create_app
 from backend.app.operacion.auth import hash_password
 from backend.app.ingesta import DwgConversionResult
@@ -86,6 +86,38 @@ class _GeneralLiveProvider:
 class _FailingGeneralProvider:
     def create_response(self, **kwargs):
         raise RuntimeError("provider unavailable")
+
+
+class _TraceThenFailingGeneralProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_response(self, **kwargs):
+        self.calls += 1
+        if self.calls == 1:
+            return ProviderResponse(
+                id="general-inspection-response",
+                model="test-general-live",
+                input_tokens=15,
+                output_tokens=5,
+                total_tokens=20,
+                tool_calls=(ToolCall(
+                    call_id="general-inspection-call",
+                    name="inspeccionar_evidencia_general",
+                    arguments_json=json.dumps({
+                        "evidence_ids": [], "view_ids": [],
+                        "measurement_ids": [], "query_measurements": True,
+                        "measurement_offset": 0, "measurement_limit": 64,
+                    }),
+                ),),
+            )
+        raise ProviderError(
+            "provider_response_incomplete",
+            status_code=200,
+            request_id="req-must-not-be-public",
+            response_id="resp-must-not-be-public",
+            incomplete_reason="max_output_tokens",
+        )
 
 
 class _SemanticRepairProvider(_GeneralLiveProvider):
@@ -423,6 +455,59 @@ def test_general_live_failure_does_not_leave_a_run_ghost(tmp_path: Path, monkeyp
 
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "general_live_provider_failed"
+    with sqlite3.connect(data / "vexplorer.sqlite3") as database:
+        assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
+
+
+def test_general_live_durable_failure_preserves_safe_trace_and_counters(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    data = tmp_path / "data"
+    provider = _TraceThenFailingGeneralProvider()
+    client = TestClient(create_app(
+        data_dir=data, frontend_dir=tmp_path / "none", agent_provider=provider,
+    ))
+    upload = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]
+
+    submitted = client.post(
+        "/api/v1/jobs",
+        json={
+            "document_id": upload["document_id"], "mode": "live",
+            "input_kind": "general_furniture", "proposal_mode": "model_generated",
+        },
+    )
+    assert submitted.status_code == 202
+    job_id = submitted.json()["data"]["id"]
+    for _ in range(100):
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["state"] not in {"queued", "running"}:
+            break
+        time.sleep(0.01)
+
+    assert job["state"] == "failed"
+    assert job["run_id"] is None
+    assert job["error"]["code"] == "general_live_provider_failed"
+    assert job["error"]["reason_code"] == "provider_response_incomplete"
+    assert job["error"]["model_calls"] == 2
+    assert job["error"]["tool_calls"] == 1
+    assert job["error"]["trace"] == [{
+        "tool": "inspeccionar_evidencia_general",
+        "ok": True,
+        "summary": "Ledger evidence inspected.",
+        "provider_response_id": "general-inspection-response",
+        "provider_model": "test-general-live",
+        "provider_call_id": "general-inspection-call",
+        "provider_duration_ms": None,
+        "provider_input_tokens": 15,
+        "provider_output_tokens": 5,
+        "provider_total_tokens": 20,
+    }]
+    assert "request_id" not in job["error"]
+    assert "response_id" not in job["error"]
     with sqlite3.connect(data / "vexplorer.sqlite3") as database:
         assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
 

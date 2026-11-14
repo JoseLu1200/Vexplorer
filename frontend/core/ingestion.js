@@ -23,7 +23,7 @@ export function presentDocumentIngestion(raw = {}) {
   const warnings = list(ingestion.warnings ?? raw.warnings);
   let summary;
   if (format === "DWG" && converted) summary = `DWG convertido a DXF por ${ingestion.converter ?? raw.converter ?? "convertidor configurado"}`;
-  else if (format === "PDF" && !measurementReady) summary = "PDF disponible como vista previa; requiere revisión manual antes de usar medidas";
+  else if (format === "PDF" && !measurementReady) summary = "PDF disponible para análisis visual automático; las medidas métricas permanecen desconocidas sin escala o evidencia métrica";
   else summary = `${format} ${measurementReady ? "disponible para lectura geométrica" : "pendiente de normalización"}`;
   return {
     format,

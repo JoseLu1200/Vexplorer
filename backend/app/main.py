@@ -46,7 +46,7 @@ from backend.app.historico.service import find_comparables
 from backend.app.historico.real_service import HistoricalStore
 from backend.app.historico.models import ProvisionalDimension, ProvisionalQuantity, ProvisionalScenarioRow, ProvisionalScenarioSnapshot, ProvisionalText
 from backend.app.api.history import create_history_router
-from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralVisualPage, run_general_furniture_agent
+from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
 from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
@@ -1232,6 +1232,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             )
             try:
                 general_outcome = execute_general_live(general_context)
+            except GeneralLiveError as exc:
+                return JSONResponse({
+                    "schema_version": "0.2.0",
+                    "error": {
+                        "code": "general_live_provider_failed",
+                        "reason_code": exc.code,
+                        "message": "La propuesta general live falló de forma acotada.",
+                        "retryable": True,
+                        "model_calls": exc.model_calls,
+                        "tool_calls": exc.tool_calls,
+                        "trace": list(exc.trace),
+                    },
+                }, status_code=502)
             except Exception as exc:
                 return _error(502, "general_live_provider_failed", f"La propuesta general live falló: {type(exc).__name__}.", True)
         try:

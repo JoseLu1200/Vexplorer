@@ -102,14 +102,56 @@ def _target(**updates) -> HistoricalTarget:
     return HistoricalTarget(**values)
 
 
-def _provisional_snapshot(*, rows=None) -> ProvisionalScenarioSnapshot:
-    accepted_dimension = lambda value, name: ProvisionalDimension(
-        value_mm=value,
-        state="hypothesis",
-        review_status="accepted",
-        check_ids=(f"{name}-check",),
-        dependency_refs=(f"binding:{name}",),
+def _published_item_hours_record(
+    record_id: str = "published-hours",
+    *,
+    driver: str = "item",
+) -> dict:
+    return {
+        "record_id": record_id,
+        "project_id": record_id,
+        "revision": "published-2026-09-20",
+        "family": "living room furniture",
+        "quantity": 1,
+        "manufacturing_hours": 1.94,
+        "origin": "published",
+        "provenance": {
+            "source": "https://doi.org/10.3390/su18189636; Table 3 / Table A6",
+            "source_date": "2026-09-20",
+            "notes": "Published per-unit production-time coefficient; not labor or ERP actual.",
+        },
+        "concepts": [
+            {
+                "concept_id": "production_time",
+                "kind": "production_time",
+                "driver": driver,
+                "hours": 1.94,
+            }
+        ],
+        "included_scope": ["production_time"],
+        "cost_scope": [],
+        "hours_scope": ["production_time"],
+    }
+
+
+def _unknown_provisional_dimension() -> ProvisionalDimension:
+    return ProvisionalDimension(
+        value_mm=None,
+        state="unknown",
+        review_status="abstained",
     )
+
+
+def _provisional_snapshot(*, rows=None) -> ProvisionalScenarioSnapshot:
+    def accepted_dimension(value, name):
+        return ProvisionalDimension(
+            value_mm=value,
+            state="hypothesis",
+            review_status="accepted",
+            check_ids=(f"{name}-check",),
+            dependency_refs=(f"binding:{name}",),
+        )
+
     default_row = ProvisionalScenarioRow(
         component_id="panel-1",
         occurrence_status="provisional",
@@ -930,6 +972,249 @@ def test_provisional_scenarios_keep_each_comparable_conditional_and_separate(tmp
     assert {item.source_effective_date.isoformat() for item in response.scenarios} == {
         "2026-10-31"
     }
+
+
+@pytest.mark.parametrize("driver", ("item", "fixed"))
+def test_provisional_scenarios_allow_published_hours_without_geometry_or_material(
+    tmp_path, driver
+) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    store.import_records(
+        HistoricalImport(records=(_published_item_hours_record(driver=driver),)),
+        dry_run=False,
+    )
+    base = _provisional_snapshot().rows[0]
+    unknown_text = ProvisionalText(
+        value=None, state="unknown", review_status="abstained"
+    )
+    row = base.model_copy(
+        update={
+            "length": _unknown_provisional_dimension(),
+            "width": _unknown_provisional_dimension(),
+            "thickness": _unknown_provisional_dimension(),
+            "material": unknown_text,
+            "finish": unknown_text,
+        }
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(rows=(row,)), limit=3, retrieval_method="attribute"
+    )
+
+    assert response.status == "provisional"
+    assert len(response.scenarios) == 1
+    scenario = response.scenarios[0]
+    assert scenario.condition.family == "living room furniture"
+    assert scenario.condition.material is None
+    assert scenario.condition.finish is None
+    assert scenario.condition.currency is None
+    assert scenario.condition.cost_scope == ()
+    assert scenario.condition.hours_scope == ("production_time",)
+    assert scenario.scaling_basis.length_mm is None
+    assert scenario.scaling_basis.area_mm2 is None
+    assert scenario.scaling_basis.volume_mm3 is None
+    assert scenario.cost_subtotal is None
+    assert scenario.cost_range is None
+    assert scenario.manufacturing_hours == 1.94
+    assert scenario.hours_range is None
+    assert scenario.hours_uncertainty in {"medium", "high"}
+    assert "required_cost_scope" not in scenario.missing_data
+    assert {item.code for item in scenario.assumptions} >= {
+        "reference_material_unreported",
+        "reference_finish_unreported",
+    }
+    provenance = scenario.result_provenance[0]
+    assert provenance.origin == "published"
+    assert provenance.source_date.isoformat() == "2026-09-20"
+    assert provenance.cost_basis is None
+    assert provenance.contributes_cost is False
+    assert provenance.contributes_hours is True
+    assert provenance.hours_scope == ("production_time",)
+
+
+def test_provisional_item_hours_never_sum_partial_geometry(tmp_path) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    store.import_records(
+        HistoricalImport(records=(_published_item_hours_record(),)), dry_run=False
+    )
+    first = _provisional_snapshot().rows[0]
+    unknown_text = ProvisionalText(
+        value=None, state="unknown", review_status="abstained"
+    )
+    second = first.model_copy(
+        update={
+            "component_id": "panel-unknown",
+            "scenario_occurrence_ids": ("unknown-occurrence",),
+            "quantity": first.quantity.model_copy(update={"value": 1}),
+            "length": _unknown_provisional_dimension(),
+            "width": _unknown_provisional_dimension(),
+            "thickness": _unknown_provisional_dimension(),
+            "material": unknown_text,
+            "finish": unknown_text,
+        }
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(rows=(first, second)),
+        limit=3,
+        retrieval_method="attribute",
+    )
+
+    scenario = response.scenarios[0]
+    assert scenario.manufacturing_hours == 1.94
+    assert scenario.scaling_basis.length_mm is None
+    assert scenario.scaling_basis.area_mm2 is None
+    assert scenario.scaling_basis.volume_mm3 is None
+
+
+def test_provisional_area_hours_require_complete_accepted_area(tmp_path) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    area_record = _published_item_hours_record(driver="area")
+    area_record["area_mm2"] = 2_000_000
+    store.import_records(HistoricalImport(records=(area_record,)), dry_run=False)
+    base = _provisional_snapshot().rows[0]
+    row = base.model_copy(
+        update={
+            "length": _unknown_provisional_dimension(),
+            "width": _unknown_provisional_dimension(),
+            "thickness": _unknown_provisional_dimension(),
+        }
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(rows=(row,)), limit=3, retrieval_method="attribute"
+    )
+
+    assert response.status == "not_estimable"
+    assert response.scenarios == ()
+    assert "compatible_non_synthetic_reference" in response.missing_data
+
+
+def test_known_material_conflict_blocks_cost_but_not_unconstrained_production_time(
+    tmp_path,
+) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    steel = _record("steel-cost", material="steel")
+    hours = _published_item_hours_record()
+    store.import_records(HistoricalImport(records=(steel, hours)), dry_run=False)
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(), limit=3, retrieval_method="attribute"
+    )
+
+    assert [item.comparable_id for item in response.scenarios] == ["published-hours"]
+    scenario = response.scenarios[0]
+    assert scenario.cost_subtotal is None
+    assert scenario.manufacturing_hours == 1.94
+    assert scenario.condition.material is None
+    assert "reference_material_unreported" in {
+        item.code for item in scenario.assumptions
+    }
+    assert scenario.condition.hours_scope == ("production_time",)
+
+
+def test_heterogeneous_bom_blocks_cost_but_allows_unconstrained_item_hours(
+    tmp_path,
+) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    store.import_records(
+        HistoricalImport(
+            records=(_record("cost-reference"), _published_item_hours_record())
+        ),
+        dry_run=False,
+    )
+    first = _provisional_snapshot().rows[0]
+    second = first.model_copy(
+        update={
+            "component_id": "steel-panel",
+            "scenario_occurrence_ids": ("steel-occurrence",),
+            "quantity": first.quantity.model_copy(update={"value": 1}),
+            "material": first.material.model_copy(update={"value": "steel"}),
+        }
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(rows=(first, second)),
+        limit=3,
+        retrieval_method="attribute",
+    )
+
+    assert [item.comparable_id for item in response.scenarios] == ["published-hours"]
+    scenario = response.scenarios[0]
+    assert scenario.cost_subtotal is None
+    assert scenario.manufacturing_hours == 1.94
+    assert scenario.condition.material is None
+
+
+def test_provisional_candidate_limit_preserves_cost_and_hours_metrics(tmp_path) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    cost_records = []
+    for index in range(3):
+        row = _record(f"cost-{index}", project_id=f"cost-project-{index}")
+        row["manufacturing_hours"] = None
+        row["hours_scope"] = []
+        for concept in row["concepts"]:
+            concept["hours"] = None
+        cost_records.append(row)
+    store.import_records(
+        HistoricalImport(
+            records=(*cost_records, _published_item_hours_record())
+        ),
+        dry_run=False,
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(), limit=2, retrieval_method="attribute"
+    )
+
+    assert len(response.scenarios) == 2
+    assert any(item.cost_subtotal is not None for item in response.scenarios)
+    assert any(
+        item.condition.hours_scope == ("production_time",)
+        and item.manufacturing_hours == 1.94
+        for item in response.scenarios
+    )
+
+
+def test_nullable_reference_attributes_never_weaken_cost_eligibility(tmp_path) -> None:
+    store = HistoricalStore(tmp_path / "history.sqlite3")
+    cost_without_context = {
+        "record_id": "labor-cost-without-context",
+        "project_id": "labor-cost-without-context",
+        "revision": "r1",
+        "family": "table",
+        "quantity": 1,
+        "currency": "EUR",
+        "actual_cost": 100,
+        "cost_basis": "actual",
+        "origin": "actual",
+        "provenance": {"source": "ERP WO-9", "source_date": "2026-10-31"},
+        "concepts": [
+            {
+                "concept_id": "labor",
+                "kind": "labor",
+                "driver": "item",
+                "cost": 100,
+            }
+        ],
+        "included_scope": ["labor"],
+        "cost_scope": ["labor"],
+        "hours_scope": [],
+    }
+    store.import_records(
+        HistoricalImport(
+            records=(cost_without_context, _published_item_hours_record())
+        ),
+        dry_run=False,
+    )
+
+    response = store.provisional_scenarios(
+        _provisional_snapshot(), limit=3, retrieval_method="attribute"
+    )
+
+    assert [item.comparable_id for item in response.scenarios] == ["published-hours"]
+    assert response.scenarios[0].cost_subtotal is None
+    assert response.scenarios[0].manufacturing_hours == 1.94
 
 
 def test_provisional_snapshot_contract_fails_closed_on_incoherent_mapper_output() -> None:

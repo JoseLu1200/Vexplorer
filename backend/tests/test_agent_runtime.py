@@ -8,7 +8,7 @@ import httpx
 import pytest
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.provider import MAX_PROVIDER_RESPONSE_BYTES, OpenAIResponsesProvider, ProviderResponse, ToolCall
+from backend.app.agente.provider import MAX_PROVIDER_RESPONSE_BYTES, OpenAIResponsesProvider, ProviderError, ProviderResponse, ToolCall
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs
@@ -173,6 +173,68 @@ def test_provider_errors_do_not_echo_credentials_or_remote_body() -> None:
     with pytest.raises(RuntimeError) as caught:
         provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=0.25)
     assert str(caught.value) == "provider_request_failed"
+
+
+def test_provider_http_error_exposes_only_safe_bounded_operational_metadata() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            429,
+            headers={"x-request-id": "req-safe-123"},
+            json={
+                "error": {
+                    "code": "rate_limit_exceeded",
+                    "message": "remote leaked super-secret credential",
+                }
+            },
+        )
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(api_key="super-secret", model="gpt-test", base_url="https://example.test/v1"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(ProviderError) as caught:
+        provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=0.25)
+
+    assert str(caught.value) == "provider_request_failed"
+    assert caught.value.status_code == 429
+    assert caught.value.provider_code == "rate_limit_exceeded"
+    assert caught.value.request_id == "req-safe-123"
+    assert caught.value.response_id is None
+    assert caught.value.incomplete_reason is None
+    assert "secret" not in repr(caught.value).lower()
+    assert "remote" not in repr(caught.value).lower()
+
+
+def test_provider_incomplete_error_preserves_safe_response_identity_and_reason() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "req-incomplete-456"},
+            json={
+                "id": "resp-incomplete-789",
+                "status": "incomplete",
+                "incomplete_details": {"reason": "max_output_tokens"},
+                "output": [],
+                "private_debug": "must-not-propagate",
+            },
+        )
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(api_key="super-secret", model="gpt-test", base_url="https://example.test/v1"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(ProviderError) as caught:
+        provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=0.25)
+
+    assert str(caught.value) == "provider_response_incomplete"
+    assert caught.value.status_code == 200
+    assert caught.value.provider_code is None
+    assert caught.value.request_id == "req-incomplete-456"
+    assert caught.value.response_id == "resp-incomplete-789"
+    assert caught.value.incomplete_reason == "max_output_tokens"
+    assert "private_debug" not in repr(caught.value)
 
 
 def test_provider_streams_valid_json_without_content_length() -> None:

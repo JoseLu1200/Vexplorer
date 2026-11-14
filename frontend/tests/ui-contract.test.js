@@ -85,6 +85,11 @@ test("private identity, job progress and event gap status are announced", () => 
   assert.match(html, /id="restore-run-retry"[^>]*type="button"[^>]*hidden/);
 });
 
+test("restoring a persisted run replaces the pending source provenance",()=>{
+  assert.match(app,/Documento restaurado · fuente persistida en servidor/);
+  assert.match(app,/state\.documentId&&\!state\.documentIngestion/);
+});
+
 test("static assets remain relative for a prefixed private deployment", () => {
   assert.match(html, /href="\.\/styles\.css"/);
   assert.match(html, /src="\.\/app\.js"/);

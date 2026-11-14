@@ -306,7 +306,9 @@ def ingest_pdf(
             if unsupported:
                 page_warnings.append(f"unsupported_vector_operations:{unsupported}")
             if image_count:
-                page_warnings.append(f"raster_page_requires_manual_review:{page_number}")
+                page_warnings.append(
+                    f"raster_page_has_no_vector_geometry:{page_number}"
+                )
             visible_text = " ".join(block.text for block in text_blocks).upper()
             if scale is not None and ("DO NOT SCALE" in visible_text or "NO ESCALAR" in visible_text):
                 page_warnings.append(
