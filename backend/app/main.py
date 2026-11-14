@@ -202,6 +202,33 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
 
 
+def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings) -> None:
+    """Registra las funcionalidades de ``backend/app/precedentes`` (ideas 2.1-3.5 del brainstorming de embeddings).
+
+    En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca.
+    """
+    from backend.app.precedentes.api_analogia import crear_router_analogia
+    from backend.app.precedentes.api_busqueda import crear_proveedor_traductor, crear_router_busqueda
+    from backend.app.precedentes.api_decisiones import crear_router_decisiones
+    from backend.app.precedentes.api_embeddings import crear_router_embeddings
+    from backend.app.precedentes.api_herrajes import crear_router_herrajes
+    from backend.app.precedentes.api_imagen import crear_router_imagen
+    from backend.app.precedentes.api_piezas import crear_router_piezas
+    from backend.app.precedentes.api_sugerencias import crear_router_sugerencias
+    from backend.app.precedentes.decisiones import AlmacenDecisiones
+    from backend.app.precedentes.espacio import AlmacenEspacio
+    from backend.app.precedentes.herrajes import AlmacenHerrajes
+
+    app.include_router(crear_router_sugerencias(repository))
+    app.include_router(crear_router_analogia(historical_store))
+    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / "precedentes_espacio.sqlite3")))
+    app.include_router(crear_router_piezas(repository))
+    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")))
+    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0))
+    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None))
+    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
+
+
 def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
@@ -645,6 +672,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 path == "/api/v1/history" or path.startswith("/api/v1/history/")
                 or path == "/api/v1/library" or path.startswith("/api/v1/library/")
                 or path == "/api/v1/semantic-explorer/review"
+                or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
                 or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
             )
             if shared_feature:
@@ -744,6 +772,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
     ))
+    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings)
     from backend.app.reconstruction3d.router import create_reconstruction_router
     from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
     from dataclasses import replace
