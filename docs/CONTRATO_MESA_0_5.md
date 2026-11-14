@@ -8,7 +8,7 @@ La entrada es un DXF 2D con vistas ortográficas del mueble montado. El cliente 
 
 El DXF no aporta BOM, vistas de piezas, roles, cantidades ni montaje 3D. El ledger conserva cotas, vistas, conflictos y procedencia. Filename, manifiesto, referencia privada y respuestas del fixture no entran en prompt, herramientas o reglas.
 
-`geometry_only` siempre devuelve el ledger. Solo genera catálogo si el usuario seleccionó `proposal_mode=catalog_baseline`, marcado como tal y nunca como IA. `live` exige `proposal_mode=model_generated` y la herramienta cerrada `proponer_descomposicion`. No hay fallback silencioso.
+`geometry_only` siempre devuelve el ledger. Solo genera catálogo si el usuario seleccionó `proposal_mode=catalog_baseline` y `table_template_id=side_supports_v1|corner_supports_v1`, marcado como tal y nunca como IA. `live` exige `proposal_mode=model_generated` y la herramienta cerrada `proponer_descomposicion`. No hay fallback silencioso ni selección de topología por apariencia.
 
 ## Ledger observacional
 
@@ -18,11 +18,11 @@ El DXF no aporta BOM, vistas de piezas, roles, cantidades ni montaje 3D. El ledg
 analyze_mounted_table(extraction: DrawingExtraction) -> MountedTableAnalysis
 ```
 
-`MountedTableAnalysis` contiene perfil, `ledger_revision`, medidas admitidas, warnings y estado. Cada `TableMeasure` tiene ID, semántica/eje, valor métrico nullable, estado `observed|unknown|conflict` y refs measurement/view/evidence/entity. Un conflicto nunca se resuelve silenciosamente. El ledger es inmutable entre revisiones.
+`MountedTableAnalysis` contiene perfil, `ledger_revision`, medidas admitidas, warnings y estado. Cada `TableMeasure` tiene ID, semántica/eje, valor métrico nullable, estado `observed|unknown|conflict` y refs measurement/view/evidence/entity. El análisis crea además los slots `unknown` definidos por el perfil cuando falta sección/espesor; se distinguen de una medida CAD observada y no inventan evidencia. Un conflicto nunca se resuelve silenciosamente. El ledger es inmutable entre revisiones.
 
 ## Programa acotado
 
-`TableProgramProposal` contiene perfil/revisión/origen; hasta 24 bindings ordenados; exactamente dos specs de tipo (`tabletop` y `side_support` o `corner_support`); cobertura mediante `consumed_measurement_ids` + `unassigned_measurement_ids`; premisas y evidencia separadas.
+`TableProgramProposal` contiene perfil/revisión/origen; hasta 24 bindings ordenados; exactamente dos specs de tipo (`tabletop` y `side_support` o `corner_support`); premisas estructuradas y evidencia separadas. El modelo no declara una cobertura confiable: el evaluador deriva los IDs consumidos desde operand refs y crea `TableMeasurementDisposition{measurement_id,reason,blocking}` para el resto. Conflictos son siempre bloqueantes; una cota redundante puede ser no bloqueante. `completed` solo admite disposiciones no bloqueantes.
 
 `TableBinding.operation=copy|add|subtract`. Sus operandos solo son `measure:<id>` o `binding:<id>` anterior. `copy` tiene 1 operando, `add` al menos 2 y `subtract` al menos 2, con semántica primero menos suma del resto. Se rechazan constantes, floats, coordenadas, refs futuras, ciclos, bindings muertos, unidades incompatibles y resultados no finitos/no positivos.
 
@@ -36,7 +36,7 @@ Los componentes solo refieren bindings L/W/T. Cantidad y placement proceden del 
 
 No se duplican specs para codificar cantidad. Las topologías excluyentes son tapa + 2 soportes laterales o tapa + 4 patas.
 
-El servidor conserva propuesta raw, normaliza símbolos, calcula programa canónico y `program_hash` independiente de IDs arbitrarios/orden, y registra versiones de ledger/perfil/reglas. Los intentos inválidos se auditan sin argumentos crudos ni secretos.
+El servidor conserva propuesta raw y calcula forma/hash canónicos topológicamente: asigna IDs canónicos; puede ordenar specs/componentes; ordena operandos de `add`; en `subtract` preserva el minuendo y solo ordena los sustraendos. La identidad incluye ledger, perfil y versiones de reglas. Los intentos inválidos se auditan sin argumentos crudos ni secretos.
 
 Para la selección humana explícita de baseline, A implementa también:
 
@@ -46,7 +46,7 @@ catalog_table_programs(
 ) -> tuple[TableProgramProposal, ...]
 ```
 
-Devuelve las dos alternativas incompatibles side/corner con `proposal_origin=catalog_baseline`; ninguna se selecciona por apariencia. Secciones o espesores ausentes son slots/premisas `unknown`, no mediciones CAD fantasma ni medidas consumidas artificialmente. B no duplica estas reglas en repositorio.
+Devuelve las dos alternativas incompatibles side/corner con `proposal_origin=catalog_baseline`; B conserva únicamente la que coincide con el `table_template_id` solicitado. Ninguna se selecciona por apariencia. Secciones o espesores ausentes son `TableMeasure unknown` del perfil, no mediciones CAD fantasma. B no duplica estas reglas en repositorio.
 
 ## Evaluación y revisión
 
@@ -63,9 +63,9 @@ evaluate_table_program(
 
 `EvaluatedTableProgram` conserva bindings/componentes efectivos, ocurrencias, placements, dimensiones generales, constraints, issues, dependencias, cobertura, registry versions y programa/hash canónicos. `conflict` domina; después `unknown`; cualquier dependencia `proposed` mantiene el resultado `proposed`. Una operación sobre `observed|confirmed` produce `calculated`, nunca `observed`.
 
-`TableReviewDecision` solo acepta/rechaza `program|component|binding|premise` por ID exacto y lleva razón; no contiene números. `TableConfirmedValue` apunta a un slot predeclarado `measurement_slot|binding_input_slot`, con `target_id`, `value_mm>0`, razón y `source=human`; solo resuelve `unknown|conflict|proposed`, nunca modifica `observed|calculated` ni una dimensión final de componente. Aceptar topología no rellena valores y confirmar un valor no acepta topología.
+`TablePremise` tiene ID, kind cerrado, `required` y descripción; el texto libre nunca participa en completitud. `TableReviewDecision` solo acepta/rechaza `program|component|premise` por ID exacto y lleva razón; no contiene números. Las decisiones son únicas por target; reject bloquea dependientes; aceptar programa no acepta componentes/premisas. `TableConfirmedValue` solo apunta a `target_kind=measurement_slot`, con `target_id`, `value_mm>0`, razón y `source=human`; resuelve un overlay `unknown|conflict|proposed`, nunca modifica `TableMeasure observed|calculated` ni una dimensión final. Aceptar topología no rellena valores y confirmar un valor no acepta topología.
 
-Cada revisión recalcula desde ledger crudo + decisiones humanas y persiste solo la copia efectiva en esa revisión. `completed` exige programa/topología/premisas/componentes aceptados; L/W/T positivas; qty/constraints/placements pass; cobertura completa; y ningún blocker/conflicto/desconocido. En otro caso queda `needs_review`.
+Cada revisión recalcula desde ledger crudo + decisiones humanas y persiste solo la copia efectiva en esa revisión. `completed` exige registry/versiones vigentes, decisiones no contradictorias, programa/topología, cada premisa required y cada componente aceptados; L/W/T positivas; qty/constraints/placements pass; y ninguna disposición bloqueante/conflicto/desconocido. En otro caso queda `needs_review`.
 
 `Result` añade `input_semantics=mounted_orthographic_views`, `table_analysis`, `table_programs`, `selected_table_program_id` y `evaluated_table_program`. `ReviewRequest` añade `table_program_id`, `table_decisions` y `table_confirmed_values`, excluyentes con legacy/parts-only.
 
@@ -108,10 +108,11 @@ El apoyo de costes implementa exclusivamente:
 estimate_table_costs(
     evaluated: EvaluatedTableProgram,
     *, result_revision: int,
+    scope: TableCostScope,
 ) -> TableCostEstimate
 ```
 
-El catálogo sintético pequeño vive en `table_costs.py`; su versión se expone. El cálculo usa ocurrencias, no vistas o tipos duplicados. Cada concepto conserva refs component/occurrence, fórmula, cantidad, unidad `EUR/m2|EUR/m3|EUR/m|EUR/unit|EUR/h`, tarifa, importe y estado `resolved|unknown|not_applicable`. El fijo se aplica una vez; canteado solo con scope explícito; horas, operaciones y acabado ausentes siguen unknown.
+`TableCostScope` selecciona `material_tariff_id`, `edge_scope=none|all_exposed` y `operation_tariff_ids`; sin selección, los conceptos requeridos quedan unknown. El catálogo sintético pequeño vive en `table_costs.py`; su versión se expone. El cálculo usa ocurrencias, no vistas o tipos duplicados. Cada concepto conserva refs component/occurrence, fórmula, cantidad + `quantity_unit=m2|m3|m|unit|h`, tarifa + `rate_unit=EUR/m2|EUR/m3|EUR/m|EUR/unit|EUR/h`, importe y estado `resolved|unknown|not_applicable`. El fijo se aplica una vez; canteado solo con scope explícito; horas, operaciones y acabado ausentes siguen unknown.
 
 Se exponen `known_subtotal_eur` y `total_state=partial|complete`; si falta un concepto requerido, `grand_total_eur=null`. Todo queda ligado a revisión/hash. El módulo no crea modelos/API.
 
@@ -121,7 +122,7 @@ Solo una revisión aceptada puede guardarse. La mesa usa `FurnitureDescriptorV3`
 
 ## API aditiva
 
-- `POST /api/v1/runs`: añade `input_kind`, `table_profile` y `proposal_mode=none|catalog_baseline|model_generated`; combinaciones incompatibles dan 422.
+- `POST /api/v1/runs`: añade `input_kind`, `table_profile`, `proposal_mode=none|catalog_baseline|model_generated` y `table_template_id`; baseline exige template explícito, live lo prohíbe, y combinaciones incompatibles dan 422.
 - `GET /api/v1/runs/{run_id}/table?result_revision=N`: análisis, programas, seleccionado y evaluación.
 - `POST /api/v1/runs/{run_id}/reviews`: misma ruta/stale guard; admite revisión de mesa.
 - `GET /api/v1/runs/{run_id}/scene?result_revision=N`: escena efectiva.
@@ -129,6 +130,7 @@ Solo una revisión aceptada puede guardarse. La mesa usa `FurnitureDescriptorV3`
 - `GET /api/v1/runs/{run_id}/table-drawings/{sheet_id}.{format}?result_revision=N&program_hash=...`: bytes SVG/DXF.
 - `POST /api/v1/runs/{run_id}/table-costs`: calcula revisión exacta; `GET .../table-costs?result_revision=N` solo lee persistido.
 - Export JSON incluye análisis/programa raw-normalizado/revisión y scene/drawings/cost/descriptor/procedencia disponibles.
+- `POST /library`, `/similarity` y `/groups` admiten `descriptor_version=furniture-v3`; consulta/grupos filtran exactamente ese espacio y pueden informar `excluded_count`. Sin filtro se conserva el comportamiento legacy, incluido el rechazo de mezcla incompatible.
 
 Lecturas no llaman ocultamente al proveedor. Una revisión nueva invalida derivados actuales sin borrar historia. Legacy y parts-only no cambian.
 
