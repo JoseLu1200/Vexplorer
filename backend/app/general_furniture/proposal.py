@@ -8,6 +8,7 @@ from backend.app.contratos.modelos import (
     GeneralValue,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.assembly_semantics import validate_assembly_source_references
 from backend.app.general_furniture.inference import resolve_construction_graph
 
 
@@ -32,6 +33,7 @@ def materialize_general_proposal(
     }
     dimensions = {item.id: item for item in extraction.dimensions}
     measures = {item.id: item for item in derive_geometry_measurements(extraction)}
+    validate_assembly_source_references(extraction, proposal, allowed_document_refs=allowed_document_refs)
     internal_ref_prefixes = (
         "parameter:", "binding:", "premise:", "component:",
         "constraint:", "detail:", "decision:",
@@ -275,6 +277,8 @@ def materialize_general_proposal(
         ),
         premises=proposal.premises,
         assumptions=proposal.assumptions,
+        assembly_relations=proposal.assembly_relations,
+        assembly_alternatives=proposal.assembly_alternatives,
         construction_scenario_id=proposal.construction_scenario_id,
         construction_parameters=resolved_parameters,
         construction_constraints=proposal.construction_constraints,

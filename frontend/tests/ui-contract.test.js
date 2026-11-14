@@ -173,6 +173,8 @@ test("PDF pages require an explicit page and optional confirmed scale before ana
   assert.match(html, /id="pdf-page-controls"[^>]*hidden/);
   assert.match(html, /id="pdf-page-select"/);
   assert.match(html, /id="pdf-mm-per-point"[^>]*min="0"/);
-  assert.match(html, /id="pdf-scale-reason"[^>]*required/);
+  assert.doesNotMatch(html, /id="pdf-scale-reason"[^>]*required/);
+  assert.match(app, /if\(rawScale&&!reason\)return setMessage\("Explica de dónde procede la escala confirmada\."/);
+  assert.match(app, /reason\|\|"Escala no confirmada; conservar unidades desconocidas\."/);
   assert.match(html, /id="pdf-normalize"/);
 });

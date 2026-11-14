@@ -4,7 +4,7 @@ from datetime import date
 from math import isfinite
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SCHEMA_VERSION = "0.2.0"
 
@@ -792,6 +792,29 @@ class GeneralComponentProposal(StrictModel):
     quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32, description="Must include at least one closed premise:<id>; may also cite exact ledger refs such as contour:<id>, observation:<id>, evidence:<id>, view:<id>, document:<id>, or visual:<id>.")
 
 
+class GeneralAssemblyRelation(StrictModel):
+    subject_component_id: str = Field(min_length=1, max_length=120)
+    relation: Literal["supported_by", "fixed_to", "attached_to", "contained_by", "aligned_with", "adjacent_to", "hinged_to", "unknown"]
+    object_component_id: str = Field(min_length=1, max_length=120)
+    state: Literal["hypothesis", "unknown", "conflict"]
+    premise_ids: tuple[str, ...] = ()
+    source_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def relation_is_bounded(self) -> "GeneralAssemblyRelation":
+        if self.subject_component_id == self.object_component_id:
+            raise ValueError("assembly relation cannot target the same component")
+        if self.state == "hypothesis" and (not self.premise_ids or not self.source_refs):
+            raise ValueError("hypothesis assembly relation requires premise and source references")
+        return self
+
+
+class GeneralAssemblyAlternative(StrictModel):
+    alternative_id: str = Field(min_length=1, max_length=120)
+    relations: tuple[GeneralAssemblyRelation, ...] = Field(min_length=1, max_length=256)
+    premise_ids: tuple[str, ...] = ()
+
+
 class GeneralFurnitureProposal(StrictModel):
     schema_version: Literal["0.6.0"] = "0.6.0"
     id: str = Field(min_length=1, max_length=120)
@@ -808,6 +831,8 @@ class GeneralFurnitureProposal(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
     @model_validator(mode="after")
     def references_are_closed(self) -> "GeneralFurnitureProposal":
@@ -824,6 +849,7 @@ class GeneralFurnitureProposal(StrictModel):
             if len(values) != len(set(values)):
                 raise ValueError("construction ids must be unique by kind")
         binding_set = set(binding_ids)
+        component_set = set(component_ids)
         premise_set = set(premise_ids)
         parameter_set = set(parameter_ids)
         detail_set = set(detail_ids)
@@ -945,6 +971,30 @@ class GeneralFurnitureProposal(StrictModel):
                 raise ValueError("construction placement references an unknown premise")
             if not internal_refs_are_closed(placement.source_refs):
                 raise ValueError("construction placement has an unknown source reference")
+        alternative_ids = [item.alternative_id for item in self.assembly_alternatives]
+        if self.assembly_alternatives and len(self.assembly_alternatives) < 2:
+            raise ValueError("assembly alternatives require at least two alternatives")
+        if len(alternative_ids) != len(set(alternative_ids)):
+            raise ValueError("duplicate assembly alternative ids")
+        relations = self.assembly_relations + tuple(relation for item in self.assembly_alternatives for relation in item.relations)
+        if any(
+            relation.subject_component_id not in component_set
+            or relation.object_component_id not in component_set
+            or not set(relation.premise_ids) <= premise_set
+            for relation in relations
+        ):
+            raise ValueError("assembly relation references an unknown component or premise")
+        if any(not set(item.premise_ids) <= premise_set for item in self.assembly_alternatives):
+            raise ValueError("assembly alternative references an unknown premise")
+        def relation_signature(relation: GeneralAssemblyRelation) -> tuple[str, str, str, str]:
+            return (relation.subject_component_id, relation.relation, relation.object_component_id, relation.state)
+
+        relation_groups = (self.assembly_relations,) + tuple(item.relations for item in self.assembly_alternatives)
+        if any(len(group) != len({relation_signature(relation) for relation in group}) for group in relation_groups):
+            raise ValueError("duplicate assembly relation")
+        signatures = [tuple(sorted(relation_signature(relation) for relation in item.relations)) for item in self.assembly_alternatives]
+        if len(signatures) != len(set(signatures)):
+            raise ValueError("assembly alternatives require distinct relation sets")
         return self
 
 
@@ -959,6 +1009,8 @@ class ProposeGeneralFurnitureArgs(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
 
 class InspectGeneralContextArgs(StrictModel):
@@ -1317,6 +1369,8 @@ class GeneralFurnitureDraft(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = ()
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = ()
     status: Literal["needs_review"] = "needs_review"
 
 
@@ -1370,6 +1424,167 @@ class GeneralBomRow(StrictModel):
         return self
 
 
+SignedWorldAxis = Literal["+x", "-x", "+y", "-y", "+z", "-z"]
+
+
+def _signed_axis_vector(value: SignedWorldAxis) -> tuple[int, int, int]:
+    sign = 1 if value[0] == "+" else -1
+    axis = value[1]
+    return tuple(sign if name == axis else 0 for name in ("x", "y", "z"))  # type: ignore[return-value]
+
+
+class GeneralAssemblyOrientation(StrictModel):
+    length_axis: SignedWorldAxis
+    width_axis: SignedWorldAxis
+    thickness_axis: SignedWorldAxis
+
+    @model_validator(mode="after")
+    def right_handed_signed_permutation(self) -> "GeneralAssemblyOrientation":
+        values = (self.length_axis, self.width_axis, self.thickness_axis)
+        if len({value[1] for value in values}) != 3:
+            raise ValueError("orientation axes must form a signed permutation")
+        a, b, c = (_signed_axis_vector(value) for value in values)
+        determinant = (
+            a[0] * (b[1] * c[2] - b[2] * c[1])
+            - a[1] * (b[0] * c[2] - b[2] * c[0])
+            + a[2] * (b[0] * c[1] - b[1] * c[0])
+        )
+        if determinant != 1:
+            raise ValueError("orientation determinant must be +1")
+        return self
+
+
+class GeneralAssemblyFrame(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    region_id: str = Field(min_length=1, max_length=160)
+    view_id: str = Field(min_length=1, max_length=120)
+    horizontal_axis: SignedWorldAxis
+    vertical_axis: SignedWorldAxis
+    origin_corner: Literal["lower_left", "lower_right", "upper_left", "upper_right"]
+
+    @model_validator(mode="after")
+    def axes_are_distinct(self) -> "GeneralAssemblyFrame":
+        if self.horizontal_axis[1] == self.vertical_axis[1]:
+            raise ValueError("frame axes must map to distinct world axes")
+        return self
+
+
+class GeneralAssemblyProjection(StrictModel):
+    frame_id: str = Field(min_length=1, max_length=120)
+    contour_id: str = Field(min_length=1, max_length=160)
+    evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=32)
+    occlusion_ambiguity_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+
+class GeneralAssemblyPlacementHypothesis(StrictModel):
+    occurrence_id: str = Field(min_length=1, max_length=160)
+    occurrence_index: int = Field(gt=0, le=1000)
+    component_id: str = Field(min_length=1, max_length=120)
+    orientation: GeneralAssemblyOrientation
+    projections: tuple[GeneralAssemblyProjection, ...] = Field(min_length=2, max_length=3)
+
+
+class GeneralAssemblyPenetrationHypothesis(StrictModel):
+    occurrence_ids: tuple[str, str]
+    kind: Literal["projected_overlap_machining_unverified"]
+    source_refs: tuple[str, ...] = Field(min_length=2, max_length=32)
+
+    @model_validator(mode="after")
+    def pair_is_physical(self) -> "GeneralAssemblyPenetrationHypothesis":
+        if self.occurrence_ids[0] == self.occurrence_ids[1]:
+            raise ValueError("penetration hypothesis requires two occurrences")
+        return self
+
+
+class GeneralAssemblyCandidate(StrictModel):
+    schema_version: Literal["assembly-1"] = "assembly-1"
+    run_id: str = Field(min_length=1)
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    assembly_revision: int = Field(gt=0)
+    candidate_id: str = Field(min_length=1, max_length=120)
+    alternative_id: str = Field(min_length=1, max_length=120)
+    frames: tuple[GeneralAssemblyFrame, ...] = Field(min_length=2, max_length=32)
+    placements: tuple[GeneralAssemblyPlacementHypothesis, ...] = Field(min_length=1, max_length=100)
+    penetration_hypotheses: tuple[GeneralAssemblyPenetrationHypothesis, ...] = Field(default=(), max_length=256)
+    sources: tuple[str, ...] = Field(min_length=1, max_length=128)
+
+    @model_validator(mode="after")
+    def candidate_ids_are_unique(self) -> "GeneralAssemblyCandidate":
+        frame_ids = [item.id for item in self.frames]
+        frame_region_ids = [item.region_id for item in self.frames]
+        occurrence_ids = [item.occurrence_id for item in self.placements]
+        if len(frame_ids) != len(set(frame_ids)):
+            raise ValueError("duplicate assembly frame ids")
+        if len(frame_region_ids) != len(set(frame_region_ids)):
+            raise ValueError("one coherent assembly frame is required per region")
+        if len(occurrence_ids) != len(set(occurrence_ids)):
+            raise ValueError("duplicate assembly occurrence ids")
+        occurrence_set = set(occurrence_ids)
+        pairs = [frozenset(item.occurrence_ids) for item in self.penetration_hypotheses]
+        if len(pairs) != len(set(pairs)):
+            raise ValueError("duplicate penetration hypothesis pairs")
+        if any(not set(item.occurrence_ids) <= occurrence_set for item in self.penetration_hypotheses):
+            raise ValueError("penetration hypothesis references an unknown occurrence")
+        return self
+
+
+class GeneralAssemblyContextRegion(StrictModel):
+    id: str
+    view_id: str
+    bounds_source: Bounds2D
+    bounds_mm: Bounds2D
+    contour_ids: tuple[str, ...]
+
+
+class GeneralAssemblyContextContour(StrictModel):
+    id: str
+    view_id: str
+    region_id: str
+    bounds_mm: Bounds2D
+    evidence_ids: tuple[str, ...]
+    source_entity_ids: tuple[str, ...]
+    box_fit_residual_mm: float = Field(ge=0, allow_inf_nan=False)
+
+
+class GeneralAssemblyContextComponent(StrictModel):
+    id: str
+    length_mm: float = Field(gt=0, allow_inf_nan=False)
+    width_mm: float = Field(gt=0, allow_inf_nan=False)
+    thickness_mm: float = Field(gt=0, allow_inf_nan=False)
+    occurrence_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class GeneralAssemblyContext(StrictModel):
+    schema_version: Literal["assembly-context-1"] = "assembly-context-1"
+    drawing_id: str
+    run_id: str
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    regions: tuple[GeneralAssemblyContextRegion, ...]
+    contours: tuple[GeneralAssemblyContextContour, ...]
+    components: tuple[GeneralAssemblyContextComponent, ...]
+    warnings: tuple[str, ...] = ()
+
+
+class GeneralAssemblyValidationIssue(StrictModel):
+    code: str = Field(min_length=1, max_length=80)
+    severity: Literal["error", "warning"]
+    message: str = Field(min_length=1, max_length=500)
+    occurrence_ids: tuple[str, ...] = ()
+    source_refs: tuple[str, ...] = ()
+
+
+class GeneralAssemblyPlacement(StrictModel):
+    occurrence_id: str
+    occurrence_index: int = Field(gt=0)
+    component_id: str
+    position_mm: Point3D
+    size_mm: Size3D
+    orientation: GeneralAssemblyOrientation
+    source_refs: tuple[str, ...] = Field(min_length=1)
+
+
 class GeneralSceneItem(StrictModel):
     id: str
     component_id: str
@@ -1380,13 +1595,95 @@ class GeneralSceneItem(StrictModel):
     width: GeneralValue
     thickness: GeneralValue
     position_mm: Point3D | None = None
-    status: Literal["schematic_unplaced", "unavailable"]
+    size_mm: Size3D | None = None
+    occurrence_id: str | None = None
+    occurrence_index: int | None = Field(default=None, gt=0)
+    orientation: GeneralAssemblyOrientation | None = None
+    status: Literal["schematic_unplaced", "unavailable", "placed_hypothesis"]
+
+    @model_validator(mode="after")
+    def placed_item_has_instance_transform(self) -> "GeneralSceneItem":
+        transform = (
+            self.position_mm,
+            self.size_mm,
+            self.occurrence_id,
+            self.occurrence_index,
+            self.orientation,
+        )
+        if self.status == "placed_hypothesis" and any(value is None for value in transform):
+            raise ValueError("placed hypothesis requires a complete instance transform")
+        if (self.occurrence_id is None) != (self.occurrence_index is None):
+            raise ValueError("scene occurrence id and index must be provided together")
+        return self
 
 
 class GeneralScene(StrictModel):
-    status: Literal["schematic_incomplete", "schematic_ready", "unavailable"]
+    status: Literal["schematic_incomplete", "schematic_ready", "unavailable", "mounted_hypothesis"]
     items: tuple[GeneralSceneItem, ...]
     warnings: tuple[str, ...]
+
+
+class GeneralAssemblyValidationReport(StrictModel):
+    schema_version: Literal["assembly-report-1"] = "assembly-report-1"
+    status: Literal["accepted", "rejected", "incomplete"]
+    issues: tuple[GeneralAssemblyValidationIssue, ...]
+    placements: tuple[GeneralAssemblyPlacement, ...]
+    scene: GeneralScene | None = None
+    global_bounds_mm: Bounds3D | None = None
+    max_penetration_mm: float = Field(default=0, ge=0, allow_inf_nan=False)
+
+
+class GeneralAssemblyTraceEvent(StrictModel):
+    sequence: int = Field(gt=0)
+    kind: Literal["inspect", "evaluate", "repair", "final"]
+    summary: str = Field(min_length=1, max_length=500)
+
+
+class GeneralAssemblyAttempt(StrictModel):
+    schema_version: Literal["assembly-attempt-1"] = "assembly-attempt-1"
+    run_id: str
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    assembly_revision: int = Field(gt=0)
+    attempt_index: int = Field(gt=0)
+    candidate: GeneralAssemblyCandidate | None = None
+    report: GeneralAssemblyValidationReport
+    model: str = Field(min_length=1, max_length=128)
+    policy_version: str = Field(min_length=1, max_length=128)
+    sources: tuple[str, ...] = Field(min_length=1, max_length=128)
+    trace: tuple[GeneralAssemblyTraceEvent, ...] = Field(max_length=64)
+
+
+class GeneralAssemblyState(StrictModel):
+    schema_version: Literal["assembly-state-1"] = "assembly-state-1"
+    run_id: str
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    assembly_revision: int = Field(gt=0)
+    status: Literal["accepted", "ambiguous", "incomplete", "rejected"]
+    current: GeneralAssemblyAttempt
+    accepted_alternatives: tuple[GeneralAssemblyAttempt, ...] = Field(max_length=64)
+    ambiguous: bool = False
+
+    @model_validator(mode="after")
+    def alternatives_match_state(self) -> "GeneralAssemblyState":
+        expected = (self.run_id, self.proposal_revision, self.review_revision)
+        attempts = (self.current, *self.accepted_alternatives)
+        if any((item.run_id, item.proposal_revision, item.review_revision) != expected for item in attempts):
+            raise ValueError("assembly state contains a stale attempt")
+        alternatives = [item.candidate.alternative_id for item in self.accepted_alternatives if item.candidate is not None]
+        if len(alternatives) != len(self.accepted_alternatives) or len(alternatives) != len(set(alternatives)):
+            raise ValueError("accepted alternatives require unique candidates")
+        if any(item.report.status != "accepted" for item in self.accepted_alternatives):
+            raise ValueError("accepted alternatives must have accepted reports")
+        expected_ambiguous = len(self.accepted_alternatives) > 1
+        if self.ambiguous != expected_ambiguous:
+            raise ValueError("ambiguous flag must match accepted alternatives")
+        if self.status == "ambiguous" and not self.ambiguous:
+            raise ValueError("ambiguous status requires multiple alternatives")
+        if self.status == "accepted" and (self.ambiguous or len(self.accepted_alternatives) != 1):
+            raise ValueError("accepted status requires exactly one accepted alternative")
+        return self
 
 
 class GeneralCostBasisContributor(StrictModel):
@@ -2554,6 +2851,21 @@ class EmbeddingMetadata(StrictModel):
     status: Literal["generated", "cache"]
 
 
+class LibraryPublicationProvenance(StrictModel):
+    source_kind: Literal["real_furniture"]
+    source_reference: str = Field(min_length=1, max_length=500)
+    approved_for_public_library: Literal[True]
+    attested_by: str = Field(min_length=1, max_length=120)
+    attested_at: str = Field(min_length=1)
+
+    @field_validator("source_reference")
+    @classmethod
+    def source_reference_is_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("source reference cannot be blank")
+        return value.strip()
+
+
 class LibraryItem(StrictModel):
     schema_version: Literal["0.3.0"] = "0.3.0"
     id: str = Field(min_length=1)
@@ -2564,6 +2876,7 @@ class LibraryItem(StrictModel):
     descriptor_fingerprint: str = Field(min_length=64, max_length=64)
     created_at: str = Field(min_length=1)
     embedding: EmbeddingMetadata | None = None
+    publication: LibraryPublicationProvenance | None = None
 
 
 class SimilarityDifference(StrictModel):
@@ -2580,8 +2893,21 @@ class SimilarityMatch(StrictModel):
     score: float = Field(ge=-1, le=1, allow_inf_nan=False)
     score_kind: Literal["geometric_similarity", "cosine_similarity"]
     score_components: dict[str, float]
+    technical_score: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    technical_score_kind: Literal["technical_similarity"] | None = None
+    technical_score_components: dict[str, float] = Field(default_factory=dict)
+    compatibility_warnings: tuple[str, ...] = ()
+    equivalent_record_ids: tuple[str, ...] = ()
+    duplicate_record_count: int = Field(default=0, ge=0)
     differences: tuple[SimilarityDifference, ...]
     embedding: EmbeddingMetadata | None = None
+
+    @model_validator(mode="after")
+    def duplicate_count_matches_equivalent_records(self) -> "SimilarityMatch":
+        expected = max(0, len(self.equivalent_record_ids) - 1)
+        if self.duplicate_record_count != expected:
+            raise ValueError("duplicate record count does not match equivalent records")
+        return self
 
 
 class SimilarityGroup(StrictModel):
@@ -2590,6 +2916,8 @@ class SimilarityGroup(StrictModel):
     method: Literal["geometric", "semantic"]
     score_kind: Literal["geometric_similarity", "cosine_similarity"]
     threshold: float = Field(ge=-1, le=1, allow_inf_nan=False)
+    linkage: Literal["complete"] = "complete"
+    minimum_pair_score: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     explanation: str = Field(min_length=1)
 
 

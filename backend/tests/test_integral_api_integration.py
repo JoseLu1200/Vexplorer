@@ -1074,3 +1074,74 @@ def test_production_job_integrates_general_review_derived_and_history_persistent
     persisted = restarted.get(f"/api/v1/runs/{run_id}/general", auth=auth)
     assert persisted.status_code == 200
     assert persisted.json()["data"]["review"]["reviewer_name"] == "alice"
+
+class _CountingAssemblyProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_response(self, **kwargs):
+        self.calls += 1
+        raise AssertionError("insufficient reviewed geometry must fail before provider spend")
+
+def test_general_assembly_phase_persists_failure_and_retry_uses_durable_job(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    assembly_provider = _CountingAssemblyProvider()
+    app = create_app(
+        data_dir=tmp_path,
+        frontend_dir=tmp_path / "none",
+        agent_provider=_GeneralLiveProvider(),
+        general_assembly_provider=assembly_provider,
+    )
+    client = TestClient(app)
+    uploaded = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]
+    created = client.post(
+        "/api/v1/runs",
+        json={
+            "document_id": uploaded["document_id"],
+            "mode": "live",
+            "input_kind": "general_furniture",
+            "proposal_mode": "model_generated",
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    run_id = created.json()["data"]["run"]["id"]
+    record = client.get(f"/api/v1/runs/{run_id}/general").json()["data"]
+    query = (
+        f"proposal_revision={record['proposal_revision']}"
+        f"&review_revision={record['review_revision']}"
+    )
+    first = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    again = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+
+    assert first.status_code == 200
+    assert first.json()["current"]["report"]["status"] == "incomplete"
+    assert first.json()["current"]["report"]["scene"] is None
+    assert first.json()["current"]["report"]["issues"][0]["code"].startswith("assembly_")
+    assert first.json()["current"]["report"]["issues"][0]["code"] != "assembly_runtime_failed"
+    assert again.json()["assembly_revision"] == 1
+    assert assembly_provider.calls == 0
+
+    submitted = client.post(
+        f"/api/v1/runs/{run_id}/general/assembly/retry",
+        json={
+            "base_proposal_revision": record["proposal_revision"],
+            "base_review_revision": record["review_revision"],
+        },
+    )
+    assert submitted.status_code == 202, submitted.text
+    job_id = submitted.json()["data"]["id"]
+    for _ in range(100):
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["state"] in {"succeeded", "failed", "interrupted"}:
+            break
+        time.sleep(0.01)
+    latest = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    assert job["state"] == "failed"
+    assert latest.status_code == 200
+    assert latest.json()["assembly_revision"] == 2

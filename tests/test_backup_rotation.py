@@ -34,6 +34,7 @@ def test_scheduled_backup_is_verified_and_prunes_only_its_own_old_archives(
         output_dir,
         keep=2,
         quiescent=True,
+        min_free_bytes=0,  # Disk-pressure policy is covered by its dedicated guard test.
         now=datetime(2026, 11, 14, 3, 30, tzinfo=timezone.utc),
     )
 

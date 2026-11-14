@@ -135,6 +135,17 @@ test("pending table revisions cannot invoke descriptor-backed library actions", 
   assert.match(app, /find-similar"\)\.disabled = !libraryReady/);
 });
 
+test("a newly completed table replaces the stale pending-library message", () => {
+  assert.match(app, /function semanticAvailabilityText\(/);
+  assert.match(app, /if\(!libraryReady\)text\(\$\("#semantic-note"\),"Completa la revisión de mesa antes de guardar o buscar por descriptor\."\);else text\(\$\("#semantic-note"\),semanticAvailabilityText\(\)\)/);
+});
+
+test("refresh avoids expected 404 probes for table artifacts that do not exist yet", () => {
+  assert.doesNotMatch(app, /api\.getTableDrawings\(requestedRun,state\.snapshot\.result_revision\)/);
+  assert.match(app, /if\(state\.snapshot\?\.estimate\)\{try\{const costs=await api\.getTableCosts/);
+  assert.match(app, /if\(!manifest\).*api\.generateTableDrawings/s);
+});
+
 test("a provisional 3D scene is never labeled as reviewed", () => {
   assert.equal(typeof ui.sceneContextLabel, "function");
   assert.equal(

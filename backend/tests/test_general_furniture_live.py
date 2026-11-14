@@ -1,4 +1,6 @@
 from __future__ import annotations
+from backend.app.agente.provider import OpenAIResponsesProvider, ProviderError
+from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, run_general_furniture_agent
 
 import json
 
@@ -312,3 +314,142 @@ def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -
     assert caught.value.tool_calls == 1
     assert caught.value.trace[-1]["tool"] == "inspeccionar_evidencia_general"
     assert "secret provider payload" not in json.dumps(caught.value.trace)
+
+def test_vector_context_announces_typed_assembly_and_exact_document_references() -> None:
+    provider = _Provider()
+    run_general_furniture_agent(_extraction(), ledger_revision="ledger-1", provider=provider)
+    context = json.loads(provider.input_items[0]["content"][0]["text"])
+    authority = context["reference_authority"]
+    assert authority["allowed_source_document_refs"] == []
+    assert authority["assembly_source_ref_examples"] == [
+        "view:front", "observation:obs-front", "evidence:ev-width", "dimension:overall-width",
+    ]
+    assert authority["assembly_source_ref_prefixes"] == ["view", "observation", "contour", "evidence", "dimension"]
+    assert "source_document_refs=[]" in authority["instruction"]
+
+def test_live_tool_exposes_bounded_assembly_relations_and_ambiguity_rule() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    assert {"assembly_relations", "assembly_alternatives"} <= set(
+        schema["parameters"]["properties"]
+    )
+    assert "supported_by" in schema["description"]
+    assert "fixed_to" in schema["description"]
+    assert "unknown/conflict" in schema["description"]
+    assert "side_panel, top_panel, bottom_panel" in schema["description"]
+    assert "assembly_not_identifiable" in schema["description"]
+    assert "No declares uniones como observadas" in GENERAL_FURNITURE_SYSTEM_PROMPT
+    assert "hidden joinery" in GENERAL_FURNITURE_SYSTEM_PROMPT
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    assert "rol canónico" in payload["instruction"]
+    assert "assembly_not_identifiable" in payload["instruction"]
+
+def test_live_prompt_prefers_canonical_roles_without_closing_the_ontology() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    combined = " ".join(
+        (GENERAL_FURNITURE_SYSTEM_PROMPT, schema["description"], payload["instruction"])
+    )
+    assert "usa exactamente el canónico" in combined
+    assert "rol custom snake_case estable" in combined
+    assert "usa unknown solo" in combined
+    assert "No colapses componentes del mismo rol" in combined
+    assert "cantidad cuenta ocurrencias físicas" in combined
+
+def test_live_prompt_separates_functional_support_from_hidden_joinery() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    combined = f"{GENERAL_FURNITURE_SYSTEM_PROMPT} {schema['description']}"
+    assert "supported_by describe apoyo funcional" in combined
+    assert "puede coexistir con fixed_to" in combined
+    assert "fixed_to solo con evidencia visible propia" in combined
+
+def test_raster_live_accepts_announced_document_reference_without_fake_view() -> None:
+    provider = _RasterProvider()
+    page = GeneralVisualPage(
+        reference="pdf-sha:pdf-page:0001", media_type="image/png",
+        sha256="b" * 64, content=b"png",
+        source_document_refs=("document:pdf-child",),
+    )
+
+    outcome = run_general_furniture_agent(
+        _raster_extraction(), ledger_revision="ledger-raster", provider=provider,
+        visual_pages=(page,),
+    )
+
+    component = outcome.draft.components[0]
+    assert component.source_view_ids == ()
+    assert component.source_document_refs == ("document:pdf-child",)
+    assert component.length.value_mm is None
+    assert component.width.value_mm is None
+    assert component.thickness.value_mm is None
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    assert payload["raster_authority"] == {
+        "allowed_source_view_ids": [],
+        "allowed_source_document_refs": [
+            "pdf-sha:pdf-page:0001", "document:pdf-child",
+        ],
+        "allowed_numeric_binding_refs": [],
+        "instruction": payload["raster_authority"]["instruction"],
+    }
+    proposal_schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    assert "source_view_ids=[]" in proposal_schema["description"]
+    assert "no midas píxeles" in proposal_schema["description"]
+
+def test_raster_fake_view_failure_preserves_validation_reason_in_typed_error() -> None:
+    page = GeneralVisualPage(
+        reference="pdf-sha:pdf-page:0001", media_type="image/png",
+        sha256="b" * 64, content=b"png",
+        source_document_refs=("document:pdf-child",),
+    )
+
+    with pytest.raises(general_live.GeneralLiveError) as caught:
+        run_general_furniture_agent(
+            _raster_extraction(), ledger_revision="ledger-raster",
+            provider=_RasterProvider(source_view_ids=("pdf-page-0001",)),
+            visual_pages=(page,), limits=AgentLimits(max_validation_repairs=0),
+        )
+
+    assert caught.value.code == "validation_repair_budget_exhausted"
+    assert caught.value.trace[-1]["details"] == [{
+        "loc": [], "msg": "proposal_reference_outside_ledger", "type": "value_error",
+    }]
+
+def test_live_error_preserves_only_allowlisted_provider_diagnostic() -> None:
+    class FailingProvider:
+        def create_response(self, **kwargs):
+            raise ProviderError(
+                "provider_response_incomplete", status_code=200,
+                request_id="req-safe", response_id="resp-safe",
+                incomplete_reason="max_output_tokens",
+            )
+
+    with pytest.raises(general_live.GeneralLiveError) as caught:
+        run_general_furniture_agent(
+            _raster_extraction(), ledger_revision="ledger-raster",
+            provider=FailingProvider(),
+        )
+
+    error = caught.value
+    assert error.code == "provider_response_incomplete"
+    assert error.provider_status_code == 200
+    assert error.provider_request_id == "req-safe"
+    assert error.provider_response_id == "resp-safe"
+    assert error.provider_incomplete_reason == "max_output_tokens"
+    assert error.trace == ()
