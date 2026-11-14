@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
 test("upload defaults to mounted table views and keeps parts and legacy opt-ins", () => {
   assert.match(html, /name="input_kind"/);
@@ -27,6 +28,7 @@ test("technical viewer exposes source and derived drawing tabs without replacing
   assert.match(html, /id="derived-drawing-downloads"/);
   assert.match(css, /\.derived-drawing-canvas\{[^}]*overflow:hidden/);
   assert.match(css, /\.derived-drawing-view\.is-expanded\{[^}]*position:fixed/);
+  assert.match(app, /event\.target\.closest\("button,a,select,input"\)/);
 });
 
 test("responsive header never hides the active execution mode", () => {
