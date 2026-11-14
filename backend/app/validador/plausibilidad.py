@@ -7,17 +7,26 @@ from __future__ import annotations
 
 import json
 import os
+from itertools import pairwise
 from math import hypot
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.app.contratos.modelos import DecompositionScenario, DrawingEntity, DrawingExtraction
+from backend.app.contratos.modelos import (
+    DecompositionScenario,
+    DrawingEntity,
+    DrawingExtraction,
+)
 
 DEFAULT_CATALOG_PATH = Path(__file__).with_name("catalogo_taller.json")
 CATALOG_ENV = "VEXPLORER_WORKSHOP_CATALOG"
 TOLERANCE_MM = 0.1
+# A measured position farther than this from every drawn vertex (along the measuring direction) is not on geometry.
+DIMENSION_ATTACH_TOLERANCE_MM = 0.5
+MAX_DIMENSIONS_CHECKED = 200
+NON_GEOMETRY_KINDS = {"DIMENSION", "TEXT", "MTEXT", "ATTRIB", "HATCH"}
 
 
 class _Model(BaseModel):
@@ -44,7 +53,7 @@ class WorkshopCatalog(_Model):
 
 class PlausibilityFinding(_Model):
     id: str
-    check: Literal["hole_row_drilling_system", "observed_thickness_in_catalog"]
+    check: Literal["hole_row_drilling_system", "observed_thickness_in_catalog", "dimension_attached_to_geometry"]
     status: Literal["pass", "fail", "unknown"]
     message: str
     evidence_ids: tuple[str, ...] = ()
@@ -101,7 +110,7 @@ def _hole_findings(extraction: DrawingExtraction, catalog: WorkshopCatalog) -> l
         diameter = 2 * circles[0][2]
         vertical = abs(circles[-1][0] - circles[0][0]) <= TOLERANCE_MM
         along = sorted(circle[1] if vertical else circle[0] for circle in circles)
-        spacings = [second - first for first, second in zip(along, along[1:])]
+        spacings = [second - first for first, second in pairwise(along)]
         view = next((view_by_entity.get(entity_id) for entity_id in item.source_entity_ids if entity_id in view_by_entity), None)
         setback = _setback(extraction, set(view.entity_ids) if view else set(), [(circle[0], circle[1]) for circle in circles], vertical)
         matches = []
@@ -152,6 +161,54 @@ def _thickness_findings(scenarios: tuple[DecompositionScenario, ...], catalog: W
     return findings
 
 
+def _dimension_findings(extraction: DrawingExtraction) -> list[PlausibilityFinding]:
+    """Linear dimensions whose measured positions match no drawn vertex of their view.
+
+    Each extension point is projected onto the measuring direction; some vertex of the view's geometry must sit at
+    that same coordinate. Extension lines may start away from the feature (a height taken at x=0 on a trapezoid), so
+    only the measured coordinate is checked. A miss is typical of a non-associative dimension left behind after the
+    geometry was stretched: the annotated value may not describe what is drawn. Millimetre coordinates only; findings
+    only, the extraction status is not changed.
+    """
+    if extraction.coordinate_unit != "mm":
+        return []
+    entities = {entity.id: entity for entity in extraction.entities}
+    vertices_by_view: dict[str, list[tuple[float, float]]] = {}
+    for view in extraction.views:
+        vertices_by_view[view.id] = [
+            (point.x, point.y)
+            for entity_id in view.entity_ids
+            if (entity := entities.get(entity_id)) is not None and entity.kind not in NON_GEOMETRY_KINDS and entity.points_mm
+            for point in entity.points_mm
+        ]
+    evidence_by_dimension = {item.id: item.evidence_ids for item in extraction.dimensions}
+    findings = []
+    for graphic in extraction.dimension_graphics[:MAX_DIMENSIONS_CHECKED]:
+        anchors = (graphic.extension_start_a_mm, graphic.extension_start_b_mm)
+        line = (graphic.dimension_start_mm, graphic.dimension_end_mm)
+        vertices = vertices_by_view.get(graphic.view_id, [])
+        if any(item is None for item in (*anchors, *line)) or not vertices:
+            continue
+        length = hypot(line[1].x - line[0].x, line[1].y - line[0].y)
+        if length <= TOLERANCE_MM:
+            continue
+        direction = ((line[1].x - line[0].x) / length, (line[1].y - line[0].y) / length)
+        projected = [x * direction[0] + y * direction[1] for x, y in vertices]
+        gaps = [min(abs(anchor.x * direction[0] + anchor.y * direction[1] - value) for value in projected) for anchor in anchors]
+        worst = max(gaps)
+        if worst <= DIMENSION_ATTACH_TOLERANCE_MM:
+            status: Literal["pass", "fail", "unknown"] = "pass"
+            message = "Las dos posiciones medidas por la cota coinciden con vértices dibujados de su vista."
+        else:
+            status = "fail"
+            message = f"Una posición medida por la cota queda a {worst:.1f} mm del vértice dibujado más cercano en su dirección: la cota puede no describir lo dibujado y debe revisarse."
+        findings.append(PlausibilityFinding(
+            id=f"plausibility-{graphic.dimension_id}", check="dimension_attached_to_geometry", status=status, message=message,
+            evidence_ids=evidence_by_dimension.get(graphic.dimension_id, ()), entity_ids=(graphic.source_entity_id,),
+        ))
+    return findings
+
+
 def check_plausibility(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], catalog: WorkshopCatalog | None = None) -> tuple[PlausibilityFinding, ...]:
     catalog = catalog or load_catalog()
-    return tuple(_hole_findings(extraction, catalog) + _thickness_findings(scenarios, catalog))
+    return tuple(_hole_findings(extraction, catalog) + _thickness_findings(scenarios, catalog) + _dimension_findings(extraction))

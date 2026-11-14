@@ -8,7 +8,12 @@ import ezdxf
 
 from backend.app.geometria import extract_drawing
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
-from backend.app.validador.plausibilidad import CATALOG_ENV, WorkshopCatalog, check_plausibility, load_catalog
+from backend.app.validador.plausibilidad import (
+    CATALOG_ENV,
+    WorkshopCatalog,
+    check_plausibility,
+    load_catalog,
+)
 
 FIXTURE = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "estanteria_montada.dxf"
 
