@@ -34,32 +34,107 @@ export function safeText(value) {
   return String(value ?? "");
 }
 
+function parseViewBounds(view, metric) {
+  const raw = metric ? view?.bounds_mm : (view?.bounds_source ?? view?.bounds_mm);
+  if (Array.isArray(raw) && raw.length >= 4 && raw.slice(0, 4).every(Number.isFinite)) {
+    return { minX: raw[0], minY: raw[1], maxX: raw[2], maxY: raw[3] };
+  }
+  if (raw && typeof raw === "object") {
+    const minX = raw.min_x ?? raw.minX;
+    const minY = raw.min_y ?? raw.minY;
+    const maxX = raw.max_x ?? raw.maxX;
+    const maxY = raw.max_y ?? raw.maxY;
+    if ([minX, minY, maxX, maxY].every(Number.isFinite)) {
+      return { minX, minY, maxX, maxY };
+    }
+  }
+  return null;
+}
+
+function pointsInBounds(points, bounds, eps = 1e-6) {
+  return Array.isArray(points) && points.length > 0 && points.every(([x, y]) => (
+    x >= bounds.minX - eps && x <= bounds.maxX + eps
+    && y >= bounds.minY - eps && y <= bounds.maxY + eps
+  ));
+}
+
+function resolvePathViews(explicitIds, points, viewBoundsList) {
+  const unique = [...new Set((explicitIds ?? []).filter(Boolean))];
+  const viewIds = unique.length
+    ? unique
+    : viewBoundsList.filter(({ bounds }) => pointsInBounds(points, bounds)).map(({ id }) => id);
+  return {
+    viewId: viewIds.length === 1 ? viewIds[0] : null,
+    viewIds,
+  };
+}
+
+export function pathMatchesView(item, activeView) {
+  if (!activeView || activeView === "all") return true;
+  if (activeView instanceof Set) {
+    return activeView.has(item?.viewId)
+      || (Array.isArray(item?.viewIds) && item.viewIds.some((id) => activeView.has(id)));
+  }
+  return item?.viewId === activeView
+    || (Array.isArray(item?.viewIds) && item.viewIds.includes(activeView));
+}
+
 export function normaliseDrawing(extraction) {
   const metric = extraction?.coordinate_unit === "mm" || (extraction?.source_unit !== "unknown" && Number.isFinite(extraction?.unit_scale_to_mm));
+  const views = extraction?.views ?? [];
+  const viewBoundsList = views
+    .map((view) => ({ id: view?.id, bounds: parseViewBounds(view, metric) }))
+    .filter((item) => item.id && item.bounds);
   const contours = extraction?.contours ?? [];
   const paths = contours.flatMap((contour) => {
-    const points = metric ? contour.points_mm : (contour.source_points ?? contour.points_source);
-    if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return [];
+    const rawPoints = metric ? contour.points_mm : (contour.source_points ?? contour.points_source);
+    if (!Array.isArray(rawPoints) || rawPoints.length < 2 || !rawPoints.every(finitePoint)) return [];
+    const points = rawPoints.map(pointTuple);
+    const explicitIds = [
+      ...(Array.isArray(contour.view_ids) ? contour.view_ids : []),
+      contour.view_id ?? contour.view,
+    ];
+    const { viewId, viewIds } = resolvePathViews(explicitIds, points, viewBoundsList);
     return [{
       id: contour.id,
-      viewId: contour.view_id ?? contour.view,
+      viewId,
+      viewIds,
       entityIds: [...(contour.source_entity_ids ?? [])],
-      points: points.map(pointTuple),
+      points,
       closed: Boolean(contour.closed),
     }];
   });
   const claimedEntities = new Set(contours.flatMap((contour) => contour.source_entity_ids ?? []));
   const entityViews = new Map();
-  (extraction?.views ?? []).forEach((view) => (view.entity_ids ?? []).forEach((id) => entityViews.set(id, [...(entityViews.get(id) ?? []), view.id])));
+  views.forEach((view) => {
+    if (!view?.id) return;
+    (view.entity_ids ?? []).forEach((id) => {
+      const existing = entityViews.get(id);
+      if (!existing) entityViews.set(id, [view.id]);
+      else if (!existing.includes(view.id)) existing.push(view.id);
+    });
+  });
   const dimensionEntityIds = new Set((extraction?.dimension_graphics ?? []).map((item) => item.source_entity_id).filter(Boolean));
   (extraction?.entities ?? []).forEach((entity) => {
     if (claimedEntities.has(entity.id)) return;
     if (String(entity.kind).toUpperCase() === "DIMENSION" && ((extraction?.dimension_graphics?.length ?? 0) > 0 || dimensionEntityIds.has(entity.id))) return;
-    const circular=resolvedCircular(entity,metric),points = metric ? entity.points_mm : entity.source_points;
-    const viewIds = entityViews.get(entity.id) ?? [];
-    if(circular){paths.push({id:`entity:${entity.id}`,viewId:viewIds.length===1?viewIds[0]:null,entityIds:[entity.id],points:circularFitPoints(circular),closed:circular.kind==="circle",kind:entity.kind,circular});return;}
-    if (!Array.isArray(points) || points.length < 2 || !points.every(finitePoint)) return;
-    paths.push({ id: `entity:${entity.id}`, viewId: viewIds.length === 1 ? viewIds[0] : null, entityIds: [entity.id], points: points.map(pointTuple), closed: false, kind: entity.kind });
+    const circular = resolvedCircular(entity, metric);
+    const rawPoints = metric ? entity.points_mm : entity.source_points;
+    const explicitIds = [
+      ...(entityViews.get(entity.id) ?? []),
+      ...(Array.isArray(entity.view_ids) ? entity.view_ids : []),
+      entity.view_id ?? entity.view,
+    ];
+    if (circular) {
+      const points = circularFitPoints(circular);
+      const { viewId, viewIds } = resolvePathViews(explicitIds, points, viewBoundsList);
+      paths.push({ id: `entity:${entity.id}`, viewId, viewIds, entityIds: [entity.id], points, closed: circular.kind === "circle", kind: entity.kind, circular });
+      return;
+    }
+    if (!Array.isArray(rawPoints) || rawPoints.length < 2 || !rawPoints.every(finitePoint)) return;
+    const points = rawPoints.map(pointTuple);
+    const { viewId, viewIds } = resolvePathViews(explicitIds, points, viewBoundsList);
+    paths.push({ id: `entity:${entity.id}`, viewId, viewIds, entityIds: [entity.id], points, closed: false, kind: entity.kind });
   });
   const texts = (extraction?.texts ?? []).flatMap((item) => {
     const position = resolvedPoint(item, "position", metric);
@@ -110,19 +185,15 @@ export function normaliseDrawing(extraction) {
     dimensions,
     warnings: extraction?.warnings ?? [],
   };
-  model.pointsForViews = (viewIds) => {
-    const allowed = (viewId) => !viewIds || viewIds.has(viewId);
-    return [
-      ...model.paths.filter((item) => allowed(item.viewId)).flatMap((item) => item.points),
-      ...model.texts.filter((item) => allowed(item.viewId)).map((item) => item.position),
-      ...model.dimensions.filter((item) => allowed(item.viewId)).flatMap((item) => item.segments.flat()),
-    ];
-  };
+  model.pointsForViews = (viewIds) => [
+    ...model.paths.filter((item) => pathMatchesView(item, viewIds)).flatMap((item) => item.points),
+    ...model.texts.filter((item) => pathMatchesView(item, viewIds)).map((item) => item.position),
+    ...model.dimensions.filter((item) => pathMatchesView(item, viewIds)).flatMap((item) => item.segments.flat()),
+  ];
   model.fitPaddingForViews = (viewIds) => {
-    const allowed = (viewId) => !viewIds || viewIds.has(viewId);
     const labels = [
-      ...model.texts.filter((item) => allowed(item.viewId)).map((item) => item.text),
-      ...model.dimensions.filter((item) => allowed(item.viewId)).map((item) => item.label),
+      ...model.texts.filter((item) => pathMatchesView(item, viewIds)).map((item) => item.text),
+      ...model.dimensions.filter((item) => pathMatchesView(item, viewIds)).map((item) => item.label),
     ];
     const longest = labels.reduce((length, label) => Math.max(length, String(label ?? "").length), 0);
     return { left: 28, right: Math.min(180, Math.max(28, longest * 8 + 16)), top: 28, bottom: 28 };
