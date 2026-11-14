@@ -11,7 +11,7 @@
 
 - Objetivo concreto: completar el recorrido 2D centrado en `Fuente → Construcción → Por pieza`, con BOM primaria que incluya cotas estimadas aceptadas como aproximadas, láminas acotadas seleccionables y decisiones de impacto comprensibles.
 - Referencia del plan: `docs/superpowers/specs/2026-11-14-cad-completion.md`, sobre el worktree aislado `.worktrees/cad-completion` desde `0e65713`.
-- Estado: implementación frontend terminada y suite verde; pendiente QA visual HTTP con F01.
+- Estado: implementación y QA visual HTTP F01/F02/F03 terminados; suite verde.
 
 ## Alcance y reservas
 
@@ -45,7 +45,7 @@
 
 ## Siguiente bloque
 
-- Ejecutar QA visual real sobre F01 en el servidor coordinado, comprobando tabla, cantidad/cotas aproximadas, Construcción, selector Por pieza y descargas SVG/DXF.
+- Entregar al coordinador el reporte final y el único ajuste bloqueante de layout detectado por QA.
 
 ## Hecho en CAD completion
 
@@ -87,11 +87,15 @@
 | Frontend CAD completion focal | `node --test tests/general.test.js tests/ui-contract.test.js` | 37 passed, 0 failed | Presenter, estimaciones, cantidad, plan y contrato estático de navegación |
 | Suite frontend CAD completion | `npm test` | 159 passed, 0 failed | Pendiente recorrido visual real con F01 |
 | Sintaxis CAD completion | `node --check app.js` | exit 0 | No sustituye QA visual |
+| Suite frontend final tras QA | `npm test` | 163 passed, 0 failed | Incluye reserva de altura visible para la BOM primaria |
+| QA navegador F01/F02/F03 | Playwright headless contra `127.0.0.1:8773` | 4/8/3 filas; 3/2/3 decisiones; Fuente, Construcción y Por pieza disponibles; SVG/DXF seleccionados devuelven 200; cero errores de consola/página/red | Construcción usa esquema general cuando no hay placements de conjunto |
 
 ## Bloqueos y cierre
 
-- Bloqueos: ninguno de frontend; esperando servidor/run coordinado para QA visual F01.
-- Pendientes: QA visual del flujo 2D y corrección de cualquier defecto reproducible.
+- Bloqueos: ninguno.
+- Hallazgo corregido: el bloque de decisiones podía colapsar la tabla hasta ocultar todas las filas; ahora la BOM reserva 105 px mínimos y las decisiones tienen scroll limitado a 110 px.
+- Evidencia visual: `.runtime/qa-f01/source.png`, `general.png` y `components-fixed.png`.
+- Pendientes: integración explícita del coordinador; este agente no crea commit.
 - Reserva activa: solo `frontend/`, pruebas frontend y este registro en `.worktrees/cad-completion`; no se tocará el checkout raíz ni el checkpoint 3D `803faae`.
 - Entrega a otra persona: `/root`, sin commit propio, mediante diff explícito del worktree compartido.
 

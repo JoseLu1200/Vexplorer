@@ -166,3 +166,84 @@ def test_piece_dxf_preserves_exact_mm_extents_and_separate_authority_layers() ->
     assert "ESTIMADO" in visible_text
     assert "RESTRICCION: Confirmar espesor dentro del rango 16-19 mm." in visible_text
 
+
+def _assert_svg_text_inside_viewbox(root: ET.Element) -> None:
+    view_x, view_y, view_width, view_height = (
+        float(value) for value in root.attrib["viewBox"].split()
+    )
+    view_right = view_x + view_width
+    view_bottom = view_y + view_height
+    for item in root.findall(".//{http://www.w3.org/2000/svg}text"):
+        if not item.text:
+            continue
+        x = float(item.attrib["x"])
+        y = float(item.attrib["y"])
+        font_size = float(item.attrib.get("font-size", "12"))
+        text_width = len(item.text) * font_size * 0.6
+        left = x - text_width / 2 if item.attrib.get("text-anchor") == "middle" else x
+        right = x + text_width / 2 if item.attrib.get("text-anchor") == "middle" else x + text_width
+        assert left >= view_x, item.text
+        assert right <= view_right, item.text
+        assert y - font_size >= view_y, item.text
+        assert y + font_size * 0.3 <= view_bottom, item.text
+
+
+def test_svg_bounds_include_long_estimated_vertical_dimension_label_to_the_left() -> None:
+    sheet = SimpleNamespace(
+        sheet_id="piece:box-sides",
+        kind="piece",
+        piece_id="box-sides",
+        title="Laterales de caja",
+        warnings=(),
+        primitives=(
+            _primitive(
+                "outline", "polyline",
+                ((0, 0), (400, 0), (400, 180), (0, 180), (0, 0)),
+                state="estimated",
+            ),
+            _primitive(
+                "vertical-estimate", "dimension",
+                ((0, 0), (0, 180), (-45, 0)),
+                state="estimated", text="≈ 180 mm [160–200]",
+            ),
+        ),
+    )
+
+    root = ET.fromstring(render_construction_sheet_svg(sheet))
+
+    label = next(
+        item for item in root.findall(".//{http://www.w3.org/2000/svg}text")
+        if item.text == "≈ 180 mm [160–200]"
+    )
+    assert label.attrib["text-anchor"] == "middle"
+    _assert_svg_text_inside_viewbox(root)
+
+
+def test_svg_bounds_include_all_labels_when_sheet_has_no_geometry() -> None:
+    sheet = SimpleNamespace(
+        sheet_id="piece:guides",
+        kind="piece",
+        piece_id="guides",
+        title="Guías interiores propuestas sin geometría local disponible",
+        warnings=(SimpleNamespace(
+            code="piece_geometry_incomplete",
+            message="La pieza no tiene forma explícita y tres dimensiones aceptadas.",
+            severity="warning",
+            consequence="provisional_only",
+        ),),
+        primitives=(
+            _primitive(
+                "quantity", "text", ((0, 0),), state="estimated",
+                text="Cantidad propuesta: ≈ 6 uds.",
+            ),
+        ),
+    )
+
+    root = ET.fromstring(render_construction_sheet_svg(sheet))
+
+    text = " ".join(value.strip() for value in root.itertext() if value.strip())
+    assert sheet.title in text
+    assert "PROPUESTA CONSTRUCTIVA · COTAS ESTIMADAS SEÑALADAS" in text
+    assert "RESTRICCIÓN: La pieza no tiene forma explícita" in text
+    _assert_svg_text_inside_viewbox(root)
+

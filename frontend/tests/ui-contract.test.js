@@ -51,6 +51,8 @@ test("general furniture exposes the construction-first 2D flow", () => {
   assert.match(app, /construction_overview_svg/);
   assert.match(app, /piece_sheet_svg/);
   assert.match(app, /sheetId/);
+  assert.match(css, /\.parts-dock \.table-wrap\{[^}]*min-height:105px;[^}]*flex:1 1 auto/);
+  assert.match(css, /\.impact-decisions\{[^}]*max-height:110px;[^}]*overflow:auto/);
 });
 
 test("responsive header never hides the active execution mode", () => {

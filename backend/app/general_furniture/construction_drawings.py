@@ -61,16 +61,39 @@ def _ascii_dxf(value: str) -> str:
 
 def _bounds(sheet: Any) -> tuple[float, float, float, float]:
     points = [point for primitive in sheet.primitives for point in primitive.points_mm]
-    if not points:
-        return 0.0, 0.0, 100.0, 100.0
-    min_x = min(point.x for point in points)
-    min_y = min(point.y for point in points)
-    max_x = max(point.x for point in points)
-    max_y = max(point.y for point in points)
+    if points:
+        min_x = min(point.x for point in points)
+        min_y = min(point.y for point in points)
+        max_x = max(point.x for point in points)
+        max_y = max(point.y for point in points)
+    else:
+        min_x, min_y, max_x, max_y = 0.0, 0.0, 100.0, 100.0
     for primitive in sheet.primitives:
-        if primitive.text and primitive.points_mm:
+        if not primitive.text or not primitive.points_mm:
+            continue
+        font_size = 12.0
+        text_width = len(primitive.text) * font_size * 0.6
+        if primitive.kind == "dimension":
+            _, _, dim1, dim2 = _dimension_geometry(primitive)
+            anchor_x = (dim1[0] + dim2[0]) / 2
+            anchor_y = (dim1[1] + dim2[1]) / 2 - 6
+            min_x = min(min_x, anchor_x - text_width / 2)
+            max_x = max(max_x, anchor_x + text_width / 2)
+        else:
             anchor = primitive.points_mm[-1] if primitive.kind == "detail_callout" else primitive.points_mm[0]
-            max_x = max(max_x, anchor.x + len(primitive.text) * 6.5)
+            anchor_x, anchor_y = anchor.x, anchor.y - 5 if primitive.kind == "detail_callout" else anchor.y
+            max_x = max(max_x, anchor_x + text_width)
+        min_y = min(min_y, anchor_y - font_size)
+        max_y = max(max_y, anchor_y + font_size * 0.3)
+
+    notice = "PROPUESTA CONSTRUCTIVA · COTAS ESTIMADAS SEÑALADAS"
+    required_width = max(
+        700.0,
+        len(sheet.title) * 18.0 * 0.6,
+        len(notice) * 12.0 * 0.6,
+        *(len(f"RESTRICCIÓN: {warning.message}") * 11.0 * 0.6 for warning in sheet.warnings),
+    )
+    max_x = max(max_x, min_x + required_width)
     return min_x, min_y, max(max_x, min_x + 1.0), max(max_y, min_y + 1.0)
 
 
