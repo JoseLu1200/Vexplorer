@@ -571,10 +571,22 @@ class TableProgramProposal(StrictModel):
         if roles.count("tabletop") != 1 or sum(role in ("side_support", "corner_support") for role in roles) != 1:
             raise ValueError("program requires exactly one tabletop and one support system")
         binding_set = set(binding_ids)
-        used_bindings = {value for item in self.components for value in (item.length_binding_id, item.width_binding_id, item.thickness_binding_id)}
-        if not used_bindings <= binding_set:
+        root_bindings = {value for item in self.components for value in (item.length_binding_id, item.width_binding_id, item.thickness_binding_id)}
+        if not root_bindings <= binding_set:
             raise ValueError("component references an unknown binding")
-        if used_bindings != binding_set:
+        dependencies = {
+            item.id: {operand.ref_id for operand in item.operand_refs if operand.ref_type == "binding"}
+            for item in self.bindings
+        }
+        reachable = set(root_bindings)
+        pending = list(root_bindings)
+        while pending:
+            current = pending.pop()
+            for dependency in dependencies[current]:
+                if dependency not in reachable:
+                    reachable.add(dependency)
+                    pending.append(dependency)
+        if reachable != binding_set:
             raise ValueError("dead bindings are not allowed")
         premise_ids = [item.id for item in self.premises]
         if len(premise_ids) != len(set(premise_ids)):
@@ -596,6 +608,16 @@ class ProposeTableProgramArgs(StrictModel):
     premises: tuple[TablePremise, ...] = Field(min_length=1, max_length=16)
     assumptions: tuple[str, ...] = Field(min_length=1, max_length=16)
     evidence_ids: tuple[str, ...] = ()
+
+
+class InspectTableMeasuresArgs(StrictModel):
+    measurement_ids: tuple[str, ...] = Field(min_length=1, max_length=16)
+
+    @model_validator(mode="after")
+    def unique_measurements(self) -> "InspectTableMeasuresArgs":
+        if len(self.measurement_ids) != len(set(self.measurement_ids)):
+            raise ValueError("duplicate table measurement ids")
+        return self
 
 
 class TableReviewDecision(StrictModel):
