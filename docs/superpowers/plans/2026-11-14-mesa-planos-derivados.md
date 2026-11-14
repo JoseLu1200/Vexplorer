@@ -17,8 +17,8 @@ Todos conservan las lecturas obligatorias de AGENTS/CLAUDE/README/planes/team/tr
 
 ## Verificaciones requeridas
 
-- [ ] Contrato A/B registrado, revisado y comunicado antes del código dependiente.
-- [ ] Fixture permitido de vistas montadas y variante incompleta; referencia fuera del runtime/prompt.
+- [x] Contrato A/B registrado y comunicado; revisión temprana Astra APPROVE en `6ab6c2e` tras cerrar autoridad, cobertura, estados y dependencia de revisión.
+- [x] Fixture permitido de vistas montadas y variante incompleta; commits D `79621eb` y `2bd052d`, referencia fuera del runtime/prompt.
 - [ ] Geometría, programa generativo validado y baseline etiquetada; números calculados localmente.
 - [ ] Revisión por campo/componente, recálculo y conservación del historial.
 - [ ] SVG/DXF general, por piezas y hoja de despiece; dimensiones y procedencias consistentes.
