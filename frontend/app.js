@@ -3,8 +3,8 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
-import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, translateAssumption } from "./core/parts.js";
-import { buildAssemblyReviewPayload, buildScenarioReviewPayload } from "./core/review.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, resolveAssemblyOperand, translateAssumption } from "./core/parts.js";
+import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
@@ -276,9 +276,8 @@ const unknownFieldLabel=(value)=>({quantity:"cantidad",length:"largo",length_mm:
 
 function renderDerivedDimensions(candidate, root) {
   const axisLabel={width:"Ancho",height:"Alto",depth:"Fondo"};
-  const resolveOperand=(reference)=>{const match=String(reference).match(/^(.+)\.dimensions\.(length|width|thickness)$/); if(!match)return null; return state.partsWorkspace.observations.find((item)=>item.id===match[1])?.dimensions?.[match[2]]?.value??null;};
   candidate.derivedDimensions.forEach((dimension)=>{
-    const constraint=candidate.constraints.find((item)=>item.id===dimension.constraint_id), refs=constraint?.operand_refs??dimension.operand_refs??[], values=refs.map(resolveOperand), known=values.length&&values.every(Number.isFinite);
+    const constraint=candidate.constraints.find((item)=>item.id===dimension.constraint_id), refs=constraint?.operand_refs??dimension.operand_refs??[], values=refs.map((reference)=>resolveAssemblyOperand(reference,state.partsWorkspace,candidate)?.value??null), known=values.length&&values.every(Number.isFinite);
     const card=document.createElement("div"); card.className="derived-dimension"; const heading=document.createElement("b"); heading.textContent=`${axisLabel[dimension.axis]??dimension.axis}: ${formatMeasurement(dimension.value_mm,"mm")} · ${dimension.state==="derived"?"Calculado":partStateLabel(dimension.state)}`;
     const explanation=document.createElement("code"); const symbol=constraint?.operation==="sum"?" + ":constraint?.operation==="difference"?" − ":" = "; explanation.textContent=known?`${values.map((value)=>formatMeasurement(value,"mm")).join(symbol)} = ${formatMeasurement(dimension.value_mm,"mm")}`:`Operación ${constraint?.operation??"documentada"} · ${refs.join(" · ")}`;
     card.append(heading,explanation); root.append(card);
@@ -295,13 +294,13 @@ function renderPartDecisionFields(candidate) {
     const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId);
     const block=document.createElement("fieldset"); block.className="allocation-decision"; block.dataset.useId=use.id; block.dataset.role=use.role;
     const legend=document.createElement("legend"); legend.textContent=`${observation?.label??"Pieza"} como ${roleLabel(use.role).toLowerCase()}`;
-    const numericField=(labelText,field,step,effective)=>{const label=document.createElement("label"); label.textContent=effective?.value!=null?`${labelText.replace("confirmad", "vigente confirmad")}`:labelText; const input=document.createElement("input"); input.type="number"; input.min=step; input.step=step; input.dataset.decisionField=field; if(effective?.value!=null){input.value=effective.value; input.disabled=true; input.setAttribute("aria-label",`${labelText}: valor vigente`);} label.append(input); return label;};
+    const numericField=(labelText,field,step,effective)=>{const label=document.createElement("label"); label.textContent=effective?.value!=null?`${labelText.replace("confirmad", "vigente confirmad")}`:labelText; const input=document.createElement("input"); input.type="number"; input.min=step; input.step=step; input.dataset.decisionField=field; input.dataset.originalValue=effective?.value??""; if(effective?.value!=null){input.value=effective.value; input.classList.add("is-reviewed"); input.setAttribute("aria-label",`${labelText}: valor vigente editable`);} label.append(input); return label;};
     const fields=[];
     if(use.allocatedQuantity.value==null)fields.push(numericField("Cantidad confirmada","quantity","1",use.effective?.quantity));
     if(observation?.dimensions.length.value==null)fields.push(numericField("Largo confirmado (mm)","length",".1",use.effective?.dimensions.length));
     if(observation?.dimensions.width.value==null)fields.push(numericField("Ancho confirmado (mm)","width",".1",use.effective?.dimensions.width));
     if(observation?.dimensions.thickness.value==null)fields.push(numericField("Grosor confirmado (mm)","thickness",".1",use.effective?.dimensions.thickness));
-    const note=document.createElement("small"); note.textContent=fields.some((field)=>field.querySelector("input:not(:disabled)"))?"Deja vacío lo que no esté comprobado; el sistema conservará el desconocido.":"Estos valores ya constan en la revisión vigente y no se volverán a enviar.";
+    const note=document.createElement("small"); note.textContent=fields.some((field)=>field.querySelector("input")?.dataset.originalValue==="")?"Deja vacío lo que no esté comprobado; el sistema conservará el desconocido.":"Valores vigentes: edítalos solo para registrar una nueva corrección justificada.";
     block.append(legend,...fields,note); root.append(block);
   });
 }
@@ -512,7 +511,7 @@ async function submitReview(event) {
   event.preventDefault(); const parts=state.partsWorkspace?.isPartsOnly; const scenario = $(parts?"input[name='assembly-candidate']:checked":"input[name='scenario']:checked"); if (!scenario) return;
   const identity=actionIdentity(), token=actionFence.issue(identity);
   try {
-    const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const value=(field)=>{const input=$("[data-decision-field='"+field+"']",block); return input&&!input.disabled?input.value:"";}; const quantity=value("quantity"),length=value("length"),width=value("width"),thickness=value("thickness"); return quantity||length||width||thickness?[{use_id:block.dataset.useId,role:block.dataset.role,quantity,length_mm:length,width_mm:width,thickness_mm:thickness,material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}]:[];}):[];
+    const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const inputs=$$("[data-decision-field]",block), current=Object.fromEntries(inputs.map((input)=>[input.dataset.decisionField,input.value])), original=Object.fromEntries(inputs.map((input)=>[input.dataset.decisionField,input.dataset.originalValue??""])), changed=changedReviewDecisionValues(current,original); if(!changed)return[]; return [{use_id:block.dataset.useId,role:block.dataset.role,quantity:changed.quantity??"",length_mm:changed.length??"",width_mm:changed.width??"",thickness_mm:changed.thickness??"",material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}];}):[];
     const values = {
       scenario_id: scenario.value,
       assembly_candidate_id: scenario.value,

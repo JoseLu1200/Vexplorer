@@ -90,6 +90,20 @@ export function presentReviewedUse(use) {
   };
 }
 
+export function resolveAssemblyOperand(reference, workspace, candidate) {
+  const observed = String(reference).match(/^(.+)\.dimensions\.(length|width|thickness)$/);
+  if (observed) {
+    const record = workspace?.observations?.find((item) => item.id === observed[1])?.dimensions?.[observed[2]];
+    return record ? { value: record.value, state: record.state } : null;
+  }
+  const reviewed = String(reference).match(/^review:(\d+):piece:(.+)\.(quantity|length_mm|width_mm|thickness_mm)$/);
+  if (!reviewed || Number(reviewed[1]) !== workspace?.revisionNumber) return null;
+  const use = candidate?.uses?.find((item) => item.effective?.pieceId === reviewed[2]);
+  if (!use?.effective) return null;
+  const record = reviewed[3] === "quantity" ? use.effective.quantity : use.effective.dimensions[reviewed[3].replace("_mm", "")];
+  return record ? { value: record.value, state: record.state } : null;
+}
+
 export function presentDescriptorV2(descriptor = {}) {
   return {
     version: descriptor.descriptor_version ?? "desconocida",

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse } from "../core/parts.js";
-import { buildAssemblyReviewPayload } from "../core/review.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, resolveAssemblyOperand } from "../core/parts.js";
+import { buildAssemblyReviewPayload, changedReviewDecisionValues } from "../core/review.js";
 
 const snapshot = {
   result_revision: 1,
@@ -101,6 +101,10 @@ test("reviewed values remain separate from unknown source observations", () => {
     width: "300 mm · Observado",
     thickness: "18 mm · Confirmado por persona",
   });
+  assert.deepEqual(resolveAssemblyOperand("review:3:piece:piece-reviewed.thickness_mm", workspace, workspace.candidates[0]), { value: 18, state: "confirmed" });
+  assert.equal(resolveAssemblyOperand("review:2:piece:piece-reviewed.thickness_mm", workspace, workspace.candidates[0]), null);
+  assert.equal(changedReviewDecisionValues({ quantity: "2", thickness: "18" }, { quantity: "2", thickness: "18" }), null);
+  assert.deepEqual(changedReviewDecisionValues({ quantity: "2", thickness: "20" }, { quantity: "2", thickness: "18" }), { quantity: "2", thickness: "20" });
 });
 
 test("assembly review decisions address use ids and preserve only human supplied values", () => {

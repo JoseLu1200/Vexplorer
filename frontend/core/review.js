@@ -67,3 +67,8 @@ export function buildAssemblyReviewPayload(snapshot, values) {
   if (decisions.length) payload.decisions = decisions;
   return payload;
 }
+
+export function changedReviewDecisionValues(current = {}, original = {}) {
+  const changed = Object.keys({ ...original, ...current }).some((key) => String(current[key] ?? "") !== String(original[key] ?? ""));
+  return changed ? { ...current } : null;
+}
