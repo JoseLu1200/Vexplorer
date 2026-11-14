@@ -346,7 +346,7 @@ def test_tope_de_pares_y_ceros_por_consulta(fuente, tmp_path):
 def test_destinos_inseguros(fuente, tmp_path):
     with pytest.raises(ValueError, match="separate"):
         generar_corpus(fuente, tmp_path / "x", tmp_path / "x" / "y")
-    with pytest.raises(ValueError, match="inside the repository"):
+    with pytest.raises(ValueError, match="inside a Git repository"):
         generar_corpus(fuente, plankassembly_corpus.REPO_ROOT / "tmp-no" / "p", tmp_path / "q")
     pub, _, _ = _generar(fuente, tmp_path)
     with pytest.raises(ValueError, match="exists"):
@@ -530,3 +530,46 @@ def test_grupos_grandes_avisan_o_fallan(tmp_path):
     with pytest.raises(ValueError, match="group"):
         _generar(root, tmp_path, "estricto", sizes={"train": 20, "valid": 1, "test": 1}, max_group_size=5, strict_groups=True)
     assert not (tmp_path / "pub-estricto").exists()
+
+
+def test_destinos_dentro_de_cualquier_repositorio_git_se_rechazan(fuente, tmp_path):
+    repo = tmp_path / "otro_repo"
+    (repo / ".git").mkdir(parents=True)
+    with pytest.raises(ValueError, match="inside a Git repository"):
+        generar_corpus(fuente, repo / "out" / "pub", tmp_path / "priv-fuera")
+    with pytest.raises(ValueError, match="inside a Git repository"):
+        generar_corpus(fuente, tmp_path / "pub-fuera", repo / "sub" / "priv")
+    assert not (repo / "out").exists() and not (tmp_path / "pub-fuera").exists()
+
+
+def test_worktree_rechaza_el_repositorio_principal(fuente, tmp_path, monkeypatch):
+    principal = tmp_path / "principal"
+    gitdir = principal / ".git" / "worktrees" / "wt"
+    gitdir.mkdir(parents=True)
+    (gitdir / "commondir").write_text("../..\n", encoding="utf-8")
+    arbol = tmp_path / "fuera" / "wt"
+    arbol.mkdir(parents=True)
+    (arbol / ".git").write_text(f"gitdir: {gitdir}\n", encoding="utf-8")
+    assert principal.resolve() in plankassembly_corpus._raices_de_repositorio(arbol)
+    assert arbol.resolve() in plankassembly_corpus._raices_de_repositorio(arbol / "carpeta")
+    monkeypatch.setattr(plankassembly_corpus, "REPO_ROOT", arbol)
+    # Un destino bajo el repositorio principal (carpeta no ignorada) se rechaza aunque no cuelgue del worktree.
+    with pytest.raises(ValueError, match="inside a Git repository"):
+        generar_corpus(fuente, principal / "datos" / "pub", tmp_path / "priv-x")
+    with pytest.raises(ValueError, match="inside a Git repository"):
+        generar_corpus(fuente, arbol / "pub", tmp_path / "priv-x")
+
+
+def test_fallo_al_publicar_privado_limpia_el_publico(fuente, tmp_path, monkeypatch):
+    original = Path.rename
+
+    def rename(self, destino):
+        if Path(destino).name == "priv-fallo":
+            raise OSError("fallo simulado")
+        return original(self, destino)
+
+    monkeypatch.setattr(Path, "rename", rename)
+    with pytest.raises(OSError, match="simulado"):
+        generar_corpus(fuente, tmp_path / "pub-fallo", tmp_path / "priv-fallo", sizes={"test": 1})
+    assert not (tmp_path / "pub-fallo").exists() and not (tmp_path / "priv-fallo").exists()
+    assert not list(tmp_path.glob("*.partial-*"))

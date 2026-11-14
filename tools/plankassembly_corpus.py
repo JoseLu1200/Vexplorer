@@ -624,14 +624,45 @@ def _referencia(case_id: str, grupo: str, modelo: ModeloAnalizado) -> dict[str, 
     }
 
 
+def _raices_de_repositorio(ruta: Path) -> set[Path]:
+    """Raíces de repositorio Git de ``ruta`` sin invocar git.
+
+    Sube por los ancestros buscando ``.git``. Si es un archivo (worktree: ``gitdir: ...``), añade
+    también la raíz del repositorio principal, el padre del directorio común (``commondir``).
+    """
+    raices: set[Path] = set()
+    for carpeta in (ruta.resolve(), *ruta.resolve().parents):
+        marca = carpeta / ".git"
+        if marca.is_dir():
+            raices.add(carpeta)
+        elif marca.is_file():
+            raices.add(carpeta)
+            try:
+                texto = marca.read_text(encoding="utf-8").strip()
+                gitdir = Path(texto.removeprefix("gitdir:").strip())
+                gitdir = gitdir if gitdir.is_absolute() else (carpeta / gitdir)
+                comun = gitdir
+                archivo_comun = gitdir / "commondir"
+                if archivo_comun.is_file():
+                    comun = gitdir / archivo_comun.read_text(encoding="utf-8").strip()
+                comun = comun.resolve()
+                raices.add(comun.parent if comun.name == ".git" else comun)
+            except OSError:
+                pass
+    return raices
+
+
 def _validar_destinos(public: Path, private: Path) -> None:
     if public == private or public.is_relative_to(private) or private.is_relative_to(public):
         raise ValueError("public and private destinations must be separate")
+    prohibidas = _raices_de_repositorio(REPO_ROOT) | {REPO_ROOT.resolve()}
     for destino in (public, private):
-        if destino.is_relative_to(REPO_ROOT):
-            raise ValueError(f"destination {destino} is inside the repository; dataset derivatives (CC BY-NC-ND 4.0) must stay outside Git")
         if destino.exists():
             raise ValueError("destination exists")
+        if _raices_de_repositorio(destino) or any(destino.is_relative_to(raiz) for raiz in prohibidas):
+            raise ValueError(
+                f"destination {destino} is inside a Git repository; dataset derivatives (CC BY-NC-ND 4.0) must stay outside Git"
+            )
 
 
 def generar_corpus(
@@ -816,7 +847,11 @@ def generar_corpus(
         _write_hashes(public_stage)
         _write_hashes(private_stage)
         public_stage.rename(public_destination)
-        private_stage.rename(private_destination)
+        try:
+            private_stage.rename(private_destination)
+        except Exception:
+            shutil.rmtree(public_destination, ignore_errors=True)  # no dejar la mitad pública publicada
+            raise
         return json.loads((public_destination / "manifest.json").read_text(encoding="utf-8"))
     except Exception:
         shutil.rmtree(public_stage, ignore_errors=True)
