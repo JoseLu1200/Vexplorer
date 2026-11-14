@@ -127,3 +127,11 @@ Completado: demo local integrada y verificada; aceptación final GPT-6 Astra SHI
 - A mantiene ingesta/geometría y validación del programa; B mantiene contratos/API/harness. Apoyos delegados: exportador de corte y costes bajo B, renderer de planos bajo A, plausibilidad de taller bajo B. Cada archivo tiene un único escritor; root integra commits y conserva la atribución de origen en documentación.
 - Revisión Astra sustantiva en curso: corrigiendo restricciones geométricas, evidencia derivada, IDs de revisión disjuntos, referencias de planos, explicación de valores humanos y tarifa fija de catálogo. La aceptación de contrato y el SHIP 0.4 no equivalen a SHIP de esta ampliación.
 - La autorización de merge/push main persiste; se ejecutará después de la verificación integrada. No hay despliegue al VPS ni publicación de datos externos.
+
+### Cierre técnico de mesa/CAD
+
+- Primer merge/push incremental a main confirmado en `23b8e01`, con 287 Python/81 JS y SHIP incremental.
+- Código final `5241a86`: 313 Python/82 JS, 26 comprobaciones HTTP del flujo, 20 peticiones HTTP live correctas, compileall/pip check/diff-check correctos. GPT-6 Astra emite SHIP final sin hallazgos críticos o importantes reproducibles.
+- Visión nativa real verificada: el modelo solicitó FRONT, recibió PNG con cinco marcas y su hash; después propuso y la revisión 2 quedó completed. OFF por defecto; ON exige al menos una inspección y permite tres intentos. Acuerdo A/B explícito registrado por B.
+- Navegador final abrió el run live, mostró cotas y componentes y amplió el SVG con nitidez; consola sin errores/avisos en esa sesión. C verificó además zoom/pan/Escape, subida/revisión/coste/3D y responsive. Evidencia en `docs/VERIFICACION_MESA_CAD_2026-11-14.md` y `docs/auditoria/2026-11-14/table-*`.
+- Adaptación selectiva de ambos bloques de Pablo integrada. Quedan fuera HATCH, bulges, paperspace y ARC OCS negativo; costes sintéticos, reconstrucción esquemática y perfil acotado se mantienen explícitos. No se afirma automatización general ni precisión empresarial.

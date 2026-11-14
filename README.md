@@ -4,7 +4,7 @@ Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. 
 
 Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca local usa atributos geométricos o embeddings reales; las tarifas económicas son sintéticas. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
-El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el nuevo recorrido; su integración y revisión están en curso. La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) conserva el cierre anterior. La [auditoría de `dab7ce5`](docs/AUDITORIA_APP_2026-11-14.md) es histórica. Las [adaptaciones de CAD/harness](docs/INTEGRACION_CAD_HARNESS.md) identifican los cambios de Pablo adoptados, sus correcciones y lo pendiente.
+El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el nuevo recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) recoge **313 pruebas Python, 82 JavaScript, API y navegador reales, inferencia y visión con proveedor real**, y revisión final GPT-6 Astra SHIP. La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) conserva el cierre anterior. Las [adaptaciones de CAD/harness](docs/INTEGRACION_CAD_HARNESS.md) identifican los cambios de Pablo adoptados y sus exclusiones.
 
 ## Instalación y arranque (PowerShell)
 
@@ -21,7 +21,7 @@ Abrir **http://127.0.0.1:8765**. FastAPI sirve también el frontend JS/HTML: no 
 
 Los documentos, resultados y revisiones se conservan en `.vexplorer-data/`, ignorado por Git. Instancia local de un operador, sin autenticación multiusuario; mantener el bind en `127.0.0.1`. No se ha desplegado al VPS.
 
-Si ya existe una biblioteca antigua con descriptores v1, puede conservarse y abrir una instancia separada para v2; los grupos semánticos rechazan mezclar ambas versiones:
+La biblioteca puede conservar descriptores v1/v2/v3. La interfaz de mesa filtra v3; las comparaciones rechazan mezclas de versiones incompatibles. Para una demo con almacenamiento separado:
 
 ```powershell
 .\.venv\Scripts\python.exe -c "from pathlib import Path; from dotenv import load_dotenv; load_dotenv(); import uvicorn; from backend.app.main import create_app; uvicorn.run(create_app(data_dir=Path('.runtime/demo-parts')),host='127.0.0.1',port=8765)"
@@ -51,7 +51,7 @@ El programa generativo está limitado a tapa más dos soportes laterales o cuatr
 8. En **Coste**, consultar comparables sintéticos y calcular: material `1,7568 m² × 50 EUR/m² = 87,84 EUR`; preparación `40 EUR`, una sola vez; total **127,84 EUR**. Horas desconocidas. Exportar ficha JSON con escena, explicaciones, descriptor, biblioteca, resultado y traza; CSV para la tabla de piezas.
 9. Probar [cantidad desconocida](data/planos_demo/piezas_qty_desconocida.dxf), [espesor desconocido](data/planos_demo/piezas_espesor_desconocido.dxf) y [asociación ambigua](data/planos_demo/piezas_ambigua_sin_id.dxf). Los faltantes se conservan; una revisión puede aportar cantidad o medidas con su motivo. Sin asociación suficiente no se fuerza un montaje.
 
-El formato admitido para asociar vistas es texto visible `PART <clave> FRONT|TOP|SIDE`; la cantidad usa `QTY <clave> <entero>`. Los ejes locales son FRONT largo/ancho, TOP largo/espesor y SIDE espesor/ancho. No es reconocimiento general de dibujos sin etiquetas. La opción **Vistas montadas · legado** conserva la primera demo con [estanteria_montada.dxf](data/planos_demo/estanteria_montada.dxf).
+El formato admitido para asociar vistas de piezas separadas es texto visible `PART <clave> FRONT|TOP|SIDE`; la cantidad usa `QTY <clave> <entero>`. Los ejes locales son FRONT largo/ancho, TOP largo/espesor y SIDE espesor/ancho. No es reconocimiento general de piezas sin etiquetas. Las vistas montadas pueden asociarse por una disposición inequívoca, marcada para revisión. La opción **Estantería · legado** conserva la primera demo con [estanteria_montada.dxf](data/planos_demo/estanteria_montada.dxf).
 
 La entrada no contiene una BOM ni nombres de piezas. La referencia propia está en [evaluation/reference](evaluation/reference/README.md), reservada a las pruebas del evaluador; las herramientas y endpoints del producto no la sirven ni la leen. El caso es de desarrollo inspeccionado, no un benchmark ciego. El test congela la salida antes de abrir la referencia.
 
@@ -70,6 +70,8 @@ $env:OPENAI_MODEL="gpt-6.1-sol"
 
 Los errores de proveedor se muestran como tales; no se convierten en resultados geométricos etiquetados live. Límites: 15 llamadas de modelo, 30 herramientas, 2 reparaciones estructurales y 120 segundos para la fase del agente. `OPENAI_MAX_OUTPUT_TOKENS` vale 4096 por defecto y admite de 256 a 16384; una configuración inválida deshabilita el proveedor con motivo explícito. Nunca incorporar `.env` a Git.
 
+La visión está **desactivada por defecto**. En mesa live, `OPENAI_VISION_ENABLED=1` habilita la herramienta nativa `visualizar_vista`; el modelo debe consultar al menos una vista antes de entregar su programa. Se permiten tres intentos en total, con PNG locales del ledger de hasta 1024 px y 2 MB por vista. Las marcas identifican contornos o entidades; los píxeles no aportan medidas. La traza conserva vista, hash y número de marcas. Esta opción se probó contra la API real y sigue sin acreditar reconocimiento general de muebles. La lectura CAD y las herramientas vectoriales siguen siendo la fuente numérica.
+
 Los embeddings son independientes del modo de análisis del DXF. Usan `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small` y `OPENAI_EMBEDDING_DIMENSIONS=256` por defecto. Se generan mediante una acción explícita de guardado semántico. La caché distingue descriptor, modelo y dimensiones; se rechazan vectores corruptos o incompatibles. Los ejemplos de la misma familia tienen cosenos muy altos: la utilidad de esa agrupación sobre un histórico variado sigue pendiente de evaluación.
 
 ## Verificación
@@ -80,7 +82,7 @@ npm test --prefix frontend
 .\.venv\Scripts\python.exe -m compileall -q backend tools
 ```
 
-Node prepara los módulos locales de Three.js y ejecuta las pruebas JavaScript; el servidor de uso es Python. Resultados de esta entrega en [VERIFICACION_PIEZAS_SEPARADAS.md](docs/VERIFICACION_PIEZAS_SEPARADAS.md); antecedentes en [VERIFICACION_DEMO.md](docs/VERIFICACION_DEMO.md) y [VISOR_RECONSTRUCCION_SIMILITUD.md](docs/VISOR_RECONSTRUCCION_SIMILITUD.md).
+Node prepara los módulos locales de Three.js y ejecuta las pruebas JavaScript; el servidor de uso es Python. Resultados actuales y comandos de auditoría HTTP/proveedor en [VERIFICACION_MESA_CAD_2026-11-14.md](docs/VERIFICACION_MESA_CAD_2026-11-14.md); antecedentes en [VERIFICACION_PIEZAS_SEPARADAS.md](docs/VERIFICACION_PIEZAS_SEPARADAS.md).
 
 Los DXF propios se pueden regenerar con:
 
@@ -94,7 +96,7 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 
 ## Alcance y trabajo pendiente
 
-- Inferencia DXF: modelspace, LINE, LWPOLYLINE recta, TEXT/MTEXT y cotas lineales admitidas. Requiere vistas FRONT/TOP/SIDE o RIGHT coherentes. El SVG visual admite más grafismo, como bloques y curvas, pero eso no amplía las piezas inferibles. No hay lector general de croquis, PDF, DWG ni muebles arbitrarios.
+- Lectura DXF: modelspace, bloques anidados y atributos, líneas y polilíneas rectas, círculos/arcos tipados, textos y cotas lineales o por ordenadas. ELLIPSE/SPLINE son aproximaciones visuales declaradas; no generan paneles ni medidas exactas. Se detectan filas regulares de círculos como evidencia neutral y se contrasta un catálogo de taller que por defecto no está confirmado. DXF recuperados requieren revisión. Límites: 100.000 entidades, 20.000 puntos por entidad y 200.000 por dibujo. HATCH, bulges, paperspace y ARC con OCS negativo no están admitidos por el lector. No hay lector general de croquis, PDF, DWG ni muebles arbitrarios.
 - La revisión de piezas separadas permite elegir asignación y completar cantidad o dimensiones desconocidas, con material/acabado y motivo. Dividir/unir componentes y crear elementos ocultos arbitrarios desde la interfaz quedan pendientes.
 - Biblioteca geométrica/semántica de revisiones guardadas, separada del histórico económico de tres ejemplos inventados. Agrupación por componentes conexos y umbral, sin evaluación estadística de relevancia. No se infieren tiempos industriales, mecanizados, acabado cotizado ni impuestos. No es un presupuesto de fabricación completo.
 - Reconstrucción por cajas de tableros según montaje revisado y niveles observados, sin traseras ocultas añadidas, mecanizados, uniones detalladas ni certificación de colisiones. Las ejecuciones antiguas se abren, pero para obtener cotas enriquecidas y vínculo al CAD original deben analizarse de nuevo.
@@ -106,6 +108,6 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 
 [Diseño inicial](docs/DEMO_IMPLEMENTACION.md), [ampliación del visor](docs/VISOR_RECONSTRUCCION_SIMILITUD.md), [proyectos open source evaluados](docs/OPEN_SOURCE.md), [coordinación](team/agente_coordinador.md), [A geometría](team/agente_geometria.md), [B backend](team/agente_backend.md), [C frontend](team/agente_frontend.md), [D evaluación](team/agente_evaluacion.md).
 
-Los documentos [initial-plan.md](initial-plan.md), [PLAN.md](PLAN.md), [ARQUITECTURA](docs/ARQUITECTURA.md) y [CONTRATOS_DATOS](docs/CONTRATOS_DATOS.md) conservan el diseño amplio y sus pendientes. El [acuerdo 0.4](docs/CONTRATO_PARTS_ONLY_0_4.md) añade observaciones, asignaciones de ejemplares y montaje hipotético; mantiene el envelope **0.2.0** y usa descriptor **furniture-v2** separado del anterior. A/B acordaron los cambios y avisaron a C; [modelos.py](backend/app/contratos/modelos.py) es la fuente contractual. No todas las tareas T1–T13 están terminadas.
+Los documentos [initial-plan.md](initial-plan.md), [PLAN.md](PLAN.md), [ARQUITECTURA](docs/ARQUITECTURA.md) y [CONTRATOS_DATOS](docs/CONTRATOS_DATOS.md) conservan el diseño amplio y sus pendientes. Los acuerdos [0.4 de piezas](docs/CONTRATO_PARTS_ONLY_0_4.md) y [0.5 de mesa](docs/CONTRATO_MESA_0_5.md) añaden sus recorridos; el envelope HTTP sigue en **0.2.0**, el export de mesa en **0.5.0** y sus descriptores son **furniture-v2/v3**. A/B acordaron los cambios y avisaron a C; [modelos.py](backend/app/contratos/modelos.py) es la fuente contractual. No todas las tareas T1–T13 están terminadas.
 
 El preparador mecánico anterior continúa disponible. Esta entrega elimina sus diagnósticos de abstención del contexto público, verifica la referencia contra el manifiesto y consume los bytes verificados; los pilotos antiguos requieren regeneración para incorporar esas correcciones. No se ha redistribuido ni regenerado aquí el corpus externo. Véase [PILOTO_DATASET](docs/PILOTO_DATASET.md).

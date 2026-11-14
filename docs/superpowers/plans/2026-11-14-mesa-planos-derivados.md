@@ -19,10 +19,11 @@ Todos conservan las lecturas obligatorias de AGENTS/CLAUDE/README/planes/team/tr
 
 - [x] Contrato A/B registrado y comunicado; revisión temprana Astra APPROVE en `6ab6c2e` tras cerrar autoridad, cobertura, estados y dependencia de revisión.
 - [x] Fixture permitido de vistas montadas y variante incompleta; commits D `79621eb` y `2bd052d`, referencia fuera del runtime/prompt.
-- [ ] Geometría, programa generativo validado y baseline etiquetada; números calculados localmente.
-- [ ] Revisión por campo/componente, recálculo y conservación del historial.
-- [ ] SVG/DXF general, por piezas y hoja de despiece; dimensiones y procedencias consistentes.
-- [ ] Coste por pieza/concepto y estados de desconocido; tarifas sintéticas explícitas.
-- [ ] API, UI, biblioteca/descriptor y exportación integrados.
-- [ ] Pruebas, ejecución live real, navegador y correcciones.
-- [ ] README/informe y revisión final Astra; merge/push main sin despliegue ni datasets externos.
+- [x] Geometría, programa generativo validado y baseline etiquetada; números calculados localmente.
+- [x] Revisión por campo/componente, recálculo y conservación del historial.
+- [x] SVG/DXF general, por piezas y hoja de despiece; dimensiones y procedencias consistentes.
+- [x] Coste por pieza/concepto y estados de desconocido; tarifas sintéticas explícitas.
+- [x] API, UI, biblioteca/descriptor y exportación integrados.
+- [x] Pruebas, ejecución live real, navegador y correcciones.
+- [x] README/informe y revisión final Astra: SHIP sobre `5241a86`, 313 Python y 82 JS; API/visión real verificadas.
+- [ ] Push final a main (checkpoint `23b8e01` ya subido); sin despliegue ni datasets externos.

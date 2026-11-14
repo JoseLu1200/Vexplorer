@@ -21,6 +21,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--invoke-paid-provider", action="store_true", required=True)
     parser.add_argument("--reuse-live-run")
+    parser.add_argument("--require-vision", action="store_true", help="Require an actual successful native vision tool call in the real run.")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     report = {"date_utc": datetime.now(UTC).isoformat(), "base_url": args.base_url, "checks": [], "assertions": {}}
@@ -41,6 +42,8 @@ def main() -> None:
 
     config = call("GET", "/config")
     assert config["live_available"], "Real provider is not configured"
+    if args.require_vision:
+        assert config.get("vision", {}).get("enabled"), "Optional vision is not enabled on the server"
     if args.reuse_live_run:
         created = call("GET", f"/runs/{args.reuse_live_run}")
     else:
@@ -55,6 +58,14 @@ def main() -> None:
     events.raise_for_status()
     report["live_events_sse"] = events.text
     assert "proponer_descomposicion" in events.text
+    parsed_events = [json.loads(line.removeprefix("data: ")) for line in events.text.splitlines() if line.startswith("data: ")]
+    visual_actions = [event["data"] for event in parsed_events if event.get("data", {}).get("tool_name") == "visualizar_vista" and event["data"].get("artifact_sha256")]
+    report["vision_artifacts"] = visual_actions
+    save()
+    if args.require_vision:
+        assert visual_actions, "The model did not invoke the optional vision tool successfully"
+        assert all(len(item["artifact_sha256"]) == 64 and item["mark_count"] > 0 for item in visual_actions)
+        report["assertions"]["real_native_vision_tool"] = True
     report["assertions"]["real_generated_program"] = True
     if result["result_revision"] == 1:
         decisions = [{"target_kind": kind, "target_id": item["id"], "action": "accept", "reason": "Agente auditor: acepta hipótesis en ensayo técnico, no certificación de fabricación."} for kind, items in (("program", [program]), ("component", program["components"]), ("premise", program["premises"])) for item in items]

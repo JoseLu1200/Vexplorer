@@ -1,0 +1,450 @@
+{
+  "audit_schema": "vexplorer-table-api-audit-1",
+  "capabilities": {
+    "bounded_catalog_program": {
+      "evidence": "explicit side/corner templates; no implicit choice",
+      "state": "audited"
+    },
+    "live_model": {
+      "evidence": "runner uses geometry_only and makes no provider call",
+      "state": "not_exercised"
+    },
+    "mounted_source_ledger": {
+      "evidence": "observed dimensions and provenance checked",
+      "state": "audited"
+    },
+    "review_scene": {
+      "evidence": "versioned review and physical occurrence counts checked",
+      "state": "schematic"
+    },
+    "table_cost": {
+      "evidence": "per-component area and single setup checked",
+      "state": "synthetic_demo_only"
+    },
+    "technical_drawings": {
+      "evidence": "SVG and mm DXF artifacts reopened through HTTP",
+      "state": "audited"
+    }
+  },
+  "checks": [
+    {
+      "expected": {
+        "data.status": "ok",
+        "status": 200
+      },
+      "name": "service.health",
+      "observed": {
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.complete",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "mounted_orthographic_views",
+        "status": 201
+      },
+      "name": "run.complete",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "schema_version": "0.5.0",
+        "status": 200
+      },
+      "name": "table.complete.r1",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "depth": 700.0,
+        "height": 750.0,
+        "provenance": true,
+        "width": 1200.0
+      },
+      "name": "source.overall_dimensions_are_observed_with_provenance",
+      "observed": {
+        "measures": {
+          "overall_depth": [
+            "observed",
+            700.0
+          ],
+          "overall_height": [
+            "observed",
+            750.0
+          ],
+          "overall_width": [
+            "observed",
+            1200.0
+          ]
+        },
+        "provenance": true
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "bounded": true,
+        "occurrences": 3,
+        "origin": "catalog_baseline",
+        "state": "needs_review"
+      },
+      "name": "program.catalog_baseline_is_bounded_and_unreviewed",
+      "observed": {
+        "bounded": true,
+        "occurrences": 3,
+        "origin": "catalog_baseline",
+        "state": "needs_review"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "revision": 2,
+        "status": 201
+      },
+      "name": "review.complete",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "dimensions": [
+          1200.0,
+          700.0,
+          750.0
+        ],
+        "occurrences": 3,
+        "state": "completed"
+      },
+      "name": "review.completed_recalculates_program",
+      "observed": {
+        "dimensions": {
+          "depth_mm": 700.0,
+          "height_mm": 750.0,
+          "width_mm": 1200.0
+        },
+        "occurrences": 3,
+        "program_state": "completed",
+        "result_state": "completed"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 3,
+        "state": "ready",
+        "status": 200
+      },
+      "name": "scene.reviewed_three_occurrences",
+      "observed": {
+        "objects": 3,
+        "state": "ready",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "artifacts": 8,
+        "dxf_units": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "sheet_kinds": [
+          "general",
+          "component",
+          "cut_sheet"
+        ]
+      },
+      "name": "drawings.general_components_cut_sheet_roundtrip",
+      "observed": {
+        "artifacts": 8,
+        "dxf_units": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "sheet_kinds": [
+          "component",
+          "cut_sheet",
+          "general"
+        ],
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "known_subtotal": 102.62,
+        "setup": 25.0,
+        "supports_m2": 1.008,
+        "top_m2": 0.84,
+        "total_state": "partial"
+      },
+      "name": "cost.per_component_area_and_single_setup",
+      "observed": {
+        "known_subtotal": 102.62,
+        "setup": 25.0,
+        "status": 201,
+        "supports_m2": 1.008,
+        "top_m2": 0.84,
+        "total_state": "partial"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "descriptor": "furniture-v3",
+        "revision_bound": true,
+        "schema": "0.5.0",
+        "status": 200
+      },
+      "name": "export.revision_bound_bundle",
+      "observed": {
+        "descriptor": "furniture-v3",
+        "revision_bound": true,
+        "schema": "0.5.0",
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "status": 422
+      },
+      "name": "program.implicit_catalog_choice_rejected",
+      "observed": {
+        "code": null,
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.corner",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "mounted_orthographic_views",
+        "status": 201
+      },
+      "name": "run.corner",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "occurrences": 5,
+        "program_state": "hypothesis",
+        "state": "needs_review"
+      },
+      "name": "program.corner_registry_has_five_hypothetical_occurrences",
+      "observed": {
+        "occurrences": 5,
+        "program_state": "hypothesis",
+        "state": "needs_review"
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.dimensions",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "mounted_orthographic_views",
+        "status": 201
+      },
+      "name": "run.dimensions",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "depth_mm": 800.0,
+        "height_mm": 760.0,
+        "width_mm": 1400.0
+      },
+      "name": "variant.changed_dimensions_propagate",
+      "observed": {
+        "depth_mm": 800.0,
+        "height_mm": 760.0,
+        "width_mm": 1400.0
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.missing_side",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "mounted_orthographic_views",
+        "status": 201
+      },
+      "name": "run.missing_side",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "revision": 2,
+        "status": 201
+      },
+      "name": "review.missing_side",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "incomplete_sheet": true,
+        "result": "needs_review",
+        "scene": "incomplete",
+        "warning": "missing_required_view:SIDE"
+      },
+      "name": "variant.missing_side_remains_incomplete_with_source_plan_available",
+      "observed": {
+        "incomplete_sheets": 2,
+        "objects": 0,
+        "result": "needs_review",
+        "scene": "incomplete",
+        "warning_present": true
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.conflict",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "input_kind": "mounted_orthographic_views",
+        "status": 201
+      },
+      "name": "run.conflict",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "evidence_count_min": 2,
+        "state": "conflict",
+        "value_mm": null
+      },
+      "name": "variant.dimension_conflict_is_null_and_traced",
+      "observed": {
+        "evidence_count": 3,
+        "state": "conflict",
+        "value_mm": null
+      },
+      "status": "pass"
+    }
+  ],
+  "findings": [],
+  "generated_at": "2026-11-14T01:28:57.467169+00:00",
+  "policy": {
+    "evaluator_oracle_reads": false,
+    "proposal_mode": "catalog_baseline",
+    "provider_calls": false,
+    "public_fixtures_only": true,
+    "run_mode": "geometry_only",
+    "transport": "real_http"
+  },
+  "resources": {
+    "documents": {
+      "complete": "doc-bc761f9e2b474122a51ac276afa1a381",
+      "conflict": "doc-f4f00c5449f84c0b97c755c068469abb",
+      "corner": "doc-89b08ed4c4f3481f9f6c2eed52bf04ed",
+      "dimensions": "doc-89ad6fb227b74f52b3bf4deb19a1c46d",
+      "missing_side": "doc-b335b2e811904229812e29a5051b4d1f"
+    },
+    "runs": {
+      "complete": "run-3d3dd9551db944beb420b3dbd869b381",
+      "conflict": "run-4598da1606b940e480a881491d3e4c29",
+      "corner": "run-476effd31f814f0587cbeb416d9afba0",
+      "dimensions": "run-252e366327f94a7b8c4f7e92da3de56d",
+      "missing_side": "run-551c6ef2dff548398da8dac7de9406a6"
+    }
+  },
+  "summary": {
+    "duration_ms": 729,
+    "failed": 0,
+    "passed": 26,
+    "result": "pass"
+  },
+  "target": "http://127.0.0.1:8770",
+  "integration_code_commit": "5241a86"
+}

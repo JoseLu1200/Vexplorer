@@ -1,0 +1,31 @@
+{
+  "code_commit": "5241a86",
+  "transport": "real_browser",
+  "run_id": "run-4cd41770b1254f2185f01f9a6430086a",
+  "mode": "live",
+  "revision": 2,
+  "viewport_css": {
+    "width": 1140,
+    "height": 575,
+    "document_width": 1140
+  },
+  "general_svg": {
+    "natural_width": 1600,
+    "natural_height": 1541,
+    "expanded": true,
+    "image_css_width": 1090,
+    "image_css_height": 457
+  },
+  "console_errors_and_warnings": [],
+  "observed": [
+    "Restored real live run displays model-generated components and reviewed values.",
+    "General sheet shows FRONT/TOP/SIDE component projections and observed overall dimensions.",
+    "Expanded viewer preserves sharp SVG lines and source-state legend."
+  ],
+  "additional_frontend_agent_smoke": [
+    "Upload DXF, review 1 to 2, component/cut sheets, 3D with three occurrences and partial cost.",
+    "Zoom and pan change displayed geometry; expand/Escape restore state.",
+    "Responsive 1042 and 501 CSS px without horizontal overflow."
+  ],
+  "screenshot": "table-general-browser.png"
+}
