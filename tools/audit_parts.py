@@ -90,6 +90,23 @@ def code(response: httpx.Response) -> str | None:
     return body(response).get("error", {}).get("code")
 
 
+def sse_events(response: httpx.Response) -> list[dict[str, Any]]:
+    values: list[dict[str, Any]] = []
+    event_type: str | None = None
+    for line in response.text.splitlines():
+        if line.startswith("event: "):
+            event_type = line.removeprefix("event: ")
+        elif line.startswith("data: "):
+            try:
+                payload = json.loads(line.removeprefix("data: "))
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict):
+                values.append({"event_type": event_type, **payload})
+            event_type = None
+    return values
+
+
 def upload(client: httpx.Client, audit: Audit, key: str, filename: str) -> str:
     with (FIXTURES / filename).open("rb") as stream:
         response = client.post(
@@ -269,6 +286,53 @@ def audit_complete(client: httpx.Client, audit: Audit) -> None:
             "selected": latest.get("selected_assembly_candidate_id") == selected["id"],
             "occurrences": sum(item.get("quantity") or 0 for item in reviewed.get("pieces", [])),
         },
+    )
+    events_response = client.get(f"/api/v1/runs/{run_id}/events")
+    committed = [
+        item
+        for item in sse_events(events_response)
+        if item.get("event_type") == "human_review_committed"
+        and item.get("result_revision") == 2
+    ]
+    audit.check(
+        "review.sse_records_selected_assembly_candidate",
+        events_response.status_code == 200
+        and len(committed) == 1
+        and committed[0].get("selected_assembly_candidate_id") == selected["id"],
+        {"status": 200, "review_events": 1, "selected_candidate_recorded": True},
+        {
+            "status": events_response.status_code,
+            "review_events": len(committed),
+            "selected_candidate_recorded": bool(committed)
+            and committed[0].get("selected_assembly_candidate_id") == selected["id"],
+        },
+    )
+    observed_use = next(
+        use for use in selected["uses"] if use["quantity_source"] == "observed_annotation"
+    )
+    override = client.post(
+        f"/api/v1/runs/{run_id}/reviews",
+        json={
+            "base_result_revision": 2,
+            "reviewer_name": "Auditoría HTTP parts-only",
+            "assembly_candidate_id": selected["id"],
+            "decisions": [
+                {
+                    "proposal_id": observed_use["id"],
+                    "action": "confirm",
+                    "role": observed_use["role"],
+                    "quantity": 5,
+                    "notes": "Intento de contradecir una cantidad observada",
+                }
+            ],
+            "notes": "Control negativo de cantidad observada",
+        },
+    )
+    audit.check(
+        "review.observed_quantity_override_rejected",
+        override.status_code in {400, 409, 422},
+        {"status": [400, 409, 422], "accepted": False},
+        {"status": override.status_code, "code": code(override), "accepted": override.is_success},
     )
     stale = client.post(
         f"/api/v1/runs/{run_id}/reviews",
@@ -607,6 +671,63 @@ def audit_partial(client: httpx.Client, audit: Audit) -> None:
                         item.get("part_observation_id")
                         for item in completed_scene_data.get("objects", [])
                     },
+                },
+            )
+            frozen_ledger = parts(client, audit, run_id, 3, f"{key}_reviewed")
+            frozen_observation = next(
+                item
+                for item in frozen_ledger["part_analysis"]["observations"]
+                if item["id"] == observation["id"]
+            )
+            exported = client.get(
+                f"/api/v1/runs/{run_id}/exports", params={"format": "json"}
+            )
+            descriptor = body(exported).get("descriptor", {})
+            descriptor_field = "quantity" if field == "quantity" else "thickness_mm"
+            expected_value = 2 if field == "quantity" else 18.0
+            confirmed_features = [
+                feature
+                for feature in descriptor.get("part_features", [])
+                if feature.get(descriptor_field) == expected_value
+                and feature.get("field_states", {}).get(descriptor_field) == "confirmed"
+                and descriptor_field not in feature.get("unknown_fields", [])
+            ]
+            unresolved_suffix = "quantity" if field == "quantity" else "thickness"
+            descriptor_unknowns = descriptor.get("unknown_fields", [])
+            ledger_value = (
+                frozen_observation["quantity"]["value"]
+                if field == "quantity"
+                else frozen_observation["dimensions"]["thickness"]["value_mm"]
+            )
+            audit.check(
+                f"partial.{key}.descriptor_uses_resolved_value_ledger_stays_null",
+                exported.status_code == 200
+                and descriptor.get("descriptor_version") == "furniture-v2"
+                and descriptor.get("classification_status") == "confirmed"
+                and len(confirmed_features) == 1
+                and not any(
+                    item.endswith(f".{unresolved_suffix}") for item in descriptor_unknowns
+                )
+                and ledger_value is None,
+                {
+                    "status": 200,
+                    "descriptor": "furniture-v2",
+                    "classification": "confirmed",
+                    "confirmed_feature_value": expected_value,
+                    "resolved_unknown_removed": True,
+                    "ledger_value": None,
+                },
+                {
+                    "status": exported.status_code,
+                    "descriptor": descriptor.get("descriptor_version"),
+                    "classification": descriptor.get("classification_status"),
+                    "confirmed_features": len(confirmed_features),
+                    "remaining_matching_unknowns": [
+                        item
+                        for item in descriptor_unknowns
+                        if item.endswith(f".{unresolved_suffix}")
+                    ],
+                    "ledger_value": ledger_value,
                 },
             )
     document_id = upload(client, audit, "unassociated", "piezas_ambigua_sin_id.dxf")
