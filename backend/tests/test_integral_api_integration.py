@@ -21,6 +21,22 @@ ROOT = Path(__file__).resolve().parents[2]
 DXF_FIXTURE = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
 
 
+def _accepted_dimension_decisions(required_targets: list[str], visual_ref: str):
+    checks = []
+    field_reviews = []
+    for index, target in enumerate(required_targets, start=1):
+        check_id = f"visual-dimension-{index}"
+        checks.append({
+            "id": check_id, "kind": "visual_consistency", "outcome": "pass",
+            "method": "model_visual", "target_refs": [target],
+            "source_refs": [visual_ref], "summary": "Asignación dimensional contrastada.",
+        })
+        field_reviews.append({
+            "target_ref": target, "status": "accepted", "check_ids": [check_id],
+        })
+    return checks, field_reviews
+
+
 class _GeneralLiveProvider:
     def __init__(self) -> None:
         self.visual_page_count = 0
@@ -35,9 +51,13 @@ class _GeneralLiveProvider:
             self.review_visual_page_count += sum(
                 item.get("type") == "input_image" for item in input_items[0]["content"]
             )
+            checks, field_reviews = _accepted_dimension_decisions(
+                context["required_dimension_field_review_targets"],
+                context["visual_artifacts"][0]["reference"],
+            )
             arguments = {
                 "scenario_id": "scenario-autonomous-1",
-                "checks": [], "field_reviews": [],
+                "checks": checks, "field_reviews": field_reviews,
                 "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
             }
             return ProviderResponse(
@@ -140,9 +160,13 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
             components[0]["label"] = "Panel reparado semánticamente"
             arguments = {"bindings": proposal["bindings"], "components": components, "premises": proposal["premises"], "assumptions": [*proposal["assumptions"], "Reparación automática trazable."]}
             return ProviderResponse(id="repair-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="repair-call-1", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
+        checks, field_reviews = _accepted_dimension_decisions(
+            output["required_dimension_field_review_targets"],
+            self.review_context["visual_artifacts"][0]["reference"],
+        )
         arguments = {
             "scenario_id": "scenario-repair-2",
-            "checks": [], "field_reviews": [],
+            "checks": checks, "field_reviews": field_reviews,
             "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
         }
         return ProviderResponse(id="critic-response-2", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-2", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
@@ -200,8 +224,12 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
         if self.repair_count < 2:
             return self._critic(source_id)
         self.review_count += 1
+        checks, field_reviews = _accepted_dimension_decisions(
+            output["required_dimension_field_review_targets"], self.visual_ref,
+        )
         arguments = {
-            "scenario_id": "scenario-final", "checks": [], "field_reviews": [],
+            "scenario_id": "scenario-final", "checks": checks,
+            "field_reviews": field_reviews,
             "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
         }
         return ProviderResponse(

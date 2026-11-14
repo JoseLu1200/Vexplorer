@@ -58,6 +58,7 @@ Una cota observed solo puede sostener la dimensión de la misma geometría visib
 Aceptar significa que una hipótesis es coherente, no que sea un hecho observado. Contrasta cada candidato en sus regiones: un contorno cerrado puede ser cara material, hueco, rebaje o límite interior. Busca duplicados entre proyecciones, incoherencias dimensionales y bases de cantidad antes de aceptar.
 Contrasta también la estabilidad global: vuelco, descuadre y arriostramiento. Cuando el escenario lo requiera, exige un detalle estimated explícito de estabilización o anclaje con premisa, ubicación y referencias; una simple nota pendiente no resuelve el escenario.
 Cada check model_visual debe citar en source_refs al menos una referencia visual exacta del contexto, también los checks de cantidad y duplicados de detalles estimados. Las premisas por sí solas no constituyen evidencia visual; no inventes referencias para completar un check.
+Decide explícitamente cada cota numérica anunciada en `required_dimension_field_review_targets`. Aceptar un parámetro no acepta automáticamente su asignación a length/width/thickness del componente: cada aceptación de campo cita un check model_visual pass dirigido a ese target exacto; cuando no puedas contrastarlo usa abstained, rejected o conflict. Para cada grupo `required_hardware_classification_field_review_targets`, decide al menos kind o geometry; solo accepted con evidencia visual exacta autoriza tratarlo como herraje comercial sin tres cotas de fabricación.
 La geometry de un detalle usa coordenadas locales de la cara de cada pieza asociada, nunca coordenadas del mueble completo. Divide los detalles por pieza cuando tengan orígenes o dimensiones diferentes; comprueba sus límites antes de proponerlos.
 Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
 
@@ -80,6 +81,53 @@ class GeneralAutonomousError(RuntimeError):
         self.trace = trace
         self.model_calls = model_calls
         self.tool_calls = tool_calls
+
+
+class _MissingDimensionFieldReviews(ValueError):
+    def __init__(
+        self,
+        targets: tuple[str, ...],
+        hardware_target_groups: tuple[tuple[str, ...], ...] = (),
+    ) -> None:
+        super().__init__("machine_dimension_field_reviews_required")
+        self.targets = targets
+        self.hardware_target_groups = hardware_target_groups
+
+
+class _MissingHardwareClassificationReviews(ValueError):
+    def __init__(self, target_groups: tuple[tuple[str, ...], ...]) -> None:
+        super().__init__("machine_hardware_classification_field_review_required")
+        self.target_groups = target_groups
+
+
+def _safe_autonomous_validation_details(
+    error: Exception,
+) -> list[dict[str, object]]:
+    if isinstance(error, _MissingDimensionFieldReviews):
+        return [{
+            "loc": ["field_reviews"],
+            "msg": "machine_dimension_field_reviews_required",
+            "type": "value_error",
+            "missing_count": len(error.targets),
+            "missing_targets": list(error.targets[:64]),
+            "missing_hardware_any_of": [
+                list(group) for group in error.hardware_target_groups[:64]
+            ],
+            "truncated": (
+                len(error.targets) > 64
+                or len(error.hardware_target_groups) > 64
+            ),
+        }]
+    if isinstance(error, _MissingHardwareClassificationReviews):
+        return [{
+            "loc": ["field_reviews"],
+            "msg": "machine_hardware_classification_field_review_required",
+            "type": "value_error",
+            "missing_count": len(error.target_groups),
+            "missing_any_of": [list(group) for group in error.target_groups[:64]],
+            "truncated": len(error.target_groups) > 64,
+        }]
+    return _safe_validation_details(error)
 
 
 def _safe_autonomous_error_code(error: Exception) -> str:
@@ -179,7 +227,7 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
         )
     )
     return [
-        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
+        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Debes incluir un field_review explícito para cada target de required_dimension_field_review_targets y al menos un any_of de cada required_hardware_classification_field_review_targets; accepted exige un check model_visual pass dirigido al mismo target. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
         schema("proponer_mueble_general", repair_description, ProposeGeneralFurnitureArgs),
     ]
 
@@ -215,6 +263,47 @@ def _review_target_refs(proposal, draft) -> set[str]:
     }
 
 
+def _required_numeric_dimension_targets(components) -> tuple[str, ...]:
+    return tuple(sorted(
+        f"component:{component.id}.{field}"
+        for component in components
+        for field in ("length", "width", "thickness")
+        if getattr(component, field).value_mm is not None
+    ))
+
+
+def _required_hardware_classification_target_groups(
+    components,
+) -> tuple[tuple[str, ...], ...]:
+    return tuple(
+        (
+            f"component:{component.id}.kind",
+            f"component:{component.id}.geometry",
+        )
+        for component in components
+        if component.kind == "hardware"
+        or (
+            component.geometry is not None
+            and component.geometry.shape_kind == "hardware"
+        )
+    )
+
+
+def _validate_numeric_dimension_review_coverage(args: GeneralAutoReviewArgs) -> None:
+    reviewed = {item.target_ref for item in args.field_reviews}
+    missing = tuple(
+        target for target in _required_numeric_dimension_targets(args.components)
+        if target not in reviewed
+    )
+    missing_hardware = tuple(
+        group
+        for group in _required_hardware_classification_target_groups(args.components)
+        if not reviewed.intersection(group)
+    )
+    if missing:
+        raise _MissingDimensionFieldReviews(missing, missing_hardware)
+    if missing_hardware:
+        raise _MissingHardwareClassificationReviews(missing_hardware)
 def _validate_visual_checks(
     args: GeneralAutoReviewArgs,
     allowed_source_refs: set[str],
@@ -240,8 +329,13 @@ def _validate_visual_checks(
     for field_review in args.field_reviews:
         if field_review.target_ref not in valid_targets:
             raise ValueError("machine_field_review_targets_unknown_field")
-        if field_review.status == "accepted" and not any(check_id in checks and checks[check_id].outcome == "pass" for check_id in field_review.check_ids):
-            raise ValueError("accepted_machine_field_requires_visual_check")
+        if field_review.status == "accepted" and not any(
+            check_id in checks
+            and checks[check_id].outcome == "pass"
+            and field_review.target_ref in checks[check_id].target_refs
+            for check_id in field_review.check_ids
+        ):
+            raise ValueError("accepted_machine_field_requires_targeted_visual_check")
         if field_review.status == "accepted" and field_review.target_ref.endswith(".quantity"):
             selected = [checks.get(check_id) for check_id in field_review.check_ids]
             if (
@@ -429,6 +523,15 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
             break
         offset = page.next_offset
     allowed_target_refs = sorted(_review_target_refs(outcome.proposal, outcome.draft))
+    required_dimension_field_review_targets = list(
+        _required_numeric_dimension_targets(outcome.draft.components)
+    )
+    required_hardware_classification_field_review_targets = [
+        {"component_id": group[0].split(":", 1)[1].rsplit(".", 1)[0], "any_of": list(group)}
+        for group in _required_hardware_classification_target_groups(
+            outcome.draft.components
+        )
+    ]
     visible_source_refs = set()
     for page in context.visual_pages:
         visible_source_refs.add(f"visual:{page.reference}")
@@ -448,12 +551,14 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         ).to_payload(),
         "referenced_segment_measurements": referenced_measurements,
         "allowed_target_refs": allowed_target_refs,
+        "required_dimension_field_review_targets": required_dimension_field_review_targets,
+        "required_hardware_classification_field_review_targets": required_hardware_classification_field_review_targets,
         "allowed_source_refs": allowed_source_refs,
         "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish|existence|kind|role|geometry> or parameter:<id> or constraint:<id> or detail:<id> or decision:<id>",
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Debes decidir explícitamente cada required_dimension_field_review_target; aceptar un parameter no sustituye decidir su asignación al campo del componente. Para cada required_hardware_classification_field_review_target decide al menos uno de sus any_of; solo accepted con check model_visual exacto autoriza clasificarlo como herraje. accepted exige un check model_visual pass que incluya ese mismo target; si no basta la evidencia usa abstained/rejected/conflict. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
     }
     if raster_without_metric_ledger:
         payload["allowed_document_refs"] = list(allowed_document_refs)
@@ -596,7 +701,16 @@ def run_general_autonomous(
                 repaired_targets = sorted(
                     _review_target_refs(effective.proposal, effective.draft)
                 )
-                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "allowed_target_refs": repaired_targets, "instruction": "Revisa ahora la propuesta reparada. Entrega solo checks/decisiones; no components/operations."}, ensure_ascii=False)}]
+                repaired_required_dimensions = list(
+                    _required_numeric_dimension_targets(effective.draft.components)
+                )
+                repaired_hardware_targets = [
+                    {"component_id": group[0].split(":", 1)[1].rsplit(".", 1)[0], "any_of": list(group)}
+                    for group in _required_hardware_classification_target_groups(
+                        effective.draft.components
+                    )
+                ]
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "allowed_target_refs": repaired_targets, "required_dimension_field_review_targets": repaired_required_dimensions, "required_hardware_classification_field_review_targets": repaired_hardware_targets, "instruction": "Revisa ahora la propuesta reparada. Entrega solo checks/decisiones; no components/operations. Decide explícitamente cada required_dimension_field_review_target y al menos un any_of por clasificación hardware; accepted exige check model_visual pass dirigido al mismo target."}, ensure_ascii=False)}]
                 continue
             if call.name != "entregar_revision_autonoma":
                 raise ValueError("unknown_tool")
@@ -606,6 +720,7 @@ def run_general_autonomous(
                 json.dumps(raw), strict=True
             )
             args = _server_review_args(decision, effective.draft, current_previous)
+            _validate_numeric_dimension_review_coverage(args)
             current_allowed_refs = allowed_refs | {
                 f"premise:{item.id}" for item in effective.proposal.premises
             }
@@ -731,7 +846,7 @@ def run_general_autonomous(
             return GeneralAutonomousOutcome(proposal_outcome, effective, tuple(snapshots), semantic_repairs, review, derived, tuple(trace), model_call, tool_calls, effective_status)
         except (ValidationError, ValueError, TypeError, json.JSONDecodeError) as exc:
             validation_repairs += 1
-            details = _safe_validation_details(exc)
+            details = _safe_autonomous_validation_details(exc)
             trace.append({"tool": call.name, "ok": False, "summary": "Herramienta autónoma inválida rechazada.", "provider_response_id": response.id, "details": details})
             if validation_repairs > limits.max_validation_repairs:
                 raise GeneralAutonomousError(

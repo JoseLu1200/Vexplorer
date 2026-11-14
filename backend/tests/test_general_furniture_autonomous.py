@@ -161,6 +161,9 @@ def test_critic_receives_exact_detail_for_segment_binding_omitted_from_initial_s
     assert detail["value_mm"] == 100
     assert detail["semantic"] == "contour_segment_length"
     assert "component:panel.length" in payload["allowed_target_refs"]
+    assert payload["required_dimension_field_review_targets"] == [
+        "component:panel.length"
+    ]
 
 
 def test_raster_document_references_are_closed_and_shared_by_critic_and_repair() -> None:
@@ -333,6 +336,178 @@ def test_partial_machine_coverage_cannot_report_accepted() -> None:
     assert outcome.review.auto_review_status == "incomplete"
 
 
+def test_numeric_component_dimension_omission_is_repaired_by_same_critic() -> None:
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    source = draft.components[0]
+    calls = 0
+    feedback = None
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            nonlocal calls, feedback
+            calls += 1
+            if calls == 1:
+                arguments = {
+                    "scenario_id": "scenario-missing-dimension-decision",
+                    "checks": [_visual_check("visual-length", source.id, "length")],
+                    "field_reviews": [],
+                    "unresolved": ["quantity", "thickness"],
+                    "status": "incomplete",
+                }
+            else:
+                feedback = json.loads(input_items[0]["output"])
+                arguments = {
+                    "scenario_id": "scenario-complete-dimension-decision",
+                    "checks": [_visual_check("visual-length", source.id, "length")],
+                    "field_reviews": [{
+                        "target_ref": f"component:{source.id}.length",
+                        "status": "accepted",
+                        "check_ids": ["visual-length"],
+                    }],
+                    "unresolved": ["quantity", "thickness"],
+                    "status": "incomplete",
+                }
+            return ProviderResponse(
+                id=f"dimension-coverage-{calls}", model="reviewer-model",
+                tool_calls=(ToolCall(
+                    call_id=f"dimension-coverage-call-{calls}",
+                    name="entregar_revision_autonoma",
+                    arguments_json=json.dumps(arguments),
+                ),),
+            )
+
+    outcome = run_general_autonomous(
+        _context(extraction),
+        GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(),
+        proposer_model="proposer-model",
+    )
+
+    assert calls == 2
+    assert outcome.semantic_repairs == 0
+    assert feedback is not None
+    assert feedback["error"] == "invalid_arguments"
+    assert feedback["details"][0]["msg"] == "machine_dimension_field_reviews_required"
+    assert feedback["details"][0]["missing_targets"] == [
+        f"component:{source.id}.length"
+    ]
+    assert outcome.derived.bom_rows[0].length.value_mm == 800
+
+
+def test_accepted_component_dimension_requires_visual_check_for_same_target() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs, GeneralComponentReview, GeneralModelVisualCheck,
+        GeneralQuantity, GeneralReviewOperation, GeneralTextValue,
+    )
+
+    source = materialize_general_proposal(_extraction(), _proposal()).components[0]
+    component = GeneralComponentReview(
+        id="panel", label=source.label, kind=source.kind, role=source.role,
+        length=source.length, width=source.width, thickness=source.thickness,
+        quantity=GeneralQuantity(value=None, state="unknown"),
+        material=GeneralTextValue(value=None, state="unknown"),
+        finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=(source.id,), assumptions=(), unknown_fields=("quantity",),
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="scenario-wrong-check-target",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=(source.id,),
+            result_component_ids=(component.id,), reason="Continuidad.",
+        ),),
+        components=(component,),
+        checks=(GeneralModelVisualCheck(
+            id="visual-quantity", kind="visual_consistency", outcome="pass",
+            method="model_visual", target_refs=("component:panel.quantity",),
+            source_refs=("visual:page-1",), summary="Solo revisa cantidad.",
+        ),),
+        field_reviews=(GeneralMachineFieldReview(
+            target_ref="component:panel.length", status="accepted",
+            check_ids=("visual-quantity",),
+        ),),
+        unresolved=("quantity",), status="incomplete",
+    )
+
+    with pytest.raises(ValueError, match="accepted_machine_field_requires_targeted_visual_check"):
+        _validate_visual_checks(
+            args,
+            {"visual:page-1"},
+            {"visual:page-1"},
+        )
+
+
+def test_typed_hardware_requires_explicit_visual_classification_decision() -> None:
+    from backend.app.contratos.modelos import GeneralFurnitureProposal
+
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    raw = _proposal().model_dump(mode="python")
+    raw["components"][0]["kind"] = "hardware"
+    raw["components"][0]["geometry"] = {
+        "shape_kind": "hardware", "source_contour_ids": [],
+        "basis_refs": ["premise:p1"],
+        "rationale": "Herraje comercial propuesto.",
+    }
+    proposal = GeneralFurnitureProposal.model_validate(raw)
+    draft = materialize_general_proposal(extraction, proposal)
+    source = draft.components[0]
+    calls = 0
+    feedback = None
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            nonlocal calls, feedback
+            calls += 1
+            checks = [_visual_check("visual-length", source.id, "length")]
+            field_reviews = [{
+                "target_ref": f"component:{source.id}.length",
+                "status": "accepted", "check_ids": ["visual-length"],
+            }]
+            if calls == 2:
+                feedback = json.loads(input_items[0]["output"])
+                checks.append(_visual_check("visual-kind", source.id, "kind"))
+                field_reviews.append({
+                    "target_ref": f"component:{source.id}.kind",
+                    "status": "accepted", "check_ids": ["visual-kind"],
+                })
+            arguments = {
+                "scenario_id": "scenario-hardware",
+                "checks": checks, "field_reviews": field_reviews,
+                "unresolved": ["quantity", "width", "thickness"],
+                "status": "incomplete",
+            }
+            return ProviderResponse(
+                id=f"hardware-classification-{calls}", model="reviewer-model",
+                tool_calls=(ToolCall(
+                    call_id=f"hardware-classification-call-{calls}",
+                    name="entregar_revision_autonoma",
+                    arguments_json=json.dumps(arguments),
+                ),),
+            )
+
+    outcome = run_general_autonomous(
+        _context(extraction),
+        GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+    )
+
+    assert calls == 2
+    assert feedback is not None
+    assert feedback["details"][0]["msg"] == (
+        "machine_hardware_classification_field_review_required"
+    )
+    assert feedback["details"][0]["missing_any_of"] == [[
+        f"component:{source.id}.kind",
+        f"component:{source.id}.geometry",
+    ]]
+    accepted = {
+        item.target_ref for item in outcome.review.machine_field_reviews
+        if item.status == "accepted"
+    }
+    assert f"component:{source.id}.kind" in accepted
+
+
 def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_review_it() -> None:
     extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
     proposal = _proposal()
@@ -500,7 +675,11 @@ def test_derivation_regenerates_once_without_another_provider_call(monkeypatch) 
             provider_calls += 1
             args = {
                 "scenario_id": "scenario-final",
-                "checks": [], "field_reviews": [],
+                "checks": [_visual_check("visual-length", proposal.components[0].id, "length")],
+                "field_reviews": [{
+                    "target_ref": f"component:{proposal.components[0].id}.length",
+                    "status": "accepted", "check_ids": ["visual-length"],
+                }],
                 "unresolved": ["quantity", "material", "finish"],
                 "status": "incomplete",
             }
@@ -544,7 +723,12 @@ def test_terminal_derivation_failure_preserves_review_with_incomplete_package(mo
             nonlocal provider_calls
             provider_calls += 1
             args = {
-                "scenario_id": "scenario-final", "checks": [], "field_reviews": [],
+                "scenario_id": "scenario-final",
+                "checks": [_visual_check("visual-length", proposal.components[0].id, "length")],
+                "field_reviews": [{
+                    "target_ref": f"component:{proposal.components[0].id}.length",
+                    "status": "accepted", "check_ids": ["visual-length"],
+                }],
                 "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
             }
             return ProviderResponse(

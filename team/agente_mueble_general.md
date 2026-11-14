@@ -45,6 +45,8 @@
 | 2026-11-14 | Una reparacion semantica crea P2 inmutable y vuelve a criticarse | Reintentar JSON no corrige bindings, agrupacion o cantidad | Gate root/Astra |
 | 2026-11-14 | Un único escenario constructivo provisional alimenta BOM y planos; `estimated` aceptado conserva su número/rango | El usuario exige una propuesta útil, no una lista vacía de unknowns | Especificación CAD-completion y freeze root/A-B |
 | 2026-11-14 | Una deducción transitivamente dependiente de estimación sigue `estimated` | Cerrar una ecuación no eleva la autoridad de sus entradas | Freeze root/Astra |
+| 2026-11-14 | Toda cota numérica de componente requiere decisión explícita del crítico; aceptar un parámetro no acepta su asignación al campo | Evita que una omisión editorial vacíe BOM y planos, sin promover parámetros automáticamente | Reproducción pública F02 + acuerdo root/Astra/evaluación |
+| 2026-11-14 | Un herraje tipado requiere decisión visual explícita sobre `kind` o `geometry` | Permite separar piezas comerciales de piezas fabricadas sin heurísticas por nombre ni cotas inventadas | Acuerdo root/Astra/evaluación |
 
 ## Dependencias / avisos
 
@@ -62,6 +64,7 @@
 | Suite Python compartida | `python -m pytest -q` | 524 passed in 66.12s | Posterior repairability focal: live+contract 10 passed |
 | Sintaxis/compilación | `git diff --check`; `python -m compileall -q ...` | exit 0 | Worktree compartido contiene cambios de otros agentes |
 | Autonomo, visual y derivados | `python -m pytest backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_derivations.py backend/tests/test_general_furniture_visual_evidence.py backend/tests/test_general_furniture_drawing_renderer.py -q` | 22 passed | Smoke real publico delegado a root |
+| Cobertura crítica F02 y clasificación hardware | `python -m pytest -q backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_derivations.py backend/tests/test_general_furniture_construction_planner.py backend/tests/test_integral_api_integration.py`; `ruff check backend/app/general_furniture/autonomous.py backend/tests/test_general_furniture_autonomous.py backend/tests/test_integral_api_integration.py` | 59 passed; Ruff limpio. Astra revalidó 31/31 focales | Inferencia real final delegada a root sobre candidato empaquetado |
 
 ## Bloqueos y cierre
 
