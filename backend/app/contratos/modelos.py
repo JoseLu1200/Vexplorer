@@ -1310,7 +1310,7 @@ class Estimate(StrictModel):
 
 
 class InspectEvidenceArgs(StrictModel):
-    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=50)
 
 
 class SelectScenarioArgs(StrictModel):
