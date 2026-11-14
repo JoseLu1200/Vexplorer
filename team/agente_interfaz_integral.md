@@ -99,6 +99,18 @@
 - Reserva activa: solo `frontend/`, pruebas frontend y este registro en `.worktrees/cad-completion`; no se tocará el checkout raíz ni el checkpoint 3D `803faae`.
 - Entrega a otra persona: `/root`, sin commit propio, mediante diff explícito del worktree compartido.
 
+## Integración UX pública de producción
+
+- Base del snapshot desplegado: `c94a88897ce0f0d9a3a7b16905c5dd7d3511a6c1`; base CAD antes del merge: `8e5f584aa052249ea90e6a3281b5572fd6dd6ec2`.
+- Snapshot UX dirty de origen registrado con manifiesto SHA-256 `ea8494fe7975a176a22ffbabdf6ce858ac175cfba0d40c9afdb0158a749a7cee`.
+- Resultado integrado (UX + CAD completion + recuperación/reintento) registrado con manifiesto SHA-256 `f94cef510b7bb06915caf9bbe6adb41c6776f63f20a0ed8c645aced21b1f6319`.
+- Los binarios Geist, `SceneViewer.js` y `scene.test.js` conservan exactamente sus hashes del snapshot desplegado; `app.js`, `index.html`, `styles.css`, `core/ui.js` y `ui-behavior.test.js` cambian solo para integrar CAD, reintento y capacidades públicas.
+- Acceso público sin login: CAD, derivados y descargas exactas permanecen visibles; histórico, biblioteca y semántica se ocultan cuando config publica `history.available=false` y no emiten peticiones destinadas a 403.
+- Reintento durable: un trabajo `failed|interrupted` y `retryable` puede crear una ejecución enlazada sin recargar el plano; la interfaz explica que el original se conserva.
+- Suite frontend fresca: `npm test` → 183 passed, 0 failed. Sintaxis: `node --check app.js` → exit 0.
+- QA visual pública con Playwright contra run F01 y config de producción: 4 filas, decisiones visibles, Fuente/Construcción/Por pieza operativos, tema oscuro conmutable, biblioteca oculta, cero peticiones privadas y cero errores de consola/página.
+- Evidencia: `.runtime/qa-production-ux/public-source.png`, `public-construction.png`, `public-piece.png`.
+
 ## QA visual del commit 208c5d6
 
 - Worktree detached y limpio: `.worktrees/qa-208c5d6`, commit exacto `208c5d677c3c42fac08e682468abd464f4c37e4c`.

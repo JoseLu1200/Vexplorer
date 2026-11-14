@@ -65,3 +65,11 @@
 - Pendientes: suite conjunta tras GREEN de integration/Astra.
 - Reservas liberadas: ninguna.
 - Entrega: `validate_construction_scenario(proposal, draft) -> GeneralConstructionValidation`; root integrará archivos explícitos y este agente no creará commit propio.
+
+## Incremento de producción: reintentos durables
+
+- Delegación posterior: endpoint `POST /api/v1/jobs/{job_id}/retry`, persistencia del enlace y cuota diaria del modo live público.
+- Archivos: `backend/app/servicios/repository.py`, bloque jobs/config de `backend/app/main.py` y `backend/tests/test_private_jobs.py`.
+- Garantías: solicitud original reutilizada; un sucesor por origen y actor; ajenos ocultos como 404; solo `failed|interrupted` con `retryable=true`; cuota UTC global/cliente atómica y durable, sin cobrar replay.
+- Verificación: focal jobs `10 passed`; jobs+auth+integral `39 passed`; compileall y diff-check correctos.
+- Revisión Astra: aprobada sin blocker funcional; se añadió `Retry-After` y `X-RateLimit-Reset` UTC a su recomendación.

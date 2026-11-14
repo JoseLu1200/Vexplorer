@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule verified Vexplorer backups
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+RandomizedDelaySec=20m
+Unit=vexplorer-backup.service
+
+[Install]
+WantedBy=timers.target

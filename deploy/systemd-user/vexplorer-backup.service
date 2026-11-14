@@ -1,0 +1,25 @@
+[Unit]
+Description=Create a verified Vexplorer data backup
+After=vexplorer.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/apps/vexplorer/current
+Environment=PYTHONPATH=%h/apps/vexplorer/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+UMask=0077
+ExecCondition=%h/apps/vexplorer/venv/bin/python -m tools.backup_rotate --data-dir %h/apps/vexplorer/shared/data --output-dir %h/apps/vexplorer/shared/backups --check-idle-only
+ExecStartPre=systemctl --user stop vexplorer.service
+ExecStart=%h/apps/vexplorer/venv/bin/python -m tools.backup_rotate --data-dir %h/apps/vexplorer/shared/data --output-dir %h/apps/vexplorer/shared/backups --keep 14 --max-total-bytes 2147483648 --min-free-bytes 1073741824 --quiescent
+ExecStopPost=systemctl --user start vexplorer.service
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/apps/vexplorer/shared/backups
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native

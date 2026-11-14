@@ -72,16 +72,30 @@ def _validate_database(path: Path) -> None:
         raise BackupError("invalid_database")
 
 
-def _snapshot_database(source_path: Path, snapshot: Path) -> None:
+def _snapshot_database(
+    source_path: Path, snapshot: Path, *, immutable_source: bool = False
+) -> None:
     try:
+        source_target: str | Path = source_path
+        source_uri = False
+        if immutable_source:
+            source_target = f"file:{source_path.as_posix()}?mode=ro&immutable=1"
+            source_uri = True
         with (
-            closing(sqlite3.connect(source_path)) as source,
+            closing(sqlite3.connect(source_target, uri=source_uri)) as source,
             closing(sqlite3.connect(snapshot)) as target,
         ):
             source.backup(target)
     except sqlite3.Error as exc:
         raise BackupError("invalid_database") from exc
     _validate_database(snapshot)
+
+
+def _assert_quiescent_database(path: Path) -> None:
+    for suffix in ("-wal", "-journal"):
+        sidecar = Path(f"{path}{suffix}")
+        if sidecar.is_file() and sidecar.stat().st_size > 0:
+            raise BackupError("quiescent_database_has_uncheckpointed_sidecar")
 
 
 def _database_sources(
@@ -113,10 +127,14 @@ def create_backup(
     archive: Path,
     *,
     databases: Mapping[str, Path] | None = None,
+    quiescent: bool = False,
 ) -> Path:
     data_dir = data_dir.resolve()
     archive = archive.resolve()
     database_sources = _database_sources(data_dir, databases)
+    if quiescent:
+        for database_path in database_sources.values():
+            _assert_quiescent_database(database_path)
     if archive.exists():
         raise BackupError("archive_exists")
     archive.parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +148,9 @@ def create_backup(
             payloads: list[tuple[Path, str]] = []
             for alias, database_path in sorted(database_sources.items()):
                 snapshot = staging / f"{alias}.sqlite3"
-                _snapshot_database(database_path, snapshot)
+                _snapshot_database(
+                    database_path, snapshot, immutable_source=quiescent
+                )
                 payloads.append((snapshot, f"database/{alias}.sqlite3"))
             documents_dir = data_dir / "documents"
             for document in _document_files(documents_dir):
@@ -287,6 +307,46 @@ def restore_backup(archive: Path, destination: Path) -> Path:
     return destination
 
 
+def verify_backup(archive: Path) -> dict[str, object]:
+    """Verify every payload hash and SQLite snapshot without restoring documents."""
+    archive = archive.resolve()
+    manifest, backup = _load_and_validate_archive(archive)
+    try:
+        files = manifest["files"]
+        assert isinstance(files, list)
+        with tempfile.TemporaryDirectory(prefix="vexplorer-backup-verify-") as temporary:
+            staging = Path(temporary)
+            for item in files:
+                assert isinstance(item, dict)
+                name = item["path"]
+                assert isinstance(name, str)
+                digest = hashlib.sha256()
+                written = 0
+                database_target = None
+                if name.startswith("database/"):
+                    database_target = staging / PurePosixPath(name).name
+                with backup.open(name) as source:
+                    if database_target is None:
+                        while chunk := source.read(1024 * 1024):
+                            written += len(chunk)
+                            digest.update(chunk)
+                    else:
+                        with database_target.open("xb") as output:
+                            while chunk := source.read(1024 * 1024):
+                                written += len(chunk)
+                                digest.update(chunk)
+                                output.write(chunk)
+                if written != item["size"]:
+                    raise BackupError("size_mismatch")
+                if digest.hexdigest() != item["sha256"]:
+                    raise BackupError("hash_mismatch")
+                if database_target is not None:
+                    _validate_database(database_target)
+        return manifest
+    finally:
+        backup.close()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Create or restore verified Vexplorer backups."
@@ -301,6 +361,11 @@ def _parser() -> argparse.ArgumentParser:
         default=[],
         metavar="ALIAS=PATH",
         help="Additional SQLite store (repeatable), for example history=/srv/history.sqlite3.",
+    )
+    create.add_argument(
+        "--quiescent",
+        action="store_true",
+        help="Read stopped SQLite stores in immutable read-only mode.",
     )
     restore = commands.add_parser("restore")
     restore.add_argument("--archive", type=Path, required=True)
@@ -317,7 +382,12 @@ def main() -> int:
             if not separator or not path or alias in databases:
                 raise BackupError("invalid_database_alias")
             databases[alias] = Path(path)
-        result = create_backup(args.data_dir, args.output, databases=databases)
+        result = create_backup(
+            args.data_dir,
+            args.output,
+            databases=databases,
+            quiescent=args.quiescent,
+        )
     else:
         result = restore_backup(args.archive, args.destination)
     print(result)

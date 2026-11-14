@@ -39,9 +39,10 @@ class AuditConfig:
     base_url: str
     fixture: Path
     output: Path
-    username: str
-    password: str
+    username: str | None
+    password: str | None
     origin: str | None
+    public: bool = False
     timeout_s: float = 600.0
     request_timeout_s: float = 60.0
     resume_report: Path | None = None
@@ -271,12 +272,17 @@ class AutonomousAudit:
         headers = {"User-Agent": "Vexplorer-autonomous-online-acceptance/1"}
         if config.origin:
             headers["Origin"] = config.origin
+        client_options: dict[str, Any] = {}
+        if not config.public:
+            if not config.username or not config.password:
+                raise AcceptanceFailure("private_audit_credentials_missing")
+            client_options["auth"] = httpx.BasicAuth(config.username, config.password)
         self.client = httpx.Client(
             base_url=config.base_url.rstrip("/") + "/",
-            auth=httpx.BasicAuth(config.username, config.password),
             headers=headers,
             timeout=config.request_timeout_s,
             follow_redirects=False,
+            **client_options,
         )
         self.report: dict[str, Any] = {
             "schema_version": "1.0.0",
@@ -291,6 +297,7 @@ class AutonomousAudit:
             "fixture": config.fixture.name,
             "fixture_sha256": sha256(config.fixture.read_bytes()).hexdigest(),
             "timeout_s": config.timeout_s,
+            "access_mode": "public" if config.public else "authenticated",
             "status": "running",
             "checks": [],
             "resources": {},
@@ -311,6 +318,11 @@ class AutonomousAudit:
         )
         if not condition:
             raise AcceptanceFailure(f"{check_id}: {detail}")
+
+    def skip(self, check_id: str, detail: str, **evidence: Any) -> None:
+        self.report["checks"].append(
+            {"id": check_id, "status": "SKIP", "detail": detail, "evidence": evidence}
+        )
 
     @staticmethod
     def _error_code(response: httpx.Response) -> str | None:
@@ -388,6 +400,102 @@ def _provider_event_evidence(events: tuple[dict[str, Any], ...]) -> tuple[str, .
     return tuple(dict.fromkeys(response_ids))
 
 
+def _proposal_models(events: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            str(event["data"]["provider_model"])
+            for event in events
+            if event["event_type"] == "general_proposal_committed"
+            and event.get("data", {}).get("provider_model")
+        )
+    )
+
+
+def _validate_construction_outputs(
+    package: dict[str, Any], downloaded: list[tuple[dict[str, Any], bytes]]
+) -> dict[str, Any]:
+    construction = package.get("construction")
+    if not isinstance(construction, dict):
+        raise AcceptanceFailure("construction_plan_missing")
+    pieces = construction.get("pieces")
+    if not isinstance(pieces, list) or not pieces:
+        raise AcceptanceFailure("construction_pieces_missing")
+    for piece in pieces:
+        if not isinstance(piece, dict):
+            raise AcceptanceFailure("construction_piece_invalid")
+        quantity = piece.get("quantity")
+        if not isinstance(quantity, dict) or not isinstance(quantity.get("value"), int):
+            raise AcceptanceFailure("construction_piece_quantity_not_numeric")
+        for field in ("length", "width", "thickness"):
+            value = piece.get(field)
+            number = value.get("value_mm") if isinstance(value, dict) else None
+            if not isinstance(number, (int, float)) or isinstance(number, bool) or number <= 0:
+                raise AcceptanceFailure("construction_piece_dimension_not_numeric")
+        sheet_ids = piece.get("sheet_ids")
+        if not isinstance(sheet_ids, list) or not sheet_ids:
+            raise AcceptanceFailure("construction_piece_sheet_missing")
+        formats = {
+            str(artifact.get("kind"))
+            for artifact, payload in downloaded
+            if payload
+            and artifact.get("status") == "ready"
+            and artifact.get("sheet_id") in sheet_ids
+        }
+        if not {"piece_sheet_svg", "piece_sheet_dxf"} <= formats:
+            raise AcceptanceFailure("construction_piece_formats_missing")
+    return {
+        "piece_count": len(pieces),
+        "numeric_dimension_count": len(pieces) * 3,
+        "piece_sheet_svg_count": sum(
+            artifact.get("kind") == "piece_sheet_svg" for artifact, _ in downloaded
+        ),
+        "piece_sheet_dxf_count": sum(
+            artifact.get("kind") == "piece_sheet_dxf" for artifact, _ in downloaded
+        ),
+    }
+
+
+def _audit_history_scenarios(
+    audit: "AutonomousAudit",
+    config: AuditConfig,
+    *,
+    run_id: str,
+    proposal_revision: int,
+    review_revision: int,
+) -> None:
+    if config.public:
+        audit.skip(
+            "historical_scenarios_exact_snapshot",
+            "Public acceptance intentionally omits private history/catalog endpoints.",
+            omitted_endpoint="/api/v1/history/scenarios",
+        )
+        return
+    history_scenarios = audit.data(
+        audit.client.post(
+            "api/v1/history/scenarios",
+            json={
+                "run_id": run_id,
+                "proposal_revision": proposal_revision,
+                "review_revision": review_revision,
+                "limit": 5,
+                "retrieval_method": "attribute",
+            },
+            headers={"Idempotency-Key": f"{audit.qa_id}-history-scenarios"},
+        ),
+        200,
+    )
+    history_evidence = _validate_history_scenarios(
+        history_scenarios, run_id, proposal_revision, review_revision
+    )
+    audit.report["history_scenarios"] = history_scenarios
+    audit.check(
+        "historical_scenarios_exact_snapshot",
+        True,
+        "Historical scenarios use the exact autonomous snapshot and preserve provenance; missing numeric cost/hours remain explicit.",
+        **history_evidence,
+    )
+
+
 def _resume_resources(path: Path) -> tuple[str, str, str]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -409,8 +517,13 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
         session = audit.data(audit.client.get("api/v1/session"), 200)
         audit.check(
             "session",
-            bool(session.get("environment")),
-            "The target exposed an authenticated environment-scoped session.",
+            bool(session.get("environment"))
+            and (config.public or bool(session.get("authenticated"))),
+            (
+                "The target exposed the public environment without credentials."
+                if config.public
+                else "The target exposed an authenticated environment-scoped session."
+            ),
             environment=session.get("environment"),
             authenticated=session.get("authenticated"),
         )
@@ -502,6 +615,7 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             "general_auto_review_completed",
         }
         provider_response_ids = _provider_event_evidence(events)
+        proposer_models = _proposal_models(events)
         image_hashes = _extract_image_hashes(events)
         visual_artifacts = _visual_event_artifacts(events)
         audit.check(
@@ -558,6 +672,15 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             machine_provenance=provenance,
         )
         audit.check(
+            "separate_live_models",
+            any("sol" in model.lower() for model in proposer_models)
+            and "astra" in reviewer_model.lower()
+            and reviewer_model not in proposer_models,
+            "The fresh live run used a Sol proposer and a separate Astra critic.",
+            proposer_models=proposer_models,
+            reviewer_model=reviewer_model,
+        )
+        audit.check(
             "no_forged_confirmed_facts",
             True,
             "Machine facts contain no forged confirmations; physical occurrences require observed/derived quantity and hypotheses remain provisional.",
@@ -611,6 +734,7 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             package_status=package.get("status"),
         )
         artifact_payloads: dict[str, bytes] = {}
+        downloaded_artifacts: list[tuple[dict[str, Any], bytes]] = []
         for artifact in package.get("artifacts", []):
             response = audit.client.get(
                 f"api/v1/runs/{run_id}/general/artifacts/{artifact['id']}",
@@ -624,6 +748,7 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
                     f"artifact_unavailable:{artifact['id']}:{response.status_code}"
                 )
             artifact_payloads[str(artifact["kind"])] = response.content
+            downloaded_artifacts.append((artifact, response.content))
         if "bom_csv" not in artifact_payloads or "drawing_svg" not in artifact_payloads:
             raise AcceptanceFailure("provisional_exports_missing")
         export_evidence = _validate_provisional_exports(
@@ -635,32 +760,18 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             "CSV and SVG retain provisional/unknown occurrence labels and manufacturing warning.",
             **export_evidence,
         )
-        history_scenarios = audit.data(
-            audit.client.post(
-                "api/v1/history/scenarios",
-                json={
-                    "run_id": run_id,
-                    "proposal_revision": proposal_revision,
-                    "review_revision": review_revision,
-                    "limit": 5,
-                    "retrieval_method": "attribute",
-                },
-                headers={"Idempotency-Key": f"{audit.qa_id}-history-scenarios"},
-            ),
-            200,
-        )
-        history_evidence = _validate_history_scenarios(
-            history_scenarios,
-            run_id,
-            proposal_revision,
-            review_revision,
-        )
-        audit.report["history_scenarios"] = history_scenarios
         audit.check(
-            "historical_scenarios_exact_snapshot",
+            "numeric_construction_outputs",
             True,
-            "Historical scenarios use the exact autonomous snapshot and preserve provenance; missing numeric cost/hours remain explicit.",
-            **history_evidence,
+            "Every primary CAD piece is numeric and exposes downloadable SVG and DXF sheets.",
+            **_validate_construction_outputs(package, downloaded_artifacts),
+        )
+        _audit_history_scenarios(
+            audit,
+            config,
+            run_id=run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
         )
         audit.report["resources"].update(
             {
@@ -722,6 +833,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=600.0)
     parser.add_argument(
+        "--public",
+        action="store_true",
+        help="Use the public no-login surface and omit private history/catalog checks.",
+    )
+    parser.add_argument(
         "--resume-report",
         type=Path,
         help="Reuse document/job/run IDs from an earlier report; never submits a new job.",
@@ -733,7 +849,9 @@ def main() -> None:
         parser.error("--timeout must be at least 300 seconds for real model execution")
     if args.resume_report is not None and not args.resume_report.is_file():
         parser.error("--resume-report must be an existing autonomous audit JSON")
-    username, password = _credentials()
+    if args.public and args.resume_report is not None:
+        parser.error("--public requires a fresh durable live job; resume is not allowed")
+    username, password = (None, None) if args.public else _credentials()
     try:
         report = run_autonomous_acceptance(
             AuditConfig(
@@ -743,6 +861,7 @@ def main() -> None:
                 username=username,
                 password=password,
                 origin=os.getenv("VEXPLORER_QA_ORIGIN"),
+                public=args.public,
                 timeout_s=args.timeout,
                 resume_report=args.resume_report.resolve()
                 if args.resume_report is not None

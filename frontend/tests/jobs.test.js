@@ -47,3 +47,15 @@ test("job polling aborts without issuing another request", async () => {
   }), (error) => error.name === "AbortError");
   assert.equal(calls, 1);
 });
+
+test("job polling stops locally after ten minutes without cancelling the durable job", async()=>{
+  let now=0,calls=0;
+  await assert.rejects(()=>pollJob("job-long",{
+    getJob:async()=>{calls+=1;return{id:"job-long",state:"running"};},
+    wait:async(milliseconds)=>{now+=milliseconds;},
+    now:()=>now,
+    intervalMs:100_000,
+    timeoutMs:600_000,
+  }),(error)=>error.name==="TimeoutError"&&/servidor/.test(error.message));
+  assert.equal(calls,6);
+});

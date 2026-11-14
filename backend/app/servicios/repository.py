@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -82,6 +83,23 @@ class DemoRepository:
                     request_hash TEXT NOT NULL, job_id TEXT NOT NULL,
                     PRIMARY KEY (actor, idempotency_key)
                 );
+                CREATE TABLE IF NOT EXISTS job_retries (
+                    source_job_id TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    retry_job_id TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (source_job_id, actor)
+                );
+                CREATE TABLE IF NOT EXISTS job_admission (
+                    job_id TEXT PRIMARY KEY,
+                    admitted_day TEXT NOT NULL,
+                    client_hash TEXT NOT NULL,
+                    kind TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS job_admission_day
+                    ON job_admission(admitted_day);
+                CREATE INDEX IF NOT EXISTS job_admission_client_day
+                    ON job_admission(client_hash, admitted_day);
                 CREATE TABLE IF NOT EXISTS agent_recordings (
                     id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL,
                     source_run_id TEXT NOT NULL UNIQUE, source_result_revision INTEGER NOT NULL,
@@ -313,6 +331,10 @@ class DemoRepository:
         *,
         actor: str | None,
         idempotency_key: str | None = None,
+        public_client_hash: str | None = None,
+        public_global_daily_limit: int = 10,
+        public_client_daily_limit: int = 3,
+        admission_callback: Callable[[sqlite3.Connection], None] | None = None,
     ) -> tuple[dict, bool]:
         request_hash = hashlib.sha256(request_json.encode("utf-8")).hexdigest()
         actor_key = actor or "local-demo"
@@ -328,6 +350,18 @@ class DemoRepository:
                     if replay["request_hash"] != request_hash:
                         raise ValueError("idempotency_key_conflict")
                     return self._get_job_in_transaction(db, replay["job_id"]), False
+            if admission_callback is not None:
+                admission_callback(db)
+            if public_client_hash is not None:
+                self._consume_public_live_admission(
+                    db,
+                    job_id=job_id,
+                    client_hash=public_client_hash,
+                    timestamp=timestamp,
+                    kind="submission",
+                    global_daily_limit=public_global_daily_limit,
+                    client_daily_limit=public_client_daily_limit,
+                )
             db.execute(
                 "INSERT INTO jobs VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
                 (job_id, actor, request_json, request_hash, timestamp, timestamp),
@@ -369,14 +403,47 @@ class DemoRepository:
         ).fetchone()
         if row is None:
             raise KeyError(job_id)
-        return {
+        result = {
             "id": row["id"], "state": row["state"], "run_id": row["run_id"],
             "error": json.loads(row["error_json"]) if row["error_json"] else None,
         }
+        retry = db.execute(
+            "SELECT source_job_id FROM job_retries WHERE retry_job_id=?", (job_id,)
+        ).fetchone()
+        if retry is not None:
+            result["retry_of_job_id"] = retry["source_job_id"]
+        return result
 
     def get_job(self, job_id: str) -> dict:
         with self._connect() as db:
             return self._get_job_in_transaction(db, job_id)
+
+    def get_job_for_actor(self, job_id: str, *, actor: str | None) -> dict:
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT actor FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if row is None or (row["actor"] or "local-demo") != actor_key:
+                raise KeyError(job_id)
+            return self._get_job_in_transaction(db, job_id)
+
+    def get_job_retry(self, source_job_id: str, *, actor: str | None) -> dict | None:
+        """Return the actor's already-created successor without exposing other jobs."""
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            source = db.execute(
+                "SELECT actor FROM jobs WHERE id=?", (source_job_id,)
+            ).fetchone()
+            if source is None or (source["actor"] or "local-demo") != actor_key:
+                raise KeyError(source_job_id)
+            retry = db.execute(
+                "SELECT retry_job_id FROM job_retries WHERE source_job_id=? AND actor=?",
+                (source_job_id, actor_key),
+            ).fetchone()
+            if retry is None:
+                return None
+            return self._get_job_in_transaction(db, retry["retry_job_id"])
 
     def get_job_request(self, job_id: str) -> str:
         with self._connect() as db:
@@ -384,6 +451,97 @@ class DemoRepository:
         if row is None:
             raise KeyError(job_id)
         return row["request_json"]
+
+    def reserve_job_retry(
+        self,
+        source_job_id: str,
+        retry_job_id: str,
+        *,
+        actor: str | None,
+        public_client_hash: str | None = None,
+        public_global_daily_limit: int = 10,
+        public_client_daily_limit: int = 3,
+        admission_callback: Callable[[sqlite3.Connection], None] | None = None,
+    ) -> tuple[dict, bool]:
+        actor_key = actor or "local-demo"
+        timestamp = _now()
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            source = db.execute(
+                "SELECT actor,request_json,request_hash,state,error_json FROM jobs WHERE id=?",
+                (source_job_id,),
+            ).fetchone()
+            if source is None or (source["actor"] or "local-demo") != actor_key:
+                raise KeyError(source_job_id)
+            existing = db.execute(
+                "SELECT retry_job_id FROM job_retries WHERE source_job_id=? AND actor=?",
+                (source_job_id, actor_key),
+            ).fetchone()
+            if existing is not None:
+                return self._get_job_in_transaction(db, existing["retry_job_id"]), False
+            state = source["state"]
+            if state not in {"failed", "interrupted"}:
+                raise ValueError(f"job_not_retryable:{state}")
+            error = json.loads(source["error_json"]) if source["error_json"] else None
+            if not isinstance(error, dict) or error.get("retryable") is not True:
+                raise ValueError("job_not_retryable:error")
+            if admission_callback is not None:
+                admission_callback(db)
+            if public_client_hash is not None:
+                self._consume_public_live_admission(
+                    db,
+                    job_id=retry_job_id,
+                    client_hash=public_client_hash,
+                    timestamp=timestamp,
+                    kind="retry",
+                    global_daily_limit=public_global_daily_limit,
+                    client_daily_limit=public_client_daily_limit,
+                )
+            db.execute(
+                "INSERT INTO jobs VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
+                (
+                    retry_job_id,
+                    actor,
+                    source["request_json"],
+                    source["request_hash"],
+                    timestamp,
+                    timestamp,
+                ),
+            )
+            db.execute(
+                "INSERT INTO job_retries VALUES (?, ?, ?, ?)",
+                (source_job_id, actor_key, retry_job_id, timestamp),
+            )
+            return self._get_job_in_transaction(db, retry_job_id), True
+
+    @staticmethod
+    def _consume_public_live_admission(
+        db: sqlite3.Connection,
+        *,
+        job_id: str,
+        client_hash: str,
+        timestamp: str,
+        kind: str,
+        global_daily_limit: int,
+        client_daily_limit: int,
+    ) -> None:
+        if global_daily_limit <= 0 or client_daily_limit <= 0:
+            raise ValueError("invalid_public_live_quota")
+        admitted_day = timestamp[:10]
+        global_count = db.execute(
+            "SELECT COUNT(*) FROM job_admission WHERE admitted_day=?",
+            (admitted_day,),
+        ).fetchone()[0]
+        client_count = db.execute(
+            "SELECT COUNT(*) FROM job_admission WHERE admitted_day=? AND client_hash=?",
+            (admitted_day, client_hash),
+        ).fetchone()[0]
+        if global_count >= global_daily_limit or client_count >= client_daily_limit:
+            raise ValueError("public_live_quota_exhausted")
+        db.execute(
+            "INSERT INTO job_admission VALUES (?, ?, ?, ?)",
+            (job_id, admitted_day, client_hash, kind),
+        )
 
     def start_job(self, job_id: str) -> None:
         with self._connect() as db:
@@ -411,8 +569,8 @@ class DemoRepository:
     def interrupt_unfinished_jobs(self) -> int:
         error = json.dumps({
             "code": "server_restarted",
-            "message": "El trabajo fue interrumpido por un reinicio y no se reejecutará.",
-            "retryable": False,
+            "message": "El trabajo fue interrumpido por un reinicio y puede reintentarse de forma explícita.",
+            "retryable": True,
         })
         with self._connect() as db:
             changed = db.execute(

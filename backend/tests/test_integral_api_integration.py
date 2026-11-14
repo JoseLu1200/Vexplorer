@@ -35,13 +35,6 @@ class _GeneralLiveProvider:
             self.review_visual_page_count += sum(
                 item.get("type") == "input_image" for item in input_items[0]["content"]
             )
-            source = context["draft"]["components"][0]
-            component = {
-                **{key: value for key, value in source.items() if key != "premise_ids"},
-                "id": f"auto-{source['id']}", "replaces_component_ids": [source["id"]],
-                "material": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-            }
             arguments = {
                 "scenario_id": "scenario-autonomous-1",
                 "checks": [], "field_reviews": [],
@@ -132,12 +125,6 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
             context = json.loads(input_items[0]["content"][0]["text"])
             self.review_context = context
             source = context["draft"]["components"][0]
-            component = {
-                **{key: value for key, value in source.items() if key != "premise_ids"},
-                "id": f"critic-{source['id']}", "replaces_component_ids": [source["id"]],
-                "material": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-            }
             visual_ref = context["visual_artifacts"][0]["reference"]
             arguments = {
                 "scenario_id": "scenario-repair-1",
@@ -153,14 +140,6 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
             components[0]["label"] = "Panel reparado semánticamente"
             arguments = {"bindings": proposal["bindings"], "components": components, "premises": proposal["premises"], "assumptions": [*proposal["assumptions"], "Reparación automática trazable."]}
             return ProviderResponse(id="repair-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="repair-call-1", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
-        draft = output["draft"]
-        source = draft["components"][0]
-        component = {
-            **{key: value for key, value in source.items() if key != "premise_ids"},
-            "id": f"reviewed-{source['id']}", "replaces_component_ids": [source["id"]],
-            "material": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-            "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-        }
         arguments = {
             "scenario_id": "scenario-repair-2",
             "checks": [], "field_reviews": [],
@@ -178,6 +157,77 @@ class _FailingAfterSemanticRepairProvider(_SemanticRepairProvider):
         return super().create_response(
             input_items=input_items, tools=tools,
             previous_response_id=previous_response_id, timeout_s=timeout_s,
+        )
+
+
+class _TwoSemanticRepairProvider(_GeneralLiveProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.current_proposal = None
+        self.repair_count = 0
+        self.review_count = 0
+        self.visual_ref = None
+
+    def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+        if tools[0]["name"] != "entregar_revision_autonoma":
+            return super().create_response(
+                input_items=input_items, tools=tools,
+                previous_response_id=previous_response_id, timeout_s=timeout_s,
+            )
+        if "content" in input_items[0]:
+            context = json.loads(input_items[0]["content"][0]["text"])
+            self.current_proposal = context["proposal"]
+            self.visual_ref = context["visual_artifacts"][0]["reference"]
+            source_id = context["draft"]["components"][0]["id"]
+            return self._critic(source_id)
+        output = json.loads(input_items[0]["output"])
+        if output["status"] == "repair_requested":
+            self.repair_count += 1
+            proposal = self.current_proposal
+            components = [dict(item) for item in proposal["components"]]
+            components[0]["label"] = f"Panel reparación {self.repair_count}"
+            arguments = {
+                "bindings": proposal["bindings"], "components": components,
+                "premises": proposal["premises"],
+                "assumptions": [*proposal["assumptions"], f"Reparación {self.repair_count}."],
+            }
+            return ProviderResponse(
+                id=f"repair-response-{self.repair_count}", model="test-general-reviewer",
+                tool_calls=(ToolCall(call_id=f"repair-call-{self.repair_count}", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),),
+            )
+        self.current_proposal = output["proposal"]
+        source_id = output["draft"]["components"][0]["id"]
+        if self.repair_count < 2:
+            return self._critic(source_id)
+        self.review_count += 1
+        arguments = {
+            "scenario_id": "scenario-final", "checks": [], "field_reviews": [],
+            "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
+        }
+        return ProviderResponse(
+            id="critic-final", model="test-general-reviewer",
+            tool_calls=(ToolCall(call_id="critic-final-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),),
+        )
+
+    def _critic(self, source_id: str) -> ProviderResponse:
+        self.review_count += 1
+        check_id = f"semantic-conflict-{self.review_count}"
+        arguments = {
+            "scenario_id": f"scenario-critic-{self.review_count}",
+            "checks": [{
+                "id": check_id, "kind": "visual_consistency", "outcome": "fail",
+                "method": "model_visual", "target_refs": [f"component:{source_id}.length"],
+                "source_refs": [self.visual_ref], "summary": "Requiere otra reparación semántica.",
+            }],
+            "field_reviews": [{
+                "target_ref": f"component:{source_id}.length", "status": "rejected",
+                "check_ids": [check_id],
+            }],
+            "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
+        }
+        return ProviderResponse(
+            id=f"critic-response-{self.review_count}", model="test-general-reviewer",
+            tool_calls=(ToolCall(call_id=f"critic-call-{self.review_count}", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),),
         )
 
 
@@ -276,7 +326,8 @@ def test_config_advertises_integral_capabilities_without_exposing_evaluation(
     assert capabilities["general_furniture"]["autonomous_review"]["human_required"] is False
     assert capabilities["general_furniture"]["autonomous_review"]["max_visual_artifacts"] == 4
     assert capabilities["general_furniture"]["autonomous_review"]["limits"] == {
-        "max_model_calls": 5, "max_validation_repairs": 2, "job_timeout_s": 300.0,
+            "max_model_calls": 5, "max_validation_repairs": 2,
+            "max_semantic_repairs": 2, "job_timeout_s": 300.0,
     }
     assert capabilities["general_furniture"]["construction_completion"] == {
         "available": True,
@@ -638,6 +689,87 @@ def test_general_autonomous_semantic_repair_preserves_p1_and_reviews_p2(
     )
     assert direct_retry.status_code == 409
     assert direct_retry.json()["detail"] == "general_auto_review_requires_durable_job"
+
+
+def test_general_autonomous_two_repairs_persist_p1_p2_p3_and_final_derived(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    monkeypatch.setenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5")
+    monkeypatch.setenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2")
+    provider = _TwoSemanticRepairProvider()
+    app = create_app(
+        data_dir=tmp_path, frontend_dir=tmp_path / "none",
+        agent_provider=provider,
+    )
+    client = TestClient(app)
+    document_id = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]["document_id"]
+
+    created = client.post(
+        "/api/v1/runs",
+        json={"document_id": document_id, "mode": "live", "input_kind": "general_furniture", "proposal_mode": "model_generated"},
+    )
+
+    assert created.status_code == 201, created.text
+    run_id = created.json()["data"]["run"]["id"]
+    p1 = app.state.general_furniture_repository.get(run_id, proposal_revision=1)
+    p2 = app.state.general_furniture_repository.get(run_id, proposal_revision=2)
+    p3 = app.state.general_furniture_repository.get(run_id, proposal_revision=3)
+    derived = app.state.general_furniture_repository.get_derived(
+        run_id, proposal_revision=3, review_revision=1,
+    )
+    assert p1 is not None and p1.review is None
+    assert p2 is not None and p2.review is None
+    assert p3 is not None and p3.review is not None
+    assert p3.review.proposal_revision == 3
+    assert derived is not None and derived.proposal_revision == 3
+    assert provider.repair_count == 2
+    assert provider.review_count == 3
+    events = client.get(f"/api/v1/runs/{run_id}/events").text
+    assert events.count("event: general_auto_semantic_repair_committed") == 2
+
+
+def test_durable_job_two_repairs_succeeds_with_p3_review_and_derived(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    monkeypatch.setenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5")
+    monkeypatch.setenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2")
+    provider = _TwoSemanticRepairProvider()
+    app = create_app(
+        data_dir=tmp_path, frontend_dir=tmp_path / "none",
+        agent_provider=provider,
+    )
+    client = TestClient(app)
+    document_id = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]["document_id"]
+    submitted = client.post(
+        "/api/v1/jobs",
+        json={"document_id": document_id, "mode": "live", "input_kind": "general_furniture", "proposal_mode": "model_generated"},
+    )
+    job_id = submitted.json()["data"]["id"]
+    for _ in range(150):
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["state"] in {"succeeded", "failed", "interrupted"}:
+            break
+        time.sleep(0.02)
+
+    assert job["state"] == "succeeded", job
+    run_id = job["run_id"]
+    repository = app.state.general_furniture_repository
+    assert repository.get(run_id, proposal_revision=1).review is None
+    assert repository.get(run_id, proposal_revision=2).review is None
+    p3 = repository.get(run_id, proposal_revision=3)
+    assert p3.review is not None and p3.review.proposal_revision == 3
+    assert repository.get_derived(run_id, proposal_revision=3, review_revision=1) is not None
+    events = client.get(f"/api/v1/runs/{run_id}/events").text
+    assert events.count("event: general_auto_semantic_repair_committed") == 2
+    assert provider.repair_count == 2 and provider.review_count == 3
 
 
 def test_failed_c2_job_keeps_run_p1_p2_and_no_successful_review(

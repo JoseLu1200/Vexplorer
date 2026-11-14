@@ -97,3 +97,17 @@
 - Pendientes: suite completa fresca tras integración total y verificación HTTP/navegador/despliegue por coordinación.
 - Reservas liberadas: `backend/app/main.py`, nueva prueba integral y este registro tras handoff.
 - Entrega a otra persona: coordinación raíz recibe rutas, variables, resultados y límites.
+
+## Preparación operativa del release CAD completion
+
+- Alcance transferido por coordinación: solo `deploy/`, tooling de backup/release y sus pruebas; `main`, autonomía y frontend quedan fuera de esta reserva.
+- Inspección SSH read-only: `current` apunta a `releases/public-access-20261114-071821`; su `RELEASE.json` declara git head `a61f97a89a8634582fa9182a5c67b39271be8c5e`. Servicio activo/habilitado, bind exclusivo `127.0.0.1:18792`, Python 3.12.3, `pip check` limpio y 8.115.896.320 bytes libres.
+- El usuario confirmó operación pública: se conserva `VEXPLORER_AUTH_ENABLED=false` y no se modifican `users.json` ni sus hashes. Health, `/config` y sesión anónima 200 son el gate esperado; CSRF, presupuesto y cola siguen siendo barreras de mutación.
+- Añadido `verify_backup` y rotación programable: verifica hashes de todos los payloads e integridad SQLite; solo elimina ZIP propios `scheduled-*` después de crear/verificar el nuevo. En quiescencia las SQLite fuente se abren `mode=ro&immutable=1`; los snapshots RW viven solo en `PrivateTmp`.
+- Añadidos servicio/timer de usuario. El servicio comprueba que no haya jobs queued/running, detiene exclusivamente `vexplorer.service`, vuelve a comprobar inactividad sobre datos quiescentes, captura todas las SQLite y documentos, y reinicia el mismo servicio mediante `ExecStopPost`. El sandbox solo permite escritura en `shared/backups`, exige 1 GiB libre además del tamaño fuente y limita el total de backups programados a 2 GiB. No se habilitó ni instaló en VPS.
+- Añadido builder de release exacto por commit con todo frontend tracked (incluidos explorer/vendor/assets futuros), backend runtime, backup/rotación, unidades y requirements; excluye tests/npm/datos/env y genera `RELEASE.json`, `MANIFEST.sha256` y hash externo del tar.
+- Preparados, sin ejecutar, `.runtime/prod-ready/remote-stage.sh` y `remote-activate.sh`: CAS del current/env observado, archive SHA/manifest, backup+restore quiescente, candidato aislado 18793, gate externo obligatorio, env atómico limitado, restart/rollback solo del servicio propio y timer opt-in.
+- Cierre P1 de WAL: el modo quiescente rechaza antes de snapshot cualquier `-wal` o `-journal` no vacío; una regresión conserva una fila confirmada solo en WAL y prueba que no se publica un ZIP incompleto.
+- Separado el ejemplo Docker del nuevo `deploy/systemd-production.env.example`, que usa los nombres que consume `create_app`, rutas reales del VPS, modo público, reviewer, límites y LibreDWG. `deploy/SYSTEMD_RELEASE.md` documenta instalación y quiescencia.
+- Verificación: 41 pruebas operativas pasaron; PowerShell del builder y ambos Bash parsean; `compileall` pasó. Ruff no está instalado en el venv (`No module named ruff`).
+- Bloqueos antes de activar: empaquetar solo el commit final tras integrar cambios concurrentes; crear+restaurar backup predeploy quiescente; actualizar atómicamente solo claves de reviewer/DWG/timeout (600 s) preservando auth pública y secretos; probar candidato aislado; root ejecuta toda mutación/activación y rollback.

@@ -12,14 +12,15 @@ import { createRequestFence } from "./core/request-fence.js";
 import { jobStatusLabel, pollJob } from "./core/jobs.js";
 import { nextFocusTarget } from "./core/focus.js";
 import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "./core/table.js";
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "./core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived } from "./core/general.js";
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
+import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, presentLibraryDifferences, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
@@ -49,6 +50,7 @@ function resetRunUi() {
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
+  toggleHidden($("#explode-control"),true); $("#explode-scene").checked=false; sceneViewer?.setExploded(false); sceneViewer?.setScene({state:"unavailable",objects:[],warnings:[]}); toggleHidden($("#scene-warning"),true); text($("#scene-warning"),"");
   $("#derived-drawing-image").removeAttribute("src"); $("#derived-drawing-view").hidden=true; $("#derived-drawing-sheet").replaceChildren(); $("#derived-drawing-downloads").replaceChildren(); artifactFence.invalidate();
   $("#derived-drawing-view").classList.remove("is-expanded"); $("#derived-drawing-expand").setAttribute("aria-pressed","false"); text($("#derived-drawing-expand"),"Ampliar");
   toggleHidden($("#table-cost-scope"),true); $$('[data-artifact-view]').forEach((tab)=>{if(tab.dataset.artifactView!=="source")tab.disabled=true;});
@@ -66,11 +68,15 @@ function resetRunUi() {
   $$('[data-export="bom_csv"],[data-export="bom_json"]').forEach((button)=>button.disabled=true);resetEstimateUi(); $("#estimate-button").disabled = true;
   $("#trace-export").disabled = true;
   $("#trace-list").replaceChildren(emptyParagraph("No hay eventos todavía."));
-  text($("#trace-gap-status"), ""); text($("#job-status"), "");
+  text($("#trace-gap-status"), ""); text($("#job-status"), ""); toggleHidden($("#job-retry"),true);
 }
 
 function configureModes(config = {}) {
   state.config = config;
+  state.features = publicFeatureAvailability(config);
+  const libraryTab=$('[data-panel="library"]'),libraryPanel=$('[data-panel-content="library"]');
+  toggleHidden(libraryTab,!state.features.library);toggleHidden(libraryPanel,!state.features.library);
+  toggleHidden($("#historical-scenarios"),!state.features.history);toggleHidden($("#historical-confirmed-details"),!state.features.history);
   availableModes(config.capabilities ?? config).forEach((mode) => {
     const input = $(`[name="mode"] [value="${mode.id}"]`) ?? $(`[name="mode"][value="${mode.id}"]`);
     if (input) input.disabled = !mode.enabled;
@@ -79,7 +85,7 @@ function configureModes(config = {}) {
   if (config.recorded_replay_available || config.replay_available || config.capabilities?.replay_available) text($("#replay-note"), "Grabación real disponible");
   const semantic = config.semantic ?? config.capabilities?.semantic ?? {};
   const semanticOption = $("#similarity-mode option[value='semantic']");
-  const semanticAvailable = Boolean(semantic.available ?? config.semantic_available);
+  const semanticAvailable = state.features.semantic;
   if (semanticOption) semanticOption.disabled = !semanticAvailable;
   const historySemanticOption = $('#history-retrieval-method option[value="semantic"]');
   if(historySemanticOption)historySemanticOption.disabled=!semanticAvailable;
@@ -143,18 +149,18 @@ function renderDrawing() {
   model.texts.forEach((item) => { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", item.position[0]); label.setAttribute("y", -item.position[1]); label.setAttribute("class", "drawing-text layer-texts"); label.dataset.viewId = item.viewId ?? ""; label.textContent = item.text; svg.append(label); });
   const tabs = $("#view-tabs");
   tabs.replaceChildren();
-  const all = document.createElement("button"); all.type = "button"; all.className = "view-tab"; all.dataset.view = "all"; all.setAttribute("aria-selected", "true"); all.textContent = state.partsWorkspace?.isPartsOnly ? "Todas las piezas" : "Todas"; all.addEventListener("click", () => activateView("all", all)); tabs.append(all);
+  const all = document.createElement("button"); all.type = "button"; all.role="tab"; all.tabIndex=0; all.className = "view-tab"; all.dataset.view = "all"; all.setAttribute("aria-selected", "true"); all.textContent = state.partsWorkspace?.isPartsOnly ? "Todas las piezas" : "Todas"; all.addEventListener("click", () => activateView("all", all)); tabs.append(all);
   const viewTabs = state.partsWorkspace?.isPartsOnly ? state.partsWorkspace.observations.map((observation) => ({ id: `part:${observation.id}`, label: `${observation.label} · ${observation.viewIds.length} ${observation.viewIds.length === 1 ? "vista" : "vistas"}`, observation })) : (model.views ?? []);
   viewTabs.forEach((view) => {
     const button = document.createElement("button");
-    button.type = "button"; button.className = "view-tab"; button.role = "tab";
+    button.type = "button"; button.className = "view-tab"; button.role="tab"; button.tabIndex=-1;
     button.setAttribute("aria-selected", "false");
     button.textContent = view.observation ? view.label : (({ FRONT: "Alzado", TOP: "Planta", SIDE: "Lateral", UNKNOWN: "Sin orientar" })[view.label] ?? view.label);
     button.addEventListener("click", () => { activateView(view.id, button); if (view.observation) selectPartObservation(view.observation); });
     tabs.append(button);
   });
-  if (state.documentId) { const original = document.createElement("button"); original.type="button"; original.className="view-tab"; original.textContent="CAD original"; original.setAttribute("aria-selected","false"); original.addEventListener("click",()=>activateView("original",original)); tabs.append(original); }
-  const three = document.createElement("button"); three.type="button"; three.className="view-tab"; three.textContent="3D"; three.setAttribute("aria-selected","false"); three.addEventListener("click",()=>activateView("3d",three)); tabs.append(three);
+  if (state.documentId) { const original = document.createElement("button"); original.type="button"; original.role="tab"; original.tabIndex=-1; original.className="view-tab"; original.textContent="CAD original"; original.setAttribute("aria-selected","false"); original.addEventListener("click",()=>activateView("original",original)); tabs.append(original); }
+  const three = document.createElement("button"); three.type="button"; three.role="tab"; three.tabIndex=-1; three.className="view-tab"; three.textContent="3D"; three.setAttribute("aria-selected","false"); three.addEventListener("click",()=>activateView("3d",three)); tabs.append(three);
   applySvgTextScale();
   applyLayerVisibility();
   renderEvidence(null);
@@ -164,7 +170,7 @@ function renderDrawing() {
 function activateView(viewId, button) {
   showSourceArtifact();
   state.activeView = viewId;
-  $$(".view-tab").forEach((tab) => tab.setAttribute("aria-selected", String(tab === button)));
+  $$(".view-tab").forEach((tab) => {const selected=tab===button;tab.setAttribute("aria-selected",String(selected));tab.tabIndex=selected?0:-1;});
   toggleHidden($("#drawing-viewer"), viewId === "original" || viewId === "3d");
   toggleHidden($("#original-view"), viewId !== "original");
   toggleHidden($("#scene-viewer"), viewId !== "3d");
@@ -362,7 +368,7 @@ async function loadScene() {
     if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
     const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
-    text($("#scene-context"),`3D revisado · colocación ${assumptions.length?"esquemática":"según candidato"}`);
+    text($("#scene-context"),sceneContextLabel(state.snapshot,raw));
     const premises=$("#scene-premises-list"); premises.replaceChildren(); assumptions.forEach((value)=>{const line=document.createElement("p"); line.textContent=value; premises.append(line);}); toggleHidden($("#scene-premises"),!assumptions.length);
     const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
@@ -441,7 +447,7 @@ const TABLE_MEASURE_LABELS={overall_width:"Ancho general",overall_height:"Alto g
 const TABLE_STATE_LABELS={observed:"Observado",calculated:"Calculado",confirmed:"Confirmado",proposed:"Propuesto",unknown:"Desconocido",conflict:"Conflicto",hypothesis:"Hipótesis",needs_review:"Revisión necesaria",completed:"Revisado",rejected:"Rechazado"};
 function tableStateLabel(value){return TABLE_STATE_LABELS[value]??value??"Desconocido";}
 function tableValueCell(field,quantity=false){const cell=document.createElement("td"),value=field?.value; cell.textContent=value==null?(quantity?"Desconocida":"Desconocido"):(quantity?value:formatMeasurement(value,"mm")); const badge=document.createElement("small"); badge.className="cell-origin"; badge.dataset.origin=field?.state==="confirmed"?"human_confirmed":field?.state==="calculated"?"derived":field?.state==="observed"?"observed":"hypothesis"; badge.textContent=tableStateLabel(field?.state); cell.append(badge); if(value==null)cell.classList.add("unknown"); return cell;}
-function tableDecisionControl(kind,id,labelText,workspace){const block=document.createElement("fieldset"); block.className="detail-item table-decision"; block.dataset.targetKind=kind; block.dataset.targetId=id; const legend=document.createElement("legend"); legend.textContent=labelText; block.append(legend); [["accept","Aceptar"],["reject","Rechazar"]].forEach(([value,label])=>{const choice=document.createElement("label"),radio=document.createElement("input"); radio.type="radio"; radio.name=`table-${kind}-${id}`; radio.value=value; radio.checked=value==="accept"?workspace.evaluated?.acceptedTargetIds.includes(id):workspace.evaluated?.rejectedTargetIds.includes(id); choice.append(radio,document.createTextNode(` ${label}`)); block.append(choice);}); return block;}
+function tableDecisionControl(kind,id,labelText,workspace){const block=document.createElement("label"); block.className="detail-item table-decision"; block.dataset.targetKind=kind; block.dataset.targetId=id; const title=document.createElement("span"),select=document.createElement("select"); title.textContent=tableDiagnosticLabel(labelText); select.name=formControlName("table-decision",kind,id); select.setAttribute("aria-label",`Decisión: ${title.textContent}`); [["","Sin cambio"],["accept","Aceptar"],["reject","Rechazar"]].forEach(([value,label])=>select.append(new Option(label,value))); select.value=workspace.evaluated?.acceptedTargetIds.includes(id)?"accept":workspace.evaluated?.rejectedTargetIds.includes(id)?"reject":""; block.append(title,select); return block;}
 
 function renderTableAndReview(){
   const workspace=state.tableWorkspace, selectedId=state.snapshot.preview_table_program_id??workspace.selectedProgramId??workspace.evaluated?.programId??workspace.programs[0]?.id, program=workspace.programs.find((item)=>item.id===selectedId)??workspace.programs[0], evaluated=workspace.evaluated?.programId===program?.id?workspace.evaluated:null;
@@ -451,12 +457,12 @@ function renderTableAndReview(){
   const body=$("#parts-body"); body.replaceChildren();
   (program?.components??[]).forEach((component)=>{const effective=evaluated?.components.find((item)=>item.id===component.id),row=document.createElement("tr"); row.dataset.componentId=component.id; row.tabIndex=0; const name=document.createElement("td"); name.textContent=TABLE_ROLE_LABELS[component.role]??component.role; const origin=document.createElement("td"); origin.textContent=program.originLabel; origin.dataset.origin="hypothesis"; const quantity={value:effective?.quantity??component.quantity,state:effective?.accepted?"confirmed":"proposed"}; row.append(name,origin,tableValueCell(quantity,true),tableValueCell(effective?.length),tableValueCell(effective?.width),tableValueCell(effective?.thickness)); row.addEventListener("click",()=>selectTableComponent(effective??component)); row.addEventListener("keydown",(event)=>{if(event.key==="Enter")selectTableComponent(effective??component);}); body.append(row);});
   if(!program){const row=document.createElement("tr"); row.className="empty-row"; const cell=document.createElement("td"); cell.colSpan=6; cell.textContent="No hay propuesta de componentes. El plano fuente permanece disponible."; row.append(cell); body.append(row);}
-  const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Programa de descomposición"; options.append(legend); workspace.programs.forEach((item)=>{const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="table-program"; input.value=item.id; input.checked=item.id===program?.id; input.addEventListener("change",()=>{state.snapshot.preview_table_program_id=item.id;renderTableAndReview();}); const content=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"); title.textContent=item.originLabel; detail.textContent=`${item.components.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · ")} · ${item.assumptions.join(" · ")}`; content.append(title,detail); label.append(input,content); options.append(label);}); if(!workspace.programs.length)options.append(emptyParagraph("No hay programa válido para revisar."));
-  const summary=$("#classification-summary"); summary.replaceChildren(); const source=document.createElement("b"); source.textContent=program?.originLabel??"Sin propuesta"; summary.append(source); workspace.measures.forEach((measure)=>{const line=document.createElement("p"),sourceValue=measure.value==null?"Desconocido":formatMeasurement(measure.value,"mm"),effective=measure.effectiveValue==null?"":` · ${measure.effectivePrefix} ${formatMeasurement(measure.effectiveValue,"mm")} · ${measure.effectiveLabel}`; line.textContent=`${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic}: ${sourceValue} · ${measure.sourceLabel} · ${tableStateLabel(measure.state)}${effective}`; if(measure.state!=="observed"&&measure.effectiveValue==null)line.className="unknown"; summary.append(line);}); workspace.warnings.forEach((warning)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=warning; summary.append(line);});
-  const decisions=$("#part-decisions"); decisions.replaceChildren(); if(program){decisions.append(tableDecisionControl("program",program.id,"Programa completo",workspace)); program.components.forEach((component)=>decisions.append(tableDecisionControl("component",component.id,TABLE_ROLE_LABELS[component.role]??component.role,workspace))); program.premises.forEach((premise)=>decisions.append(tableDecisionControl("premise",premise.id,premise.description,workspace))); workspace.measures.filter((measure)=>measure.confirmable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-confirmed-value"; label.dataset.measureId=measure.id; const action=measure.humanEffective?"Valor vigente editable":measure.effectiveValue==null?"Confirmar":"Confirmar propuesta"; label.textContent=`${action} ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??""; input.placeholder=measure.state==="conflict"?"Resolver conflicto":"Dato faltante"; label.append(input); decisions.append(label);}); evaluated?.issues.forEach((issue)=>{const note=document.createElement("p"); note.className=issue.severity==="warning"?"field-note":"unknown"; note.textContent=issue.message; decisions.append(note);});}
-  $$(".table-confirmed-value",decisions).forEach((label)=>{const measure=workspace.measures.find((item)=>item.id===label.dataset.measureId),input=$("input",label); input.dataset.originalValue=measure?.effectiveValue??""; if(measure?.confirmation){const note=document.createElement("small"); note.textContent=`Confirmación vigente: ${measure.confirmation.reason}. Editar crea una nueva revisión sin borrar la anterior.`; label.append(note);}});
-  workspace.measures.filter((measure)=>measure.correctable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-observed-correction"; label.dataset.measureId=measure.id; label.textContent=`Corregir valor observado · ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??measure.value??""; input.dataset.originalValue=measure.effectiveValue??measure.value??""; const note=document.createElement("small"); note.textContent=`Original CAD ${formatMeasurement(measure.value,"mm")} · evidencia ${measure.evidenceIds.join(", ")}. Una contradicción superior a tolerancia seguirá bloqueando.`; label.append(input,note); decisions.append(label);});
-  workspace.sourceWarnings.forEach((warning)=>{const block=document.createElement("fieldset"); block.className="table-source-review"; block.dataset.warningId=warning.id; block.dataset.warningCode=warning.code; const legend=document.createElement("legend"); legend.textContent=warning.currentAction?"Decisión de recuperación DXF rectificable":"Revisión obligatoria de recuperación DXF"; block.append(legend); [["accept","Fuente comprobada"],["reject","Fuente rechazada"]].forEach(([value,labelText])=>{const label=document.createElement("label"),radio=document.createElement("input"); radio.type="radio"; radio.name=`source-${warning.id}`; radio.value=value; radio.checked=warning.currentAction===value; label.append(radio,document.createTextNode(` ${labelText}`)); block.append(label);}); const note=document.createElement("small"); note.textContent=`${warning.message} · ${warning.code}${warning.currentReason?` · Motivo vigente: ${warning.currentReason}`:""}`; block.append(note); decisions.append(block);});
+  const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Programa de descomposición"; options.append(legend); workspace.programs.forEach((item)=>{const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="table-program"; input.value=item.id; input.checked=item.id===program?.id; input.addEventListener("change",()=>{state.snapshot.preview_table_program_id=item.id;renderTableAndReview();}); const content=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"),assumptions=document.createElement("details"),assumptionSummary=document.createElement("summary"); title.textContent=item.originLabel; detail.textContent=item.components.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · "); assumptionSummary.textContent=`Supuestos y límites (${item.assumptions.length})`; assumptions.append(assumptionSummary,...item.assumptions.map((value)=>emptyParagraph(tableDiagnosticLabel(value)))); content.append(title,detail); if(item.assumptions.length)content.append(assumptions); label.append(input,content); options.append(label);}); if(!workspace.programs.length)options.append(emptyParagraph("No hay programa válido para revisar."));
+  const summary=$("#classification-summary"); summary.replaceChildren(); const source=document.createElement("b"),overview=document.createElement("p"),diagnostics=document.createElement("details"),diagnosticSummary=document.createElement("summary"); source.textContent=program?.originLabel??"Sin propuesta"; const pendingCount=workspace.measures.filter((measure)=>measure.value==null).length; overview.textContent=`${workspace.measures.length} medidas del ledger · ${pendingCount?`${pendingCount} pendientes`:"sin medidas pendientes"}`; diagnostics.className="table-diagnostics"; diagnosticSummary.textContent=`Ver diagnóstico y medidas (${workspace.measures.length})`; diagnostics.append(diagnosticSummary); workspace.measures.forEach((measure)=>{const line=document.createElement("p"),sourceValue=measure.value==null?"Desconocido":formatMeasurement(measure.value,"mm"),effective=measure.effectiveValue==null?"":` · ${measure.effectivePrefix} ${formatMeasurement(measure.effectiveValue,"mm")} · ${measure.effectiveLabel}`; line.textContent=`${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic}: ${sourceValue} · ${measure.sourceLabel} · ${tableStateLabel(measure.state)}${effective}`; if(measure.state!=="observed"&&measure.effectiveValue==null)line.className="unknown"; diagnostics.append(line);}); workspace.warnings.forEach((warning)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=tableDiagnosticLabel(warning); diagnostics.append(line);}); summary.append(source,overview,diagnostics);
+  const decisions=$("#part-decisions"),advanced=document.createElement("details"),advancedSummary=document.createElement("summary"); decisions.replaceChildren(); advanced.className="table-advanced-review"; advancedSummary.textContent="Medidas y fuente · corrección avanzada"; advanced.append(advancedSummary); if(program){decisions.append(tableDecisionControl("program",program.id,"Programa completo",workspace)); program.components.forEach((component)=>decisions.append(tableDecisionControl("component",component.id,TABLE_ROLE_LABELS[component.role]??component.role,workspace))); program.premises.forEach((premise)=>decisions.append(tableDecisionControl("premise",premise.id,premise.description,workspace))); workspace.measures.filter((measure)=>measure.confirmable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-confirmed-value"; label.dataset.measureId=measure.id; const action=measure.humanEffective?"Valor vigente editable":measure.effectiveValue==null?"Confirmar":"Confirmar propuesta"; label.textContent=`${action} ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.name=formControlName("table-confirmation",measure.id); input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??""; input.placeholder=measure.state==="conflict"?"Resolver conflicto":"Dato faltante"; label.append(input); advanced.append(label);}); evaluated?.issues.forEach((issue)=>{const note=document.createElement("p"); note.className=issue.severity==="warning"?"field-note":"unknown"; note.textContent=tableDiagnosticLabel(issue.message); advanced.append(note);});}
+  $$(".table-confirmed-value",advanced).forEach((label)=>{const measure=workspace.measures.find((item)=>item.id===label.dataset.measureId),input=$("input",label); input.dataset.originalValue=measure?.effectiveValue??""; if(measure?.confirmation){const note=document.createElement("small"); note.textContent=`Confirmación vigente: ${measure.confirmation.reason}. Editar crea una nueva revisión sin borrar la anterior.`; label.append(note);}});
+  workspace.measures.filter((measure)=>measure.correctable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-observed-correction"; label.dataset.measureId=measure.id; label.textContent=`Corregir valor observado · ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.name=formControlName("table-correction",measure.id); input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??measure.value??""; input.dataset.originalValue=measure.effectiveValue??measure.value??""; const note=document.createElement("small"); note.textContent=`Original CAD ${formatMeasurement(measure.value,"mm")} · ${measure.evidenceIds.length} evidencias. Los identificadores completos siguen disponibles en el inspector.`; label.append(input,note); advanced.append(label);});
+  workspace.sourceWarnings.forEach((warning)=>{const block=document.createElement("fieldset"); block.className="table-source-review"; block.dataset.warningId=warning.id; block.dataset.warningCode=warning.code; const legend=document.createElement("legend"); legend.textContent=warning.currentAction?"Decisión de recuperación DXF rectificable":"Revisión obligatoria de recuperación DXF"; block.append(legend); [["accept","Fuente comprobada"],["reject","Fuente rechazada"]].forEach(([value,labelText])=>{const label=document.createElement("label"),radio=document.createElement("input"); radio.type="radio"; radio.name=`source-${warning.id}`; radio.value=value; radio.checked=warning.currentAction===value; label.append(radio,document.createTextNode(` ${labelText}`)); block.append(label);}); const note=document.createElement("small"); note.textContent=`${tableDiagnosticLabel(warning.message)}${warning.currentReason?` · Motivo vigente: ${warning.currentReason}`:""}`; block.append(note); advanced.append(block);}); if(advanced.children.length>1)decisions.append(advanced);
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-submit").disabled=!program; text($("#revision-label"),Number.isInteger(state.snapshot?.result_revision)?`Revisión ${state.snapshot.result_revision}`:"Revisión pendiente"); unlock("parts-stage"); unlock("review-stage");
 }
 
@@ -611,24 +617,25 @@ async function refreshRun() {
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
   const replay=presentReplaySource(state.snapshot),replaySource=$("#replay-source"),replayText=replay.available?`${replay.summary} · ${replay.detail}`:""; toggleHidden(replaySource,!replay.available); text(replaySource,replayText); replaySource.title=replayText;
-  try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
+  try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); if(!state.documentIngestion){text($("#document-provenance"),restoredSourceLabel(drawing)); $("#document-provenance").title="Metadatos recuperados de la ejecución; el nombre original no forma parte de este endpoint.";} } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   try { const ledger=await api.getLedger(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.ledger=ledger; } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   if(snapshot.input_kind==="general_furniture"){
     let general;
     try{general=await api.getGeneralFurniture(requestedRun);}catch(error){if(!(error instanceof ApiError)||error.status!==404)throw error;general={run_id:requestedRun,status:"reviewed_incomplete",proposal_revision:null,review_revision:0,draft:{drawing_id:state.drawing?.drawing_id??snapshot.document_id,ledger_revision:state.ledger?.ledger_revision??state.ledger?.revision??"pending",components:[]},automatic_review_unavailable:true};} if(!runFence.isCurrent(token,state.runId))return;
     state.generalWorkspace=normaliseGeneralWorkspace(general);
     const machineStatus=generalMachineStatusPresentation(state.generalWorkspace);if(machineStatus){text($("#upload-status"),machineStatus.label);setMessage(machineStatus.message);}
-    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
+    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){const failure=generalDerivedLoadFailure(error);if(failure){text($("#upload-status"),failure.label);setMessage(failure.message,true);}else if(!(error instanceof ApiError)||error.status!==404)throw error;}}
   }
   renderPartsAndReview(); updateArtifactTabs();
-  if(state.tableWorkspace.isTable&&Number.isInteger(state.snapshot.result_revision)){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
+  const tableReady=tableResourcesReady(state.tableWorkspace,state.snapshot);
+  if(tableReady){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
   await loadRevisionContext();
   if(!runFence.isCurrent(token,state.runId))return;
   if (state.activeView === "3d") await loadScene();
   const scenarioReady=Boolean(state.generalWorkspace?.isGeneral&&state.generalWorkspace.reviewerKind==="machine"&&Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0),confirmedDetails=$("#historical-confirmed-details"),confirmedSummary=$("#historical-confirmed-details > summary");toggleHidden($("#historical-scenarios"),!scenarioReady);$("#historical-scenarios-button").disabled=!scenarioReady;confirmedDetails.open=!scenarioReady;confirmedSummary.hidden=!scenarioReady;
   toggleHidden($("#table-cost-scope"),!state.tableWorkspace.isTable); text($("#estimate-button"),state.tableWorkspace.isTable?"Calcular costes de mesa":"Calcular estimación");
-  if(state.tableWorkspace.isTable){toggleHidden($("#history-estimate-controls"),true);resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph("Cargando componentes…")); try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;} $("#estimate-button").disabled=state.snapshot.result?.state!=="completed"||state.tableWorkspace.evaluated?.state!=="completed"; configureExportActions(); unlock("estimate-stage");}
-  else if(state.generalWorkspace?.isGeneral){toggleHidden($("#history-estimate-controls"),false);resetEstimateUi();const target=state.generalDerived?.historicalTarget,scopeReady=Boolean(target?.required_cost_scope?.length||target?.required_hours_scope?.length),ready=Boolean(target?.currency&&scopeReady);$("#estimate-button").disabled=!ready;text($("#estimate-button"),"Estimar desde histórico confirmado");text($("#estimate-uncertainty"),ready?`Base confirmada ${target.basis_revision} · moneda ${target.currency} · alcance de coste ${target.required_cost_scope.join(", ")||"ninguno"} · alcance de horas ${target.required_hours_scope.join(", ")||"ninguno"}.`:`El histórico confirmado requiere moneda y alcance humanos. Los escenarios condicionales automáticos se muestran por separado.`);if(scenarioReady)await loadHistoricalScenarios();if(ready)await loadHistoricalComparables();unlock("estimate-stage");}
+  if(state.tableWorkspace.isTable){toggleHidden($("#history-estimate-controls"),true);resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph(tableReady?"Cargando componentes…":"Completa la revisión para configurar costes.")); if(tableReady){try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}} $("#estimate-button").disabled=!tableReady; configureExportActions(); unlock("estimate-stage");}
+  else if(state.generalWorkspace?.isGeneral){toggleHidden($("#history-estimate-controls"),!state.features.history);resetEstimateUi();const target=state.generalDerived?.historicalTarget,scopeReady=Boolean(target?.required_cost_scope?.length||target?.required_hours_scope?.length),ready=state.features.history&&Boolean(target?.currency&&scopeReady);$("#estimate-button").disabled=!ready;text($("#estimate-button"),state.features.history?"Estimar desde histórico confirmado":"Histórico privado no disponible");text($("#estimate-uncertainty"),state.features.history?(ready?`Base confirmada ${target.basis_revision} · moneda ${target.currency} · alcance de coste ${target.required_cost_scope.join(", ")||"ninguno"} · alcance de horas ${target.required_hours_scope.join(", ")||"ninguno"}.`:`El histórico confirmado requiere moneda y alcance humanos. Los escenarios condicionales automáticos se muestran por separado.`):"El acceso público mantiene el flujo CAD; el catálogo histórico privado no está disponible.");if(state.features.history&&scenarioReady)await loadHistoricalScenarios();if(ready)await loadHistoricalComparables();unlock("estimate-stage");}
   else {toggleHidden($("#history-estimate-controls"),true);if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi(); if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }}
 }
 
@@ -642,10 +649,10 @@ async function loadRevisionContext() {
     revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.review?.reviewer_name ?? "Sistema"} · ${item.selected_table_program_id??item.review?.selected_assembly_candidate_id??item.review?.selected_scenario_id??item.state??"sin propuesta seleccionada"}`; card.append(title,detail); root.append(card); });
     if (!revisions.length) root.append(emptyParagraph("Sin revisiones registradas."));
   } catch { /* endpoint aditivo: el resto del visor sigue operativo */ }
-  try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
+  if(state.features.library)try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
   if (Number.isInteger(revision)) {
     try { const explanations=await api.getExplanations(runId, revision); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.explanations = explanations; } catch { if(contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))state.explanations = null; }
-    $("#save-library").disabled = false; $("#find-similar").disabled = false;
+    const libraryReady=!state.tableWorkspace?.isTable||tableResourcesReady(state.tableWorkspace,state.snapshot); $("#save-library").disabled = !libraryReady; $("#find-similar").disabled = !libraryReady; if(!libraryReady)text($("#semantic-note"),"Completa la revisión de mesa antes de guardar o buscar por descriptor.");
   } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
   state.scene = null;
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren(); text($("#scene-context"),"2D fuente · sin reconstrucción cargada");
@@ -653,6 +660,7 @@ async function loadRevisionContext() {
 }
 
 async function loadComparables(requestedRun=state.runId, requestedRevision=state.snapshot?.result_revision) {
+  if(!state.features.library)return;
   try {
     const response = await api.getComparables(requestedRun); if(state.runId!==requestedRun||state.snapshot?.result_revision!==requestedRevision)return; const items = response.comparables ?? response.items ?? response ?? [];
     const root = $("#comparables-list"); root.replaceChildren();
@@ -734,7 +742,8 @@ async function followJob(initialJob) {
   const controller = new AbortController(); state.jobAbort = controller; state.jobId = initialJob.id;
   persistJob(initialJob, localStorage);
   const intervalMs = Number(state.config?.run_submission?.poll_interval_ms) || 500;
-  const result = await pollJob(initialJob.id, {
+  let result;
+  try{result = await pollJob(initialJob.id, {
     signal: controller.signal,
     intervalMs,
     getJob: api.getJob,
@@ -747,17 +756,21 @@ async function followJob(initialJob) {
         try { await refreshTraceHistory(); } catch { text($("#trace-gap-status"), "La traza aún no está disponible; se volverá a consultar."); }
       }
     },
-  });
+  });}catch(error){state.jobAbort=null;throw error;}
   if (controller.signal.aborted) return null;
   state.jobAbort = null;
   if (result.state !== "succeeded" || !result.runId) {
+    const retryable=Boolean(result.error?.retryable)&&["failed","interrupted"].includes(result.state);toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;
     const error = new ApiError(result.error?.message ?? "El trabajo no terminó correctamente.", { code: result.error?.code ?? result.state, retryable: Boolean(result.error?.retryable) });
     throw error;
   }
+  toggleHidden($("#job-retry"),true);
   state.runId = result.runId; persistRunId(result.runId, localStorage, location, history);
   await refreshRun(); await refreshTraceHistory(3);
   return result;
 }
+
+async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry");button.disabled=true;try{setMessage(`Creando una nueva ejecución enlazada a ${sourceJobId}; el trabajo original se conserva.`);const next=await api.retryJob(sourceJobId);text($("#job-status"),`Reintento de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
 
 async function runUpload(event) {
   event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
@@ -768,12 +781,12 @@ async function runUpload(event) {
   const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,formData.get("table_template_id")):inputKind==="general_furniture"?generalRunOptions(mode):{};
   let uploadToken;
   try {
-    resetRunUi();
+    resetRunUi(); text($("#input-kind-label"),inputKindLabel(inputKind));
     uploadToken=uploadFence.issue(file);
     setMessage("Guardando el plano…"); text($("#upload-status"), "Cargando");
     const documentRecord = await api.upload(file); if(!uploadFence.isCurrent(uploadToken,file))return; state.documentId = documentRecord.document_id ?? documentRecord.id; const ingestion=renderDocumentIngestion(documentRecord);
     $("#original-preview").src = ingestion.previewUrl ? api.resourceUrl(ingestion.previewUrl) : api.documentPreviewUrl(state.documentId);
-    if(ingestion.format==="PDF"){setMessage("Selecciona una página PDF y confirma la escala solo si está documentada. Sin escala se conservará como desconocida.");text($("#upload-status"),"Revisión PDF");return;}
+    if(ingestion.format==="PDF"){state.activeView="original";showSourceArtifact();$("#drawing-empty").hidden=true;unlock("drawing-stage");text($("#scene-context"),"Vista previa PDF · escala pendiente");setMessage("Selecciona una página PDF y confirma la escala solo si está documentada. Sin escala se conservará como desconocida.");text($("#upload-status"),"Revisión PDF");return;}
     await startRunForDocument({documentId:state.documentId,mode,inputKind,runOptions,stillCurrent:()=>uploadFence.isCurrent(uploadToken,file)});
   } catch (error) { if(uploadToken&&!uploadFence.isCurrent(uploadToken,file))return; setMessage(error.message, true); text($("#upload-status"), "Error"); }
 }
@@ -794,13 +807,13 @@ function renderHistoryRecords(raw) {
   items.forEach((item)=>{const presented=presentHistoricalRecord(item),card=document.createElement("div");card.className="detail-item";const title=document.createElement("b"),detail=document.createElement("span"),source=document.createElement("span");title.textContent=item.name??item.project_name??item.project_id??item.record_id??item.id??"Registro histórico";detail.textContent=presented.provenanceLabel;source.textContent=`Fuente: ${item.provenance?.source??"sin fuente"}${item.provenance?.source_date?` · ${item.provenance.source_date}`:""}`;card.append(title,detail,source);root.append(card);}); if(!items.length)root.append(emptyParagraph("No hay registros con esta procedencia."));
 }
 
-async function refreshHistoryRecords(){try{const raw=await api.getHistory({origin:$("#history-provenance").value,limit:25,offset:0});renderHistoryRecords(raw);}catch(error){$("#history-list")?.replaceChildren(emptyParagraph(error.message));}}
+async function refreshHistoryRecords(){if(!state.features.history)return;try{const raw=await api.getHistory({origin:$("#history-provenance").value,limit:25,offset:0});renderHistoryRecords(raw);}catch(error){$("#history-list")?.replaceChildren(emptyParagraph(error.message));}}
 
 async function importHistory(event){event.preventDefault();const file=$("#history-file").files[0];if(!file)return text($("#history-import-status"),"Selecciona un CSV. Cada registro debe declarar su origen y su fuente.");try{const raw=await api.importHistory(file,{dryRun:false}),result=presentHistoryImport(raw);text($("#history-import-status"),`${result.summary}${result.errors.length?` · ${result.errors.join(" ")}`:""}`);await refreshHistoryRecords();}catch(error){text($("#history-import-status"),error.message);}}
 
 function tableReviewPayload(scenario, values) {
   const newId=(prefix)=>`${prefix}-${globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
-  const decisions=$$('.table-decision').flatMap((block)=>{const selected=$("input:checked",block);return selected?[{targetKind:block.dataset.targetKind,targetId:block.dataset.targetId,action:selected.value,reason:values.notes}]:[];});
+  const decisions=$$('.table-decision').flatMap((block)=>{const selected=$("select",block);return selected?.value?[{targetKind:block.dataset.targetKind,targetId:block.dataset.targetId,action:selected.value,reason:values.notes}]:[];});
   const confirmedValues=$$('.table-confirmed-value').flatMap((label)=>{const input=$("input",label);if(!input.value||String(input.value)===String(input.dataset.originalValue??""))return[];return[{targetId:label.dataset.measureId,valueMm:input.value,reason:values.notes,confirmationId:newId("confirmation")}];});
   const observedCorrections=$$('.table-observed-correction').flatMap((label)=>{const input=$("input",label);if(!input.value||String(input.value)===String(input.dataset.originalValue??""))return[];return[{targetId:label.dataset.measureId,valueMm:input.value,reason:values.notes,correctionId:newId("correction")}];});
   const sourceDecisions=$$('.table-source-review').flatMap((block)=>{const selected=$("input:checked",block);return selected?[{warningId:block.dataset.warningId,warningCode:block.dataset.warningCode,action:selected.value,reason:values.notes}]:[];});
@@ -844,7 +857,7 @@ async function submitReview(event) {
 function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename.replace(/[^a-z0-9._-]/gi,"_"); document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url); }
 
 async function exportResult(format) {
-  if(state.generalDerived&&(format==="bom_csv"||format==="bom_json")){const extension=format.endsWith("csv")?"csv":"json",type=extension==="csv"?"text/csv":"application/json";downloadBlob(new Blob([serialiseGeneralBom(state.generalDerived.bom,extension)],{type}),`vexplorer_${state.runId}_bom.${extension}`);return;}
+  if(state.generalDerived&&(format==="bom_csv"||format==="bom_json")){const extension=format.endsWith("csv")?"csv":"json",artifact=generalBomArtifact(state.generalDerived,extension);if(!artifact){setMessage(`El snapshot exacto no publicó BOM ${extension.toUpperCase()}; no se generó una exportación local sustitutiva.`,true);return;}const link=document.createElement("a");link.href=api.generalArtifactUrl(state.runId,artifact.id,state.generalDerived.proposalRevision,state.generalDerived.reviewRevision);link.download=artifact.filename??`vexplorer_${state.runId}_bom.${extension}`;link.click();return;}
   const requestedFormat=state.tableWorkspace?.isTable?tableExportFormat(format):format;
   try { const response = await fetch(api.exportUrl(state.runId, requestedFormat)); if (!response.ok) throw new Error("La exportación no está disponible."); downloadBlob(await response.blob(), `vexplorer_${state.runId}.${format}`); } catch (error) { setMessage(error.message, true); }
 }
@@ -853,13 +866,13 @@ let traceReturnFocus = null;
 function toggleTrace(open) {
   const drawer = $("#trace-drawer");
   if (open) traceReturnFocus = document.activeElement;
-  drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open;
+  drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); drawer.inert=!open; $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open;
   if (open) $("#trace-close").focus(); else traceReturnFocus?.focus?.();
 }
 
 function setupWorkspaceControls() {
-  $$('[data-artifact-view]').forEach((button)=>button.addEventListener("click",()=>activateArtifactView(button.dataset.artifactView,button)));
-  $$('[data-panel]').forEach((button)=>button.addEventListener("click",()=>{ $$('[data-panel]').forEach((item)=>item.classList.toggle("is-active",item===button)); $$('[data-panel-content]').forEach((panel)=>panel.classList.toggle("is-active",panel.dataset.panelContent===button.dataset.panel)); }));
+  $$('[data-artifact-view]').forEach((button)=>{button.role="tab";button.tabIndex=button.getAttribute("aria-selected")==="true"?0:-1;button.addEventListener("click",()=>activateArtifactView(button.dataset.artifactView,button));}); $("#trace-drawer").inert=true;
+  const panelButtons=$$('[data-panel]'),panels=$$('[data-panel-content]'),activatePanel=(button,compact=false)=>activateWorkspacePanel(panelButtons,panels,button,{compact,reducedMotion:globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches===true}); panelButtons.forEach((button)=>button.addEventListener("click",()=>activatePanel(button,globalThis.matchMedia?.("(max-width: 980px)").matches===true))); activatePanel(panelButtons.find((button)=>button.classList.contains("is-active"))??panelButtons[0]);
   ["entities","texts","dimensions"].forEach((name)=>$(`#toggle-${name}`).addEventListener("change",applyLayerVisibility));
   $("#fit-view").addEventListener("click",fitDrawing); $("#reset-view").addEventListener("click",fitDrawing);
   const zoom=(factor)=>{ if(state.activeArtifact!=="source"){const rect=$("#derived-drawing-canvas").getBoundingClientRect();state.derivedImageViewport=zoomImageViewport(state.derivedImageViewport,1/factor,{x:rect.width/2,y:rect.height/2});applyDerivedImageViewport();return;} if(state.activeView==="3d"){sceneViewer?.zoom(factor); return;} if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
@@ -883,6 +896,7 @@ function setupWorkspaceControls() {
       return;
     }
     if(event.key==="Escape"&&$("#derived-drawing-view").classList.contains("is-expanded"))toggleDerivedExpanded();
+    const tab=event.target.closest?.('[role="tab"]'),tablist=tab?.closest?.('[role="tablist"]'); if(tablist&&["ArrowLeft","ArrowRight","Home","End"].includes(event.key)){const tabs=$$('[role="tab"]:not([disabled])',tablist),current=tabs.indexOf(tab);if(current<0)return;event.preventDefault();const index=event.key==="Home"?0:event.key==="End"?tabs.length-1:(current+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;tabs[index]?.focus();tabs[index]?.click();}
   });
   $("#explode-scene").addEventListener("change",(event)=>sceneViewer?.setExploded(event.target.checked));
 }
@@ -890,12 +904,12 @@ function setupWorkspaceControls() {
 function updateTableRunControls() {
   const form=$("#upload-form"), inputKind=form.elements.input_kind.value, mode=form.elements.mode.value;
   toggleHidden($("#table-template-field"),inputKind!=="mounted_orthographic_views"||mode!=="geometry_only");
-  if(!state.runId)text($("#input-kind-label"),({general_furniture:"Entrada: mueble general",mounted_orthographic_views:"Entrada: mesa · vistas montadas",separated_part_views:"Entrada: piezas separadas",mounted_views_legacy:"Entrada: vistas montadas legacy"})[inputKind]??"Entrada pendiente");
+  if(!state.runId)text($("#input-kind-label"),inputKindLabel(inputKind));
 }
 
 function renderLibraryResults(raw, mode) {
   const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[];
-  items.forEach((item)=>{ const candidate=state.libraryItems.get(item.library_item_id); const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=candidate?.label??item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; const threshold=Number.isFinite(item.threshold)?` · umbral ${item.threshold.toFixed(2)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? candidate?.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}${threshold}`; const differences=document.createElement("span"); differences.textContent=(item.differences??[]).map((value)=>typeof value==="string"?value:`${value.field}: ${value.query_value} ↔ ${value.candidate_value}`).join(" · ")||item.explanation||"Sin diferencias documentadas"; card.append(title,detail,differences); const linked=item.member_ids?.map((id)=>state.libraryItems.get(id)).filter(Boolean)??(candidate?[candidate]:[]); if(linked.length){ const links=document.createElement("div"); links.className="library-members"; linked.forEach((entry)=>links.append(libraryRunLink(entry))); card.append(links); } root.append(card); });
+  items.forEach((item)=>{ const candidate=state.libraryItems.get(item.library_item_id); const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=candidate?.label??item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; const threshold=Number.isFinite(item.threshold)?` · umbral ${item.threshold.toFixed(2)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? candidate?.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}${threshold}`; const presented=presentLibraryDifferences(item.differences??[]),differences=document.createElement("span"); differences.textContent=presented.summary.join(" · ")||(item.explanation?"Comparación disponible":"Sin diferencias documentadas"); card.append(title,detail,differences); const technical=[...presented.technical,...(item.explanation?[String(item.explanation)]:[])]; if(technical.length){const disclosure=document.createElement("details"),disclosureTitle=document.createElement("summary"),content=document.createElement("div");disclosure.className="library-comparison-details";disclosureTitle.textContent="Datos de comparación";technical.forEach((value)=>{const line=document.createElement("code");line.textContent=value;content.append(line);});disclosure.append(disclosureTitle,content);card.append(disclosure);} const linked=item.member_ids?.map((id)=>state.libraryItems.get(id)).filter(Boolean)??(candidate?[candidate]:[]); if(linked.length){ const links=document.createElement("div"); links.className="library-members"; linked.forEach((entry)=>links.append(libraryRunLink(entry))); card.append(links); } root.append(card); });
   if(!items.length)root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
   if(Number.isInteger(raw.excluded_count)&&raw.excluded_count>0)root.append(emptyParagraph(`${raw.excluded_count} elementos de otra versión de descriptor se excluyeron de la comparación.`));
 }
@@ -913,7 +927,7 @@ function libraryRunLink(item) {
 }
 
 async function estimateCurrentRevision(){ if(state.tableWorkspace?.isTable)return estimateTableRevision(); const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral){const target=state.generalDerived?.historicalTarget;if(!target)throw new TypeError("La revisión general no tiene una base histórica autoritativa.");const {includeSynthetic}=historicalRetrievalOptions(),comparableResult=await loadHistoricalComparables();if(!actionFence.isCurrent(token,actionIdentity()))return;const comparableIds=(comparableResult?.items??[]).map((item)=>item.record_id);const estimate=await api.estimateFromHistory({target,comparable_ids:comparableIds,include_synthetic:includeSynthetic});if(!actionFence.isCurrent(token,actionIdentity()))return;renderHistoricalEstimate(estimate);return;}const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
-async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; await api.saveToLibrary(state.runId,{result_revision:state.snapshot.result_revision,label,embedding_mode:$("#similarity-mode").value==="semantic"?"openai":"offline",...(descriptor?{descriptor_version:descriptor}:{})}); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
+async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,librarySavePayload({resultRevision:state.snapshot.result_revision,label,semantic:$("#similarity-mode").value==="semantic"})); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
 async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 
@@ -931,7 +945,49 @@ async function restoreRunReference(runId) {
   } finally { retry.disabled=false; }
 }
 
+const THEME_KEY = "vexplorer.tema";
+const RAIL_KEY = "vexplorer.rail";
+function paintTheme(theme) {
+  const dark = theme === "dark";
+  if (dark) document.documentElement.setAttribute("data-theme", "dark");
+  else document.documentElement.removeAttribute("data-theme");
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  const toggle = $("#theme-toggle");
+  const label = toggle?.querySelector(".nav-label");
+  if (toggle) toggle.setAttribute("aria-pressed", String(dark));
+  if (label) label.textContent = dark ? "Claro" : "Oscuro";
+  if (toggle) toggle.setAttribute("aria-label", dark ? "Usar tema claro" : "Usar tema oscuro");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", dark ? "#141312" : "#f4f4f2");
+  window.dispatchEvent(new CustomEvent("vexplorer-theme"));
+}
+function setupChrome() {
+  let theme = "light";
+  try { theme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"; } catch { theme = "light"; }
+  paintTheme(theme);
+  $("#theme-toggle")?.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    try { if (next === "dark") localStorage.setItem(THEME_KEY, "dark"); else localStorage.removeItem(THEME_KEY); } catch { /* modo privado */ }
+    paintTheme(next);
+  });
+  const frame = $(".app-frame");
+  const railButton = $("#rail-toggle");
+  const applyRail = (collapsed) => {
+    frame?.classList.toggle("is-rail-collapsed", collapsed);
+    railButton?.setAttribute("aria-expanded", String(!collapsed));
+    railButton?.setAttribute("aria-label", collapsed ? "Expandir menú" : "Contraer menú");
+    if (railButton) railButton.textContent = collapsed ? "⟩" : "⟨";
+  };
+  try { applyRail(localStorage.getItem(RAIL_KEY) === "collapsed"); } catch { applyRail(false); }
+  railButton?.addEventListener("click", () => {
+    const collapsed = !frame.classList.contains("is-rail-collapsed");
+    applyRail(collapsed);
+    try { if (collapsed) localStorage.setItem(RAIL_KEY, "collapsed"); else localStorage.removeItem(RAIL_KEY); } catch { /* modo privado */ }
+  });
+}
+
 async function boot() {
+  setupChrome();
   setupWorkspaceControls();
   createHistoryEstimateControls();
   text($("#drawing-empty strong"),"Abre un plano DXF, DWG o PDF");
@@ -951,11 +1007,12 @@ async function boot() {
   $("#find-similar").addEventListener("click",findSimilarCurrent);
   $("#group-library").addEventListener("click",groupCurrentLibrary);
   $("#restore-run-retry").addEventListener("click",()=>{if(state.runId)restoreRunReference(state.runId);});
+  $("#job-retry").addEventListener("click",retryCurrentJob);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
   try {
     state.session=await api.getSession();
     const authenticated=state.session.authenticated===true&&Boolean(state.session.username), reviewer=$("#reviewer-name");
-    text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:"Local · identidad manual");
+    text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:state.features.sessionLabel??(state.session.environment==="production"?"Acceso público · CAD disponible":"Local · identidad manual"));
     if(authenticated){reviewer.value=state.session.username;reviewer.readOnly=true;}
   } catch { text($("#session-user"),"Local · identidad manual"); }
   await refreshHistoryRecords();

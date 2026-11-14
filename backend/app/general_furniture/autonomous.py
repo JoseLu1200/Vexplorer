@@ -14,12 +14,15 @@ from backend.app.contratos.modelos import (
     GeneralAutoReviewDecisionArgs,
     GeneralAutoReviewCheck,
     GeneralComponentReview,
+    GeneralCostBasis,
+    GeneralDerivedPackage,
     GeneralFurnitureProposal,
     GeneralFurnitureReview,
     GeneralFurnitureReviewRequest,
     GeneralMachineProvenance,
     GeneralReviewOperation,
     GeneralScenarioOccurrence,
+    GeneralScene,
     GeneralTextValue,
     ProposeGeneralFurnitureArgs,
 )
@@ -94,10 +97,11 @@ def _safe_autonomous_error_code(error: Exception) -> str:
 
 @dataclass(frozen=True)
 class AutoReviewLimits:
-    max_model_calls: int = 3
-    max_tool_calls: int = 3
+    max_model_calls: int = 5
+    max_tool_calls: int = 5
     max_validation_repairs: int = 1
-    max_semantic_repairs: int = 1
+    max_semantic_repairs: int = 2
+    max_derivation_repairs: int = 1
     timeout_s: float = 120.0
 
     def __post_init__(self) -> None:
@@ -105,8 +109,10 @@ class AutoReviewLimits:
             raise ValueError("general_auto_review_call_budget_invalid")
         if not 0 <= self.max_validation_repairs <= 2:
             raise ValueError("general_auto_review_validation_budget_invalid")
-        if self.max_semantic_repairs not in (0, 1):
+        if self.max_semantic_repairs not in (0, 1, 2):
             raise ValueError("general_auto_review_semantic_budget_invalid")
+        if self.max_derivation_repairs not in (0, 1):
+            raise ValueError("general_auto_review_derivation_budget_invalid")
         if self.timeout_s <= 0 or self.timeout_s > 300:
             raise ValueError("general_auto_review_timeout_budget_invalid")
 
@@ -132,6 +138,27 @@ class GeneralAutonomousCheckpoint:
     proposal_outcome: GeneralFurnitureAgentOutcome
     critic_snapshot: GeneralAutoReviewArgs | None
     trace_event: dict[str, object]
+
+
+def _derivation_failed_package(review: GeneralFurnitureReview) -> GeneralDerivedPackage:
+    """Persist a valid review even when deterministic export remains unavailable."""
+    return GeneralDerivedPackage(
+        run_id=review.run_id,
+        proposal_revision=review.proposal_revision,
+        review_revision=review.review_revision,
+        status="incomplete",
+        bom_rows=(),
+        artifacts=(),
+        scene=GeneralScene(
+            status="unavailable", items=(),
+            warnings=("Derivación determinista no disponible; la revisión se conserva.",),
+        ),
+        cost_basis=GeneralCostBasis(
+            status="unavailable", contributors=(),
+            missing_data=("derivation_failed",),
+        ),
+        construction=None,
+    )
 
 
 def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
@@ -605,7 +632,9 @@ def run_general_autonomous(
             )
             effective_status = _effective_auto_status(args, construction_validation)
             if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args, construction_validation):
-                event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status}
+                remaining_model_calls = limits.max_model_calls - model_call
+                remaining_tool_calls = limits.max_tool_calls - tool_calls
+                event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status, "remaining_model_calls": remaining_model_calls, "remaining_tool_calls": remaining_tool_calls}
                 trace.append(event)
                 if checkpoint_sink is not None:
                     checkpoint_sink(GeneralAutonomousCheckpoint(
@@ -615,38 +644,46 @@ def run_general_autonomous(
                         critic_snapshot=args,
                         trace_event=event,
                     ))
-                repair_output = {
-                    "ok": True,
-                    "status": "repair_requested",
-                    "unresolved": args.unresolved,
-                    "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
-                }
-                if construction_validation.status == "invalid":
-                    repair_output["construction_validation"] = (
-                        construction_validation.model_dump(mode="json")
-                    )
-                    repair_output["instruction"] = (
-                        "Corrige todas las restricciones deterministas fallidas mediante "
-                        "una propuesta completa; conserva observaciones y no inventes cifras. "
-                        "Las estimaciones válidas declaran nominal, rango, método y supuestos. "
-                        "No transfieras cotas observed entre geometrías: piezas ocultas u otros "
-                        "componentes requieren parámetro estimated separado. Resuelve estabilidad "
-                        "necesaria con detalle estimated explícito."
-                    )
-                if raster_without_metric_ledger:
-                    repair_output.update({
-                        "allowed_source_view_ids": [],
-                        "allowed_source_document_refs": list(
-                            general_allowed_document_refs(
-                                context.visual_pages,
-                                include_announced_children=True,
-                            )
-                        ),
-                        "allowed_numeric_binding_refs": [],
-                        "raster_instruction": "Usa bindings=[], ejes null y source_view_ids=[].",
-                    })
-                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(repair_output, ensure_ascii=False)}]
-                continue
+                if remaining_model_calls >= 2 and remaining_tool_calls >= 2:
+                    repair_output = {
+                        "ok": True,
+                        "status": "repair_requested",
+                        "unresolved": args.unresolved,
+                        "construction_validation": construction_validation.model_dump(mode="json"),
+                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
+                    }
+                    if construction_validation.status == "invalid":
+                        repair_output["instruction"] = (
+                            "Corrige todas las restricciones deterministas fallidas mediante "
+                            "una propuesta completa; conserva observaciones y no inventes cifras. "
+                            "Las estimaciones válidas declaran nominal, rango, método y supuestos. "
+                            "No transfieras cotas observed entre geometrías: piezas ocultas u otros "
+                            "componentes requieren parámetro estimated separado. Resuelve estabilidad "
+                            "necesaria con detalle estimated explícito."
+                        )
+                    if raster_without_metric_ledger:
+                        repair_output.update({
+                            "allowed_source_view_ids": [],
+                            "allowed_source_document_refs": list(
+                                general_allowed_document_refs(
+                                    context.visual_pages,
+                                    include_announced_children=True,
+                                )
+                            ),
+                            "allowed_numeric_binding_refs": [],
+                            "raster_instruction": "Usa bindings=[], ejes null y source_view_ids=[].",
+                        })
+                    input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(repair_output, ensure_ascii=False)}]
+                    continue
+                trace.append({
+                    "tool": call.name,
+                    "ok": False,
+                    "summary": "Presupuesto insuficiente para una propuesta reparada y su crítica final; se conserva la revisión incompleta.",
+                    "phase": "general_auto_repair_budget",
+                    "remaining_model_calls": remaining_model_calls,
+                    "remaining_tool_calls": remaining_tool_calls,
+                    "diagnostic": "increase_general_review_max_calls_or_resume_from_checkpoint",
+                })
             checks = _deterministic_checks(args) + args.checks
             relation = "self_review" if proposer_model and proposer_model == getattr(response, "model", None) else "separate_model"
             review_data = base_review.model_dump(mode="python") | {
@@ -658,7 +695,38 @@ def run_general_autonomous(
                 "status": base_review.status if effective_status == "accepted" else "reviewed_incomplete",
             }
             review = GeneralFurnitureReview.model_validate(review_data)
-            derived = derive_general_package(review)
+            derived = None
+            for derivation_attempt in range(limits.max_derivation_repairs + 1):
+                try:
+                    derived = derive_general_package(review)
+                    if derivation_attempt:
+                        trace.append({
+                            "tool": call.name, "ok": True,
+                            "summary": "La derivación server-side se regeneró sin otra llamada al modelo.",
+                            "phase": "general_auto_derivation_recovered",
+                            "derivation_attempt": derivation_attempt + 1,
+                        })
+                    break
+                except Exception:
+                    trace.append({
+                        "tool": call.name,
+                        "ok": False,
+                        "summary": "La derivación server-side falló después de una revisión válida.",
+                        "phase": "general_auto_derivation",
+                        "diagnostic": "general_auto_review_derivation_failed",
+                        "derivation_attempt": derivation_attempt + 1,
+                    })
+                    if derivation_attempt >= limits.max_derivation_repairs:
+                        derived = _derivation_failed_package(review)
+                        effective_status = "incomplete"
+                        trace.append({
+                            "tool": call.name, "ok": True,
+                            "summary": "Se conserva la revisión válida con un paquete derivado incompleto.",
+                            "phase": "general_auto_derivation_fallback",
+                            "diagnostic": "derivation_unavailable_review_persisted",
+                        })
+                        break
+            assert derived is not None
             trace.append({"tool": call.name, "ok": True, "summary": "Revisión multimodal provisional completada.", "phase": "general_auto_review", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "provider_input_tokens": getattr(response, "input_tokens", None), "provider_output_tokens": getattr(response, "output_tokens", None), "provider_total_tokens": getattr(response, "total_tokens", None), "status": effective_status})
             return GeneralAutonomousOutcome(proposal_outcome, effective, tuple(snapshots), semantic_repairs, review, derived, tuple(trace), model_call, tool_calls, effective_status)
         except (ValidationError, ValueError, TypeError, json.JSONDecodeError) as exc:

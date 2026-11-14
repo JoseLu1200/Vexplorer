@@ -400,6 +400,175 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
     assert checkpoints[1].proposal_outcome.proposal.id == outcome.effective_proposal_outcome.proposal.id
 
 
+def test_autonomous_can_checkpoint_two_semantic_repairs_in_one_bounded_job() -> None:
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    calls = 0
+    checkpoints = []
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                args = _repairable_decision(proposal.components[0].id, "length", "p1")
+                name = "entregar_revision_autonoma"
+            elif calls == 2:
+                args = _repair_proposal_args("width-v1", "panel-v1")
+                name = "proponer_mueble_general"
+            elif calls == 3:
+                args = _repairable_decision("panel-v1", "width", "p2")
+                name = "entregar_revision_autonoma"
+            elif calls == 4:
+                args = _repair_proposal_args("width-v2", "panel-v2")
+                name = "proponer_mueble_general"
+            else:
+                args = {
+                    "scenario_id": "scenario-p3",
+                    "checks": [_visual_check("width-final", "panel-v2", "width")],
+                    "field_reviews": [{"target_ref": "component:panel-v2.width", "status": "accepted", "check_ids": ["width-final"]}],
+                    "unresolved": ["length", "thickness", "quantity"],
+                    "status": "incomplete",
+                }
+                name = "entregar_revision_autonoma"
+            return ProviderResponse(
+                id=f"two-repair-{calls}", model="reviewer-model",
+                tool_calls=(ToolCall(call_id=f"two-call-{calls}", name=name, arguments_json=json.dumps(args)),),
+            )
+
+    outcome = run_general_autonomous(
+        _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+        limits=__import__("backend.app.general_furniture.autonomous", fromlist=["AutoReviewLimits"]).AutoReviewLimits(
+            max_model_calls=5, max_tool_calls=5, max_semantic_repairs=2,
+        ),
+        checkpoint_sink=checkpoints.append,
+    )
+
+    assert calls == 5
+    assert outcome.semantic_repairs == 2
+    assert outcome.review.proposal_revision == 3
+    assert outcome.effective_proposal_outcome.draft.components[0].width.value_mm == 800
+    assert [item.phase for item in checkpoints] == ["critic", "semantic_repair", "critic", "semantic_repair"]
+    assert [item.proposal_revision for item in checkpoints] == [1, 2, 2, 3]
+
+
+def test_repair_preflight_returns_incomplete_review_when_budget_cannot_cover_repair_and_recritic() -> None:
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    checkpoints = []
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            args = _repairable_decision(proposal.components[0].id, "length", "p1")
+            return ProviderResponse(
+                id="budget-response", model="reviewer-model",
+                tool_calls=(ToolCall(call_id="budget-call", name="entregar_revision_autonoma", arguments_json=json.dumps(args)),),
+            )
+
+    outcome = run_general_autonomous(
+        _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+        limits=__import__("backend.app.general_furniture.autonomous", fromlist=["AutoReviewLimits"]).AutoReviewLimits(
+            max_model_calls=1, max_tool_calls=1, max_semantic_repairs=2,
+        ),
+        checkpoint_sink=checkpoints.append,
+    )
+
+    assert outcome.semantic_repairs == 0
+    assert outcome.status == "conflict"
+    assert checkpoints[0].phase == "critic"
+    assert outcome.trace[-2]["phase"] == "general_auto_repair_budget"
+    assert outcome.trace[-2]["diagnostic"] == "increase_general_review_max_calls_or_resume_from_checkpoint"
+
+
+def test_derivation_regenerates_once_without_another_provider_call(monkeypatch) -> None:
+    import backend.app.general_furniture.autonomous as autonomous_module
+    from backend.app.general_furniture.derivations import derive_general_package as real_derive
+
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    provider_calls = 0
+    derivation_calls = 0
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            nonlocal provider_calls
+            provider_calls += 1
+            args = {
+                "scenario_id": "scenario-final",
+                "checks": [], "field_reviews": [],
+                "unresolved": ["quantity", "material", "finish"],
+                "status": "incomplete",
+            }
+            return ProviderResponse(
+                id="review-final", model="reviewer-model",
+                tool_calls=(ToolCall(call_id="review-final-call", name="entregar_revision_autonoma", arguments_json=json.dumps(args)),),
+            )
+
+    def flaky_derive(review):
+        nonlocal derivation_calls
+        derivation_calls += 1
+        if derivation_calls == 1:
+            raise ValueError("transient_renderer_failure")
+        return real_derive(review)
+
+    monkeypatch.setattr(autonomous_module, "derive_general_package", flaky_derive)
+    outcome = run_general_autonomous(
+        _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+    )
+
+    assert provider_calls == 1
+    assert derivation_calls == 2
+    assert outcome.review.proposal_revision == 1
+    assert outcome.derived.proposal_revision == 1
+    assert [item["phase"] for item in outcome.trace if item.get("phase", "").startswith("general_auto_derivation")] == [
+        "general_auto_derivation", "general_auto_derivation_recovered",
+    ]
+
+
+def test_terminal_derivation_failure_preserves_review_with_incomplete_package(monkeypatch) -> None:
+    import backend.app.general_furniture.autonomous as autonomous_module
+
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    provider_calls = 0
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            nonlocal provider_calls
+            provider_calls += 1
+            args = {
+                "scenario_id": "scenario-final", "checks": [], "field_reviews": [],
+                "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
+            }
+            return ProviderResponse(
+                id="review-final", model="reviewer-model",
+                tool_calls=(ToolCall(call_id="review-final-call", name="entregar_revision_autonoma", arguments_json=json.dumps(args)),),
+            )
+
+    monkeypatch.setattr(
+        autonomous_module, "derive_general_package",
+        lambda review: (_ for _ in ()).throw(ValueError("renderer_unavailable")),
+    )
+    outcome = run_general_autonomous(
+        _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+    )
+
+    assert provider_calls == 1
+    assert outcome.review.proposal_revision == 1
+    assert outcome.derived.proposal_revision == 1
+    assert outcome.derived.status == "incomplete"
+    assert outcome.derived.cost_basis.missing_data == ("derivation_failed",)
+    assert outcome.trace[-2]["phase"] == "general_auto_derivation_fallback"
+
+
 def test_autonomous_provider_failure_preserves_prior_safe_critique_trace() -> None:
     extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
     proposal = _proposal()
@@ -473,7 +642,7 @@ def test_semantic_repair_rejects_numeric_binding_outside_ledger() -> None:
             return ProviderResponse(id=f"bad-response-{calls}", model="reviewer-model", tool_calls=(ToolCall(call_id=f"bad-call-{calls}", name=name, arguments_json=json.dumps(args)),))
 
     with pytest.raises(RuntimeError, match="general_auto_review_repair_budget_exhausted") as error:
-        run_general_autonomous(_context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()), reviewer_provider=Provider(), proposer_model="proposer-model", limits=__import__("backend.app.general_furniture.autonomous", fromlist=["AutoReviewLimits"]).AutoReviewLimits(max_model_calls=2, max_validation_repairs=0))
+        run_general_autonomous(_context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()), reviewer_provider=Provider(), proposer_model="proposer-model", limits=__import__("backend.app.general_furniture.autonomous", fromlist=["AutoReviewLimits"]).AutoReviewLimits(max_model_calls=3, max_tool_calls=3, max_validation_repairs=0))
 
     assert error.value.trace[-1]["ok"] is False
     assert any(
@@ -492,6 +661,42 @@ def _replace(source_id: str, result_id: str) -> dict:
 
 def _visual_check(check_id: str, component_id: str, field: str) -> dict:
     return {"id": check_id, "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:{component_id}.{field}"], "source_refs": ["visual:page-1"], "summary": "La imagen es coherente con la asignación provisional."}
+
+
+def _repairable_decision(component_id: str, field: str, suffix: str) -> dict:
+    check_id = f"repair-{suffix}"
+    return {
+        "scenario_id": f"scenario-{suffix}",
+        "checks": [{
+            "id": check_id, "kind": "visual_consistency", "outcome": "fail",
+            "method": "model_visual", "target_refs": [f"component:{component_id}.{field}"],
+            "source_refs": ["visual:page-1"], "summary": "La asignación requiere otra reparación.",
+        }],
+        "field_reviews": [{
+            "target_ref": f"component:{component_id}.{field}",
+            "status": "rejected", "check_ids": [check_id],
+        }],
+        "unresolved": [f"repairable:{field}_binding"],
+        "status": "conflict",
+    }
+
+
+def _repair_proposal_args(binding_id: str, component_id: str) -> dict:
+    return {
+        "bindings": [{"id": binding_id, "operation": "copy", "operand_refs": ["dimension:dim-width"]}],
+        "components": [{
+            "id": component_id, "label": "Panel reparado", "kind": "panel", "role": "unknown",
+            "length_binding_id": None, "width_binding_id": binding_id, "thickness_binding_id": None,
+            "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+            "premise_ids": ["p-repair"], "source_view_ids": ["view-front"],
+            "source_observation_ids": ["observation-front"], "source_contour_ids": [],
+            "source_evidence_ids": ["evidence-width"], "source_dimension_ids": ["dim-width"],
+            "source_document_refs": [], "assumptions": ["Reasignación provisional."],
+            "unknown_fields": ["length", "thickness", "quantity"],
+        }],
+        "premises": [{"id": "p-repair", "description": "Reasignación semántica.", "required": True, "blocking": True}],
+        "assumptions": ["Reparación provisional."],
+    }
 
 
 def _review_component(source, *, component_id: str) -> dict:

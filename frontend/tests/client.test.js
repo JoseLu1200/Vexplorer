@@ -112,6 +112,15 @@ test("private session and durable jobs use their explicit API resources", async 
   assert.equal(requests[2][0], "/api/v1/jobs/job%201");
 });
 
+test("retrying a terminal job creates a linked durable execution without reupload",async()=>{
+  const requests=[],client=createApiClient({fetchImpl:async(url,init={})=>{requests.push([url,init]);return response(202,{data:{id:"job-2",state:"queued",retry_of_job_id:"job-1"}});},idFactory:()=>"retry-key"});
+  const result=await client.retryJob("job 1");
+  assert.equal(result.retry_of_job_id,"job-1");
+  assert.equal(requests[0][0],"/api/v1/jobs/job%201/retry");
+  assert.equal(requests[0][1].method,"POST");
+  assert.equal(requests[0][1].headers["Idempotency-Key"],"retry-key");
+});
+
 test("replay availability is checked with the exact server resolved run request", async () => {
   let request;
   const client = createApiClient({ fetchImpl: async (url, init) => { request = [url, init]; return response(200, { data: { available: true } }); } });

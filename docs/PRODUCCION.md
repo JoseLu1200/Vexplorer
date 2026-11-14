@@ -53,7 +53,8 @@ VEXPLORER_GENERAL_REVIEW_MODEL=gpt-6-astra
 VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS=16384
 VEXPLORER_GENERAL_REVIEW_MAX_CALLS=5
 VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS=2
-VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS=300
+VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS=2
+VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS=600
 ```
 
 La clave de proveedor está en el env privado; no se pasa en argv ni se copia al release. La unidad instalada liga solo `127.0.0.1:18792`, usa un worker y permite escritura persistente exclusivamente en `shared/data`; `PrivateTmp=yes` proporciona además un `/tmp` efímero y aislado. En el gestor de usuario systemd 255 de este host se omiten deliberadamente `PrivateDevices=yes` y `ProtectKernelModules=yes`: ambas fallan por separado con `status=218/CAPABILITIES`. El resto de directivas de endurecimiento se probó conjuntamente y la unidad arrancó correctamente.

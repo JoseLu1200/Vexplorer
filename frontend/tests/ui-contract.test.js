@@ -6,14 +6,16 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-test("upload defaults to mounted table views and keeps parts and legacy opt-ins", () => {
+test("upload defaults to general CAD completion and keeps specialized opt-ins", () => {
   assert.match(html, /name="input_kind"/);
-  assert.match(html, /value="mounted_orthographic_views" selected/);
+  assert.match(html, /value="general_furniture" selected/);
+  assert.doesNotMatch(html, /value="mounted_orthographic_views" selected/);
   assert.match(html, /value="separated_part_views"/);
   assert.match(html, /value="mounted_views_legacy"/);
   assert.match(html, /name="table_template_id"/);
   assert.match(html, /value="side_supports_v1"/);
   assert.match(html, /value="corner_supports_v1"/);
+  assert.match(html, /id="input-kind-label">Entrada: mueble general/);
 });
 
 test("empty workspace mirrors the selected input and names every supported document format",()=>{
@@ -51,6 +53,8 @@ test("general furniture exposes the construction-first 2D flow", () => {
   assert.match(app, /construction_overview_svg/);
   assert.match(app, /piece_sheet_svg/);
   assert.match(app, /sheetId/);
+  assert.match(app, /generalBomArtifact/);
+  assert.match(app, /generalDerivedLoadFailure/);
   assert.match(css, /\.parts-dock \.table-wrap\{[^}]*min-height:105px;[^}]*flex:1 1 auto/);
   assert.match(css, /\.impact-decisions\{[^}]*max-height:110px;[^}]*overflow:auto/);
 });
@@ -95,6 +99,8 @@ test("table cost scope is explicit and never hides a partial known subtotal as a
 test("private identity, job progress and event gap status are announced", () => {
   assert.match(html, /id="session-user"/);
   assert.match(html, /id="job-status"[^>]*role="status"/);
+  assert.match(html, /id="job-retry"[^>]*type="button"[^>]*hidden/);
+  assert.match(app, /retryJob/);
   assert.match(html, /id="trace-gap-status"[^>]*role="status"/);
   assert.match(html, /id="trace-drawer"[^>]*role="dialog"[^>]*aria-modal="true"/);
   assert.match(html, /id="replay-source"[^>]*role="status"/);

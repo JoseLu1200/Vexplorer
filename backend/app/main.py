@@ -51,7 +51,7 @@ from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_A
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
 from backend.app.general_furniture.visual_evidence import render_visual_evidence
-from backend.app.salida.service import export_csv, export_json
+from backend.app.salida.service import export_csv
 from backend.app.salida.drawing_preview import render_drawing_preview
 from backend.app.salida.table_cutlist import export_table_cutlist_csv
 from backend.app.salida.technical_drawings import render_table_drawings
@@ -66,6 +66,7 @@ from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbedd
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
 from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
 from backend.app.operacion.jobs import BoundedJobExecutor
+from backend.app.operacion.public_access import PublicAdmissionStore
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 DOCUMENT_ID_PATTERN = re.compile(r"doc-[0-9a-f]{32}\Z")
@@ -205,6 +206,11 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
+    auth_setting = os.getenv("VEXPLORER_AUTH_ENABLED", "true").strip().lower()
+    if auth_setting not in {"true", "false"}:
+        raise ValueError("invalid_auth_enabled")
+    auth_enabled = environment == "production" and auth_setting == "true"
+    public_production = environment == "production" and not auth_enabled
     root_path = os.getenv("VEXPLORER_ROOT_PATH", "")
     if root_path and re.fullmatch(r"(?:/[A-Za-z0-9._~-]+)+", root_path) is None:
         raise ValueError("invalid_root_path")
@@ -215,10 +221,11 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     password_file = None
     allowed_origins: frozenset[str] = frozenset()
     if environment == "production":
-        users_path = os.getenv("VEXPLORER_USERS_FILE")
-        if not users_path:
-            raise ValueError("production_users_file_required")
-        password_file = PasswordFile.load(Path(users_path))
+        if auth_enabled:
+            users_path = os.getenv("VEXPLORER_USERS_FILE")
+            if not users_path:
+                raise ValueError("production_users_file_required")
+            password_file = PasswordFile.load(Path(users_path))
         origins = tuple(
             item.strip().rstrip("/")
             for item in os.getenv("VEXPLORER_ALLOWED_ORIGINS", "").split(",")
@@ -229,12 +236,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         allowed_origins = frozenset(origins)
     try:
         job_max_pending = int(os.getenv("VEXPLORER_JOB_MAX_PENDING", "8"))
+        public_live_daily_limit = int(os.getenv("VEXPLORER_PUBLIC_LIVE_DAILY_LIMIT", "10"))
+        public_live_client_daily_limit = int(os.getenv("VEXPLORER_PUBLIC_LIVE_CLIENT_DAILY_LIMIT", "3"))
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
         recording_max_count = int(os.getenv("VEXPLORER_RECORDING_MAX_COUNT", str(DEFAULT_RECORDING_MAX_COUNT)))
         recording_max_bytes = int(os.getenv("VEXPLORER_RECORDING_MAX_BYTES", str(DEFAULT_RECORDING_MAX_BYTES)))
         general_job_timeout_s = float(os.getenv("VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS", "300"))
         general_review_max_calls = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5"))
         general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
+        general_review_max_semantic_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2"))
         general_review_max_output_tokens = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS", "16384"))
     except ValueError as exc:
         raise ValueError("invalid_numeric_production_limit") from exc
@@ -242,7 +252,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         raise ValueError("max_storage_below_upload_limit")
     if recording_max_count <= 0 or recording_max_bytes < MAX_RECORDED_TRANSCRIPT_BYTES:
         raise ValueError("invalid_recording_storage_policy")
-    if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
+    if not 1 <= public_live_client_daily_limit <= public_live_daily_limit <= 10000:
+        raise ValueError("invalid_public_live_quota")
+    if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 0 <= general_review_max_semantic_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
         raise ValueError("invalid_general_review_policy")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
@@ -250,6 +262,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     staging_dir.mkdir(parents=True, exist_ok=True)
     upload_lock = Lock()
     repository = DemoRepository(root / "vexplorer.sqlite3")
+    public_admission = PublicAdmissionStore(root / "vexplorer.sqlite3") if public_production else None
     repository.interrupt_unfinished_jobs()
     repository.release_stale_agent_recording_reservations()
     job_executor = BoundedJobExecutor(job_max_pending)
@@ -417,7 +430,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 max_model_calls=general_review_max_calls,
                 max_tool_calls=general_review_max_calls,
                 max_validation_repairs=general_review_max_repairs,
-                max_semantic_repairs=1,
+                max_semantic_repairs=general_review_max_semantic_repairs,
                 timeout_s=timeout_s,
             ),
             proposal_revision=proposal_revision,
@@ -606,7 +619,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     @app.middleware("http")
     async def private_access(request: Request, call_next):
         request.state.actor = None
-        if environment == "production" and request.url.path not in {"/api/v1/health", "/health"}:
+        if auth_enabled and request.url.path not in {"/api/v1/health", "/health"}:
             client_key = request.client.host if request.client is not None else "unknown"
             now = time.monotonic()
             recent = [item for item in authentication_failures.get(client_key, ()) if now - item < 60]
@@ -622,10 +635,33 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 return response
             authentication_failures.pop(client_key, None)
             request.state.actor = actor
+        if environment == "production" and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            origin = request.headers.get("Origin")
+            if origin is not None and origin.rstrip("/") not in allowed_origins:
+                return _error(403, "origin_not_allowed", "Origen no autorizado.")
+        if public_production:
+            path = request.url.path.rstrip("/")
+            shared_feature = (
+                path == "/api/v1/history" or path.startswith("/api/v1/history/")
+                or path == "/api/v1/library" or path.startswith("/api/v1/library/")
+                or path == "/api/v1/semantic-explorer/review"
+                or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
+            )
+            if shared_feature:
+                return _error(403, "private_feature_unavailable", "Esta operación del catálogo privado no está disponible en el acceso público.")
             if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-                origin = request.headers.get("Origin")
-                if origin is not None and origin.rstrip("/") not in allowed_origins:
-                    return _error(403, "origin_not_allowed", "Origen no autorizado.")
+                action = "upload" if path == "/api/v1/documents" else "other"
+                decision = await run_in_threadpool(
+                    public_admission.admit_mutation,
+                    request.client.host if request.client is not None else "unknown",
+                    action,
+                    content_length=request.headers.get("content-length"),
+                )
+                if not decision.allowed:
+                    response = _error(decision.status_code, decision.code, "Se ha alcanzado un límite del servicio público. Consulta Retry-After antes de reintentar.", decision.status_code == 429)
+                    if decision.retry_after_seconds is not None:
+                        response.headers["Retry-After"] = str(decision.retry_after_seconds)
+                    return response
         return await call_next(request)
 
     @app.get("/health")
@@ -658,6 +694,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             else "recording_storage_exhausted:maintenance_or_increase_quota_required"
         )
         semantic_capability = {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
+        if public_production:
+            semantic_capability = {**semantic_capability, "available": False, "unavailable_reason": "private_feature_unavailable"}
         capabilities = {
             "live_available": effective_live_available,
             "recorded_replay_available": replay_available,
@@ -676,6 +714,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "limits": {
                         "max_model_calls": general_review_max_calls,
                         "max_validation_repairs": general_review_max_repairs,
+                        "max_semantic_repairs": general_review_max_semantic_repairs,
                         "job_timeout_s": general_job_timeout_s,
                     },
                 },
@@ -693,10 +732,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "exact_snapshot_queries": True,
                 },
             },
-            "history": {"available": _module_available("backend.app.api.history")},
+            "history": {"available": not public_production and _module_available("backend.app.api.history")},
             "evaluation": {"available": False, "reason": "offline_private_reference"},
         }
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -788,7 +827,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         preview = pages[0]["preview"]
             except Exception as exc:
                 shutil.rmtree(stage, ignore_errors=True)
-                code = str(exc)
                 if format_name == "dxf":
                     return "invalid_dxf", None
                 if format_name == "dwg":
@@ -1356,6 +1394,81 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, "use_jobs_endpoint", "Producción requiere el endpoint durable de trabajos.")
         return _execute_run(request)
 
+    class PublicJobAdmissionDenied(ValueError):
+        def __init__(self, decision) -> None:
+            super().__init__(decision.code or "public_job_admission_denied")
+            self.status_code = decision.status_code or 429
+            self.retry_after_seconds = decision.retry_after_seconds
+
+    def public_job_admission(http_request: Request, request: RunRequest) -> dict:
+        if not public_production:
+            return {}
+        client_host = http_request.client.host if http_request.client is not None else "unknown"
+
+        def admit(database) -> None:
+            decision = public_admission.admit_mutation(
+                client_host, "job", database=database
+            )
+            if not decision.allowed:
+                raise PublicJobAdmissionDenied(decision)
+
+        arguments = {"admission_callback": admit}
+        if request.mode != "live":
+            return arguments
+        client_hash = hashlib.sha256(
+            f"vexplorer-public-live:{client_host}".encode("utf-8")
+        ).hexdigest()
+        return {
+            **arguments,
+            "public_client_hash": client_hash,
+            "public_global_daily_limit": public_live_daily_limit,
+            "public_client_daily_limit": public_live_client_daily_limit,
+        }
+
+    def public_job_admission_denied(exc: PublicJobAdmissionDenied):
+        response = _error(
+            exc.status_code,
+            str(exc),
+            "Se ha alcanzado un límite del servicio público. Consulta Retry-After antes de reintentar.",
+            exc.status_code == 429,
+        )
+        if exc.retry_after_seconds is not None:
+            response.headers["Retry-After"] = str(exc.retry_after_seconds)
+        return response
+
+    def public_live_quota_exhausted():
+        now_timestamp = int(datetime.now(UTC).timestamp())
+        reset_timestamp = ((now_timestamp // 86400) + 1) * 86400
+        response = _error(
+            429,
+            "public_live_quota_exhausted",
+            "Se ha agotado la cuota diaria de análisis público.",
+        )
+        response.headers["Retry-After"] = str(max(1, reset_timestamp - now_timestamp))
+        response.headers["X-RateLimit-Reset"] = str(reset_timestamp)
+        return response
+
+    def enqueue_reserved_job(job_id: str, request: RunRequest, actor: str | None) -> None:
+        def process() -> None:
+            try:
+                repository.start_job(job_id)
+                response = _execute_run(request, actor=actor)
+                payload = json.loads(response.body)
+                if response.status_code == 201:
+                    repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
+                else:
+                    repository.finish_job(job_id, run_id=payload.get("run_id"), error=payload.get("error") or {
+                        "code": "job_failed", "message": "El trabajo no terminó.", "retryable": False
+                    })
+            except Exception as exc:
+                repository.finish_job(job_id, error={
+                    "code": "job_failed",
+                    "message": f"El trabajo falló de forma segura: {type(exc).__name__}.",
+                    "retryable": False,
+                })
+
+        job_executor.submit_reserved(process)
+
     @app.post("/api/v1/jobs")
     def submit_job(
         request: RunRequest,
@@ -1387,41 +1500,76 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 request_json,
                 actor=http_request.state.actor,
                 idempotency_key=idempotency_key,
+                **public_job_admission(http_request, request),
             )
+        except PublicJobAdmissionDenied as exc:
+            job_executor.release()
+            return public_job_admission_denied(exc)
         except ValueError as exc:
             job_executor.release()
+            if str(exc) == "public_live_quota_exhausted":
+                return public_live_quota_exhausted()
             return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
         if not created:
             job_executor.release()
             return _ok(job, 202)
 
-        def process() -> None:
-            try:
-                repository.start_job(job_id)
-                response = _execute_run(request, actor=http_request.state.actor)
-                payload = json.loads(response.body)
-                if response.status_code == 201:
-                    repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
-                else:
-                    repository.finish_job(job_id, run_id=payload.get("run_id"), error=payload.get("error") or {
-                        "code": "job_failed", "message": "El trabajo no terminó.", "retryable": False
-                    })
-            except Exception as exc:
-                repository.finish_job(job_id, error={
-                    "code": "job_failed",
-                    "message": f"El trabajo falló de forma segura: {type(exc).__name__}.",
-                    "retryable": False,
-                })
+        enqueue_reserved_job(job_id, request, http_request.state.actor)
+        return _ok(job, 202)
 
-        job_executor.submit_reserved(process)
+    @app.post("/api/v1/jobs/{job_id}/retry")
+    def retry_job(
+        job_id: str,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
+        if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
+            return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
+        if idempotency_key is not None and not 1 <= len(idempotency_key) <= 128:
+            return _error(422, "invalid_idempotency_key", "Idempotency-Key no es válido.")
+        actor = http_request.state.actor
+        try:
+            replay = repository.get_job_retry(job_id, actor=actor)
+            request = RunRequest.model_validate_json(repository.get_job_request(job_id))
+        except KeyError:
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        except ValueError:
+            return _error(409, "job_request_invalid", "La solicitud persistida no admite reintento.")
+        if replay is not None:
+            return _ok(replay, 202)
+        if not job_executor.reserve():
+            return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
+        retry_job_id = f"job-{uuid4().hex}"
+        try:
+            job, created = repository.reserve_job_retry(
+                job_id,
+                retry_job_id,
+                actor=actor,
+                **public_job_admission(http_request, request),
+            )
+        except PublicJobAdmissionDenied as exc:
+            job_executor.release()
+            return public_job_admission_denied(exc)
+        except KeyError:
+            job_executor.release()
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        except ValueError as exc:
+            job_executor.release()
+            if str(exc) == "public_live_quota_exhausted":
+                return public_live_quota_exhausted()
+            return _error(409, str(exc), "El trabajo no admite reintento.")
+        if not created:
+            job_executor.release()
+            return _ok(job, 202)
+        enqueue_reserved_job(retry_job_id, request, actor)
         return _ok(job, 202)
 
     @app.get("/api/v1/jobs/{job_id}")
-    def get_job(job_id: str):
+    def get_job(job_id: str, http_request: Request):
         if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
             return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
         try:
-            return _ok(repository.get_job(job_id))
+            return _ok(repository.get_job_for_actor(job_id, actor=http_request.state.actor))
         except KeyError:
             return _error(404, "job_not_found", "Trabajo inexistente.")
 

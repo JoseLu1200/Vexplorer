@@ -206,6 +206,10 @@ export function presentGeneralDerived(raw = {}) {
   };
 }
 
+export function generalBomArtifact(derived,format){const kind=({csv:"bom_csv",json:"bom_json"})[format];return kind?list(derived?.artifacts).find((item)=>item.kind===kind)??null:null;}
+
+export function generalDerivedLoadFailure(error){if(error?.status!==409)return null;return{label:"Snapshot desactualizado",message:`La propuesta cambió mientras se cargaban sus derivados. Recarga la ejecución para consultar el snapshot exacto.${error.message?` ${error.message}`:""}`};}
+
 function csv(value) { const text=String(value??""); return /[",\r\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text; }
 function fieldValue(value) { return value&&typeof value==="object"&&!Array.isArray(value)?(value.value??value.value_mm??null):value; }
 function csvText(value){const text=String(value??"");return /^[=+\-@]/.test(text.trimStart())?`'${text}`:text;}

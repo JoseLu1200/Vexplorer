@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -127,6 +127,18 @@ test("derived BOM keeps missing fields and incomplete artifacts visible", () => 
   assert.deepEqual(result.artifacts[0].incompleteReasons, ["Falta grosor"]);
   assert.deepEqual(result.costBasis.missingData, ["material"]);
   assert.deepEqual(result.historicalTarget,{family:"cabinet",basis_revision:"general:4:2"});
+});
+
+test("BOM exports select the authoritative exact-snapshot artifact",()=>{
+  const derived=presentGeneralDerived({package:{proposal_revision:3,review_revision:2,bom_rows:[],artifacts:[{id:"bom-csv",kind:"bom_csv",filename:"bom.csv",status:"ready",incomplete_reasons:[]},{id:"bom-json",kind:"bom_json",filename:"bom.json",status:"ready",incomplete_reasons:[]}]}});
+  assert.equal(generalBomArtifact(derived,"csv").id,"bom-csv");
+  assert.equal(generalBomArtifact(derived,"json").id,"bom-json");
+  assert.equal(generalBomArtifact(derived,"pdf"),null);
+});
+
+test("snapshot conflicts are actionable and never presented as ready",()=>{
+  assert.deepEqual(generalDerivedLoadFailure({status:409,message:"revision mismatch"}),{label:"Snapshot desactualizado",message:"La propuesta cambió mientras se cargaban sus derivados. Recarga la ejecución para consultar el snapshot exacto. revision mismatch"});
+  assert.equal(generalDerivedLoadFailure({status:404}),null);
 });
 
 test("accepted construction estimates stay numeric but visibly approximate", () => {
