@@ -434,7 +434,8 @@ def extraction_payload(
         views.append({"id": _view_id(label), "label": _view_role(label), "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
     status = "needs_review" if inferred_labels or drawing.unit_scale_to_mm is None or any(
-        warning.startswith(("unsupported_", "recovered_dxf")) or "conflict" in warning or "override" in warning
+        warning.startswith(("unsupported_", "recovered_dxf", "approximated_", "curve_point_limit"))
+        or "conflict" in warning or "override" in warning
         for warning in drawing.warnings
     ) else "ready"
     observations = []
