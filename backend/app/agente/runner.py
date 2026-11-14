@@ -71,6 +71,11 @@ class TableAgentOutcome:
     actions: tuple[AgentAction, ...]
 
 
+def _valid_reference_details(values, limit: int = 50) -> dict:
+    ordered = sorted(set(values))
+    return {"valid_ids": ordered[:limit], "valid_ids_total": len(ordered), "valid_ids_truncated": len(ordered) > limit}
+
+
 def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits()) -> AgentOutcome:
     started = time.monotonic()
     model_calls = 0
@@ -113,6 +118,8 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         "contours": [item.model_dump(mode="json") for item in extraction.contours if set(item.source_entity_ids) & source_ids],
                         "dimensions": [item.model_dump(mode="json") for item in extraction.dimensions if set(item.evidence_ids) & set(args.evidence_ids)],
                     }
+                    if unknown:
+                        data["details"] = _valid_reference_details(evidence)
                     actions.append(AgentAction(tool_name=call.name, ok=not unknown, evidence_ids=tuple(item for item in args.evidence_ids if item in evidence), summary="Evidencia vectorial del ledger inspeccionada." if not unknown else "Referencia de evidencia desconocida rechazada."))
                 elif call.name == "explicar_pieza":
                     args = ExplainPieceArgs.model_validate_json(json.dumps(arguments), strict=True)
@@ -120,7 +127,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         data = {"ok": False, "error": "revision_not_available"}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Revisión no disponible en este bucle rechazada."))
                     elif args.piece_id not in proposals:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(proposals)}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Propuesta desconocida rechazada."))
                     else:
                         scenario, proposal = proposals[args.piece_id]
@@ -130,7 +137,7 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                 elif call.name == "entregar_despiece":
                     args = SelectScenarioArgs.model_validate_json(json.dumps(arguments), strict=True)
                     if args.scenario_id not in scenario_ids:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(scenario_ids)}
                         actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Escenario desconocido rechazado."))
                     else:
                         actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana.", selected_scenario_id=args.scenario_id))
@@ -221,7 +228,7 @@ def run_parts_agent(
                         data = {"ok": False, "error": "candidate_revision_mismatch"}
                         actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
                     elif args.part_observation_id not in observations:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(observations)}
                         actions.append(AgentAction(call.name, False, (), "Observación de pieza desconocida rechazada."))
                     else:
                         observation = observations[args.part_observation_id]
@@ -233,7 +240,7 @@ def run_parts_agent(
                         data = {"ok": False, "error": "candidate_revision_mismatch"}
                         actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
                     elif args.assembly_candidate_id not in candidate_ids:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(candidate_ids)}
                         actions.append(AgentAction(call.name, False, (), "Candidato de montaje desconocido rechazado."))
                     else:
                         actions.append(AgentAction(
@@ -314,13 +321,15 @@ def run_table_agent(
                         "source_entities": [entities[item].model_dump(mode="json") for item in sorted(source_entity_ids) if item in entities],
                         "views": [views[item].model_dump(mode="json") for item in sorted(source_view_ids) if item in views],
                     }
+                    if unknown:
+                        data["details"] = _valid_reference_details(measures)
                     actions.append(AgentAction(call.name, not unknown, tuple(evidence_id for item in selected for evidence_id in item.evidence_ids), "Medidas y fuentes del ledger inspeccionadas." if not unknown else "Referencia de medida desconocida rechazada."))
                 elif call.name == "proponer_descomposicion":
                     args = ProposeTableProgramArgs.model_validate_json(json.dumps(arguments), strict=True)
                     referenced_measures = {operand.ref_id for binding in args.bindings for operand in binding.operand_refs if operand.ref_type == "measure"}
                     referenced_evidence = set(args.evidence_ids) | {evidence_id for component in args.components for evidence_id in component.evidence_ids}
                     if not referenced_measures <= set(measures) or not referenced_evidence <= allowed_evidence_ids:
-                        data = {"ok": False, "error": "unknown_reference"}
+                        data = {"ok": False, "error": "unknown_reference", "details": {"measurements": _valid_reference_details(measures), "evidence": _valid_reference_details(allowed_evidence_ids)}}
                         actions.append(AgentAction(call.name, False, (), "Programa con referencias ajenas al ledger rechazado."))
                     else:
                         canonical_args = json.dumps(args.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)

@@ -39,7 +39,7 @@ class OpenAIResponsesProvider:
             "tools": tools,
             "tool_choice": "required",
             "parallel_tool_calls": False,
-            "max_output_tokens": 1200,
+            "max_output_tokens": self.settings.max_output_tokens,
         }
         if previous_response_id:
             payload["previous_response_id"] = previous_response_id
