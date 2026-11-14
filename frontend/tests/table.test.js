@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "../core/table.js";
+import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "../core/table.js";
 
 test("table run options keep catalog baseline and live model generation visibly distinct", () => {
   assert.deepEqual(tableRunOptions("geometry_only", "side_supports_v1"), {
@@ -341,6 +341,27 @@ test("complete economic scope sends selected hours, finish, exclusions and expli
   assert.throws(() => buildTableCostScope({ exclusions: [{ scope: "labor", reason: " " }] }), /motivo/i);
   assert.throws(() => buildTableCostScope({ operations: [{ id: "cut-1", hours: "1" }], exclusions: [{ scope: "operation", reason: "No aplica" }] }), /operaciones.*excluidas/i);
   assert.throws(() => buildTableCostScope({ edgeScope: "all_exposed", edgeTariffId: "edge-1", exclusions: [{ scope: "edge", reason: "No aplica" }] }), /canteado.*excluido/i);
+});
+
+test("component material overrides use current component ids and discard stale controls", () => {
+  const components = [{ id: "top", role: "tabletop" }, { id: "left-support", role: "side_support" }];
+  assert.deepEqual(componentMaterialOverrides(components, {
+    top: "oak-board", "left-support": "birch-board", "removed-leg": "old-board", empty: "", unknown: "unknown-board",
+  }, [{ id: "oak-board" }, { id: "birch-board" }]), { top: "oak-board", "left-support": "birch-board" });
+  assert.deepEqual(componentMaterialOverrides([{ id: "new-leg", role: "corner_support" }], {
+    top: "oak-board", "left-support": "birch-board",
+  }, [{ id: "oak-board" }, { id: "birch-board" }]), {});
+});
+
+test("saved material scope round trips and reports missing catalog or component references", () => {
+  const components = [{ id: "top" }, { id: "support" }], materials = [{ id: "general-board" }, { id: "oak-board" }];
+  assert.deepEqual(tableMaterialScopeSelection({ material_tariff_id: "general-board", component_material_tariff_ids: { top: "oak-board" } }, components, materials), {
+    materialTariffId: "general-board", componentMaterialTariffIds: { top: "oak-board" }, warnings: [],
+  });
+  const stale = tableMaterialScopeSelection({ material_tariff_id: "retired", component_material_tariff_ids: { top: "missing", removed: "oak-board" } }, components, materials);
+  assert.equal(stale.materialTariffId, "");
+  assert.deepEqual(stale.componentMaterialTariffIds, {});
+  assert.equal(stale.warnings.length, 3);
 });
 
 test("table explanation presents backend formulas, premises and unknowns without recomputing them", () => {

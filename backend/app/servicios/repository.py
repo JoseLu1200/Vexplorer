@@ -30,8 +30,6 @@ from backend.app.geometria.mounted_table import evaluate_table_program
 from backend.app.agente.replay import (
     MAX_RECORDED_RESPONSES,
     MAX_RECORDED_TRANSCRIPT_BYTES,
-    MAX_STORED_RECORDING_BYTES,
-    MAX_STORED_RECORDINGS,
     RECORDING_VERSION,
     RecordingDraft,
     StoredRecording,
@@ -96,6 +94,10 @@ class DemoRepository:
                 );
                 CREATE INDEX IF NOT EXISTS agent_recordings_fingerprint
                     ON agent_recordings(fingerprint, recorded_at DESC, id DESC);
+                CREATE TABLE IF NOT EXISTS agent_recording_reservations (
+                    id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, actor TEXT NOT NULL,
+                    reserved_bytes INTEGER NOT NULL, created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS library_items (
                     run_id TEXT PRIMARY KEY, payload TEXT NOT NULL
                 );
@@ -158,7 +160,7 @@ class DemoRepository:
         connection.execute("PRAGMA busy_timeout=10000")
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, recording_reservation_id: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
         created_at = _now()
         input_semantics = extraction.input_kind
         candidate_revision = part_analysis.candidate_revision if part_analysis is not None else table_analysis.ledger_revision if table_analysis is not None else extraction.drawing_id
@@ -179,20 +181,20 @@ class DemoRepository:
             sequence += 1
             db.execute("INSERT INTO events VALUES (?, ?, 'run_finished', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
             if recording_draft is not None:
-                if mode != "live" or not recording_fingerprint or not document_id:
+                if mode != "live" or not recording_fingerprint or not document_id or not recording_reservation_id:
                     raise ValueError("invalid_live_recording_scope")
                 if not 1 <= recording_draft.response_count <= MAX_RECORDED_RESPONSES:
                     raise ValueError("recording_response_limit_exceeded")
                 if not 1 <= recording_draft.transcript_bytes <= MAX_RECORDED_TRANSCRIPT_BYTES:
                     raise ValueError("recording_byte_limit_exceeded")
-                usage = db.execute(
-                    "SELECT COUNT(*) AS count,COALESCE(SUM(transcript_bytes),0) AS bytes FROM agent_recordings"
+                reservation = db.execute(
+                    "SELECT reserved_bytes FROM agent_recording_reservations WHERE id=?",
+                    (recording_reservation_id,),
                 ).fetchone()
-                if (
-                    usage["count"] + 1 > MAX_STORED_RECORDINGS
-                    or usage["bytes"] + recording_draft.transcript_bytes > MAX_STORED_RECORDING_BYTES
-                ):
-                    raise ValueError("recording_storage_exhausted")
+                if reservation is None:
+                    raise ValueError("recording_reservation_missing")
+                if recording_draft.transcript_bytes > reservation["reserved_bytes"]:
+                    raise ValueError("recording_reservation_too_small")
                 recording_id = "recording-" + hashlib.sha256(
                     f"{recording_fingerprint}:{run_id}:{recording_draft.transcript_sha256}".encode("utf-8")
                 ).hexdigest()
@@ -206,7 +208,71 @@ class DemoRepository:
                         RECORDING_VERSION, recording_draft.response_count, recording_draft.transcript_bytes,
                     ),
                 )
+                db.execute(
+                    "DELETE FROM agent_recording_reservations WHERE id=?",
+                    (recording_reservation_id,),
+                )
         return self.get_run(run_id)
+
+    def recording_storage_usage(self) -> dict[str, int]:
+        with self._connect() as db:
+            recordings = db.execute(
+                "SELECT COUNT(*) AS count,COALESCE(SUM(transcript_bytes),0) AS bytes FROM agent_recordings"
+            ).fetchone()
+            reservations = db.execute(
+                "SELECT COUNT(*) AS count,COALESCE(SUM(reserved_bytes),0) AS bytes FROM agent_recording_reservations"
+            ).fetchone()
+        return {
+            "recording_count": recordings["count"], "recording_bytes": recordings["bytes"],
+            "reservation_count": reservations["count"], "reserved_bytes": reservations["bytes"],
+        }
+
+    def agent_recording_capacity_available(
+        self, *, max_count: int, max_bytes: int, reserved_bytes: int,
+    ) -> bool:
+        if max_count <= 0 or reserved_bytes <= 0 or max_bytes < reserved_bytes:
+            return False
+        usage = self.recording_storage_usage()
+        return (
+            usage["recording_count"] + usage["reservation_count"] + 1 <= max_count
+            and usage["recording_bytes"] + usage["reserved_bytes"] + reserved_bytes <= max_bytes
+        )
+
+    def reserve_agent_recording(
+        self, reservation_id: str, *, fingerprint: str, actor: str,
+        max_count: int, max_bytes: int, reserved_bytes: int,
+    ) -> None:
+        if max_count <= 0 or reserved_bytes <= 0 or max_bytes < reserved_bytes:
+            raise ValueError("invalid_recording_storage_policy")
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            recordings = db.execute(
+                "SELECT COUNT(*) AS count,COALESCE(SUM(transcript_bytes),0) AS bytes FROM agent_recordings"
+            ).fetchone()
+            reservations = db.execute(
+                "SELECT COUNT(*) AS count,COALESCE(SUM(reserved_bytes),0) AS bytes FROM agent_recording_reservations"
+            ).fetchone()
+            if (
+                recordings["count"] + reservations["count"] + 1 > max_count
+                or recordings["bytes"] + reservations["bytes"] + reserved_bytes > max_bytes
+            ):
+                raise ValueError("recording_storage_exhausted")
+            db.execute(
+                "INSERT INTO agent_recording_reservations VALUES (?, ?, ?, ?, ?)",
+                (reservation_id, fingerprint, actor, reserved_bytes, _now()),
+            )
+
+    def release_agent_recording_reservation(self, reservation_id: str) -> bool:
+        with self._connect() as db:
+            changed = db.execute(
+                "DELETE FROM agent_recording_reservations WHERE id=?", (reservation_id,),
+            )
+        return changed.rowcount == 1
+
+    def release_stale_agent_recording_reservations(self) -> int:
+        with self._connect() as db:
+            changed = db.execute("DELETE FROM agent_recording_reservations")
+        return changed.rowcount
 
     @staticmethod
     def _recording_from_row(row: sqlite3.Row) -> StoredRecording:

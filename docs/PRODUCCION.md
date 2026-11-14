@@ -42,6 +42,8 @@ VEXPLORER_ALLOWED_ORIGINS=https://gex-dashboard.hopto.org
 VEXPLORER_ROOT_PATH=/vexplorer
 VEXPLORER_JOB_MAX_PENDING=8
 VEXPLORER_MAX_STORAGE_BYTES=1073741824
+VEXPLORER_RECORDING_MAX_COUNT=1000
+VEXPLORER_RECORDING_MAX_BYTES=268435456
 OPENAI_MODEL=gpt-6.1-sol
 OPENAI_MAX_OUTPUT_TOKENS=4096
 OPENAI_VISION_ENABLED=false
@@ -136,6 +138,10 @@ curl --fail --user operador https://HOST_REAL/api/v1/config
 No añada un `ports:` al servicio `app`. Configure firewall, actualizaciones del host y acceso SSH según las normas de la empresa. Los logs pueden contener IDs operativos: restrinja su lectura y retención.
 
 ## Datos, actualización y reinicio
+
+Las grabaciones live tienen una política separada de los límites por ejecución: por defecto, 1000 grabaciones y 256 MiB de transcripts, configurables con `VEXPLORER_RECORDING_MAX_COUNT` y `VEXPLORER_RECORDING_MAX_BYTES`. Antes de llamar al proveedor se reserva atómicamente un puesto y hasta 4 MiB; la persistencia convierte esa reserva en el tamaño real del transcript. Una reserva agotada impide la llamada pagada. El límite de 15 llamadas del agente sigue aplicándose a cada ejecución, no al historial del equipo.
+
+No se borran grabaciones automáticamente: pueden estar referenciadas por replays y auditorías. Al alcanzar capacidad, las ejecuciones geométricas y replays existentes continúan disponibles; el operador debe respaldar los datos y revisar el presupuesto antes de aumentar estos límites. La cuota de transcripts no incluye el resto de SQLite, los documentos ni las copias: revisar también el espacio real del disco. El perfil soportado mantiene un único proceso de aplicación; el arranque recupera las reservas interrumpidas junto con los trabajos sin reintentar llamadas pagadas.
 
 `VEXPLORER_DATA_VOLUME` nombra el volumen persistente. Dentro guarda `/var/lib/vexplorer/data/vexplorer.sqlite3` y `documents/`; SQLite incluye runs, revisiones, trabajos, eventos, estimaciones y artefactos persistidos. `docker compose restart` y recrear contenedores no eliminan el volumen.
 

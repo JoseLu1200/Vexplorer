@@ -30,7 +30,7 @@
 - Implementación terminada por TDD, sin commits.
 - Replay: transcript request/response por hashes, metadatos seguros, tool outputs recalculados, fingerprint de documento/ledger/config/prompt/schema/registry/visión y output terminal; SQLite es la fuente autoritativa y el live run + recording se confirman en una transacción.
 - Tres runners cubiertos, incluida identidad del PNG visual; jobs durables locales y producción autenticada; 409 por ausencia/divergencia; procedencia del live fuente en snapshot/eventos.
-- Cuota total real: máximo derivado de los presupuestos existentes de respuestas y bytes; al agotarse, la transacción completa se revierte.
+- Cuota total real configurable: `VEXPLORER_RECORDING_MAX_COUNT` (1000 por defecto) y `VEXPLORER_RECORDING_MAX_BYTES` (256 MiB por defecto). Cada live reserva conservadoramente el máximo de 4 MiB antes del proveedor; SQLite serializa admisión, el commit del run consume la reserva atómicamente y errores/reinicio la liberan. No se eliminan grabaciones existentes ni referenciadas. `/config` desactiva live y explica mantenimiento/ampliación de cuota cuando no cabe otra reserva; el gate transaccional previo a proveedor sigue siendo autoritativo.
 - `comparar_candidatas`: schema común estricto, revisión exacta, dos IDs distintos y handlers conservadores separados para legacy/parts/table; sin tolerancias nuevas ni cifras del modelo.
 - Hallazgo Astra adicional corregido: IDs no nulos de confirmación únicos por request y owner map actualizado dentro del lote, con defensa de repositorio ante modelos legacy/bypass.
-- Verificación focal integrada: 51 pruebas aprobadas en 14,54 s sobre tests nuevos, harness, API legacy/parts/table, jobs y repositorio privado.
+- Verificación focal integrada final: 75 pruebas aprobadas en 14,95 s sobre tests nuevos, harness, API legacy/parts/table, jobs, auth y repositorio privado. `compileall` y `git diff --check` pasan; sólo aparecen avisos de normalización LF→CRLF del worktree.

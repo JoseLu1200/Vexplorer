@@ -216,6 +216,29 @@ export function normaliseTableCostCatalog(raw = {}) {
   };
 }
 
+export function componentMaterialOverrides(components = [], selected = {}, materials = null) {
+  const currentIds = new Set(components.map((component) => component?.id).filter(Boolean));
+  const materialIds = materials == null ? null : new Set(materials.map((material) => material?.id).filter(Boolean));
+  return Object.fromEntries(Object.entries(selected).filter(([componentId, tariffId]) => currentIds.has(componentId) && Boolean(tariffId) && (materialIds == null || materialIds.has(tariffId))));
+}
+
+export function tableMaterialScopeSelection(scope = {}, components = [], materials = []) {
+  const componentIds = new Set(components.map((component) => component?.id).filter(Boolean));
+  const materialIds = new Set(materials.map((material) => material?.id).filter(Boolean));
+  const requestedGeneral = scope.material_tariff_id ?? "";
+  const warnings = [];
+  if (requestedGeneral && !materialIds.has(requestedGeneral)) warnings.push(`La tarifa general guardada ${requestedGeneral} ya no está disponible.`);
+  Object.entries(scope.component_material_tariff_ids ?? {}).forEach(([componentId, tariffId]) => {
+    if (!componentIds.has(componentId)) warnings.push(`La pieza guardada ${componentId} ya no forma parte del programa actual.`);
+    else if (tariffId && !materialIds.has(tariffId)) warnings.push(`La tarifa guardada ${tariffId} para ${componentId} ya no está disponible.`);
+  });
+  return {
+    materialTariffId: materialIds.has(requestedGeneral) ? requestedGeneral : "",
+    componentMaterialTariffIds: componentMaterialOverrides(components, scope.component_material_tariff_ids ?? {}, materials),
+    warnings,
+  };
+}
+
 export function buildTableCostScope(values = {}) {
   const optionalNumber = (value, label) => {
     if (value === "" || value == null) return null;

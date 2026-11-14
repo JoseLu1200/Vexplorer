@@ -13,7 +13,6 @@ from backend.app.main import create_app
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs
 import backend.app.agente.runner as runner_module
-import backend.app.servicios.repository as repository_module
 from backend.app.estimacion.table_costs import get_table_cost_catalog
 from backend.app.operacion.auth import hash_password
 
@@ -44,6 +43,14 @@ class _LegacyProvider:
                 arguments={"scenario_id": context["scenarios"][0]["id"]},
             ),),
         )
+
+
+class _FailsOnceProvider(_LegacyProvider):
+    def create_response(self, **kwargs):
+        if self.calls == 0:
+            self.calls += 1
+            raise RuntimeError("simulated_provider_failure")
+        return super().create_response(**kwargs)
 
 
 class _PartsProvider:
@@ -245,17 +252,71 @@ def test_table_vision_replay_rejects_changed_rendered_png_hash(tmp_path: Path, m
 def test_total_recording_count_quota_rolls_back_live_run_atomically(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_MODEL", "model-test")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setattr(repository_module, "MAX_STORED_RECORDINGS", 1)
-    client = TestClient(create_app(data_dir=tmp_path, agent_provider=_LegacyProvider()))
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_COUNT", "1")
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_BYTES", str(4 * 1024 * 1024))
+    provider = _LegacyProvider()
+    client = TestClient(create_app(data_dir=tmp_path, agent_provider=provider))
     document_id = _upload(client)
     request = {"document_id": document_id, "mode": "live"}
     assert client.post("/api/v1/runs", json=request).status_code == 201
+    calls_after_first = provider.calls
+    full_config = client.get("/api/v1/config").json()["data"]
+    assert full_config["live_available"] is False
+    assert full_config["unavailable_reason"] == "recording_storage_exhausted:maintenance_or_increase_quota_required"
+    assert full_config["recorded_replay_available"] is True
+    assert "recorded_replay" in full_config["modes"] and "live" not in full_config["modes"]
     rejected = client.post("/api/v1/runs", json=request)
-    assert rejected.status_code == 507
+    assert rejected.status_code == 429
     assert rejected.json()["error"]["code"] == "recording_storage_exhausted"
+    assert provider.calls == calls_after_first
     with sqlite3.connect(tmp_path / "vexplorer.sqlite3") as db:
         assert db.execute("SELECT COUNT(*) FROM agent_recordings").fetchone()[0] == 1
+        assert db.execute("SELECT COUNT(*) FROM agent_recording_reservations").fetchone()[0] == 0
         assert db.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 1
+
+
+def test_recording_policy_is_configurable_and_uses_historical_not_turn_limits(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_COUNT", "1000")
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_BYTES", str(256 * 1024 * 1024))
+    client = TestClient(create_app(data_dir=tmp_path))
+    policy = client.get("/api/v1/config").json()["data"]["recordings"]
+    assert policy == {
+        "max_count": 1000,
+        "max_bytes": 256 * 1024 * 1024,
+        "reservation_bytes": 4 * 1024 * 1024,
+        "capacity_available": True,
+        "unavailable_reason": None,
+    }
+
+
+def test_failed_provider_releases_reserved_recording_capacity(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_MODEL", "model-test")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_COUNT", "1")
+    monkeypatch.setenv("VEXPLORER_RECORDING_MAX_BYTES", str(4 * 1024 * 1024))
+    provider = _FailsOnceProvider()
+    client = TestClient(create_app(data_dir=tmp_path, agent_provider=provider))
+    document_id = _upload(client)
+    request = {"document_id": document_id, "mode": "live"}
+    assert client.post("/api/v1/runs", json=request).status_code == 502
+    assert client.app.state.repository.recording_storage_usage()["reservation_count"] == 0
+    assert client.post("/api/v1/runs", json=request).status_code == 201
+
+
+def test_persistence_failure_releases_reservation_without_hiding_server_error(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_MODEL", "model-test")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    app = create_app(data_dir=tmp_path, agent_provider=_LegacyProvider())
+    client = TestClient(app, raise_server_exceptions=False)
+    document_id = _upload(client)
+
+    def fail_persistence(*args, **kwargs):
+        raise sqlite3.OperationalError("simulated_disk_failure")
+
+    monkeypatch.setattr(app.state.repository, "create_run", fail_persistence)
+    response = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "live"})
+    assert response.status_code == 500
+    assert app.state.repository.recording_storage_usage()["reservation_count"] == 0
 
 
 def test_production_authenticated_jobs_record_and_replay_for_shared_team(tmp_path: Path, monkeypatch) -> None:

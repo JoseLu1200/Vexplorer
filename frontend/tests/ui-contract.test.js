@@ -57,6 +57,8 @@ test("technical workspace has dedicated parts, classification and scene premise 
 test("table cost scope is explicit and never hides a partial known subtotal as a total", () => {
   assert.match(html, /id="table-cost-scope"/);
   assert.match(html, /id="table-material-tariff"/);
+  assert.match(html, /id="table-component-material-tariffs"/);
+  assert.match(html, /id="table-material-scope-warning"[^>]*role="status"/);
   assert.match(html, /id="table-edge-scope"/);
   assert.match(html, /id="table-operation-tariffs"/);
   assert.match(html, /id="table-catalog-provenance"/);

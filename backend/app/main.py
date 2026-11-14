@@ -22,7 +22,14 @@ from starlette.concurrency import run_in_threadpool
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.prompts import SYSTEM_PROMPT, VISION_SYSTEM_PROMPT
-from backend.app.agente.replay import RecordingProvider, ReplayProvider, recording_fingerprint
+from backend.app.agente.replay import (
+    DEFAULT_RECORDING_MAX_BYTES,
+    DEFAULT_RECORDING_MAX_COUNT,
+    MAX_RECORDED_TRANSCRIPT_BYTES,
+    RecordingProvider,
+    ReplayProvider,
+    recording_fingerprint,
+)
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
@@ -125,15 +132,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     try:
         job_max_pending = int(os.getenv("VEXPLORER_JOB_MAX_PENDING", "8"))
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
+        recording_max_count = int(os.getenv("VEXPLORER_RECORDING_MAX_COUNT", str(DEFAULT_RECORDING_MAX_COUNT)))
+        recording_max_bytes = int(os.getenv("VEXPLORER_RECORDING_MAX_BYTES", str(DEFAULT_RECORDING_MAX_BYTES)))
     except ValueError as exc:
         raise ValueError("invalid_numeric_production_limit") from exc
     if max_storage_bytes < MAX_UPLOAD_BYTES:
         raise ValueError("max_storage_below_upload_limit")
+    if recording_max_count <= 0 or recording_max_bytes < MAX_RECORDED_TRANSCRIPT_BYTES:
+        raise ValueError("invalid_recording_storage_policy")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
     upload_lock = Lock()
     repository = DemoRepository(root / "vexplorer.sqlite3")
     repository.interrupt_unfinished_jobs()
+    repository.release_stale_agent_recording_reservations()
     job_executor = BoundedJobExecutor(job_max_pending)
     if environment == "production" and not os.getenv("VEXPLORER_COST_CATALOG"):
         raise ValueError("production_cost_catalog_required")
@@ -198,7 +210,18 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def config():
         all_tools = tool_schemas() + parts_tool_schemas() + table_tool_schemas(include_vision=settings.vision_enabled)
         replay_available = repository.has_agent_recordings()
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "modes": ["geometry_only"] + (["live"] if live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        recording_capacity = repository.agent_recording_capacity_available(
+            max_count=recording_max_count,
+            max_bytes=recording_max_bytes,
+            reserved_bytes=MAX_RECORDED_TRANSCRIPT_BYTES,
+        )
+        effective_live_available = live_available and recording_capacity
+        unavailable_reason = (
+            None if effective_live_available
+            else settings.unavailable_reason if not live_available
+            else "recording_storage_exhausted:maintenance_or_increase_quota_required"
+        )
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -360,9 +383,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         agent_selected_table_program_id = None
         recording_draft = None
         source_recording = None
+        recording_reservation_id = None
         if request.mode in {"live", "recorded_replay"}:
             try:
                 if request.mode == "live":
+                    recording_reservation_id = f"recording-reservation-{uuid4().hex}"
+                    repository.reserve_agent_recording(
+                        recording_reservation_id,
+                        fingerprint=fingerprint,
+                        actor=actor or "local-demo",
+                        max_count=recording_max_count,
+                        max_bytes=recording_max_bytes,
+                        reserved_bytes=MAX_RECORDED_TRANSCRIPT_BYTES,
+                    )
                     recording_model = settings.model or f"injected:{type(agent_provider).__name__}"
                     provider = RecordingProvider(
                         agent_provider or OpenAIResponsesProvider(settings),
@@ -402,6 +435,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 else:
                     provider.assert_complete(outcome)
             except Exception as exc:
+                if recording_reservation_id is not None:
+                    repository.release_agent_recording_reservation(recording_reservation_id)
+                if str(exc) == "recording_storage_exhausted":
+                    return _error(429, "recording_storage_exhausted", "No hay capacidad reservable para otra grabación live.", True)
                 if request.mode == "recorded_replay":
                     return _error(409, "recorded_replay_stale", f"La grabación no coincide con el estado actual: {type(exc).__name__}.")
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
@@ -447,11 +484,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 recording_draft=recording_draft,
                 recording_fingerprint=fingerprint if recording_draft is not None else None,
                 recording_actor=actor or "local-demo",
+                recording_reservation_id=recording_reservation_id,
                 replay_source_recording_id=source_recording.recording_id if source_recording else None,
             )
-        except ValueError as exc:
-            if str(exc) == "recording_storage_exhausted":
-                return _error(507, "recording_storage_exhausted", "El almacenamiento acotado de grabaciones está completo.")
+        except Exception:
+            if recording_reservation_id is not None:
+                repository.release_agent_recording_reservation(recording_reservation_id)
             raise
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
