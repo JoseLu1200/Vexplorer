@@ -1,5 +1,11 @@
 # Equipo de agentes de Vexplorer
 
+## Prioridad vigente: completar planos CAD 2D
+
+El usuario corrigió el alcance el 2026-11-14: interpretar vistas de un mueble completo con cotas escasas, deducir o estimar medidas y detalles, proponer piezas necesarias y entregar sus planos acotados con explicaciones útiles. El [diseño vigente](../docs/superpowers/specs/2026-11-14-cad-completion.md) y su [plan](../docs/superpowers/plans/2026-11-14-cad-completion.md) se implementan en `.worktrees/cad-completion`, rama `feat/cad-completion`, base `0e65713`. Las estimaciones numéricas justificadas forman parte del resultado provisional principal y no sustituyen observaciones. No se requiere revisión humana.
+
+Se mantienen los registros personales del incremento integral. Mueble general escribe contratos, inferencia, harness y derivados; histórico real se reasigna al validador de coherencia constructiva; ingesta a planos 2D por pieza; integración a API y persistencia; interfaz al recorrido 2D; evaluación a tres controles propios; coordinación a integración, comprobación visual y commits. Astra revisa en lectura. Se aparcan las ampliaciones de histórico, PDF, 3D y despliegue. Los cambios de la otra sesión UX en el checkout raíz se conservan intactos.
+
 ## Ampliación de la transcripción — sesión actual
 
 El usuario renueva el swarm GPT-6.1 Sol con GPT-6 Astra como revisor. Base `4209510`, rama `feat/transcript-completion`. Los registros históricos siguientes conservan su contexto; para este incremento la propiedad activa pasa a los registros nuevos: [coordinación](agente_coordinacion_integral.md), [ingesta](agente_ingesta_general.md), [mueble general](agente_mueble_general.md), [histórico](agente_historico_real.md), [evaluación](agente_evaluacion_integral.md), [interfaz](agente_interfaz_integral.md), [integración](agente_integracion_integral.md) , [operación](agente_operacion_integral.md) , [fuentes públicas](agente_fuentes_datos.md) y [asociación de proyecciones](agente_proyecciones.md). Cada agente mantiene solo su registro. Los contratos tienen un único escritor, mueble general, tras acuerdo con ingesta y aviso a interfaz/integración. El [plan](../docs/superpowers/plans/2026-11-14-transcript-completion.md) documenta tareas y comprobaciones; su existencia no acredita su terminación.

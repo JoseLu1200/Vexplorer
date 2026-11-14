@@ -1022,7 +1022,7 @@ class HistoricalStore:
 
         def accepted_dimension(value) -> bool:
             return (
-                value.state == "hypothesis"
+                value.state in {"hypothesis", "derived", "observed"}
                 and value.review_status == "accepted"
                 and value.value_mm is not None
                 and bool(value.check_ids)

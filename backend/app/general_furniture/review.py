@@ -27,6 +27,7 @@ def apply_general_review(
         if previous_review is not None:
             raise ValueError("review_revision_conflict")
         base_components = draft.components
+        construction_source = draft
     else:
         if (
             previous_review is None
@@ -34,6 +35,7 @@ def apply_general_review(
         ):
             raise ValueError("review_revision_conflict")
         base_components = previous_review.components
+        construction_source = previous_review
     draft_by_id = {item.id: item for item in base_components}
     source_sequence = [
         item
@@ -74,9 +76,12 @@ def apply_general_review(
             raise ValueError("review_reference_outside_proposal")
         for name in ("length", "width", "thickness"):
             value = getattr(component, name)
+            originals = [getattr(item, name) for item in sources]
+            field_evidence = allowed_refs["evidence"] | {ref for original in originals for ref in original.evidence_ids}
+            field_dimensions = allowed_refs["dimension"] | {ref for original in originals for ref in original.dimension_ids}
             if (
-                not set(value.evidence_ids) <= allowed_refs["evidence"]
-                or not set(value.dimension_ids) <= allowed_refs["dimension"]
+                not set(value.evidence_ids) <= field_evidence
+                or not set(value.dimension_ids) <= field_dimensions
             ):
                 raise ValueError("review_field_reference_outside_proposal")
             if value.state == "confirmed":
@@ -96,7 +101,8 @@ def apply_general_review(
             "conflict",
         ) and component.quantity not in [item.quantity for item in sources]:
             raise ValueError("unconfirmed_quantity_must_match_proposal")
-        if not set(component.quantity.evidence_ids) <= allowed_refs["evidence"]:
+        quantity_evidence = allowed_refs["evidence"] | {ref for item in sources for ref in item.quantity.evidence_ids}
+        if not set(component.quantity.evidence_ids) <= quantity_evidence:
             raise ValueError("review_field_reference_outside_proposal")
         for name in ("material", "finish"):
             value = getattr(component, name)
@@ -156,5 +162,14 @@ def apply_general_review(
         currency=request.currency,
         required_cost_scope=request.required_cost_scope,
         required_hours_scope=request.required_hours_scope,
+        construction_scenario_id=construction_source.construction_scenario_id,
+        construction_parameters=construction_source.construction_parameters,
+        construction_constraints=construction_source.construction_constraints,
+        construction_details=construction_source.construction_details,
+        construction_decisions=construction_source.construction_decisions,
+        construction_validation=getattr(
+            construction_source, "construction_validation", None
+        ),
+        construction_placements=construction_source.construction_placements,
         status="reviewed_incomplete" if incomplete else "approved",
     )

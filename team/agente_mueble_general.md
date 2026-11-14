@@ -9,9 +9,9 @@
 
 ## Tarea de la sesión
 
-- Objetivo concreto: implementar un pipeline genérico y fundamentado en evidencia para proponer, revisar y derivar componentes de muebles de panel, más allá de mesa/estantería.
+- Objetivo concreto vigente: completar muebles desde vistas CAD 2D con cotas escasas mediante parámetros observados, deducidos y estimados, piezas necesarias, restricciones y planos 2D acotados.
 - Referencia del plan: brechas de T11–T13 y flujo operacional propuesta → revisión → BOM/planos/3D/base de coste.
-- Estado: fase autonoma multimodal y reparacion semantica implementadas; smoke live pareado e integracion final en curso.
+- Estado: contrato CAD-completion congelado y aprobado; implementación TDD en `.worktrees/cad-completion` iniciada desde `0e65713`.
 
 ## Alcance y reservas
 
@@ -32,7 +32,7 @@
 
 ## Siguiente bloque
 
-- Ejecutar smoke live publico 001/006 y suite compartida; atender hallazgos finales sin consultar referencias privadas.
+- Materializar modelos compactos (32 parámetros, 64 componentes, 128 restricciones/detalles, DAG profundidad 8), resolver bindings `parameter:`, integrar propuesta/crítica/derivados y entregar F01 ejecutable.
 
 ## Decisiones
 
@@ -43,6 +43,8 @@
 | 2026-11-14 | Asignar una medida observada a un campo de componente conserva estado hypothesis | La geometría no prueba semántica ni montaje | Hallazgo de smoke/revisión root |
 | 2026-11-14 | `auto_review_status` es metadato ortogonal, no un estado factual auto-confirmado | Evita que consumidores confundan proceso con verdad | Acuerdo root/Astra/A-B |
 | 2026-11-14 | Una reparacion semantica crea P2 inmutable y vuelve a criticarse | Reintentar JSON no corrige bindings, agrupacion o cantidad | Gate root/Astra |
+| 2026-11-14 | Un único escenario constructivo provisional alimenta BOM y planos; `estimated` aceptado conserva su número/rango | El usuario exige una propuesta útil, no una lista vacía de unknowns | Especificación CAD-completion y freeze root/A-B |
+| 2026-11-14 | Una deducción transitivamente dependiente de estimación sigue `estimated` | Cerrar una ecuación no eleva la autoridad de sus entradas | Freeze root/Astra |
 
 ## Dependencias / avisos
 
@@ -50,6 +52,7 @@
 - Afecta a: contratos Pydantic, futura API y UI de revisión.
 - Aviso realizado: arquitectura/API comunicada a root, integración, frontend, economía, evaluación y operación; shapes finales comunicados de nuevo tras CAS/envelopes.
 - Cambio de `contratos/`: acuerdo explícito A/B recibido de ingesta antes de escribir; frontend avisado antes del delta.
+- CAD-completion: root aprobó freeze; economy/ingestion aceptaron consumir contratos sin escribirlos; frontend, integration y evaluación recibieron shapes exactos. Propiedad propia: `modelos.py`, inferencia/materialización, live/autonomous, derivations y tests; no editar validation/planner/renderer/main/router/frontend/evaluation.
 
 ## Pruebas y revisión
 

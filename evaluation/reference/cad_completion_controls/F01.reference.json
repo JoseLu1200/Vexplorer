@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "case_id": "F01",
+  "reference_kind": "developer_functional_control",
+  "public_input_sha256": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8",
+  "acceptable_scenarios": [
+    {
+      "key": "four_supports_with_perimeter_aprons",
+      "necessary_piece_types": [
+        {
+          "role": "work_surface",
+          "quantity": 1,
+          "dimensions_mm": {
+            "length": {
+              "kind": "observed",
+              "exact": 1200.0
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 600.0
+            },
+            "thickness": {
+              "kind": "observed",
+              "exact": 30.0
+            }
+          }
+        },
+        {
+          "role": "vertical_support",
+          "quantity": 4,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 720.0,
+              "relation": "overall_height - surface_thickness"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 50.0,
+              "relation": "support footprint span"
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 50.0,
+              "relation": "support footprint span"
+            }
+          }
+        },
+        {
+          "role": "longitudinal_apron",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 980.0,
+              "relation": "overall_width - 2 * (edge_inset + support_width)"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 100.0,
+              "relation": "visible elevation span"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 18.0,
+              "maximum": 25.0,
+              "premise": "panel apron thickness is not visible in the source views"
+            }
+          }
+        },
+        {
+          "role": "transverse_apron",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 380.0,
+              "relation": "overall_depth - 2 * (edge_inset + support_width)"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 100.0,
+              "relation": "visible elevation span"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 18.0,
+              "maximum": 25.0,
+              "premise": "panel apron thickness is not visible in the source views"
+            }
+          }
+        }
+      ],
+      "closure_constraints": [
+        "vertical_support.length + work_surface.thickness = 750",
+        "longitudinal_apron.length + 2 * (60 + vertical_support.width) = 1200",
+        "transverse_apron.length + 2 * (60 + vertical_support.width) = 600",
+        "all four supports terminate at the underside of the work surface"
+      ],
+      "allowed_variation": "Any numeric apron thickness in the stated interval is acceptable when declared as an estimate with its premise; it is not source-confirmed."
+    }
+  ],
+  "utility_checks": {
+    "necessary_piece_types_complete": true,
+    "scenario_quantities_numeric": true,
+    "primary_piece_list_numeric": true,
+    "closure_constraints_satisfied": true,
+    "piece_drawings": {
+      "required_formats": [
+        "svg",
+        "dxf"
+      ],
+      "per_piece_type": true,
+      "numeric_dimensions_required": true
+    }
+  },
+  "epistemic_rules": {
+    "source_dimensions": "observed",
+    "geometry_fixed_offsets": "deduced",
+    "hidden_construction_values": "estimated_with_range_and_premise",
+    "scenario_occurrences": "hypothesis"
+  },
+  "limitations": [
+    "This authored fixture is a functional development control, not a blind benchmark.",
+    "It checks a coherent provisional construction scenario, not fabrication certification."
+  ]
+}

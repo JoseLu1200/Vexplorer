@@ -16,12 +16,19 @@
 - Solo lectura: backend, contratos, fixtures/referencias existentes y documentación compartida.
 - No se modificará `evaluation/reference/` ni se introducirá ninguna ruta privada en backend, proveedor, prompts, herramientas o índice histórico.
 - Los fixtures autocontenidos son validación de desarrollo, nunca benchmark independiente o ciego.
+- Delegación vigente de CAD completion: generar tres controles funcionales propios y separados (`F01`, `F02`, `F03`) con entrada pública DXF de mueble montado y pocas cotas, referencia constructiva privada por escenarios, evaluador de utilidad y pruebas disjuntas. F01 (mesa con faldón) se entrega primero para el harness real.
+- Propiedad exclusiva de este bloque: nuevo preparador bajo `tools/`, fixtures públicos/privados nuevos del control, evaluador de utilidad nuevo bajo `evaluation/` y sus pruebas nuevas. No se modifican inferencia, contratos, router ni renderer del producto.
 
 ## Estado
 
-- Módulo, CLI y documentación implementados por TDD; pendiente puntuar las seis salidas PlankAssembly que congelará el coordinador sin leer referencias privadas.
+- Controles CAD completion `F01`/`F02`/`F03`, referencias de utilidad separadas y evaluador offline implementados por TDD; F01 ya está habilitado para el harness temprano.
 
 ## Hecho
+
+- Generados tres controles funcionales propios con DXF ensamblado, tres vistas, solo cuatro cotas fuente e IDs opacos: F01 mesa con faldones, F02 cajonera y F03 estantería. Los ZIP públicos contienen únicamente `input.dxf` y `case.json`; el runner estricto valida los tres.
+- Las referencias separadas no reducen utilidad a tripletas: F01 acepta espesor de faldón estimado en rango; F02 conserva dos órdenes coherentes de cierre de carcasa y rangos ligados a herraje/cajón; F03 acepta trasera estructural estimada o solución abierta con premisa anti-racking explícita.
+- Añadido evaluador offline de utilidad por escenario completo, sin mezclar alternativas: piezas necesarias, cantidades provisionales, dimensiones numéricas, autoridad observada/deducida/estimada, rango+premisa de estimaciones, validación de cierres y SVG+DXF por tipo. No exige gate humano ni promueve ocurrencias hipotéticas a confirmadas.
+- Añadido CLI atómico `tools/evaluate_cad_completion.py`; consume outcome congelado y referencia por rutas separadas, y nunca entra al runtime/proveedor.
 
 - Implementado informe agregado determinista para BOM por tipo/cantidad, dimensiones, relevancia top-k, coste, horas y tiempos pareados.
 - Añadidas abstenciones de cantidad, coste, horas, retrieval y tiempos con denominadores/cobertura; el error relativo omite referencias cero.
@@ -49,6 +56,12 @@
 - El valor empresarial sigue bloqueado por planos, costes/horas, juicios de relevancia y sesiones cronometradas reales de técnicos.
 
 ## Verificación
+
+- TDD CAD completion: RED por módulos ausentes y controles F02/F03 no implementados; GREEN final `..\\..\\.venv\\Scripts\\python.exe -m pytest tests/test_prepare_cad_completion_controls.py tests/test_cad_completion_evaluation.py tests/test_run_general_benchmark.py -q` → `16 passed`.
+- Compilación focal: `python -m compileall -q evaluation/cad_completion.py tools/prepare_cad_completion_controls.py tools/evaluate_cad_completion.py` → sin salida.
+- `git diff --check` sobre los ocho archivos propios de código/prueba/registro → sin salida.
+- Hashes públicos deterministas: F01 ZIP `3d93a2f5...`, F02 ZIP `b769a1bd...`, F03 ZIP `2fd5fd0a...`; cada prueba valida regeneración byte a byte y compatibilidad con el loader estricto.
+- Combinada durante edición concurrente con contrato/validator: `28 passed, 2 failed`; ambos fallos son del módulo ajeno `construction_validation.py` en alias/binding observado y fueron comunicados por su suite, mientras el focal propio fresco permanece `16 passed`.
 
 - RED inicial: `python -m pytest tests/test_evaluation_metrics.py -q` falló en colección por ausencia de `evaluation.metrics`.
 - RED de alineación/abstención: 3 fallos esperados por claves privadas/locales distintas, shape de dataset y cantidad `null`.

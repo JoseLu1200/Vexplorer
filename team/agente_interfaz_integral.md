@@ -9,9 +9,9 @@
 
 ## Tarea de la sesión
 
-- Objetivo concreto: exponer flujos operativos de mueble general, revisión editable, BOM y exportaciones, carga PDF/DWG, histórico real y estimaciones de coste/horas, y superficie de evaluación si existe.
-- Referencia del plan: brechas T11–T13 de `initial-plan.md` y transcripción; integración coordinada con los agentes de backend general, economía, ingesta y evaluación.
-- Estado: implementado y verificado; pendiente solo del cierre coordinado del swarm.
+- Objetivo concreto: completar el recorrido 2D centrado en `Fuente → Construcción → Por pieza`, con BOM primaria que incluya cotas estimadas aceptadas como aproximadas, láminas acotadas seleccionables y decisiones de impacto comprensibles.
+- Referencia del plan: `docs/superpowers/specs/2026-11-14-cad-completion.md`, sobre el worktree aislado `.worktrees/cad-completion` desde `0e65713`.
+- Estado: implementación y QA visual HTTP F01/F02/F03 terminados; suite verde.
 
 ## Alcance y reservas
 
@@ -45,7 +45,17 @@
 
 ## Siguiente bloque
 
-- Retest final de navegador por el coordinador sobre el servidor compartido y cierre de la entrega integral.
+- Entregar al coordinador el reporte final y el único ajuste bloqueante de layout detectado por QA.
+
+## Hecho en CAD completion
+
+- Consumido el contrato Pydantic `package.construction` sin inferir nombres de archivo: summary, piezas, dimensiones/cantidades tipadas, decisiones, sheets y artefactos enlazados por `sheet_id`.
+- Convertida la navegación técnica en `Fuente → Construcción → Por pieza`, conservando el visor y diseño existentes.
+- La lista primaria muestra valores `estimated+accepted` como `≈`, con rango y estado; valores no aceptados permanecen desconocidos.
+- La cantidad estimada también conserva su carácter provisional (`≈ n uds.`), límites, método, explicación y referencias en el inspector.
+- Añadidos resumen constructivo y las tres decisiones de mayor impacto ordenadas por el backend.
+- Láminas de conjunto y por pieza seleccionables, con descargas SVG/DXF ligadas al snapshot exacto propuesta/revisión.
+- CSV local ampliado para conservar estado, rango, método y referencias de cada dimensión.
 
 ## Decisiones
 
@@ -53,12 +63,13 @@
 |---|---|---|---|
 | 2026-11-14 | Integración aditiva sobre el cuaderno técnico existente | Conservar accesibilidad, densidad y recorridos ya verificados sin rediseño innecesario | Delegación del coordinador |
 | 2026-11-14 | Datos ausentes, sintéticos o no verificados se muestran como tales | Evitar vender demostraciones como histórico real o completar medidas sin evidencia | Reglas del repositorio y solicitud actual |
+| 2026-11-14 | Una estimación aceptada forma parte de la propuesta constructiva primaria y se muestra como `≈`, con rango y fundamento | Dar una salida útil sin promover la estimación a observación ni dejar la BOM vacía | Especificación CAD completion y corrección explícita del coordinador |
 
 ## Dependencias / avisos
 
-- Necesito de: contratos finales de mueble general, economía, ingesta PDF/DWG y evaluación.
-- Afecta a: visibilidad y operación de esos endpoints desde la interfaz.
-- Aviso realizado: coordinación iniciada el 2026-11-14 antes de cambios de producto.
+- Necesito de: contrato final de snapshot constructivo, cotas tipadas, decisiones priorizadas y artefactos SVG/DXF por pieza.
+- Afecta a: `frontend/core/general.js`, `frontend/app.js`, `frontend/index.html`, estilos mínimos y pruebas frontend.
+- Aviso realizado: coordinación CAD completion iniciada el 2026-11-14 con backend general, ingesta e integración antes de cambios de producto.
 - Cambio de `contratos/`: no aplica; este agente solo consume contratos acordados.
 
 ## Pruebas y revisión
@@ -73,13 +84,20 @@
 | Contratos autónomos finales | `python -m pytest backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_router.py backend/tests/test_real_history.py -q` | 35 passed, 0 failed | Cruce Pydantic/rutas tras incorporar verificación machine e incertidumbre por métrica |
 | Integración HTTP multiformato final | `python -m pytest backend/tests/test_integral_api_integration.py -q` | 11 passed, 0 failed | Incluye PDF raster seleccionado → job visual general → revisión automática |
 | Integración HTTP + escenarios económicos | `python -m pytest backend/tests/test_integral_api_integration.py backend/tests/test_real_history.py -q` | 54 passed, 0 failed | Incluye ruta `/history/scenarios`, snapshot exacto y exclusión de sintéticos |
+| Frontend CAD completion focal | `node --test tests/general.test.js tests/ui-contract.test.js` | 37 passed, 0 failed | Presenter, estimaciones, cantidad, plan y contrato estático de navegación |
+| Suite frontend CAD completion | `npm test` | 159 passed, 0 failed | Pendiente recorrido visual real con F01 |
+| Sintaxis CAD completion | `node --check app.js` | exit 0 | No sustituye QA visual |
+| Suite frontend final tras QA | `npm test` | 163 passed, 0 failed | Incluye reserva de altura visible para la BOM primaria |
+| QA navegador F01/F02/F03 | Playwright headless contra `127.0.0.1:8773` | 4/8/3 filas; 3/2/3 decisiones; Fuente, Construcción y Por pieza disponibles; SVG/DXF seleccionados devuelven 200; cero errores de consola/página/red | Construcción usa esquema general cuando no hay placements de conjunto |
 
 ## Bloqueos y cierre
 
-- Bloqueos: ninguno conocido.
-- Pendientes: último recorrido de navegador compartido y verificación global a cargo del coordinador.
-- Reservas liberadas: `frontend/` al coordinador tras esta entrega.
-- Entrega a otra persona: `/root`, con contratos y comandos de verificación comunicados.
+- Bloqueos: ninguno.
+- Hallazgo corregido: el bloque de decisiones podía colapsar la tabla hasta ocultar todas las filas; ahora la BOM reserva 105 px mínimos y las decisiones tienen scroll limitado a 110 px.
+- Evidencia visual: `.runtime/qa-f01/source.png`, `general.png` y `components-fixed.png`.
+- Pendientes: integración explícita del coordinador; este agente no crea commit.
+- Reserva activa: solo `frontend/`, pruebas frontend y este registro en `.worktrees/cad-completion`; no se tocará el checkout raíz ni el checkpoint 3D `803faae`.
+- Entrega a otra persona: `/root`, sin commit propio, mediante diff explícito del worktree compartido.
 
 ## QA visual del commit 208c5d6
 

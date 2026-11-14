@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.0",
+  "case_id": "F02",
+  "reference_kind": "developer_functional_control",
+  "public_input_sha256": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5",
+  "acceptable_scenarios": [
+    {
+      "key": "horizontal_panels_between_sides",
+      "necessary_piece_types": [
+        {
+          "role": "side_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 800.0,
+              "relation": "selected carcass joint scenario"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 450.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "top_bottom_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 864.0,
+              "relation": "selected carcass joint scenario"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 450.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "back_panel",
+          "quantity": 1,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 760.0,
+              "maximum": 800.0,
+              "premise": "overlay or inset back is not resolved"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 860.0,
+              "maximum": 900.0,
+              "premise": "overlay or inset back is not resolved"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 3.0,
+              "maximum": 6.0,
+              "premise": "back thickness is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_front",
+          "quantity": 3,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 858.0,
+              "relation": "front elevation span"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 250.0,
+              "relation": "front elevation span"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 16.0,
+              "maximum": 19.0,
+              "premise": "front thickness is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_box_side",
+          "quantity": 6,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 380.0,
+              "maximum": 420.0,
+              "premise": "runner setback and clearance are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 160.0,
+              "maximum": 210.0,
+              "premise": "box height is hidden behind the front"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 12.0,
+              "maximum": 16.0,
+              "premise": "drawer material is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_box_front_back",
+          "quantity": 6,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 820.0,
+              "maximum": 838.0,
+              "premise": "slide and joinery clearance are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 160.0,
+              "maximum": 210.0,
+              "premise": "box height is hidden behind the front"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 12.0,
+              "maximum": 16.0,
+              "premise": "drawer material is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_bottom",
+          "quantity": 3,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 820.0,
+              "maximum": 850.0,
+              "premise": "groove and box joint details are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 380.0,
+              "maximum": 420.0,
+              "premise": "runner setback and clearance are hidden"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 3.0,
+              "maximum": 8.0,
+              "premise": "bottom construction is hidden"
+            }
+          }
+        }
+      ],
+      "closure_constraints": [
+        "carcass outside width = 900",
+        "carcass outside height = 800",
+        "clear opening width = 900 - 2 * 18",
+        "three drawer fronts preserve the visible gaps",
+        "drawer box width includes an explicit selected slide clearance",
+        "back placement is stated as overlay or inset and closes its chosen envelope"
+      ],
+      "allowed_variation": "Drawer-box values inside the stated intervals are acceptable only with a named slide-clearance and joinery premise."
+    },
+    {
+      "key": "horizontal_panels_cap_sides",
+      "necessary_piece_types": [
+        {
+          "role": "side_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 764.0,
+              "relation": "selected carcass joint scenario"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 450.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "top_bottom_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 900.0,
+              "relation": "selected carcass joint scenario"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 450.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "back_panel",
+          "quantity": 1,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 760.0,
+              "maximum": 800.0,
+              "premise": "overlay or inset back is not resolved"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 860.0,
+              "maximum": 900.0,
+              "premise": "overlay or inset back is not resolved"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 3.0,
+              "maximum": 6.0,
+              "premise": "back thickness is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_front",
+          "quantity": 3,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 858.0,
+              "relation": "front elevation span"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 250.0,
+              "relation": "front elevation span"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 16.0,
+              "maximum": 19.0,
+              "premise": "front thickness is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_box_side",
+          "quantity": 6,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 380.0,
+              "maximum": 420.0,
+              "premise": "runner setback and clearance are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 160.0,
+              "maximum": 210.0,
+              "premise": "box height is hidden behind the front"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 12.0,
+              "maximum": 16.0,
+              "premise": "drawer material is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_box_front_back",
+          "quantity": 6,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 820.0,
+              "maximum": 838.0,
+              "premise": "slide and joinery clearance are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 160.0,
+              "maximum": 210.0,
+              "premise": "box height is hidden behind the front"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 12.0,
+              "maximum": 16.0,
+              "premise": "drawer material is hidden"
+            }
+          }
+        },
+        {
+          "role": "drawer_bottom",
+          "quantity": 3,
+          "dimensions_mm": {
+            "length": {
+              "kind": "estimated",
+              "minimum": 820.0,
+              "maximum": 850.0,
+              "premise": "groove and box joint details are hidden"
+            },
+            "width": {
+              "kind": "estimated",
+              "minimum": 380.0,
+              "maximum": 420.0,
+              "premise": "runner setback and clearance are hidden"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 3.0,
+              "maximum": 8.0,
+              "premise": "bottom construction is hidden"
+            }
+          }
+        }
+      ],
+      "closure_constraints": [
+        "carcass outside width = 900",
+        "carcass outside height = 800",
+        "clear opening width = 900 - 2 * 18",
+        "three drawer fronts preserve the visible gaps",
+        "drawer box width includes an explicit selected slide clearance",
+        "back placement is stated as overlay or inset and closes its chosen envelope"
+      ],
+      "allowed_variation": "Drawer-box values inside the stated intervals are acceptable only with a named slide-clearance and joinery premise."
+    }
+  ],
+  "utility_checks": {
+    "necessary_piece_types_complete": true,
+    "scenario_quantities_numeric": true,
+    "primary_piece_list_numeric": true,
+    "closure_constraints_satisfied": true,
+    "piece_drawings": {
+      "required_formats": [
+        "svg",
+        "dxf"
+      ],
+      "per_piece_type": true,
+      "numeric_dimensions_required": true
+    }
+  },
+  "epistemic_rules": {
+    "source_dimensions": "observed",
+    "geometry_fixed_offsets": "deduced",
+    "hidden_construction_values": "estimated_with_range_and_premise",
+    "scenario_occurrences": "hypothesis"
+  },
+  "limitations": [
+    "This authored fixture is a functional development control, not a blind benchmark.",
+    "Alternative scenarios are accepted only when their own closure constraints hold."
+  ]
+}

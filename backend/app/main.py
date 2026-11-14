@@ -396,12 +396,14 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return run_general_furniture_agent(
             context.extraction, ledger_revision=context.ledger_revision,
             provider=general_agent_provider, visual_pages=context.visual_pages,
+            limits=AgentLimits(timeout_s=min(300.0, general_job_timeout_s * 0.6)),
         )
 
     def execute_general_autonomous(
         context: GeneralFurnitureContext, proposal_outcome, *, timeout_s: float,
         proposal_revision: int = 1, previous_review=None, checkpoint_sink=None,
     ):
+        timeout_s = min(timeout_s, 300.0)
         if general_review_provider is None:
             raise RuntimeError("general_auto_review_unavailable")
         proposer_model = next(
@@ -445,6 +447,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     def record_general_auto_review_events(run_id: str, outcome) -> None:
         provenance = outcome.review.machine_provenance
+        construction = getattr(outcome.derived, "construction", None)
+        construction_validation = outcome.review.construction_validation
         for item in outcome.trace:
             event_payload = {
                 "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
@@ -470,6 +474,16 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "model_calls": outcome.model_calls, "tool_calls": outcome.tool_calls,
             "semantic_repairs": outcome.semantic_repairs,
             "cost_tracking": "token_usage_only",
+            "construction_scenario_id": outcome.review.construction_scenario_id,
+            "construction_validation_status": (
+                construction_validation.status if construction_validation else None
+            ),
+            "construction_basis_revision": (
+                construction.basis_revision if construction else None
+            ),
+            "construction_piece_count": (
+                len(construction.pieces) if construction else 0
+            ),
         })
 
     def record_general_auto_review_failure(run_id: str, exc: GeneralAutonomousError) -> None:
@@ -477,6 +491,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             repository.append_event(run_id, "general_auto_review_tool_completed", {
                 "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
                 "summary": item.get("summary"), "phase": item.get("phase"),
+                "details": item.get("details", []),
                 "provider_response_id": item.get("provider_response_id"),
                 "provider_model": item.get("provider_model"),
                 "provider_call_id": item.get("provider_call_id"),
@@ -558,7 +573,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             def dimension(name: str) -> ProvisionalDimension:
                 value = getattr(component, name)
                 status, check_ids = metadata(component.id, name)
-                return ProvisionalDimension(value_mm=value.value_mm, state=value.state, review_status=status, check_ids=check_ids, dependency_refs=value.dependency_refs, evidence_ids=value.evidence_ids)
+                provisional_state = {"deduced": "derived", "estimated": "hypothesis"}.get(value.state, value.state)
+                return ProvisionalDimension(value_mm=value.value_mm, state=provisional_state, review_status=status, check_ids=check_ids, dependency_refs=value.dependency_refs, evidence_ids=value.evidence_ids)
 
             def text_value(name: str) -> ProvisionalText:
                 value = getattr(component, name)
@@ -662,6 +678,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         "max_validation_repairs": general_review_max_repairs,
                         "job_timeout_s": general_job_timeout_s,
                     },
+                },
+                "construction_completion": {
+                    "available": True,
+                    "dimension_states": [
+                        "observed", "deduced", "estimated", "unknown", "conflict",
+                    ],
+                    "max_parameters": 32,
+                    "max_components": 64,
+                    "max_constraints": 128,
+                    "max_details": 128,
+                    "max_expression_depth": 8,
+                    "piece_drawing_formats": ["svg", "dxf"],
+                    "exact_snapshot_queries": True,
                 },
             },
             "history": {"available": _module_available("backend.app.api.history")},

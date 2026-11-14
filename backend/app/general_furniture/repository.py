@@ -73,6 +73,28 @@ class GeneralFurnitureRepository:
         review: GeneralFurnitureReview,
         derived: GeneralDerivedPackage,
     ) -> None:
+        if (
+            review.run_id != run_id
+            or derived.run_id != run_id
+            or derived.proposal_revision != review.proposal_revision
+            or derived.review_revision != review.review_revision
+        ):
+            raise ValueError("general_derived_revision_mismatch")
+        if derived.construction is not None:
+            expected_basis = (
+                f"run:{run_id}:proposal:{review.proposal_revision}:"
+                f"review:{review.review_revision}:scenario:"
+                f"{review.construction_scenario_id}"
+            )
+            construction = derived.construction
+            if (
+                construction.run_id != run_id
+                or construction.proposal_revision != review.proposal_revision
+                or construction.review_revision != review.review_revision
+                or construction.scenario_id != review.construction_scenario_id
+                or construction.basis_revision != expected_basis
+            ):
+                raise ValueError("general_construction_snapshot_revision_mismatch")
         self._check_size_quota()
         with closing(self._connect()) as connection, connection:
             connection.execute("BEGIN IMMEDIATE")

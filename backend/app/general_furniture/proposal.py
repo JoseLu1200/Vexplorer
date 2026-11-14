@@ -8,6 +8,7 @@ from backend.app.contratos.modelos import (
     GeneralValue,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.inference import resolve_construction_graph
 
 
 def _unknown() -> GeneralValue:
@@ -31,6 +32,48 @@ def materialize_general_proposal(
     }
     dimensions = {item.id: item for item in extraction.dimensions}
     measures = {item.id: item for item in derive_geometry_measurements(extraction)}
+    internal_ref_prefixes = (
+        "parameter:", "binding:", "premise:", "component:",
+        "constraint:", "detail:", "decision:",
+    )
+
+    def external_ref_is_allowed(reference: str) -> bool:
+        if reference.startswith(internal_ref_prefixes):
+            return True
+        kind, separator, ref_id = reference.partition(":")
+        if not separator:
+            return False
+        allowed_by_kind = {
+            "dimension": ledger["dimension"],
+            "measurement": set(measures),
+            "view": ledger["view"],
+            "observation": ledger["observation"],
+            "contour": ledger["contour"],
+            "evidence": ledger["evidence"],
+        }
+        if kind in allowed_by_kind:
+            return ref_id in allowed_by_kind[kind]
+        if kind in {"document", "visual"}:
+            return reference in allowed_document_refs or ref_id in allowed_document_refs
+        return False
+
+    nested_source_refs = [
+        *(reference for item in proposal.construction_parameters for reference in item.source_refs),
+        *(reference for item in proposal.components for reference in item.geometry.basis_refs),
+        *(reference for item in proposal.components for reference in item.quantity_basis_refs),
+        *(reference for item in proposal.construction_constraints for reference in item.source_refs),
+        *(reference for item in proposal.construction_details for reference in item.source_refs),
+        *(
+            reference
+            for item in proposal.construction_details
+            if item.geometry is not None
+            for reference in item.geometry.dimension_refs
+        ),
+        *(reference for item in proposal.construction_decisions for reference in item.basis_refs),
+        *(reference for item in proposal.construction_placements for reference in item.source_refs),
+    ]
+    if any(not external_ref_is_allowed(reference) for reference in nested_source_refs):
+        raise ValueError("construction_reference_outside_authority")
     for component in proposal.components:
         checks = (
             (component.source_view_ids, ledger["view"]),
@@ -53,8 +96,32 @@ def materialize_general_proposal(
         ):
             raise ValueError("native_component_requires_ledger_reference")
 
-    resolved: dict[str, GeneralValue] = {}
+    source_values: dict[str, GeneralValue] = {}
+    for source in dimensions.values():
+        source_values[f"dimension:{source.id}"] = GeneralValue(
+            value_mm=source.value_mm,
+            state="observed" if source.value_mm is not None else "unknown",
+            evidence_ids=source.evidence_ids if source.value_mm is not None else (),
+            dimension_ids=(source.id,) if source.value_mm is not None else (),
+            method="observed_copy" if source.value_mm is not None else None,
+        )
+    for source in measures.values():
+        source_values[f"measurement:{source.id}"] = GeneralValue(
+            value_mm=source.value_mm,
+            state="observed" if source.value_mm is not None else "unknown",
+            dependency_refs=(f"measurement:{source.id}",) if source.value_mm is not None else (),
+            method="observed_copy" if source.value_mm is not None else None,
+        )
+    if proposal.construction_parameters:
+        resolved, resolved_parameters = resolve_construction_graph(
+            proposal.bindings, proposal.construction_parameters, source_values
+        )
+    else:
+        resolved = {}
+        resolved_parameters = ()
     for binding in proposal.bindings:
+        if binding.id in resolved:
+            continue
         operands: list[GeneralValue] = []
         for ref in binding.operand_refs:
             kind, separator, ref_id = ref.partition(":")
@@ -107,6 +174,10 @@ def materialize_general_proposal(
             value = sum(values)
             state = "derived"
             dependencies = binding.operand_refs
+        elif binding.operation == "scale_rational":
+            value = values[0] * binding.rational_numerator / binding.rational_denominator
+            state = "derived"
+            dependencies = binding.operand_refs
         else:
             value = values[0] - sum(values[1:])
             state = "derived"
@@ -140,6 +211,28 @@ def materialize_general_proposal(
         value = resolved[binding_id]
         if value.value_mm is None:
             return value
+        if value.state in {"derived", "deduced", "estimated"}:
+            return GeneralValue(
+                value_mm=value.value_mm,
+                range_mm=value.range_mm,
+                state="deduced" if value.state == "derived" else value.state,
+                dependency_refs=(f"binding:{binding_id}",),
+                evidence_ids=value.evidence_ids,
+                dimension_ids=value.dimension_ids,
+                method=value.method,
+                formula=value.formula,
+                assumption_refs=value.assumption_refs,
+            )
+        if value.state == "observed":
+            return GeneralValue(
+                value_mm=value.value_mm,
+                state="deduced",
+                dependency_refs=(f"binding:{binding_id}",),
+                evidence_ids=value.evidence_ids,
+                dimension_ids=value.dimension_ids,
+                method="observed_copy",
+                formula=f"copy(binding:{binding_id})",
+            )
         return GeneralValue(
             value_mm=value.value_mm,
             state="hypothesis",
@@ -171,9 +264,21 @@ def materialize_general_proposal(
                 source_document_refs=item.source_document_refs,
                 assumptions=item.assumptions,
                 unknown_fields=item.unknown_fields,
+                scenario_id=item.scenario_id,
+                necessity=item.necessity,
+                geometry=item.geometry,
+                construction_parameter_ids=item.construction_parameter_ids,
+                detail_ids=item.detail_ids,
+                quantity_basis_refs=item.quantity_basis_refs,
             )
             for item in proposal.components
         ),
         premises=proposal.premises,
         assumptions=proposal.assumptions,
+        construction_scenario_id=proposal.construction_scenario_id,
+        construction_parameters=resolved_parameters,
+        construction_constraints=proposal.construction_constraints,
+        construction_details=proposal.construction_details,
+        construction_decisions=proposal.construction_decisions,
+        construction_placements=proposal.construction_placements,
     )

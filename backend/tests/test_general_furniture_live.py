@@ -257,8 +257,10 @@ def test_cad_tool_description_is_unchanged_when_raster_mode_is_disabled() -> Non
     assert default_tools == explicit_cad_tools
     proposal_schema = next(item for item in default_tools if item["name"] == "proponer_mueble_general")
     assert proposal_schema["description"].startswith(
-        "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings"
+        "Propone un escenario constructivo provisional completo usando IDs del ledger"
     )
+    assert "nominal_mm+rango+source_refs+premisas" in proposal_schema["description"]
+    assert "decision.target_refs usa siempre namespace" in proposal_schema["description"]
 
 
 def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -> None:

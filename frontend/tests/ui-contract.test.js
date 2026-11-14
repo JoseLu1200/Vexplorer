@@ -39,6 +39,22 @@ test("technical viewer exposes source and derived drawing tabs without replacing
   assert.match(app, /event\.target\.closest\("button,a,select,input"\)/);
 });
 
+test("general furniture exposes the construction-first 2D flow", () => {
+  assert.match(html, /data-artifact-view="source"[^>]*>Fuente</);
+  assert.match(html, /data-artifact-view="general"[^>]*>Construcción</);
+  assert.match(html, /data-artifact-view="components"[^>]*>Por pieza</);
+  assert.match(html, /id="general-construction-summary"/);
+  assert.match(html, /id="general-impact-decisions"/);
+  assert.match(html, /Observada/);
+  assert.match(html, /Deducida/);
+  assert.match(html, /≈ Estimada/);
+  assert.match(app, /construction_overview_svg/);
+  assert.match(app, /piece_sheet_svg/);
+  assert.match(app, /sheetId/);
+  assert.match(css, /\.parts-dock \.table-wrap\{[^}]*min-height:105px;[^}]*flex:1 1 auto/);
+  assert.match(css, /\.impact-decisions\{[^}]*max-height:110px;[^}]*overflow:auto/);
+});
+
 test("responsive header never hides the active execution mode", () => {
   assert.doesNotMatch(css, /\.session-meta span:not\(:last-child\)\{display:none\}/);
   assert.match(css, /#run-mode-label\{display:inline-flex/);

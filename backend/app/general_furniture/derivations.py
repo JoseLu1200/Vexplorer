@@ -15,6 +15,7 @@ from backend.app.contratos.modelos import (
     GeneralDerivedArtifact,
     GeneralDerivedPackage,
     GeneralFurnitureReview,
+    GeneralPieceGeometry,
     GeneralQuantity,
     GeneralScene,
     GeneralSceneItem,
@@ -24,6 +25,8 @@ from backend.app.contratos.modelos import (
 from backend.app.general_furniture.drawing_renderer import (
     render_general_component_drawings,
 )
+from backend.app.general_furniture.construction_planner import plan_general_construction
+from backend.app.general_furniture.construction_drawings import render_construction_artifacts
 
 
 def _csv_safe(value: str) -> str:
@@ -44,8 +47,17 @@ def _bom_csv(rows: tuple[GeneralBomRow, ...]) -> bytes:
             "physical_occurrence_ids",
             "scenario_occurrence_ids",
             "length_mm",
+            "length_state",
+            "length_range_min_mm",
+            "length_range_max_mm",
             "width_mm",
+            "width_state",
+            "width_range_min_mm",
+            "width_range_max_mm",
             "thickness_mm",
+            "thickness_state",
+            "thickness_range_min_mm",
+            "thickness_range_max_mm",
             "material",
             "finish",
             "length_review_status",
@@ -71,8 +83,17 @@ def _bom_csv(rows: tuple[GeneralBomRow, ...]) -> bytes:
                 "|".join(row.occurrence_ids),
                 "|".join(row.scenario_occurrence_ids),
                 row.length.value_mm or "",
+                row.length.state,
+                row.length.range_mm.min_mm if row.length.range_mm else "",
+                row.length.range_mm.max_mm if row.length.range_mm else "",
                 row.width.value_mm or "",
+                row.width.state,
+                row.width.range_mm.min_mm if row.width.range_mm else "",
+                row.width.range_mm.max_mm if row.width.range_mm else "",
                 row.thickness.value_mm or "",
+                row.thickness.state,
+                row.thickness.range_mm.min_mm if row.thickness.range_mm else "",
+                row.thickness.range_mm.max_mm if row.thickness.range_mm else "",
                 _csv_safe(row.material.value or ""),
                 _csv_safe(row.finish.value or ""),
                 review_statuses.get("length", ""),
@@ -170,6 +191,37 @@ def _machine_projected_fields(review: GeneralFurnitureReview, component):
         )
     decisions = {item.target_ref: item for item in review.machine_field_reviews}
     checks = {item.id: item for item in review.machine_checks}
+    rejected_targets = {
+        item.target_ref
+        for item in review.machine_field_reviews
+        if item.status in {"rejected", "conflict"}
+    }
+    parameter_by_binding = {
+        f"binding:{item.binding_id}": f"parameter:{item.id}"
+        for item in review.construction_parameters
+        if item.binding_id is not None
+    }
+
+    def has_rejected_dependency(field: str, raw_value) -> bool:
+        if f"component:{component.id}.existence" in rejected_targets:
+            return True
+        if field in {"length", "width", "thickness"} and f"component:{component.id}.geometry" in rejected_targets:
+            return True
+        pending = list(getattr(raw_value, "dependency_refs", ()))
+        seen = set()
+        parameters = {f"parameter:{item.id}": item for item in review.construction_parameters}
+        while pending:
+            reference = pending.pop()
+            reference = parameter_by_binding.get(reference, reference)
+            if reference in seen:
+                continue
+            seen.add(reference)
+            if reference in rejected_targets:
+                return True
+            parameter = parameters.get(reference)
+            if parameter is not None:
+                pending.extend(parameter.dependency_refs)
+        return False
     projected = {}
     metadata = []
     for field in _MACHINE_FIELDS:
@@ -178,6 +230,17 @@ def _machine_projected_fields(review: GeneralFurnitureReview, component):
         status = decision.status if decision is not None else "unreviewed"
         check_ids = decision.check_ids if decision is not None else ()
         selected_checks = tuple(checks[item] for item in check_ids if item in checks)
+        raw_value = getattr(component, field)
+        if status == "accepted" and has_rejected_dependency(field, raw_value):
+            status = "conflict"
+        if field == "quantity" and status == "accepted" and raw_value.value is not None:
+            scenario_indices = {
+                item.occurrence_index
+                for item in review.scenario_occurrences
+                if item.component_id == component.id
+            }
+            if not component.quantity.state in {"observed", "derived", "confirmed"} and scenario_indices != set(range(1, raw_value.value + 1)):
+                status = "unreviewed"
         metadata.append(
             GeneralDerivedFieldReview(
                 field=field,
@@ -194,9 +257,81 @@ def _machine_projected_fields(review: GeneralFurnitureReview, component):
                 ),
             )
         )
-        raw_value = getattr(component, field)
         projected[field] = raw_value if status == "accepted" else _masked_unknown(raw_value)
     return projected, tuple(metadata)
+
+
+def _construction_projected_review(
+    review: GeneralFurnitureReview, rows: tuple[GeneralBomRow, ...]
+) -> GeneralFurnitureReview:
+    """Apply the same closed machine projection before planning any geometry."""
+    if review.reviewer_kind != "machine":
+        return review
+    rejected = {
+        item.target_ref
+        for item in review.machine_field_reviews
+        if item.status in {"rejected", "conflict"}
+    }
+    rows_by_id = {row.component_id: row for row in rows}
+    components = []
+    retained_ids = set()
+    for component in review.components:
+        if f"component:{component.id}.existence" in rejected:
+            continue
+        row = rows_by_id[component.id]
+        geometry = component.geometry
+        if f"component:{component.id}.geometry" in rejected:
+            geometry = GeneralPieceGeometry(
+                shape_kind="unknown",
+                source_contour_ids=component.geometry.source_contour_ids,
+                basis_refs=component.geometry.basis_refs,
+                rationale="Geometry rejected by the machine review.",
+            )
+        components.append(component.model_copy(update={
+            "length": row.length,
+            "width": row.width,
+            "thickness": row.thickness,
+            "quantity": row.quantity,
+            "material": row.material,
+            "finish": row.finish,
+            "geometry": geometry,
+        }))
+        retained_ids.add(component.id)
+    return review.model_copy(update={
+        "components": tuple(components),
+        "construction_parameters": tuple(
+            parameter
+            for parameter in review.construction_parameters
+            if f"parameter:{parameter.id}" not in rejected
+        ),
+        "scenario_occurrences": tuple(
+            occurrence
+            for occurrence in review.scenario_occurrences
+            if occurrence.component_id in retained_ids
+            and rows_by_id[occurrence.component_id].quantity.value is not None
+        ),
+        "construction_details": tuple(
+            detail
+            for detail in review.construction_details
+            if f"detail:{detail.id}" not in rejected
+            and set(detail.component_ids) <= retained_ids
+            and not set(detail.parameter_refs) & rejected
+            and not (
+                detail.geometry is not None
+                and set(detail.geometry.dimension_refs) & rejected
+            )
+        ),
+        "construction_decisions": tuple(
+            decision
+            for decision in review.construction_decisions
+            if f"decision:{decision.id}" not in rejected
+        ),
+        "construction_placements": tuple(
+            placement
+            for placement in review.construction_placements
+            if placement.piece_id in retained_ids
+        ),
+    })
 
 
 def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPackage:
@@ -295,13 +430,22 @@ def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPack
     all_missing = tuple(
         sorted({value for item in contributors for value in item.missing_data})
     )
+    unresolved_declared_fields: set[str] = set()
+    rows_by_component = {row.component_id: row for row in rows}
+    for component in review.components:
+        row = rows_by_component[component.id]
+        for field in component.unknown_fields:
+            value = getattr(row, field, None)
+            resolved_value = (
+                getattr(value, "value_mm", None)
+                if field in {"length", "width", "thickness"}
+                else getattr(value, "value", None)
+            )
+            if resolved_value is None:
+                unresolved_declared_fields.add(field)
     incomplete_reasons = tuple(
         sorted(
-            {
-                field
-                for component in review.components
-                for field in component.unknown_fields
-            }
+            unresolved_declared_fields
             | set(all_missing)
             | {
                 f"{row.component_id}:{item.field}_machine_{item.status}"
@@ -336,6 +480,14 @@ def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPack
     artifacts = data_artifacts + render_general_component_drawings(
         rows, review_revision=review.review_revision
     )
+    construction_review = _construction_projected_review(review, rows)
+    construction = (
+        plan_general_construction(construction_review, review.construction_validation)
+        if review.construction_validation is not None
+        else None
+    )
+    if construction is not None:
+        artifacts += render_construction_artifacts(construction)
     scene_items = tuple(
         GeneralSceneItem(
             id=f"scene:{row.component_id}",
@@ -375,4 +527,5 @@ def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPack
             contributors=tuple(contributors),
             missing_data=all_missing,
         ),
+        construction=construction,
     )

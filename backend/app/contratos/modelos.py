@@ -473,7 +473,7 @@ class DecompositionScenario(StrictModel):
     state: Literal["hypothesis"] = "hypothesis"
 
 
-GeneralInformationState = Literal["observed", "derived", "hypothesis", "confirmed", "unknown", "conflict"]
+GeneralInformationState = Literal["observed", "derived", "deduced", "estimated", "hypothesis", "confirmed", "unknown", "conflict"]
 GeneralEconomicScope = Annotated[
     str,
     Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_-]+$"),
@@ -483,7 +483,7 @@ GeneralMachineTargetRef = Annotated[
     Field(
         min_length=1,
         max_length=200,
-        pattern=r"^component:.+\.(length|width|thickness|quantity|material|finish)$",
+        pattern=r"^(component:.+\.(length|width|thickness|quantity|material|finish|existence|kind|role|geometry)|parameter:.+|constraint:.+|detail:.+|decision:.+)$",
     ),
 ]
 
@@ -495,6 +495,10 @@ class GeneralValue(StrictModel):
     dependency_refs: tuple[str, ...] = ()
     evidence_ids: tuple[str, ...] = ()
     dimension_ids: tuple[str, ...] = ()
+    range_mm: GeneralDimensionRange | None = None
+    method: str | None = Field(default=None, max_length=120)
+    formula: str | None = Field(default=None, max_length=500)
+    assumption_refs: tuple[str, ...] = Field(default=(), max_length=16)
 
     @model_validator(mode="after")
     def provenance_matches_state(self) -> "GeneralValue":
@@ -505,8 +509,15 @@ class GeneralValue(StrictModel):
             raise ValueError("resolved value requires a numeric value")
         if self.state == "observed" and not ((self.evidence_ids and self.dimension_ids) or self.dependency_refs):
             raise ValueError("observed value requires drawing provenance")
-        if self.state == "derived" and not self.dependency_refs:
-            raise ValueError("derived value requires dependency references")
+        if self.state in {"derived", "deduced", "estimated"} and not self.dependency_refs:
+            raise ValueError("derived, deduced, or estimated value requires dependency references")
+        if self.state == "estimated":
+            if self.range_mm is None or self.value_mm is None:
+                raise ValueError("estimated value requires a numeric range")
+            if not self.range_mm.min_mm <= self.value_mm <= self.range_mm.max_mm:
+                raise ValueError("estimated value must lie inside its range")
+            if not self.assumption_refs:
+                raise ValueError("estimated value requires assumption references")
         return self
 
 
@@ -528,20 +539,211 @@ class GeneralQuantity(StrictModel):
             raise ValueError("resolved quantity requires a value")
         if self.state == "observed" and not self.evidence_ids:
             raise ValueError("observed quantity requires drawing provenance")
-        if self.state == "derived" and not self.dependency_refs:
-            raise ValueError("derived quantity requires dependency references")
         if self.state == "hypothesis" and not self.dependency_refs:
             raise ValueError("hypothesis quantity requires premise references")
+        if self.state in {"derived", "deduced", "estimated"} and not self.dependency_refs:
+            raise ValueError("derived, deduced, or estimated quantity requires references")
         return self
+
+
+class GeneralDimensionRange(StrictModel):
+    min_mm: float = Field(gt=0, le=1_000_000, allow_inf_nan=False)
+    max_mm: float = Field(gt=0, le=1_000_000, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def ordered(self) -> "GeneralDimensionRange":
+        if self.min_mm > self.max_mm:
+            raise ValueError("dimension range min must not exceed max")
+        return self
+
+
+class GeneralConstructionParameter(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=200)
+    basis: Literal["observed", "deduced", "estimated"]
+    nominal_mm: float | None = Field(default=None, gt=0, le=1_000_000, allow_inf_nan=False, description="Required only for basis=estimated; must be null for observed or deduced because the server evaluates their binding.")
+    range_mm: GeneralDimensionRange | None = Field(default=None, description="Required only for basis=estimated; must be null for observed or deduced.")
+    method: Literal[
+        "observed_copy", "arithmetic", "fit", "symmetry", "equal_spacing",
+        "proportion", "construction_assumption",
+    ] = Field(description="observed requires observed_copy; deduced allows arithmetic, fit, symmetry, equal_spacing, proportion; estimated allows fit, symmetry, equal_spacing, proportion, construction_assumption. Arithmetic of estimates is a deduced parameter with a binding; the server propagates estimated uncertainty.")
+    binding_id: str | None = Field(default=None, min_length=1, max_length=120, description="Required for observed/deduced; must be null for estimated.")
+    source_refs: tuple[str, ...] = Field(max_length=32)
+    assumption_refs: tuple[str, ...] = Field(max_length=16)
+    rationale: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def basis_is_closed(self) -> "GeneralConstructionParameter":
+        allowed_methods = {
+            "observed": {"observed_copy"},
+            "deduced": {"arithmetic", "fit", "symmetry", "equal_spacing", "proportion"},
+            "estimated": {"fit", "symmetry", "equal_spacing", "proportion", "construction_assumption"},
+        }
+        if self.method not in allowed_methods[self.basis]:
+            raise ValueError(f"construction parameter method does not match basis {self.basis}; allowed: {', '.join(sorted(allowed_methods[self.basis]))}")
+        if self.basis == "estimated":
+            if self.nominal_mm is None or self.range_mm is None:
+                raise ValueError("estimated parameter requires nominal and range")
+            if not self.range_mm.min_mm <= self.nominal_mm <= self.range_mm.max_mm:
+                raise ValueError("nominal must be inside estimated range")
+            if not self.assumption_refs:
+                raise ValueError("estimated parameter requires assumption references")
+            if not self.source_refs:
+                raise ValueError("estimated parameter requires basis source references")
+            if self.binding_id is not None:
+                raise ValueError("estimated parameter cannot claim a deterministic binding")
+        else:
+            if self.binding_id is None:
+                raise ValueError("observed or deduced parameter requires binding")
+            if self.nominal_mm is not None or self.range_mm is not None:
+                raise ValueError("observed or deduced proposal parameter is server-evaluated")
+            if self.basis == "observed" and not self.source_refs:
+                raise ValueError("observed parameter requires source references")
+        return self
+
+
+class GeneralPieceGeometry(StrictModel):
+    shape_kind: Literal["rectangle", "linear", "custom_contour", "hardware", "unknown"]
+    source_contour_ids: tuple[str, ...] = Field(max_length=32)
+    basis_refs: tuple[str, ...] = Field(max_length=32)
+    rationale: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def explicit_geometry_has_basis(self) -> "GeneralPieceGeometry":
+        if self.shape_kind != "unknown" and not self.basis_refs:
+            raise ValueError("explicit piece geometry requires basis references")
+        if self.shape_kind == "custom_contour" and not self.source_contour_ids:
+            raise ValueError("custom contour geometry requires contour IDs")
+        return self
+
+
+class GeneralConstructionConstraint(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    kind: Literal[
+        "overall_closure", "clearance", "repeated_equal", "fit",
+        "sum_equals", "equal", "greater_equal",
+    ]
+    left_refs: tuple[str, ...] = Field(min_length=1, max_length=16)
+    right_refs: tuple[str, ...] = Field(min_length=1, max_length=16)
+    tolerance_mm: float = Field(default=0.1, ge=0, le=1000, allow_inf_nan=False)
+    severity: Literal["error", "warning"] = "error"
+    source_refs: tuple[str, ...] = Field(max_length=32)
+    rationale: str = Field(min_length=1, max_length=500)
+
+
+class GeneralConstructionDetailGeometry(StrictModel):
+    kind: Literal["point", "line", "polyline", "circle"]
+    points_mm: tuple[Point2D, ...] = Field(min_length=1, max_length=64)
+    dimension_refs: tuple[str, ...] = Field(default=(), max_length=8)
+
+    @model_validator(mode="after")
+    def geometry_arity(self) -> "GeneralConstructionDetailGeometry":
+        expected = {"point": 1, "line": 2, "circle": 2}
+        if self.kind in expected and len(self.points_mm) != expected[self.kind]:
+            raise ValueError(f"{self.kind} detail geometry has invalid point count")
+        if self.kind == "polyline" and len(self.points_mm) < 2:
+            raise ValueError("polyline detail geometry requires at least two points")
+        return self
+
+
+class GeneralConstructionDetail(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    kind: Literal["joint", "edge", "bore", "groove", "rabbet", "fastener", "section", "other"]
+    component_ids: tuple[str, ...] = Field(min_length=1, max_length=16)
+    parameter_refs: tuple[str, ...] = Field(max_length=16)
+    quantity: int = Field(default=1, gt=0, le=1000)
+    state: Literal["deduced", "estimated"]
+    source_refs: tuple[str, ...] = Field(max_length=32)
+    assumption_refs: tuple[str, ...] = Field(max_length=16)
+    rationale: str = Field(min_length=1, max_length=500)
+    geometry: GeneralConstructionDetailGeometry | None = None
+
+    @model_validator(mode="after")
+    def estimated_detail_has_assumption(self) -> "GeneralConstructionDetail":
+        if self.state == "estimated" and not self.assumption_refs:
+            raise ValueError("estimated construction detail requires assumptions")
+        if self.state == "deduced" and not (self.source_refs or self.assumption_refs):
+            raise ValueError("deduced construction detail requires a basis")
+        return self
+
+
+class GeneralConstructionDecision(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    category: Literal["dimension", "component", "quantity", "geometry", "joint", "edge", "machining", "assembly"]
+    summary: str = Field(min_length=1, max_length=300)
+    target_refs: tuple[str, ...] = Field(min_length=1, max_length=32, description="Exact typed targets only: component:<id> or component:<id>.<field>, parameter:<id>, constraint:<id>, or detail:<id>.")
+    basis_refs: tuple[str, ...] = Field(max_length=32)
+    alternatives: tuple[str, ...] = Field(max_length=8)
+    rationale: str = Field(min_length=1, max_length=500)
+    impact: Literal["high", "medium", "low"]
+
+
+class GeneralConstraintResult(StrictModel):
+    constraint_id: str = Field(min_length=1, max_length=120)
+    status: Literal["pass", "fail", "unknown"]
+    left_range_mm: GeneralDimensionRange | None = None
+    right_range_mm: GeneralDimensionRange | None = None
+    residual_mm: float | None = Field(default=None, allow_inf_nan=False)
+
+
+class GeneralConstructionIssue(StrictModel):
+    severity: Literal["error", "warning"]
+    code: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=500)
+    target_refs: tuple[str, ...] = Field(max_length=32)
+
+
+class GeneralConstructionValidation(StrictModel):
+    status: Literal["valid", "invalid", "incomplete"]
+    parameter_order: tuple[str, ...] = Field(max_length=32)
+    max_depth: int = Field(ge=0, le=8)
+    constraint_results: tuple[GeneralConstraintResult, ...] = Field(max_length=128)
+    issues: tuple[GeneralConstructionIssue, ...] = Field(max_length=256)
+
+
+class GeneralResolvedConstructionParameter(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=200)
+    nominal_mm: float = Field(gt=0, le=1_000_000, allow_inf_nan=False)
+    range_mm: GeneralDimensionRange
+    state: Literal["observed", "deduced", "estimated"]
+    method: str = Field(min_length=1, max_length=120)
+    binding_id: str | None = Field(default=None, max_length=120)
+    formula: str | None = Field(default=None, max_length=500)
+    dependency_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    assumption_refs: tuple[str, ...] = Field(default=(), max_length=16)
+    rationale: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def nominal_is_inside_range(self) -> "GeneralResolvedConstructionParameter":
+        if not self.range_mm.min_mm <= self.nominal_mm <= self.range_mm.max_mm:
+            raise ValueError("resolved nominal must be inside range")
+        if self.state == "estimated" and not self.assumption_refs:
+            raise ValueError("resolved estimate requires assumption references")
+        return self
+
+
+class GeneralPiecePlacement(StrictModel):
+    occurrence_ref: str = Field(min_length=1, max_length=200)
+    piece_id: str = Field(min_length=1, max_length=120)
+    x_mm: float = Field(allow_inf_nan=False)
+    y_mm: float = Field(allow_inf_nan=False)
+    rotation_deg: float = Field(allow_inf_nan=False)
+    state: Literal["deduced", "estimated"]
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    assumption_refs: tuple[str, ...] = Field(default=(), max_length=16)
 
 
 class GeneralBinding(StrictModel):
     id: str = Field(min_length=1, max_length=120)
-    operation: Literal["copy", "add", "subtract"]
+    operation: Literal["copy", "add", "subtract", "scale_rational"]
+    rational_numerator: int = Field(default=1, gt=0, le=64)
+    rational_denominator: int = Field(default=1, gt=0, le=64)
     operand_refs: tuple[str, ...] = Field(
         min_length=1,
         max_length=8,
-        description="References are exactly dimension:<dimension_id>, measurement:<geometry_measurement_id>, or binding:<prior_binding_id>. Geometry measurement IDs are announced in geometric_measures and may be copied as hypotheses.",
+        description="References are dimension:<id>, measurement:<id>, parameter:<id>, or binding:<id>. Parameter references preserve estimated authority transitively.",
     )
 
     @model_validator(mode="after")
@@ -550,6 +752,10 @@ class GeneralBinding(StrictModel):
             raise ValueError("copy requires exactly one operand")
         if self.operation in ("add", "subtract") and len(self.operand_refs) < 2:
             raise ValueError(f"{self.operation} requires at least two operands")
+        if self.operation == "scale_rational" and len(self.operand_refs) != 1:
+            raise ValueError("scale_rational requires exactly one operand")
+        if self.operation != "scale_rational" and (self.rational_numerator != 1 or self.rational_denominator != 1):
+            raise ValueError("rational factors are only valid for scale_rational")
         return self
 
 
@@ -578,6 +784,12 @@ class GeneralComponentProposal(StrictModel):
     source_document_refs: tuple[str, ...] = ()
     assumptions: tuple[str, ...] = Field(min_length=1)
     unknown_fields: tuple[str, ...] = ()
+    scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    necessity: Literal["visible", "deduced_required", "estimated_required"] = "visible"
+    geometry: GeneralPieceGeometry = GeneralPieceGeometry(shape_kind="unknown", source_contour_ids=(), basis_refs=(), rationale="geometry not declared")
+    construction_parameter_ids: tuple[str, ...] = Field(default=(), max_length=32)
+    detail_ids: tuple[str, ...] = Field(default=(), max_length=128)
+    quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32, description="Must include at least one closed premise:<id>; may also cite exact ledger refs such as contour:<id>, observation:<id>, evidence:<id>, view:<id>, document:<id>, or visual:<id>.")
 
 
 class GeneralFurnitureProposal(StrictModel):
@@ -587,26 +799,65 @@ class GeneralFurnitureProposal(StrictModel):
     ledger_revision: str = Field(min_length=1)
     proposal_origin: Literal["native_tool", "human"]
     bindings: tuple[GeneralBinding, ...] = ()
-    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
+    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=64)
     premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
     assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+    construction_scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    construction_parameters: tuple[GeneralConstructionParameter, ...] = Field(default=(), max_length=32)
+    construction_constraints: tuple[GeneralConstructionConstraint, ...] = Field(default=(), max_length=128)
+    construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
+    construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
+    construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
 
     @model_validator(mode="after")
     def references_are_closed(self) -> "GeneralFurnitureProposal":
         binding_ids = [item.id for item in self.bindings]
         component_ids = [item.id for item in self.components]
         premise_ids = [item.id for item in self.premises]
+        parameter_ids = [item.id for item in self.construction_parameters]
+        constraint_ids = [item.id for item in self.construction_constraints]
+        detail_ids = [item.id for item in self.construction_details]
+        decision_ids = [item.id for item in self.construction_decisions]
         if len(binding_ids) != len(set(binding_ids)) or len(component_ids) != len(set(component_ids)) or len(premise_ids) != len(set(premise_ids)):
             raise ValueError("general proposal ids must be unique by kind")
+        for values in (parameter_ids, constraint_ids, detail_ids, decision_ids):
+            if len(values) != len(set(values)):
+                raise ValueError("construction ids must be unique by kind")
         binding_set = set(binding_ids)
         premise_set = set(premise_ids)
+        parameter_set = set(parameter_ids)
+        detail_set = set(detail_ids)
+        parameter_binding_ids = [item.binding_id for item in self.construction_parameters if item.binding_id is not None]
+        if len(parameter_binding_ids) != len(set(parameter_binding_ids)):
+            raise ValueError("construction parameters cannot share a binding")
+        if {item.scenario_id for item in self.components} != {self.construction_scenario_id}:
+            raise ValueError("proposal components must belong to its construction scenario")
+        for parameter in self.construction_parameters:
+            if parameter.binding_id is not None and parameter.binding_id not in binding_set:
+                raise ValueError("construction parameter references an unknown binding")
+            if parameter.basis == "observed" and next(item for item in self.bindings if item.id == parameter.binding_id).operation != "copy":
+                raise ValueError("observed construction parameter requires a copy binding")
+            premise_refs = {ref.removeprefix("premise:") for ref in parameter.assumption_refs if ref.startswith("premise:")}
+            if len(premise_refs) != len(parameter.assumption_refs) or not premise_refs <= premise_set:
+                raise ValueError("construction parameter references an unknown assumption premise")
+        allowed_expression_refs = {
+            *(f"parameter:{item}" for item in parameter_set),
+            *(f"binding:{item}" for item in binding_set),
+        }
+        for constraint in self.construction_constraints:
+            if not set(constraint.left_refs + constraint.right_refs) <= allowed_expression_refs:
+                raise ValueError("construction constraint references an unknown parameter or binding")
+        for binding in self.bindings:
+            for reference in binding.operand_refs:
+                if reference.startswith("parameter:") and reference.removeprefix("parameter:") not in parameter_set:
+                    raise ValueError("binding references an unknown construction parameter")
         for component in self.components:
             refs = {value for value in (component.length_binding_id, component.width_binding_id, component.thickness_binding_id) if value is not None}
             if not refs <= binding_set:
                 raise ValueError("component references an unknown binding")
             if not set(component.premise_ids) <= premise_set:
                 raise ValueError("component references an unknown premise")
-            if component.quantity.state == "hypothesis":
+            if component.quantity.state in {"hypothesis", "estimated"}:
                 quantity_premise_ids = {
                     reference.removeprefix("premise:")
                     for reference in component.quantity.dependency_refs
@@ -614,14 +865,100 @@ class GeneralFurnitureProposal(StrictModel):
                 }
                 if len(quantity_premise_ids) != len(component.quantity.dependency_refs) or not quantity_premise_ids <= set(component.premise_ids):
                     raise ValueError("component references an unknown quantity premise")
+            quantity_basis_premises = {
+                reference.removeprefix("premise:")
+                for reference in component.quantity_basis_refs + component.quantity.dependency_refs
+                if reference.startswith("premise:")
+            }
+            if component.quantity.state in {"hypothesis", "estimated"} and not quantity_basis_premises:
+                raise ValueError("provisional quantity basis requires a premise:<id>")
+            if not quantity_basis_premises <= premise_set:
+                raise ValueError("component quantity basis references an unknown premise")
+            if not set(component.construction_parameter_ids) <= parameter_set:
+                raise ValueError("component references an unknown construction parameter")
+            if not set(component.detail_ids) <= detail_set:
+                raise ValueError("component references an unknown construction detail")
+        for detail in self.construction_details:
+            if not set(detail.component_ids) <= set(component_ids):
+                raise ValueError("construction detail references an unknown component")
+            if not set(detail.parameter_refs) <= {f"parameter:{item}" for item in parameter_set}:
+                raise ValueError("construction detail references an unknown parameter")
+            detail_premises = {
+                reference.removeprefix("premise:")
+                for reference in detail.assumption_refs
+                if reference.startswith("premise:")
+            }
+            if len(detail_premises) != len(detail.assumption_refs) or not detail_premises <= premise_set:
+                raise ValueError("construction detail references an unknown premise")
+        allowed_decision_targets = {
+            *(f"component:{item}" for item in component_ids),
+            *(
+                f"component:{item}.{field}"
+                for item in component_ids
+                for field in ("length", "width", "thickness", "quantity", "material", "finish", "existence", "kind", "role", "geometry")
+            ),
+            *(f"parameter:{item}" for item in parameter_ids),
+            *(f"constraint:{item}" for item in constraint_ids),
+            *(f"detail:{item}" for item in detail_ids),
+        }
+        allowed_internal_refs = allowed_decision_targets | {
+            *(f"binding:{item}" for item in binding_ids),
+            *(f"premise:{item}" for item in premise_ids),
+            *(f"decision:{item}" for item in decision_ids),
+        }
+
+        def internal_refs_are_closed(refs: tuple[str, ...]) -> bool:
+            internal_prefixes = ("component:", "parameter:", "binding:", "premise:", "constraint:", "detail:", "decision:")
+            return all(not ref.startswith(internal_prefixes) or ref in allowed_internal_refs for ref in refs)
+
+        for decision in self.construction_decisions:
+            invalid_targets = sorted(set(decision.target_refs) - allowed_decision_targets)
+            if invalid_targets:
+                raise ValueError(
+                    "construction decision target_refs require component:<id>[.<field>], parameter:<id>, constraint:<id>, or detail:<id>; invalid="
+                    + ",".join(invalid_targets[:8])
+                )
+            if not internal_refs_are_closed(decision.basis_refs):
+                raise ValueError("construction decision has an unknown basis reference")
+        for constraint in self.construction_constraints:
+            if not internal_refs_are_closed(constraint.source_refs):
+                raise ValueError("construction constraint has an unknown source reference")
+        for detail in self.construction_details:
+            if not internal_refs_are_closed(detail.source_refs):
+                raise ValueError("construction detail has an unknown source reference")
+            if detail.geometry is not None and not internal_refs_are_closed(detail.geometry.dimension_refs):
+                raise ValueError("construction detail geometry has an unknown dimension reference")
+        for component in self.components:
+            if not set(component.geometry.source_contour_ids) <= set(component.source_contour_ids):
+                raise ValueError("component geometry references an undeclared contour")
+            if not internal_refs_are_closed(component.geometry.basis_refs):
+                raise ValueError("component geometry has an unknown basis reference")
+        for placement in self.construction_placements:
+            if placement.piece_id not in set(component_ids):
+                raise ValueError("construction placement references an unknown component")
+            placement_premises = {
+                reference.removeprefix("premise:")
+                for reference in placement.assumption_refs
+                if reference.startswith("premise:")
+            }
+            if len(placement_premises) != len(placement.assumption_refs) or not placement_premises <= premise_set:
+                raise ValueError("construction placement references an unknown premise")
+            if not internal_refs_are_closed(placement.source_refs):
+                raise ValueError("construction placement has an unknown source reference")
         return self
 
 
 class ProposeGeneralFurnitureArgs(StrictModel):
     bindings: tuple[GeneralBinding, ...] = Field(max_length=128)
-    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
+    components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=64)
     premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
     assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+    construction_scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    construction_parameters: tuple[GeneralConstructionParameter, ...] = Field(default=(), max_length=32)
+    construction_constraints: tuple[GeneralConstructionConstraint, ...] = Field(default=(), max_length=128)
+    construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
+    construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
+    construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
 
 
 class InspectGeneralContextArgs(StrictModel):
@@ -654,8 +991,8 @@ class GeneralTextValue(StrictModel):
             raise ValueError("resolved text value requires a value")
         if self.state == "observed" and not self.evidence_ids:
             raise ValueError("observed text value requires drawing provenance")
-        if self.state == "derived" and not self.dependency_refs:
-            raise ValueError("derived text value requires dependency references")
+        if self.state in {"derived", "deduced", "estimated"} and not self.dependency_refs:
+            raise ValueError("derived, deduced, or estimated text value requires dependency references")
         return self
 
 
@@ -679,6 +1016,12 @@ class GeneralComponentReview(StrictModel):
     source_document_refs: tuple[str, ...] = ()
     assumptions: tuple[str, ...] = ()
     unknown_fields: tuple[str, ...] = ()
+    scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    necessity: Literal["visible", "deduced_required", "estimated_required"] = "visible"
+    geometry: GeneralPieceGeometry = GeneralPieceGeometry(shape_kind="unknown", source_contour_ids=(), basis_refs=(), rationale="geometry not declared")
+    construction_parameter_ids: tuple[str, ...] = Field(default=(), max_length=32)
+    detail_ids: tuple[str, ...] = Field(default=(), max_length=128)
+    quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32)
 
 
 class GeneralReviewOperation(StrictModel):
@@ -856,6 +1199,13 @@ class GeneralFurnitureReview(StrictModel):
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
     required_cost_scope: tuple[GeneralEconomicScope, ...] = ()
     required_hours_scope: tuple[GeneralEconomicScope, ...] = ()
+    construction_scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    construction_parameters: tuple[GeneralResolvedConstructionParameter, ...] = Field(default=(), max_length=32)
+    construction_constraints: tuple[GeneralConstructionConstraint, ...] = Field(default=(), max_length=128)
+    construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
+    construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
+    construction_validation: GeneralConstructionValidation | None = None
+    construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
     status: Literal["approved", "reviewed_incomplete"]
 
     @model_validator(mode="after")
@@ -873,10 +1223,16 @@ class GeneralFurnitureReview(StrictModel):
         if len(field_targets) != len(set(field_targets)):
             raise ValueError("duplicate machine field review targets")
         for field_review in self.machine_field_reviews:
-            valid_targets = {
+            component_targets = {
                 f"component:{component.id}.{field}"
                 for component in self.components
-                for field in ("length", "width", "thickness", "quantity", "material", "finish")
+                for field in ("length", "width", "thickness", "quantity", "material", "finish", "existence", "kind", "role", "geometry")
+            }
+            valid_targets = component_targets | {
+                *(f"parameter:{item.id}" for item in self.construction_parameters),
+                *(f"constraint:{item.id}" for item in self.construction_constraints),
+                *(f"detail:{item.id}" for item in self.construction_details),
+                *(f"decision:{item.id}" for item in self.construction_decisions),
             }
             if field_review.target_ref not in valid_targets:
                 raise ValueError("machine field review targets an unknown component field")
@@ -891,12 +1247,33 @@ class GeneralFurnitureReview(StrictModel):
             selected_checks = [checks.get(check_id) for check_id in occurrence.check_ids]
             if component is None or occurrence.quantity_target_ref != f"component:{occurrence.component_id}.quantity":
                 raise ValueError("provisional occurrence references an unknown quantity field")
-            if component.quantity.state != "hypothesis" or component.quantity.value is None or occurrence.occurrence_index > component.quantity.value:
-                raise ValueError("provisional occurrence requires a bounded hypothesis quantity")
+            if component.quantity.state not in {"hypothesis", "deduced", "estimated"} or component.quantity.value is None or occurrence.occurrence_index > component.quantity.value:
+                raise ValueError("provisional occurrence requires a bounded provisional quantity")
             if any(check is None or check.outcome != "pass" for check in selected_checks):
                 raise ValueError("provisional occurrence requires passing checks")
             if not {"quantity_basis", "duplicate_scan"} <= {check.kind for check in selected_checks if check is not None}:
                 raise ValueError("provisional occurrence requires quantity and duplicate checks")
+        field_reviews = {item.target_ref: item for item in self.machine_field_reviews}
+        for component in self.components:
+            quantity_review = field_reviews.get(f"component:{component.id}.quantity")
+            if (
+                self.reviewer_kind == "machine"
+                and quantity_review is not None
+                and quantity_review.status == "accepted"
+                and component.quantity.state in {"hypothesis", "deduced", "estimated"}
+                and component.quantity.value is not None
+            ):
+                component_occurrences = [
+                    item
+                    for item in self.scenario_occurrences
+                    if item.component_id == component.id
+                ]
+                indices = {
+                    item.occurrence_index
+                    for item in component_occurrences
+                }
+                if len(component_occurrences) != component.quantity.value or indices != set(range(1, component.quantity.value + 1)):
+                    raise ValueError("accepted provisional quantity requires complete scenario occurrences")
         return self
 
 
@@ -918,6 +1295,12 @@ class GeneralDraftComponent(StrictModel):
     source_document_refs: tuple[str, ...]
     assumptions: tuple[str, ...]
     unknown_fields: tuple[str, ...]
+    scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    necessity: Literal["visible", "deduced_required", "estimated_required"] = "visible"
+    geometry: GeneralPieceGeometry = GeneralPieceGeometry(shape_kind="unknown", source_contour_ids=(), basis_refs=(), rationale="geometry not declared")
+    construction_parameter_ids: tuple[str, ...] = Field(default=(), max_length=32)
+    detail_ids: tuple[str, ...] = Field(default=(), max_length=128)
+    quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32)
 
 
 class GeneralFurnitureDraft(StrictModel):
@@ -928,6 +1311,12 @@ class GeneralFurnitureDraft(StrictModel):
     components: tuple[GeneralDraftComponent, ...]
     premises: tuple[GeneralPremise, ...]
     assumptions: tuple[str, ...]
+    construction_scenario_id: str = Field(default="base", min_length=1, max_length=120)
+    construction_parameters: tuple[GeneralResolvedConstructionParameter, ...] = Field(default=(), max_length=32)
+    construction_constraints: tuple[GeneralConstructionConstraint, ...] = Field(default=(), max_length=128)
+    construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
+    construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
+    construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
     status: Literal["needs_review"] = "needs_review"
 
 
@@ -1016,14 +1405,144 @@ class GeneralCostBasis(StrictModel):
     missing_data: tuple[str, ...]
 
 
+GeneralConstructionReviewStatus = Literal["accepted", "rejected", "conflict", "abstained", "unreviewed"]
+
+
+class GeneralConstructionDimension(StrictModel):
+    value_mm: float | None = Field(default=None, gt=0, le=1_000_000, allow_inf_nan=False)
+    range_mm: GeneralDimensionRange | None = None
+    state: Literal["observed", "deduced", "estimated", "unknown", "conflict"]
+    review_status: GeneralConstructionReviewStatus
+    method: str | None = Field(default=None, max_length=120)
+    formula: str | None = Field(default=None, max_length=500)
+    operand_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    assumption_refs: tuple[str, ...] = Field(default=(), max_length=16)
+    explanation: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def value_matches_authority(self) -> "GeneralConstructionDimension":
+        if self.state in {"unknown", "conflict"}:
+            if self.value_mm is not None or self.range_mm is not None:
+                raise ValueError("unknown construction dimension cannot carry a value")
+        elif self.value_mm is None:
+            raise ValueError("resolved construction dimension requires a value")
+        if self.state == "estimated":
+            if self.range_mm is None or not self.assumption_refs:
+                raise ValueError("estimated construction dimension requires range and assumptions")
+            if not self.range_mm.min_mm <= self.value_mm <= self.range_mm.max_mm:
+                raise ValueError("estimated construction dimension must lie inside range")
+        if self.state == "deduced" and (not self.operand_refs or self.formula is None):
+            raise ValueError("deduced construction dimension requires formula and operands")
+        return self
+
+
+class GeneralConstructionQuantity(StrictModel):
+    value: int | None = Field(default=None, gt=0, le=1000)
+    min_value: int | None = Field(default=None, gt=0, le=1000)
+    max_value: int | None = Field(default=None, gt=0, le=1000)
+    state: Literal["observed", "deduced", "estimated", "unknown", "conflict"]
+    review_status: GeneralConstructionReviewStatus
+    method: str | None = Field(default=None, max_length=120)
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    assumption_refs: tuple[str, ...] = Field(default=(), max_length=16)
+    explanation: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def quantity_is_bounded(self) -> "GeneralConstructionQuantity":
+        if self.state in {"unknown", "conflict"}:
+            if any(value is not None for value in (self.value, self.min_value, self.max_value)):
+                raise ValueError("unknown construction quantity cannot carry a value")
+            return self
+        if self.value is None:
+            raise ValueError("resolved construction quantity requires a value")
+        if self.state == "estimated":
+            if self.min_value is None or self.max_value is None or not self.assumption_refs:
+                raise ValueError("estimated construction quantity requires bounds and assumptions")
+            if not self.min_value <= self.value <= self.max_value:
+                raise ValueError("estimated construction quantity must lie inside bounds")
+        return self
+
+
+class GeneralConstructionWarning(StrictModel):
+    severity: Literal["error", "warning", "info"]
+    code: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=500)
+    component_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    field_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    consequence: Literal["blocks_fabrication", "provisional_only"]
+
+
+class GeneralConstructionSummary(StrictModel):
+    label: str = Field(min_length=1, max_length=300)
+    component_count: int = Field(ge=0, le=64)
+    occurrence_count: int = Field(ge=0, le=5000)
+    source_refs: tuple[str, ...] = Field(default=(), max_length=64)
+    top_decision_ids: tuple[str, ...] = Field(default=(), max_length=3)
+    warnings: tuple[GeneralConstructionWarning, ...] = Field(default=(), max_length=128)
+
+
+class GeneralConstructionPiece(StrictModel):
+    piece_id: str = Field(min_length=1, max_length=120)
+    component_id: str = Field(min_length=1, max_length=120)
+    scenario_id: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=200)
+    role: str = Field(min_length=1, max_length=120)
+    quantity: GeneralConstructionQuantity
+    occurrence_ids: tuple[str, ...] = Field(default=(), max_length=1000)
+    scenario_occurrence_ids: tuple[str, ...] = Field(default=(), max_length=1000)
+    geometry: GeneralPieceGeometry
+    length: GeneralConstructionDimension
+    width: GeneralConstructionDimension
+    thickness: GeneralConstructionDimension
+    detail_ids: tuple[str, ...] = Field(default=(), max_length=128)
+    source_refs: tuple[str, ...] = Field(default=(), max_length=64)
+    sheet_ids: tuple[str, ...] = Field(default=(), max_length=8)
+
+
+class GeneralSheetPrimitive(StrictModel):
+    kind: Literal["line", "polyline", "circle", "arc", "dimension", "text", "detail_callout"]
+    points_mm: tuple[Point2D, ...] = Field(default=(), max_length=256)
+    text: str | None = Field(default=None, max_length=500)
+    state: Literal["observed", "deduced", "estimated", "unknown"]
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+
+
+class GeneralSheetPlan(StrictModel):
+    sheet_id: str = Field(min_length=1, max_length=120)
+    kind: Literal["assembly", "piece"]
+    piece_id: str | None = Field(default=None, max_length=120)
+    title: str = Field(min_length=1, max_length=300)
+    primitives: tuple[GeneralSheetPrimitive, ...] = Field(default=(), max_length=2048)
+    warnings: tuple[GeneralConstructionWarning, ...] = Field(default=(), max_length=128)
+
+
+class GeneralConstructionPlan(StrictModel):
+    run_id: str = Field(min_length=1)
+    proposal_revision: int = Field(gt=0)
+    review_revision: int = Field(gt=0)
+    basis_revision: str = Field(min_length=1, max_length=300)
+    scenario_id: str = Field(min_length=1, max_length=120)
+    summary: GeneralConstructionSummary
+    pieces: tuple[GeneralConstructionPiece, ...] = Field(max_length=64)
+    placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
+    decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
+    warnings: tuple[GeneralConstructionWarning, ...] = Field(default=(), max_length=128)
+    sheets: tuple[GeneralSheetPlan, ...] = Field(default=(), max_length=128)
+    authority: Literal["provisional_not_manufacturing"] = "provisional_not_manufacturing"
+
+
 class GeneralDerivedArtifact(StrictModel):
     id: str
-    kind: Literal["bom_csv", "bom_json", "drawing_svg", "drawing_dxf"]
+    kind: Literal["bom_csv", "bom_json", "drawing_svg", "drawing_dxf", "construction_overview_svg", "construction_overview_dxf", "piece_sheet_svg", "piece_sheet_dxf"]
     status: Literal["ready", "incomplete"]
     review_revision: int = Field(gt=0)
     filename: str
     media_type: str
     incomplete_reasons: tuple[str, ...] = ()
+    sheet_id: str | None = Field(default=None, max_length=120)
+    component_id: str | None = Field(default=None, max_length=120)
     content: bytes
 
 
@@ -1037,6 +1556,7 @@ class GeneralDerivedPackage(StrictModel):
     artifacts: tuple[GeneralDerivedArtifact, ...]
     scene: GeneralScene
     cost_basis: GeneralCostBasis
+    construction: GeneralConstructionPlan | None = None
 
 
 class GeneralFurnitureRecord(StrictModel):
