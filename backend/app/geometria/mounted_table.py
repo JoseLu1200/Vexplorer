@@ -318,6 +318,16 @@ def catalog_table_programs(analysis: MountedTableAnalysis) -> tuple[TableProgram
             for measure in (measures["overall_width"], measures["overall_height"], measures["overall_depth"], tabletop_section, support_width, support_thickness)
             for evidence_id in measure.evidence_ids
         }))
+        top_evidence_ids = tuple(sorted({
+            evidence_id
+            for measure in (measures["overall_width"], measures["overall_depth"], tabletop_section)
+            for evidence_id in measure.evidence_ids
+        }))
+        support_evidence_ids = tuple(sorted({
+            evidence_id
+            for measure in (measures["overall_height"], tabletop_section, support_width, support_thickness)
+            for evidence_id in measure.evidence_ids
+        }))
         return TableProgramProposal(
             id=f"catalog-{template_id}", ledger_revision=analysis.ledger_revision,
             proposal_origin="catalog_baseline", table_template_id=template_id,
@@ -327,14 +337,14 @@ def catalog_table_programs(analysis: MountedTableAnalysis) -> tuple[TableProgram
                     id="component-tabletop", role="tabletop",
                     length_binding_id="binding-top-length", width_binding_id="binding-top-width",
                     thickness_binding_id="binding-top-thickness", quantity_rule_id="top_one",
-                    placement_rule_id="top_flush", evidence_ids=evidence_ids,
+                    placement_rule_id="top_flush", evidence_ids=top_evidence_ids,
                     premise_ids=(premise_ids[1], premise_ids[2], premise_ids[3]),
                 ),
                 TableComponentSpec(
                     id=f"component-{support_role.replace('_', '-')}", role=support_role,
                     length_binding_id="binding-support-length", width_binding_id="binding-support-width",
                     thickness_binding_id="binding-support-thickness", quantity_rule_id=quantity_rule,
-                    placement_rule_id=placement_rule, evidence_ids=evidence_ids, premise_ids=premise_ids,
+                    placement_rule_id=placement_rule, evidence_ids=support_evidence_ids, premise_ids=premise_ids,
                 ),
             ),
             premises=premises,
