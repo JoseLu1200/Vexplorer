@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
-from backend.app.agente.tools import parts_tool_schemas, tool_schemas
+from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest
 from backend.app.estimacion.service import estimate_result
 from backend.app.geometria import extract_drawing
@@ -89,7 +89,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @app.get("/api/v1/config")
     def config():
-        all_tools = tool_schemas() + parts_tool_schemas()
+        all_tools = tool_schemas() + parts_tool_schemas() + table_tool_schemas()
         return _ok({"provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.post("/api/v1/documents")
