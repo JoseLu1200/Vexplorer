@@ -8,12 +8,14 @@ import re
 from typing import Any, Iterable, Iterator
 
 import ezdxf
+import ezdxf.path
 from ezdxf import recover
 
 
 UNIT_BY_INSUNITS = {1: ("in", 25.4), 4: ("mm", 1.0), 5: ("cm", 10.0), 6: ("m", 1000.0)}
 MAX_ENTITIES = 100_000
 MAX_BLOCK_DEPTH = 8
+MAX_CURVE_POINTS = 4096
 
 
 class _EntityLimitExceeded(ValueError):
@@ -96,6 +98,36 @@ def _read_document(path: Path, warnings: list[str]) -> object:
         document, auditor = recover.readfile(path)
         warnings.append(f"recovered_dxf:fixes={len(auditor.fixes)}:errors={len(auditor.errors)}")
         return document
+
+
+def _approximate_curve(entity: object, entity_id: str, warnings: list[str]) -> tuple[tuple[float, float], ...] | None:
+    try:
+        path = ezdxf.path.make_path(entity)
+        control = []
+        for index, point in enumerate(path.control_vertices()):
+            if index >= MAX_CURVE_POINTS:
+                warnings.append(f"curve_point_limit:{entity_id}")
+                return None
+            control.append(point)
+        if not control:
+            return None
+        xs = [float(point[0]) for point in control]
+        ys = [float(point[1]) for point in control]
+        distance = max(max(max(xs) - min(xs), max(ys) - min(ys)) * 1e-3, 1e-9)
+        flattened = []
+        for index, point in enumerate(path.flattening(distance, segments=4)):
+            if index >= MAX_CURVE_POINTS:
+                warnings.append(f"curve_point_limit:{entity_id}")
+                return None
+            flattened.append(point)
+    except (AttributeError, ValueError, ezdxf.DXFError):
+        return None
+    points = _planar_xy_points(flattened)
+    if points is None:
+        warnings.append(f"unsupported_entity_plane:{entity.dxftype()}:{entity_id}")  # type: ignore[attr-defined]
+        return None
+    warnings.append(f"approximated_curve:{entity_id}:max_points={MAX_CURVE_POINTS}")
+    return points
 
 
 def _linetype(
@@ -204,6 +236,10 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
                 continue
             parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.closed), linetype=linetype))
         elif kind in {"CIRCLE", "ARC"}:
+            extrusion = entity.dxf.extrusion
+            if abs(float(extrusion.x)) > 1e-9 or abs(float(extrusion.y)) > 1e-9 or abs(abs(float(extrusion.z)) - 1.0) > 1e-9:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
             center_wcs = entity.ocs().to_wcs(entity.dxf.center)
             if kind == "CIRCLE":
                 radius = float(entity.dxf.radius)
@@ -226,6 +262,12 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
                     "start_angle_deg": start_angle, "end_angle_deg": end_angle,
                 },
             ))
+        elif kind in {"ELLIPSE", "SPLINE"}:
+            points = _approximate_curve(entity, entity_id, warnings)
+            if points:
+                parsed.append(ParsedEntity(entity_id, kind, layer, points, linetype=linetype))
+            else:
+                warnings.append(f"unsupported_entity:{kind}:{entity_id}")
         elif kind in {"TEXT", "MTEXT", "ATTRIB"}:
             text = entity.plain_text() if kind == "MTEXT" else str(entity.dxf.text)
             insert = _planar_xy_points((entity.dxf.insert,))
