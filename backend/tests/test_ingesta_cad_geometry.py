@@ -96,3 +96,22 @@ def test_large_minsert_stops_at_budget_without_materializing_grid(tmp_path: Path
 
     with pytest.raises(ValueError, match="entity limit exceeded after block expansion"):
         parse_dxf(path, max_entities=50)
+
+
+def test_exact_regular_circle_row_is_grouped_as_neutral_geometry_evidence(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline([(0, 0), (200, 0), (200, 100), (0, 100)], close=True)
+    modelspace.add_text("FRONT", dxfattribs={"insert": (0, 120)})
+    circles = [modelspace.add_circle((20 + 32 * index, 40), 2.5) for index in range(3)]
+
+    extraction = extract_drawing(
+        _save(document, tmp_path, "hole-row.dxf"), input_kind="mounted_orthographic_views",
+    )
+
+    rows = [item for item in extraction.evidence if item.id.startswith("evidence-holes-")]
+    assert len(rows) == 1
+    assert rows[0].kind == "geometry"
+    assert set(rows[0].source_entity_ids) == {f"entity-{item.dxf.handle}" for item in circles}
+    assert "system" not in rows[0].description.lower()
