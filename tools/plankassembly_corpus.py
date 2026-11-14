@@ -168,6 +168,35 @@ def calcular_features(fisicas: Sequence[Sequence[float]]) -> dict[str, object]:
 # ----------------------------------------------------------------------- firmas
 
 
+def _dims_y_mayor(fisicas: Sequence[Sequence[float]]) -> tuple[tuple[tuple[float, ...], ...], float]:
+    """Dimensiones por tablero (orden ascendente, lista ordenada) y mayor extensión de la envolvente."""
+    xmin = min(b[0] for b in fisicas)
+    ymin = min(b[1] for b in fisicas)
+    zmin = min(b[2] for b in fisicas)
+    mayor = max(
+        max(b[3] for b in fisicas) - xmin, max(b[4] for b in fisicas) - ymin, max(b[5] for b in fisicas) - zmin
+    )
+    dims = sorted(tuple(sorted(b[i + 3] - b[i] for i in range(3))) for b in fisicas)
+    return tuple(dims), mayor
+
+
+def _dimensiones_cercanas(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
+    """Mismo número de tableros y cada dimensión de cada tablero a <= ``tolerancia_mm``."""
+    return len(a.dims) == len(b.dims) and all(
+        abs(x - y) <= tolerancia_mm for pa, pb in zip(a.dims, b.dims) for x, y in zip(pa, pb)
+    )
+
+
+def _escala_cercana(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
+    """Un único factor isótropo (cociente de las mayores extensiones) con residuo <= ``tolerancia_mm``."""
+    if len(a.dims) != len(b.dims) or a.mayor <= 0:
+        return False
+    factor = b.mayor / a.mayor
+    return all(
+        abs(x * factor - y) <= tolerancia_mm for pa, pb in zip(a.dims, b.dims) for x, y in zip(pa, pb)
+    )
+
+
 def _firmas(fisicas: Sequence[Sequence[float]], tolerancia_mm: float, paso_escala: float) -> tuple[str, tuple[Hashable, ...]]:
     """Hash exacto (invariante a traslación) y claves de agrupación de duplicados.
 
@@ -224,6 +253,8 @@ class ModeloAnalizado:
     exact_hash: str
     family_hash: str
     claves: tuple[Hashable, ...]
+    dims: tuple[tuple[float, ...], ...]
+    mayor: float
     features: dict[str, object]
     categoria: str | None
     model: dict[str, object]
@@ -258,6 +289,8 @@ def auditar_universo(
     tolerancia_mm: float = 2.0,
     paso_escala: float = 0.01,
     campo_categoria: str | None = None,
+    max_group_size: int = 50,
+    strict_groups: bool = False,
 ) -> tuple[list[ModeloAnalizado], dict[str, object]]:
     """Analiza todos los modelos listados y aplica la política de duplicados.
 
@@ -286,6 +319,7 @@ def auditar_universo(
                 continue
             fisicas = tuple(tuple(b) for b in model["planks"][1:])  # type: ignore[index]
             exact_hash, claves = _firmas(fisicas, tolerancia_mm, paso_escala)
+            dims, mayor = _dims_y_mayor(fisicas)
             categoria = None
             if campo_categoria is not None:
                 valor = model.get(campo_categoria)
@@ -294,17 +328,32 @@ def auditar_universo(
                 filename=nombre, partition=partition, sha256=_digest(data), fisicas=fisicas,
                 has_normal=model.get("normal") is not None, exact_hash=exact_hash,
                 family_hash=_family_hash(model["planks"]),  # type: ignore[arg-type]
-                claves=claves, features=calcular_features(fisicas), categoria=categoria, model=model,
+                claves=claves, dims=dims, mayor=mayor, features=calcular_features(fisicas), categoria=categoria, model=model,
             ))
 
+    # Las rejillas solo proponen candidatos; cada unión no exacta se verifica por pares frente a los
+    # "líderes" del cubo (sin cadenas dentro de un cubo; cada unión sigue siendo transitiva entre cubos).
     union = _UnionFind(len(analizados))
-    primera: dict[Hashable, int] = {}
+    cubos: dict[Hashable, list[int]] = {}
     for indice, modelo in enumerate(analizados):
         for clave in modelo.claves:
-            if clave in primera:
-                union.union(primera[clave], indice)
+            cubos.setdefault(clave, []).append(indice)
+    for clave, miembros in cubos.items():
+        if len(miembros) < 2:
+            continue
+        if clave[0] == "exacta":
+            for indice in miembros[1:]:
+                union.union(miembros[0], indice)
+            continue
+        cercano = _dimensiones_cercanas if clave[0] == "dim" else _escala_cercana
+        lideres: list[int] = []
+        for indice in miembros:
+            for lider in lideres:
+                if cercano(analizados[lider], analizados[indice], tolerancia_mm):
+                    union.union(lider, indice)
+                    break
             else:
-                primera[clave] = indice
+                lideres.append(indice)
     grupos: dict[int, list[int]] = {}
     for indice in range(len(analizados)):
         grupos.setdefault(union.find(indice), []).append(indice)
@@ -335,6 +384,20 @@ def auditar_universo(
         supervivientes.append(representante)
     supervivientes.sort(key=lambda m: (prioridad[m.partition], m.filename))
 
+    tamanos_grupo: dict[str, int] = {}
+    for miembros_idx in grupos.values():
+        clave_tam = str(len(miembros_idx))
+        tamanos_grupo[clave_tam] = tamanos_grupo.get(clave_tam, 0) + 1
+    mayor_grupo = max((len(m) for m in grupos.values()), default=0)
+    avisos: list[str] = []
+    if mayor_grupo > max_group_size:
+        mensaje = (
+            f"largest duplicate group has {mayor_grupo} members (> max_group_size={max_group_size}): "
+            "possible chained parametric variants; review tolerance_mm/scale_step"
+        )
+        if strict_groups:
+            raise ValueError(mensaje)
+        avisos.append(mensaje)
     resumen = {
         p: {
             "listed": len(listas[p]),
@@ -354,11 +417,15 @@ def auditar_universo(
             "groups": len(grupos),
             "groups_with_more_than_one_member": grupos_con_duplicados,
             "groups_crossing_partitions": grupos_cruzados,
+            "size_distribution": dict(sorted(tamanos_grupo.items(), key=lambda par: int(par[0]))),
+            "largest_group": mayor_grupo,
+            "max_group_size": max_group_size,
             "tolerance_mm": tolerancia_mm,
             "scale_step": paso_escala,
             "keys": ["exact_translated_mm_0.1", "per_plank_dims_within_tolerance_dual_grid", "isotropic_scale_dual_grid"],
-            "limitation": "Heuristic grid keys: they bound but do not prove the absence of near-duplicates; anisotropic or parametric variants are not detected.",
+            "limitation": "Grid keys only propose candidates: pairs differing by >= step/2 per dimension in some axes can be missed, and anisotropic or parametric variants are not detected. Each proposed non-exact pair is verified (per-plank dimension difference <= tolerance_mm, or a single isotropic factor with residual <= tolerance_mm).",
         },
+        "warnings": avisos,
         "dropped_cross_split": cruce,
         "dropped_within_split_duplicate": dentro,
         "group_ids": grupo_de,
@@ -579,6 +646,8 @@ def generar_corpus(
     category_field: str | None = None,
     tolerance_mm: float = 2.0,
     scale_step: float = 0.01,
+    max_group_size: int = 50,
+    strict_groups: bool = False,
     source_revision: str | None = None,
     rule: ReglaRelevancia | None = None,
     max_pairs: int = 3_000_000,
@@ -603,7 +672,8 @@ def generar_corpus(
     semilla = str(seed)
 
     supervivientes, auditoria = auditar_universo(
-        source, tolerancia_mm=tolerance_mm, paso_escala=scale_step, campo_categoria=category_field
+        source, tolerancia_mm=tolerance_mm, paso_escala=scale_step, campo_categoria=category_field,
+        max_group_size=max_group_size, strict_groups=strict_groups,
     )
     muestra = muestrear(supervivientes, semilla, tamanos)
     grupo_de: dict[str, str] = auditoria["group_ids"]  # type: ignore[assignment]
@@ -721,6 +791,7 @@ def generar_corpus(
             "source_split_sha256": _split_hashes(source),
             "audit_summary": auditoria["partitions"],
             "unlisted_json_excluded": auditoria["unlisted_json_excluded"],
+            "audit_warnings": auditoria["warnings"],
             "sampled_without_normal": sin_normal,
             "sampling": "ascending sha256(seed|partition|source_file) over audited survivors; prefix-stable",
             "duplicate_policy": "group crossing partitions kept only in train>valid>test; one representative (lowest filename) per group per partition",
@@ -766,6 +837,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--category-field", default=None, help="campo JSON de categoría, solo si se ha verificado que existe")
     parser.add_argument("--tolerance-mm", type=float, default=2.0)
     parser.add_argument("--scale-step", type=float, default=0.01)
+    parser.add_argument("--max-group-size", type=int, default=50, help="aviso si un grupo de duplicados supera este tamaño")
+    parser.add_argument("--strict-groups", action="store_true", help="falla en lugar de avisar ante grupos grandes")
     parser.add_argument("--source-revision", default=None, help="revisión HF declarada (no verificable sin conexión)")
     parser.add_argument("--max-pairs", type=int, default=3_000_000)
     parser.add_argument("--zeros-per-query", type=int, default=None)
@@ -775,7 +848,8 @@ def main(argv: list[str] | None = None) -> int:
             args.source, args.public_output, args.private_output,
             seed=args.seed, sizes={"train": args.train, "valid": args.valid, "test": args.test},
             poor_variants=args.poor_variants, category_field=args.category_field,
-            tolerance_mm=args.tolerance_mm, scale_step=args.scale_step, source_revision=args.source_revision,
+            tolerance_mm=args.tolerance_mm, scale_step=args.scale_step,
+            max_group_size=args.max_group_size, strict_groups=args.strict_groups, source_revision=args.source_revision,
             max_pairs=args.max_pairs, zeros_per_query=args.zeros_per_query,
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:

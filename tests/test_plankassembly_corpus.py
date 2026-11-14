@@ -322,8 +322,6 @@ def test_ids_publicos_opacos_y_sin_relacion_variante_base(fuente, tmp_path):
         claves_publicas |= set(c)
     assert claves_publicas == {"id", "file", "format", "unit", "view_kind", "instruction", "sha256", "partition"}
     assert "seed" not in _json(pub / "manifest.json") and _json(priv / "manifest.json")["seed"] == "7"
-    base_ids = {r["variant_of"] for r in refs.values() if r["variant_of"]}
-    variantes = {r["id"] for r in refs.values() if r["variant_of"]}
     for archivo in sorted(pub.rglob("*")):
         if not archivo.is_file():
             continue
@@ -483,3 +481,52 @@ def test_cli_principal(fuente, tmp_path, capsys):
     manifiesto = json.loads(capsys.readouterr().out)
     assert manifiesto["source_revision"].startswith("d1d4308") and manifiesto["partitions"]["test"]["sampled"] == 2
     assert (priv / "juicios" / "juicios_test.json").exists()
+
+
+def _fuente_con(tmp_path: Path, modelos: dict[str, tuple[str, dict]], nombre="src2") -> Path:
+    root = tmp_path / nombre
+    _escribir(root, modelos)
+    return root
+
+
+def test_familia_parametrica_no_colapsa_ni_se_encadena(tmp_path):
+    # Anchos 600..640 cada 5 mm: la rejilla los propone, la verificación (tolerancia 2 mm) los separa.
+    modelos = {}
+    for i, ancho in enumerate(range(600, 645, 5)):
+        particion = ("train", "train", "train", "valid", "test")[i % 5]
+        modelos[f"fam_{ancho}.json"] = (particion, _mueble(ancho, 300, 1800, 3))
+    # Casi duplicado real (1 mm) de un train (605), en test: sí debe descartarse.
+    modelos["casi_dup.json"] = ("test", _mueble(601, 300, 1800, 3))
+    root = _fuente_con(tmp_path, modelos)
+    _, priv, _ = _generar(root, tmp_path, sizes={"train": 50, "valid": 50, "test": 50})
+    audit = _json(priv / "audit.json")
+    assert audit["dropped_cross_split"]["test"] == ["casi_dup.json"]
+    assert audit["dropped_cross_split"]["valid"] == [] and audit["dropped_within_split_duplicate"]["train"] == []
+    assert audit["partitions"]["train"]["available"] == 6 and audit["partitions"]["valid"]["available"] == 2
+    assert audit["partitions"]["test"]["available"] == 1
+    assert audit["duplicate_groups"]["size_distribution"] == {"1": 8, "2": 1}
+    assert audit["duplicate_groups"]["largest_group"] == 2
+
+
+def test_escalado_isotropo_verificado_y_anisotropo_rechazado(tmp_path):
+    modelos = {
+        "a.json": ("train", _mueble(800, 300, 1800, 3)),
+        "a_x1_5.json": ("test", _mueble(800, 300, 1800, 3, escala=1.5)),  # copia reescalada: duplicado
+        "b_ancho.json": ("test", _mueble(1000, 300, 1800, 3)),  # otro ancho con el mismo grosor: no lo es
+    }
+    _, priv, _ = _generar(_fuente_con(tmp_path, modelos), tmp_path, sizes={"train": 5, "valid": 5, "test": 5})
+    assert _json(priv / "audit.json")["dropped_cross_split"]["test"] == ["a_x1_5.json"]
+
+
+def test_grupos_grandes_avisan_o_fallan(tmp_path):
+    modelos = {f"cad_{ancho}.json": ("train", _mueble(ancho, 300, 1800, 3)) for ancho in range(600, 615)}
+    root = _fuente_con(tmp_path, modelos)
+    modelos_test = {**modelos, "t.json": ("test", _mueble(700, 300, 1800, 3))}
+    root = _fuente_con(tmp_path, modelos_test, "src3")
+    _, priv, _ = _generar(root, tmp_path, "w", sizes={"train": 20, "valid": 1, "test": 1}, max_group_size=5)
+    audit = _json(priv / "audit.json")
+    assert audit["duplicate_groups"]["largest_group"] == 15
+    assert any("15" in w for w in audit["warnings"])
+    with pytest.raises(ValueError, match="group"):
+        _generar(root, tmp_path, "estricto", sizes={"train": 20, "valid": 1, "test": 1}, max_group_size=5, strict_groups=True)
+    assert not (tmp_path / "pub-estricto").exists()
