@@ -53,7 +53,11 @@ export function normalisePartsWorkspace(snapshot = {}) {
     unassignedObservationIds: [...(item.unassigned_part_observation_ids ?? [])], constraints: [...(item.constraints ?? [])], derivedDimensions: [...(item.derived_dimensions ?? [])],
     unknownFields: [...(item.unknown_fields ?? [])], assumptions: (item.assumptions ?? []).map(translateAssumption), evidenceIds: [...(item.evidence_ids ?? [])], state: item.state, needsReview: item.needs_review !== false,
   });});
-  return { isPartsOnly: result.input_semantics === "separated_part_views" && Boolean(analysis), candidateRevision: analysis?.candidate_revision ?? null, observations, candidates, warnings: [...(analysis?.warnings ?? [])], selectedCandidateId: result.selected_assembly_candidate_id ?? null, suggestedCandidateId: snapshot.agent_selected_scenario_id ?? null };
+  return { isPartsOnly: result.input_semantics === "separated_part_views" && Boolean(analysis), candidateRevision: analysis?.candidate_revision ?? null, observations, candidates, warnings: [...(analysis?.warnings ?? [])], selectedCandidateId: result.selected_assembly_candidate_id ?? null, suggestedCandidateId: snapshot.agent_selected_assembly_candidate_id ?? snapshot.agent_selected_scenario_id ?? null };
+}
+
+export function preferredCandidateId(workspace, previewCandidateId = null) {
+  return workspace?.selectedCandidateId ?? previewCandidateId ?? workspace?.suggestedCandidateId ?? workspace?.candidates?.[0]?.id ?? null;
 }
 
 export function partSelectionViewIds(workspace, selection) {
