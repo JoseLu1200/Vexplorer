@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "case_id": "F03",
+  "control_kind": "developer_functional_control",
+  "selected_reference_scenario": "open_back_with_anchoring",
+  "role_matching": "postfreeze_generic_furniture_aliases_v2",
+  "necessary_piece_types": {
+    "matched": 3,
+    "required": 3,
+    "coverage": 1.0
+  },
+  "scenario_quantities": {
+    "correct": 3,
+    "required": 3
+  },
+  "dimensions": {
+    "numeric_primary": 9,
+    "correct": 9,
+    "basis_correct": 2,
+    "required": 9,
+    "tolerance_mm": 1.0
+  },
+  "estimates": {
+    "declared_with_range_and_premise": 0,
+    "required": 0
+  },
+  "closure": {
+    "server_validation": "valid",
+    "no_failed_constraints": true
+  },
+  "construction_requirements": {
+    "satisfied": 1,
+    "required": 1,
+    "missing": []
+  },
+  "piece_drawings": {
+    "with_svg_and_dxf": 3,
+    "required": 3
+  },
+  "occurrence_authority": {
+    "hypothesis_safe": true,
+    "unsafe_piece_types": []
+  },
+  "unmatched_predicted_piece_types": 0,
+  "utility_pass": false,
+  "limitations": [
+    "Authored developer control; not blind or independent evidence.",
+    "Passing means one coherent accepted scenario, not manufacturing certification.",
+    "Role aliases v2 were added after F01-F03 outputs froze; role-aligned results are diagnostic, not preregistered evidence."
+  ]
+}
