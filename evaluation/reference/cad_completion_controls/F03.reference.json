@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0",
+  "case_id": "F03",
+  "reference_kind": "developer_functional_control",
+  "public_input_sha256": "b9b0713828553f109d407c8d55fb715aa60837b0e8b1611785dfcdd655c330ff",
+  "acceptable_scenarios": [
+    {
+      "key": "open_back_with_anchoring",
+      "necessary_piece_types": [
+        {
+          "role": "side_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "observed",
+              "exact": 1800.0
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "top_bottom_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 764.0,
+              "relation": "overall_width - 2 * panel_thickness"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "internal_shelf",
+          "quantity": 4,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 764.0,
+              "relation": "overall_width - 2 * panel_thickness"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "repeated visible shelf span"
+            }
+          }
+        }
+      ],
+      "closure_constraints": [
+        "outside width = 800",
+        "outside height = 1800",
+        "each horizontal panel spans 800 - 2 * 18",
+        "four internal shelf occurrences preserve the visible elevations",
+        "anti-racking wall anchoring or equivalent explicit bracing is required"
+      ],
+      "allowed_variation": "No back panel is acceptable only with an explicit anti-racking premise."
+    },
+    {
+      "key": "thin_structural_back",
+      "necessary_piece_types": [
+        {
+          "role": "side_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "observed",
+              "exact": 1800.0
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "top_bottom_panel",
+          "quantity": 2,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 764.0,
+              "relation": "overall_width - 2 * panel_thickness"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "common panel span"
+            }
+          }
+        },
+        {
+          "role": "internal_shelf",
+          "quantity": 4,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 764.0,
+              "relation": "overall_width - 2 * panel_thickness"
+            },
+            "width": {
+              "kind": "observed",
+              "exact": 300.0
+            },
+            "thickness": {
+              "kind": "deduced",
+              "exact": 18.0,
+              "relation": "repeated visible shelf span"
+            }
+          }
+        },
+        {
+          "role": "back_panel",
+          "quantity": 1,
+          "dimensions_mm": {
+            "length": {
+              "kind": "deduced",
+              "exact": 1800.0,
+              "relation": "outside envelope"
+            },
+            "width": {
+              "kind": "deduced",
+              "exact": 800.0,
+              "relation": "outside envelope"
+            },
+            "thickness": {
+              "kind": "estimated",
+              "minimum": 3.0,
+              "maximum": 6.0,
+              "premise": "rear construction is absent from the views"
+            }
+          }
+        }
+      ],
+      "closure_constraints": [
+        "outside width = 800",
+        "outside height = 1800",
+        "each horizontal panel spans 800 - 2 * 18",
+        "four internal shelf occurrences preserve the visible elevations",
+        "the rear panel closes the outside envelope and supplies anti-racking action"
+      ],
+      "allowed_variation": "Back thickness may vary inside the estimated interval."
+    }
+  ],
+  "utility_checks": {
+    "necessary_piece_types_complete": true,
+    "scenario_quantities_numeric": true,
+    "primary_piece_list_numeric": true,
+    "closure_constraints_satisfied": true,
+    "piece_drawings": {
+      "required_formats": [
+        "svg",
+        "dxf"
+      ],
+      "per_piece_type": true,
+      "numeric_dimensions_required": true
+    }
+  },
+  "epistemic_rules": {
+    "source_dimensions": "observed",
+    "geometry_fixed_offsets": "deduced",
+    "hidden_construction_values": "estimated_with_range_and_premise",
+    "scenario_occurrences": "hypothesis"
+  },
+  "limitations": [
+    "This authored fixture is a functional development control, not a blind benchmark.",
+    "Alternative scenarios are accepted only when their own closure constraints hold."
+  ]
+}
