@@ -108,6 +108,33 @@ test("table workspace keeps source measures separate from generated and evaluate
   assert.deepEqual(workspace.evaluated.components[0].length.dependencyRefs, ["measure:m-width"]);
 });
 
+test("non blocking profile slots stay in the ledger without asking the reviewer for values", () => {
+  const workspace = normaliseTableWorkspace({
+    result_revision: 1,
+    result: {
+      input_semantics: "mounted_orthographic_views",
+      table_analysis: { measures: [
+        { id: "m-unused", semantic: "support_width", value_mm: null, state: "unknown", slot_origin: "profile_required_slot" },
+        { id: "m-required", semantic: "support_depth", value_mm: null, state: "unknown", slot_origin: "profile_required_slot" },
+      ] },
+      table_programs: [],
+      evaluated_table_program: {
+        state: "hypothesis",
+        bindings: [],
+        components: [],
+        measurement_dispositions: [
+          { measurement_id: "m-unused", reason: "No lo usa esta topología", blocking: false },
+          { measurement_id: "m-required", reason: "Necesario para colocar el soporte", blocking: true },
+        ],
+      },
+    },
+  });
+
+  assert.equal(workspace.measures.find((item) => item.id === "m-unused").confirmable, false);
+  assert.equal(workspace.measures.find((item) => item.id === "m-unused").dispositionReason, "No lo usa esta topología");
+  assert.equal(workspace.measures.find((item) => item.id === "m-required").confirmable, true);
+});
+
 test("table review accepts explicit targets and only confirms declared unresolved measurement slots", () => {
   const workspace = normaliseTableWorkspace({
     result_revision: 1,
