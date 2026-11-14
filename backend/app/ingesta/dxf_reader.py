@@ -380,9 +380,13 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
     for layout in document.layouts:
         if layout.name == "Model":
             continue
-        content = sum(1 for entity in layout if entity.dxftype() != "VIEWPORT")
-        if content:
-            warnings.append(f"paperspace_content:{_label(layout.name)}:{content}")
+        # Title blocks usually live in paperspace and are harmless; unread dimensions there are not.
+        kinds = [entity.dxftype() for entity in layout if entity.dxftype() != "VIEWPORT"]
+        dimensions = sum(1 for kind in kinds if kind in {"DIMENSION", "ARC_DIMENSION", "LEADER", "MLEADER"})
+        if dimensions:
+            warnings.append(f"paperspace_dimensions:{_label(layout.name)}:{dimensions}")
+        if len(kinds) - dimensions:
+            warnings.append(f"paperspace_annotations:{_label(layout.name)}:{len(kinds) - dimensions}")
 
     return ParsedDrawing(
         drawing_id=f"drawing-{sha256(raw).hexdigest()[:16]}",
