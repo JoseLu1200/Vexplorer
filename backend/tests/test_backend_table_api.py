@@ -43,8 +43,10 @@ def _accept_all(program):
 class _OneProgramProvider:
     def __init__(self, arguments):
         self.arguments = arguments
+        self.inputs = []
 
     def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+        self.inputs.append(input_items)
         return ProviderResponse(
             id="response-live-table",
             tool_calls=(ToolCall(call_id="propose-live-table", name="proponer_descomposicion", arguments=self.arguments),),
@@ -142,7 +144,9 @@ def test_live_model_generated_table_program_can_be_reviewed_to_completion(tmp_pa
         "assumptions": list(baseline.assumptions),
         "evidence_ids": list(baseline.evidence_ids),
     }
-    client = TestClient(create_app(data_dir=tmp_path, agent_provider=_OneProgramProvider(arguments)))
+    monkeypatch.setenv("OPENAI_VISION_ENABLED", "true")
+    provider = _OneProgramProvider(arguments)
+    client = TestClient(create_app(data_dir=tmp_path, agent_provider=provider))
     with FIXTURE.open("rb") as stream:
         document_id = client.post("/api/v1/documents", files={"file": ("mesa.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
     created = client.post("/api/v1/runs", json={
@@ -157,6 +161,11 @@ def test_live_model_generated_table_program_can_be_reviewed_to_completion(tmp_pa
     program = payload["result"]["table_programs"][0]
     assert program["proposal_origin"] == "model_generated"
     assert program["table_template_id"] is None
+    initial_content = provider.inputs[0][0]["content"]
+    assert sum(item["type"] == "input_image" for item in initial_content) == 3
+    events = client.get(f'/api/v1/runs/{payload["run"]["id"]}/events')
+    assert "renderizar_contexto_visual" in events.text
+    assert "artifact_sha256" in events.text and "mark_count" in events.text
     reviewed = client.post(f'/api/v1/runs/{payload["run"]["id"]}/reviews', json={
         "base_result_revision": 1,
         "reviewer_name": "Técnica local",

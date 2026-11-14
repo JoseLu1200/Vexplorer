@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import hashlib
 import time
+from base64 import b64encode
 from dataclasses import dataclass
 from typing import Protocol
 
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
+from backend.app.agente.vision import render_view
 from backend.app.validador.plausibilidad import evaluate_plausibility
 from backend.app.contratos.modelos import (
     AssemblyCandidate,
@@ -47,6 +49,9 @@ class AgentAction:
     evidence_ids: tuple[str, ...]
     summary: str
     selected_scenario_id: str | None = None
+    artifact_sha256: str | None = None
+    mark_count: int | None = None
+    view_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -278,6 +283,8 @@ def run_table_agent(
     analysis: MountedTableAnalysis,
     provider: Provider,
     limits: AgentLimits = AgentLimits(),
+    *,
+    vision_enabled: bool = False,
 ) -> TableAgentOutcome:
     if extraction.drawing_id != analysis.drawing_id or extraction.input_kind != "mounted_orthographic_views":
         raise ValueError("table_analysis_scope_mismatch")
@@ -294,7 +301,7 @@ def run_table_agent(
         plausibility_findings = evaluate_plausibility(extraction)
     except (FileNotFoundError, ValueError):
         plausibility_findings = ()
-    input_items = [{"role": "user", "content": json.dumps({
+    context = {
         "input_kind": analysis.input_kind,
         "profile": analysis.profile,
         "ledger_revision": analysis.ledger_revision,
@@ -307,8 +314,54 @@ def run_table_agent(
             "truncated": len(plausibility_findings) > 20,
             "authority": "advisory_workshop_catalog_not_measurement_source",
         },
-    }, ensure_ascii=False)}]
+    }
     actions: list[AgentAction] = []
+    if vision_enabled:
+        label_order = {"FRONT": 0, "TOP": 1, "SIDE": 2, "UNKNOWN": 3}
+        selected_views = sorted(extraction.views, key=lambda item: (label_order[item.label], item.id))[:3]
+        if not selected_views:
+            raise RuntimeError("vision_geometry_unavailable")
+        rendered = []
+        for view in selected_views:
+            try:
+                artifact = render_view(extraction, view.id)
+            except ValueError as exc:
+                raise RuntimeError(str(exc)) from exc
+            rendered.append(artifact)
+            actions.append(AgentAction(
+                tool_name="renderizar_contexto_visual",
+                ok=True,
+                evidence_ids=(),
+                summary="Vista PNG Set-of-Mark derivada del ledger para contexto visual; no es fuente de medidas.",
+                artifact_sha256=artifact.sha256,
+                mark_count=len(artifact.marks),
+                view_id=artifact.view_id,
+            ))
+        context["vision"] = {
+            "authority": "context_only_not_measurement_source",
+            "views": [
+                {
+                    "view_id": artifact.view_id,
+                    "sha256": artifact.sha256,
+                    "width_px": artifact.width_px,
+                    "height_px": artifact.height_px,
+                    "marks": [
+                        {"mark_id": mark.mark_id, "source_kind": mark.source_kind, "source_id": mark.source_id}
+                        for mark in artifact.marks
+                    ],
+                }
+                for artifact in rendered
+            ],
+        }
+        content = [{"type": "input_text", "text": json.dumps(context, ensure_ascii=False)}]
+        content.extend({
+            "type": "input_image",
+            "image_url": f"data:{artifact.media_type};base64,{b64encode(artifact.png).decode('ascii')}",
+            "detail": "high",
+        } for artifact in rendered)
+        input_items = [{"role": "user", "content": content}]
+    else:
+        input_items = [{"role": "user", "content": json.dumps(context, ensure_ascii=False)}]
     while model_calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:

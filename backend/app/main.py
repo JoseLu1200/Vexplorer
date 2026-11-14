@@ -202,7 +202,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             try:
                 provider = agent_provider or OpenAIResponsesProvider(settings)
                 if request.input_kind == "mounted_orthographic_views":
-                    outcome = run_table_agent(extraction, table_analysis, provider, AgentLimits())
+                    outcome = run_table_agent(extraction, table_analysis, provider, AgentLimits(), vision_enabled=settings.vision_enabled)
                     table_programs = (outcome.program,)
                     evaluated_table_program = evaluate_table_program(table_analysis, outcome.program)
                     agent_selected_table_program_id = outcome.program.id
@@ -227,6 +227,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 "selected_scenario_id": action.selected_scenario_id if request.input_kind == "mounted_views_legacy" else None,
                 "selected_assembly_candidate_id": action.selected_scenario_id if request.input_kind == "separated_part_views" else None,
                 "selected_table_program_id": agent_selected_table_program_id if request.input_kind == "mounted_orthographic_views" and action.tool_name == "proponer_descomposicion" else None,
+                "artifact_sha256": action.artifact_sha256,
+                "mark_count": action.mark_count,
+                "view_id": action.view_id,
             } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
         run = repository.create_run(
