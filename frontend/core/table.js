@@ -175,6 +175,24 @@ export function presentTableCosts(raw = {}) {
   };
 }
 
+export function presentTableComponentExplanation(bundle = {}, componentId) {
+  bundle = bundle ?? {};
+  const raw = (bundle.pieces ?? []).find((item) => [item.piece_id, item.proposal_id].includes(componentId)) ?? {};
+  const labels = { quantity: "Cantidad", length_mm: "Largo", width_mm: "Ancho", thickness_mm: "Grosor" };
+  return {
+    formulas: (raw.formulas ?? []).map((formula) => ({
+      fieldLabel: labels[formula.field] ?? formula.field,
+      expression: formula.expression,
+      operandsLabel: Object.entries(formula.operands_mm ?? {}).map(([id, value]) => `${id} = ${value} mm`).join(" · "),
+      resultLabel: Number.isFinite(formula.result_mm) ? `${formula.result_mm} mm` : "Desconocido",
+    })),
+    premises: [...(raw.premises ?? [])],
+    unknownLabels: (raw.unknown_fields ?? []).map((field) => labels[field] ?? field),
+    fieldStates: { ...(raw.field_states ?? {}) },
+    warnings: [...(bundle.warnings ?? [])],
+  };
+}
+
 export function normaliseTableDrawingManifest(raw = {}) {
   const revision = Number.isInteger(raw.result_revision) ? raw.result_revision : null;
   const programHash = typeof raw.program_hash === "string" ? raw.program_hash : null;

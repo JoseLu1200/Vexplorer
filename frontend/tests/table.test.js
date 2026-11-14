@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableCosts, tableRunOptions } from "../core/table.js";
+import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableRunOptions } from "../core/table.js";
 
 test("table run options keep catalog baseline and live model generation visibly distinct", () => {
   assert.deepEqual(tableRunOptions("geometry_only", "side_supports_v1"), {
@@ -169,4 +169,12 @@ test("table costs expose explicit tariffs, partial subtotal and largest known co
   assert.match(result.totalLabel, /Subtotal conocido/);
   assert.equal(result.largestContribution.id, "material-top");
   assert.equal(result.items[2].amountLabel, "Pendiente");
+});
+
+test("table explanation presents backend formulas, premises and unknowns without recomputing them", () => {
+  const explanation = presentTableComponentExplanation({ pieces: [{ piece_id: "top", formulas: [{ field: "length_mm", expression: "length_mm=binding:top_length", operands_mm: { "measure:m-width": 1200 }, result_mm: 1200 }], premises: ["Tapa rectangular"], unknown_fields: ["thickness_mm"], field_states: { length_mm: "calculated", thickness_mm: "unknown" } }], warnings: ["Confirma el espesor"] }, "top");
+  assert.deepEqual(explanation.formulas, [{ fieldLabel: "Largo", expression: "length_mm=binding:top_length", operandsLabel: "measure:m-width = 1200 mm", resultLabel: "1200 mm" }]);
+  assert.deepEqual(explanation.premises, ["Tapa rectangular"]);
+  assert.deepEqual(explanation.unknownLabels, ["Grosor"]);
+  assert.deepEqual(explanation.warnings, ["Confirma el espesor"]);
 });
