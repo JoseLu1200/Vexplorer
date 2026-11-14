@@ -10,6 +10,13 @@ from backend.app.ingesta.dxf_reader import ParsedDrawing, ParsedEntity, parse_dx
 
 
 VIEW_LABELS = {"FRONT": "FRONT", "TOP": "TOP", "RIGHT": "SIDE", "SIDE": "SIDE"}
+# Closed outlines that can become contours: LWPOLYLINE and classic 2D POLYLINE.
+POLYGON_KINDS = {"LWPOLYLINE", "POLYLINE"}
+TEXT_KINDS = {"TEXT", "MTEXT", "ATTRIB"}
+# Warnings that keep the extraction in needs_review: unread content, approximations, repaired files, paperspace content.
+REVIEW_WARNING_PREFIXES = ("unsupported_", "approximated_", "recovered_", "paperspace_content")
+HOLE_ROW_MIN_COUNT = 3
+HOLE_TOLERANCE_MM = 0.1
 
 
 @dataclass(frozen=True)
@@ -47,7 +54,7 @@ def _view_labels(drawing: ParsedDrawing) -> list[tuple[str, tuple[float, float]]
     labels = []
     for entity in drawing.entities:
         normalized = (entity.text or "").strip().upper()
-        if normalized in VIEW_LABELS:
+        if entity.kind in {"TEXT", "MTEXT"} and normalized in VIEW_LABELS:
             labels.append((VIEW_LABELS[normalized], entity.points[0]))
     return labels
 
@@ -98,7 +105,7 @@ def _infer_view_labels(
     tolerance = 1e-6 * max(extent, 1.0)
     outlines: list[tuple[Rect, tuple[str, ...]]] = []
     for entity in drawing.entities:
-        if entity.kind == "LWPOLYLINE" and entity.closed and (rect := _corner_rectangle(entity.points, tolerance)):
+        if entity.kind in POLYGON_KINDS and entity.closed and (rect := _corner_rectangle(entity.points, tolerance)):
             outlines.append((rect, (entity.id,)))
     lines = [entity for entity in drawing.entities if entity.kind == "LINE"]
     for component in _line_components(lines, tolerance) if lines else []:
@@ -142,7 +149,7 @@ def _view_regions(
 ) -> list[tuple[str, tuple[float, float, float, float]]]:
     regions = []
     for entity in drawing.entities:
-        if entity.kind != "LWPOLYLINE" or not entity.closed or len(entity.points) < 4:
+        if entity.kind not in POLYGON_KINDS or not entity.closed or len(entity.points) < 4:
             continue
         center = (
             sum(point[0] for point in entity.points) / len(entity.points),
@@ -161,7 +168,9 @@ def _assign_view(
 ) -> str:
     if not labels or not entity.points:
         return "UNKNOWN"
-    region_points = entity.extension_starts if entity.kind == "DIMENSION" else entity.points
+    # An ordinate dimension belongs where its feature point is (defpoint2), not near its UCS origin.
+    anchor_points = entity.points[1:2] if entity.ordinate_axis and len(entity.points) >= 2 else entity.points
+    region_points = entity.extension_starts if entity.kind == "DIMENSION" and not entity.ordinate_axis else anchor_points
     if entity.kind in {"DIMENSION", "LINE"} and region_points and regions:
         def distance_to_region(region: tuple[float, float, float, float]) -> float:
             min_x, min_y, max_x, max_y = region
@@ -173,7 +182,7 @@ def _assign_view(
             return total
 
         return min(regions, key=lambda item: (distance_to_region(item[1]), item[0]))[0]
-    center = (sum(p[0] for p in entity.points) / len(entity.points), sum(p[1] for p in entity.points) / len(entity.points))
+    center = (sum(p[0] for p in anchor_points) / len(anchor_points), sum(p[1] for p in anchor_points) / len(anchor_points))
     return min(labels, key=lambda item: (dist(center, item[1]), item[0]))[0]
 
 
@@ -250,6 +259,58 @@ def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, 
     return tuple(sorted((lengths[0], lengths[1]), reverse=True))
 
 
+def _printable(value: str, limit: int = 80) -> str:
+    return "".join(character if character.isprintable() else "?" for character in value)[:limit]
+
+
+def _hole_row_evidence(drawing: ParsedDrawing, view_of: dict[str, str]) -> list[dict[str, Any]]:
+    """Rows of >= 3 equal circles aligned on one axis, with their pitch, as deterministic geometric evidence.
+
+    Reports what is drawn (diameter, pitch, whether all spacings are multiples of the pitch); it does not decide
+    what the holes are. Comparing against a drilling system belongs to the validator's workshop catalog.
+    Only with resolved units, so every figure is in millimetres.
+    """
+    scale = drawing.unit_scale_to_mm
+    if scale is None:
+        return []
+    groups: dict[tuple[str, int], list[tuple[float, float, str]]] = {}
+    for entity in drawing.entities:
+        if entity.kind != "CIRCLE" or entity.circle is None:
+            continue
+        x, y, radius = (value * scale for value in entity.circle)
+        groups.setdefault((view_of.get(entity.id, "UNKNOWN"), round(2 * radius / HOLE_TOLERANCE_MM)), []).append((x, y, entity.id))
+    rows: list[tuple[str, float, str, float, list[tuple[float, str]]]] = []
+    for (view, diameter_key), circles in groups.items():
+        for axis in ("x", "y"):
+            lines: dict[int, list[tuple[float, str]]] = {}
+            for x, y, entity_id in circles:
+                along, across = (x, y) if axis == "x" else (y, x)
+                lines.setdefault(round(across / HOLE_TOLERANCE_MM), []).append((along, entity_id))
+            for across_key, members in lines.items():
+                if len(members) >= HOLE_ROW_MIN_COUNT:
+                    rows.append((view, diameter_key * HOLE_TOLERANCE_MM, axis, across_key * HOLE_TOLERANCE_MM, sorted(members)))
+    result = []
+    counters: dict[str, int] = {}
+    for view, diameter, axis, across, members in sorted(rows, key=lambda row: (row[0], row[1], row[2], row[3])):
+        spacings = [second[0] - first[0] for first, second in zip(members, members[1:])]
+        pitch = min(spacings)
+        if pitch <= HOLE_TOLERANCE_MM:
+            continue
+        regular = all(abs(spacing / pitch - round(spacing / pitch)) * pitch <= HOLE_TOLERANCE_MM for spacing in spacings)
+        counters[view] = counters.get(view, 0) + 1
+        other = "y" if axis == "x" else "x"
+        spacing_text = "all multiples of the pitch" if regular else "irregular"
+        result.append({
+            "id": f"evidence-holes-{view.lower()}-{counters[view]}", "kind": "geometry",
+            "source_entity_ids": [entity_id for _, entity_id in members],
+            "description": (
+                f"Row of {len(members)} circles diameter {diameter:.1f} mm in view {view}, along {axis} at {other}={across:.1f} mm, "
+                f"pitch {pitch:.1f} mm, spacings {spacing_text}, span {members[-1][0] - members[0][0]:.1f} mm"
+            ),
+        })
+    return result
+
+
 def extraction_payload(path: Path) -> dict[str, Any]:
     drawing = parse_dxf(path)
     labels = _view_labels(drawing)
@@ -274,29 +335,34 @@ def extraction_payload(path: Path) -> dict[str, Any]:
         points_mm = _scaled(entity.points, drawing.unit_scale_to_mm)
         entities.append({"id": entity.id, "kind": entity.kind, "layer": entity.layer, "source_points": points_source, "points_mm": points_mm, "linetype": entity.linetype})
         by_view.setdefault(view_label, []).append(entity.id)
-        if entity.kind in {"TEXT", "MTEXT"} and entity.text is not None:
+        if entity.kind in TEXT_KINDS and entity.text is not None:
             position_source, position_mm = _point_payload(entity.points[0], drawing.unit_scale_to_mm)
             texts.append({
                 "id": f"text-{entity.id}", "source_entity_id": entity.id,
                 "view_id": f"view-{view_label.lower()}", "layer": entity.layer, "text": entity.text,
                 "position_source": position_source, "position_mm": position_mm,
             })
-        if entity.kind == "LWPOLYLINE" and entity.closed and len(entity.points) >= 4:
+        if entity.kind in POLYGON_KINDS and entity.closed and len(entity.points) >= 4:
             contour_id = f"contour-{entity.id}"
             contours.append({"id": contour_id, "view_id": f"view-{view_label.lower()}", "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})
         if entity.kind == "DIMENSION" and entity.measurement is not None:
             evidence_id = f"evidence-dimension-{entity.id}"
             dimension_id = f"dimension-{entity.id}"
+            has_graphic = bool(entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None)
             graphic_id = f"graphic-{entity.id}"
             value_mm = entity.measurement * drawing.unit_scale_to_mm if not entity.dimension_conflict and drawing.unit_scale_to_mm is not None else None
-            evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": "Linear dimension annotation observed in drawing"})
+            description = (
+                f"Ordinate dimension ({entity.ordinate_axis.upper()} from its origin) observed in drawing"
+                if entity.ordinate_axis else "Linear dimension annotation observed in drawing"
+            )
+            evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": description})
             dimensions.append({
                 "id": dimension_id, "kind": "annotation", "value_mm": value_mm,
                 "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed",
-                "view_id": f"view-{view_label.lower()}", "graphic_id": graphic_id,
+                "view_id": f"view-{view_label.lower()}", "graphic_id": graphic_id if has_graphic else None,
             })
-            if entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None:
+            if has_graphic:
                 start_a_source, start_a_mm = _point_payload(entity.extension_starts[0], drawing.unit_scale_to_mm)
                 start_b_source, start_b_mm = _point_payload(entity.extension_starts[1], drawing.unit_scale_to_mm)
                 dimension_start_source, dimension_start_mm = _point_payload(entity.dimension_line[0], drawing.unit_scale_to_mm)
@@ -331,6 +397,21 @@ def extraction_payload(path: Path) -> dict[str, Any]:
                 "description": "Axis-aligned closed contour derived from connected source lines",
             })
 
+    view_of = {entity_id: label for label, ids in by_view.items() for entity_id in ids}
+    evidence.extend(_hole_row_evidence(drawing, view_of))
+    for reference in drawing.block_references:
+        if reference.primitive_ids:
+            evidence.append({
+                "id": f"evidence-block-{reference.id}", "kind": "geometry", "source_entity_ids": list(reference.primitive_ids),
+                "description": f"Block reference with {len(reference.primitive_ids)} expanded primitives at nesting depth {reference.depth}; untrusted block name: {_printable(reference.name)}",
+            })
+    for entity in drawing.entities:
+        if entity.kind == "HATCH":
+            evidence.append({
+                "id": f"evidence-hatch-{entity.id}", "kind": "geometry", "source_entity_ids": [entity.id],
+                "description": f"Hatch boundary observed; untrusted pattern name: {_printable(entity.hatch_pattern or 'unknown')}",
+            })
+
     warnings = list(drawing.warnings)
     if inferred_outline_ids:
         warnings.append("view_labels_inferred_from_alignment")
@@ -351,7 +432,7 @@ def extraction_payload(path: Path) -> dict[str, Any]:
         views.append({"id": f"view-{label.lower()}", "label": label, "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
     status = "needs_review" if drawing.unit_scale_to_mm is None or inferred_outline_ids or any(
-        warning.startswith("unsupported_") or "conflict" in warning or "override" in warning
+        warning.startswith(REVIEW_WARNING_PREFIXES) or "conflict" in warning or "override" in warning
         for warning in drawing.warnings
     ) else "ready"
     observations = []
