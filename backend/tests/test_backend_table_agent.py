@@ -1,0 +1,79 @@
+import json
+
+from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.agente.runner import AgentLimits, run_table_agent
+from backend.app.agente.tools import table_tool_schemas
+from backend.app.contratos.modelos import MountedTableAnalysis, TableMeasure
+
+
+class FakeProvider:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.inputs = []
+
+    def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+        self.inputs.append(input_items)
+        return self.responses.pop(0)
+
+
+def _analysis():
+    measures = tuple(
+        TableMeasure(
+            id=name,
+            semantic=semantic,
+            axis=axis,
+            value_mm=value,
+            state="observed",
+            measurement_ids=(f"dim-{name}",),
+            view_ids=("front",),
+            evidence_ids=(f"ev-{name}",),
+            source_entity_ids=(f"entity-{name}",),
+        )
+        for name, semantic, axis, value in (
+            ("w", "overall_width", "width", 1200),
+            ("h", "overall_height", "height", 750),
+            ("d", "overall_depth", "depth", 700),
+        )
+    )
+    return MountedTableAnalysis(drawing_id="drawing", ledger_revision="ledger-1", measures=measures, admitted_measurement_ids=("w", "h", "d"), state="ready")
+
+
+def _proposal_arguments():
+    bindings = []
+    for binding_id, measure_id in (("top-l", "w"), ("top-w", "d"), ("top-t", "h"), ("side-l", "h"), ("side-w", "d"), ("side-t", "w")):
+        bindings.append({"id": binding_id, "operation": "copy", "operand_refs": [{"ref_type": "measure", "ref_id": measure_id}]})
+    return {
+        "bindings": bindings,
+        "components": [
+            {"id": "top", "role": "tabletop", "length_binding_id": "top-l", "width_binding_id": "top-w", "thickness_binding_id": "top-t", "quantity_rule_id": "top_one", "quantity_rule_version": "1", "placement_rule_id": "top_flush", "placement_rule_version": "1", "evidence_ids": ["ev-w"], "premise_ids": ["p-top"]},
+            {"id": "sides", "role": "side_support", "length_binding_id": "side-l", "width_binding_id": "side-w", "thickness_binding_id": "side-t", "quantity_rule_id": "two_side_supports", "quantity_rule_version": "1", "placement_rule_id": "side_supports_flush", "placement_rule_version": "1", "evidence_ids": ["ev-h"], "premise_ids": ["p-side"]},
+        ],
+        "premises": [
+            {"id": "p-top", "kind": "topology", "required": True, "description": "Tapa rectangular"},
+            {"id": "p-side", "kind": "topology", "required": True, "description": "Dos soportes laterales"},
+        ],
+        "assumptions": ["construction_hypothesis"],
+        "evidence_ids": ["ev-w", "ev-h", "ev-d"],
+    }
+
+
+def test_table_agent_inspects_source_values_then_proposes_reference_only_program():
+    analysis = _analysis()
+    provider = FakeProvider([
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="inspect", name="inspeccionar_medidas_mesa", arguments={"measurement_ids": ["w", "h", "d"]}),)),
+        ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+    ])
+
+    outcome = run_table_agent(analysis, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+
+    context = json.loads(provider.inputs[0][0]["content"])
+    assert context["input_kind"] == "mounted_orthographic_views"
+    assert all("value_mm" not in item for item in context["measurements"])
+    inspected = json.loads(provider.inputs[1][0]["output"])
+    assert inspected["ok"] is True
+    assert {item["value_mm"] for item in inspected["measures"]} == {1200, 750, 700}
+    assert outcome.program.ledger_revision == analysis.ledger_revision
+    assert outcome.program.proposal_origin == "model_generated"
+    assert outcome.program.table_template_id is None
+    assert [item.tool_name for item in outcome.actions] == ["inspeccionar_medidas_mesa", "proponer_descomposicion"]
+    assert {item["name"] for item in table_tool_schemas()} == {"inspeccionar_medidas_mesa", "proponer_descomposicion"}

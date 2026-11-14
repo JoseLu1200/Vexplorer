@@ -4,6 +4,8 @@ from backend.app.contratos.modelos import (
     ExplainPieceArgs,
     InspectEvidenceArgs,
     InspectSeparatedPartArgs,
+    InspectTableMeasuresArgs,
+    ProposeTableProgramArgs,
     SelectAssemblyCandidateArgs,
     SelectScenarioArgs,
 )
@@ -32,5 +34,20 @@ def parts_tool_schemas() -> list[dict]:
             "entregar_candidato_montaje",
             "Entrega por ID un candidato de montaje ya calculado; no confirma el montaje ni permite aportar medidas o cantidades.",
             SelectAssemblyCandidateArgs,
+        ),
+    ]
+
+
+def table_tool_schemas() -> list[dict]:
+    return [
+        _schema(
+            "inspeccionar_medidas_mesa",
+            "Consulta por ID medidas y evidencias del ledger de vistas montadas actual; no modifica valores.",
+            InspectTableMeasuresArgs,
+        ),
+        _schema(
+            "proponer_descomposicion",
+            "Propone un programa acotado por referencias y reglas; no admite números, coordenadas, cantidades ni placements libres.",
+            ProposeTableProgramArgs,
         ),
     ]
