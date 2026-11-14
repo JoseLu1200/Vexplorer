@@ -507,7 +507,14 @@ def evaluate_table_program(
         "corner_supports_v1": ("corner_support", "four_corner_supports", "corner_supports_flush"),
     }
     top = component_specs.get("tabletop")
-    expected = expected_rules.get(program.table_template_id)
+    effective_template_id = program.table_template_id
+    if effective_template_id is None:
+        support_roles = set(component_specs) - {"tabletop"}
+        if support_roles == {"side_support"}:
+            effective_template_id = "side_supports_v1"
+        elif support_roles == {"corner_support"}:
+            effective_template_id = "corner_supports_v1"
+    expected = expected_rules.get(effective_template_id)
     support = component_specs.get(expected[0]) if expected is not None else None
     semantic_valid = top is not None and support is not None and expected is not None
     if semantic_valid:
