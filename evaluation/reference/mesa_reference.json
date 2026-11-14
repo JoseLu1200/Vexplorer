@@ -1,0 +1,114 @@
+{
+  "schema_version": "vexplorer-table-evaluator-reference-1",
+  "provenance": "original_synthetic_reference_authored_for_development",
+  "access_policy": {
+    "evaluator_only": true,
+    "runtime_allowed": false,
+    "prompt_allowed": false,
+    "tool_allowed": false
+  },
+  "evaluation_protocol": {
+    "freeze_runtime_output_before_reading": true,
+    "compatible_alternatives_are_not_errors_before_human_review": true,
+    "manufacturing_accuracy_claimed": false
+  },
+  "cases": {
+    "mesa_demo_001.dxf": {
+      "reviewed_profile": "rectangular_table_v1",
+      "reviewed_rule": "two_side_supports@1",
+      "reviewed_components": [
+        {
+          "role": "tabletop",
+          "quantity": 1,
+          "length_mm": 1200.0,
+          "width_mm": 700.0,
+          "thickness_mm": 30.0
+        },
+        {
+          "role": "side_support",
+          "quantity": 2,
+          "length_mm": 720.0,
+          "width_mm": 700.0,
+          "thickness_mm": 18.0
+        }
+      ],
+      "independent_volume_mm3": 43344000.0,
+      "independent_economy": {
+        "currency": "EUR",
+        "synthetic": true,
+        "area_rate_eur_m2": 50.0,
+        "setup_eur": 40.0,
+        "piece_area_mm2": [
+          840000.0,
+          504000.0,
+          504000.0
+        ],
+        "piece_material_eur": [
+          42.0,
+          25.2,
+          25.2
+        ],
+        "total_area_mm2": 1848000.0,
+        "material_eur": 92.4,
+        "total_eur": 132.4
+      }
+    },
+    "mesa_demo_002.dxf": {
+      "reviewed_profile": "rectangular_table_v1",
+      "reviewed_rule": "two_side_supports@1",
+      "reviewed_components": [
+        {
+          "role": "tabletop",
+          "quantity": 1,
+          "length_mm": 1400.0,
+          "width_mm": 800.0,
+          "thickness_mm": 32.0
+        },
+        {
+          "role": "side_support",
+          "quantity": 2,
+          "length_mm": 728.0,
+          "width_mm": 800.0,
+          "thickness_mm": 20.0
+        }
+      ],
+      "independent_volume_mm3": 59136000.0,
+      "independent_economy": {
+        "currency": "EUR",
+        "synthetic": true,
+        "area_rate_eur_m2": 50.0,
+        "setup_eur": 40.0,
+        "piece_area_mm2": [
+          1120000.0,
+          582400.0,
+          582400.0
+        ],
+        "piece_material_eur": [
+          56.0,
+          29.12,
+          29.12
+        ],
+        "total_area_mm2": 2284800.0,
+        "material_eur": 114.24,
+        "total_eur": 154.24
+      }
+    },
+    "mesa_demo_003.dxf": {
+      "pre_review_unknowns": [
+        "side_support.width_mm"
+      ],
+      "reviewed_components": null,
+      "independent_economy": null
+    },
+    "mesa_demo_004.dxf": {
+      "pre_review_conflicts": {
+        "overall_width_mm": {
+          "geometry": 1200.0,
+          "dimension_text": 1190.0
+        }
+      },
+      "reviewed_components": null,
+      "independent_economy": null
+    }
+  }
+}

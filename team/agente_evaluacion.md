@@ -9,16 +9,21 @@
 
 ## Tarea y alcance
 
-- Estado: en curso para la entrada parts-only 0.4 del 2026-11-14.
+- Estado: en curso para la ampliación 0.5 de mesa desde vistas montadas del 2026-11-14.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
 - Propiedad adicional autorizada: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*` y `tests/test_parts_only_evaluation.py`.
 - Propiedad adicional de auditoría HTTP parts-only: `tools/audit_parts.py` y `docs/auditoria/2026-11-14/parts-api.json`.
+- Propiedad nueva autorizada: `tools/build_table_fixture.py`, `data/planos_demo/mesa_*`, `evaluation/reference/mesa_*`, `tests/test_table_evaluation.py` y futuro `tools/audit_table.py`.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
-- Objetivo actual: fixture propio compuesto solo por vistas locales de piezas separadas, cantidades públicas asociadas cuando existan, variantes con incógnitas y controles de descriptor, manteniendo ensamblaje/roles/BOM exclusivamente en referencia privada.
+- Objetivo actual: fixture propio de una mesa montada en planta/alzado/perfil, sin vistas de piezas, roles ni BOM públicos; evaluar propuesta generativa, revisión, planos derivados y coste manteniendo el oráculo exclusivamente privado.
 
 ## Hecho
 
+- Creado bloque público de mesa montada con cuatro DXF propios y nombres opacos: completo, variación dimensional, ausencia de perfil y discrepancia entre geometría/cota visible; el manifiesto no identifica cada caso.
+- Las vistas públicas son `FRONT`, `TOP`, `SIDE` con ejes W/H, W/D y D/H; no contienen `PART`, `QTY`, roles, BOM ni vistas locales del despiece.
+- La referencia de construcción revisada y economía sintética vive solo en `evaluation/reference/mesa_reference.json`; el generador se prueba con cualquier lectura privada denegada.
+- A/B recibieron exclusivamente rutas, regiones, capas y ejes observables del DXF. El contrato 0.5 fue acordado y B lo congeló en `c3ab42b`; D espera los modelos/API materializados para fijar aceptación de producto.
 - Creado bloque parts-only público con siete DXF propios: completo, cantidad desconocida, espesor desconocido, dimensiones distintas, espesor 36 mm, claves/traslación distintas y vistas ambiguas sin clave.
 - La gramática visible usa `PART <key> FRONT|TOP|SIDE` y `QTY <key> <n>`; FRONT=(L,W), TOP=(L,T), SIDE=(T,W). Un `QTY` suelto no se asocia.
 - Separada la nueva referencia de ensamblaje, roles y economía en `evaluation/reference/piezas_reference.json`; el generador no la importa ni la lee.
@@ -45,6 +50,7 @@
 
 ## Dependencias / avisos
 
+- Mesa 0.5: A/B acordaron `mounted_orthographic_views`, perfil `rectangular_table_v1`, programa declarativo sin números y reglas versionadas calculadas por servidor. D no importará modelos hasta el commit de implementación contractual de B.
 - B entregará la API vertical para ejecutar el E2E TestClient de revisión, comparable, estimación y exportación.
 - La referencia privada nunca se comunica al extractor ni se incorpora a prompts, endpoints, herramientas, índice histórico o runtime.
 - No hay cambio de `contratos/` por D.
@@ -83,6 +89,9 @@
 | Suite D sobre raíz integrada `59a49d6` | parts-only + fixture/aislamiento/E2E/workbench | 47 pasan; 1 aviso deprecación | Incluye export parts y explicaciones corregidos |
 | Suite Python sobre raíz integrada | `.venv\Scripts\python.exe -m pytest -q` | 176 pasan; 1 aviso deprecación | El hallazgo HTTP de revisión incremental no estaba cubierto por la suite |
 | Suite JavaScript sobre raíz integrada | `npm test --prefix frontend` | 61 pasan | Sin navegador real ni proveedor; ambos quedan a cargo del coordinador |
+| Baseline mesa desde `main` `164356b` | `python -m pytest -q` | 188 pasan; 1 aviso deprecación | Antes de crear fixtures de mesa |
+| TDD rojo fixture mesa | `python -m pytest tests/test_table_evaluation.py -q` | 8 fallos por generador/DXF/manifiesto ausentes | Fallos esperados antes de implementar |
+| Fixture público, referencia e aislamiento mesa | mismo comando tras implementar | 11 pasan | API/contrato 0.5 todavía no materializados en esta rama |
 
 ## Siguiente bloque
 
