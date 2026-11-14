@@ -86,7 +86,9 @@ def render_markdown(report: dict[str, Any]) -> str:
                     ),
                     (
                         f"- Despiece: emparejadas {ident['matched']}, falsos positivos {ident['false_positives']}, "
-                        f"omisiones {ident['omissions']}, precision {_pct(ident['precision'])}, recall {_pct(ident['recall'])}"
+                        f"omisiones {ident['omissions']}, precision {_pct(ident['precision'])}, recall {_pct(ident['recall'])}; "
+                        f"parciales (fuera de precision/recall) {ident['matched_partial']}, "
+                        f"pares en clases ambiguas {ident['ambiguous_class_pairs']}"
                     ),
                     (
                         f"- Cantidades: comparadas {qty['compared_components']}, exactas {_pct(qty['exact_rate'])}, "
@@ -95,7 +97,9 @@ def render_markdown(report: dict[str, Any]) -> str:
                     (
                         f"- Abstencion: correcta {_pct(abst['correct_abstention_rate'])} "
                         f"({abst['correct_abstentions']}/{abst['unidentifiable_fields']}), afirmados no identificables "
-                        f"{abst['asserted_unidentifiable']}, sobre-abstencion {_pct(abst['over_abstention_rate'])}"
+                        f"{abst['asserted_unidentifiable']}, sobre-abstencion {_pct(abst['over_abstention_rate'])}; "
+                        f"cota inferior (asignacion menos favorable) correcta {_pct(abst['lower_bound']['correct_abstention_rate'])}, "
+                        f"afirmados {abst['lower_bound']['asserted_unidentifiable']}"
                     ),
                     f"- Campos sin referencia anotada: {m['fields_without_reference']['fields']}",
                     (

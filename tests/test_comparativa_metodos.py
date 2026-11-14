@@ -527,14 +527,6 @@ def test_two_known_dimensions_do_not_outscore_three_with_one_wrong() -> None:
     assert wrong_three["identity"]["matched"] == abstain["identity"]["matched"]
 
 
-def test_wrong_value_in_an_identifiable_field_is_an_error_not_a_lost_component() -> None:
-    answer = [_c("K1", 1200, 300, 40), _c("K2", 864, 300, 18), _c("K3", 864, 300, 18)]
-    m = _score([_out(answer)], _ref_case(thickness_k3_identifiable=True))
-    assert m["identity"]["matched"] == 3
-    assert m["dimensions"]["eligible_fields"] == 9 and m["dimensions"]["predicted_fields"] == 9
-    assert m["dimensions"]["within_tolerance"] == 8
-
-
 def test_failed_observations_stay_in_the_coverage_and_recall_denominators() -> None:
     good = [_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, 18)]
     outputs = [_out(good, repetition=1)] + [_out([], status="failed", repetition=n) for n in range(2, 6)]
@@ -799,3 +791,100 @@ def test_error_messages_do_not_carry_absolute_paths(tmp_path: Path) -> None:
     message = out["error"]["message"]
     assert "bob" not in message and "Users" not in message and "home" not in message
     assert message.count("<path>") == 3
+
+
+# ------------------- re-review fixes: strict identity, ambiguity lower bound, large classes
+
+def _plank_ref(rows: list[tuple[float, float, float]]):
+    from evaluation.comparativa.model import ReferenceCase
+
+    return ReferenceCase("c1", tuple(
+        RefComponent(f"R{i}", {n: RefField(v, True) for n, v in zip(("length", "width", "thickness"), dims)}, RefField(1, False))
+        for i, dims in enumerate(rows, 1)
+    ))
+
+
+def test_a_far_off_identifiable_dimension_is_not_an_identity_match() -> None:
+    reference = _plank_ref([(700, 500, 20), (960, 500, 20), (400, 500, 20)])
+    answer = [_c(f"P{i}", 5000 + i, 500, 20, None) for i in range(3)]
+    m = _score([_out(answer)], reference)
+    assert m["identity"]["matched"] == 0
+    assert m["identity"]["precision"] == 0.0 and m["identity"]["recall"] == 0.0
+    assert m["dimensions"]["predicted_fields"] == 0 and m["dimensions"]["coverage"] == 0.0
+    # the looser view is published apart and never enters precision or recall
+    assert m["identity"]["matched_partial"] == 3
+    assert m["identity"]["false_positives"] == 3 and m["identity"]["omissions"] == 3
+
+
+def test_a_wrong_identifiable_dimension_does_not_count_as_covered() -> None:
+    answer = [_c("K1", 1200, 300, 40), _c("K2", 864, 300, 18), _c("K3", 864, 300, 18)]
+    m = _score([_out(answer)], _ref_case(thickness_k3_identifiable=True))
+    assert m["identity"]["matched"] == 2 and m["identity"]["matched_partial"] == 1
+    assert m["dimensions"]["predicted_fields"] == 6 and m["dimensions"]["eligible_fields"] == 9
+    assert m["dimensions"]["within_tolerance"] == 6
+
+
+def test_value_in_an_unidentifiable_field_never_blocks_the_match() -> None:
+    answer = [_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, 40)]
+    m = _score([_out(answer)], _ref_case())
+    assert m["identity"]["matched"] == 3 and m["identity"]["matched_partial"] == 0
+    assert m["abstention"]["asserted_unidentifiable"] == 1
+
+
+def test_inverted_abstention_inside_an_ambiguous_class_is_bounded_from_below() -> None:
+    # K2 and K3 are indistinguishable by size.  Abstaining on the resolvable one and
+    # asserting the unidentifiable one is a perfect score under the favourable
+    # assignment; the lower bound shows what the least favourable reading gives.
+    answer = [_c("K1", 1200, 300, 18), _c("a", 864, 300, None), _c("b", 864, 300, 18)]
+    m = _score([_out(answer)], _ref_case())
+    assert m["abstention"]["correct_abstention_rate"] == 1.0
+    assert m["identity"]["ambiguous_class_pairs"] == 2
+    lower = m["abstention"]["lower_bound"]
+    assert lower["correct_abstentions"] == 0 and lower["asserted_unidentifiable"] == 1
+    assert lower["resolvable_left_unknown"] == 1 and lower["correct_abstention_rate"] == 0.0
+    # an unambiguous answer has equal bounds
+    clean = _score([_out([_c("K1", 1200, 300, 18)])], _ref_case())
+    assert clean["identity"]["ambiguous_class_pairs"] == 0
+    assert clean["abstention"]["lower_bound"]["asserted_unidentifiable"] == 0
+
+
+def test_classes_larger_than_seven_follow_the_same_rule() -> None:
+    from evaluation.comparativa.model import ReferenceCase
+
+    def member(i: int, unidentifiable: bool) -> RefComponent:
+        return RefComponent(f"R{i}", {"length": RefField(900, True), "width": RefField(300, True),
+                                      "thickness": RefField(18, not unidentifiable)}, RefField(1, True))
+
+    reference = ReferenceCase("c1", tuple(member(i, i == 5) for i in range(9)))
+    answer = [_c(f"p{i}", 900, 300, 18, 1) for i in range(8)] + [_c("p8", 900, 300, None, 1)]
+    m = _score([_out(answer)], reference)
+    assert m["identity"]["matched"] == 9
+    assert m["abstention"]["correct_abstentions"] == 1 and m["abstention"]["asserted_unidentifiable"] == 0
+    assert m["abstention"]["resolvable_left_unknown"] == 0
+    assert m["abstention"]["lower_bound"]["correct_abstentions"] == 0
+    assert m["identity"]["ambiguous_class_pairs"] == 9
+
+
+def test_hungarian_matches_brute_force_on_random_matrices() -> None:
+    import itertools
+    import random
+
+    from evaluation.comparativa.scoring import _hungarian
+
+    rng = random.Random(7)
+    for _ in range(200):
+        n = rng.randint(1, 5)
+        m = n + rng.randint(0, 3)
+        cost = [[rng.randint(0, 50) for _ in range(m)] for _ in range(n)]
+        picked = _hungarian(cost)
+        assert len(set(picked)) == n
+        got = sum(cost[i][j] for i, j in enumerate(picked))
+        best = min(sum(cost[i][j] for i, j in enumerate(cols)) for cols in itertools.permutations(range(m), n))
+        assert got == best
+
+
+def test_markdown_shows_partial_matches_and_the_abstention_lower_bound(tmp_path: Path) -> None:
+    reader = dev_reader(tmp_path / "s")
+    execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+    text = render_markdown(score_run(reader, tmp_path / "run"))
+    assert "parciales (fuera de precision/recall)" in text and "cota inferior" in text

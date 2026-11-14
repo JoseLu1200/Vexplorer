@@ -6,21 +6,28 @@ never uses keys, roles or reference-supplied pairings, and nothing in it
 depends on key order.
 
 Matching rules (documented because they are a choice):
-* A predicted component needs at least two known dimensions that fit the
-  reference within ``match_tolerance_mm``: the best subset of >= 2 values is
-  assigned to distinct reference dimension slots, independent of field labels
-  (an orthographic rectangle shows any two of a part's three dimensions).
-  The remaining known values go to the remaining slots and are then scored as
-  errors (identifiable slot) or inventions (unidentifiable slot).
+* Identity match: every known value of the predicted component is assigned to
+  a distinct reference dimension slot (independent of field labels: an
+  orthographic rectangle shows any two of a part's three dimensions) and every
+  value that lands on an *identifiable* slot must be within
+  ``match_tolerance_mm``.  A value that lands on an unidentifiable slot does not
+  block the match; it is scored afterwards as an invention.  At least two known
+  values must fit.
+* ``matched_partial`` is published apart: pairs among the leftovers where two or
+  more values fit but an identifiable one does not.  It never enters precision,
+  recall, coverage or MAE.
 * Reference components with identical dimensions form one *class*.  Predicted
-  components are matched to classes greedily by (fit, content signature,
-  class dimensions); keys are never used, so equal answers score equally under
-  any naming.
-* Inside a class the assignment of predicted to reference components is the one
-  most favourable to the prediction (fewest inventions, then fewest resolvable
-  fields left unknown, then least dimension error, then most exact quantities).
-  The ambiguity is declared, not hidden: indistinguishable references cannot
-  penalise a prediction for how they happen to be listed.
+  components go to classes greedily by (fit, content signature, class
+  dimensions); keys are never used, so equal answers score equally under any
+  naming.
+* Inside a class the assignment of predicted to reference components is solved
+  exactly (Hungarian algorithm, any class size) for the one most favourable to
+  the prediction: maximum number of valid matches, then fewest inventions, then
+  fewest resolvable fields left unknown, then least dimension error, then most
+  exact quantities.  That headline is optimistic inside ambiguous classes, so the
+  least favourable assignment is solved too and published as
+  ``abstention.lower_bound``; ``identity.ambiguous_class_pairs`` counts the pairs
+  resolved inside classes of more than one member.
 * Failed observations contribute their reference types and resolvable fields to
   the coverage/recall denominators (no prediction = nothing found); a labelled
   ``*_conditioned_on_ok`` view excludes them.  ``not_evaluated`` and
@@ -62,15 +69,10 @@ def _slots(reference: RefComponent) -> list[str]:
     return [name for name in DIMENSION_FIELDS if reference.dimensions[name].value is not None]
 
 
-def _assign(
+def _assign_partial(
     component: Component, reference: RefComponent, tolerance: float
 ) -> tuple[tuple[int, float], dict[str, str]] | None:
-    """Best fit of the component's known values to the reference slots.
-
-    Returns ``(rank, mapping)``; rank is ``(-fitted_values, summed_error)`` so
-    smaller is better.  ``mapping`` maps predicted field -> reference slot and
-    includes values that did not fit (they become errors or inventions).
-    """
+    """Loose fit: best subset of >= 2 values within tolerance (for ``matched_partial`` only)."""
 
     known = [
         (name, component.dimensions_mm[name])
@@ -170,52 +172,187 @@ def _pair_cost(component: Component, reference: RefComponent, mapping: dict[str,
     return (invented, left_unknown, round(error, 9), -exact)
 
 
-MAX_PERMUTED_CLASS = 7
+def _fit_strict(
+    component: Component, reference: RefComponent, tolerance: float
+) -> tuple[tuple[int, float], dict[str, str]] | None:
+    """Identity fit: all known values placed; identifiable slots must be within tolerance."""
+
+    known = [
+        (name, component.dimensions_mm[name])
+        for name in DIMENSION_FIELDS
+        if component.dimensions_mm[name] is not None
+    ]
+    slots = _slots(reference)
+    if len(known) < MIN_KNOWN_DIMENSIONS or len(known) > len(slots):
+        return None
+    best: tuple[tuple[int, float, tuple[str, ...]], dict[str, str]] | None = None
+    for chosen in permutations(slots, len(known)):
+        diffs = [
+            abs(value - reference.dimensions[slot].value)  # type: ignore[operator]
+            for (_, value), slot in zip(known, chosen, strict=True)
+        ]
+        if any(d > tolerance and reference.dimensions[slot].identifiable is True for d, slot in zip(diffs, chosen, strict=True)):
+            continue
+        fits = sum(d <= tolerance for d in diffs)
+        if fits < MIN_KNOWN_DIMENSIONS:
+            continue
+        rank = (-fits, sum(diffs), chosen)
+        if best is None or rank < best[0]:
+            best = (rank, {name: slot for (name, _), slot in zip(known, chosen, strict=True)})
+    return None if best is None else ((best[0][0], best[0][1]), best[1])
+
+
+# Integer weights keep the lexicographic order exact inside a linear assignment.
+_W_INVENTED = 10**18
+_W_LEFT_UNKNOWN = 10**12
+_UNMATCHED = 10**30
+_FORBIDDEN = 10**33
+_REVERSE = 10**21
+
+
+def _scalar_cost(cost: tuple[Any, ...]) -> int:
+    invented, left_unknown, error, minus_exact = cost
+    return invented * _W_INVENTED + left_unknown * _W_LEFT_UNKNOWN + round(error * 1000) * 2 + (1 + minus_exact)
+
+
+def _hungarian(cost: list[list[int]]) -> list[int]:
+    """Minimum-cost assignment of ``n`` rows to ``m >= n`` columns (exact, integers)."""
+
+    n, m = len(cost), len(cost[0])
+    inf = 10**60
+    u = [0] * (n + 1)
+    v = [0] * (m + 1)
+    owner = [0] * (m + 1)
+    way = [0] * (m + 1)
+    for i in range(1, n + 1):
+        owner[0] = i
+        j0 = 0
+        minv = [inf] * (m + 1)
+        used = [False] * (m + 1)
+        while True:
+            used[j0] = True
+            i0, delta, j1 = owner[j0], inf, 0
+            for j in range(1, m + 1):
+                if used[j]:
+                    continue
+                current = cost[i0 - 1][j - 1] - u[i0] - v[j]
+                if current < minv[j]:
+                    minv[j], way[j] = current, j0
+                if minv[j] < delta:
+                    delta, j1 = minv[j], j
+            for j in range(m + 1):
+                if used[j]:
+                    u[owner[j]] += delta
+                    v[j] -= delta
+                else:
+                    minv[j] -= delta
+            j0 = j1
+            if owner[j0] == 0:
+                break
+        while j0:
+            j1 = way[j0]
+            owner[j0] = owner[j1]
+            j0 = j1
+    answer = [0] * n
+    for j in range(1, m + 1):
+        if owner[j]:
+            answer[owner[j] - 1] = j - 1
+    return answer
 
 
 def match_components(
-    predicted: list[Component], reference: tuple[RefComponent, ...], match_tolerance_mm: float
+    predicted: list[Component],
+    reference: tuple[RefComponent, ...],
+    match_tolerance_mm: float,
+    *,
+    pessimistic: bool = False,
 ) -> list[tuple[Component, RefComponent, dict[str, str]]]:
+    """One-to-one identity matches.  ``pessimistic`` picks the least favourable assignment in a class."""
+
     classes: dict[tuple[float, ...], list[RefComponent]] = {}
     for ref in reference:
         classes.setdefault(_ref_dims(ref), []).append(ref)
     candidates = []
     for pred in predicted:
         for dims, members in classes.items():
-            assigned = _assign(pred, members[0], match_tolerance_mm)
-            if assigned is not None:
-                candidates.append((assigned[0], _signature(pred), dims, pred, assigned[1]))
+            seen: set[tuple[Any, ...]] = set()
+            best = None
+            for member in members:
+                signature = _ref_signature(member)
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                fit = _fit_strict(pred, member, match_tolerance_mm)
+                if fit is not None and (best is None or fit[0] < best[0]):
+                    best = fit
+            if best is not None:
+                candidates.append((best[0], _signature(pred), dims, pred))
     candidates.sort(key=lambda item: item[:3])
     capacity = {dims: len(members) for dims, members in classes.items()}
-    taken: dict[tuple[float, ...], list[tuple[Component, dict[str, str]]]] = {}
+    taken: dict[tuple[float, ...], list[Component]] = {}
     used: set[int] = set()
-    for _, _, dims, pred, mapping in candidates:
+    for _, _, dims, pred in candidates:
         if id(pred) in used or capacity[dims] == 0:
             continue
         used.add(id(pred))
         capacity[dims] -= 1
-        taken.setdefault(dims, []).append((pred, mapping))
+        taken.setdefault(dims, []).append(pred)
 
     pairs: list[tuple[Component, RefComponent, dict[str, str]]] = []
     for dims in sorted(taken):
         members = sorted(classes[dims], key=_ref_signature)
-        chosen = sorted(taken[dims], key=lambda item: _signature(item[0]))
-        if len(members) > MAX_PERMUTED_CLASS:
-            pairs.extend((p, r, m) for (p, m), r in zip(chosen, members, strict=False))
-            continue
-        best: tuple[tuple[Any, ...], tuple[RefComponent, ...]] | None = None
-        for order in permutations(members, len(chosen)):
-            totals = [_pair_cost(p, r, m) for (p, m), r in zip(chosen, order, strict=True)]
-            score = tuple(sum(item[i] for item in totals) for i in range(4))
-            if best is None or score < best[0]:
-                best = (score, order)
-        assert best is not None
-        pairs.extend((p, r, m) for (p, m), r in zip(chosen, best[1], strict=True))
+        chosen = sorted(taken[dims], key=_signature)
+        fits = [[_fit_strict(p, r, match_tolerance_mm) for r in members] for p in chosen]
+        matrix = []
+        for row, p in zip(fits, chosen, strict=True):
+            costs = []
+            for fit, r in zip(row, members, strict=True):
+                if fit is None:
+                    costs.append(_FORBIDDEN)
+                    continue
+                scalar = _scalar_cost(_pair_cost(p, r, fit[1]))
+                costs.append(_REVERSE - scalar if pessimistic else scalar)
+            matrix.append(costs + [_UNMATCHED] * len(chosen))
+        for row_index, column in enumerate(_hungarian(matrix)):
+            if column < len(members) and fits[row_index][column] is not None:
+                pairs.append((chosen[row_index], members[column], fits[row_index][column][1]))  # type: ignore[index]
     return pairs
 
 
+def count_partial_matches(
+    predicted: list[Component],
+    reference: tuple[RefComponent, ...],
+    pairs: list[tuple[Component, RefComponent, dict[str, str]]],
+    match_tolerance_mm: float,
+) -> int:
+    """Greedy one-to-one loose fits among the leftovers (published apart, never scored)."""
+
+    matched_p = {id(p) for p, _, _ in pairs}
+    matched_r = {id(r) for _, r, _ in pairs}
+    candidates = []
+    for pred in predicted:
+        if id(pred) in matched_p:
+            continue
+        for ref in reference:
+            if id(ref) in matched_r:
+                continue
+            fit = _assign_partial(pred, ref, match_tolerance_mm)
+            if fit is not None:
+                candidates.append((fit[0], _signature(pred), _ref_signature(ref), id(pred), id(ref)))
+    candidates.sort(key=lambda item: item[:3])
+    used_p: set[int] = set()
+    used_r: set[int] = set()
+    for *_, pid, rid in candidates:
+        if pid in used_p or rid in used_r:
+            continue
+        used_p.add(pid)
+        used_r.add(rid)
+    return len(used_p)
+
+
 class _Group:
-    def __init__(self) -> None:
+    def __init__(self, *, shadow: bool = False) -> None:
+        self.shadow: _Group = self if shadow else _Group(shadow=True)
         self.cases: set[str] = set()
         self.cases_with_reference: set[str] = set()
         self.cases_without_reference: set[str] = set()
@@ -228,6 +365,19 @@ class _Group:
         self.costs: list[float] = []
 
     def finalize(self) -> dict[str, Any]:
+        result = self._finalize()
+        lower = self.shadow._finalize()
+        result["abstention"]["lower_bound"] = {
+            "note": "least favourable assignment inside classes of identical dimensions",
+            "correct_abstentions": lower["abstention"]["correct_abstentions"],
+            "correct_abstention_rate": lower["abstention"]["correct_abstention_rate"],
+            "asserted_unidentifiable": lower["abstention"]["asserted_unidentifiable"],
+            "resolvable_left_unknown": lower["abstention"]["resolvable_left_unknown"],
+            "over_abstention_rate": lower["abstention"]["over_abstention_rate"],
+        }
+        return result
+
+    def _finalize(self) -> dict[str, Any]:
         c = self.c
         types_ref = c["reference_types"] + c["failed_reference_types"]
         precision = _ratio(c["matched"], c["predicted_types"])
@@ -262,6 +412,8 @@ class _Group:
                 "reference_types": types_ref,
                 "predicted_types": c["predicted_types"],
                 "matched": c["matched"],
+                "matched_partial": c["matched_partial"],
+                "ambiguous_class_pairs": c["ambiguous_pairs"],
                 "false_positives": c["predicted_types"] - c["matched"],
                 "omissions": types_ref - c["matched"],
                 "precision": precision,
@@ -326,11 +478,14 @@ def _score_failed(group: _Group, reference: ReferenceCase) -> None:
 
 def _score_observation(
     group: _Group, components: list[Component], reference: ReferenceCase,
-    tolerance_mm: float, match_tolerance_mm: float,
+    tolerance_mm: float, match_tolerance_mm: float, *, pessimistic: bool = False,
 ) -> None:
     c = group.c
-    pairs = match_components(components, reference.components, match_tolerance_mm)
+    pairs = match_components(components, reference.components, match_tolerance_mm, pessimistic=pessimistic)
     c["matched"] += len(pairs)
+    c["matched_partial"] += count_partial_matches(components, reference.components, pairs, match_tolerance_mm)
+    class_size = Counter(_ref_dims(r) for r in reference.components)
+    c["ambiguous_pairs"] += sum(class_size[_ref_dims(r)] > 1 for _, r, _ in pairs)
     c["predicted_types"] += len(components)
     c["reference_types"] += len(reference.components)
     group.observations_scored += 1
@@ -444,6 +599,7 @@ def score_outputs(
             continue
         components = [parse_component(item) for item in output["components"]]
         _score_observation(group, components, reference, tolerance_mm, match_tolerance_mm)
+        _score_observation(group.shadow, components, reference, tolerance_mm, match_tolerance_mm, pessimistic=True)
     result: dict[str, dict[str, dict[str, dict[str, Any]]]] = {}
     for (variant, family, split), group in sorted(groups.items()):
         result.setdefault(variant, {}).setdefault(family, {})[split] = group.finalize()
