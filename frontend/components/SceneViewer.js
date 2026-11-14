@@ -2,12 +2,33 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { cameraZoomPosition, normaliseScene, sceneMeshCenter } from "../core/scene.js";
 
+export function observeContainerSize(root, resize, ResizeObserverClass = globalThis.ResizeObserver) {
+  resize();
+  if (ResizeObserverClass) {
+    const observer = new ResizeObserverClass(resize);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }
+  globalThis.addEventListener?.("resize", resize, { passive: true });
+  return () => globalThis.removeEventListener?.("resize", resize);
+}
+
+export function resizeRendererToContainer(root, renderer, camera, draw) {
+  const { width, height } = root.getBoundingClientRect();
+  if (!width || !height) return false;
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  draw();
+  return true;
+}
+
 export class SceneViewer {
   constructor(root, { onSelect = () => {} } = {}) {
     this.root = root;
     this.onSelect = onSelect;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf6f5f0);
+    this.scene.background = new THREE.Color(0xfffcf6);
     this.camera = new THREE.PerspectiveCamera(40, 1, 1, 50000);
     this.camera.position.set(1800, 1400, 1800);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power" });
@@ -16,12 +37,23 @@ export class SceneViewer {
     root.replaceChildren(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = false;
-    this.controls.addEventListener("change", () => this.draw());
+    this.boundControlsChange = () => this.draw();
+    this.controls.addEventListener("change", this.boundControlsChange);
     this.group = new THREE.Group();
     this.scene.add(this.group, new THREE.HemisphereLight(0xffffff, 0x4b5563, 2.2));
     const directional = new THREE.DirectionalLight(0xffffff, 2.5); directional.position.set(1, 2, 3); this.scene.add(directional);
-    this.renderer.domElement.addEventListener("pointerdown", (event) => this.pick(event));
-    this.boundResize = () => this.resize(); window.addEventListener("resize", this.boundResize, { passive: true }); this.resize();
+    this.boundPointerDown = (event) => this.pick(event);
+    this.renderer.domElement.addEventListener("pointerdown", this.boundPointerDown);
+    this.boundResize = () => this.resize();
+    this.stopObservingSize = observeContainerSize(root, this.boundResize);
+    this.syncTheme = () => {
+      const dark = document.documentElement.dataset.theme === "dark";
+      this.scene.background = new THREE.Color(dark ? 0x1a1a17 : 0xfffcf6);
+      this.draw();
+    };
+    this.boundTheme = () => this.syncTheme();
+    window.addEventListener("vexplorer-theme", this.boundTheme);
+    this.syncTheme();
   }
 
   setScene(raw) {
@@ -75,11 +107,19 @@ export class SceneViewer {
   }
 
   resize() {
-    const { width, height } = this.root.getBoundingClientRect(); if (!width || !height) return;
-    this.renderer.setSize(width, height, false); this.camera.aspect = width / height; this.camera.updateProjectionMatrix(); this.draw();
+    return resizeRendererToContainer(this.root, this.renderer, this.camera, () => this.draw());
   }
 
   draw() { this.renderer.render(this.scene, this.camera); }
   clearGroup() { this.group.children.slice().forEach((mesh) => { mesh.geometry?.dispose(); mesh.material?.dispose(); mesh.children.forEach((child)=>{ child.geometry?.dispose(); child.material?.dispose(); }); this.group.remove(mesh); }); }
-  dispose() { window.removeEventListener("resize", this.boundResize); this.clearGroup(); this.controls.dispose(); this.renderer.dispose(); }
+  dispose() {
+    this.stopObservingSize?.();
+    window.removeEventListener("vexplorer-theme", this.boundTheme);
+    this.renderer.domElement.removeEventListener("pointerdown", this.boundPointerDown);
+    this.controls.removeEventListener("change", this.boundControlsChange);
+    this.clearGroup();
+    this.controls.dispose();
+    this.renderer.dispose();
+    this.renderer.forceContextLoss?.();
+  }
 }

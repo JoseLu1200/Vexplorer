@@ -186,6 +186,17 @@ def create_reconstruction_router(
                     AssemblyProposal.model_validate(outcome["proposal"]),
                     dest / "artifacts",
                 )
+                _write(
+                    dest / "artifacts" / "revision.json",
+                    {
+                        **state,
+                        "status": outcome["status"],
+                        "user_declarations": outcome["user_declarations"],
+                        "geometry_provenance": "generated_design_hypothesis",
+                        "proposal": outcome["proposal"],
+                        "checks": outcome["checks"],
+                    },
+                )
                 files = sorted(
                     p.relative_to(dest / "artifacts").as_posix()
                     for p in (dest / "artifacts").rglob("*")
@@ -243,7 +254,9 @@ def create_reconstruction_router(
             or parent.get("baseline")
             or {}
         )
-        questions = set(proposal.get("missing_information", []))
+        questions = set(proposal.get("missing_information", [])) | {
+            a["question"] for a in parent.get("clarifications", [])
+        }
         if any(answer.question not in questions for answer in body.answers):
             raise HTTPException(422, "question_not_in_parent")
         answers = {a["question"]: a["answer"] for a in parent.get("clarifications", [])}

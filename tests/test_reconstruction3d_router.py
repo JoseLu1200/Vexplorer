@@ -345,3 +345,57 @@ def test_refinement_rejects_active_legacy_context_tamper_and_revision_limit(tmp_
         )
         assert r.status_code == 409 and r.json()["detail"] == "frozen_input_changed"
         assert len(provider.calls) == n
+
+
+def test_previous_answer_can_be_corrected_after_question_disappears_and_exports_provenance(
+    tmp_path,
+):
+    provider = Provider(payload())
+    app = FastAPI()
+    app.include_router(
+        create_reconstruction_router(
+            root=tmp_path,
+            context_loader=context,
+            provider=provider,
+            executor=InlineExecutor(),
+        )
+    )
+    with TestClient(app) as client:
+        job = client.post("/api/v1/runs/run-test/reconstruction", json={}).json()[
+            "job_id"
+        ]
+        provider.data["missing_information"] = ["mounting"]
+        child = client.post(
+            f"/api/v1/reconstruction/{job}/refine",
+            json={
+                "answers": [{"question": "function", "answer": "Desk divider"}],
+                "envelope_mm": {"width": 100},
+            },
+        ).json()["job_id"]
+        corrected = client.post(
+            f"/api/v1/reconstruction/{child}/refine",
+            json={"answers": [{"question": "function", "answer": "Privacy screen"}]},
+        )
+        assert corrected.status_code == 202
+        state = client.get(
+            f"/api/v1/reconstruction/{corrected.json()['job_id']}"
+        ).json()
+        assert state["clarifications"] == [
+            {"question": "function", "answer": "Privacy screen"}
+        ]
+        assert (
+            client.get(f"/api/v1/reconstruction/{child}").json()["clarifications"][0][
+                "answer"
+            ]
+            == "Desk divider"
+        )
+        manifest = client.get(
+            f"/api/v1/reconstruction/{state['job_id']}/artifacts/revision.json"
+        )
+        assert manifest.status_code == 200
+        exported = manifest.json()
+        assert exported["source_sha256"] == state["source_sha256"]
+        assert exported["parent_job_id"] == child and exported["revision"] == 3
+        assert exported["user_declarations"]["envelope_mm"] == {"width": 100}
+        assert exported["user_declarations"]["answers"] == state["clarifications"]
+        assert exported["user_declarations"]["is_observed_in_drawing"] is False

@@ -1,0 +1,16 @@
+{
+  "source_head": "c94a888",
+  "source": "root working tree; existing uncommitted UX overhaul, copied not authored here",
+  "files": {
+    "frontend/index.html": "3dfe82747ccc2e691c65870f22c252cf331a63a8ada1caebaa63cb35f004cb20",
+    "frontend/styles.css": "fa1680a391ce743211eb9d0ebf6cde40d5854f10eaee6d5c4c56c9539786d7dd",
+    "frontend/components/SceneViewer.js": "75c370ddb45ea99c4274da6525c52f97509ebd06b1bcc2e9b5eaebef128efa1d",
+    "frontend/tests/scene.test.js": "965b09b585a8318ec68ac397a4967ae50039803133a2f00e8821d497dd066754",
+    "frontend/core/ui.js": "167b3d0198b2277416c5a7a54bd20291e0f29a415f0bbff5c3a3027c29b10593",
+    "frontend/tests/ui-behavior.test.js": "71ee126afe3743eaa2335ebec3abf58d7ccbeb9a60bae927d7ffbe61be4fed3c",
+    "frontend/assets/fonts/geist-latin-variable.woff2": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1",
+    "frontend/assets/fonts/geist-mono-latin-variable.woff2": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc",
+    "frontend/assets/fonts/OFL-Geist.txt": "71609cbb5c78b5870d712eab73a31d76622635c6ed034ab5cee3b9ecbda8685f",
+    "frontend/app.js": "02e42ccc47d64dffe0522dcb9ff98d6cc8ab8b65d40fb14c4a1d2f8c9ea3941b"
+  }
+}
