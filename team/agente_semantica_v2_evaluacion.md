@@ -44,11 +44,14 @@
 - Original reviewed: roles F1 0,2184; ocurrencias F1 0,1972; relaciones F1 0;
   0/30 casos completos.
 - Corrected reviewed: roles F1 0,2543; ocurrencias F1 0,2529; relaciones F1 0
-  con 90 falsos positivos; 0/30 casos completos.
+  con 90 tripletas no admitidas por la referencia cerrada; 0/30 casos
+  completos. El conteo no acredita 90 uniones físicas incorrectas.
 - Rev3→rev4 no cambia roles/ocurrencias ni el F1 de relaciones, pero aumenta
   FN de relaciones 35→50 (original) y 20→50 (corrected). Rev4 es principal.
-- Diagnóstico: mezcla de desalineación ontológica y subrecuperación real; no
-  se añadieron aliases ni se retocó la referencia después de ver scores.
+- Diagnóstico: mezcla de desalineación ontológica, gold relacional no
+  exhaustivo y subrecuperación real; no se añadieron aliases ni se retocó la
+  referencia después de ver scores. Las métricas acreditan concordancia léxica
+  estricta contra referencia cerrada, no corrección física exhaustiva.
 
 ## Dependencias / avisos
 

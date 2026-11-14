@@ -23,3 +23,8 @@ Verificado en ambos snapshots: hash canónico de todos los parameters de herrami
 Hallazgo visual dev antes de scoring: sx001/source0 muestra V1/top y V2/side superpuestas. Generador usa width+depth+200 para tercera vista aunque segunda ocupa width. Se solicita fix v2 con test separación espacial, preservación v1 y generación rev3 nueva; rev2 runs se conservan diagnóstico de layout defectuoso y NO puntúan como benchmark principal. Referencias de scoring aún cerradas. Runtime permanece congelado.
 
 Cierre tests posterior a fixes generador/anotación: python -m pytest -q →793 passed in128.36s. Configuraciones principales idénticas en30entradas/modelos/presupuestos; diferencia públicosrev3 vsrev4erratum=0. Queda scoring tras ambosfreezes.
+
+Entrega final:30/30 ejecuciones porversión; 0/30 casoscompletos contra referencia. Reviewed F1 roles .2184→.2543, ocurrencias .1972→.2529, relaciones0→0 con90tripletas noadmitidas (gold cerrado/noexhaustivo y vocabulariosdesalineados). No se declara problemafuncionalresuelto. Informe docs/RESULTADOS_SEMANTICA_V2.md; resultados .runtime/semantic-v2-results/summary.md y derivation-manifest.json. Nativefreezes anteriores referencias; re-freeze adapter posterior apertura documentado. Testsúltimos52focales pasan, suite previa793pasa; sin commit ni despliegue.
+
+## Integración y producción autorizadas (2026-11-14)
+El usuario solicita explícitamente git add, commit, push, integración en main y despliegue en producción. Se coordina con la sesión de integración general y montaje para mantener un único integrador y preservar CAD, semántica y montaje. Se incluyen los cuatro documentos finales pendientes; el código ya está registrado en 48dac99 y sucesores.
