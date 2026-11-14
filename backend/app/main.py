@@ -17,7 +17,7 @@ from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
 from backend.app.agente.tools import parts_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest
+from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest
 from backend.app.estimacion.service import estimate_result
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
@@ -37,12 +37,6 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 class RequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-
-class RunRequest(RequestModel):
-    document_id: str = Field(pattern=r"^doc-[0-9a-f]{32}$")
-    mode: Literal["live", "geometry_only", "recorded_replay"]
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
 
 
 class EstimateRequest(RequestModel):
@@ -113,7 +107,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     @app.get("/api/v1/documents/{document_id}/drawing")
     def get_document_drawing(
         document_id: str,
-        input_kind: Literal["mounted_views_legacy", "separated_part_views"] = Query(
+        input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = Query(
             default="mounted_views_legacy"
         ),
     ):
