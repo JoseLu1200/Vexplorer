@@ -7,6 +7,7 @@ Implementación en `backend/app/precedentes/` de las ideas 2.1 a 3.5 de [BRAINST
 - **Umbrales calibrados (1.2):** 2.1 y 2.3 usan `similarity.thresholds.resolve_similarity_threshold`, configurable por versión de descriptor y modelo con `VEXPLORER_SIMILARITY_THRESHOLDS_FILE` (generado con `tools/calibrate_similarity.py`, idea 1.1).
   - 2.1 compara el score de cada vecino **relativo al techo de la consulta** (su similitud consigo misma): `geometric_match` puntúa 0 las medidas desconocidas, y sin ese ajuste un vecino idéntico en lo conocido nunca alcanzaría el umbral calibrado para muebles completos.
   - 2.3 aplica a cada candidato el umbral combinado con sus pesos efectivos (`w_geo·umbral_geo + w_sem·umbral_sem`) y se abstiene con `sin_precedentes_suficientes`, el mismo motivo que la búsqueda de similares.
+- **Cambio de comportamiento en `POST /api/v1/library/groups` (1.2/1.3):** `threshold` es opcional y, si se omite, ya no vale 0,8 fijo sino `DEFAULT_GROUP_THRESHOLDS` de `similarity/thresholds.py`: 0,85 en modo `geometric` y 0,92 en modo `semantic` (resoluble por versión de descriptor y modelo con `VEXPLORER_SIMILARITY_THRESHOLDS_FILE`). Un cliente que dependiera del 0,8 implícito obtendrá agrupaciones más estrictas (menos pares unidos); debe enviar `threshold` explícito para conservar el valor anterior.
 - **Coseno unificado (1.4):** 2.3, 2.6 y 3.3 calculan el coseno con `similarity.math_utils`.
 - **Agrupamiento sin encadenamiento (1.3):** 2.4 aplica el mismo principio a piezas, con tolerancia en mm en lugar de score.
 
