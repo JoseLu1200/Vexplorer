@@ -28,3 +28,15 @@ export function clearProposal($, viewer) {
   $('exploded').disabled = true;
   $('selected').textContent = 'Selecciona una pieza para ver sus medidas.';
 }
+
+export function refinementQuestions(state, proposal) {
+  const previous = new Map((state.clarifications ?? []).map(a => [a.question,a.answer]));
+  const questions = new Set([...(proposal?.missing_information ?? []), ...previous.keys()]);
+  return [...questions].map(question => ({question, answer:previous.get(question) ?? ''}));
+}
+
+export function parentRevisionUrl(params, parentId) {
+  const previous = new URLSearchParams(params);
+  previous.set('job',parentId);
+  return '?' + previous.toString();
+}

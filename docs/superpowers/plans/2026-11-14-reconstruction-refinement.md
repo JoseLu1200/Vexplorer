@@ -28,10 +28,10 @@ Files: backend/app/reconstruction3d/{models,service,router}.py; tests/test_recon
 
 Interfaces: RefinementRequest(answers, intended_use, envelope_mm), reconstruct(..., clarifications, envelope_mm); POST refine → job con parent_job_id, revision y entradas congeladas.
 
-- [ ] Escribir y ejecutar pruebas RED de cotas/entradas y revisión inmutable.
-- [ ] Implementar validación de texto/cotas, feedback y contexto de usuario.
-- [ ] Implementar persistencia de fuente/contexto, herencia y límites.
-- [ ] Ejecutar pytest focal y ruff; commit.
+- [x] Escribir y ejecutar pruebas RED de cotas/entradas y revisión inmutable.
+- [x] Implementar validación de texto/cotas, feedback y contexto de usuario.
+- [x] Implementar persistencia de fuente/contexto, herencia y límites.
+- [x] Ejecutar pytest focal y ruff; commit.
 
 ### Task 2: Aclaraciones en el visor y cierre
 
@@ -39,7 +39,11 @@ Files: frontend/reconstruction.{html,js,css}; frontend/tests/reconstruction.test
 
 Interfaces: formulario consume missing_information; envía sólo respuestas no vacías y cotas numéricas; muestra procedencia y enlace al padre.
 
-- [ ] Prueba RED para serialización y cambio de estado sin datos obsoletos.
-- [ ] Implementar formulario, historial y limpieza de visor.
-- [ ] Verificar navegador escritorio/móvil y recorrido pregunta → respuesta → propuesta.
-- [ ] Ejecutar suites globales y revisión independiente; corregir hallazgos importantes, documentar límites y commit.
+- [x] Prueba RED para serialización y cambio de estado sin datos obsoletos.
+- [x] Implementar formulario, historial y limpieza de visor.
+- [x] Verificar navegador escritorio/móvil y recorrido pregunta → respuesta → propuesta.
+- [x] Ejecutar suites globales y revisión independiente; corregir hallazgos importantes, documentar límites y commit.
+
+## Ajuste solicitado durante ejecución
+
+El usuario señaló el overhaul UX posterior. Se incorporó su snapshot verificable y la herramienta se integra en el shell actual, con tema/foco/historial preservados. No se cambia la fuente ni se publica. Evidencia en docs/RECONSTRUCCION_3D_INCREMENTO.md.

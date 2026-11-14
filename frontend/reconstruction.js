@@ -1,5 +1,5 @@
 import { createApiClient } from './api/client.js';
-import { buildRefinement, clearProposal } from './reconstruction-state.js';
+import { buildRefinement, clearProposal, refinementQuestions, parentRevisionUrl } from './reconstruction-state.js';
 const api=createApiClient(),$=(id)=>document.getElementById(id),params=new URLSearchParams(location.search);
 let viewer,jobId=params.get('job'),active=true,currentState;
 const endpoint=(suffix='')=>api.resourceUrl(`/api/v1/reconstruction/${encodeURIComponent(jobId)}${suffix}`);
@@ -9,7 +9,7 @@ function link(name,path){const a=document.createElement('a');a.textContent=name;
 function showRefinement(state, proposal) {
   $('version').textContent = `Versión ${state.revision ?? 1} · Todas las piezas son una propuesta de diseño.`;
   $('previous-version').hidden = !state.parent_job_id;
-  if(state.parent_job_id) $('previous-version').href = `?job=${encodeURIComponent(state.parent_job_id)}`;
+  if(state.parent_job_id) $('previous-version').href = parentRevisionUrl(params,state.parent_job_id);
   const supported = state.refinement_supported && (state.revision ?? 1) < 11;
   $('refine-section').hidden = !supported;
   if(!supported) return;
@@ -19,9 +19,10 @@ function showRefinement(state, proposal) {
     ...(state.clarifications ?? []).map(a => `${a.question}: ${a.answer}`),
     ...Object.entries(state.envelope_mm ?? {}).map(([axis,value]) => `${dimensions[axis]}: ${value} mm (aportada por el usuario)`),
   ]);
-  $('questions').replaceChildren(...(proposal?.missing_information ?? []).map((question,index) => {
+  $('questions').replaceChildren(...refinementQuestions(state,proposal).map(({question,answer},index) => {
     const label=document.createElement('label'), input=document.createElement('textarea');
     input.id=`answer-${index}`; input.maxLength=2000; input.dataset.question=question;
+    input.defaultValue=answer;
     label.htmlFor=input.id; label.textContent=question; label.append(input); return label;
   }));
   $('refine').reset(); $('refine-status').textContent='';
@@ -46,7 +47,7 @@ async function display(state){
     }catch{$('selected').textContent='Vista 3D no disponible en este navegador. Se muestra el render de la propuesta.';}
   }
   $('parts-body').replaceChildren(...proposal.components.map(p=>{const tr=document.createElement('tr');for(const value of [p.label,`${p.size_mm.join(' × ')} ${proposal.unit}`,1]){const td=document.createElement('td');td.textContent=value;tr.append(td);}const td=document.createElement('td');td.append(link('SVG',`parts/${p.id}.svg`));if(state.artifacts.includes(`parts/${p.id}.dxf`))td.append(link('DXF',`parts/${p.id}.dxf`));tr.append(td);return tr;}));
-  $('downloads').replaceChildren(...[['BOM CSV','bom.csv'],['Propuesta JSON','proposal.json'],['Montaje GLB','assembly.glb'],['Despiece visual','exploded.png']].filter(([,p])=>state.artifacts.includes(p)).map(([n,p])=>link(n,p)));
+  $('downloads').replaceChildren(...[['BOM CSV','bom.csv'],['Propuesta JSON','proposal.json'],['Procedencia y revisión','revision.json'],['Montaje GLB','assembly.glb'],['Despiece visual','exploded.png']].filter(([,p])=>state.artifacts.includes(p)).map(([n,p])=>link(n,p)));
 }
 async function poll(){
   $('generate-button').disabled=true; $('refine-button').disabled=true;
@@ -76,4 +77,12 @@ $('refine').addEventListener('submit', async e => {
   }
 });
 window.addEventListener('pagehide',()=>{active=false;viewer?.dispose();});
+if(params.has('embedded')){
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')parent.postMessage({type:'reconstruction-close'},location.origin);});
+  window.addEventListener('message',event=>{
+    if(event.origin===location.origin && event.source===parent && event.data?.type==='reconstruction-theme'){
+      document.documentElement.dataset.theme=event.data.theme==='dark'?'dark':'light';
+    }
+  });
+}
 if(jobId)poll();else if(!params.get('run')){$('status').textContent='Abre un plano de mueble general en Vexplorer y selecciona Construcción propuesta.';$('generate-button').disabled=true;}
