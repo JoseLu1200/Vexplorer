@@ -17,7 +17,7 @@ from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope
+from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -26,10 +26,13 @@ from backend.app.geometria.parts import derive_assembly_candidates, extract_sepa
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
+from backend.app.salida.technical_drawings import render_table_drawings
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 from backend.app.servicios.explanations import explain_result
+from backend.app.servicios.table_explanations import explain_table_result
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
+from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
@@ -67,6 +70,10 @@ class GroupRequest(RequestModel):
 class TableCostRequest(RequestModel):
     result_revision: int = Field(gt=0)
     scope: TableCostScope = Field(default_factory=TableCostScope)
+
+
+class TableDerivedRequest(RequestModel):
+    result_revision: int = Field(gt=0)
 
 
 def _ok(data, status_code: int = 200):
@@ -290,6 +297,53 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "evaluated_table_program": result.evaluated_table_program.model_dump(mode="json") if result.evaluated_table_program is not None else None,
         })
 
+    @app.post("/api/v1/runs/{run_id}/table-drawings")
+    def generate_table_drawings(run_id: str, request: TableDerivedRequest):
+        try:
+            result = repository.get_result(run_id, request.result_revision)
+            extraction = repository.get_extraction(run_id)
+        except KeyError:
+            return _error(404, "result_not_found", "Revisión inexistente.")
+        if result.input_semantics != "mounted_orthographic_views" or result.table_analysis is None or result.evaluated_table_program is None:
+            return _error(409, "table_evaluation_unavailable", "La revisión no contiene una mesa evaluada.")
+        plan = derive_table_drawing_plan(extraction, result.table_analysis, result.evaluated_table_program, result_revision=result.result_revision)
+        exports = render_table_drawings(plan)
+        by_sheet = {item.sheet_id: item for item in plan.sheets}
+        links_by_sheet: dict[str, list[TableDrawingFormatLink]] = {item.sheet_id: [] for item in plan.sheets}
+        for artifact in exports.artifacts:
+            url = f"/api/v1/runs/{run_id}/table-drawings/{artifact.sheet_id}.{artifact.format}?result_revision={result.result_revision}&program_hash={plan.program_hash}"
+            links_by_sheet[artifact.sheet_id].append(TableDrawingFormatLink(format=artifact.format, media_type=artifact.media_type, url=url))
+        manifest = TableDrawingManifest(
+            run_id=run_id, result_revision=result.result_revision, program_hash=plan.program_hash,
+            sheets=tuple(TableDrawingManifestSheet(
+                sheet_id=sheet.sheet_id, kind=sheet.kind, title=sheet.title, component_id=sheet.component_id,
+                page=sheet.page, result_revision=result.result_revision, program_hash=plan.program_hash,
+                status=sheet.status, warnings=sheet.warnings,
+                formats=tuple(sorted(links_by_sheet[sheet.sheet_id], key=lambda item: item.format)),
+            ) for sheet in sorted(by_sheet.values(), key=lambda item: item.page)),
+        )
+        repository.save_table_drawings(run_id, manifest, exports)
+        repository.append_event(run_id, "table_drawings_committed", {"result_revision": result.result_revision, "program_hash": plan.program_hash, "sheet_count": len(manifest.sheets)})
+        return _ok(manifest.model_dump(mode="json"), 201)
+
+    @app.get("/api/v1/runs/{run_id}/table-drawings")
+    def get_table_drawings(run_id: str, result_revision: int = Query(..., gt=0)):
+        try:
+            manifest = repository.get_table_drawing_manifest(run_id, result_revision)
+        except KeyError:
+            return _error(404, "table_drawings_not_found", "No existen planos persistidos para esa revisión.")
+        return _ok(manifest.model_dump(mode="json"))
+
+    @app.get("/api/v1/runs/{run_id}/table-drawings/{sheet_id}.{format}")
+    def get_table_drawing_artifact(run_id: str, sheet_id: str, format: Literal["svg", "dxf"], result_revision: int = Query(..., gt=0), program_hash: str = Query(..., pattern=r"^[0-9a-f]{64}$")):
+        try:
+            content, media_type, filename = repository.get_table_drawing_artifact(run_id, result_revision, sheet_id, format, program_hash)
+        except KeyError:
+            return _error(404, "table_drawing_artifact_not_found", "Artefacto inexistente.")
+        except ValueError as exc:
+            return _error(409, str(exc), "El artefacto pertenece a otra revisión de programa.")
+        return Response(content, media_type=media_type, headers={"Content-Disposition": f'attachment; filename="{filename}"', "X-Content-Type-Options": "nosniff"})
+
     @app.get("/api/v1/runs/{run_id}/explanations")
     def get_explanations(run_id: str, result_revision: int = Query(..., gt=0)):
         try:
@@ -297,7 +351,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             extraction = repository.get_extraction(run_id)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        return _ok(explain_result(extraction, result).model_dump(mode="json"))
+        explanation = explain_table_result(result) if result.input_semantics == "mounted_orthographic_views" else explain_result(extraction, result)
+        return _ok(explanation.model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/scene")
     def get_scene(run_id: str, result_revision: int = Query(..., gt=0)):
@@ -306,11 +361,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             extraction = repository.get_extraction(run_id)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        scene = (
-            reconstruct_parts_scene(extraction, result.part_analysis, result)
-            if result.input_semantics == "separated_part_views" and result.part_analysis is not None
-            else reconstruct_scene(extraction, result)
-        )
+        if result.input_semantics == "mounted_orthographic_views" and result.table_analysis is not None:
+            scene = reconstruct_table_scene(extraction, result.table_analysis, result)
+        elif result.input_semantics == "separated_part_views" and result.part_analysis is not None:
+            scene = reconstruct_parts_scene(extraction, result.part_analysis, result)
+        else:
+            scene = reconstruct_scene(extraction, result)
         return _ok(scene.model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/ledger")
@@ -494,24 +550,41 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "result_not_found", "Resultado inexistente.")
         if format == "json":
+            is_table = result.input_semantics == "mounted_orthographic_views"
             try:
-                estimate_value = repository.get_estimate(run_id, result.result_revision).model_dump(mode="json")
+                estimate_value = (repository.get_table_cost_estimate(run_id, result.result_revision) if is_table else repository.get_estimate(run_id, result.result_revision)).model_dump(mode="json")
             except KeyError:
                 estimate_value = None
             extraction = repository.get_extraction(run_id)
-            descriptor = build_descriptor(result)
+            try:
+                descriptor = build_descriptor(result)
+            except ValueError:
+                descriptor = None
             try:
                 library_item = repository.get_library_item(run_id)
                 if library_item.result_revision != result.result_revision:
                     library_item = None
             except KeyError:
                 library_item = None
-            scene = (
-                reconstruct_parts_scene(extraction, result.part_analysis, result)
-                if result.input_semantics == "separated_part_views" and result.part_analysis is not None
-                else reconstruct_scene(extraction, result)
-            )
-            bundle = {"schema_version": "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "scene": scene.model_dump(mode="json"), "explanations": explain_result(extraction, result).model_dump(mode="json"), "descriptor": descriptor.model_dump(mode="json"), "library_item": library_item.model_dump(mode="json") if library_item else None, "comparables": [item.model_dump(mode="json") for item in find_comparables(result)], "estimate": estimate_value, "events": list(repository.get_events(run_id))}
+            if is_table and result.table_analysis is not None:
+                scene = reconstruct_table_scene(extraction, result.table_analysis, result)
+                explanations = explain_table_result(result) if result.evaluated_table_program is not None else None
+                comparables_value = []
+                try:
+                    drawing_manifest = repository.get_table_drawing_manifest(run_id, result.result_revision).model_dump(mode="json")
+                except KeyError:
+                    drawing_manifest = None
+            elif result.input_semantics == "separated_part_views" and result.part_analysis is not None:
+                scene = reconstruct_parts_scene(extraction, result.part_analysis, result)
+                explanations = explain_result(extraction, result)
+                comparables_value = [item.model_dump(mode="json") for item in find_comparables(result)]
+                drawing_manifest = None
+            else:
+                scene = reconstruct_scene(extraction, result)
+                explanations = explain_result(extraction, result)
+                comparables_value = [item.model_dump(mode="json") for item in find_comparables(result)]
+                drawing_manifest = None
+            bundle = {"schema_version": "0.5.0" if is_table else "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "scene": scene.model_dump(mode="json"), "explanations": explanations.model_dump(mode="json") if explanations is not None else None, "descriptor": descriptor.model_dump(mode="json") if descriptor is not None else None, "library_item": library_item.model_dump(mode="json") if library_item else None, "comparables": comparables_value, "estimate": estimate_value, "table_drawings": drawing_manifest, "events": list(repository.get_events(run_id))}
             payload, media = json.dumps(bundle, ensure_ascii=False, indent=2), "application/json"
         else:
             payload, media = export_csv(result), "text/csv; charset=utf-8"
