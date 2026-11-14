@@ -68,8 +68,9 @@ test("table workspace keeps source measures separate from generated and evaluate
         state: "needs_review",
         warnings: ["Falta espesor"],
         measures: [
-          { id: "m-width", semantic: "overall_width", axis: "width", value_mm: 1200, state: "observed", measurement_ids: ["dim-1"], view_ids: ["front"], evidence_ids: ["ev-1"], source_entity_ids: ["entity-1"], slot_origin: "drawing" },
-          { id: "m-thickness", semantic: "tabletop_thickness", axis: "section", value_mm: null, state: "unknown", measurement_ids: [], view_ids: [], evidence_ids: [], source_entity_ids: [], slot_origin: "profile_required_slot" },
+          { id: "m-width", semantic: "overall_width", axis: "width", value_mm: 1200, state: "observed", measurement_ids: ["dim-1"], view_ids: ["front"], evidence_ids: ["ev-1"], source_entity_ids: ["entity-1"], slot_origin: "drawing", geometry_relation: "dimension_annotation" },
+          { id: "m-support", semantic: "support_width", axis: "section", value_mm: 30, state: "observed", measurement_ids: [], view_ids: ["front"], evidence_ids: ["ev-2"], source_entity_ids: ["line-1"], slot_origin: "drawing", geometry_relation: "opposite_offsets" },
+          { id: "m-thickness", semantic: "tabletop_thickness", axis: "section", value_mm: null, state: "unknown", measurement_ids: [], view_ids: [], evidence_ids: [], source_entity_ids: [], slot_origin: "profile_required_slot", geometry_relation: "profile_required_slot" },
         ],
       },
       table_programs: [{
@@ -96,9 +97,11 @@ test("table workspace keeps source measures separate from generated and evaluate
 
   assert.equal(workspace.isTable, true);
   assert.equal(workspace.measures[0].informationClass, "observed");
-  assert.equal(workspace.measures[1].informationClass, "unknown");
-  assert.equal(workspace.measures[1].confirmable, true);
-  assert.equal(workspace.measures[1].effectiveValue, 18);
+  assert.equal(workspace.measures[0].sourceLabel, "Cota escrita");
+  assert.equal(workspace.measures[1].sourceLabel, "Medición CAD · separaciones opuestas");
+  assert.equal(workspace.measures[2].informationClass, "unknown");
+  assert.equal(workspace.measures[2].confirmable, true);
+  assert.equal(workspace.measures[2].effectiveValue, 18);
   assert.equal(workspace.programs[0].originLabel, "Baseline de catálogo");
   assert.equal(workspace.programs[0].components[1].quantity, 2);
   assert.equal(workspace.evaluated.components[0].thickness.state, "unknown");
