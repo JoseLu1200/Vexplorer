@@ -16,6 +16,11 @@ test("responsive header never hides the active execution mode", () => {
   assert.match(css, /#run-mode-label\{display:inline-flex/);
 });
 
+test("responsive upload controls reflow instead of widening the document", () => {
+  assert.match(css, /@media\(max-width:980px\).*\.quick-upload\{[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) auto/s);
+  assert.match(css, /@media\(max-width:620px\).*\.quick-upload>\.button\{grid-column:1\/-1/s);
+});
+
 test("technical workspace has dedicated parts, classification and scene premise regions", () => {
   assert.match(html, /id="parts-summary"/);
   assert.match(html, /id="classification-summary"/);
