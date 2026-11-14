@@ -6,6 +6,8 @@ from backend.app.contratos.modelos import (
     TableBinding,
     TableComponentSpec,
     TableConfirmedValue,
+    TableCostCatalog,
+    TableCostTariff,
     TableMeasure,
     TableOperandRef,
     TablePremise,
@@ -64,6 +66,8 @@ def test_table_ledger_requires_traceable_observed_values_and_exact_ids():
         TableMeasure(id="bad", semantic="overall_width", axis="width", value_mm=1200, state="observed")
     geometric = TableMeasure(id="section", semantic="unknown", axis="section", value_mm=30, state="observed", view_ids=("front",), evidence_ids=("ev-section",), source_entity_ids=("line-section",), geometry_relation="offset_from_min_x")
     assert geometric.measurement_ids == () and geometric.value_mm == 30
+    envelope = geometric.model_copy(update={"id": "envelope", "semantic": "overall_width", "geometry_relation": "envelope_extent"})
+    assert envelope.geometry_relation == "envelope_extent"
 
 
 def test_table_program_rejects_future_binding_references_and_wrong_topology():
@@ -116,3 +120,11 @@ def test_technical_drawing_can_preserve_observed_state():
     assert primitive.state == "observed"
     with pytest.raises(ValidationError, match="exactly 3 points"):
         TableDrawingPrimitive(id="bad", kind="dimension", points_mm=(Point2D(x=0, y=0), Point2D(x=1, y=0)), state="unknown")
+
+
+def test_table_cost_catalog_has_unique_discoverable_tariffs():
+    tariff = TableCostTariff(id="material-demo", label="Tablero demo", concept_type="material_area", scope="material", rate_eur_per_unit=20, rate_unit="EUR/m2")
+    catalog = TableCostCatalog(catalog_version="table-costs-v1", tariffs=(tariff,))
+    assert catalog.synthetic is True
+    with pytest.raises(ValidationError, match="duplicate"):
+        TableCostCatalog(catalog_version="table-costs-v1", tariffs=(tariff, tariff))

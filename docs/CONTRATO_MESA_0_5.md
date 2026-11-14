@@ -18,7 +18,7 @@ El DXF no aporta BOM, vistas de piezas, roles, cantidades ni montaje 3D. El ledg
 analyze_mounted_table(extraction: DrawingExtraction) -> MountedTableAnalysis
 ```
 
-`MountedTableAnalysis` contiene perfil, `ledger_revision`, medidas admitidas, warnings y estado. Cada `TableMeasure` tiene ID, semántica/eje, valor métrico nullable, estado `observed|unknown|conflict` y refs measurement/view/evidence/entity. El análisis crea además los slots `unknown` definidos por el perfil cuando falta sección/espesor; se distinguen de una medida CAD observada y no inventan evidencia. Un conflicto nunca se resuelve silenciosamente. El ledger es inmutable entre revisiones.
+`MountedTableAnalysis` contiene perfil, `ledger_revision`, medidas admitidas, warnings y estado. Cada `TableMeasure` tiene ID, semántica/eje, valor métrico nullable, estado `observed|unknown|conflict`, relación geométrica tipada y refs measurement/view/evidence/entity. `envelope_extent` identifica una extensión geométrica sin fingir cota; offsets conservan su borde/eje. El análisis crea además slots `unknown` definidos por perfil cuando falta sección/espesor; se distinguen de una medida CAD observada y no inventan evidencia. Un conflicto nunca se resuelve silenciosamente. El ledger es inmutable entre revisiones.
 
 ## Programa acotado
 
@@ -110,6 +110,8 @@ estimate_table_costs(
     *, result_revision: int,
     scope: TableCostScope,
 ) -> TableCostEstimate
+
+get_table_cost_catalog() -> TableCostCatalog
 ```
 
 `TableCostScope` selecciona `material_tariff_id`, `edge_scope=none|all_exposed` y `operation_tariff_ids`; sin selección, los conceptos requeridos quedan unknown. El catálogo sintético pequeño vive en `table_costs.py`; su versión se expone. El cálculo usa ocurrencias, no vistas o tipos duplicados. Cada concepto conserva refs component/occurrence, fórmula, cantidad + `quantity_unit=m2|m3|m|unit|h`, tarifa + `rate_unit=EUR/m2|EUR/m3|EUR/m|EUR/unit|EUR/h`, importe y estado `resolved|unknown|not_applicable`. El fijo se aplica una vez; canteado solo con scope explícito; horas, operaciones y acabado ausentes siguen unknown.
@@ -129,6 +131,7 @@ Solo una revisión aceptada puede guardarse. La mesa usa `FurnitureDescriptorV3`
 - `POST /api/v1/runs/{run_id}/table-drawings`: genera/persiste revisión exacta; `GET .../table-drawings?result_revision=N` solo lee manifiesto.
 - `GET /api/v1/runs/{run_id}/table-drawings/{sheet_id}.{format}?result_revision=N&program_hash=...`: bytes SVG/DXF.
 - `POST /api/v1/runs/{run_id}/table-costs`: calcula revisión exacta; `GET .../table-costs?result_revision=N` solo lee persistido.
+- `GET /api/v1/table-cost-catalog`: catálogo sintético versionado de IDs/labels/tarifas para construir `TableCostScope`; la UI no codifica IDs.
 - Export JSON incluye análisis/programa raw-normalizado/revisión y scene/drawings/cost/descriptor/procedencia disponibles.
 - `POST /library`, `/similarity` y `/groups` admiten `descriptor_version=furniture-v3`; consulta/grupos filtran exactamente ese espacio y pueden informar `excluded_count`. Sin filtro se conserva el comportamiento legacy, incluido el rechazo de mezcla incompatible.
 
