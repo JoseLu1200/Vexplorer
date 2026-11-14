@@ -14,6 +14,8 @@ El [explorador semántico](docs/semantic-lab/INTEGRACION_EXPLORADOR.md) añade m
 
 La [verificación de esta ampliación](docs/VERIFICACION_TRANSCRIPCION_2026-11-14.md) registra integración, navegador, inferencia real y límites observados. El [diseño](docs/superpowers/specs/2026-11-14-transcript-completion-design.md) y el [plan](docs/superpowers/plans/2026-11-14-transcript-completion.md) describen el incremento implementado por agentes GPT-6.1 Sol y revisado por GPT-6 Astra. La guía [PRODUCCION](docs/PRODUCCION.md) incluye despliegue y copias. La [auditoría anterior](docs/AUDITORIA_COMPLETA_2026-11-14.md) y la [verificación privada anterior](docs/VERIFICACION_PRIVADA_2026-11-14.md) conservan sus resultados históricos; no sustituyen la aceptación actual.
 
+El cierre de PoC posterior se trabaja en la rama/worktree aislada `poc-closure`: integra las correcciones de abstención, PDF raster, semántica y corpus sin borrar los cambios concurrentes útiles de similitud que el usuario pidió conservar. La cohorte pareada inicial de seis casos se congeló antes de puntuación; tres casos terminaron y tres se detuvieron por el mismo presupuesto visual antes del proveedor. La recuperación se fijó de antemano solo para esos tres fallos y conserva denominador, bytes de los éxitos, fallos originales y procedencia por versión. Las métricas y límites consolidados pertenecen a [CIERRE_POC](docs/CIERRE_POC_2026-11-14.md); no se anticipan aquí. El commit y paquete definitivos se registrarán después de integrar y repetir la verificación, y este trabajo no implica un nuevo despliegue.
+
 ## Instalación y arranque local (PowerShell)
 
 Desde la raíz del repositorio, con Python 3.11 o posterior y Node/npm:

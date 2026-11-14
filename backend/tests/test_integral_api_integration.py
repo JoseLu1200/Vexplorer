@@ -146,7 +146,11 @@ class _GeneralLiveProvider:
 
 class _FailingGeneralProvider:
     def create_response(self, **kwargs):
-        raise RuntimeError("provider unavailable")
+        raise ProviderError(
+            "provider_response_incomplete", status_code=200,
+            request_id="req-internal", response_id="resp-internal",
+            incomplete_reason="max_output_tokens",
+        )
 
 
 class _TraceThenFailingGeneralProvider:
@@ -592,7 +596,13 @@ def test_general_live_failure_does_not_leave_a_run_ghost(tmp_path: Path, monkeyp
     )
 
     assert response.status_code == 502
-    assert response.json()["error"]["code"] == "general_live_provider_failed"
+    error = response.json()["error"]
+    assert error["code"] == "general_live_provider_failed"
+    assert error["reason_code"] == "provider_response_incomplete"
+    assert error["provider_status_code"] == 200
+    assert error["provider_incomplete_reason"] == "max_output_tokens"
+    assert "req-internal" not in response.text
+    assert "resp-internal" not in response.text
     with sqlite3.connect(data / "vexplorer.sqlite3") as database:
         assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
 
