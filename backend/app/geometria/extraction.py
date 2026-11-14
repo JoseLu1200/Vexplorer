@@ -366,6 +366,44 @@ def extraction_payload(
                     "text_position_source": text_position_source, "text_position_mm": text_position_mm,
                 })
 
+    if drawing.unit_scale_to_mm is not None:
+        row_index = 0
+        for view_label, entity_ids in sorted(by_view.items()):
+            if view_label == "UNKNOWN":
+                continue
+            circles = [
+                entity for entity in drawing.entities
+                if entity.id in entity_ids and entity.kind == "CIRCLE" and entity.circular is not None
+            ]
+            seen_rows: set[tuple[str, ...]] = set()
+            radius_groups: dict[int, list[ParsedEntity]] = {}
+            for circle in circles:
+                radius_groups.setdefault(round(circle.circular["radius_source"] * 1_000_000), []).append(circle)
+            for group in radius_groups.values():
+                for primary_axis, secondary_axis in ((0, 1), (1, 0)):
+                    aligned: dict[int, list[ParsedEntity]] = {}
+                    for circle in group:
+                        center = circle.circular["center_source"]
+                        aligned.setdefault(round(center[secondary_axis] * 1_000_000), []).append(circle)
+                    for candidates in aligned.values():
+                        ordered = sorted(candidates, key=lambda item: item.circular["center_source"][primary_axis])
+                        if len(ordered) < 3:
+                            continue
+                        coordinates = [item.circular["center_source"][primary_axis] for item in ordered]
+                        gaps = [right - left for left, right in zip(coordinates, coordinates[1:])]
+                        if min(gaps) <= 1e-6 or max(gaps) - min(gaps) > 1e-6:
+                            continue
+                        source_ids = tuple(sorted(item.id for item in ordered))
+                        if source_ids in seen_rows:
+                            continue
+                        seen_rows.add(source_ids)
+                        row_index += 1
+                        evidence.append({
+                            "id": f"evidence-holes-{view_label.lower()}-{row_index}",
+                            "kind": "geometry", "source_entity_ids": source_ids,
+                            "description": "Regular collinear row of equal exact circles observed in one view",
+                        })
+
     for view_label in sorted(by_view):
         view_lines = [entity for entity in drawing.entities if entity.kind == "LINE" and entity.id in by_view[view_label]]
         for index, component in enumerate(_line_components(view_lines), start=1):
