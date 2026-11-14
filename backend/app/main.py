@@ -26,6 +26,7 @@ from backend.app.geometria.parts import derive_assembly_candidates, extract_sepa
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
+from backend.app.salida.table_cutlist import export_table_cutlist_csv
 from backend.app.salida.technical_drawings import render_table_drawings
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 from backend.app.servicios.explanations import explain_result
@@ -544,7 +545,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok(value.model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/exports")
-    def exports(run_id: str, format: Literal["json", "csv"] = Query(...)):
+    def exports(run_id: str, format: Literal["json", "csv", "table_cutlist"] = Query(...)):
         try:
             result = repository.get_result(run_id)
         except KeyError:
@@ -586,9 +587,18 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 drawing_manifest = None
             bundle = {"schema_version": "0.5.0" if is_table else "0.2.0", "result_revision": result.result_revision, "result": result.model_dump(mode="json"), "scene": scene.model_dump(mode="json"), "explanations": explanations.model_dump(mode="json") if explanations is not None else None, "descriptor": descriptor.model_dump(mode="json") if descriptor is not None else None, "library_item": library_item.model_dump(mode="json") if library_item else None, "comparables": comparables_value, "estimate": estimate_value, "table_drawings": drawing_manifest, "events": list(repository.get_events(run_id))}
             payload, media = json.dumps(bundle, ensure_ascii=False, indent=2), "application/json"
-        else:
+        elif format == "csv":
             payload, media = export_csv(result), "text/csv; charset=utf-8"
-        return Response(payload, media_type=media, headers={"Content-Disposition": f'attachment; filename="{run_id}-r{result.result_revision}.{format}"'})
+        else:
+            if result.input_semantics != "mounted_orthographic_views" or result.evaluated_table_program is None:
+                return _error(409, "table_evaluation_unavailable", "La revisión no contiene una mesa evaluada.")
+            try:
+                payload = export_table_cutlist_csv(result.evaluated_table_program, result_revision=result.result_revision)
+            except ValueError as exc:
+                return _error(409, str(exc), "La lista de corte requiere una revisión de mesa aceptada.")
+            media = "text/csv; charset=utf-8"
+        extension = "csv" if format == "table_cutlist" else format
+        return Response(payload, media_type=media, headers={"Content-Disposition": f'attachment; filename="{run_id}-r{result.result_revision}.{extension}"'})
 
     @app.get("/api/v1/runs/{run_id}/events")
     def events(run_id: str):

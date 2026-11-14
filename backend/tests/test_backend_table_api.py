@@ -99,6 +99,14 @@ def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path,
     assert bundle["descriptor"]["descriptor_version"] == "furniture-v3"
     assert bundle["scene"]["state"] == "ready"
     assert bundle["explanations"]["pieces"]
+    cutlist = client.get(f"/api/v1/runs/{run_id}/exports", params={"format": "table_cutlist"})
+    assert cutlist.status_code == 200, cutlist.text
+    assert cutlist.headers["content-type"].startswith("text/csv")
+    assert cutlist.headers["content-disposition"].endswith(f'{run_id}-r2.csv"')
+    rows = cutlist.text.splitlines()
+    assert len(rows) == 3
+    assert "generic_not_certified" in cutlist.text
+    assert "material_state" in rows[0] and ",unknown," in cutlist.text
 
 
 def test_table_run_rejects_implicit_catalog_choice(tmp_path, monkeypatch):
