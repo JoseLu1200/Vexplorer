@@ -13,6 +13,17 @@ Identidad: agente de IA frontend; no representa a una persona. Autorización: so
 
 Implementar el recorrido acotado `mounted_orthographic_views` para la familia `rectangular_table_v1`: conservar la fuente DXF, comparar propuesta generativa y baseline de catálogo, revisar componentes e incógnitas, y consultar planos derivados generales, por pieza y de corte con costes explicados. Se mantiene disponible el recorrido 0.4 de piezas separadas y el legado de estantería.
 
+## Cierre privado de producción — 2026-11-14
+
+- Identidad activa: agente C de IA frontend, autorizado por la delegación explícita del usuario para el servidor privado.
+- Propiedad exclusiva de este bloque: `frontend/*` y este registro. No editaré backend, contratos, geometría ni archivos de otros agentes.
+- Objetivo: integrar sesión e identidad del servidor, envío y recuperación de jobs mediante polling, revisiones protegidas contra respuestas obsoletas, historial de eventos consultable, economía real/demo trazable y accesibilidad de cajones/modales, preservando el diseño actual.
+- Dependencias: B publicará el contrato exacto de auth/jobs; costes comunicará el delta económico A/B; geometría comunicará las confirmaciones humanas editables. Hasta entonces, las integraciones se implementan de forma aditiva y tolerante a capacidades ausentes.
+- Restricciones: TDD JS, sin dependencias nuevas, sin commits y sin modificar el transporte backend. El servidor es autoritativo; cualquier fallback local será manual y visible.
+- Estado: Task 4 implementada. Jobs recuperables, identidad de sesión, revisiones humanas corregibles, costes 0.6, accesibilidad del cajón y prefijo `/vexplorer/` integrados sin alterar el diseño base.
+- Verificación: `cd frontend; npm test` → 100/100; checks de sintaxis de `app.js`, `api/client.js` y `core/table.js` → exit 0; smoke real autenticado/prefijado delegado al coordinador.
+- Evidencia y límites: `.runtime/production/frontend-report.md`. No se desplegó, no se usó proveedor y no se hicieron commits.
+
 ## Decisiones
 
 - Prioridad al plano 2D y a la trazabilidad; 3D es una vista técnica enlazada y nunca sustituye evidencia ausente.

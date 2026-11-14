@@ -2,11 +2,15 @@
 
 Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. Admite dos recorridos acotados: **mesa rectangular desde alzado, planta y perfil del conjunto**, y **estantería desde vistas de piezas separadas con identificadores explícitos**. La geometría mide; el modelo propone asociaciones y operaciones; una revisión registra las premisas aceptadas y los datos aportados.
 
-Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca local usa atributos geométricos o embeddings reales; las tarifas económicas son sintéticas. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
+Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca usa atributos geométricos o embeddings reales. El incremento privado permite un catálogo económico propio con fuente y fecha; el catálogo de demostración se mantiene identificado como sintético. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
 El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el nuevo recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) recoge **313 pruebas Python, 82 JavaScript, API y navegador reales, inferencia y visión con proveedor real**, y revisión final GPT-6 Astra SHIP. La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) conserva el cierre anterior. Las [adaptaciones de CAD/harness](docs/INTEGRACION_CAD_HARNESS.md) identifican los cambios de Pablo adoptados y sus exclusiones.
 
-## Instalación y arranque (PowerShell)
+## Auditoría e incremento privado
+
+La [auditoría completa](docs/AUDITORIA_COMPLETA_2026-11-14.md) recorre los 495 commits accesibles al comenzar, la documentación y los módulos propios; identifica defectos que la suite anterior no detectaba. El [diseño privado](docs/superpowers/specs/2026-11-14-private-production-design.md) y el [plan](docs/superpowers/plans/2026-11-14-private-production.md) registran el incremento posterior y sus criterios de aceptación. La guía [PRODUCCION](docs/PRODUCCION.md) incluye usuarios, catálogo, despliegue y copias. El alcance sigue siendo el perfil de mesa y los recorridos acotados descritos abajo; validación industrial y aceptación con técnicos se informan por separado.
+
+## Instalación y arranque local (PowerShell)
 
 Desde la raíz del repositorio, con Python 3.11 o posterior y Node/npm:
 
@@ -19,7 +23,7 @@ npm ci --prefix frontend
 
 Abrir **http://127.0.0.1:8765**. FastAPI sirve también el frontend JS/HTML: no hay otro proceso de frontend. `npm ci` prepara Three.js local, sin CDN durante el uso. La geometría, el visor, la revisión y la similitud geométrica funcionan sin credenciales. Instalación comprobada en Windows con Python 3.14.2 y Node 25.8.1; [requirements-demo.txt](requirements-demo.txt) registra las dependencias Python verificadas. Para repetir esas versiones en un entorno compatible, instalar con `-c requirements-demo.txt`.
 
-Los documentos, resultados y revisiones se conservan en `.vexplorer-data/`, ignorado por Git. Instancia local de un operador, sin autenticación multiusuario; mantener el bind en `127.0.0.1`. No se ha desplegado al VPS.
+El arranque anterior usa modo local: documentos, resultados y revisiones en `.vexplorer-data/`, ignorado por Git; mantener ese modo en `127.0.0.1`. Para el equipo existe un perfil privado con cuentas individuales, trabajos persistidos y TLS mediante proxy: seguir [PRODUCCION](docs/PRODUCCION.md). No se ha desplegado a un servidor remoto en esta entrega.
 
 La biblioteca puede conservar descriptores v1/v2/v3. La interfaz de mesa filtra v3; las comparaciones rechazan mezclas de versiones incompatibles. Para una demo con almacenamiento separado:
 
@@ -100,8 +104,8 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 - La revisión de piezas separadas permite elegir asignación y completar cantidad o dimensiones desconocidas, con material/acabado y motivo. Dividir/unir componentes y crear elementos ocultos arbitrarios desde la interfaz quedan pendientes.
 - Biblioteca geométrica/semántica de revisiones guardadas, separada del histórico económico de tres ejemplos inventados. Agrupación por componentes conexos y umbral, sin evaluación estadística de relevancia. No se infieren tiempos industriales, mecanizados, acabado cotizado ni impuestos. No es un presupuesto de fabricación completo.
 - Reconstrucción por cajas de tableros según montaje revisado y niveles observados, sin traseras ocultas añadidas, mecanizados, uniones detalladas ni certificación de colisiones. Las ejecuciones antiguas se abren, pero para obtener cotas enriquecidas y vínculo al CAD original deben analizarse de nuevo.
-- Ejecución local síncrona y traza persistida; no se afirma procesamiento distribuido ni streaming de tokens o imágenes.
-- PlankAssembly sigue separado: no se han publicado datos ni derivados. Su adaptación futura exige preservar índices, excluir la envolvente, manejar normales ausentes y resolver condiciones de uso; ver [PLANKASSEMBLY](docs/PLANKASSEMBLY.md).
+- El endpoint legado local conserva ejecución síncrona. El perfil privado incorpora trabajos persistidos y seguimiento mediante polling; no se afirma procesamiento distribuido ni streaming de tokens o imágenes.
+- PlankAssembly sigue separado y no se han publicado datos ni derivados. El incremento de evaluación añade un preparador local de muestra; conserva índices, excluye envolvente y trata normales ausentes. Preparar vistas no demuestra inferencia ni resuelve por sí solo las condiciones de uso; ver [PLANKASSEMBLY](docs/PLANKASSEMBLY.md) y la aceptación de producción.
 - La comparación de métodos, evaluación con técnicos y medición de ahorro siguen pendientes; ver [COMPARATIVA_METODOS](docs/COMPARATIVA_METODOS.md).
 
 ## Documentación y coordinación

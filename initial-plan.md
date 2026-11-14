@@ -1,5 +1,7 @@
 # Vexplorer — plan inicial y decisiones de alcance
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 ## Problema y propuesta
 
 El equipo quiere reducir el tiempo que se dedica a leer planos de mobiliario, identificar componentes, recopilar cotas y preparar una representación comprensible. La entrega objetivo incluye propuestas de piezas y secciones desde planos pobres, con nombre, cantidad, dimensiones, materiales y evidencia o supuestos, revisables por un técnico. Se conecta a las vistas 2D y a una ficha para compras/administración. También recupera muebles históricos similares y explica ajustes de coste y tiempo por medidas, materiales y acabados. La [transcripción](transcripcion-contexto-poc.md) es la fuente de estos requisitos; [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md) fija su evaluación.

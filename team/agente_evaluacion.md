@@ -9,16 +9,25 @@
 
 ## Tarea y alcance
 
-- Estado: en curso para la ampliación 0.5 de mesa desde vistas montadas del 2026-11-14.
+- Estado: Task 6 de aceptación independiente completada localmente el 2026-11-14; pendiente de integración y suite global por el coordinador.
 - Propiedad: `data/planos_demo/`, `evaluation/`, `tools/build_demo_fixture.py`, `tests/test_demo*.py` y este archivo.
 - Propiedad adicional autorizada: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluation/reference/piezas_*` y `tests/test_parts_only_evaluation.py`.
 - Propiedad adicional de auditoría HTTP parts-only: `tools/audit_parts.py` y `docs/auditoria/2026-11-14/parts-api.json`.
 - Propiedad nueva autorizada: `tools/build_table_fixture.py`, `data/planos_demo/mesa_*`, `evaluation/reference/mesa_*`, `tests/test_table_evaluation.py` y futuro `tools/audit_table.py`.
+- Propiedad adicional autorizada para cierre de producción: nuevos `tools/audit_production.py`, `tests/test_production_acceptance.py`, `tools/prepare_plankassembly.py`, pruebas propias del adaptador, adiciones bajo `evaluation/`, `docs/ACEPTACION_PRODUCCION.md`, `.runtime/production/acceptance-report.md` y este archivo.
+- `tools/prepare_evaluation.py` y su prueba permanecen en propiedad de A: D los audita y ejecuta para generar `engineering_evaluation_pilot_v3` fuera del repositorio, sin modificarlos ni alterar pilotos anteriores.
 - Solo lectura/coordinación: contratos, geometría, backend, frontend y documentación compartida.
 - Solapes comprobados: ninguno; la propiedad está registrada en `team/agente_coordinador.md`.
 - Objetivo actual: fixture propio de una mesa montada en planta/alzado/perfil, sin vistas de piezas, roles ni BOM públicos; evaluar propuesta generativa, revisión, planos derivados y coste manteniendo el oráculo exclusivamente privado.
+- Objetivo de producción: ensayar offline el recorrido autenticado y durable hasta revisión, planos, coste real configurado, exportación y reinicio; comprobar negativos de autoridad y conflicto dimensional con aritmética independiente, y preparar como máximo 5–10 casos locales de PlankAssembly sin distribuir datos externos ni afirmar inferencia ciega.
 
 ## Hecho
+
+- Implementado `tools/audit_production.py` y su aceptación E2E offline: Basic obligatorio, actor de servidor, job durable, revisión, planos, catálogo configurado no-demo, exportación y reinicio; cubre negativos sin autoridad y conflicto dimensional.
+- El oráculo económico multiplica cantidades publicadas por tarifas literales con `Decimal`, suma conceptos y aplica el margen sin importar helpers de producto.
+- Regenerado fuera de Git `engineering_evaluation_pilot_v3`: 17 ZIP por caso y 68 hashes verificados; v2 queda inválido por filtrar la tarea de abstención y la ausencia de espesor/cantidad.
+- Implementado por TDD `tools/prepare_plankassembly.py`: excluye envolvente, conserva índices, admite `normal` ausente, genera vistas ortográficas montadas y separa referencia. Ensayo externo limitado a seis casos, sin inferencia ni redistribución.
+- Generado `.runtime/production/acceptance-report.md` con ocho comprobaciones PASS; no hubo llamadas a proveedor.
 
 - Creado bloque público de mesa montada con cuatro DXF propios y nombres opacos: completo, variación dimensional, ausencia de perfil y discrepancia entre geometría/cota visible; el manifiesto no identifica cada caso.
 - Las vistas públicas son `FRONT`, `TOP`, `SIDE` con ejes W/H, W/D y D/H; no contienen `PART`, `QTY`, roles, BOM ni vistas locales del despiece.
@@ -49,6 +58,9 @@
 | 2026-11-13 | Unidad desconocida y trapecio son casos de preview, no casos de despiece | El plano debe seguir visible aunque la inferencia se abstenga |
 
 ## Dependencias / avisos
+
+- Producción: solicitadas a B las interfaces finales de autenticación/trabajos/reinicio y al responsable de economía la carga/inyección del catálogo configurado. D no editará backend, contratos, economía ni frontend.
+- La aceptación no hará llamadas pagadas ni despliegue remoto. El corpus PlankAssembly y los pilotos generados quedan fuera de Git; solo se versionan adaptador, fixtures propios, manifiestos/protocolo y pruebas sin datos externos.
 
 - Mesa 0.5: A/B acordaron `mounted_orthographic_views`, perfil `rectangular_table_v1`, programa declarativo sin números y reglas versionadas calculadas por servidor. D no importará modelos hasta el commit de implementación contractual de B.
 - B entregará la API vertical para ejecutar el E2E TestClient de revisión, comparable, estimación y exportación.
@@ -92,13 +104,14 @@
 | Baseline mesa desde `main` `164356b` | `python -m pytest -q` | 188 pasan; 1 aviso deprecación | Antes de crear fixtures de mesa |
 | TDD rojo fixture mesa | `python -m pytest tests/test_table_evaluation.py -q` | 8 fallos por generador/DXF/manifiesto ausentes | Fallos esperados antes de implementar |
 | Fixture público, referencia e aislamiento mesa | mismo comando tras implementar | 11 pasan | API/contrato 0.5 todavía no materializados en esta rama |
+| Adaptador PlankAssembly propio | `.venv\Scripts\python.exe -m pytest tests/test_prepare_plankassembly.py -q` | 2 pasan | Fixtures propios; no ejecuta ni distribuye el corpus externo |
+| Aceptación privada E2E | `.venv\Scripts\python.exe -m pytest tests/test_production_acceptance.py -q` | 3 pasan; 1 aviso deprecación | Offline; incluye repetición sobre el mismo runtime; catálogo de aceptación, no tarifas comerciales |
+| Harness operativo | `.venv\Scripts\python.exe -m tools.audit_production --catalog .runtime/production/acceptance-catalog.json --data-dir .runtime/production/acceptance-data-final-v2 --report .runtime/production/acceptance-report.md` | 8 PASS | Reinicio de aplicación en proceso local; sin TLS remoto |
 
 ## Siguiente bloque
 
-- Compartir el commit temprano de fixtures con A/B sin revelar la referencia privada.
-- Tras recibir el hash contractual 0.4, añadir aceptación de observaciones, trazabilidad, revisión, descriptor, escena y economía sin duplicar pruebas unitarias A/B.
-- Ejecutar suites completas sobre la raíz integrada; sin despliegue ni `push`.
-- Corregir fuera de esta auditoría la reconstrucción incremental tras completar una cantidad desconocida: el resultado queda `completed` y la escena `ready`, pero la escena omite la pieza cuya cantidad se confirmó en la segunda revisión.
+- El coordinador integra los archivos inspeccionados y ejecuta la suite completa de Python/JS y las comprobaciones de empaquetado.
+- La validación pendiente requiere tarifas, planos y tiempos reales de la empresa, TLS en el host privado y revisión de un técnico; no se simulan como aprobados.
 
 ## Cierre de la fase anterior
 

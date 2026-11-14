@@ -80,6 +80,35 @@ def test_separated_part_views_resolve_local_axes_and_explicit_quantity(tmp_path:
     assert observation.status == "complete"
 
 
+def test_block_attribute_part_label_is_preserved_end_to_end(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    block = document.blocks.new("PART_VIEW")
+    block.add_lwpolyline(
+        [(0.0, 0.0), (800.0, 0.0), (800.0, 300.0), (0.0, 300.0)],
+        close=True,
+    )
+    insert = document.modelspace().add_blockref("PART_VIEW", (100.0, 200.0))
+    insert.add_attrib("PART_VIEW", "PART K1 FRONT QTY 2", insert=(500.0, 350.0))
+    path = tmp_path / "attrib-part.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+
+    assert [(item.text, item.source_entity_id) for item in extraction.texts] == [
+        ("PART K1 FRONT QTY 2", next(item.id for item in extraction.entities if item.kind == "ATTRIB")),
+    ]
+    assert len(parts.observations) == 1
+    observation = parts.observations[0]
+    assert observation.part_key == "K1"
+    assert observation.quantity.value == 2
+    assert observation.quantity.state == "observed"
+    assert [view.role for view in observation.views] == ["FRONT"]
+    assert observation.dimensions.length.value_mm == 800.0
+    assert observation.dimensions.width.value_mm == 300.0
+
+
 def test_views_never_supply_quantity_and_unknown_units_never_supply_mm(tmp_path: Path) -> None:
     extraction = extract_drawing(
         _parts_drawing(tmp_path, unit_code=0, quantity=None),

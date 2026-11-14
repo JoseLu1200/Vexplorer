@@ -1,5 +1,7 @@
 # Arquitectura de Vexplorer
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](../README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
 **Estado:** especificación para implementar. **Versión propuesta del contrato:** 0.1.0, pendiente de acuerdo A/B y aviso C. **Fecha:** 13 de noviembre de 2026.

@@ -1,0 +1,92 @@
+name: vexplorer
+
+services:
+  app:
+    image: vexplorer:${VEXPLORER_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      VEXPLORER_ENV: production
+      VEXPLORER_DATA_DIR: /var/lib/vexplorer/data
+      VEXPLORER_USERS_FILE: /run/secrets/vexplorer_users
+      VEXPLORER_ALLOWED_ORIGINS: ${VEXPLORER_ALLOWED_ORIGINS:?set an HTTPS origin}
+      VEXPLORER_COST_CATALOG: /run/config/vexplorer-cost-catalog.json
+      VEXPLORER_JOB_MAX_PENDING: ${VEXPLORER_JOB_MAX_PENDING:-8}
+      VEXPLORER_ROOT_PATH: ${VEXPLORER_ROOT_PATH:-}
+      VEXPLORER_MAX_STORAGE_BYTES: ${VEXPLORER_MAX_STORAGE_BYTES:-1073741824}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6.1-sol}
+      OPENAI_MAX_OUTPUT_TOKENS: ${OPENAI_MAX_OUTPUT_TOKENS:-4096}
+      OPENAI_VISION_ENABLED: ${OPENAI_VISION_ENABLED:-false}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_EMBEDDING_DIMENSIONS: ${OPENAI_EMBEDDING_DIMENSIONS:-256}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      HOME: /tmp
+    secrets:
+      - vexplorer_users
+    configs:
+      - source: vexplorer_cost_catalog
+        target: /run/config/vexplorer-cost-catalog.json
+    volumes:
+      - vexplorer_data:/var/lib/vexplorer
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+      - egress
+
+  proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      VEXPLORER_HOSTNAME: ${VEXPLORER_HOSTNAME:?set the real TLS hostname}
+      VEXPLORER_TLS_EMAIL: ${VEXPLORER_TLS_EMAIL:?set the ACME contact email}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - frontend
+      - backend
+
+secrets:
+  vexplorer_users:
+    file: ${VEXPLORER_USERS_FILE_HOST:?set the host users JSON path}
+
+configs:
+  vexplorer_cost_catalog:
+    file: ${VEXPLORER_COST_CATALOG_HOST:?set the host catalog JSON path}
+
+volumes:
+  vexplorer_data:
+    name: ${VEXPLORER_DATA_VOLUME:-vexplorer_data}
+  caddy_data:
+  caddy_config:
+
+networks:
+  frontend:
+  backend:
+    internal: true
+  egress:

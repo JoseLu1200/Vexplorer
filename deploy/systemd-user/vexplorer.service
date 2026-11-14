@@ -1,0 +1,35 @@
+[Unit]
+Description=Vexplorer private team application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/apps/vexplorer/current
+EnvironmentFile=%h/apps/vexplorer/shared/production.env
+Environment=PYTHONPATH=%h/apps/vexplorer/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+Environment=XDG_CACHE_HOME=/tmp
+ExecStart=%h/apps/vexplorer/venv/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 18792 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/apps/vexplorer/shared/data
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=default.target

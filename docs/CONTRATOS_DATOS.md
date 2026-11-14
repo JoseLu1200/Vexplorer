@@ -1,5 +1,7 @@
 # Contratos de datos — Vexplorer 0.1.0
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](../README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
 **Estado: propuesta 0.1.0 pendiente de acuerdo explícito A/B y aviso a C.** No existe backend implementado en este paquete. [CLAUDE.md](../CLAUDE.md) mantiene la autoridad de trabajo; esta especificación no acredita que el equipo haya aprobado estos campos. Las reglas semánticas viven en [VALIDACION.md](VALIDACION.md); los sobres HTTP/SSE, en [API_Y_EVENTOS.md](API_Y_EVENTOS.md).

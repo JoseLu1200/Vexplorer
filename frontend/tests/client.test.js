@@ -82,11 +82,40 @@ test("parts-only run is explicit and parts convenience endpoint is revisioned by
   const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };
   const client = createApiClient({ fetchImpl, idFactory: () => "key" });
   await client.createRun("doc-1", "geometry_only", "separated_part_views");
-  await client.getParts("run parts");
+  assert.throws(() => client.getParts("run parts"), /revisión/i);
   await client.getParts("run parts", 2);
   assert.deepEqual(JSON.parse(requests[0][1].body), { document_id: "doc-1", mode: "geometry_only", input_kind: "separated_part_views" });
-  assert.equal(requests[1][0], "/api/v1/runs/run%20parts/parts");
-  assert.equal(requests[2][0], "/api/v1/runs/run%20parts/parts?result_revision=2");
+  assert.equal(requests[1][0], "/api/v1/runs/run%20parts/parts?result_revision=2");
+});
+
+test("private session and durable jobs use their explicit API resources", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => {
+    requests.push([url, init]);
+    return response(url.endsWith("/jobs") ? 202 : 200, { data: { id: "job-1", state: "queued" } });
+  };
+  const client = createApiClient({ fetchImpl, idFactory: () => "job-key" });
+
+  await client.getSession();
+  await client.createJob({ document_id: "doc-1", mode: "geometry_only" });
+  await client.getJob("job 1");
+
+  assert.equal(requests[0][0], "/api/v1/session");
+  assert.equal(requests[1][0], "/api/v1/jobs");
+  assert.equal(requests[1][1].headers["Idempotency-Key"], "job-key");
+  assert.deepEqual(JSON.parse(requests[1][1].body), { document_id: "doc-1", mode: "geometry_only" });
+  assert.equal(requests[2][0], "/api/v1/jobs/job%201");
+});
+
+test("a deployment base path prefixes API and generated artifact URLs without changing local routes", async () => {
+  const requests = [];
+  const client = createApiClient({ basePath: "/vexplorer/", fetchImpl: async (url) => { requests.push(url); return response(200, { data: {} }); } });
+  await client.getSession();
+  await client.getJob("job-1");
+  assert.deepEqual(requests, ["/vexplorer/api/v1/session", "/vexplorer/api/v1/jobs/job-1"]);
+  assert.equal(client.documentPreviewUrl("doc-1"), "/vexplorer/api/v1/documents/doc-1/preview.svg");
+  assert.equal(client.resourceUrl("/api/v1/runs/run-1/file.svg"), "/vexplorer/api/v1/runs/run-1/file.svg");
+  assert.equal(client.resourceUrl("https://files.invalid/file.svg"), "https://files.invalid/file.svg");
 });
 
 test("table runs and revisioned artifacts preserve the frozen 0.5 request fields", async () => {
@@ -98,6 +127,7 @@ test("table runs and revisioned artifacts preserve the frozen 0.5 request fields
     proposal_mode: "catalog_baseline",
     table_template_id: "side_supports_v1",
   });
+  assert.throws(() => client.getTable("run table"), /revisión/i);
   await client.getTable("run table", 2);
   await client.generateTableDrawings("run table", { result_revision: 2 });
   await client.getTableDrawings("run table", 2);

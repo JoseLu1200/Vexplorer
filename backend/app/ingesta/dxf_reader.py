@@ -320,6 +320,15 @@ def parse_dxf(
             parsed.append(ParsedEntity(entity_id, kind, layer, insert, text=text.strip(), linetype=linetype))
         elif kind == "DIMENSION":
             dimension_type = int(entity.dxf.dimtype) & 0x0F
+            definition_points = tuple(
+                getattr(entity.dxf, attr)
+                for attr in ("defpoint", "defpoint2", "defpoint3", "defpoint4", "defpoint5")
+                if entity.dxf.hasattr(attr)
+            )
+            planar_definition_points = _planar_xy_points(definition_points)
+            if planar_definition_points is None:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
             conflict = False
             dimension_scale = 1.0
             if dimension_type == 6 and entity.dxf.hasattr("defpoint") and entity.dxf.hasattr("defpoint2"):
@@ -358,10 +367,7 @@ def parse_dxf(
                 if not isfinite(dimension_scale) or abs(dimension_scale - 1.0) > 1e-12:
                     conflict = True
                     warnings.append(f"dimension_scale_conflict:{entity_id}:scale={dimension_scale:g}")
-            points = []
-            for attr in ("defpoint", "defpoint2", "defpoint3"):
-                if entity.dxf.hasattr(attr):
-                    points.append(_point2(getattr(entity.dxf, attr)))
+            points = list(planar_definition_points[:3])
             extension_starts = None
             dimension_line = None
             text_position = None

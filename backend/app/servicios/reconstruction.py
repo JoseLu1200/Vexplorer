@@ -15,6 +15,11 @@ from backend.app.geometria.parts import recompute_reviewed_assembly_candidate
 
 
 SUPPORTED_ROLES = {"side_panel", "top_panel", "base_panel", "shelf"}
+DIMENSION_TOLERANCE_MM = 0.1
+
+
+def _different(left: float | None, right: float | None) -> bool:
+    return left is None or right is None or abs(left - right) > DIMENSION_TOLERANCE_MM
 
 
 def _scene_object(
@@ -126,9 +131,11 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
             selected_scenario_id=scenario_id, warnings=tuple(warnings or ["envelope_pieces_missing"]),
             assumptions=tuple(scenario.assumptions),
         )
-    thicknesses = {piece.thickness_mm for piece in complete.values()}
-    depths = {piece.width_mm for piece in complete.values()}
-    if len(thicknesses) != 1 or len(depths) != 1:
+    if any(
+        _different(piece.thickness_mm, side.thickness_mm)
+        or _different(piece.width_mm, side.width_mm)
+        for piece in complete.values()
+    ):
         return ReconstructionScene(
             run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
             selected_scenario_id=scenario_id, warnings=tuple(warnings + ["inconsistent_panel_dimensions"]),
@@ -154,7 +161,7 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
             selected_scenario_id=scenario_id, warnings=("unsupported_mounting_scenario",),
             assumptions=tuple(scenario.assumptions),
         )
-    if abs(top.length_mm - horizontal_width) > 1e-6 or abs(base.length_mm - horizontal_width) > 1e-6:
+    if _different(top.length_mm, horizontal_width) or _different(base.length_mm, horizontal_width):
         return ReconstructionScene(
             run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
             selected_scenario_id=scenario_id,
@@ -191,7 +198,7 @@ def reconstruct_scene(extraction: DrawingExtraction, result: Result) -> Reconstr
         levels = _shelf_levels(extraction, proposal.source_entity_ids)
         if shelf.quantity is None or len(levels) != shelf.quantity:
             warnings.append(f"shelf_levels_incomplete:{shelf.id}")
-        elif shelf.length_mm != width - 2 * thickness:
+        elif _different(shelf.length_mm, width - 2 * thickness):
             warnings.append(f"shelf_width_inconsistent:{shelf.id}")
         else:
             for index, level in enumerate(levels, start=1):
@@ -297,7 +304,10 @@ def reconstruct_parts_scene(
     thickness = side.thickness_mm
     assert thickness is not None
     all_pieces = (side, top, base) + ((shelf,) if shelf else ())
-    if any(piece.width_mm != depth or piece.thickness_mm != thickness for piece in all_pieces):
+    if any(
+        _different(piece.width_mm, depth) or _different(piece.thickness_mm, thickness)
+        for piece in all_pieces
+    ):
         warnings.append("inconsistent_panel_dimensions")
     if candidate.layout == "between_sides":
         horizontal_x, side_y = thickness, 0.0
@@ -310,9 +320,13 @@ def reconstruct_parts_scene(
         expected_side_length = expected_horizontal_length = -1.0
         horizontal_x = side_y = 0.0
     expected_shelf_length = width - 2 * thickness
-    if side.length_mm != expected_side_length or top.length_mm != expected_horizontal_length or base.length_mm != expected_horizontal_length:
+    if (
+        _different(side.length_mm, expected_side_length)
+        or _different(top.length_mm, expected_horizontal_length)
+        or _different(base.length_mm, expected_horizontal_length)
+    ):
         warnings.append("inconsistent_resolved_dimensions")
-    if shelf is not None and shelf.length_mm != expected_shelf_length:
+    if shelf is not None and _different(shelf.length_mm, expected_shelf_length):
         warnings.append("shelf_width_inconsistent")
     if side.quantity != 2 or top.quantity != 1 or base.quantity != 1:
         warnings.append("unsupported_envelope_quantity")

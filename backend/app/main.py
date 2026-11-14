@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import time
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Lock
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Query, UploadFile
+from fastapi import FastAPI, File, Header, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.concurrency import run_in_threadpool
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
@@ -23,6 +28,7 @@ from backend.app.estimacion.table_costs import estimate_table_costs, get_table_c
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs, evaluate_table_program
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
+from backend.app.ingesta.dxf_reader import parse_dxf
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
@@ -37,6 +43,8 @@ from backend.app.servicios.table_reconstruction import derive_table_drawing_plan
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
+from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
+from backend.app.operacion.jobs import BoundedJobExecutor
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
@@ -86,30 +94,111 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
 
 
 def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None) -> FastAPI:
-    root = data_dir or Path(".vexplorer-data")
+    environment = os.getenv("VEXPLORER_ENV", "local")
+    if environment not in {"local", "production"}:
+        raise ValueError("invalid_vexplorer_environment")
+    root_path = os.getenv("VEXPLORER_ROOT_PATH", "")
+    if root_path and re.fullmatch(r"(?:/[A-Za-z0-9._~-]+)+", root_path) is None:
+        raise ValueError("invalid_root_path")
+    configured_data_dir = os.getenv("VEXPLORER_DATA_DIR")
+    if environment == "production" and data_dir is None and not configured_data_dir:
+        raise ValueError("production_data_dir_required")
+    root = data_dir or Path(configured_data_dir or ".vexplorer-data")
+    password_file = None
+    allowed_origins: frozenset[str] = frozenset()
+    if environment == "production":
+        users_path = os.getenv("VEXPLORER_USERS_FILE")
+        if not users_path:
+            raise ValueError("production_users_file_required")
+        password_file = PasswordFile.load(Path(users_path))
+        origins = tuple(
+            item.strip().rstrip("/")
+            for item in os.getenv("VEXPLORER_ALLOWED_ORIGINS", "").split(",")
+            if item.strip()
+        )
+        if not origins or any(not item.startswith("https://") for item in origins):
+            raise ValueError("production_allowed_origins_required")
+        allowed_origins = frozenset(origins)
+    try:
+        job_max_pending = int(os.getenv("VEXPLORER_JOB_MAX_PENDING", "8"))
+        max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
+    except ValueError as exc:
+        raise ValueError("invalid_numeric_production_limit") from exc
+    if max_storage_bytes < MAX_UPLOAD_BYTES:
+        raise ValueError("max_storage_below_upload_limit")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
+    upload_lock = Lock()
     repository = DemoRepository(root / "vexplorer.sqlite3")
+    repository.interrupt_unfinished_jobs()
+    job_executor = BoundedJobExecutor(job_max_pending)
+    if environment == "production" and not os.getenv("VEXPLORER_COST_CATALOG"):
+        raise ValueError("production_cost_catalog_required")
+    table_cost_catalog_value = get_table_cost_catalog()
     settings = ProviderSettings.from_env()
     live_available = agent_provider is not None or settings.available
     embedding_settings = EmbeddingSettings.from_env()
     semantic_provider = embedding_provider
     if semantic_provider is None and embedding_settings.available:
         semantic_provider = OpenAIEmbeddingProvider(api_key=embedding_settings.api_key or "", model=embedding_settings.model, dimensions=embedding_settings.dimensions, base_url=embedding_settings.base_url)
-    app = FastAPI(title="Vexplorer", version="0.2.0")
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        yield
+        job_executor.shutdown()
 
+    app = FastAPI(title="Vexplorer", version="0.2.0", lifespan=lifespan)
+    app.root_path = root_path
+    app.state.repository = repository
+    app.state.job_executor = job_executor
+    authentication_failures: dict[str, list[float]] = {}
+
+    @app.middleware("http")
+    async def private_access(request: Request, call_next):
+        request.state.actor = None
+        if environment == "production" and request.url.path not in {"/api/v1/health", "/health"}:
+            client_key = request.client.host if request.client is not None else "unknown"
+            now = time.monotonic()
+            recent = [item for item in authentication_failures.get(client_key, ()) if now - item < 60]
+            authentication_failures[client_key] = recent
+            if len(recent) >= 10:
+                return _error(429, "authentication_rate_limited", "Demasiados intentos de autenticación.", True)
+            credentials = decode_basic_authorization(request.headers.get("Authorization"))
+            actor = await run_in_threadpool(password_file.authenticate, *credentials) if credentials is not None and password_file is not None else None
+            if actor is None:
+                recent.append(now)
+                response = _error(401, "authentication_required", "Se requieren credenciales individuales.")
+                response.headers["WWW-Authenticate"] = 'Basic realm="Vexplorer", charset="UTF-8"'
+                return response
+            authentication_failures.pop(client_key, None)
+            request.state.actor = actor
+            if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+                origin = request.headers.get("Origin")
+                if origin is not None and origin.rstrip("/") not in allowed_origins:
+                    return _error(403, "origin_not_allowed", "Origen no autorizado.")
+        return await call_next(request)
+
+    @app.get("/health")
     @app.get("/api/v1/health")
     def health():
         return _ok({"status": "ok"})
 
+    @app.get("/api/v1/session")
+    def session(request: Request):
+        actor = request.state.actor
+        return _ok({
+            "authenticated": actor is not None,
+            "username": actor,
+            "environment": environment,
+        })
+
     @app.get("/api/v1/config")
     def config():
         all_tools = tool_schemas() + parts_tool_schemas() + table_tool_schemas(include_vision=settings.vision_enabled)
-        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
-        return _ok(get_table_cost_catalog().model_dump(mode="json"))
+        return _ok(table_cost_catalog_value.model_dump(mode="json"))
 
     @app.post("/api/v1/documents")
     async def upload_document(file: UploadFile = File(...)):
@@ -120,7 +209,27 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         if len(content) > MAX_UPLOAD_BYTES:
             return _error(413, "upload_too_large", "El archivo supera 20 MiB.")
         document_id = f"doc-{uuid4().hex}"
-        (documents_dir / f"{document_id}.dxf").write_bytes(content)
+        path = documents_dir / f"{document_id}.dxf"
+        temporary = documents_dir / f".{document_id}.upload.dxf"
+        def persist() -> str:
+            with upload_lock:
+                used_bytes = sum(item.stat().st_size for item in documents_dir.glob("*.dxf"))
+                if used_bytes + len(content) > max_storage_bytes:
+                    return "quota"
+                temporary.write_bytes(content)
+                try:
+                    parse_dxf(temporary)
+                    temporary.replace(path)
+                except Exception:
+                    temporary.unlink(missing_ok=True)
+                    return "invalid"
+                return "stored"
+
+        persisted = await run_in_threadpool(persist)
+        if persisted == "quota":
+            return _error(507, "storage_quota_exceeded", "La cuota persistente de documentos está agotada.")
+        if persisted == "invalid":
+            return _error(422, "invalid_dxf", "El archivo no es un DXF válido dentro de los límites admitidos.")
         return _ok({"document_id": document_id, "original_filename": filename, "size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "source_kind": "uploaded"}, 201)
 
     @app.get("/api/v1/documents/{document_id}/drawing")
@@ -155,8 +264,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, code, "No se pudo generar la previsualización SVG.")
         return Response(svg, media_type="image/svg+xml", headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff"})
 
-    @app.post("/api/v1/runs")
-    def create_run(request: RunRequest):
+    def _execute_run(request: RunRequest):
         if request.mode == "recorded_replay":
             return _error(409, "recorded_replay_unavailable", "No existe una grabación real autorizada para replay.")
         if request.mode == "live" and not live_available:
@@ -230,6 +338,13 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 "artifact_sha256": action.artifact_sha256,
                 "mark_count": action.mark_count,
                 "view_id": action.view_id,
+                "provider_response_id": action.provider_response_id,
+                "provider_model": action.provider_model,
+                "provider_call_id": action.provider_call_id,
+                "provider_duration_ms": action.provider_duration_ms,
+                "provider_input_tokens": action.provider_input_tokens,
+                "provider_output_tokens": action.provider_output_tokens,
+                "provider_total_tokens": action.provider_total_tokens,
             } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
         run = repository.create_run(
@@ -249,6 +364,81 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             evaluated_table_program,
         )
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
+
+    @app.post("/api/v1/runs")
+    def create_run(request: RunRequest):
+        if environment == "production":
+            return _error(409, "use_jobs_endpoint", "Producción requiere el endpoint durable de trabajos.")
+        return _execute_run(request)
+
+    @app.post("/api/v1/jobs")
+    def submit_job(
+        request: RunRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
+        if environment == "production" and not idempotency_key:
+            return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
+        if idempotency_key is not None and not 1 <= len(idempotency_key) <= 128:
+            return _error(422, "invalid_idempotency_key", "Idempotency-Key no es válido.")
+        request_json = request.model_dump_json()
+        if idempotency_key is not None:
+            try:
+                replay = repository.get_idempotent_job(
+                    request_json,
+                    actor=http_request.state.actor,
+                    idempotency_key=idempotency_key,
+                )
+            except ValueError as exc:
+                return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+            if replay is not None:
+                return _ok(replay, 202)
+        if not job_executor.reserve():
+            return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
+        job_id = f"job-{uuid4().hex}"
+        try:
+            job, created = repository.reserve_job(
+                job_id,
+                request_json,
+                actor=http_request.state.actor,
+                idempotency_key=idempotency_key,
+            )
+        except ValueError as exc:
+            job_executor.release()
+            return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+        if not created:
+            job_executor.release()
+            return _ok(job, 202)
+
+        def process() -> None:
+            try:
+                repository.start_job(job_id)
+                response = _execute_run(request)
+                payload = json.loads(response.body)
+                if response.status_code == 201:
+                    repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
+                else:
+                    repository.finish_job(job_id, error=payload.get("error") or {
+                        "code": "job_failed", "message": "El trabajo no terminó.", "retryable": False
+                    })
+            except Exception as exc:
+                repository.finish_job(job_id, error={
+                    "code": "job_failed",
+                    "message": f"El trabajo falló de forma segura: {type(exc).__name__}.",
+                    "retryable": False,
+                })
+
+        job_executor.submit_reserved(process)
+        return _ok(job, 202)
+
+    @app.get("/api/v1/jobs/{job_id}")
+    def get_job(job_id: str):
+        if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
+            return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
+        try:
+            return _ok(repository.get_job(job_id))
+        except KeyError:
+            return _error(404, "job_not_found", "Trabajo inexistente.")
 
     @app.get("/api/v1/runs/{run_id}")
     def get_run(run_id: str):
@@ -315,7 +505,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         by_sheet = {item.sheet_id: item for item in plan.sheets}
         links_by_sheet: dict[str, list[TableDrawingFormatLink]] = {item.sheet_id: [] for item in plan.sheets}
         for artifact in exports.artifacts:
-            url = f"/api/v1/runs/{run_id}/table-drawings/{artifact.sheet_id}.{artifact.format}?result_revision={result.result_revision}&program_hash={plan.program_hash}"
+            url = f"{root_path}/api/v1/runs/{run_id}/table-drawings/{artifact.sheet_id}.{artifact.format}?result_revision={result.result_revision}&program_hash={plan.program_hash}"
             links_by_sheet[artifact.sheet_id].append(TableDrawingFormatLink(format=artifact.format, media_type=artifact.media_type, url=url))
         manifest = TableDrawingManifest(
             run_id=run_id, result_revision=result.result_revision, program_hash=plan.program_hash,
@@ -327,7 +517,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             ) for sheet in sorted(by_sheet.values(), key=lambda item: item.page)),
         )
         repository.save_table_drawings(run_id, manifest, exports)
-        repository.append_event(run_id, "table_drawings_committed", {"result_revision": result.result_revision, "program_hash": plan.program_hash, "sheet_count": len(manifest.sheets)})
         return _ok(manifest.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/table-drawings")
@@ -382,16 +571,27 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(404, "run_not_found", "Ejecución inexistente.")
 
     @app.post("/api/v1/runs/{run_id}/reviews")
-    def review_run(run_id: str, request: ReviewRequest):
+    def review_run(
+        run_id: str,
+        review: ReviewRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
+        if environment == "production" and not idempotency_key:
+            return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
         try:
-            result = repository.review(run_id, request)
-            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id, "selected_assembly_candidate_id": request.assembly_candidate_id, "selected_table_program_id": request.table_program_id})
+            result = repository.review(
+                run_id,
+                review,
+                idempotency_key=idempotency_key,
+                actor=http_request.state.actor,
+            )
             return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         except ValueError as exc:
             code = str(exc)
-            return _error(409 if code == "stale_result_revision" else 422, code, "La revisión no es aplicable.")
+            return _error(409 if code in {"stale_result_revision", "idempotency_key_conflict"} else 422, code, "La revisión no es aplicable.")
 
     @app.get("/api/v1/runs/{run_id}/comparables")
     def comparables(run_id: str, limit: int = Query(default=3, ge=1, le=3)):
@@ -433,7 +633,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             embedding = EmbeddingMetadata(model=model, dimensions=dimensions, descriptor_version=descriptor.descriptor_version, cache_key=cache_key, status=status)
         item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding)
         repository.save_library_item(item)
-        repository.append_event(run_id, "library_item_saved", {"result_revision": result.result_revision, "embedding_mode": request.embedding_mode})
         return _ok(item.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/library")
@@ -514,7 +713,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             result = repository.get_result(run_id, request.result_revision)
             value = estimate_result(result, find_comparables(result))
             repository.save_estimate(run_id, value)
-            repository.append_event(run_id, "estimate_committed", {"result_revision": value.result_revision, "total": value.total, "currency": value.currency})
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
         except ValueError as exc:
@@ -532,17 +730,16 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         if result.state != "completed" or result.evaluated_table_program.state != "completed":
             return _error(409, "table_revision_not_accepted", "La mesa debe estar revisada antes de calcular costes.")
         try:
-            value = estimate_table_costs(result.evaluated_table_program, result_revision=result.result_revision, scope=request.scope)
+            value = estimate_table_costs(result.evaluated_table_program, result_revision=result.result_revision, scope=request.scope, catalog=table_cost_catalog_value)
             repository.save_table_cost_estimate(run_id, value)
-            repository.append_event(run_id, "table_cost_committed", {"result_revision": value.result_revision, "program_hash": value.program_hash, "total_state": value.total_state})
         except ValueError as exc:
             return _error(422, str(exc), "No se pudo calcular el coste de mesa.")
         return _ok(value.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/table-costs")
-    def get_table_costs(run_id: str, result_revision: int = Query(..., gt=0)):
+    def get_table_costs(run_id: str, result_revision: int = Query(..., gt=0), estimate_id: str | None = Query(default=None, pattern=r"^[0-9a-f]{64}$")):
         try:
-            value = repository.get_table_cost_estimate(run_id, result_revision)
+            value = repository.get_table_cost_estimate(run_id, result_revision, estimate_id)
         except KeyError:
             return _error(404, "table_cost_not_found", "No existe coste persistido para esa revisión.")
         return _ok(value.model_dump(mode="json"))

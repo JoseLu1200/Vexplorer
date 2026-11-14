@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from datetime import UTC, datetime
@@ -59,6 +60,21 @@ class DemoRepository:
                     run_id TEXT NOT NULL, sequence INTEGER NOT NULL, event_type TEXT NOT NULL,
                     payload TEXT NOT NULL, PRIMARY KEY (run_id, sequence)
                 );
+                CREATE TABLE IF NOT EXISTS review_idempotency (
+                    run_id TEXT NOT NULL, idempotency_key TEXT NOT NULL,
+                    request_hash TEXT NOT NULL, result_revision INTEGER NOT NULL,
+                    PRIMARY KEY (run_id, idempotency_key)
+                );
+                CREATE TABLE IF NOT EXISTS jobs (
+                    id TEXT PRIMARY KEY, actor TEXT, request_json TEXT NOT NULL,
+                    request_hash TEXT NOT NULL, state TEXT NOT NULL, run_id TEXT,
+                    error_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS job_idempotency (
+                    actor TEXT NOT NULL, idempotency_key TEXT NOT NULL,
+                    request_hash TEXT NOT NULL, job_id TEXT NOT NULL,
+                    PRIMARY KEY (actor, idempotency_key)
+                );
                 CREATE TABLE IF NOT EXISTS library_items (
                     run_id TEXT PRIMARY KEY, payload TEXT NOT NULL
                 );
@@ -67,8 +83,9 @@ class DemoRepository:
                     descriptor_version TEXT NOT NULL, vector_json TEXT NOT NULL, created_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS table_cost_estimates (
-                    run_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL,
-                    PRIMARY KEY (run_id, revision)
+                    run_id TEXT NOT NULL, revision INTEGER NOT NULL,
+                    estimate_id TEXT NOT NULL, payload TEXT NOT NULL,
+                    PRIMARY KEY (run_id, revision, estimate_id)
                 );
                 CREATE TABLE IF NOT EXISTS table_drawing_manifests (
                     run_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL,
@@ -93,10 +110,29 @@ class DemoRepository:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_assembly_candidate_id TEXT")
             if "agent_selected_table_program_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_table_program_id TEXT")
+            cost_columns = db.execute("PRAGMA table_info(table_cost_estimates)").fetchall()
+            if cost_columns and "estimate_id" not in {row[1] for row in cost_columns}:
+                db.execute("ALTER TABLE table_cost_estimates RENAME TO table_cost_estimates_legacy")
+                db.execute(
+                    "CREATE TABLE table_cost_estimates (run_id TEXT NOT NULL, revision INTEGER NOT NULL, estimate_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (run_id, revision, estimate_id))"
+                )
+                for row in db.execute(
+                    "SELECT run_id,revision,payload FROM table_cost_estimates_legacy"
+                ).fetchall():
+                    payload = json.loads(row["payload"])
+                    estimate_id = payload.get("estimate_id") or hashlib.sha256(
+                        row["payload"].encode("utf-8")
+                    ).hexdigest()
+                    db.execute(
+                        "INSERT INTO table_cost_estimates VALUES (?, ?, ?, ?)",
+                        (row["run_id"], row["revision"], estimate_id, row["payload"]),
+                    )
+                db.execute("DROP TABLE table_cost_estimates_legacy")
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.path)
+        connection = sqlite3.connect(self.path, timeout=10)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout=10000")
         return connection
 
     def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None) -> RunSnapshot:
@@ -120,6 +156,119 @@ class DemoRepository:
             sequence += 1
             db.execute("INSERT INTO events VALUES (?, ?, 'run_finished', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
         return self.get_run(run_id)
+
+    def reserve_job(
+        self,
+        job_id: str,
+        request_json: str,
+        *,
+        actor: str | None,
+        idempotency_key: str | None = None,
+    ) -> tuple[dict, bool]:
+        request_hash = hashlib.sha256(request_json.encode("utf-8")).hexdigest()
+        actor_key = actor or "local-demo"
+        timestamp = _now()
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if idempotency_key is not None:
+                replay = db.execute(
+                    "SELECT request_hash,job_id FROM job_idempotency WHERE actor=? AND idempotency_key=?",
+                    (actor_key, idempotency_key),
+                ).fetchone()
+                if replay is not None:
+                    if replay["request_hash"] != request_hash:
+                        raise ValueError("idempotency_key_conflict")
+                    return self._get_job_in_transaction(db, replay["job_id"]), False
+            db.execute(
+                "INSERT INTO jobs VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
+                (job_id, actor, request_json, request_hash, timestamp, timestamp),
+            )
+            if idempotency_key is not None:
+                db.execute(
+                    "INSERT INTO job_idempotency VALUES (?, ?, ?, ?)",
+                    (actor_key, idempotency_key, request_hash, job_id),
+                )
+            return self._get_job_in_transaction(db, job_id), True
+
+    def get_idempotent_job(
+        self,
+        request_json: str,
+        *,
+        actor: str | None,
+        idempotency_key: str,
+    ) -> dict | None:
+        request_hash = hashlib.sha256(request_json.encode("utf-8")).hexdigest()
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            replay = db.execute(
+                "SELECT request_hash,job_id FROM job_idempotency WHERE actor=? AND idempotency_key=?",
+                (actor_key, idempotency_key),
+            ).fetchone()
+            if replay is None:
+                return None
+            if replay["request_hash"] != request_hash:
+                raise ValueError("idempotency_key_conflict")
+            return self._get_job_in_transaction(db, replay["job_id"])
+
+    def create_job(self, job_id: str, request_json: str, *, actor: str | None) -> dict:
+        return self.reserve_job(job_id, request_json, actor=actor)[0]
+
+    @staticmethod
+    def _get_job_in_transaction(db: sqlite3.Connection, job_id: str) -> dict:
+        row = db.execute(
+            "SELECT id,state,run_id,error_json FROM jobs WHERE id=?", (job_id,)
+        ).fetchone()
+        if row is None:
+            raise KeyError(job_id)
+        return {
+            "id": row["id"], "state": row["state"], "run_id": row["run_id"],
+            "error": json.loads(row["error_json"]) if row["error_json"] else None,
+        }
+
+    def get_job(self, job_id: str) -> dict:
+        with self._connect() as db:
+            return self._get_job_in_transaction(db, job_id)
+
+    def get_job_request(self, job_id: str) -> str:
+        with self._connect() as db:
+            row = db.execute("SELECT request_json FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if row is None:
+            raise KeyError(job_id)
+        return row["request_json"]
+
+    def start_job(self, job_id: str) -> None:
+        with self._connect() as db:
+            changed = db.execute(
+                "UPDATE jobs SET state='running',updated_at=? WHERE id=? AND state='queued'",
+                (_now(), job_id),
+            )
+            if changed.rowcount != 1:
+                raise ValueError("job_not_queued")
+
+    def finish_job(
+        self, job_id: str, *, run_id: str | None = None, error: dict | None = None
+    ) -> None:
+        state = "succeeded" if run_id is not None else "failed"
+        with self._connect() as db:
+            changed = db.execute(
+                "UPDATE jobs SET state=?,run_id=?,error_json=?,updated_at=? WHERE id=? AND state='running'",
+                (state, run_id, json.dumps(error) if error else None, _now(), job_id),
+            )
+            if changed.rowcount != 1:
+                raise ValueError("job_not_running")
+
+    def interrupt_unfinished_jobs(self) -> int:
+        error = json.dumps({
+            "code": "server_restarted",
+            "message": "El trabajo fue interrumpido por un reinicio y no se reejecutará.",
+            "retryable": False,
+        })
+        with self._connect() as db:
+            changed = db.execute(
+                "UPDATE jobs SET state='interrupted',error_json=?,updated_at=? WHERE state IN ('queued','running')",
+                (error, _now()),
+            )
+            return changed.rowcount
 
     def get_run(self, run_id: str) -> RunSnapshot:
         with self._connect() as db:
@@ -150,15 +299,80 @@ class DemoRepository:
             rows = db.execute("SELECT payload FROM results WHERE run_id=? ORDER BY revision", (run_id,)).fetchall()
         return tuple(Result.model_validate_json(row[0]) for row in rows)
 
-    def review(self, run_id: str, request: ReviewRequest) -> Result:
-        run = self.get_run(run_id)
-        if request.base_result_revision != run.result_revision:
-            raise ValueError("stale_result_revision")
-        previous = self.get_result(run_id)
-        if previous.input_semantics == "mounted_orthographic_views":
-            return self._review_table(run_id, previous, request)
-        if previous.input_semantics == "separated_part_views":
-            return self._review_parts(run_id, previous, request)
+    def review(
+        self,
+        run_id: str,
+        request: ReviewRequest,
+        *,
+        idempotency_key: str | None = None,
+        actor: str | None = None,
+    ) -> Result:
+        if actor is not None:
+            request = request.model_copy(update={"reviewer_name": actor})
+        request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if idempotency_key is not None:
+                replay = db.execute(
+                    "SELECT request_hash,result_revision FROM review_idempotency WHERE run_id=? AND idempotency_key=?",
+                    (run_id, idempotency_key),
+                ).fetchone()
+                if replay is not None:
+                    if replay["request_hash"] != request_hash:
+                        raise ValueError("idempotency_key_conflict")
+                    row = db.execute(
+                        "SELECT payload FROM results WHERE run_id=? AND revision=?",
+                        (run_id, replay["result_revision"]),
+                    ).fetchone()
+                    if row is None:
+                        raise RuntimeError("idempotency_result_missing")
+                    return Result.model_validate_json(row["payload"])
+            run_row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
+            if run_row is None:
+                raise KeyError(run_id)
+            if request.base_result_revision != run_row["current_result_revision"]:
+                raise ValueError("stale_result_revision")
+            previous_row = db.execute(
+                "SELECT payload FROM results WHERE run_id=? AND revision=?",
+                (run_id, request.base_result_revision),
+            ).fetchone()
+            if previous_row is None:
+                raise KeyError((run_id, request.base_result_revision))
+            previous = Result.model_validate_json(previous_row["payload"])
+            if previous.input_semantics == "mounted_orthographic_views":
+                result = self._review_table(run_id, previous, request)
+            elif previous.input_semantics == "separated_part_views":
+                result = self._review_parts(run_id, previous, request)
+            else:
+                result = self._review_legacy(run_id, previous, request)
+            reserved = db.execute(
+                "UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?",
+                (result.result_revision, run_id, request.base_result_revision),
+            )
+            if reserved.rowcount != 1:
+                raise ValueError("stale_result_revision")
+            db.execute(
+                "INSERT INTO results VALUES (?, ?, ?)",
+                (run_id, result.result_revision, result.model_dump_json()),
+            )
+            self._append_event_in_transaction(
+                db, run_id, "human_review_committed",
+                {
+                    "result_revision": result.result_revision,
+                    "reviewer_name": request.reviewer_name,
+                    "selected_scenario_id": request.scenario_id,
+                    "selected_assembly_candidate_id": request.assembly_candidate_id,
+                    "selected_table_program_id": request.table_program_id,
+                },
+            )
+            if idempotency_key is not None:
+                db.execute(
+                    "INSERT INTO review_idempotency VALUES (?, ?, ?, ?)",
+                    (run_id, idempotency_key, request_hash, result.result_revision),
+                )
+            return result
+
+    def _review_legacy(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
         proposal_scenarios = {proposal.id: scenario.id for scenario in previous.scenarios for proposal in scenario.components}
         pieces: list[ResolvedPiece] = []
@@ -218,11 +432,6 @@ class DemoRepository:
         timestamp = _now()
         reason = request.notes or "; ".join(item.notes for item in request.decisions)
         result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=selected_scenario_id), agent_selected_scenario_id=previous.agent_selected_scenario_id)
-        with self._connect() as db:
-            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
-            if reserved.rowcount != 1:
-                raise ValueError("stale_result_revision")
-            db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
         return result
 
     def _review_table(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
@@ -234,13 +443,57 @@ class DemoRepository:
         if previous.selected_table_program_id == program.id:
             decisions = {(item.target_kind, item.target_id): item for item in previous.table_review_decisions}
             confirmed = {item.target_id: item for item in previous.table_confirmed_values}
+            corrections = {item.measurement_id: item for item in previous.table_observed_value_corrections}
+            source_decisions = {item.warning_id: item for item in previous.table_source_review_decisions}
         else:
-            decisions, confirmed = {}, {}
+            decisions, confirmed, corrections, source_decisions = {}, {}, {}, {}
         decisions.update({(item.target_kind, item.target_id): item for item in request.table_decisions})
-        confirmed.update({item.target_id: item for item in request.table_confirmed_values})
+        existing_confirmation_ids = {
+            item.confirmation_id: target
+            for target, item in confirmed.items()
+            if item.confirmation_id is not None
+        }
+        for item in request.table_confirmed_values:
+            current = confirmed.get(item.target_id)
+            if current is None:
+                if item.supersedes_confirmation_id is not None:
+                    raise ValueError("unknown_superseded_confirmation")
+            elif current.confirmation_id is not None:
+                if item.supersedes_confirmation_id != current.confirmation_id:
+                    raise ValueError("stale_confirmation_supersedes")
+            elif item.supersedes_confirmation_id is not None:
+                raise ValueError("unknown_superseded_confirmation")
+            owner = existing_confirmation_ids.get(item.confirmation_id)
+            if item.confirmation_id is not None and owner not in (None, item.target_id):
+                raise ValueError("duplicate_confirmation_id")
+            confirmed[item.target_id] = item
+        existing_correction_ids = {
+            item.correction_id: target for target, item in corrections.items()
+        }
+        for item in request.table_observed_value_corrections:
+            current = corrections.get(item.measurement_id)
+            if current is None:
+                if item.supersedes_correction_id is not None:
+                    raise ValueError("unknown_superseded_correction")
+            elif item.supersedes_correction_id != current.correction_id:
+                raise ValueError("stale_correction_supersedes")
+            owner = existing_correction_ids.get(item.correction_id)
+            if owner not in (None, item.measurement_id):
+                raise ValueError("duplicate_correction_id")
+            corrections[item.measurement_id] = item
+        source_decisions.update({item.warning_id: item for item in request.table_source_review_decisions})
         effective_decisions = tuple(decisions[key] for key in sorted(decisions))
         effective_confirmed = tuple(confirmed[key] for key in sorted(confirmed))
-        evaluated = evaluate_table_program(previous.table_analysis, program, effective_decisions, effective_confirmed)
+        effective_corrections = tuple(corrections[key] for key in sorted(corrections))
+        effective_source_decisions = tuple(source_decisions[key] for key in sorted(source_decisions))
+        evaluated = evaluate_table_program(
+            previous.table_analysis,
+            program,
+            effective_decisions,
+            effective_confirmed,
+            effective_corrections,
+            effective_source_decisions,
+        )
         revision = request.base_result_revision + 1
         timestamp = _now()
         result = Result(
@@ -252,12 +505,9 @@ class DemoRepository:
             table_analysis=previous.table_analysis, table_programs=previous.table_programs,
             selected_table_program_id=program.id, evaluated_table_program=evaluated,
             table_review_decisions=effective_decisions, table_confirmed_values=effective_confirmed,
+            table_observed_value_corrections=effective_corrections,
+            table_source_review_decisions=effective_source_decisions,
         )
-        with self._connect() as db:
-            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
-            if reserved.rowcount != 1:
-                raise ValueError("stale_result_revision")
-            db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
         return result
 
     def _review_parts(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
@@ -358,18 +608,27 @@ class DemoRepository:
         assembly_complete = effective_candidate.family != "unknown" and effective_candidate.layout != "unknown" and not effective_candidate.unassigned_part_observation_ids and not rejected and len(pieces) == len(effective_candidate.uses) and all(item.status == "pass" for item in effective_candidate.constraints) and {item.axis for item in effective_candidate.derived_dimensions} == {"width", "height", "depth"} and all(item.state == "derived" for item in effective_candidate.derived_dimensions)
         timestamp = _now()
         result = Result(run_id=run_id, result_revision=revision, state="completed" if dimensions_complete and assembly_complete else "needs_review", scenarios=(), pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=request.notes or "; ".join(item.notes for item in request.decisions), timestamp=timestamp, selected_scenario_id=None, selected_assembly_candidate_id=effective_candidate.id), input_semantics="separated_part_views", part_analysis=previous.part_analysis, assembly_candidates=effective_candidates, selected_assembly_candidate_id=effective_candidate.id)
-        with self._connect() as db:
-            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
-            if reserved.rowcount != 1:
-                raise ValueError("stale_result_revision")
-            db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
         return result
 
     def save_estimate(self, run_id: str, estimate: Estimate) -> None:
         if self.get_result(run_id, estimate.result_revision).result_revision != estimate.result_revision:
             raise ValueError("result_revision_mismatch")
         with self._connect() as db:
-            db.execute("INSERT OR REPLACE INTO estimates VALUES (?, ?, ?)", (run_id, estimate.result_revision, estimate.model_dump_json()))
+            db.execute("BEGIN IMMEDIATE")
+            payload = estimate.model_dump_json()
+            existing = db.execute(
+                "SELECT payload FROM estimates WHERE run_id=? AND revision=?",
+                (run_id, estimate.result_revision),
+            ).fetchone()
+            if existing is not None:
+                if existing["payload"] != payload:
+                    raise ValueError("economic_revision_conflict")
+                return
+            db.execute("INSERT INTO estimates VALUES (?, ?, ?)", (run_id, estimate.result_revision, payload))
+            self._append_event_in_transaction(
+                db, run_id, "estimate_committed",
+                {"result_revision": estimate.result_revision, "total": estimate.total, "currency": estimate.currency},
+            )
 
     def get_estimate(self, run_id: str, revision: int) -> Estimate:
         with self._connect() as db:
@@ -385,16 +644,34 @@ class DemoRepository:
         return tuple({"sequence": row["sequence"], "event_type": row["event_type"], "data": json.loads(row["payload"])} for row in rows)
 
     def append_event(self, run_id: str, event_type: str, payload: dict) -> None:
-        self.get_run(run_id)
-        stamped = {"timestamp": _now(), **payload}
         with self._connect() as db:
-            sequence = db.execute("SELECT COALESCE(MAX(sequence), 0) + 1 FROM events WHERE run_id=?", (run_id,)).fetchone()[0]
-            db.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (run_id, sequence, event_type, json.dumps(stamped)))
+            db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM runs WHERE id=?", (run_id,)).fetchone() is None:
+                raise KeyError(run_id)
+            self._append_event_in_transaction(db, run_id, event_type, payload)
+
+    @staticmethod
+    def _append_event_in_transaction(
+        db: sqlite3.Connection, run_id: str, event_type: str, payload: dict
+    ) -> None:
+        stamped = {"timestamp": _now(), **payload}
+        sequence = db.execute(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM events WHERE run_id=?",
+            (run_id,),
+        ).fetchone()[0]
+        db.execute(
+            "INSERT INTO events VALUES (?, ?, ?, ?)",
+            (run_id, sequence, event_type, json.dumps(stamped)),
+        )
 
     def save_library_item(self, item: LibraryItem) -> None:
         self.get_result(item.run_id, item.result_revision)
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             db.execute("INSERT OR REPLACE INTO library_items (run_id,payload) VALUES (?, ?)", (item.run_id, item.model_dump_json()))
+            self._append_event_in_transaction(
+                db, item.run_id, "library_item_saved", {"result_revision": item.result_revision}
+            )
 
     def get_library_items(self) -> tuple[LibraryItem, ...]:
         with self._connect() as db:
@@ -432,12 +709,41 @@ class DemoRepository:
         if evaluated is None or evaluated.program_hash != estimate.program_hash:
             raise ValueError("table_program_revision_mismatch")
         with self._connect() as db:
-            db.execute("INSERT OR REPLACE INTO table_cost_estimates VALUES (?, ?, ?)", (run_id, estimate.result_revision, estimate.model_dump_json()))
+            db.execute("BEGIN IMMEDIATE")
+            payload = estimate.model_dump_json()
+            estimate_id = estimate.estimate_id or hashlib.sha256(payload.encode("utf-8")).hexdigest()
+            existing = db.execute(
+                "SELECT payload FROM table_cost_estimates WHERE run_id=? AND revision=? AND estimate_id=?",
+                (run_id, estimate.result_revision, estimate_id),
+            ).fetchone()
+            if existing is not None:
+                if existing["payload"] != payload:
+                    raise ValueError("economic_revision_conflict")
+                return
+            db.execute(
+                "INSERT INTO table_cost_estimates VALUES (?, ?, ?, ?)",
+                (run_id, estimate.result_revision, estimate_id, payload),
+            )
+            self._append_event_in_transaction(
+                db, run_id, "table_cost_committed",
+                {"result_revision": estimate.result_revision, "estimate_id": estimate_id, "program_hash": estimate.program_hash, "total_state": estimate.total_state},
+            )
 
-    def get_table_cost_estimate(self, run_id: str, revision: int) -> TableCostEstimate:
+    def get_table_cost_estimate(
+        self, run_id: str, revision: int, estimate_id: str | None = None
+    ) -> TableCostEstimate:
         self.get_result(run_id, revision)
         with self._connect() as db:
-            row = db.execute("SELECT payload FROM table_cost_estimates WHERE run_id=? AND revision=?", (run_id, revision)).fetchone()
+            if estimate_id is None:
+                row = db.execute(
+                    "SELECT payload FROM table_cost_estimates WHERE run_id=? AND revision=? ORDER BY rowid DESC LIMIT 1",
+                    (run_id, revision),
+                ).fetchone()
+            else:
+                row = db.execute(
+                    "SELECT payload FROM table_cost_estimates WHERE run_id=? AND revision=? AND estimate_id=?",
+                    (run_id, revision, estimate_id),
+                ).fetchone()
         if row is None:
             raise KeyError((run_id, revision))
         return TableCostEstimate.model_validate_json(row[0])
@@ -454,11 +760,16 @@ class DemoRepository:
         if links != artifacts:
             raise ValueError("table_drawing_manifest_mismatch")
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             db.execute("INSERT OR REPLACE INTO table_drawing_manifests VALUES (?, ?, ?)", (run_id, manifest.result_revision, manifest.model_dump_json()))
             db.execute("DELETE FROM table_drawing_artifacts WHERE run_id=? AND revision=?", (run_id, manifest.result_revision))
             db.executemany(
                 "INSERT INTO table_drawing_artifacts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 ((run_id, manifest.result_revision, item.sheet_id, item.format, manifest.program_hash, item.media_type, item.filename, item.content) for item in exports.artifacts),
+            )
+            self._append_event_in_transaction(
+                db, run_id, "table_drawings_committed",
+                {"result_revision": manifest.result_revision, "program_hash": manifest.program_hash, "sheet_count": len(manifest.sheets)},
             )
 
     def get_table_drawing_manifest(self, run_id: str, revision: int) -> TableDrawingManifest:

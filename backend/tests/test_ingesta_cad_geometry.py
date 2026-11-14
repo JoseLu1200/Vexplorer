@@ -66,6 +66,26 @@ def test_nonzero_or_varying_z_is_not_silently_projected_to_xy(tmp_path: Path) ->
     assert len([warning for warning in extraction.warnings if warning.startswith("unsupported_entity_plane:LINE")]) == 2
 
 
+def test_nonzero_z_linear_dimension_is_rejected_instead_of_projected_to_xy(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    dimension = document.modelspace().add_linear_dim(
+        base=(0.0, 20.0, 10.0),
+        p1=(0.0, 0.0, 10.0),
+        p2=(100.0, 0.0, 10.0),
+    )
+    dimension.render()
+
+    extraction = extract_drawing(_save(document, tmp_path, "dimension-z10.dxf"))
+
+    assert not extraction.dimensions
+    assert not any(item.kind == "DIMENSION" for item in extraction.entities)
+    assert any(
+        warning.startswith("unsupported_entity_plane:DIMENSION:")
+        for warning in extraction.warnings
+    )
+
+
 def test_nested_block_transform_is_expanded_in_wcs(tmp_path: Path) -> None:
     document = ezdxf.new("R2010")
     document.header["$INSUNITS"] = 4

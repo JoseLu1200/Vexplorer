@@ -323,7 +323,7 @@ def extraction_payload(
                 "id": f"evidence-geometry-{entity.id}", "kind": "geometry",
                 "source_entity_ids": [entity.id], "description": "Geometric segment observed in drawing",
             })
-        if entity.kind in {"TEXT", "MTEXT"} and entity.text is not None:
+        if entity.kind in {"TEXT", "MTEXT", "ATTRIB"} and entity.text is not None:
             position_source, position_mm = _point_payload(entity.points[0], drawing.unit_scale_to_mm)
             texts.append({
                 "id": f"text-{entity.id}", "source_entity_id": entity.id,

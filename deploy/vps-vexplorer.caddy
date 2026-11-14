@@ -1,0 +1,11 @@
+# Import inside the existing gex-dashboard.hopto.org block before catch-all handles.
+handle /vexplorer {
+	redir /vexplorer/ 308
+}
+
+handle_path /vexplorer/* {
+	request_body {
+		max_size 21MB
+	}
+	reverse_proxy 127.0.0.1:18792
+}

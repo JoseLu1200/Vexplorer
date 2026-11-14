@@ -4,7 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.contratos.modelos import DrawingExtraction, TableConfirmedValue, TableProgramProposal, TableReviewDecision
+from backend.app.contratos.modelos import (
+    DrawingExtraction,
+    TableConfirmedValue,
+    TableObservedValueCorrection,
+    TableProgramProposal,
+    TableReviewDecision,
+    TableSourceReviewDecision,
+)
 from backend.app.geometria.extraction import extract_drawing
 
 
@@ -31,13 +38,22 @@ def _catalog(analysis):
     return catalog_table_programs(analysis)
 
 
-def _evaluate(analysis, program, decisions=(), confirmed_values=()):
+def _evaluate(
+    analysis,
+    program,
+    decisions=(),
+    confirmed_values=(),
+    observed_value_corrections=(),
+    source_review_decisions=(),
+):
     try:
         from backend.app.geometria.mounted_table import evaluate_table_program
     except ImportError as exc:  # pragma: no cover - exercised only in the RED step
         pytest.fail(f"mounted table evaluator is missing: {exc}")
     return evaluate_table_program(
         analysis, program, decisions=decisions, confirmed_values=confirmed_values,
+        observed_value_corrections=observed_value_corrections,
+        source_review_decisions=source_review_decisions,
     )
 
 
@@ -414,6 +430,147 @@ def test_human_overlay_resolves_effective_conflict_without_mutating_cad_measure(
     assert resolved.overall_dimensions.width_mm == 1200.0
     assert width.state == "conflict"
     assert width.value_mm is None
+
+
+def test_human_confirmation_can_supersede_prior_effective_slot_value() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[1]
+    support_depth = next(item for item in analysis.measures if item.semantic == "support_depth")
+    first = TableConfirmedValue(
+        confirmation_id="confirmation-support-depth-r2",
+        target_id=support_depth.id,
+        value_mm=60.0,
+        reason="Primera medición manual de la sección.",
+    )
+    amended = TableConfirmedValue(
+        confirmation_id="confirmation-support-depth-r3",
+        supersedes_confirmation_id=first.confirmation_id,
+        target_id=support_depth.id,
+        value_mm=70.0,
+        reason="Corrección humana documentada tras repetir la medición.",
+    )
+
+    first_result = _evaluate(
+        analysis, program, decisions=_accept_all(program), confirmed_values=(first,),
+    )
+    amended_result = _evaluate(
+        analysis, program, decisions=_accept_all(program), confirmed_values=(amended,),
+    )
+
+    first_support = next(item for item in first_result.components if item.role == "corner_support")
+    amended_support = next(item for item in amended_result.components if item.role == "corner_support")
+    assert first_result.state == amended_result.state == "completed"
+    assert first_support.width.value_mm == 60.0
+    assert amended_support.width.value_mm == 70.0
+    assert support_depth.value_mm is None
+    assert support_depth.state == "unknown"
+
+
+def test_observed_value_correction_is_separate_and_physical_conflict_stays_blocking() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[0]
+    width = next(item for item in analysis.measures if item.semantic == "overall_width")
+    evidence_id = width.evidence_ids[0]
+    within_tolerance = TableObservedValueCorrection(
+        correction_id="correction-width-r2",
+        measurement_id=width.id,
+        value_mm=1200.05,
+        reason="Lectura humana más precisa dentro de la tolerancia geométrica.",
+        evidence_ids=(evidence_id,),
+    )
+    contradictory = TableObservedValueCorrection(
+        correction_id="correction-width-r3",
+        supersedes_correction_id=within_tolerance.correction_id,
+        measurement_id=width.id,
+        value_mm=1210.0,
+        reason="Valor deliberadamente contradictorio para comprobar el bloqueo.",
+        evidence_ids=(evidence_id,),
+    )
+
+    corrected = _evaluate(
+        analysis, program, decisions=_accept_all(program),
+        observed_value_corrections=(within_tolerance,),
+    )
+    conflicted = _evaluate(
+        analysis, program, decisions=_accept_all(program),
+        observed_value_corrections=(contradictory,),
+    )
+
+    assert corrected.state == "completed"
+    assert corrected.overall_dimensions.width_mm == pytest.approx(1200.05)
+    assert width.value_mm == 1200.0 and width.state == "observed"
+    assert conflicted.state == "needs_review"
+    assert conflicted.overall_dimensions.width_mm is None
+    assert any(item.code == "observed_correction_conflict" for item in conflicted.issues)
+    assert any(item.state == "conflict" for item in conflicted.placements)
+
+
+def test_recovered_dxf_requires_exact_source_review_decision_before_completion() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    warning = "recovered_dxf:fixes=1:errors=0"
+    recovered = analysis.model_copy(update={
+        "warnings": (*analysis.warnings, warning),
+        "state": "needs_review",
+    })
+    program = _catalog(recovered)[0]
+
+    pending = _evaluate(recovered, program, decisions=_accept_all(program))
+    pending_issue = next(
+        item for item in pending.issues if item.code == "source_recovery_review_required"
+    )
+    warning_id = pending_issue.target_ids[0]
+    accepted = _evaluate(
+        recovered, program, decisions=_accept_all(program),
+        source_review_decisions=(TableSourceReviewDecision(
+            warning_id=warning_id,
+            warning_code=warning,
+            action="accept",
+            reason="La persona revisó la reparación de estructura DXF.",
+        ),),
+    )
+    rejected = _evaluate(
+        recovered, program, decisions=_accept_all(program),
+        source_review_decisions=(TableSourceReviewDecision(
+            warning_id=warning_id,
+            warning_code=warning,
+            action="reject",
+            reason="La reparación no conserva la fuente aceptable.",
+        ),),
+    )
+
+    assert pending.state == "needs_review"
+    assert any(item.code == "source_recovery_review_required" for item in pending.issues)
+    assert accepted.state == "completed"
+    assert warning in recovered.warnings
+    assert rejected.state == "needs_review"
+    assert any(item.code == "source_recovery_rejected" for item in rejected.issues)
+
+    duplicated = recovered.model_copy(update={
+        "warnings": (*recovered.warnings, warning),
+    })
+    duplicate_pending = _evaluate(
+        duplicated, program, decisions=_accept_all(program),
+    )
+    incidents = [
+        item for item in duplicate_pending.issues
+        if item.code == "source_recovery_review_required"
+    ]
+    assert len(incidents) == 2
+    assert len({item.target_ids[0] for item in incidents}) == 2
+    one_accepted = _evaluate(
+        duplicated, program, decisions=_accept_all(program),
+        source_review_decisions=(TableSourceReviewDecision(
+            warning_id=incidents[0].target_ids[0],
+            warning_code=warning,
+            action="accept",
+            reason="Sólo se revisó una de dos incidencias iguales.",
+        ),),
+    )
+    assert one_accepted.state == "needs_review"
+    assert sum(
+        item.code == "source_recovery_review_required"
+        for item in one_accepted.issues
+    ) == 1
 
 
 def test_metric_envelope_remains_observed_when_general_dimensions_are_absent() -> None:

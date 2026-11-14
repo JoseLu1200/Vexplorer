@@ -1,5 +1,7 @@
 # API HTTP, eventos y revisiones
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](../README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 > **Alcance actualizado:** las referencias a P0 y al contrato 0.1.0 describen el hito técnico T1–T10. La prueba de concepto completa exige además T11–T13: inferencia desde planos pobres, histórico y estimación. Véase [CASO_DE_USO_Y_EVALUACION](CASO_DE_USO_Y_EVALUACION.md). Las ampliaciones siguen pendientes de implementación y acuerdo de contratos.
 
 Estado: contrato propuesto para implementar con FastAPI; no describe un servicio desplegado ni pruebas ejecutadas. Los objetos de dominio se definen en [CONTRATOS_DATOS.md](CONTRATOS_DATOS.md). El ciclo del agente y sus presupuestos están en [HARNESS.md](HARNESS.md). Todas las rutas siguientes requieren autenticación y autorización sobre el documento/run; conocer un ID no concede acceso.

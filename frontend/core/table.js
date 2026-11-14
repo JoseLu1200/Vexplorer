@@ -46,14 +46,20 @@ export function normaliseTableWorkspace(snapshot = {}) {
   const evaluatedRaw = result.evaluated_table_program;
   const evaluatedBindings = (evaluatedRaw?.bindings ?? []).map((binding) => ({ ...binding, operandRefs: [...(binding.operand_refs ?? [])], result: tableField(binding.result) }));
   const measurementDispositions = new Map((evaluatedRaw?.measurement_dispositions ?? []).map((item) => [item.measurement_id, item]));
-  const measures = (analysis.measures ?? []).map((measure) => ({
+  const confirmedByTarget = new Map((result.table_confirmed_values ?? []).map((item) => [item.target_id, item]));
+  const correctionsByTarget = new Map((result.table_observed_value_corrections ?? []).map((item) => [item.measurement_id, item]));
+  const measures = (analysis.measures ?? []).map((measure) => {
+    const confirmation = confirmedByTarget.get(measure.id) ?? null;
+    const correction = correctionsByTarget.get(measure.id) ?? null;
+    return ({
     id: measure.id,
     semantic: measure.semantic ?? "unknown",
     axis: measure.axis ?? "unknown",
     value: Number.isFinite(measure.value_mm) ? measure.value_mm : null,
     state: measure.state ?? "unknown",
     informationClass: measure.state ?? "unknown",
-    confirmable: ["unknown", "conflict"].includes(measure.state) && measurementDispositions.get(measure.id)?.blocking !== false,
+    confirmable: (["unknown", "conflict"].includes(measure.state) || confirmation !== null) && measurementDispositions.get(measure.id)?.blocking !== false,
+    correctable: ["observed", "conflict"].includes(measure.state) && (measure.evidence_ids ?? []).length > 0,
     dispositionReason: measurementDispositions.get(measure.id)?.reason ?? null,
     slotOrigin: measure.slot_origin ?? "drawing",
     geometryRelation: measure.geometry_relation ?? (measure.slot_origin === "profile_required_slot" ? "profile_required_slot" : "dimension_annotation"),
@@ -62,8 +68,10 @@ export function normaliseTableWorkspace(snapshot = {}) {
     viewIds: [...(measure.view_ids ?? [])],
     evidenceIds: [...(measure.evidence_ids ?? [])],
     sourceEntityIds: [...(measure.source_entity_ids ?? [])],
-    effectiveValue: evaluatedBindings.find((binding) => binding.operation === "copy" && binding.operandRefs.length === 1 && binding.operandRefs[0].ref_type === "measure" && binding.operandRefs[0].ref_id === measure.id)?.result.value ?? null,
-  }));
+    confirmation,
+    correction,
+    effectiveValue: confirmation?.value_mm ?? correction?.value_mm ?? evaluatedBindings.find((binding) => binding.operation === "copy" && binding.operandRefs.length === 1 && binding.operandRefs[0].ref_type === "measure" && binding.operandRefs[0].ref_id === measure.id)?.result.value ?? null,
+  }); });
   const programs = (result.table_programs ?? []).map((program) => ({
     id: program.id,
     origin: program.proposal_origin,
@@ -104,6 +112,7 @@ export function normaliseTableWorkspace(snapshot = {}) {
     analysisState: analysis.state ?? "needs_review",
     ledgerRevision: analysis.ledger_revision ?? null,
     warnings: [...(analysis.warnings ?? [])],
+    sourceWarnings: (evaluatedRaw?.issues ?? []).flatMap((issue) => issue.code === "source_recovery_review_required" && issue.target_ids?.length >= 2 ? [{ id: issue.target_ids[0], code: issue.target_ids[1], message: issue.message }] : []),
     measures,
     programs,
     selectedProgramId: result.selected_table_program_id ?? null,
@@ -133,7 +142,32 @@ export function buildTableReviewPayload(snapshot, workspace, values = {}) {
     if (!confirmable.has(item.targetId)) return [];
     const number = Number(item.valueMm);
     if (!Number.isFinite(number) || number <= 0 || !item.reason?.trim()) throw new TypeError("Cada medida confirmada necesita un valor positivo y motivo.");
-    return [{ target_kind: "measurement_slot", target_id: item.targetId, value_mm: number, reason: item.reason.trim(), source: "human" }];
+    const previous = workspace.measures.find((measure) => measure.id === item.targetId)?.confirmation;
+    return [{
+      ...(item.confirmationId ? { confirmation_id: item.confirmationId } : {}),
+      ...(previous?.confirmation_id ? { supersedes_confirmation_id: previous.confirmation_id } : {}),
+      target_kind: "measurement_slot", target_id: item.targetId, value_mm: number, reason: item.reason.trim(), source: "human",
+    }];
+  });
+  const correctable = new Map(workspace.measures.filter((item) => item.correctable).map((item) => [item.id, item]));
+  const observedCorrections = (values.observedCorrections ?? []).map((item) => {
+    const measure = correctable.get(item.targetId), number = Number(item.valueMm);
+    if (!measure || !item.correctionId || !Number.isFinite(number) || number <= 0 || !item.reason?.trim()) throw new TypeError("Cada corrección observada necesita evidencia, valor positivo y motivo.");
+    return {
+      correction_id: item.correctionId,
+      measurement_id: item.targetId,
+      value_mm: number,
+      reason: item.reason.trim(),
+      evidence_ids: [...measure.evidenceIds],
+      source: "human",
+      ...(measure.correction?.correction_id ? { supersedes_correction_id: measure.correction.correction_id } : {}),
+    };
+  });
+  const sourceWarnings = new Map(workspace.sourceWarnings.map((item) => [item.id, item]));
+  const sourceDecisions = (values.sourceDecisions ?? []).map((item) => {
+    const warning = sourceWarnings.get(item.warningId);
+    if (!warning || warning.code !== item.warningCode || !["accept", "reject"].includes(item.action) || !item.reason?.trim()) throw new TypeError("Cada revisión de fuente necesita incidencia, decisión y motivo.");
+    return { warning_id: item.warningId, warning_code: item.warningCode, action: item.action, reason: item.reason.trim() };
   });
   return {
     base_result_revision: revision,
@@ -141,6 +175,8 @@ export function buildTableReviewPayload(snapshot, workspace, values = {}) {
     table_program_id: values.programId,
     table_decisions: tableDecisions,
     table_confirmed_values: tableConfirmedValues,
+    ...(observedCorrections.length ? { table_observed_value_corrections: observedCorrections } : {}),
+    ...(sourceDecisions.length ? { table_source_review_decisions: sourceDecisions } : {}),
     notes: values.notes.trim(),
   };
 }
@@ -151,9 +187,48 @@ export function normaliseTableCostCatalog(raw = {}) {
   return {
     version: raw.catalog_version ?? null,
     synthetic: raw.synthetic === true,
+    source: raw.source ?? null,
+    effectiveDate: raw.effective_date ?? null,
     materials: (raw.material_tariffs ?? raw.materials ?? tariffs.filter((item) => item.scope === "material")).map(tariff),
     edges: tariffs.filter((item) => item.scope === "edge").map(tariff),
     operations: (raw.operation_tariffs ?? raw.operations ?? tariffs.filter((item) => item.scope === "operation")).map(tariff),
+    labor: tariffs.filter((item) => item.scope === "labor").map(tariff),
+    finishing: tariffs.filter((item) => item.scope === "finishing").map(tariff),
+  };
+}
+
+export function buildTableCostScope(values = {}) {
+  const optionalNumber = (value, label) => {
+    if (value === "" || value == null) return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0) throw new TypeError(`${label} debe ser un número no negativo.`);
+    return number;
+  };
+  const exclusions = (values.exclusions ?? []).map((item) => {
+    const reason = String(item.reason ?? "").trim();
+    if (!reason) throw new TypeError("Cada exclusión necesita un motivo.");
+    return { scope: item.scope, reason };
+  });
+  const operations = values.operations ?? [];
+  const operationHours = Object.fromEntries(operations.flatMap((item) => {
+    const hours = optionalNumber(item.hours, "Las horas de operación");
+    return hours == null ? [] : [[item.id, hours]];
+  }));
+  const margin = optionalNumber(values.marginPercent, "El margen provisional");
+  if (margin != null && margin >= 100) throw new TypeError("El margen provisional debe ser menor que 100.");
+  return {
+    material_tariff_id: values.materialTariffId || null,
+    component_material_tariff_ids: { ...(values.componentMaterialTariffIds ?? {}) },
+    edge_scope: values.edgeScope === "all_exposed" ? "all_exposed" : "none",
+    edge_tariff_id: values.edgeTariffId || null,
+    operation_tariff_ids: operations.map((item) => item.id),
+    operation_hours_by_tariff: operationHours,
+    labor_tariff_id: values.laborTariffId || null,
+    labor_hours: optionalNumber(values.laborHours, "Las horas de mano de obra"),
+    finish_tariff_id: values.finishTariffId || null,
+    finish_quantity_m2: optionalNumber(values.finishQuantity, "La superficie de acabado"),
+    exclusions,
+    provisional_margin_percent: margin,
   };
 }
 
@@ -163,18 +238,25 @@ export function presentTableCosts(raw = {}) {
   const items = (raw.concepts ?? []).map((concept) => ({
     ...concept,
     quantityLabel: Number.isFinite(concept.quantity) ? `${number.format(concept.quantity)} ${concept.quantity_unit}` : "Cantidad pendiente",
-    rateLabel: Number.isFinite(concept.rate_eur_per_unit) ? `${euros.format(concept.rate_eur_per_unit)} por ${concept.rate_unit.replace("EUR/", "")}` : "Tarifa pendiente",
-    amountLabel: Number.isFinite(concept.amount_eur) ? euros.format(concept.amount_eur) : "Pendiente",
+    rateLabel: Number.isFinite(concept.rate_eur_per_unit) ? `${euros.format(concept.rate_eur_per_unit)} por ${String(concept.rate_unit ?? "unidad").replace("EUR/", "")}` : concept.state === "not_applicable" ? "No aplica" : "Tarifa pendiente",
+    amountLabel: Number.isFinite(concept.amount_eur) ? euros.format(concept.amount_eur) : concept.state === "not_applicable" ? "No aplica" : "Pendiente",
+    stateLabel: concept.state === "resolved" ? "Resuelto" : concept.state === "not_applicable" ? "No aplica" : "Desconocido",
   }));
   const resolved = items.filter((item) => Number.isFinite(item.amount_eur));
-  const largestContribution = resolved.reduce((largest, item) => !largest || item.amount_eur > largest.amount_eur ? item : largest, null);
+  const largestContribution = raw.principal_cost_contributor_id ? resolved.find((item) => item.id === raw.principal_cost_contributor_id) ?? null : resolved.reduce((largest, item) => !largest || item.amount_eur > largest.amount_eur ? item : largest, null);
   const complete = raw.total_state === "complete" && Number.isFinite(raw.grand_total_eur);
+  const snapshot = raw.catalog_snapshot ?? {};
   return {
     revision: raw.result_revision ?? null,
     programHash: raw.program_hash ?? null,
     catalogVersion: raw.catalog_version ?? null,
+    synthetic: raw.synthetic !== false,
+    catalogLabel: `${raw.synthetic === false ? "Tarifa real" : "Tarifa demo"}${snapshot.source ? ` · ${snapshot.source}` : ""}${snapshot.effective_date ? ` · ${snapshot.effective_date}` : ""}`,
     complete,
     totalLabel: complete ? euros.format(raw.grand_total_eur) : `Subtotal conocido ${euros.format(raw.known_subtotal_eur ?? 0)}`,
+    hoursLabel: Number.isFinite(raw.total_hours) ? `${number.format(raw.total_hours)} h` : "Desconocidas",
+    marginLabel: Number.isFinite(raw.provisional_margin_percent) ? `${number.format(raw.provisional_margin_percent)} %` : "Sin margen",
+    salePriceLabel: Number.isFinite(raw.provisional_sale_price_eur) ? euros.format(raw.provisional_sale_price_eur) : "No disponible",
     items,
     largestContribution,
     warnings: [...(raw.warnings ?? [])],
@@ -210,7 +292,7 @@ export function normaliseTableDrawingManifest(raw = {}) {
     const formatRecords = sheet.formats ?? [];
     const formats = [...new Set(formatRecords.map((format) => typeof format === "string" ? format : format.format).filter((format) => SHEET_FORMATS.has(format)))];
     const formatLinks = Object.fromEntries(formatRecords.flatMap((format) => {
-      if (typeof format === "string" || !SHEET_FORMATS.has(format.format) || typeof format.url !== "string" || !format.url.startsWith("/api/v1/")) return [];
+      if (typeof format === "string" || !SHEET_FORMATS.has(format.format) || typeof format.url !== "string" || !format.url.startsWith("/") || format.url.startsWith("//")) return [];
       return [[format.format, format.url]];
     }));
     return [{

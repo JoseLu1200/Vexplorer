@@ -1,5 +1,7 @@
 # Vexplorer
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 Hackathon: a partir de un plano (DWG/DXF) genera un **despiece** (lista de piezas con nombre, cantidad, largo, ancho, grosor y contornos de origen). Contexto y decisiones de arquitectura completos en [`initial-plan.md`](initial-plan.md): léelo antes de tocar nada.
 
 La [transcripción](transcripcion-contexto-poc.md) concreta el objetivo: inferir piezas y secciones desde planos pobres, y orientar costes y tiempos mediante muebles históricos similares. [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md) distingue el hito técnico de la prueba de concepto completa, sin cambiar las reglas de equipo ni aprobar contratos nuevos.

@@ -77,6 +77,24 @@ def test_reviewed_table_produces_traceable_sheets_and_three_physical_solids() ->
     } == {"FRONT", "TOP", "SIDE"}
     component_sheets = [item for item in plan.sheets if item.kind == "component"]
     assert all(sum(item.kind == "dimension" for item in sheet.primitives) == 3 for sheet in component_sheets)
+    assert all(
+        {primitive.value_mm for primitive in sheet.primitives if primitive.kind == "dimension"}
+        == {
+            value
+            for value in (
+                next(item for item in evaluated.components if item.id == sheet.component_id).length.value_mm,
+                next(item for item in evaluated.components if item.id == sheet.component_id).width.value_mm,
+                next(item for item in evaluated.components if item.id == sheet.component_id).thickness.value_mm,
+            )
+            if value is not None
+        }
+        for sheet in component_sheets
+    )
+    assert all(
+        any(item.id.endswith("-identity") and "STATE=accepted" in (item.text or "") for item in sheet.primitives)
+        and any(item.id.endswith("-provenance") and item.dependency_refs for item in sheet.primitives)
+        for sheet in component_sheets
+    )
     assert {
         item.component_id: next(
             primitive.text for primitive in item.primitives
@@ -88,9 +106,29 @@ def test_reviewed_table_produces_traceable_sheets_and_three_physical_solids() ->
         "component-side-support": "QTY=2",
     }
     cut_sheet = next(item for item in plan.sheets if item.kind == "cut_sheet")
-    assert sum(item.kind == "rect" for item in cut_sheet.primitives) == 3
-    assert sum(item.kind == "dimension" for item in cut_sheet.primitives) == 6
-    assert sum(item.kind == "text" and "T=" in (item.text or "") for item in cut_sheet.primitives) == 3
+    cut_rectangles = [item for item in cut_sheet.primitives if item.kind == "rect"]
+    assert len(cut_rectangles) == 2 * len(evaluated.occurrences)
+    assert {
+        item.id for item in cut_rectangles if item.id.endswith("-rect")
+    } == {f"{item.id}-rect" for item in evaluated.occurrences}
+    assert {
+        item.id for item in cut_rectangles if item.id.endswith("-section")
+    } == {f"{item.id}-section" for item in evaluated.occurrences}
+    assert sum(item.kind == "dimension" for item in cut_sheet.primitives) == 9
+    for occurrence in evaluated.occurrences:
+        occurrence_primitives = [
+            item for item in cut_sheet.primitives if item.id.startswith(f"{occurrence.id}-")
+        ]
+        assert {
+            item.id.removeprefix(f"{occurrence.id}-")
+            for item in occurrence_primitives if item.kind == "dimension"
+        } == {"length", "width", "thickness"}
+        label = next(item for item in occurrence_primitives if item.id.endswith("-label"))
+        assert occurrence.id in (label.text or "")
+        assert label.state == "calculated"
+        assert label.dependency_refs
+        face = next(item for item in occurrence_primitives if item.id.endswith("-rect"))
+        assert face.dependency_refs
     actual_measure_refs = {f"measure:{item.id}" for item in analysis.measures}
     general_measure_refs = {
         ref for primitive in general.primitives for ref in primitive.dependency_refs
@@ -109,6 +147,41 @@ def test_reviewed_table_produces_traceable_sheets_and_three_physical_solids() ->
     assert top.dimensions_mm.model_dump() == {"x": 1200.0, "y": 30.0, "z": 700.0}
     assert top.bbox_mm.max.model_dump() == {"x": 1200.0, "y": 750.0, "z": 700.0}
     assert all(item.evidence_ids for item in scene.objects)
+
+
+def test_unknown_component_dimension_marks_component_and_cut_sheets_incomplete() -> None:
+    extraction, analysis, _program, evaluated, _result = _case()
+    derive_table_drawing_plan, _ = _service()
+    first = evaluated.components[0]
+    unresolved = first.model_copy(update={
+        "thickness": first.thickness.model_copy(update={
+            "value_mm": None,
+            "state": "unknown",
+        }),
+    })
+    incomplete = evaluated.model_copy(update={
+        "components": (unresolved, *evaluated.components[1:]),
+        "state": "needs_review",
+    })
+
+    plan = derive_table_drawing_plan(
+        extraction, analysis, incomplete, result_revision=3,
+    )
+
+    component = next(item for item in plan.sheets if item.component_id == unresolved.id)
+    cut_sheet = next(item for item in plan.sheets if item.kind == "cut_sheet")
+    assert component.status == "incomplete"
+    assert "component_dimensions_unknown" in component.warnings
+    assert cut_sheet.status == "incomplete"
+    assert any(
+        warning.startswith("occurrence_thickness_unknown:")
+        for warning in cut_sheet.warnings
+    )
+    assert not any(
+        item.kind == "dimension" and item.id.startswith("occurrence-component-tabletop")
+        and item.id.endswith("-thickness")
+        for item in cut_sheet.primitives
+    )
 
 
 def test_unreviewed_program_never_creates_table_solids() -> None:

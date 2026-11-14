@@ -59,4 +59,23 @@ test("table cost scope is explicit and never hides a partial known subtotal as a
   assert.match(html, /id="table-material-tariff"/);
   assert.match(html, /id="table-edge-scope"/);
   assert.match(html, /id="table-operation-tariffs"/);
+  assert.match(html, /id="table-catalog-provenance"/);
+  assert.match(html, /id="table-labor-hours"/);
+  assert.match(html, /id="table-finish-quantity"/);
+  assert.match(html, /id="table-exclusion-controls"/);
+  assert.match(html, /id="table-margin"/);
+});
+
+test("private identity, job progress and event gap status are announced", () => {
+  assert.match(html, /id="session-user"/);
+  assert.match(html, /id="job-status"[^>]*role="status"/);
+  assert.match(html, /id="trace-gap-status"[^>]*role="status"/);
+  assert.match(html, /id="trace-drawer"[^>]*role="dialog"[^>]*aria-modal="true"/);
+});
+
+test("static assets remain relative for a prefixed private deployment", () => {
+  assert.match(html, /href="\.\/styles\.css"/);
+  assert.match(html, /src="\.\/app\.js"/);
+  assert.match(html, /"three":"\.\/vendor\/three\/three\.module\.js"/);
+  assert.doesNotMatch(html, /(?:href|src)="\/(?:styles\.css|app\.js|vendor\/)/);
 });

@@ -18,6 +18,14 @@ test("sequence gaps are recorded before advancing", () => {
   ledger.append({ run_id: "run-1", sequence: 1, event_type: "run_state_changed", data: {} });
   ledger.append({ run_id: "run-1", sequence: 3, event_type: "run_finished", data: {} });
   assert.deepEqual(ledger.gaps(), [{ after: 1, before: 3 }]);
+  ledger.append({ run_id: "run-1", sequence: 2, event_type: "tool_completed", data: {} });
+  assert.deepEqual(ledger.gaps(), []);
+});
+
+test("history beginning after sequence one exposes the missing prefix", () => {
+  const ledger = createEventLedger("run-1");
+  ledger.append({ run_id: "run-1", sequence: 3, event_type: "run_finished", data: {} });
+  assert.deepEqual(ledger.gaps(), [{ after: 0, before: 3 }]);
 });
 
 test("persisted SSE history includes human review and estimate events after run finish", () => {
@@ -38,4 +46,9 @@ test("event timestamp reads the canonical nested data field", () => {
 
 test("library saves have a visible audit label", () => {
   assert.equal(eventLabel({ event_type: "library_item_saved" }), "Revisión guardada en biblioteca");
+});
+
+test("production table commits have visible audit labels", () => {
+  assert.equal(eventLabel({ event_type: "table_drawings_committed" }), "Planos de mesa guardados");
+  assert.equal(eventLabel({ event_type: "table_cost_committed" }), "Costes de mesa guardados");
 });

@@ -145,6 +145,22 @@ def test_scene_rejects_shelf_thickness_or_depth_inconsistent_with_reviewed_panel
     assert "inconsistent_panel_dimensions" in scene.warnings
 
 
+def test_scene_uses_geometry_tolerance_for_reviewed_panel_dimensions():
+    extraction, result = _result()
+    pieces = tuple(
+        piece.model_copy(update={"length_mm": piece.length_mm + 0.05})
+        if piece.role == "shelf" and piece.length_mm is not None
+        else piece
+        for piece in result.pieces
+    )
+
+    scene = reconstruct_scene(extraction, result.model_copy(update={"pieces": pieces}))
+
+    assert scene.state == "ready"
+    assert len(scene.objects) == 6
+    assert not scene.warnings
+
+
 def test_scene_rejects_duplicate_resolved_role_instead_of_overwriting_piece():
     extraction, result = _result()
     duplicate = next(piece for piece in result.pieces if piece.role == "top_panel").model_copy(

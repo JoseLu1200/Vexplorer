@@ -210,6 +210,23 @@ def _component_sheet(component: EvaluatedTableComponent, page: int) -> TableShee
                 ))
     if not component.accepted:
         warnings.append("component_not_accepted")
+    component_state = "calculated" if component.accepted else "proposed"
+    primitives.extend((
+        TableDrawingPrimitive(
+            id=f"{component.id}-identity", kind="text",
+            points_mm=(Point2D(x=0.0, y=(float(values[1]) if values[1] is not None else 90.0) + 80.0),),
+            text=f"ID={component.id} · ROLE={component.role} · STATE={'accepted' if component.accepted else 'pending'}",
+            state=component_state,
+            dependency_refs=(f"component:{component.id}",),
+        ),
+        TableDrawingPrimitive(
+            id=f"{component.id}-provenance", kind="text",
+            points_mm=(Point2D(x=0.0, y=(float(values[1]) if values[1] is not None else 90.0) + 110.0),),
+            text=f"PROVENANCE={','.join(component.evidence_ids) if component.evidence_ids else 'none'}",
+            state=component_state,
+            dependency_refs=component.evidence_ids,
+        ),
+    ))
     primitives.append(TableDrawingPrimitive(
         id=f"{component.id}-quantity", kind="text",
         points_mm=(Point2D(x=0.0, y=(float(values[1]) if values[1] is not None else 90.0) + 50.0),),
@@ -243,23 +260,36 @@ def _cut_sheet(evaluated: EvaluatedTableProgram, page: int) -> TableSheetPlan:
             continue
         length = component.length.value_mm
         width = component.width.value_mm
+        thickness = component.thickness.value_mm
+        primitive_state = "calculated" if evaluated.state == "completed" else "proposed"
+        section_x = cursor_x + length + 25.0
         primitives.extend((
             TableDrawingPrimitive(
                 id=f"{occurrence.id}-rect", kind="rect",
                 points_mm=(Point2D(x=cursor_x, y=0.0), Point2D(x=cursor_x + length, y=width)),
-                state="calculated" if evaluated.state == "completed" else "proposed",
+                state=primitive_state,
                 dependency_refs=tuple(sorted(set(component.length.dependency_refs + component.width.dependency_refs))),
+            ),
+            *(
+                (TableDrawingPrimitive(
+                    id=f"{occurrence.id}-section", kind="rect",
+                    points_mm=(
+                        Point2D(x=section_x, y=0.0),
+                        Point2D(x=section_x + thickness, y=width),
+                    ),
+                    state=primitive_state,
+                    dependency_refs=component.thickness.dependency_refs,
+                ),)
+                if thickness is not None else ()
             ),
             TableDrawingPrimitive(
                 id=f"{occurrence.id}-label", kind="text",
                 points_mm=(Point2D(x=cursor_x, y=width + 25.0),),
                 text=(
-                    f"{component.role} · {occurrence.occurrence_index} · "
-                    f"T={component.thickness.value_mm:g} mm"
-                    if component.thickness.value_mm is not None
-                    else f"{component.role} · {occurrence.occurrence_index} · T=?"
+                    f"{occurrence.id} · {component.role} · occurrence={occurrence.occurrence_index} · "
+                    f"STATE={'accepted' if component.accepted else 'pending'}"
                 ),
-                state="calculated" if evaluated.state == "completed" else "proposed",
+                state=primitive_state,
                 dependency_refs=(f"component:{component.id}", *component.thickness.dependency_refs),
             ),
             _dimension(
@@ -272,8 +302,19 @@ def _cut_sheet(evaluated: EvaluatedTableProgram, page: int) -> TableSheetPlan:
                 (cursor_x - DIMENSION_OFFSET_MM, 0.0), width, component.width.state,
                 component.width.dependency_refs,
             ),
+            *(
+                (_dimension(
+                    f"{occurrence.id}-thickness",
+                    (section_x, 0.0), (section_x + thickness, 0.0),
+                    (section_x, -DIMENSION_OFFSET_MM), thickness,
+                    component.thickness.state, component.thickness.dependency_refs,
+                ),)
+                if thickness is not None else ()
+            ),
         ))
-        cursor_x += length + VIEW_GAP_MM
+        if thickness is None:
+            warnings.append(f"occurrence_thickness_unknown:{occurrence.id}")
+        cursor_x += length + 25.0 + (thickness or 0.0) + VIEW_GAP_MM
     if evaluated.state != "completed":
         warnings.append("program_not_fully_reviewed")
     return TableSheetPlan(

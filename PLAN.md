@@ -1,5 +1,7 @@
 # Vexplorer — plan de implementación
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 > **Implementación futura.** Leer primero [CLAUDE.md](CLAUDE.md), [initial-plan.md](initial-plan.md) y [team/README.md](team/README.md). Antes de editar código, cumplir el protocolo de identidad, archivo personal y alcance. Las casillas no acreditan trabajo completado ni aprobación del contrato.
 
 **Objetivo:** interpretar vistas 2D pobres de un mueble, proponer piezas y secciones revisables y orientar tiempos y presupuesto mediante muebles históricos similares. La extracción de cotas es el primer hito, no la prueba de concepto completa. Requisitos y evaluación en [CASO_DE_USO_Y_EVALUACION](docs/CASO_DE_USO_Y_EVALUACION.md), derivados de la [transcripción](transcripcion-contexto-poc.md).

@@ -72,6 +72,31 @@ def test_reviewed_parts_candidate_creates_six_traceable_schematic_occurrences(tm
     assert scene.collision_status == "not_evaluated"
 
 
+def test_parts_scene_uses_same_dimension_tolerance_as_candidate_validation(tmp_path: Path) -> None:
+    extraction, parts, candidate, repository = _run(tmp_path)
+    result = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=1, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id, notes="Selecciona hipótesis dimensional",
+        ),
+    )
+    pieces = tuple(
+        piece.model_copy(update={"length_mm": piece.length_mm + 0.05})
+        if piece.role == "shelf" and piece.length_mm is not None
+        else piece
+        for piece in result.pieces
+    )
+
+    scene = reconstruct_parts_scene(
+        extraction, parts, result.model_copy(update={"pieces": pieces}),
+    )
+
+    assert scene.state == "ready"
+    assert len(scene.objects) == 6
+    assert not scene.warnings
+
+
 def test_missing_observed_thickness_keeps_parts_scene_without_solids(tmp_path: Path) -> None:
     extraction = extract_drawing(
         Path("data/planos_demo/piezas_espesor_desconocido.dxf"),

@@ -32,11 +32,28 @@ function defaultId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defaultId } = {}) {
+function requiredRevision(revision) {
+  if (!Number.isInteger(revision) || revision < 1) throw new TypeError("Indica una revisión de resultado válida.");
+  return encodeURIComponent(revision);
+}
+
+function browserBasePath() {
+  if (typeof document === "undefined") return "";
+  const path = new URL(".", document.baseURI).pathname.replace(/\/$/, "");
+  return path === "" || path === "/" ? "" : path;
+}
+
+export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defaultId, basePath = browserBasePath() } = {}) {
+  const base = String(basePath ?? "").replace(/\/+$/, "").replace(/^([^/])/, "/$1");
+  const resourceUrl = (path) => {
+    if (!path || /^(?:[a-z]+:)?\/\//i.test(path)) return path;
+    if (base && (path === base || path.startsWith(`${base}/`))) return path;
+    return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  };
   const json = async (path, init = {}) => {
     let response;
     try {
-      response = await fetchImpl(path, init);
+      response = await fetchImpl(resourceUrl(path), init);
     } catch (cause) {
       throw new ApiError("No se pudo conectar con Vexplorer.", { code: "network_error", retryable: true, details: { cause: cause?.message } });
     }
@@ -53,6 +70,8 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
 
   return {
     getConfig: () => json("/api/v1/config"),
+    resourceUrl,
+    getSession: () => json("/api/v1/session"),
     async upload(file) {
       const form = new FormData();
       form.append("file", file);
@@ -66,19 +85,21 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
       ...(table.proposal_mode ? { proposal_mode: table.proposal_mode } : {}),
       ...(table.table_template_id ? { table_template_id: table.table_template_id } : {}),
     }),
+    createJob: (request) => post("/api/v1/jobs", request),
+    getJob: (jobId) => json(`/api/v1/jobs/${encodeURIComponent(jobId)}`),
     getDocumentDrawing: (documentId, inputKind) => json(`/api/v1/documents/${encodeURIComponent(documentId)}/drawing${inputKind ? `?input_kind=${encodeURIComponent(inputKind)}` : ""}`),
-    documentPreviewUrl: (documentId) => `/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`,
+    documentPreviewUrl: (documentId) => resourceUrl(`/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`),
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),
     getDrawing: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/drawing`),
     getLedger: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/ledger`),
     getRevisions: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/revisions`),
-    getParts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/parts${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
-    getTable: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
+    getParts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/parts?result_revision=${requiredRevision(revision)}`),
+    getTable: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table?result_revision=${requiredRevision(revision)}`),
     generateTableDrawings: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-drawings`, body),
     getTableDrawings: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-drawings${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
     tableDrawingUrl: (runId, sheetId, format, revision, programHash) => {
       const query = new URLSearchParams({ result_revision: String(revision), program_hash: programHash });
-      return `/api/v1/runs/${encodeURIComponent(runId)}/table-drawings/${encodeURIComponent(sheetId)}.${encodeURIComponent(format)}?${query}`;
+      return resourceUrl(`/api/v1/runs/${encodeURIComponent(runId)}/table-drawings/${encodeURIComponent(sheetId)}.${encodeURIComponent(format)}?${query}`);
     },
     generateTableCosts: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs`, body),
     getTableCosts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
@@ -90,7 +111,7 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     findSimilar: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/similarity`, body),
     groupLibrary: (body) => post("/api/v1/library/groups", body),
     async getEventHistory(runId) {
-      const response = await fetchImpl(`/api/v1/runs/${encodeURIComponent(runId)}/events`);
+      const response = await fetchImpl(resourceUrl(`/api/v1/runs/${encodeURIComponent(runId)}/events`));
       if (!response.ok) throw new ApiError("No se pudo recuperar la traza.", { status: response.status, code: "event_history_unavailable" });
       return response.text();
     },
@@ -98,6 +119,6 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     estimate: (runId, body = {}) => post(`/api/v1/runs/${encodeURIComponent(runId)}/estimate`, body),
     review: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/reviews`, body),
     cancel: (runId) => post(`/api/v1/runs/${encodeURIComponent(runId)}/cancel`, {}, { idempotent: false }),
-    exportUrl: (runId, format) => `/api/v1/runs/${encodeURIComponent(runId)}/exports?format=${encodeURIComponent(format)}`,
+    exportUrl: (runId, format) => resourceUrl(`/api/v1/runs/${encodeURIComponent(runId)}/exports?format=${encodeURIComponent(format)}`),
   };
 }

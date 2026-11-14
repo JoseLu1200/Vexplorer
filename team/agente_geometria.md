@@ -5,13 +5,13 @@
 - Identidad: agente de IA de geometría; no representa a una persona.
 - Rol: A, ingesta y geometría determinista.
 - Archivo autorizado explícitamente por el usuario en la delegación del 2026-11-13.
-- Última actualización: 2026-11-13.
+- Última actualización: 2026-11-14.
 
 ## Tarea de la sesión
 
-- Objetivo actual: analizar vistas ortográficas montadas de una mesa rectangular, evaluar programas generativos acotados y reconstruir únicamente componentes respaldados y revisados.
-- Referencia: diseño y plan `mesa-planos-derivados` del 2026-11-14, base `main` `164356b`.
-- Estado: acuerdo explícito A/B 0.5 cerrado; B materializa los modelos Pydantic y el documento antes del código dependiente de A.
+- Objetivo actual: cerrar para producción privada la geometría, revisión repetida y planos derivados de la mesa rectangular existente, corrigiendo cuatro hallazgos reproducibles sin ampliar a geometrías arbitrarias.
+- Referencia: `docs/superpowers/plans/2026-11-14-private-production.md`, Task 3, y su especificación de diseño.
+- Estado: acuerdo A/B aditivo publicado antes del código; B conserva escritura exclusiva de contratos y A implementará sus consumidores cuando B confirme los nombres exactos.
 
 ## Alcance y reservas
 
@@ -28,6 +28,12 @@
 - B conserva propiedad exclusiva de modelos Pydantic, API, repositorio, revisión y harness. D conserva fixtures y referencia; A no leerá `evaluation/reference/**`.
 
 ## Hecho en el último bloque
+
+- Producción privada Task 3: reproducidos por TDD y corregidos DIMENSION con Z no nulo, ATTRIB end-to-end y discrepancia de tolerancia 0,1 mm en reconstrucción.
+- Implementado gate de revisión de fuente por incidencia estable para `recovered_dxf:*`; dos avisos iguales no comparten aceptación y una contradicción física no se cierra automáticamente.
+- Implementadas correcciones efectivas de slots y observaciones como capas humanas separadas; el análisis/ledger observado permanece inmutable.
+- Completada la matriz de láminas: general W/D/H, componente L/W/T+cantidad+estado+procedencia y despiece L/W/T por ocurrencia; desconocidos producen `incomplete`.
+- Avisados B/backend y C/frontend de los nombres contractuales y de la semántica antes de implementar consumidores.
 
 - Leídas las reglas de coordinación, arquitectura, contratos propuestos, geometría, semántica, TDD y evaluación.
 - Registrada identidad y alcance antes de editar código.
@@ -56,6 +62,11 @@
 | 2026-11-13 | A/B acuerdan adición 0.3: `DrawingText`, `DimensionGraphic`, anclajes source/mm, escena por ocurrencia y `reconstruct_scene(extraction, result)` | Visor legible y 3D trazable sin inventar dimensiones o posiciones | Confirmación explícita de B; B único escritor de contratos; avisos C/D |
 
 ## Dependencias / avisos
+
+- Acuerdo A/B de producción publicado el 2026-11-14 antes de modificar código: `TableConfirmedValue` añade `confirmation_id` y `supersedes_confirmation_id`; `TableObservedValueCorrection` conserva `correction_id`, `measurement_id`, valor, motivo, evidencias y corrección sustituida; `TableSourceReviewDecision` conserva warning exacto, `accept|reject` y motivo. `ReviewRequest`/`Result` llevan las dos colecciones nuevas. La revisión efectiva sustituye sólo el valor del mismo target y los `Result` previos conservan el historial; `MountedTableAnalysis` no se muta. Una contradicción mayor que 0,1 mm sigue bloqueando. Todo `recovered_dxf:*` sin `accept` explícito, o rechazado, bloquea `completed` sin borrar el warning. B es único escritor de `modelos.py`.
+- Adenda Astra/A-B: `TableSourceReviewDecision.warning_id` es obligatorio y único; A deriva un ID estable por ledger, warning y ocurrencia. El evaluador publica ID+código en el blocker y exige coincidencia exacta.
+- Aviso previo enviado a C: la UI debe editar confirmaciones humanas previas, mostrar valor vigente/procedencia/motivo y no convertir overrides observados ni `recovered_dxf` en aceptación automática.
+- Delta económico propuesto por B aceptado por A: snapshot/versionado de catálogo, alcance tipado, horas, precio provisional con margen explícito y contribuidor por coste; no altera la geometría ni autoriza importes implícitos.
 
 - Recibido de B: contrato aditivo 0.3 en `351fb63`, integrado como dependencia `13d18e4`; A no modificó modelos.
 - Necesito de D: forma pública del fixture sin acceder a la referencia reservada ni codificar sus medidas.
@@ -91,6 +102,13 @@
 | Suite final A | `python -m pytest -q` | 72 passed | Ejecución fresca tras hardening |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
 | CAD montado endurecido | `python -m pytest backend/tests/test_ingesta_cad_geometry.py backend/tests/test_mounted_view_inference.py backend/tests/test_geometry.py backend/tests/test_mounted_table_geometry.py backend/tests/test_table_reconstruction.py -q` | 37 passed | Inferencia sólo para triple ortográfico único; curvas no circulares siguen fuera del subconjunto |
+| Baseline Task 3 producción | suite geométrica focal | 76 passed | Antes de las nuevas regresiones |
+| RED auditoría Task 3 | cuatro nodos independientes | 4 failed esperados | DIMENSION Z, ATTRIB, tolerancia y espesor en despiece |
+| Geometría/planos producción | ingesta, geometría, parts, reconstrucción, mesa y renderer | 83 passed | Incluye blockers por incidencia y láminas incompletas honestas |
+| Reconstrucción parts tolerante | `python -m pytest backend/tests/test_parts_reconstruction.py -q` | 9 passed | `+0,05 mm` permanece dentro de 0,1 mm |
+| Integración geometría + repository | tests de repository mesa, geometría mesa y reconstrucción parts | 30 passed | Incluye cadena de corrección r2→r3 con histórico intacto |
+| Suite Python completa producción | `python -m pytest -q` | 378 passed; 1 warning | Warning deprecado Starlette TestClient/httpx |
+| Sintaxis/diff Task 3 | `python -m compileall -q ...`; `git diff --check -- <rutas propias>` | pasa | Ruff ausente del entorno (`No module named ruff`) |
 
 ## Bloqueos y cierre
 

@@ -136,3 +136,18 @@ Completado: demo local integrada y verificada; aceptación final GPT-6 Astra SHI
 - Navegador final abrió el run live, mostró cotas y componentes y amplió el SVG con nitidez; consola sin errores/avisos en esa sesión. C verificó además zoom/pan/Escape, subida/revisión/coste/3D y responsive. Evidencia en `docs/VERIFICACION_MESA_CAD_2026-11-14.md` y `docs/auditoria/2026-11-14/table-*`.
 - Adaptación selectiva de ambos bloques de Pablo integrada. Quedan fuera HATCH, bulges, paperspace y ARC OCS negativo; costes sintéticos, reconstrucción esquemática y perfil acotado se mantienen explícitos. No se afirma automatización general ni precisión empresarial.
 - Merge fast-forward y push final confirmados: `23b8e01..443e9f1` en main. El checkout de demostración sirve esa versión en `http://127.0.0.1:8765`, con visión desactivada por defecto y el run live revisado restaurado. Se verificaron health/config/resultado y apertura en navegador. Los servidores temporales de ensayo se cerraron; no se borraron sus datos.
+
+## Incremento privado autorizado 2026-11-14
+
+El usuario solicita completar la auditoría y continuar con un swarm GPT-6.1 Sol y revisión independiente GPT-6 Astra. Confirma servidor privado para el equipo. Base 10da225; rama aislada feat/private-production, carpeta .worktrees/production.
+
+Auditoría: 495 commits, Markdown y módulos propios revisados. Base fresca 313 Python / 82 JS correctos. Informe docs/AUDITORIA_COMPLETA_2026-11-14.md; diseño/plan private-production en docs/superpowers.
+
+Coordinación actual: B backend posee API/repositorio/operación; B economía es único escritor contractual y del motor económico; A geometría ingesta/geometría/reconstrucción/salida; C frontend; D aceptación/datasets; apoyo harness runner/provider/config; apoyo operaciones despliegue/backup/CI. Root posee documentación/integración/verificación y revisión final Astra. Archivos personales nuevos corresponden a agentes IA subordinados autorizados por esta solicitud, no personas deducidas de Git. Los agentes no hacen commits concurrentes; integra root.
+
+Los datos reales, la aceptación por técnicos y el despliegue a un servidor aún no identificado no se simulan. Los contratos adicionales se acuerdan A/B antes de modificar y se notifican a C.
+
+Alcance adicional del coordinador: `.env.example` para apuntar al despliegue privado sin activar producción ni incluir secretos; README y banners históricos. Verificación global y navegador se ejecutan desde este worktree aislado.
+
+## PR1 solicitada durante implementación
+Root coordina integración de PR1 head0fe4be7. Snapshot productivo precede ports. A PR-CAD (`pr1_analysis`) posee ingesta/extraction/decomposition/plausibilidad y pruebas PR; B PR-harness (`pr1_replay`) posee agente/herramientas/main/repositorio y pasa a ser único escritor contractual tras cierre de economía. A geometría participa en acuerdo de contrato de replay/comparación; C recibe interfaces para conectar la UI. No cambios concurrentes en esas rutas por propietarios anteriores. Root realiza merge, revisión y publicación después de comprobar el árbol integrado.

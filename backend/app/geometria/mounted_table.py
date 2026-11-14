@@ -19,6 +19,7 @@ from backend.app.contratos.modelos import (
     TableFieldValue,
     TableMeasure,
     TableMeasurementDisposition,
+    TableObservedValueCorrection,
     TableOperandRef,
     TableOccurrence,
     TableOverallDimensions,
@@ -27,6 +28,7 @@ from backend.app.contratos.modelos import (
     TableProgramIssue,
     TableProgramProposal,
     TableReviewDecision,
+    TableSourceReviewDecision,
 )
 
 
@@ -436,6 +438,8 @@ def evaluate_table_program(
     program: TableProgramProposal,
     decisions: tuple[TableReviewDecision, ...] = (),
     confirmed_values: tuple[TableConfirmedValue, ...] = (),
+    observed_value_corrections: tuple[TableObservedValueCorrection, ...] = (),
+    source_review_decisions: tuple[TableSourceReviewDecision, ...] = (),
 ) -> EvaluatedTableProgram:
     if program.ledger_revision != analysis.ledger_revision or program.profile != analysis.profile:
         raise ValueError("table program does not match analysis ledger/profile")
@@ -472,16 +476,70 @@ def evaluate_table_program(
             code="duplicate_confirmed_value", severity="error",
             message="A measurement slot can only be confirmed once.",
         ))
+    corrections = {item.measurement_id: item for item in observed_value_corrections}
+    if len(corrections) != len(observed_value_corrections):
+        issues.append(TableProgramIssue(
+            code="duplicate_observed_correction", severity="error",
+            message="An observed measurement can only have one effective correction.",
+        ))
     measure_fields: dict[str, TableFieldValue] = {}
     for measure_id, measure in measures.items():
         overlay = confirmed.get(measure_id)
+        correction = corrections.get(measure_id)
+        if overlay is not None and correction is not None:
+            issues.append(TableProgramIssue(
+                code="conflicting_human_measure_overlays", severity="error",
+                message="A measure cannot be a confirmed slot and an observed correction at once.",
+                target_ids=(measure_id,),
+            ))
+            correction = None
         if overlay is not None and measure.state == "observed":
             issues.append(TableProgramIssue(
                 code="observed_measure_override_rejected", severity="error",
                 message="Observed CAD measures cannot be overwritten by review.", target_ids=(measure_id,),
             ))
             overlay = None
-        if overlay is not None:
+        if correction is not None:
+            correction_evidence = set(correction.evidence_ids)
+            if measure.state != "observed" or measure.value_mm is None:
+                issues.append(TableProgramIssue(
+                    code="observed_correction_requires_observed_measure", severity="error",
+                    message="Observed-value correction targets a measure that is not observed.",
+                    target_ids=(measure_id,),
+                ))
+                correction = None
+            elif not correction_evidence <= set(measure.evidence_ids):
+                issues.append(TableProgramIssue(
+                    code="observed_correction_evidence_mismatch", severity="error",
+                    message="Observed-value correction cites evidence outside the source measure.",
+                    target_ids=(measure_id, *correction.evidence_ids),
+                ))
+                correction = None
+            elif abs(correction.value_mm - measure.value_mm) > TOLERANCE_MM:
+                issues.append(TableProgramIssue(
+                    code="observed_correction_conflict", severity="error",
+                    message="Human correction contradicts the immutable observed CAD value.",
+                    target_ids=(measure_id, correction.correction_id),
+                ))
+                measure_fields[measure_id] = TableFieldValue(
+                    value_mm=None, state="conflict",
+                    dependency_refs=(
+                        f"measure:{measure_id}",
+                        f"human_correction:{correction.correction_id}",
+                    ),
+                    evidence_ids=tuple(sorted(set(measure.evidence_ids) | correction_evidence)),
+                )
+                continue
+        if correction is not None:
+            measure_fields[measure_id] = TableFieldValue(
+                value_mm=correction.value_mm, state="confirmed",
+                dependency_refs=(
+                    f"measure:{measure_id}",
+                    f"human_correction:{correction.correction_id}",
+                ),
+                evidence_ids=tuple(sorted(set(measure.evidence_ids) | set(correction.evidence_ids))),
+            )
+        elif overlay is not None:
             measure_fields[measure_id] = TableFieldValue(
                 value_mm=overlay.value_mm, state="confirmed",
                 dependency_refs=(f"measure:{measure_id}",), evidence_ids=measure.evidence_ids,
@@ -496,6 +554,13 @@ def evaluate_table_program(
             issues.append(TableProgramIssue(
                 code="unknown_measurement_slot", severity="error",
                 message="Confirmed value targets an unknown measurement slot.", target_ids=(target_id,),
+            ))
+    for target_id in corrections:
+        if target_id not in measures:
+            issues.append(TableProgramIssue(
+                code="unknown_observed_correction_target", severity="error",
+                message="Observed-value correction targets an unknown measurement.",
+                target_ids=(target_id,),
             ))
 
     program_accepted = ("program", program.id) in accepted
@@ -771,6 +836,51 @@ def evaluate_table_program(
             issues.append(TableProgramIssue(
                 code="missing_required_view", severity="error", message=warning,
             ))
+    source_decisions = {item.warning_id: item for item in source_review_decisions}
+    if len(source_decisions) != len(source_review_decisions):
+        issues.append(TableProgramIssue(
+            code="duplicate_source_review_decision", severity="error",
+            message="A source warning can only have one effective review decision.",
+        ))
+    recovery_occurrences: dict[str, int] = defaultdict(int)
+    recovery_warnings_list: list[tuple[str, str]] = []
+    for warning in analysis.warnings:
+        if not warning.startswith("recovered_dxf:"):
+            continue
+        recovery_occurrences[warning] += 1
+        occurrence = recovery_occurrences[warning]
+        warning_id = "source-warning-" + sha256(
+            f"{analysis.ledger_revision}|{warning}|{occurrence}".encode("utf-8")
+        ).hexdigest()[:16]
+        recovery_warnings_list.append((warning_id, warning))
+    recovery_warnings = tuple(recovery_warnings_list)
+    recovery_by_id = dict(recovery_warnings)
+    for warning_id, warning in recovery_warnings:
+        source_decision = source_decisions.get(warning_id)
+        if source_decision is None:
+            issues.append(TableProgramIssue(
+                code="source_recovery_review_required", severity="review",
+                message="Recovered DXF source requires an explicit human source review.",
+                target_ids=(warning_id, warning),
+            ))
+        elif source_decision.warning_code != warning:
+            issues.append(TableProgramIssue(
+                code="source_recovery_decision_mismatch", severity="error",
+                message="Source review decision warning id and code do not identify the same incident.",
+                target_ids=(warning_id, source_decision.warning_code, warning),
+            ))
+        elif source_decision.action == "reject":
+            issues.append(TableProgramIssue(
+                code="source_recovery_rejected", severity="error",
+                message="Human source review rejected the recovered DXF.",
+                target_ids=(warning_id, warning),
+            ))
+    for warning_id in sorted(set(source_decisions) - set(recovery_by_id)):
+        issues.append(TableProgramIssue(
+            code="unknown_source_review_warning", severity="error",
+            message="Source review decision does not target an active recovery warning.",
+            target_ids=(warning_id,),
+        ))
     if rejected:
         issues.append(TableProgramIssue(
             code="review_target_rejected", severity="error",
@@ -787,7 +897,7 @@ def evaluate_table_program(
         state = "rejected"
     elif program_accepted and all_components_accepted and all_premises_accepted and resolved_bindings and pass_placements and not blockers:
         state = "completed"
-    elif not decisions and not confirmed_values:
+    elif not decisions and not confirmed_values and not observed_value_corrections and not source_review_decisions:
         state = "hypothesis"
     else:
         state = "needs_review"

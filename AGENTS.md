@@ -1,5 +1,7 @@
 # Guía para agentes y colaboradores de Vexplorer
 
+> Estado documental (2026-11-14): este archivo conserva requisitos y checkpoints históricos; las frases sobre ausencia de aplicación o contratos pendientes no describen el estado vigente. Consulta [README](README.md) y la auditoría completa. Las reglas de coordinación y arquitectura siguen aplicándose.
+
 **La autoridad de trabajo es [CLAUDE.md](CLAUDE.md), proporcionado por el usuario.** Este archivo facilita la navegación y no cambia sus permisos, reglas de equipo ni decisiones de arquitectura.
 
 ## Antes de trabajar

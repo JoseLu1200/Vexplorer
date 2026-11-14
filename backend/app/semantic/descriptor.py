@@ -37,6 +37,8 @@ def _dimensions(result: Result) -> DescriptorDimensions:
 
 
 def _uniform(values: list[str | None]) -> str | None:
+    if not values or any(item is None or not item.strip() for item in values):
+        return None
     known = {item.strip() for item in values if item and item.strip()}
     return next(iter(known)) if len(known) == 1 else None
 
@@ -157,6 +159,7 @@ def _build_table_descriptor(result: Result) -> FurnitureDescriptorV3:
     if result.state != "completed" or evaluated is None or evaluated.state != "completed" or result.selected_table_program_id is None:
         raise ValueError("table_revision_not_accepted")
     features = []
+    cost_scope = result.table_cost_scope
     for component in evaluated.components:
         if not component.accepted or component.quantity is None:
             raise ValueError("table_revision_not_accepted")
@@ -169,6 +172,11 @@ def _build_table_descriptor(result: Result) -> FurnitureDescriptorV3:
             length_mm=component.length.value_mm,
             width_mm=component.width.value_mm,
             thickness_mm=component.thickness.value_mm,
+            material_tariff_id=(
+                cost_scope.component_material_tariff_ids.get(component.id, cost_scope.material_tariff_id)
+                if cost_scope is not None
+                else None
+            ),
             field_states={
                 "quantity": "calculated",
                 "length_mm": component.length.state,
@@ -182,7 +190,17 @@ def _build_table_descriptor(result: Result) -> FurnitureDescriptorV3:
         raise ValueError("table_revision_not_accepted")
     roles = {item.role for item in features}
     structure = "side_support_table" if "side_support" in roles else "corner_support_table"
-    return FurnitureDescriptorV3(dimensions=dimensions, structure=structure, components=tuple(features))
+    uniform_material = None
+    if cost_scope is not None and not cost_scope.component_material_tariff_ids:
+        uniform_material = cost_scope.material_tariff_id
+    unknown_fields = () if all(item.material_tariff_id is not None for item in features) else ("material_tariff_id",)
+    return FurnitureDescriptorV3(
+        dimensions=dimensions,
+        structure=structure,
+        components=tuple(features),
+        material_tariff_id=uniform_material,
+        unknown_fields=unknown_fields,
+    )
 
 
 def build_descriptor(result: Result) -> Descriptor:
@@ -238,7 +256,7 @@ def semantic_text(descriptor: Descriptor) -> str:
         parts_suffix = f"; thicknesses_mm:{','.join(f'{item:g}' for item in descriptor.thicknesses_mm) or 'unknown'}; classification_status={descriptor.classification_status}; part_features={feature_text or 'none'}"
     elif isinstance(descriptor, FurnitureDescriptorV3):
         parts_suffix = "; components=" + "|".join(
-            f"role:{item.role},q:{item.quantity},l:{item.length_mm:g},w:{item.width_mm:g},t:{item.thickness_mm:g}"
+            f"role:{item.role},q:{item.quantity},l:{item.length_mm:g},w:{item.width_mm:g},t:{item.thickness_mm:g},material_tariff:{item.material_tariff_id or 'unknown'}"
             for item in descriptor.components
         )
     return (

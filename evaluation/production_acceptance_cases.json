@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "id": "private-table-complete",
+      "input": "data/planos_demo/mesa_demo_001.dxf",
+      "mode": "geometry_only",
+      "checks": [
+        "authenticated_job",
+        "named_review",
+        "derived_drawings",
+        "configured_real_catalog",
+        "export",
+        "restart"
+      ]
+    },
+    {
+      "id": "private-table-dimensional-conflict",
+      "input": "data/planos_demo/mesa_demo_004.dxf",
+      "mode": "geometry_only",
+      "checks": [
+        "conflict_preserved",
+        "completion_blocked"
+      ]
+    },
+    {
+      "id": "missing-authority",
+      "input": null,
+      "mode": "http",
+      "checks": [
+        "protected_route_rejects_unauthenticated_request"
+      ]
+    }
+  ],
+  "limitations": [
+    "Fixtures propios: no acreditan precisión industrial ni aceptación de un técnico.",
+    "El modo geometry_only no llama a un proveedor ni evalúa inferencia generativa.",
+    "Las tarifas del ensayo llevan synthetic=false para probar la frontera de configuración; no son precios comerciales reales."
+  ]
+}

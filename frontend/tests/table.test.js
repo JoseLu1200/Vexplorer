@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "../core/table.js";
+import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "../core/table.js";
 
 test("table run options keep catalog baseline and live model generation visibly distinct", () => {
   assert.deepEqual(tableRunOptions("geometry_only", "side_supports_v1"), {
@@ -52,6 +52,12 @@ test("drawing manifest preserves revision, hash, incomplete warnings and selecta
     formats: ["svg"],
     formatLinks: { svg: "/api/v1/runs/run/table-drawings/top.svg" },
   });
+});
+
+test("drawing manifest accepts a same origin deployment prefix but rejects external artifact URLs", () => {
+  const manifest = normaliseTableDrawingManifest({ result_revision: 1, program_hash: "a".repeat(64), sheets: [{ sheet_id: "general", kind: "general", result_revision: 1, program_hash: "a".repeat(64), formats: [{ format: "svg", url: "/vexplorer/api/v1/runs/run/table-drawings/general.svg" }, { format: "dxf", url: "https://external.invalid/file.dxf" }] }] });
+  assert.equal(manifest.sheets[0].formatLinks.svg, "/vexplorer/api/v1/runs/run/table-drawings/general.svg");
+  assert.equal(manifest.sheets[0].formatLinks.dxf, undefined);
 });
 
 test("artifact identity fences fast sheet changes across runs and revisions", () => {
@@ -179,6 +185,46 @@ test("table review accepts explicit targets and only confirms declared unresolve
   });
 });
 
+test("a prior human table value stays editable and supersedes its confirmation", () => {
+  const snapshot = { result_revision: 4, result: {
+    input_semantics: "mounted_orthographic_views",
+    table_analysis: { warnings: [], measures: [{ id: "m-slot", semantic: "tabletop_thickness", value_mm: null, state: "unknown", slot_origin: "profile_required_slot" }] },
+    table_programs: [{ id: "program-side", proposal_origin: "catalog_baseline", assumptions: [], premises: [], components: [] }],
+    table_confirmed_values: [{ confirmation_id: "confirmation-old", target_id: "m-slot", value_mm: 18, reason: "Medición anterior", source: "human" }],
+  } };
+  const workspace = normaliseTableWorkspace(snapshot);
+  assert.equal(workspace.measures[0].confirmable, true);
+  assert.equal(workspace.measures[0].effectiveValue, 18);
+  assert.equal(workspace.measures[0].confirmation.reason, "Medición anterior");
+
+  const payload = buildTableReviewPayload(snapshot, workspace, {
+    reviewerName: "Servidor",
+    programId: "program-side",
+    notes: "Se corrige la comprobación previa.",
+    confirmedValues: [{ targetId: "m-slot", valueMm: "19", reason: "Nueva medición", confirmationId: "confirmation-new" }],
+  });
+  assert.deepEqual(payload.table_confirmed_values, [{ confirmation_id: "confirmation-new", supersedes_confirmation_id: "confirmation-old", target_kind: "measurement_slot", target_id: "m-slot", value_mm: 19, reason: "Nueva medición", source: "human" }]);
+});
+
+test("observed corrections and recovered source decisions preserve evidence and intent", () => {
+  const snapshot = { result_revision: 2, result: {
+    input_semantics: "mounted_orthographic_views",
+    table_analysis: { warnings: ["recovered_dxf:fixes=1:errors=0"], measures: [{ id: "m-width", semantic: "overall_width", value_mm: 1200, state: "observed", evidence_ids: ["evidence-1"], slot_origin: "drawing" }] },
+    table_programs: [{ id: "program-side", proposal_origin: "catalog_baseline", assumptions: [], premises: [], components: [] }],
+    evaluated_table_program: { raw_program: { id: "program-side" }, state: "needs_review", bindings: [], components: [], issues: [{ code: "source_recovery_review_required", severity: "review", message: "Revisión de fuente requerida", target_ids: ["source-warning-1", "recovered_dxf:fixes=1:errors=0"] }] },
+  } };
+  const workspace = normaliseTableWorkspace(snapshot);
+  assert.equal(workspace.measures[0].correctable, true);
+  assert.equal(workspace.sourceWarnings[0].id, "source-warning-1");
+  const payload = buildTableReviewPayload(snapshot, workspace, {
+    reviewerName: "Servidor", programId: "program-side", notes: "Se revisa contra el original.",
+    observedCorrections: [{ targetId: "m-width", valueMm: 1200.05, reason: "Comprobado", correctionId: "correction-1" }],
+    sourceDecisions: [{ warningId: "source-warning-1", warningCode: "recovered_dxf:fixes=1:errors=0", action: "accept", reason: "Comparado con el DXF original" }],
+  });
+  assert.deepEqual(payload.table_observed_value_corrections, [{ correction_id: "correction-1", measurement_id: "m-width", value_mm: 1200.05, reason: "Comprobado", evidence_ids: ["evidence-1"], source: "human" }]);
+  assert.deepEqual(payload.table_source_review_decisions, [{ warning_id: "source-warning-1", warning_code: "recovered_dxf:fixes=1:errors=0", action: "accept", reason: "Comparado con el DXF original" }]);
+});
+
 test("table costs expose explicit tariffs, partial subtotal and largest known contribution", () => {
   const catalog = normaliseTableCostCatalog({ catalog_version: "synthetic-1", synthetic: true, tariffs: [{ id: "board-1", label: "Tablero demo", scope: "material", rate_eur_per_unit: 42, rate_unit: "EUR/m2" }, { id: "edge-1", label: "Canteado expuesto", scope: "edge", rate_eur_per_unit: 1.5, rate_unit: "EUR/m" }, { id: "cut-1", label: "Corte", scope: "operation", rate_eur_per_unit: 3, rate_unit: "EUR/unit" }] });
   assert.deepEqual(catalog.materials[0], { id: "board-1", label: "Tablero demo", rate: 42, rateUnit: "EUR/m2" });
@@ -201,6 +247,52 @@ test("table costs expose explicit tariffs, partial subtotal and largest known co
   assert.match(result.totalLabel, /Subtotal conocido/);
   assert.equal(result.largestContribution.id, "material-top");
   assert.equal(result.items[2].amountLabel, "Pendiente");
+});
+
+test("real catalog provenance, hours and provisional sale price remain server authoritative", () => {
+  const catalog = normaliseTableCostCatalog({
+    catalog_version: "taller-2026-11", source: "Tarifas aprobadas por Compras", effective_date: "2026-11-01", synthetic: false,
+    tariffs: [
+      { id: "labor-1", label: "Montaje", concept_type: "labor", scope: "labor", rate_eur_per_unit: 31.5, rate_unit: "EUR/h", synthetic: false },
+      { id: "finish-1", label: "Barniz", concept_type: "finish", scope: "finishing", rate_eur_per_unit: 12, rate_unit: "EUR/m2", synthetic: false },
+    ],
+  });
+  assert.equal(catalog.synthetic, false);
+  assert.equal(catalog.source, "Tarifas aprobadas por Compras");
+  assert.equal(catalog.effectiveDate, "2026-11-01");
+  assert.equal(catalog.labor[0].id, "labor-1");
+  assert.equal(catalog.finishing[0].id, "finish-1");
+
+  const result = presentTableCosts({
+    result_revision: 5, catalog_version: "taller-2026-11", synthetic: false, catalog_snapshot: { source: "Tarifas aprobadas por Compras", effective_date: "2026-11-01" },
+    known_subtotal_eur: 210, grand_total_eur: 210, total_state: "complete", total_hours: 4.5,
+    principal_cost_contributor_id: "labor", provisional_margin_percent: 30, provisional_sale_price_eur: 300,
+    concepts: [
+      { id: "labor", label: "Montaje", quantity: 4.5, quantity_unit: "h", rate_eur_per_unit: 31.5, rate_unit: "EUR/h", amount_eur: 141.75, state: "resolved" },
+      { id: "edge", label: "Canteado", quantity: null, quantity_unit: "m", rate_eur_per_unit: null, rate_unit: "EUR/m", amount_eur: null, state: "not_applicable" },
+    ],
+  });
+  assert.equal(result.hoursLabel, "4,5 h");
+  assert.equal(result.salePriceLabel, "300,00 €");
+  assert.equal(result.marginLabel, "30 %");
+  assert.equal(result.largestContribution.id, "labor");
+  assert.equal(result.items[1].stateLabel, "No aplica");
+  assert.match(result.catalogLabel, /Tarifas aprobadas/);
+});
+
+test("complete economic scope sends selected hours, finish, exclusions and explicit margin", () => {
+  assert.deepEqual(buildTableCostScope({
+    materialTariffId: "material-1", edgeScope: "all_exposed", edgeTariffId: "edge-1",
+    operations: [{ id: "cut-1", hours: "1.5" }, { id: "drill-1", hours: "" }],
+    laborTariffId: "labor-1", laborHours: "3", finishTariffId: "finish-1", finishQuantity: "2.25",
+    exclusions: [{ scope: "operation", reason: "Taladrado realizado por proveedor" }], marginPercent: "30",
+  }), {
+    material_tariff_id: "material-1", component_material_tariff_ids: {}, edge_scope: "all_exposed", edge_tariff_id: "edge-1",
+    operation_tariff_ids: ["cut-1", "drill-1"], operation_hours_by_tariff: { "cut-1": 1.5 },
+    labor_tariff_id: "labor-1", labor_hours: 3, finish_tariff_id: "finish-1", finish_quantity_m2: 2.25,
+    exclusions: [{ scope: "operation", reason: "Taladrado realizado por proveedor" }], provisional_margin_percent: 30,
+  });
+  assert.throws(() => buildTableCostScope({ exclusions: [{ scope: "labor", reason: " " }] }), /motivo/i);
 });
 
 test("table explanation presents backend formulas, premises and unknowns without recomputing them", () => {

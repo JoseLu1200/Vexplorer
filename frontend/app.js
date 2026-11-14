@@ -5,16 +5,18 @@ import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
 import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, resolveAssemblyOperand, translateAssumption } from "./core/parts.js";
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues } from "./core/review.js";
-import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
+import { clearRunSession, persistJob, persistRunId, restoreJob, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 import { fitImageViewport, imageViewportStyle, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
-import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "./core/table.js";
+import { jobStatusLabel, pollJob } from "./core/jobs.js";
+import { nextFocusTarget } from "./core/focus.js";
+import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "./core/table.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
@@ -37,8 +39,8 @@ function configureExportActions(){const table=state.tableWorkspace?.isTable===tr
 
 function resetRunUi() {
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
-  state.eventSource?.close();
-  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  state.jobAbort?.abort();
+  Object.assign(state, { documentId: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
@@ -52,14 +54,16 @@ function resetRunUi() {
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren();
   text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
-  $("#review-form").reset(); $("#review-submit").disabled = true; text($("#review-message"), "");
+  $("#review-form").reset(); if(state.session?.authenticated&&state.session.username)$("#reviewer-name").value=state.session.username; $("#review-submit").disabled = true; text($("#review-message"), "");
   $("#comparables-list").replaceChildren(emptyParagraph("Sin comparables disponibles."));
   resetEstimateUi(); $("#estimate-button").disabled = true;
   $("#trace-export").disabled = true;
   $("#trace-list").replaceChildren(emptyParagraph("No hay eventos todavía."));
+  text($("#trace-gap-status"), ""); text($("#job-status"), "");
 }
 
 function configureModes(config = {}) {
+  state.config = config;
   availableModes(config.capabilities ?? config).forEach((mode) => {
     const input = $(`[name="mode"] [value="${mode.id}"]`) ?? $(`[name="mode"][value="${mode.id}"]`);
     if (input) input.disabled = !mode.enabled;
@@ -161,8 +165,8 @@ function selectDerivedSheet(sheet){
   if(!sheet||!state.runId)return;
   const format=sheet.formats.includes("svg")?"svg":sheet.formats[0], identity=artifactRequestIdentity({runId:state.runId,revision:sheet.revision,programHash:sheet.programHash,sheetId:sheet.id,format}),token=artifactFence.issue(identity),image=$("#derived-drawing-image");
   text($("#derived-drawing-title"),sheet.title); text($("#derived-drawing-meta"),`Revisión ${sheet.revision} · ${sheet.status==="ready"?"lista":"incompleta"} · programa ${sheet.programHash.slice(0,10)}`); text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");
-  const source=sheet.formatLinks?.[format]??api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; fitDerivedDrawing(); image.onload=async()=>{try{await image.decode();}catch{} if(artifactFence.isCurrent(token,identity)){fitDerivedDrawing();text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
-  const downloads=$("#derived-drawing-downloads"); downloads.replaceChildren(); sheet.formats.forEach((itemFormat)=>{const link=document.createElement("a"); link.className="button"; link.textContent=`${itemFormat.toUpperCase()}`; link.href=sheet.formatLinks?.[itemFormat]??api.tableDrawingUrl(state.runId,sheet.id,itemFormat,sheet.revision,sheet.programHash); link.download=""; downloads.append(link);});
+  const source=sheet.formatLinks?.[format]?api.resourceUrl(sheet.formatLinks[format]):api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; fitDerivedDrawing(); image.onload=async()=>{try{await image.decode();}catch{} if(artifactFence.isCurrent(token,identity)){fitDerivedDrawing();text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
+  const downloads=$("#derived-drawing-downloads"); downloads.replaceChildren(); sheet.formats.forEach((itemFormat)=>{const link=document.createElement("a"); link.className="button"; link.textContent=`${itemFormat.toUpperCase()}`; link.href=sheet.formatLinks?.[itemFormat]?api.resourceUrl(sheet.formatLinks[itemFormat]):api.tableDrawingUrl(state.runId,sheet.id,itemFormat,sheet.revision,sheet.programHash); link.download=""; downloads.append(link);});
 }
 function renderDerivedSheetKind(kind){
   const sheets=tableDrawingSheets(kind),select=$("#derived-drawing-sheet"); select.replaceChildren(); sheets.forEach((sheet)=>{const option=document.createElement("option"); option.value=sheet.id; option.textContent=`${sheet.page}. ${sheet.title}${sheet.status==="incomplete"?" · incompleto":""}`; select.append(option);}); select.disabled=sheets.length<2; select.onchange=()=>selectDerivedSheet(sheets.find((sheet)=>sheet.id===select.value)); if(sheets[0])selectDerivedSheet(sheets[0]); else {$("#derived-drawing-image").removeAttribute("src"); text($("#derived-drawing-warning"),"La revisión no contiene una lámina de este tipo.");}
@@ -409,6 +413,9 @@ function renderTableAndReview(){
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Programa de descomposición"; options.append(legend); workspace.programs.forEach((item)=>{const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="table-program"; input.value=item.id; input.checked=item.id===program?.id; input.addEventListener("change",()=>{state.snapshot.preview_table_program_id=item.id;renderTableAndReview();}); const content=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"); title.textContent=item.originLabel; detail.textContent=`${item.components.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · ")} · ${item.assumptions.join(" · ")}`; content.append(title,detail); label.append(input,content); options.append(label);}); if(!workspace.programs.length)options.append(emptyParagraph("No hay programa válido para revisar."));
   const summary=$("#classification-summary"); summary.replaceChildren(); const source=document.createElement("b"); source.textContent=program?.originLabel??"Sin propuesta"; summary.append(source); workspace.measures.forEach((measure)=>{const line=document.createElement("p"),sourceValue=measure.value==null?"Desconocido":formatMeasurement(measure.value,"mm"),effective=measure.effectiveValue==null?"":` · vigente ${formatMeasurement(measure.effectiveValue,"mm")} · Confirmado`; line.textContent=`${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic}: ${sourceValue} · ${measure.sourceLabel} · ${tableStateLabel(measure.state)}${effective}`; if(measure.state!=="observed"&&measure.effectiveValue==null)line.className="unknown"; summary.append(line);}); workspace.warnings.forEach((warning)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=warning; summary.append(line);});
   const decisions=$("#part-decisions"); decisions.replaceChildren(); if(program){decisions.append(tableDecisionControl("program",program.id,"Programa completo",workspace)); program.components.forEach((component)=>decisions.append(tableDecisionControl("component",component.id,TABLE_ROLE_LABELS[component.role]??component.role,workspace))); program.premises.forEach((premise)=>decisions.append(tableDecisionControl("premise",premise.id,premise.description,workspace))); workspace.measures.filter((measure)=>measure.confirmable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-confirmed-value"; label.dataset.measureId=measure.id; label.textContent=`${measure.effectiveValue==null?"Confirmar":"Valor vigente editable"} ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??""; input.placeholder=measure.state==="conflict"?"Resolver conflicto":"Dato faltante"; label.append(input); decisions.append(label);}); evaluated?.issues.forEach((issue)=>{const note=document.createElement("p"); note.className=issue.severity==="warning"?"field-note":"unknown"; note.textContent=issue.message; decisions.append(note);});}
+  $$(".table-confirmed-value",decisions).forEach((label)=>{const measure=workspace.measures.find((item)=>item.id===label.dataset.measureId),input=$("input",label); input.dataset.originalValue=measure?.effectiveValue??""; if(measure?.confirmation){const note=document.createElement("small"); note.textContent=`Confirmación vigente: ${measure.confirmation.reason}. Editar crea una nueva revisión sin borrar la anterior.`; label.append(note);}});
+  workspace.measures.filter((measure)=>measure.correctable).forEach((measure)=>{const label=document.createElement("label"); label.className="table-observed-correction"; label.dataset.measureId=measure.id; label.textContent=`Corregir valor observado · ${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic} (mm)`; const input=document.createElement("input"); input.type="number"; input.min="0.1"; input.step="0.1"; input.value=measure.effectiveValue??measure.value??""; input.dataset.originalValue=measure.effectiveValue??measure.value??""; const note=document.createElement("small"); note.textContent=`Original CAD ${formatMeasurement(measure.value,"mm")} · evidencia ${measure.evidenceIds.join(", ")}. Una contradicción superior a tolerancia seguirá bloqueando.`; label.append(input,note); decisions.append(label);});
+  workspace.sourceWarnings.forEach((warning)=>{const block=document.createElement("fieldset"); block.className="table-source-review"; block.dataset.warningId=warning.id; block.dataset.warningCode=warning.code; const legend=document.createElement("legend"); legend.textContent="Revisión obligatoria de recuperación DXF"; block.append(legend); [["accept","Fuente comprobada"],["reject","Fuente rechazada"]].forEach(([value,labelText])=>{const label=document.createElement("label"),radio=document.createElement("input"); radio.type="radio"; radio.name=`source-${warning.id}`; radio.value=value; label.append(radio,document.createTextNode(` ${labelText}`)); block.append(label);}); const note=document.createElement("small"); note.textContent=`${warning.message} · ${warning.code}`; block.append(note); decisions.append(block);});
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-submit").disabled=!program; text($("#revision-label"),Number.isInteger(state.snapshot?.result_revision)?`Revisión ${state.snapshot.result_revision}`:"Revisión pendiente"); unlock("parts-stage"); unlock("review-stage");
 }
 
@@ -468,6 +475,8 @@ function renderPartsAndReview() {
 function renderTrace() {
   const root = $("#trace-list"); root.replaceChildren();
   const events = state.eventLedger?.events() ?? [];
+  const gaps = state.eventLedger?.gaps() ?? [];
+  text($("#trace-gap-status"), gaps.length ? `Historial incompleto: faltan ${gaps.map((gap) => `${gap.after + 1}–${gap.before - 1}`).join(", ")}. Se volverá a consultar.` : events.length ? "Historial completo para las secuencias recibidas." : "");
   if (!events.length) { const item = document.createElement("li"); item.className = "empty-copy"; item.textContent = "No hay eventos todavía."; root.append(item); return; }
   events.forEach((event) => {
     const item = document.createElement("li");
@@ -479,22 +488,13 @@ function renderTrace() {
   $("#trace-export").disabled = false;
 }
 
-function connectEvents(runId) {
-  state.eventSource?.close(); state.eventLedger = createEventLedger(runId);
-  const source = new EventSource(`/api/v1/runs/${encodeURIComponent(runId)}/events`); state.eventSource = source;
-  ["run_state_changed","tool_started","tool_completed","validation_issue","result_committed","run_finished","provenance","human_review_committed","estimate_committed","library_item_saved"].forEach((type) => source.addEventListener(type, (message) => {
-    if (state.runId !== runId) return;
-    try { const envelope = JSON.parse(message.data); if (state.eventLedger.append(envelope)) renderTrace(); if (type === "run_finished") refreshRun(); } catch { setMessage("La traza recibió un evento no válido.", true); }
-  }));
-  source.onerror = () => { if (state.snapshot && ["completed","needs_review","failed","cancelled","timed_out"].includes(state.snapshot.state)) source.close(); else text($("#service-status"), "Reconectando la traza"); };
-}
-
-async function refreshTraceHistory() {
+async function refreshTraceHistory(attempts = 1) {
   if (!state.runId) return;
   const runId=state.runId; if (!state.eventLedger) state.eventLedger = createEventLedger(runId);
   const ledger=state.eventLedger, body = await api.getEventHistory(runId); if(state.runId!==runId||state.eventLedger!==ledger)return;
   parseEventStream(body).forEach((event) => ledger.append(event));
   renderTrace();
+  if(attempts>1&&ledger.gaps().length){await new Promise((resolve)=>setTimeout(resolve,250));if(state.runId===runId&&state.eventLedger===ledger)await refreshTraceHistory(attempts-1);}
 }
 
 async function refreshRun() {
@@ -569,14 +569,61 @@ function renderEstimate(raw) {
 }
 
 function renderTableCostCatalog(raw){
-  const catalog=normaliseTableCostCatalog(raw); state.tableCostCatalog=catalog; const material=$("#table-material-tariff"); material.replaceChildren(); const empty=document.createElement("option"); empty.value=""; empty.textContent="Sin seleccionar"; material.append(empty); catalog.materials.forEach((tariff)=>{const option=document.createElement("option"); option.value=tariff.id; option.textContent=`${tariff.label} · ${tariff.rate} ${tariff.rateUnit}`; material.append(option);}); text($("#table-edge-rate"),catalog.edges.length?catalog.edges.map((tariff)=>`${tariff.rate} ${tariff.rateUnit}`).join(" · "):"Tarifa no disponible"); const operations=$("#table-operation-tariffs"); operations.replaceChildren(); catalog.operations.forEach((tariff)=>{const label=document.createElement("label"),input=document.createElement("input"); input.type="checkbox"; input.value=tariff.id; label.append(input,document.createTextNode(` ${tariff.label} · ${tariff.rate} ${tariff.rateUnit}`)); operations.append(label);}); if(!catalog.operations.length)operations.append(emptyParagraph("Sin operaciones disponibles."));
+  const catalog=normaliseTableCostCatalog(raw); state.tableCostCatalog=catalog;
+  text($("#table-catalog-provenance"),`${catalog.synthetic?"Catálogo demo":"Catálogo real"} · ${catalog.version??"sin versión"}${catalog.source?` · ${catalog.source}`:""}${catalog.effectiveDate?` · vigente ${catalog.effectiveDate}`:""}`);
+  const fillSelect=(selector,tariffs)=>{const select=$(selector);select.replaceChildren();const empty=document.createElement("option");empty.value="";empty.textContent="Sin seleccionar";select.append(empty);tariffs.forEach((tariff)=>{const option=document.createElement("option");option.value=tariff.id;option.textContent=`${tariff.label} · ${tariff.rate} ${tariff.rateUnit}`;select.append(option);});};
+  fillSelect("#table-material-tariff",catalog.materials);fillSelect("#table-edge-tariff",catalog.edges);fillSelect("#table-labor-tariff",catalog.labor);fillSelect("#table-finish-tariff",catalog.finishing);
+  text($("#table-edge-rate"),catalog.edges.length?catalog.edges.map((tariff)=>`${tariff.rate} ${tariff.rateUnit}`).join(" · "):"Tarifa no disponible");
+  const operations=$("#table-operation-tariffs"); operations.replaceChildren(); catalog.operations.forEach((tariff)=>{const row=document.createElement("label"),input=document.createElement("input"),hours=document.createElement("input");input.type="checkbox";input.value=tariff.id;hours.type="number";hours.min="0";hours.step="0.25";hours.placeholder="Horas";hours.dataset.operationHours=tariff.id;hours.disabled=true;input.addEventListener("change",()=>{hours.disabled=!input.checked;if(!input.checked)hours.value="";});row.append(input,document.createTextNode(` ${tariff.label} · ${tariff.rate} ${tariff.rateUnit}`),hours);operations.append(row);}); if(!catalog.operations.length)operations.append(emptyParagraph("Sin operaciones disponibles."));
+  const exclusions=$("#table-exclusion-controls");exclusions.replaceChildren();[["material","Material"],["edge","Canteado"],["operation","Operaciones"],["labor","Mano de obra"],["finishing","Acabado"]].forEach(([scope,labelText])=>{const row=document.createElement("label"),check=document.createElement("input"),reason=document.createElement("input");check.type="checkbox";check.dataset.exclusionScope=scope;reason.type="text";reason.placeholder="Motivo obligatorio";reason.dataset.exclusionReason=scope;reason.disabled=true;check.addEventListener("change",()=>{reason.disabled=!check.checked;if(!check.checked)reason.value="";});row.append(check,document.createTextNode(` ${labelText} no aplica`),reason);exclusions.append(row);});
 }
 function renderTableCosts(raw){
-  const estimate=presentTableCosts(raw); text($("#estimate-revision"),`Revisión ${estimate.revision} · Catálogo ${estimate.catalogVersion}`); text($("#estimate-total"),estimate.totalLabel); const root=$("#estimate-lines"); root.replaceChildren(); if(estimate.largestContribution){const lead=document.createElement("p"); lead.className="cost-lead"; lead.textContent=`Mayor contribución conocida: ${estimate.largestContribution.label} · ${estimate.largestContribution.amountLabel}`; root.append(lead);} estimate.items.forEach((item)=>{const row=document.createElement("div"); row.className="estimate-line"; const left=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"),formula=document.createElement("small"),amount=document.createElement("b"); title.textContent=item.label; detail.textContent=`${item.component_id?`Pieza ${item.component_id} · `:""}${item.quantityLabel} × ${item.rateLabel} · ${item.state==="resolved"?"Resuelto":item.state==="unknown"?"Desconocido":"No aplica"}`; formula.textContent=item.formula; amount.textContent=item.amountLabel; left.append(title,detail,formula); row.append(left,amount); root.append(row);}); estimate.warnings.forEach((warning)=>{const note=document.createElement("p"); note.className="estimate-note unknown"; note.textContent=warning; root.append(note);}); $$('[data-export]').forEach((button)=>button.disabled=false);
+  const estimate=presentTableCosts(raw); text($("#estimate-revision"),`Revisión ${estimate.revision} · ${estimate.catalogLabel} · Horas ${estimate.hoursLabel}`); text($("#estimate-total"),estimate.totalLabel); const root=$("#estimate-lines"); root.replaceChildren(); if(estimate.largestContribution){const lead=document.createElement("p"); lead.className="cost-lead"; lead.textContent=`Mayor contribución calculada: ${estimate.largestContribution.label} · ${estimate.largestContribution.amountLabel}`; root.append(lead);} estimate.items.forEach((item)=>{const row=document.createElement("div"); row.className="estimate-line"; const left=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"),formula=document.createElement("small"),amount=document.createElement("b"); title.textContent=item.label; detail.textContent=`${item.component_id?`Pieza ${item.component_id} · `:""}${item.quantityLabel} × ${item.rateLabel} · ${item.stateLabel}`; formula.textContent=item.formula; amount.textContent=item.amountLabel; left.append(title,detail,formula); row.append(left,amount); root.append(row);}); const sale=document.createElement("p");sale.className=estimate.complete?"cost-lead":"estimate-note unknown";sale.textContent=estimate.complete?`Precio provisional ${estimate.salePriceLabel} · margen explícito ${estimate.marginLabel}`:"Presupuesto parcial: no se publica precio provisional.";root.append(sale); estimate.warnings.forEach((warning)=>{const note=document.createElement("p"); note.className="estimate-note unknown"; note.textContent=warning; root.append(note);}); $$('[data-export]').forEach((button)=>button.disabled=false);
 }
 
 async function estimateTableRevision(){
-  const identity=actionIdentity(),token=actionFence.issue(identity),scope={material_tariff_id:$("#table-material-tariff").value||null,edge_scope:$("#table-edge-scope").checked?"all_exposed":"none",operation_tariff_ids:$$('#table-operation-tariffs input:checked').map((input)=>input.value)}; try{const estimate=await api.generateTableCosts(state.runId,{result_revision:state.snapshot.result_revision,scope}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderTableCosts(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);}
+  const identity=actionIdentity(),token=actionFence.issue(identity); try{const operations=$$('#table-operation-tariffs input[type="checkbox"]:checked').map((input)=>({id:input.value,hours:$(`[data-operation-hours="${CSS.escape(input.value)}"]`)?.value??""})),exclusions=$$('#table-exclusion-controls [data-exclusion-scope]:checked').map((input)=>({scope:input.dataset.exclusionScope,reason:$(`[data-exclusion-reason="${input.dataset.exclusionScope}"]`)?.value??""})),scope=buildTableCostScope({materialTariffId:$("#table-material-tariff").value,edgeScope:$("#table-edge-scope").checked?"all_exposed":"none",edgeTariffId:$("#table-edge-tariff").value,operations,laborTariffId:$("#table-labor-tariff").value,laborHours:$("#table-labor-hours").value,finishTariffId:$("#table-finish-tariff").value,finishQuantity:$("#table-finish-quantity").value,exclusions,marginPercent:$("#table-margin").value}); const estimate=await api.generateTableCosts(state.runId,{result_revision:state.snapshot.result_revision,scope}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderTableCosts(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);}
+}
+
+function runRequest(documentId, mode, inputKind, table = {}) {
+  return {
+    document_id: documentId,
+    mode,
+    ...(inputKind ? { input_kind: inputKind } : {}),
+    ...(table.table_profile ? { table_profile: table.table_profile } : {}),
+    ...(table.proposal_mode ? { proposal_mode: table.proposal_mode } : {}),
+    ...(table.table_template_id ? { table_template_id: table.table_template_id } : {}),
+  };
+}
+
+async function followJob(initialJob) {
+  state.jobAbort?.abort();
+  const controller = new AbortController(); state.jobAbort = controller; state.jobId = initialJob.id;
+  persistJob(initialJob, localStorage);
+  const intervalMs = Number(state.config?.run_submission?.poll_interval_ms) || 500;
+  const result = await pollJob(initialJob.id, {
+    signal: controller.signal,
+    intervalMs,
+    getJob: api.getJob,
+    onUpdate: async (job) => {
+      persistJob({ id: job.id, run_id: job.runId, state: job.state }, localStorage);
+      text($("#job-status"), `${jobStatusLabel(job)} · ${job.id}`);
+      text($("#upload-status"), jobStatusLabel(job));
+      if (job.runId) {
+        if (state.runId !== job.runId) { state.runId = job.runId; state.eventLedger = createEventLedger(job.runId); }
+        try { await refreshTraceHistory(); } catch { text($("#trace-gap-status"), "La traza aún no está disponible; se volverá a consultar."); }
+      }
+    },
+  });
+  if (controller.signal.aborted) return null;
+  state.jobAbort = null;
+  if (result.state !== "succeeded" || !result.runId) {
+    const error = new ApiError(result.error?.message ?? "El trabajo no terminó correctamente.", { code: result.error?.code ?? result.state, retryable: Boolean(result.error?.retryable) });
+    throw error;
+  }
+  state.runId = result.runId; persistRunId(result.runId, localStorage, location, history);
+  await refreshRun(); await refreshTraceHistory(3);
+  return result;
 }
 
 async function runUpload(event) {
@@ -595,10 +642,26 @@ async function runUpload(event) {
     $("#original-preview").src = api.documentPreviewUrl(state.documentId);
     state.drawing = await api.getDocumentDrawing(state.documentId,inputKind); if(!uploadFence.isCurrent(uploadToken,file))return; renderDrawing();
     setMessage("Plano disponible. Iniciando análisis…");
-    const runPayload = await api.createRun(state.documentId, mode, inputKind,runOptions); if(!uploadFence.isCurrent(uploadToken,file))return;
-    state.snapshot = normaliseRunPayload(runPayload); state.runId = state.snapshot.id; persistRunId(state.runId, localStorage, location, history); text($("#upload-status"), "En proceso"); setMessage("Plano aceptado. Extrayendo geometría y evidencia.");
-    connectEvents(state.runId); await refreshRun();
+    const request=runRequest(state.documentId,mode,inputKind,runOptions);
+    if(state.config?.run_submission?.jobs===true){
+      const job=await api.createJob(request); if(!uploadFence.isCurrent(uploadToken,file))return;
+      setMessage("Plano aceptado. El trabajo queda guardado y puede recuperarse tras recargar.");
+      await followJob(job);
+    } else {
+      setMessage("Modo local manual: esta instalación usa la ejecución síncrona compatible.");
+      const runPayload=await api.createRun(state.documentId,mode,inputKind,runOptions); if(!uploadFence.isCurrent(uploadToken,file))return;
+      state.snapshot=normaliseRunPayload(runPayload); state.runId=state.snapshot.id; persistRunId(state.runId,localStorage,location,history); text($("#upload-status"),"En proceso"); await refreshRun(); await refreshTraceHistory();
+    }
   } catch (error) { if(uploadToken&&!uploadFence.isCurrent(uploadToken,file))return; setMessage(error.message, true); text($("#upload-status"), "Error"); }
+}
+
+function tableReviewPayload(scenario, values) {
+  const newId=(prefix)=>`${prefix}-${globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+  const decisions=$$('.table-decision').flatMap((block)=>{const selected=$("input:checked",block);return selected?[{targetKind:block.dataset.targetKind,targetId:block.dataset.targetId,action:selected.value,reason:values.notes}]:[];});
+  const confirmedValues=$$('.table-confirmed-value').flatMap((label)=>{const input=$("input",label);if(!input.value||String(input.value)===String(input.dataset.originalValue??""))return[];return[{targetId:label.dataset.measureId,valueMm:input.value,reason:values.notes,confirmationId:newId("confirmation")}];});
+  const observedCorrections=$$('.table-observed-correction').flatMap((label)=>{const input=$("input",label);if(!input.value||String(input.value)===String(input.dataset.originalValue??""))return[];return[{targetId:label.dataset.measureId,valueMm:input.value,reason:values.notes,correctionId:newId("correction")}];});
+  const sourceDecisions=$$('.table-source-review').flatMap((block)=>{const selected=$("input:checked",block);return selected?[{warningId:block.dataset.warningId,warningCode:block.dataset.warningCode,action:selected.value,reason:values.notes}]:[];});
+  return buildTableReviewPayload(state.snapshot,state.tableWorkspace,{reviewerName:values.reviewer_name,programId:scenario.value,notes:values.notes,decisions,confirmedValues,observedCorrections,sourceDecisions});
 }
 
 async function submitReview(event) {
@@ -616,7 +679,7 @@ async function submitReview(event) {
       notes: $("#review-reason").value,
       decisions,
     };
-    const payload = table?buildTableReviewPayload(state.snapshot,state.tableWorkspace,{reviewerName:values.reviewer_name,programId:scenario.value,notes:values.notes,decisions:$$('.table-decision').flatMap((block)=>{const selected=$("input:checked",block); return selected?[{targetKind:block.dataset.targetKind,targetId:block.dataset.targetId,action:selected.value,reason:values.notes}]:[];}),confirmedValues:$$('.table-confirmed-value').flatMap((label)=>{const input=$("input",label); return input.value?[{targetId:label.dataset.measureId,valueMm:input.value,reason:values.notes}]:[];})}):parts?buildAssemblyReviewPayload(state.snapshot,values):buildScenarioReviewPayload(state.snapshot, values);
+    const payload = table?tableReviewPayload(scenario,values):parts?buildAssemblyReviewPayload(state.snapshot,values):buildScenarioReviewPayload(state.snapshot, values);
     const result = await api.review(state.runId, payload); if(!actionFence.isCurrent(token,actionIdentity()))return; state.snapshot = { ...state.snapshot, ...result };
     text($("#review-message"), "Decisión registrada en una nueva revisión."); await refreshRun(); await refreshTraceHistory();
   } catch (error) {
@@ -633,7 +696,13 @@ async function exportResult(format) {
   try { const response = await fetch(api.exportUrl(state.runId, requestedFormat)); if (!response.ok) throw new Error("La exportación no está disponible."); downloadBlob(await response.blob(), `vexplorer_${state.runId}.${format}`); } catch (error) { setMessage(error.message, true); }
 }
 
-function toggleTrace(open) { const drawer = $("#trace-drawer"); drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open; if (open) $("#trace-close").focus(); }
+let traceReturnFocus = null;
+function toggleTrace(open) {
+  const drawer = $("#trace-drawer");
+  if (open) traceReturnFocus = document.activeElement;
+  drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open;
+  if (open) $("#trace-close").focus(); else traceReturnFocus?.focus?.();
+}
 
 function setupWorkspaceControls() {
   $$('[data-artifact-view]').forEach((button)=>button.addEventListener("click",()=>activateArtifactView(button.dataset.artifactView,button)));
@@ -649,7 +718,19 @@ function setupWorkspaceControls() {
   viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; if(drag.kind==="derived"){state.derivedImageViewport=panImageViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);applyDerivedImageViewport();return;} const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
   viewport.addEventListener("pointerup",()=>{drag=null;}); viewport.addEventListener("pointercancel",()=>{drag=null;});
   $("#derived-drawing-expand").addEventListener("click",toggleDerivedExpanded);
-  document.addEventListener("keydown",(event)=>{if(event.key==="Escape"&&$("#derived-drawing-view").classList.contains("is-expanded"))toggleDerivedExpanded();});
+  document.addEventListener("keydown",(event)=>{
+    const drawer=$("#trace-drawer");
+    if(drawer.classList.contains("is-open")){
+      if(event.key==="Escape"){event.preventDefault();toggleTrace(false);return;}
+      if(event.key==="Tab"){
+        const focusables=$$('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',drawer).filter((node)=>!node.hidden);
+        const target=nextFocusTarget(focusables,document.activeElement,event.shiftKey);
+        if(target&&(document.activeElement===focusables.at(event.shiftKey?0:-1)||!drawer.contains(document.activeElement))){event.preventDefault();target.focus();}
+      }
+      return;
+    }
+    if(event.key==="Escape"&&$("#derived-drawing-view").classList.contains("is-expanded"))toggleDerivedExpanded();
+  });
   $("#explode-scene").addEventListener("change",(event)=>sceneViewer?.setExploded(event.target.checked));
 }
 
@@ -695,8 +776,17 @@ async function boot() {
   $("#find-similar").addEventListener("click",findSimilarCurrent);
   $("#group-library").addEventListener("click",groupCurrentLibrary);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
+  try {
+    state.session=await api.getSession();
+    const authenticated=state.session.authenticated===true&&Boolean(state.session.username), reviewer=$("#reviewer-name");
+    text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:"Local · identidad manual");
+    if(authenticated){reviewer.value=state.session.username;reviewer.readOnly=true;}
+  } catch { text($("#session-user"),"Local · identidad manual"); }
   const restoredRunId = restoreRunId(location, localStorage);
-  if (restoredRunId) {
+  const restoredJob=new URLSearchParams(location.search).has("run")?null:restoreJob(localStorage);
+  if (restoredJob) {
+    try { await followJob(restoredJob); } catch (error) { setMessage(`No se pudo restaurar el trabajo: ${error.message}`,true); }
+  } else if (restoredRunId) {
     state.runId = restoredRunId;
     try { await refreshRun(); await refreshTraceHistory(); } catch (error) { clearRunSession(localStorage, location, history); state.runId = null; setMessage(`No se pudo restaurar la ejecución: ${error.message}`, true); }
   }

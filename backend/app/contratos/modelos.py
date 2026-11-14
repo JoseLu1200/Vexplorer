@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+from math import isfinite
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -669,11 +671,52 @@ class TableReviewDecision(StrictModel):
 
 
 class TableConfirmedValue(StrictModel):
+    confirmation_id: str | None = Field(default=None, min_length=1)
+    supersedes_confirmation_id: str | None = Field(default=None, min_length=1)
     target_kind: Literal["measurement_slot"] = "measurement_slot"
     target_id: str = Field(min_length=1)
     value_mm: float = Field(gt=0, allow_inf_nan=False)
     reason: str = Field(min_length=1, max_length=500)
     source: Literal["human"] = "human"
+
+    @model_validator(mode="after")
+    def cannot_supersede_itself(self) -> "TableConfirmedValue":
+        if self.confirmation_id is not None and self.confirmation_id == self.supersedes_confirmation_id:
+            raise ValueError("confirmation cannot supersede itself")
+        return self
+
+
+class TableObservedValueCorrection(StrictModel):
+    correction_id: str = Field(min_length=1)
+    measurement_id: str = Field(min_length=1)
+    value_mm: float = Field(gt=0, allow_inf_nan=False)
+    reason: str = Field(min_length=1, max_length=500)
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+    source: Literal["human"] = "human"
+    supersedes_correction_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def correction_is_traceable(self) -> "TableObservedValueCorrection":
+        if len(self.evidence_ids) != len(set(self.evidence_ids)):
+            raise ValueError("duplicate correction evidence ids")
+        if self.correction_id == self.supersedes_correction_id:
+            raise ValueError("correction cannot supersede itself")
+        if not self.reason.strip():
+            raise ValueError("correction reason cannot be blank")
+        return self
+
+
+class TableSourceReviewDecision(StrictModel):
+    warning_id: str = Field(min_length=1)
+    warning_code: str = Field(min_length=1)
+    action: Literal["accept", "reject"]
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def reason_is_not_blank(self) -> "TableSourceReviewDecision":
+        if not self.reason.strip():
+            raise ValueError("source review reason cannot be blank")
+        return self
 
 
 class TableMeasurementDisposition(StrictModel):
@@ -804,10 +847,18 @@ class ReviewRequest(StrictModel):
     table_program_id: str | None = None
     table_decisions: tuple[TableReviewDecision, ...] = ()
     table_confirmed_values: tuple[TableConfirmedValue, ...] = ()
+    table_observed_value_corrections: tuple[TableObservedValueCorrection, ...] = ()
+    table_source_review_decisions: tuple[TableSourceReviewDecision, ...] = ()
 
     @model_validator(mode="after")
     def unique_proposals(self) -> "ReviewRequest":
-        table_review = self.table_program_id is not None or bool(self.table_decisions) or bool(self.table_confirmed_values)
+        table_review = (
+            self.table_program_id is not None
+            or bool(self.table_decisions)
+            or bool(self.table_confirmed_values)
+            or bool(self.table_observed_value_corrections)
+            or bool(self.table_source_review_decisions)
+        )
         if not self.decisions and self.scenario_id is None and self.assembly_candidate_id is None and not table_review:
             raise ValueError("a scenario selection or explicit decisions are required")
         if table_review and (self.decisions or self.scenario_id is not None or self.assembly_candidate_id is not None or self.confirmed_thickness_mm is not None):
@@ -831,6 +882,15 @@ class ReviewRequest(StrictModel):
         confirmed_targets = [item.target_id for item in self.table_confirmed_values]
         if len(confirmed_targets) != len(set(confirmed_targets)):
             raise ValueError("duplicate table confirmed values")
+        correction_ids = [item.correction_id for item in self.table_observed_value_corrections]
+        correction_targets = [item.measurement_id for item in self.table_observed_value_corrections]
+        if len(correction_ids) != len(set(correction_ids)):
+            raise ValueError("duplicate table correction ids")
+        if len(correction_targets) != len(set(correction_targets)):
+            raise ValueError("duplicate table corrected measurements")
+        warning_ids = [item.warning_id for item in self.table_source_review_decisions]
+        if len(warning_ids) != len(set(warning_ids)):
+            raise ValueError("duplicate table source review warning ids")
         return self
 
 
@@ -883,6 +943,8 @@ class Result(StrictModel):
     evaluated_table_program: EvaluatedTableProgram | None = None
     table_review_decisions: tuple[TableReviewDecision, ...] = ()
     table_confirmed_values: tuple[TableConfirmedValue, ...] = ()
+    table_observed_value_corrections: tuple[TableObservedValueCorrection, ...] = ()
+    table_source_review_decisions: tuple[TableSourceReviewDecision, ...] = ()
     table_cost_scope: TableCostScope | None = None
 
     @model_validator(mode="after")
@@ -1019,15 +1081,67 @@ class TableDrawingManifest(StrictModel):
     sheets: tuple[TableDrawingManifestSheet, ...]
 
 
+class TableCostExclusion(StrictModel):
+    scope: Literal["material", "edge", "operation", "labor", "finishing"]
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def reason_is_not_blank(self) -> "TableCostExclusion":
+        if not self.reason.strip():
+            raise ValueError("cost exclusion reason cannot be blank")
+        return self
+
+
 class TableCostScope(StrictModel):
     material_tariff_id: str | None = None
+    component_material_tariff_ids: dict[str, str] = {}
     edge_scope: Literal["none", "all_exposed"] = "none"
+    edge_tariff_id: str | None = None
     operation_tariff_ids: tuple[str, ...] = ()
+    operation_hours_by_tariff: dict[str, float] = {}
+    labor_tariff_id: str | None = None
+    labor_hours: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    finish_tariff_id: str | None = None
+    finish_quantity_m2: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    exclusions: tuple[TableCostExclusion, ...] = ()
+    provisional_margin_percent: float | None = Field(default=None, ge=0, lt=100, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def unique_operation_tariffs(self) -> "TableCostScope":
         if len(self.operation_tariff_ids) != len(set(self.operation_tariff_ids)):
             raise ValueError("duplicate operation tariff ids")
+        if not set(self.operation_hours_by_tariff) <= set(self.operation_tariff_ids):
+            raise ValueError("operation hours require a selected operation tariff")
+        if any(not key or not value for key, value in self.component_material_tariff_ids.items()):
+            raise ValueError("component material overrides require non-empty ids")
+        if any(not isfinite(value) or value < 0 for value in self.operation_hours_by_tariff.values()):
+            raise ValueError("operation hours cannot be negative")
+        excluded = [item.scope for item in self.exclusions]
+        if len(excluded) != len(set(excluded)):
+            raise ValueError("duplicate cost scope exclusions")
+        excluded_set = set(excluded)
+        if "material" in excluded_set and (
+            self.material_tariff_id is not None or self.component_material_tariff_ids
+        ):
+            raise ValueError("excluded material cannot include tariffs")
+        if "edge" in excluded_set and (
+            self.edge_scope != "none" or self.edge_tariff_id is not None
+        ):
+            raise ValueError("excluded edge cannot include scope or tariff")
+        if "operation" in excluded_set and (
+            self.operation_tariff_ids or self.operation_hours_by_tariff
+        ):
+            raise ValueError("excluded operation cannot include tariffs or hours")
+        if "labor" in excluded_set and (
+            self.labor_tariff_id is not None or self.labor_hours is not None
+        ):
+            raise ValueError("excluded labor cannot include tariff or hours")
+        if "finishing" in excluded_set and (
+            self.finish_tariff_id is not None or self.finish_quantity_m2 is not None
+        ):
+            raise ValueError("excluded finishing cannot include tariff or quantity")
+        if self.edge_scope == "none" and self.edge_tariff_id is not None:
+            raise ValueError("edge tariff requires all_exposed scope")
         return self
 
 
@@ -1035,23 +1149,51 @@ class TableCostTariff(StrictModel):
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     concept_type: Literal["fixed", "material_area", "material_volume", "edge", "operation", "labor", "finish"]
-    scope: Literal["material", "edge", "operation", "preparation"]
+    scope: Literal["material", "edge", "operation", "labor", "finishing", "preparation"]
     rate_eur_per_unit: float = Field(ge=0, allow_inf_nan=False)
     rate_unit: Literal["EUR/m2", "EUR/m3", "EUR/m", "EUR/unit", "EUR/h"]
-    synthetic: Literal[True] = True
+    synthetic: bool = True
+
+    @model_validator(mode="after")
+    def concept_unit_and_scope_match(self) -> "TableCostTariff":
+        expected = {
+            "fixed": ("preparation", "EUR/unit"),
+            "material_area": ("material", "EUR/m2"),
+            "material_volume": ("material", "EUR/m3"),
+            "edge": ("edge", "EUR/m"),
+            "operation": ("operation", "EUR/h"),
+            "labor": ("labor", "EUR/h"),
+            "finish": ("finishing", "EUR/m2"),
+        }[self.concept_type]
+        if (self.scope, self.rate_unit) != expected:
+            raise ValueError("invalid tariff concept, unit and scope combination")
+        return self
 
 
 class TableCostCatalog(StrictModel):
-    schema_version: Literal["0.5.0"] = "0.5.0"
+    schema_version: Literal["0.5.0", "0.6.0"] = "0.6.0"
     catalog_version: str = Field(min_length=1)
+    source: str | None = Field(default=None, min_length=1)
+    effective_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     tariffs: tuple[TableCostTariff, ...]
-    synthetic: Literal[True] = True
+    synthetic: bool = True
 
     @model_validator(mode="after")
     def tariff_ids_are_unique(self) -> "TableCostCatalog":
         ids = [item.id for item in self.tariffs]
         if len(ids) != len(set(ids)):
             raise ValueError("duplicate table tariff ids")
+        if any(item.synthetic != self.synthetic for item in self.tariffs):
+            raise ValueError("catalog and tariff synthetic state must match")
+        if not self.synthetic and (self.source is None or self.effective_date is None):
+            raise ValueError("real cost catalog requires source and effective date")
+        if self.source is not None and not self.source.strip():
+            raise ValueError("catalog source cannot be blank")
+        if self.effective_date is not None:
+            try:
+                date.fromisoformat(self.effective_date)
+            except ValueError as exc:
+                raise ValueError("catalog effective date must be a calendar date") from exc
         return self
 
 
@@ -1059,6 +1201,7 @@ class TableCostConcept(StrictModel):
     id: str
     label: str
     concept_type: Literal["fixed", "material_area", "material_volume", "edge", "operation", "labor", "finish"]
+    tariff_id: str | None = None
     component_id: str | None = None
     occurrence_ids: tuple[str, ...] = ()
     formula: str
@@ -1082,17 +1225,24 @@ class TableCostConcept(StrictModel):
 
 
 class TableCostEstimate(StrictModel):
-    schema_version: Literal["0.5.0"] = "0.5.0"
+    schema_version: Literal["0.5.0", "0.6.0"] = "0.6.0"
     run_id: str | None = None
+    estimate_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     result_revision: int = Field(gt=0)
     program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     catalog_version: str
+    catalog_snapshot: TableCostCatalog | None = None
+    synthetic: bool = True
     currency: Literal["EUR"] = "EUR"
     scope: TableCostScope
     concepts: tuple[TableCostConcept, ...]
     known_subtotal_eur: float = Field(ge=0, allow_inf_nan=False)
     grand_total_eur: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     total_state: Literal["partial", "complete"]
+    total_hours: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    principal_cost_contributor_id: str | None = None
+    provisional_margin_percent: float | None = Field(default=None, ge=0, lt=100, allow_inf_nan=False)
+    provisional_sale_price_eur: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     warnings: tuple[str, ...] = ()
 
     @model_validator(mode="after")
@@ -1102,6 +1252,14 @@ class TableCostEstimate(StrictModel):
             raise ValueError("partial estimate cannot expose a grand total")
         if self.total_state == "complete" and (self.grand_total_eur is None or required_unknown):
             raise ValueError("complete estimate requires all required concepts")
+        if self.provisional_sale_price_eur is not None and (
+            self.total_state != "complete" or self.provisional_margin_percent is None
+        ):
+            raise ValueError("provisional sale price requires complete cost and explicit margin")
+        if self.principal_cost_contributor_id is not None and self.principal_cost_contributor_id not in {
+            item.id for item in self.concepts if item.amount_eur is not None
+        }:
+            raise ValueError("principal contributor must reference a priced concept")
         return self
 
 
@@ -1196,6 +1354,7 @@ class TableDescriptorComponentFeature(StrictModel):
     length_mm: float = Field(gt=0, allow_inf_nan=False)
     width_mm: float = Field(gt=0, allow_inf_nan=False)
     thickness_mm: float = Field(gt=0, allow_inf_nan=False)
+    material_tariff_id: str | None = None
     field_states: dict[
         Literal["quantity", "length_mm", "width_mm", "thickness_mm"],
         Literal["calculated", "confirmed"],
