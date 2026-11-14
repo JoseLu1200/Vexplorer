@@ -33,3 +33,27 @@ La validación algebraica no equivale a utilidad completa. El evaluador diagnós
 En F02, dos discrepancias son un intercambio de los ejes de la trasera y una responde a una alternativa de unión coherente (testero 802 mm con laterales de 18 mm). El problema real es presentar como deducidos espesores trasladados a piezas ocultas. En F03 falta materializar el anclaje o arriostramiento. Se reforzó la crítica y reparación automática para ambos problemas y se reanudó desde las propuestas guardadas, sin enviar referencias privadas a los modelos.
 
 La revisión visual corrigió cotas/textos recortados en dos láminas F02 y una tabla de piezas colapsada por las decisiones. La regeneración visual usa las mismas láminas estructuradas congeladas; no es una nueva inferencia.
+
+## Reparación de la estantería
+
+F03 P2/R1 se obtuvo mediante crítica y reparación reales de Astra sobre P1. Conserva las nueve dimensiones numéricas y añade cuatro escuadras en dos alturas, con fijaciones y pared maciza como premisa. Las dimensiones trasladadas a otras piezas se marcan ahora estimadas y propagan rangos. Descargas HTTP de esta revisión verificadas; las tres láminas fueron inspeccionadas visualmente.
+
+El evaluador estricto sigue dando FAIL: 9/9 dimensiones y anclaje 1/1, pero 2/9 clasificaciones de autoridad coinciden con la referencia, que esperaba deducciones donde la reparación declara estimaciones más conservadoras. Se conserva este resultado. La revisión global sigue incompleta: el anclaje es una propuesta condicionada, no una comprobación resistente de una pared conocida.
+
+## Reparación de la cajonera y cierre
+
+F02 P3/R1 se obtuvo reanudando la crítica sobre P2. La primera reparación conservó una polilínea de conjunto aplicada a tres piezas; el servidor la marcó en conflicto por salirse de los límites locales. La siguiente reparación separó los detalles por pieza y conservó como estimados los espesores ocultos. P2 en conflicto y P3 revisada se guardaron como revisiones distintas. No se relajó el validador ni se sustituyeron las cotas originales.
+
+La revisión final devuelve `incomplete` con validación algebraica `valid`, siete tipos de tablero con 21 dimensiones numéricas y las guías comerciales explícitamente sin dimensiones. Las veinte descargas HTTP de P3/R1 respondieron correctamente. La trasera final es ≈862×762×6 mm; los otros nominales se conservan. El problema de texto largo del planner se corrigió sin perder texto y se reprodujo con las respuestas reales grabadas, sin nuevas llamadas para ese arreglo.
+
+Verificación del código integrado: **809 pruebas Python y 163 JavaScript aprobadas**, Ruff en los archivos modificados y `git diff --check` sin errores. Dos avisos externos de deprecación en Python. Revisión de código y salidas por GPT-6 Astra; UI comprobada en los tres casos, con selector y descargas de revisiones exactas.
+
+Para repetir la puntuación offline, sin llamadas al modelo:
+
+```powershell
+python -m tools.evaluate_cad_completion --reference evaluation/reference/cad_completion_controls/F02.reference.json --outcome evaluation/results/cad_completion_live_2026-11-14/F02.repaired.outcome.json --output .runtime/F02.evaluation.json
+```
+
+Los archivos `*.outcome.json` originales se conservan junto a `*.repaired.outcome.json`. La evidencia registra ejecución real, reparación y límites; no se afirma que todos los controles estrictos aprueben ni que el mueble esté completamente definido para fabricación.
+
+Resultado estricto final: F01 PASS (12/12 dimensiones); F02 FAIL (16/21 dimensiones, 16/21 bases, 8/13 estimaciones, 7/7 planos); F03 FAIL (9/9 dimensiones, 2/9 bases, anclaje 1/1, 3/3 planos). Astra aprobó el incremento funcional con estos límites explícitos: los rangos y alternativas propuestos no se presentan como coincidencias con la referencia.
