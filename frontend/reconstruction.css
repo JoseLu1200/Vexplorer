@@ -11,6 +11,15 @@
 .reconstruction #source,.reconstruction #preview{width:100%;height:440px;object-fit:contain;background:white}
 .reconstruction #viewer{height:440px;background:#f6f5f0}.reconstruction #viewer:empty{display:none}
 .reconstruction #viewer canvas{width:100%;height:100%;display:block}
+.reconstruction #refine{display:grid;gap:12px;max-width:850px}
+.reconstruction #questions{display:grid;gap:12px}
+.reconstruction #questions label{display:grid;gap:6px}
+.reconstruction textarea{width:100%;box-sizing:border-box;min-height:80px;padding:12px;font:inherit}
+.reconstruction .dimension-fields{display:flex;flex-wrap:wrap;gap:16px}
+.reconstruction .dimension-fields label{display:grid;gap:6px;flex:1;min-width:150px}
+.reconstruction .dimension-fields input{width:100%;min-width:0;box-sizing:border-box;padding:12px}
+.reconstruction #refine-button{justify-self:start}
+.reconstruction textarea:focus-visible{outline:3px solid #3858e9;outline-offset:3px}
 .reconstruction #status{border-left:3px solid #3858e9;padding:8px 16px;background:#eef0fa}
 .reconstruction #downloads{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
 .reconstruction table{width:100%;text-align:left;border-collapse:collapse}.reconstruction th,.reconstruction td{padding:12px;border-bottom:1px solid #c7ccce}.reconstruction td a{margin-right:14px}.table-scroll{overflow-x:auto}

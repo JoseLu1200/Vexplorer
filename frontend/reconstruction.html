@@ -8,8 +8,22 @@
 <p>Compara el plano original con el montaje y revisa las decisiones que completan la información que falta.</p>
 <form id="generate"><label for="purpose">Uso previsto, si se conoce</label><input id="purpose" maxlength="240" placeholder="Por ejemplo: banco con almacenaje para un recibidor"><button class="button button--primary" id="generate-button">Generar y revisar propuesta</button></form>
 <p id="status" role="status" aria-live="polite">Preparado para generar desde el documento activo.</p>
+<p id="version"></p><a id="previous-version" hidden>Consultar versión anterior</a>
 <div class="recon-grid"><section><h2>Plano original</h2><img id="source" alt="Plano original usado para la reconstrucción" hidden><p id="provenance"></p></section>
 <section id="proposal"><h2>Montaje inferido</h2><div id="viewer" aria-label="Montaje 3D interactivo"></div><img id="preview" alt="Vista de la construcción propuesta" hidden><label><input type="checkbox" id="exploded" disabled> Separar las piezas</label><p id="selected" role="status">Selecciona una pieza para ver sus medidas.</p></section></div>
-<section id="assessment" hidden><h2>Qué queda por resolver</h2><p id="geometry"></p><div class="recon-grid"><div><h3>Decisiones de diseño</h3><ul id="assumptions"></ul></div><div><h3>Información pendiente</h3><ul id="missing"></ul></div></div><ul id="functional"></ul><p>Propuesta pendiente de validación. Los contactos geométricos no verifican uniones ni capacidad de carga.</p></section>
+<section id="assessment" hidden><h2>Qué queda por resolver</h2><p id="geometry"></p><div class="recon-grid"><div><h3>Decisiones de diseño</h3><ul id="assumptions"></ul></div><div><h3>Información pendiente</h3><ul id="missing"></ul></div></div><ul id="functional"></ul><div id="partial-download"></div><p>Propuesta pendiente de validación. Los contactos geométricos no verifican uniones ni capacidad de carga.</p></section>
+<section id="refine-section" hidden><h2>Aclarar y actualizar la propuesta</h2>
+<p>Responde lo que conozcas. Guardaremos una versión nueva; las demás medidas seguirán siendo hipótesis.</p>
+<h3>Datos aportados hasta ahora</h3><ul id="declarations"></ul>
+<form id="refine">
+<div id="questions"></div>
+<label for="refine-purpose">Indicar o corregir el uso previsto</label><input id="refine-purpose" type="text" maxlength="240" placeholder="Uso que debe cumplir el mueble">
+<fieldset><legend>Cotas generales aportadas por ti (mm)</legend>
+<p>Déjalas vacías si no las conoces. Se conservarán las cotas anteriores que no cambies.</p>
+<div class="dimension-fields"><label for="width">Anchura X<input id="width" type="number" min="0.001" max="100000" step="any"></label><label for="depth">Profundidad Y<input id="depth" type="number" min="0.001" max="100000" step="any"></label><label for="height">Altura Z<input id="height" type="number" min="0.001" max="100000" step="any"></label></div>
+</fieldset>
+<button class="button button--primary" id="refine-button">Actualizar y comprobar montaje</button>
+<p id="refine-status" role="status" aria-live="polite"></p>
+</form></section>
 <section id="parts" hidden><h2>Piezas propuestas</h2><p>Medidas y cantidades del diseño inferido. Materiales, herrajes y tarifas pendientes no tienen precio asignado.</p><div class="table-scroll"><table><thead><tr><th>Pieza</th><th>Medidas X × Y × Z</th><th>Cantidad</th><th>Planos</th></tr></thead><tbody id="parts-body"></tbody></table></div><nav id="downloads" aria-label="Descargar propuesta"></nav></section>
 </main><script type="module" src="./reconstruction.js"></script></body></html>
