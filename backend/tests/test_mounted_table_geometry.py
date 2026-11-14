@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from backend.app.contratos.modelos import TableConfirmedValue, TableReviewDecision
 from backend.app.geometria.extraction import extract_drawing
 
 
@@ -20,6 +21,32 @@ def _analyze(fixture: str):
         input_kind="mounted_orthographic_views",
     )
     return extraction, analyze_mounted_table(extraction)
+
+
+def _catalog(analysis):
+    try:
+        from backend.app.geometria.mounted_table import catalog_table_programs
+    except ImportError as exc:  # pragma: no cover - exercised only in the RED step
+        pytest.fail(f"mounted table catalog is missing: {exc}")
+    return catalog_table_programs(analysis)
+
+
+def _evaluate(analysis, program, decisions=(), confirmed_values=()):
+    try:
+        from backend.app.geometria.mounted_table import evaluate_table_program
+    except ImportError as exc:  # pragma: no cover - exercised only in the RED step
+        pytest.fail(f"mounted table evaluator is missing: {exc}")
+    return evaluate_table_program(
+        analysis, program, decisions=decisions, confirmed_values=confirmed_values,
+    )
+
+
+def _accept_all(program):
+    return (
+        TableReviewDecision(target_kind="program", target_id=program.id, action="accept", reason="Selecciona esta topología"),
+        *(TableReviewDecision(target_kind="component", target_id=item.id, action="accept", reason="Acepta el tipo propuesto") for item in program.components),
+        *(TableReviewDecision(target_kind="premise", target_id=item.id, action="accept", reason="Acepta la premisa explícita") for item in program.premises),
+    )
 
 
 def test_complete_views_expose_observed_envelope_and_unknown_profile_slots() -> None:
@@ -103,4 +130,117 @@ def test_conflicting_dimension_override_does_not_replace_geometry() -> None:
     assert width.measurement_ids == ("dimension-entity-98",)
     assert len(width.evidence_ids) >= 2
     assert "table_measure_conflict" in analysis.warnings
+
+
+def test_catalog_lists_both_support_topologies_and_binds_observed_sections() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+
+    programs = _catalog(analysis)
+
+    assert [item.table_template_id for item in programs] == [
+        "side_supports_v1",
+        "corner_supports_v1",
+    ]
+    assert all(item.proposal_origin == "catalog_baseline" for item in programs)
+    section_ids = {
+        item.geometry_relation: item.id
+        for item in analysis.measures
+        if item.semantic == "unknown" and item.axis == "section"
+    }
+    side = programs[0]
+    side_measure_refs = {
+        operand.ref_id
+        for binding in side.bindings
+        for operand in binding.operand_refs
+        if operand.ref_type == "measure"
+    }
+    assert section_ids["offset_from_max_y"] in side_measure_refs
+    assert section_ids["opposite_offsets"] in side_measure_refs
+    assert {item.role for item in side.components} == {"tabletop", "side_support"}
+    assert {item.quantity_rule_id for item in side.components} == {"top_one", "two_side_supports"}
+    corner = programs[1]
+    assert {item.role for item in corner.components} == {"tabletop", "corner_support"}
+    assert {item.quantity_rule_id for item in corner.components} == {"top_one", "four_corner_supports"}
+    assert all(not hasattr(binding, "value_mm") for program in programs for binding in program.bindings)
+
+
+def test_side_support_program_stays_proposed_until_each_target_is_accepted() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[0]
+
+    proposed = _evaluate(analysis, program)
+
+    assert proposed.state == "hypothesis"
+    assert [item.quantity for item in proposed.components] == [1, 2]
+    assert len(proposed.occurrences) == 3
+    assert all(item.result.state == "proposed" for item in proposed.bindings)
+    assert all(not item.accepted for item in proposed.components)
+    assert all(item.state == "proposed" for item in proposed.placements)
+
+    decisions = _accept_all(program)
+    completed = _evaluate(analysis, program, decisions=decisions)
+
+    assert completed.state == "completed"
+    assert completed.overall_dimensions.model_dump() == {
+        "width_mm": 1200.0,
+        "depth_mm": 700.0,
+        "height_mm": 750.0,
+    }
+    assert all(item.result.state == "calculated" for item in completed.bindings)
+    assert all(item.accepted for item in completed.components)
+    assert all(item.state == "pass" for item in completed.placements)
+    placements = {item.occurrence_id: item for item in completed.placements}
+    top = placements["occurrence-component-tabletop-1"]
+    assert top.position_mm.model_dump() == {"x": 0.0, "y": 720.0, "z": 0.0}
+    assert top.dimensions_mm.model_dump() == {"x": 1200.0, "y": 30.0, "z": 700.0}
+    sides = [item for key, item in placements.items() if "side-support" in key]
+    assert sorted(item.position_mm.x for item in sides) == [0.0, 1182.0]
+    assert all(item.dimensions_mm.model_dump() == {"x": 18.0, "y": 720.0, "z": 700.0} for item in sides)
+
+
+def test_corner_support_program_needs_one_explicit_section_before_five_placements() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[1]
+    decisions = _accept_all(program)
+
+    incomplete = _evaluate(analysis, program, decisions=decisions)
+
+    assert incomplete.state == "needs_review"
+    assert len(incomplete.occurrences) == 5
+    assert any(item.state == "unknown" for item in incomplete.placements)
+    support_depth = next(item for item in analysis.measures if item.semantic == "support_depth")
+    completed = _evaluate(
+        analysis,
+        program,
+        decisions=decisions,
+        confirmed_values=(TableConfirmedValue(
+            target_id=support_depth.id, value_mm=70.0,
+            reason="La persona confirma la sección profunda del soporte.",
+        ),),
+    )
+
+    assert completed.state == "completed"
+    assert len(completed.placements) == 5
+    assert all(item.state == "pass" for item in completed.placements)
+    legs = [
+        item for item in completed.placements
+        if "corner-support" in item.occurrence_id
+    ]
+    assert sorted((item.position_mm.x, item.position_mm.z) for item in legs) == [
+        (0.0, 0.0),
+        (0.0, 630.0),
+        (1182.0, 0.0),
+        (1182.0, 630.0),
+    ]
+    assert all(item.dimensions_mm.model_dump() == {"x": 18.0, "y": 720.0, "z": 70.0} for item in legs)
+
+
+def test_accepting_hypotheses_cannot_hide_a_missing_required_view() -> None:
+    _, analysis = _analyze("mesa_demo_003.dxf")
+    program = _catalog(analysis)[0]
+
+    evaluated = _evaluate(analysis, program, decisions=_accept_all(program))
+
+    assert evaluated.state == "needs_review"
+    assert any(item.code == "missing_required_view" and item.severity == "error" for item in evaluated.issues)
 
