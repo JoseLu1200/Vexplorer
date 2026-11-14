@@ -41,14 +41,27 @@ Prefijo común: `/api/v1/precedentes`.
 
 Cada funcionalidad con estado usa su propio SQLite en el directorio de datos: `precedentes_espacio.sqlite3`, `precedentes_decisiones.sqlite3`, `precedentes_imagen.sqlite3` y `precedentes_herrajes.sqlite3`. No se tocan las tablas existentes.
 
+La rotación explícita de espacio invalida las entradas de `embedding_cache` de la biblioteca para el modelo y dimensiones correspondientes **antes** de guardar la nueva huella. La respuesta incluye `embeddings_invalidados`. Después se puede inspeccionar `POST /embeddings/regenerar` con `simular:true` y regenerar en lotes con `simular:false`. Hasta entonces, las búsquedas semánticas no reutilizan los vectores borrados; el híbrido declara su fallback geométrico. Esta operación no invalida el almacén separado del histórico económico.
+
+## Calibración utilizable por el servidor
+
+El informe estadístico y la configuración del runtime son salidas distintas:
+
+```console
+python -m tools.calibrate_similarity --db RUTA/vexplorer.sqlite3 --thresholds-output thresholds.json --json
+```
+
+Configure `VEXPLORER_SIMILARITY_THRESHOLDS_FILE` con la ruta a `thresholds.json`. El fichero contiene `similarity`, `group` y `near_duplicate`, separados por versión de descriptor y modelo. Son sugerencias empíricas del corpus utilizado: generar el fichero no acredita calidad con datos reales ni sustituye juicios de relevancia independientes.
+
 ## Límites conocidos
 
 - **Umbrales:** 2.1 y 2.3 heredan los valores por defecto de 1.2 mientras no exista un archivo de calibración real. Los múltiplos de dispersión de 2.2 y el umbral de 3.3 (obligatorio en la petición) siguen sin calibrar.
 - **2.3** sigue usando el texto embebido actual, que incluye medidas e incógnitas (hallazgos H1/H2). Cambiarlo exige una nueva `descriptor_version` y volver a embeber la biblioteca.
-- **2.6** no está ligado a `EmbeddingMetadata`; la verificación se lanza a mano.
+- **2.6** no está ligado a un identificador generacional en `EmbeddingMetadata`; verificación y rotación se lanzan a mano. La invalidación de caché protege la biblioteca tras una rotación, pero no detecta automáticamente una deriva anterior a esa operación.
 - **2.5 y 2.6:** el candado y el intervalo mínimo están en memoria de cada proceso; no se coordinan entre varios workers.
 - **3.3 y 3.5** son mecanismos sin datos ni modelo reales.
-- **3.1** estima tableros por superficie con un aprovechamiento fijo; no coloca piezas.
+- **3.1** estima tableros por superficie con un aprovechamiento fijo; no coloca piezas. Las cantidades desconocidas van a `sin_clasificar` y no se convierten en una unidad. `piezas_que_no_caben` indica que el número por superficie no es un plan de corte realizable.
+- **2.2:** MAD cero produce `dispersion_nula`, sin alerta estadística; los costes comparables y el rango siguen visibles. Los candidatos no estimables no consumen el cupo de comparables válidos.
 - Los errores de validación del cuerpo usan el 422 por defecto de FastAPI (`detail`), como `api/history.py`; los errores de negocio usan el sobre `{schema_version, data, error}`.
 
 ## Verificación

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from backend.app.contratos.modelos import (
     DrawingExtraction,
+    GeneralAssemblyState,
     GeneralAutoReviewRequest,
     GeneralDerivedResponse,
     GeneralDerivedEnvelope,
@@ -326,6 +327,21 @@ def create_general_furniture_router(
             raise HTTPException(status_code=409, detail=str(exc)) from None
         auto_review_event_sink(run_id, outcome)
         return GeneralFurnitureEnvelope(data=repository.get(run_id))  # type: ignore[arg-type]
+
+    @router.get("/assembly", response_model=GeneralAssemblyState)
+    def assembly(
+        run_id: str,
+        proposal_revision: int = Query(gt=0),
+        review_revision: int = Query(gt=0),
+    ) -> GeneralAssemblyState:
+        assembly_state = repository.get_assembly_state(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
+        if assembly_state is None:
+            raise HTTPException(status_code=404, detail="general_assembly_not_found")
+        return assembly_state
 
     @router.get("/derived", response_model=GeneralDerivedEnvelope)
     def derived(

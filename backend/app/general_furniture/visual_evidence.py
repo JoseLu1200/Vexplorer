@@ -472,12 +472,29 @@ def _cad_artifacts(
         raise ValueError("visual_evidence_geometry_unavailable")
     if len(views) > max_views:
         raise ValueError("visual_evidence_budget_exceeded")
+    if len(views) > max_artifacts:
+        raise ValueError("visual_evidence_budget_exceeded")
     regions_by_view = {
         view.id: _spatial_regions(extraction, view.id) for view in views
     }
-    artifact_count = len(views) + sum(len(items) for items in regions_by_view.values())
-    if artifact_count > max_artifacts:
-        raise ValueError("visual_evidence_budget_exceeded")
+    region_candidates = [
+        (view.id, index, region)
+        for view in views
+        for index, region in enumerate(regions_by_view[view.id], start=1)
+    ]
+    region_slots = max_artifacts - len(views)
+    if len(region_candidates) > region_slots:
+        region_candidates.sort(key=lambda item: (
+            -len(item[2].contour_ids),
+            item[0], item[1], item[2].bounds,
+        ))
+    selected_regions = region_candidates[:region_slots]
+    artifact_count = len(views) + len(selected_regions)
+    truncation_warning = (
+        f"spatial_region_crops_truncated:{len(selected_regions)}_of_{len(region_candidates)}"
+        if len(selected_regions) < len(region_candidates)
+        else None
+    )
     # Worst-case allocation is checked before render_view allocates any image.
     if artifact_count * max_dimension_px * max_dimension_px > max_total_pixels:
         raise ValueError("visual_evidence_budget_exceeded")
@@ -487,6 +504,13 @@ def _cad_artifacts(
     for view in views:
         rendered = _clean_view(extraction, view.id, max_dimension_px)
         content, warnings = _cad_annotation_layer(rendered, extraction, view.id)
+        content, overview_marks = _contour_marks(
+            content,
+            extraction,
+            view.id,
+            width_px=rendered.width_px,
+            height_px=rendered.height_px,
+        )
         used_png_bytes += len(content)
         if used_png_bytes > max_total_png_bytes:
             raise ValueError("visual_evidence_budget_exceeded")
@@ -512,7 +536,7 @@ def _cad_artifacts(
                     float(bounds.max_x),
                     float(bounds.max_y),
                 ),
-                marks=(),
+                marks=overview_marks,
                 warnings=(
                     "clean_source_overview",
                     *(
@@ -535,47 +559,46 @@ def _cad_artifacts(
                         else ()
                     ),
                     *warnings,
+                    *((truncation_warning,) if truncation_warning else ()),
                 ),
             )
         )
-        for index, region in enumerate(regions_by_view[view.id], start=1):
-            selected = _region_extraction(extraction, view.id, region)
-            region_rendered = _clean_view(selected, view.id, max_dimension_px)
-            region_content, annotation_warnings = _cad_annotation_layer(
-                region_rendered, selected, view.id
-            )
-            region_content, region_marks = _contour_marks(
-                region_content,
-                selected,
-                view.id,
+    for view_id, index, region in selected_regions:
+        selected = _region_extraction(extraction, view_id, region)
+        region_rendered = _clean_view(selected, view_id, max_dimension_px)
+        region_content, annotation_warnings = _cad_annotation_layer(
+            region_rendered, selected, view_id
+        )
+        region_content, region_marks = _contour_marks(
+            region_content,
+            selected,
+            view_id,
+            width_px=region_rendered.width_px,
+            height_px=region_rendered.height_px,
+        )
+        used_png_bytes += len(region_content)
+        if used_png_bytes > max_total_png_bytes:
+            raise ValueError("visual_evidence_budget_exceeded")
+        artifacts.append(
+            VisualEvidenceArtifact(
+                reference=f"{source_sha256}:view:{view_id}:region-{index:03d}",
+                media_type="image/png",
+                content=region_content,
+                source_sha256=source_sha256,
+                image_sha256=sha256(region_content).hexdigest(),
                 width_px=region_rendered.width_px,
                 height_px=region_rendered.height_px,
+                source_view_ids=(view_id,),
+                source_contour_ids=region.contour_ids,
+                source_document_refs=source_document_refs,
+                crop_bounds_source=region.bounds,
+                marks=region_marks,
+                warnings=(
+                    "spatial_region_not_semantic_view",
+                    *annotation_warnings,
+                ),
             )
-            used_png_bytes += len(region_content)
-            if used_png_bytes > max_total_png_bytes:
-                raise ValueError("visual_evidence_budget_exceeded")
-            artifacts.append(
-                VisualEvidenceArtifact(
-                    reference=(
-                        f"{source_sha256}:view:{view.id}:region-{index:03d}"
-                    ),
-                    media_type="image/png",
-                    content=region_content,
-                    source_sha256=source_sha256,
-                    image_sha256=sha256(region_content).hexdigest(),
-                    width_px=region_rendered.width_px,
-                    height_px=region_rendered.height_px,
-                    source_view_ids=(view.id,),
-                    source_contour_ids=region.contour_ids,
-                    source_document_refs=source_document_refs,
-                    crop_bounds_source=region.bounds,
-                    marks=region_marks,
-                    warnings=(
-                        "spatial_region_not_semantic_view",
-                        *annotation_warnings,
-                    ),
-                )
-            )
+        )
     return tuple(artifacts)
 
 

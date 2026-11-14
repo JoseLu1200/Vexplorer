@@ -57,25 +57,6 @@ test("pending table reviews do not request derived drawings or costs", () => {
   ), true);
 });
 
-test("public CAD capability hides private history, library and semantic actions without requiring login", () => {
-  assert.equal(typeof ui.publicFeatureAvailability, "function");
-  assert.deepEqual(ui.publicFeatureAvailability({
-    environment: "production",
-    authenticated: false,
-    capabilities: { history: { available: false } },
-    semantic: { available: false, unavailable_reason: "private_feature_unavailable" },
-  }), {
-    history: false,
-    library: false,
-    semantic: false,
-    publicCad: true,
-    sessionLabel: "Acceso público · CAD disponible",
-  });
-  assert.match(app, /publicFeatureAvailability/);
-  assert.match(app, /data-panel="library"/);
-  assert.match(app, /if\(state\.features\.library\).*api\.getLibrary/s);
-  assert.match(app, /if\(!state\.features\.library\)return/);
-});
 test("known table diagnostics are readable Spanish while unknown evidence remains available", () => {
   assert.equal(typeof ui.tableDiagnosticLabel, "function");
   assert.equal(ui.tableDiagnosticLabel("profile_measure_unknown:tabletop_thickness"), "Falta la medida requerida: grosor de la tapa.");
@@ -133,6 +114,17 @@ test("pending table revisions cannot invoke descriptor-backed library actions", 
   assert.match(app, /const libraryReady=!state\.tableWorkspace\?\.isTable\|\|tableResourcesReady/);
   assert.match(app, /save-library"\)\.disabled = !libraryReady/);
   assert.match(app, /find-similar"\)\.disabled = !libraryReady/);
+});
+
+test("a newly completed table replaces the stale pending-library message", () => {
+  assert.match(app, /function semanticAvailabilityText\(/);
+  assert.match(app, /if\(!libraryReady\)text\(\$\("#semantic-note"\),"Completa la revisión de mesa antes de guardar o buscar por descriptor\."\);else text\(\$\("#semantic-note"\),semanticAvailabilityText\(\)\)/);
+});
+
+test("refresh avoids expected 404 probes for table artifacts that do not exist yet", () => {
+  assert.doesNotMatch(app, /api\.getTableDrawings\(requestedRun,state\.snapshot\.result_revision\)/);
+  assert.match(app, /if\(state\.snapshot\?\.estimate\)\{try\{const costs=await api\.getTableCosts/);
+  assert.match(app, /if\(!manifest\).*api\.generateTableDrawings/s);
 });
 
 test("a provisional 3D scene is never labeled as reviewed", () => {

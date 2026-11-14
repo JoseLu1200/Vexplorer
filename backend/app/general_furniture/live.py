@@ -45,6 +45,10 @@ En quantity_basis_refs incluye al menos un premise:<id> declarado y, si existen,
 Un contorno cerrado puede ser una cara material, un hueco, un rebaje o un límite interior: contrástalo con las regiones visuales y no conviertas automáticamente cada rectángulo en panel. Las correspondencias entre proyecciones son candidatas ambiguas, no piezas adicionales.
 Una vista no es una ocurrencia física. Una instancia visible en varias proyecciones puede sostener cantidad hypothesis=1 con premisa explícita; repetición u ocultación ambigua permanece unknown o como alternativa. La salida es revisable, nunca documentación industrial lista para fabricar."""
 
+GENERAL_FURNITURE_SYSTEM_PROMPT += """
+No declares uniones como observadas. `assembly_relations` solo expresa relaciones estructuradas revisables entre IDs de componentes, con estado hypothesis, unknown o conflict, premisas y fuentes autorizadas; no añade geometría numérica. Examina cada par de componentes que la evidencia muestre interactuando y cita source_refs visibles. supported_by describe apoyo funcional y puede coexistir con fixed_to; fixed_to solo con evidencia visible propia, nunca por asumir hidden joinery. Si el apoyo visible está respaldado pero el método de unión no, emite supported_by como hypothesis y conserva la fijación como unknown, sin inventar una alternativa. Si no hay ningún par visible respaldado, los campos assembly pueden quedar vacíos y debes registrar `assembly_not_identifiable` en unknown_fields o en la razón pública.
+Para las funciones cubiertas por este vocabulario usa exactamente el canónico: side_panel, top_panel, bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, leg_frame, stretcher, support, unknown. Si existe una función legítima fuera del catálogo, usa un rol custom snake_case estable y explícalo; usa unknown solo cuando la función no sea resoluble. No traduzcas ni crees sinónimos de un concepto ya cubierto. No colapses componentes del mismo rol cuando tengan dimensiones, fuentes o identidad física distintas. cantidad cuenta ocurrencias físicas del componente, nunca vistas ni el número de contornos."""
+
 
 class GeneralFurnitureProvider(Protocol):
     def create_response(
@@ -53,6 +57,8 @@ class GeneralFurnitureProvider(Protocol):
 
 
 class GeneralLiveError(RuntimeError):
+    """Live failure that retains only prior safe trace entries and counters."""
+
     def __init__(
         self,
         code: str,
@@ -60,12 +66,22 @@ class GeneralLiveError(RuntimeError):
         trace: tuple[dict[str, object], ...],
         model_calls: int,
         tool_calls: int,
+        provider_status_code: int | None = None,
+        provider_code: str | None = None,
+        provider_request_id: str | None = None,
+        provider_response_id: str | None = None,
+        provider_incomplete_reason: str | None = None,
     ) -> None:
         super().__init__(code)
         self.code = code
         self.trace = trace
         self.model_calls = model_calls
         self.tool_calls = tool_calls
+        self.provider_status_code = provider_status_code
+        self.provider_code = provider_code
+        self.provider_request_id = provider_request_id
+        self.provider_response_id = provider_response_id
+        self.provider_incomplete_reason = provider_incomplete_reason
 
 
 @dataclass(frozen=True)
@@ -201,6 +217,19 @@ def general_furniture_tool_schemas(
         if raster_without_metric_ledger
         else "Propone un escenario constructivo provisional completo usando IDs del ledger. Parámetros observed/deduced: binding_id obligatorio y nominal_mm/range_mm null; estimated: binding_id null y nominal_mm+rango+source_refs+premisas. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos crea un parámetro estimated separado con rango y premisa. quantity_basis_refs incluye premise:<id> y refs exactas; decision.target_refs usa namespaces tipados. Usa bindings copy/add/subtract/scale_rational; dependientes de estimate siguen estimated. Comprueba estabilidad global y, si hace falta, propone un detalle estimated explícito de estabilización o anclaje, no solo una nota pendiente."
     )
+    proposal_description += (
+        " Declara assembly_relations solo como hypothesis/unknown/conflict con IDs de "
+        "componentes, premise_ids y source_refs. supported_by describe apoyo funcional "
+        "y puede coexistir con fixed_to; fixed_to solo con evidencia visible propia. "
+        "Si solo el apoyo es visible, emite supported_by hypothesis y deja el método "
+        "de fijación unknown; no inventes uniones ni geometría numérica. Examina cada par visible; "
+        "si ninguno está respaldado, permite assembly vacío y registra "
+        "assembly_not_identifiable. Para conceptos cubiertos usa exactamente el canónico: side_panel, top_panel, "
+        "bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, "
+        "leg_frame, stretcher, support, unknown; para una función legítima fuera del catálogo usa un rol custom snake_case estable; usa unknown solo si no se resuelve. "
+        "No colapses componentes del mismo rol con dimensiones o fuentes distintas; "
+        "cantidad cuenta ocurrencias físicas, no vistas ni contornos."
+    )
     return [
         schema(
             "inspeccionar_evidencia_general",
@@ -243,6 +272,32 @@ def run_general_furniture_agent(
         visual_pages,
         include_announced_children=raster_without_metric_ledger,
     )
+    source_ref_groups = {
+        "view": extraction.views,
+        "observation": extraction.observations,
+        "contour": extraction.contours,
+        "evidence": extraction.evidence,
+        "dimension": extraction.dimensions,
+    }
+    reference_authority = {
+        "allowed_source_document_refs": list(allowed_document_refs),
+        "assembly_source_ref_prefixes": list(source_ref_groups),
+        "assembly_source_ref_examples": [
+            f"{kind}:{items[0].id}"
+            for kind, items in source_ref_groups.items() if items
+        ],
+        "instruction": (
+            "En assembly_relations y assembly_alternatives, source_refs exige "
+            "referencias tipadas tipo:id con IDs existentes del ledger, por ejemplo "
+            "view:<id de vista> o evidence:<id de evidencia>, o una referencia exacta "
+            "de allowed_source_document_refs. Un ID sin prefijo no es válido. "
+            "Los campos source_view_ids/source_evidence_ids/etc de componentes usan "
+            "IDs sin prefijo. Para source_document_refs copia SOLO elementos exactos "
+            "de allowed_source_document_refs; si no necesitas referencia documental "
+            "usa source_document_refs=[]. No inventes document:<id>, recortes ni "
+            "referencias a partir de etiquetas visuales."
+        ),
+    }
     try:
         spatial_regions = derive_source_spatial_regions(extraction, general_measures)
         projection_hypotheses = derive_projection_hypotheses(
@@ -257,6 +312,7 @@ def run_general_furniture_agent(
         projection_warnings = ("projection_input_budget_exceeded",)
     context = {
         "drawing_id": extraction.drawing_id,
+        "reference_authority": reference_authority,
         "ledger_revision": ledger_revision,
         "source_unit": extraction.source_unit,
         "coordinate_unit": extraction.coordinate_unit,
@@ -297,7 +353,7 @@ def run_general_furniture_agent(
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
         "evidence_ids": sorted(evidence),
-        "instruction": "Propón un escenario constructivo coherente, no una plantilla. Parámetros observed/deduced: binding_id requerido, nominal_mm=null y range_mm=null. Parámetros estimated: binding_id=null, nominal+rango+método+source_refs+premise:<id>. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos usa un parámetro estimated separado. Dependientes de estimate conservan estimated. Comprueba estabilidad/vuelco/arriostramiento y, si procede, declara un detalle estimated explícito, no solo pendiente. Las cantidades provisionales requieren premisa y grupos físicos; nunca cuentes proyecciones como unidades.",
+        "instruction": "Propón un escenario constructivo coherente, no una plantilla. Parámetros observed/deduced: binding_id requerido, nominal_mm=null y range_mm=null. Parámetros estimated: binding_id=null, nominal+rango+método+source_refs+premise:<id>. No escribas dimensiones libres: usa bindings anunciados en compact_geometry.measurements o dimension:<id>; su asignación a una pieza sigue siendo hipótesis. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos usa un parámetro estimated separado. Dependientes de estimate conservan estimated. Comprueba estabilidad/vuelco/arriostramiento y, si procede, declara un detalle estimated explícito, no solo pendiente. Las cantidades provisionales requieren premisa y grupos físicos; nunca cuentes proyecciones como unidades. Para cada concepto cubierto usa exactamente un rol canónico anunciado; no colapses componentes del mismo rol con dimensiones, fuentes o identidad distintas. Examina pares visiblemente interactuantes y cita source_refs: supported_by es apoyo funcional y puede coexistir con fixed_to; fixed_to exige evidencia visible propia. Si solo el apoyo está respaldado, emite supported_by hypothesis y deja la fijación unknown. Si no hay par respaldado permite assembly vacío y registra assembly_not_identifiable; no infieras hidden joinery ni números.",
         "visual_pages": [
             {
                 "reference": item.reference,
@@ -359,6 +415,11 @@ def run_general_furniture_agent(
             raise GeneralLiveError(
                 _safe_live_error_code(exc), trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
+                provider_status_code=getattr(exc, "status_code", None),
+                provider_code=getattr(exc, "provider_code", None),
+                provider_request_id=getattr(exc, "request_id", None),
+                provider_response_id=getattr(exc, "response_id", None),
+                provider_incomplete_reason=getattr(exc, "incomplete_reason", None),
             ) from exc
         previous_response_id = response.id
         if not response.tool_calls:
@@ -553,6 +614,7 @@ def run_general_furniture_agent(
                     "ok": False,
                     "error": "invalid_arguments",
                     "details": details,
+                    "reference_authority": reference_authority,
                 }
             outputs.append(
                 {

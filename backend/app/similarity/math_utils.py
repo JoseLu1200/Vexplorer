@@ -94,6 +94,10 @@ def cosine_matrix(
             raise ValueError("embedding_space_incompatible")
         if mat.shape[0] == 0:
             return np.empty((0,), dtype=np.float64)
+        if not np.isfinite(mat).all():
+            raise ValueError("invalid_embedding")
+        if np.any(np.max(np.abs(mat), axis=1) == 0.0):
+            raise ValueError("invalid_embedding")
     else:
         mat = normalize_matrix(matrix, dimensions=dims)
         if mat.shape[0] == 0:

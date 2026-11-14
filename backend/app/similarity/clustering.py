@@ -34,11 +34,13 @@ def complete_linkage_groups(
     # Store only cluster pairs whose complete-linkage minimum score >= threshold.
     # Value is (min_pair_score, has_different_run_ids).
     active_edges: dict[tuple[int, int], tuple[float, bool]] = {}
+    pair_scores: dict[tuple[str, str], float] = {}
     for i in range(count):
         left = ordered[i]
         for j in range(i + 1, count):
             right = ordered[j]
             score = float(score_fn(left, right))
+            pair_scores[(left.id, right.id)] = score
             if score >= threshold:
                 active_edges[(i, j)] = (score, left.run_id != right.run_id)
 
@@ -109,6 +111,11 @@ def complete_linkage_groups(
                 score_kind=score_kind,
                 threshold=threshold,
                 explanation=explanation,
+                minimum_pair_score=min(
+                    pair_scores[(left, right)]
+                    for index, left in enumerate(members)
+                    for right in members[index + 1:]
+                ),
             )
         )
     return tuple(groups)

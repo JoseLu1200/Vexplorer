@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from base64 import b64encode
 from dataclasses import asdict, dataclass
@@ -50,7 +51,7 @@ from backend.app.general_furniture.projection_hypotheses import (
 from backend.app.general_furniture.review import apply_general_review
 
 
-AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v2"
+AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v3"
 GENERAL_AUTO_REVIEW_PROMPT = """Actúas como crítico multimodal separado del proponente. Contrasta cada propuesta con imágenes reales, geometría y referencias del ledger.
 Primero llama entregar_revision_autonoma. Si el servidor responde repair_requested, llama una sola vez proponer_mueble_general con una propuesta completa corregida; después vuelve a llamar entregar_revision_autonoma sobre esa propuesta.
 No midas píxeles ni inventes valores. Las dimensiones observadas solo proceden del ledger. Las dimensiones deduced/estimated pueden proceder de parámetros constructivos declarados, con nominal, rango, método, dependencias y supuestos explícitos; no las rechaces solo por no ser observadas. Una cantidad provisional hypothesis/deduced/estimated requiere premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
@@ -60,9 +61,227 @@ Contrasta también la estabilidad global: vuelco, descuadre y arriostramiento. C
 Cada check model_visual debe citar en source_refs al menos una referencia visual exacta del contexto, también los checks de cantidad y duplicados de detalles estimados. Las premisas por sí solas no constituyen evidencia visual; no inventes referencias para completar un check.
 Decide explícitamente cada cota numérica anunciada en `required_dimension_field_review_targets`. Aceptar un parámetro no acepta automáticamente su asignación a length/width/thickness del componente: cada aceptación de campo cita un check model_visual pass dirigido a ese target exacto; cuando no puedas contrastarlo usa abstained, rejected o conflict. Para cada grupo `required_hardware_classification_field_review_targets`, decide al menos kind o geometry. Aceptar `kind=hardware` es una clasificación constructiva provisional del elemento propuesto como comprado/no fabricado: no identifica ni certifica un modelo comercial, fabricante, medidas de catálogo, capacidad o presencia observada. Puedes aceptar kind cuando función, detalle, cantidad, encaje, premisas y contexto visual sostienen su necesidad en el escenario aunque el herraje quede oculto; no exijas una ficha comercial. Mantén geometry específica, modelo, carga, fijación y cotas desconocidas o abstained cuando no estén justificadas.
 La geometry de un detalle usa coordenadas locales de la cara de cada pieza asociada, nunca coordenadas del mueble completo. Divide los detalles por pieza cuando tengan orígenes o dimensiones diferentes; comprueba sus límites antes de proponerlos.
-Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
+Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Los campos dimensionales/material/acabado usan punto antes del nombre; kind, role, existencia y geometry solo son revisables cuando aparecen expresamente en allowed_target_refs. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. Audita también inventario, roles canónicos y grafo. Solo cuando la evidencia visual sostenga una corrección reparable, añade a unresolved una directiva exacta anunciada en `semantic_repair_directives`; la directiva abre una propuesta nueva, no confirma el hecho. La prosa libre nunca autoriza reparación. El servidor recalcula bindings, geometría y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
 
 
+_CANONICAL_ROLES = frozenset({
+    "side_panel", "top_panel", "bottom_panel", "shelf", "divider",
+    "back_panel", "door", "tabletop", "table_leg", "leg_frame",
+    "stretcher", "support", "unknown",
+})
+_ASSEMBLY_RELATIONS = frozenset({
+    "supported_by", "fixed_to", "attached_to", "contained_by",
+    "aligned_with", "adjacent_to", "hinged_to",
+})
+
+
+def _valid_role(value: str) -> bool:
+    return bool(re.fullmatch(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*", value))
+
+
+def _valid_directive_id(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,119}", value))
+
+
+def _semantic_repair_directives(
+    unresolved: tuple[str, ...], *, component_ids: set[str],
+) -> tuple[str, ...]:
+    """Return only closed semantic repair directives; prose has no authority."""
+    directives: list[str] = []
+    announced_new_ids = {
+        parts[2]
+        for value in unresolved
+        for parts in (value.split(":"),)
+        if parts[0] == "missing_component" and len(parts) == 3
+    }
+    for value in unresolved:
+        prefix = value.partition(":")[0]
+        if prefix not in {
+            "missing_component", "role_correction", "assembly_missing",
+            "assembly_remove",
+        }:
+            continue
+        parts = value.split(":")
+        if prefix == "missing_component":
+            if len(parts) not in {2, 3}:
+                raise ValueError("semantic_directive_malformed")
+            if not _valid_role(parts[1]) or parts[1] == "unknown":
+                raise ValueError("semantic_directive_role_invalid")
+            if len(parts) == 3 and (
+                not _valid_directive_id(parts[2]) or parts[2] in component_ids
+            ):
+                raise ValueError("semantic_directive_component_invalid")
+        elif prefix == "role_correction":
+            if len(parts) != 3:
+                raise ValueError("semantic_directive_malformed")
+            if parts[1] not in component_ids:
+                raise ValueError("semantic_directive_component_unknown")
+            if not _valid_role(parts[2]):
+                raise ValueError("semantic_directive_role_invalid")
+        else:
+            if len(parts) != 4:
+                raise ValueError("semantic_directive_malformed")
+            if (
+                parts[1] not in component_ids | announced_new_ids
+                or parts[3] not in component_ids | announced_new_ids
+            ):
+                raise ValueError("semantic_directive_component_unknown")
+            if parts[1] == parts[3]:
+                raise ValueError("semantic_directive_self_relation")
+            if parts[2] not in _ASSEMBLY_RELATIONS:
+                raise ValueError("semantic_directive_relation_invalid")
+        directives.append(value)
+    return tuple(directives)
+
+
+def _assembly_edges(proposal: GeneralFurnitureProposal) -> set[tuple[str, str, str]]:
+    relations = list(proposal.assembly_relations)
+    relations.extend(
+        relation
+        for alternative in proposal.assembly_alternatives
+        for relation in alternative.relations
+    )
+    return {
+        (item.subject_component_id, item.relation, item.object_component_id)
+        for item in relations
+    }
+
+
+def _validate_semantic_repair_delta(
+    before: GeneralFurnitureProposal,
+    after: GeneralFurnitureProposal,
+    *,
+    directives: tuple[str, ...],
+    checks: tuple[GeneralAutoReviewCheck, ...],
+    field_reviews: tuple[object, ...] = (),
+) -> None:
+    before_components = {item.id: item for item in before.components}
+    after_components = {item.id: item for item in after.components}
+    missing_roles: list[str] = []
+    missing_by_id: dict[str, str] = {}
+    for item in directives:
+        if not item.startswith("missing_component:"):
+            continue
+        parts = item.split(":")
+        if len(parts) == 2:
+            missing_roles.append(parts[1])
+        else:
+            missing_by_id[parts[2]] = parts[1]
+    added = set(after_components) - set(before_components)
+    for component_id in sorted(added):
+        role = after_components[component_id].role
+        if component_id in missing_by_id:
+            if role != missing_by_id[component_id]:
+                raise ValueError("semantic_repair_unannounced_component_added")
+            continue
+        if role not in missing_roles:
+            raise ValueError("semantic_repair_unannounced_component_added")
+        missing_roles.remove(role)
+
+    removable_ids = {
+        target.split(":", 1)[1].split(".", 1)[0]
+        for check in checks
+        if check.outcome == "fail" and check.kind in {"duplicate_scan", "cross_view_identity"}
+        for target in check.target_refs
+        if target.startswith("component:")
+    }
+    removed = set(before_components) - set(after_components)
+    if not removed <= removable_ids:
+        raise ValueError("semantic_repair_unannounced_component_removed")
+
+    role_permissions = {
+        (parts[1], parts[2])
+        for item in directives
+        if item.startswith("role_correction:")
+        for parts in (item.split(":"),)
+    }
+    for component_id in set(before_components) & set(after_components):
+        old_role = before_components[component_id].role
+        new_role = after_components[component_id].role
+        if old_role != new_role and (component_id, new_role) not in role_permissions:
+            raise ValueError("semantic_repair_unannounced_role_change")
+
+    allowed_targets = {
+        target
+        for check in checks if check.outcome == "fail"
+        for target in check.target_refs
+    } | {
+        item.target_ref
+        for item in field_reviews
+        if getattr(item, "status", None) in {"rejected", "conflict"}
+    }
+    binding_fields = {
+        "length": "length_binding_id",
+        "width": "width_binding_id",
+        "thickness": "thickness_binding_id",
+    }
+    allowed_binding_ids: set[str] = set()
+    for component_id in removed:
+        component = before_components[component_id]
+        allowed_binding_ids.update(
+            value for value in (
+                component.length_binding_id,
+                component.width_binding_id,
+                component.thickness_binding_id,
+            ) if value is not None
+        )
+    for component_id in added:
+        component = after_components[component_id]
+        allowed_binding_ids.update(
+            value for value in (
+                component.length_binding_id,
+                component.width_binding_id,
+                component.thickness_binding_id,
+            ) if value is not None
+        )
+    for component_id in set(before_components) & set(after_components):
+        old = before_components[component_id]
+        new = after_components[component_id]
+        old_data = old.model_dump(mode="python")
+        new_data = new.model_dump(mode="python")
+        for field in ("role", "length_binding_id", "width_binding_id", "thickness_binding_id", "quantity", "unknown_fields"):
+            old_data.pop(field, None)
+            new_data.pop(field, None)
+        if old_data != new_data:
+            raise ValueError("semantic_repair_unannounced_component_field_change")
+        for field, attribute in (*binding_fields.items(), ("quantity", "quantity")):
+            old_value = getattr(old, attribute)
+            new_value = getattr(new, attribute)
+            if old_value == new_value:
+                continue
+            target = f"component:{component_id}.{field}"
+            if target not in allowed_targets:
+                raise ValueError("semantic_repair_unannounced_component_field_change")
+            if field != "quantity":
+                allowed_binding_ids.update(
+                    value for value in (old_value, new_value) if value is not None
+                )
+
+    before_bindings = {item.id: item for item in before.bindings}
+    after_bindings = {item.id: item for item in after.bindings}
+    for binding_id in set(before_bindings) | set(after_bindings):
+        if before_bindings.get(binding_id) != after_bindings.get(binding_id):
+            if binding_id not in allowed_binding_ids:
+                raise ValueError("semantic_repair_unannounced_binding_change")
+
+    before_edges = _assembly_edges(before)
+    after_edges = _assembly_edges(after)
+    added_edge_permissions = {
+        tuple(item.split(":")[1:])
+        for item in directives if item.startswith("assembly_missing:")
+    }
+    removed_edge_permissions = {
+        tuple(item.split(":")[1:])
+        for item in directives if item.startswith("assembly_remove:")
+    }
+    removed_incident = {
+        edge for edge in before_edges
+        if edge[0] in removed or edge[2] in removed
+    }
+    if not (after_edges - before_edges) <= added_edge_permissions:
+        raise ValueError("semantic_repair_unannounced_assembly_change")
+    if not (before_edges - after_edges) <= removed_edge_permissions | removed_incident:
+        raise ValueError("semantic_repair_unannounced_assembly_change")
 class ReviewerProvider(Protocol):
     def create_response(self, *, input_items, tools, previous_response_id, timeout_s): ...
 
@@ -421,21 +640,67 @@ def _effective_auto_status(args: GeneralAutoReviewArgs, construction_validation=
         return "conflict"
     if args.status == "abstained":
         return "abstained"
-    accepted = {item.target_ref for item in args.field_reviews if item.status == "accepted"}
-    for component in args.components:
-        if component.unknown_fields:
+    if not args.components:
+        return "incomplete"
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    nonblocking_unknowns = {"material", "finish", "acabado"}
+    blocking_unresolved_markers = {
+        "identidad", "correspondencia", "proyecci", "montaje", "unión", "union",
+        "mecanizado", "cantidad", "quantity", "dimensi", "espesor", "ancho", "largo",
+        "geometr", "cara material",
+    }
+    for unresolved in args.unresolved:
+        normalized = unresolved.casefold()
+        if (
+            not any(marker in normalized for marker in nonblocking_unknowns)
+            or any(marker in normalized for marker in blocking_unresolved_markers)
+        ):
             return "incomplete"
-        for field in ("length", "width", "thickness", "quantity", "material", "finish"):
-            if getattr(component, field).state in {"unknown", "conflict"} or f"component:{component.id}.{field}" not in accepted:
+    for component in args.components:
+        if any(field.strip().lower() not in nonblocking_unknowns for field in component.unknown_fields):
+            return "incomplete"
+        for field in ("length", "width", "thickness", "quantity"):
+            target = f"component:{component.id}.{field}"
+            if getattr(component, field).state in {"unknown", "conflict"} or field_status.get(target) != "accepted":
                 return "incomplete"
-    return "accepted" if args.status == "accepted" and not args.unresolved else "incomplete"
+        for field in ("material", "finish"):
+            target = f"component:{component.id}.{field}"
+            state = getattr(component, field).state
+            expected = "abstained" if state == "unknown" else "accepted"
+            if state == "conflict" or field_status.get(target) != expected:
+                return "incomplete"
+    return "accepted"
 
 
 def _repair_is_supported(args: GeneralAutoReviewArgs, construction_validation=None) -> bool:
-    return (
+    construction_repair = (
         construction_validation is not None
         and construction_validation.status == "invalid"
-    ) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+    )
+    directives = _semantic_repair_directives(
+        args.unresolved,
+        component_ids={item.id for item in args.components},
+    )
+    return construction_repair or bool(directives) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+
+
+def _recoverable_dimension_measurements(args: GeneralAutoReviewArgs, measurements) -> tuple[dict[str, object], ...]:
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    needs_dimension_evidence = any(
+        getattr(component, field).state == "unknown"
+        and field_status.get(f"component:{component.id}.{field}") == "abstained"
+        for component in args.components
+        for field in ("length", "width", "thickness")
+    )
+    if not needs_dimension_evidence:
+        return ()
+    candidates = tuple(
+        item for item in measurements
+        if item.semantic == "contour_segment_length" and item.value_mm is not None
+    )
+    if not candidates:
+        return ()
+    return tuple(query_compact_measurements(candidates, offset=0, limit=64).to_payload()["items"])
 
 
 def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAutoReviewCheck, ...]) -> tuple[GeneralScenarioOccurrence, ...]:
@@ -452,9 +717,14 @@ def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAuto
         ):
             continue
         selected = [by_id.get(check_id) for check_id in field_review.check_ids]
-        if any(item is None or item.outcome != "pass" for item in selected) or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in selected if item is not None}:
+        targeted = [item for item in selected if item is not None and target in item.target_refs]
+        if (
+            len(targeted) != len(selected)
+            or any(item.outcome != "pass" for item in targeted)
+            or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in targeted}
+        ):
             continue
-        sources = tuple(dict.fromkeys(ref for item in selected if item is not None for ref in item.source_refs))
+        sources = tuple(dict.fromkeys(ref for item in targeted for ref in item.source_refs))
         result.extend(GeneralScenarioOccurrence(
             id=f"provisional:{args.scenario_id}:{component.id}:{index}", component_id=component.id, occurrence_index=index,
             scenario_id=args.scenario_id, quantity_target_ref=target, check_ids=field_review.check_ids,
@@ -537,9 +807,7 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         visible_source_refs.add(f"visual:{page.reference}")
         visible_source_refs.update(page.source_contour_ids)
         visible_source_refs.update(mark.source_id for mark in page.marks)
-        if raster_without_metric_ledger:
-            visible_source_refs.add(page.reference)
-            visible_source_refs.update(page.source_document_refs)
+    visible_source_refs.update(allowed_document_refs)
     allowed_source_refs = sorted(
         visible_source_refs
         | {f"premise:{item.id}" for item in outcome.proposal.premises}
@@ -557,8 +825,20 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish|existence|kind|role|geometry> or parameter:<id> or constraint:<id> or detail:<id> or decision:<id>",
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
+        "semantic_repair_directives": {
+            "allowed": [
+                "missing_component:<canonical_role>",
+                "missing_component:<role>:<new_component_id>",
+                "role_correction:<existing_component_id>:<canonical_role>",
+                "assembly_missing:<existing_subject_id>:<relation>:<existing_object_id>",
+                "assembly_remove:<existing_subject_id>:<relation>:<existing_object_id>",
+            ],
+            "canonical_roles": sorted(_CANONICAL_ROLES),
+            "assembly_relations": sorted(_ASSEMBLY_RELATIONS),
+            "authority": "repair_request_only_not_acceptance_or_confirmation",
+        },
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Debes decidir explícitamente cada required_dimension_field_review_target; aceptar un parameter no sustituye decidir su asignación al campo del componente. Para cada required_hardware_classification_field_review_target decide al menos uno de sus any_of. accepted kind=hardware es una clasificación constructiva provisional de elemento comprado/no fabricado, no una certificación comercial ni una afirmación de presencia observada; puede apoyarse en función, detalle, cantidad, encaje, premisas y contexto visual aunque el elemento quede oculto. Geometry, modelo, carga, fijación y cotas no justificadas permanecen abstained/unknown. accepted exige un check model_visual pass que incluya ese mismo target; si no basta la evidencia usa abstained/rejected/conflict. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Debes decidir explícitamente cada required_dimension_field_review_target; aceptar un parameter no sustituye decidir su asignación al campo del componente. Para cada required_hardware_classification_field_review_target decide al menos uno de sus any_of. accepted kind=hardware es una clasificación constructiva provisional de elemento comprado/no fabricado, no una certificación comercial ni una afirmación de presencia observada; puede apoyarse en función, detalle, cantidad, encaje, premisas y contexto visual aunque el elemento quede oculto. Geometry, modelo, carga, fijación y cotas no justificadas permanecen abstained/unknown. accepted exige un check model_visual pass que incluya ese mismo target; si no basta la evidencia usa abstained/rejected/conflict. Usa target/source refs exactos de las listas permitidas. Audita piezas omitidas, roles no canónicos y relaciones visibles omitidas. Solo una directiva exacta de semantic_repair_directives puede pedir reparación semántica; la prosa libre no autoriza cambios ni confirma roles o grafo. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
     }
     if raster_without_metric_ledger:
         payload["allowed_document_refs"] = list(allowed_document_refs)
@@ -618,15 +898,20 @@ def run_general_autonomous(
     trace: list[dict[str, object]] = []
     snapshots: list[GeneralAutoReviewArgs] = []
     validation_repairs = semantic_repairs = tool_calls = 0
+    evidence_reinspection_requested = False
     effective = proposal_outcome
+    measurements = derive_geometry_measurements(context.extraction)
     visual_refs = {f"visual:{item.reference}" for item in context.visual_pages}
     for page in context.visual_pages:
         visual_refs.update(page.source_contour_ids)
         visual_refs.update(mark.source_id for mark in page.marks)
-    measurements = derive_geometry_measurements(context.extraction)
     raster_without_metric_ledger = _is_raster_without_metric_ledger(
         context.extraction, measurements, context.visual_pages
     )
+    visual_refs.update(general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=raster_without_metric_ledger,
+    ))
     allowed_refs = set(visual_refs)
     if raster_without_metric_ledger:
         for page in context.visual_pages:
@@ -686,6 +971,19 @@ def run_general_autonomous(
                 repaired = _materialize_repair(context, raw)
                 if repaired.proposal.id == effective.proposal.id:
                     raise ValueError("semantic_repair_must_change_proposal")
+                latest = snapshots[-1]
+                directives = _semantic_repair_directives(
+                    latest.unresolved,
+                    component_ids={item.id for item in latest.components},
+                )
+                if directives:
+                    _validate_semantic_repair_delta(
+                        effective.proposal,
+                        repaired.proposal,
+                        directives=directives,
+                        checks=latest.checks,
+                        field_reviews=latest.field_reviews,
+                    )
                 effective = repaired
                 semantic_repairs += 1
                 event = {"tool": call.name, "ok": True, "summary": "Propuesta semántica reparada contra el mismo ledger.", "phase": "general_auto_semantic_repair", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id}
@@ -746,10 +1044,35 @@ def run_general_autonomous(
                 effective.proposal, effective.draft
             )
             effective_status = _effective_auto_status(args, construction_validation)
+            recoverable_measurements = _recoverable_dimension_measurements(args, measurements)
+            if (
+                effective_status == "incomplete"
+                and semantic_repairs < limits.max_semantic_repairs
+                and not evidence_reinspection_requested
+                and recoverable_measurements
+            ):
+                evidence_reinspection_requested = True
+                trace.append({
+                    "tool": call.name,
+                    "ok": True,
+                    "summary": "Se aportó evidencia métrica acotada para una abstención dimensional reparable.",
+                    "phase": "general_auto_evidence_reinspection",
+                    "provider_response_id": response.id,
+                    "provider_model": getattr(response, "model", None),
+                    "provider_call_id": call.call_id,
+                    "status": effective_status,
+                })
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({
+                    "ok": True,
+                    "status": "repair_requested",
+                    "candidate_measurements": recoverable_measurements,
+                    "instruction": "Hay segmentos métricos del ledger que no se habían detallado. Si imagen y ledger sostienen una asignación, emite una propuesta completa corregida con bindings; si no, conserva la abstención. No midas píxeles ni inventes valores.",
+                }, ensure_ascii=False)}]
+                continue
             if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args, construction_validation):
                 remaining_model_calls = limits.max_model_calls - model_call
                 remaining_tool_calls = limits.max_tool_calls - tool_calls
-                event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status, "remaining_model_calls": remaining_model_calls, "remaining_tool_calls": remaining_tool_calls}
+                event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico o constructivo reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status, "remaining_model_calls": remaining_model_calls, "remaining_tool_calls": remaining_tool_calls}
                 trace.append(event)
                 if checkpoint_sink is not None:
                     checkpoint_sink(GeneralAutonomousCheckpoint(
@@ -760,12 +1083,17 @@ def run_general_autonomous(
                         trace_event=event,
                     ))
                 if remaining_model_calls >= 2 and remaining_tool_calls >= 2:
+                    directives = _semantic_repair_directives(
+                        args.unresolved,
+                        component_ids={item.id for item in args.components},
+                    )
                     repair_output = {
                         "ok": True,
                         "status": "repair_requested",
                         "unresolved": args.unresolved,
+                        "semantic_repair_directives": directives,
                         "construction_validation": construction_validation.model_dump(mode="json"),
-                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
+                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Conserva componentes y relaciones respaldados; aplica solo las directivas semánticas exactas anunciadas y corrige los fallos constructivos deterministas. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
                     }
                     if construction_validation.status == "invalid":
                         repair_output["instruction"] = (

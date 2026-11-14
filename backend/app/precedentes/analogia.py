@@ -253,15 +253,25 @@ def presupuestar_por_analogia(
         {**objetivo.model_dump(), "currency": moneda}
     )
 
+    # Recuperar el pool elegible acotado por el propio almacén. ``estimate``
+    # puede descartar un comparable por drivers incompletos; esos descartes no
+    # deben consumir el ``limite`` de comparables válidos solicitado.
+    limite_pool = (
+        store.semantic_candidate_limit
+        if solicitud.metodo_recuperacion == "semantic"
+        else store.max_records
+    )
     respuesta = store.find_comparables(
         objetivo,
-        limit=solicitud.limite,
+        limit=limite_pool,
         retrieval_method=solicitud.metodo_recuperacion,
         include_synthetic=solicitud.incluir_sinteticos,
     )
     validos: list[ComparablePresupuesto] = []
     excluidos: list[ComparableExcluido] = []
+    comparables_examinados = 0
     for comparable in respuesta.items:
+        comparables_examinados += 1
         registro: HistoricalRecord = comparable.record
         motivos = _motivos_previos(registro, moneda)
         coste: float | None = None
@@ -316,6 +326,8 @@ def presupuestar_por_analogia(
                 fecha=registro.provenance.source_date,
             )
         )
+        if len(validos) == solicitud.limite:
+            break
 
     validos_t = tuple(validos)
     avisos = _avisos_de_origen(validos_t, solicitud.metodo_recuperacion)
@@ -360,7 +372,7 @@ def presupuestar_por_analogia(
         coste_calculado=solicitud.coste_calculado,
         moneda=moneda,
         metodo_recuperacion=solicitud.metodo_recuperacion,
-        comparables_recuperados=len(respuesta.items),
+        comparables_recuperados=comparables_examinados,
         minimo_comparables=solicitud.minimo_comparables,
         comparables=validos_t,
         excluidos=tuple(excluidos),

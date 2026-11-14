@@ -3,6 +3,26 @@ from __future__ import annotations
 import math
 
 from backend.app.contratos.modelos import ComponentProposal, DecompositionScenario, DrawingExtraction, ExplanationBundle, FormulaExplanation, PieceExplanation, Result
+from backend.app.validador.plausibilidad import evaluate_deflection_plausibility
+
+
+def _with_deflection_warnings(bundle: ExplanationBundle, result: Result) -> ExplanationBundle:
+    if not result.pieces:
+        return bundle
+    try:
+        findings = evaluate_deflection_plausibility(result.pieces)
+    except (FileNotFoundError, ValueError):
+        return bundle
+    deflection_warnings = tuple(
+        f"{finding['code']}: {finding['message']}"
+        for finding in findings
+        if finding["status"] == "warning" and finding.get("code")
+    )
+    if not deflection_warnings:
+        return bundle
+    return bundle.model_copy(
+        update={"warnings": tuple(dict.fromkeys((*bundle.warnings, *deflection_warnings)))}
+    )
 
 
 def explain_proposal(extraction: DrawingExtraction, scenario: DecompositionScenario, proposal: ComponentProposal) -> PieceExplanation:
@@ -19,7 +39,7 @@ def explain_proposal(extraction: DrawingExtraction, scenario: DecompositionScena
 
 def explain_result(extraction: DrawingExtraction, result: Result) -> ExplanationBundle:
     if result.input_semantics == "separated_part_views" and result.part_analysis is not None:
-        return _explain_parts_result(result)
+        return _with_deflection_warnings(_explain_parts_result(result), result)
     proposals = {item.id: item for scenario in result.scenarios for item in scenario.components}
     observations = {item.id: item for item in extraction.observations}
     pieces: list[PieceExplanation] = []
@@ -40,7 +60,10 @@ def explain_result(extraction: DrawingExtraction, result: Result) -> Explanation
         unknown_fields = tuple(sorted(field for field, state in piece.field_states.items() if state == "unknown"))
         pieces.append(PieceExplanation(piece_id=piece.id, proposal_id=piece.proposal_id, role=piece.role, source_entity_ids=proposal.source_entity_ids, source_contour_ids=piece.source_contour_ids, evidence_ids=piece.evidence_ids, dimension_ids=dimension_ids, measurements={"quantity": piece.quantity, "length_mm": piece.length_mm, "width_mm": piece.width_mm, "thickness_mm": piece.thickness_mm}, formulas=formulas, premises=tuple(premises), unknown_fields=unknown_fields, field_states=piece.field_states))
     warnings = ("result_has_unresolved_fields",) if any(item.unknown_fields for item in pieces) else ()
-    return ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(pieces), warnings=warnings)
+    return _with_deflection_warnings(
+        ExplanationBundle(run_id=result.run_id, result_revision=result.result_revision, pieces=tuple(pieces), warnings=warnings),
+        result,
+    )
 
 
 def _explain_parts_result(result: Result) -> ExplanationBundle:

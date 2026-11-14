@@ -58,18 +58,6 @@ export function tableResourcesReady(workspace, snapshot) {
   );
 }
 
-export function publicFeatureAvailability(config = {}) {
-  const history = config.capabilities?.history?.available !== false;
-  const semantic = Boolean((config.semantic ?? config.capabilities?.semantic)?.available);
-  const publicCad = config.environment === "production" && config.authenticated === false && !history;
-  return {
-    history,
-    library: history,
-    semantic,
-    publicCad,
-    sessionLabel: publicCad ? "Acceso público · CAD disponible" : null,
-  };
-}
 export function tableDiagnosticLabel(value) {
   const raw = String(value ?? "");
   const missing = raw.match(/^profile_measure_unknown:([a-z_]+)$/);
@@ -123,7 +111,7 @@ export function presentLibraryDifferences(differences = []) {
     const label = LIBRARY_FIELD_LABELS[field];
     if (label) summary.push(`${label}: ${libraryValue(difference.query_value, true)} ↔ ${libraryValue(difference.candidate_value, true)} mm`);
     else if (field === "components") summary.push("Cambios en componentes");
-    else summary.push(`Cambio en ${field}`);
+    else if (!/^(part_features\[\d+\]|components\.)/.test(field)) summary.push(`Cambio en ${field}`);
     technical.push(`${field}: ${libraryValue(difference?.query_value)} ↔ ${libraryValue(difference?.candidate_value)}`);
   });
   if (technical.length && !summary.length) summary.push("Datos técnicos de comparación disponibles");

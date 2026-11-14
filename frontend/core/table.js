@@ -5,7 +5,7 @@ const SHEET_FORMATS = new Set(["svg", "dxf"]);
 
 export function tableRunOptions(mode, templateId = null) {
   if (mode === "live") return { table_profile: TABLE_PROFILE, proposal_mode: "model_generated" };
-  if (mode === "recorded_replay") return { table_profile: TABLE_PROFILE, proposal_mode: "none" };
+  if (mode === "recorded_replay") return { table_profile: TABLE_PROFILE, proposal_mode: "model_generated" };
   if (!TABLE_TEMPLATES.has(templateId)) throw new TypeError("Selecciona una plantilla de catálogo válida.");
   return { table_profile: TABLE_PROFILE, proposal_mode: "catalog_baseline", table_template_id: templateId };
 }
@@ -16,6 +16,10 @@ export function artifactRequestIdentity({ runId, revision, programHash, sheetId,
 
 export function tableExportFormat(format) {
   return format === "csv" ? "table_cutlist" : format;
+}
+
+export function componentDrawingSheet(manifest, componentId) {
+  return manifest?.byKind?.components?.find((sheet) => sheet.componentId === componentId) ?? null;
 }
 
 const ROLE_QUANTITY = Object.freeze({ tabletop: 1, side_support: 2, corner_support: 4 });

@@ -115,6 +115,8 @@ def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path,
     assert cost.json()["data"]["grand_total_eur"] is None
     stored = client.get(f"/api/v1/runs/{run_id}/table-costs", params={"result_revision": 2})
     assert stored.status_code == 200 and stored.json()["data"] == cost.json()["data"]
+    reloaded = client.get(f"/api/v1/runs/{run_id}").json()["data"]
+    assert reloaded["estimate"] == cost.json()["data"]
     exported = client.get(f"/api/v1/runs/{run_id}/exports", params={"format": "json"})
     assert exported.status_code == 200
     bundle = exported.json()
@@ -194,3 +196,12 @@ def test_live_model_generated_table_program_can_be_reviewed_to_completion(tmp_pa
     assert reviewed.status_code == 201, reviewed.text
     assert reviewed.json()["data"]["state"] == "completed"
     assert reviewed.json()["data"]["evaluated_table_program"]["state"] == "completed"
+
+
+def test_library_rejects_unreviewed_table_without_server_error(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    created = _create_baseline(client)
+    response = client.post(f"/api/v1/runs/{created['run']['id']}/library", json={"result_revision":1,"label":"Unreviewed demo","embedding_mode":"offline"})
+    assert response.status_code == 409, response.text
+    response = client.post(f"/api/v1/runs/{created['run']['id']}/similarity", json={"result_revision":1,"mode":"geometric"})
+    assert response.status_code == 409, response.text

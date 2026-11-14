@@ -1,6 +1,23 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { cameraZoomPosition, normaliseScene, sceneMeshCenter } from "../core/scene.js";
+import { cameraZoomPosition, normaliseScene, sceneForDisplayUp, sceneMeshCenter, sceneMeshTransform } from "../core/scene.js";
+
+export function applySceneMeshTransform(mesh, item, Matrix4Class = THREE.Matrix4) {
+  const { center, rotationMatrix: r } = sceneMeshTransform(item);
+  mesh.position.set(...center);
+  mesh.setRotationFromMatrix(new Matrix4Class().set(
+    r[0], r[1], r[2], 0,
+    r[3], r[4], r[5], 0,
+    r[6], r[7], r[8], 0,
+    0, 0, 0, 1,
+  ));
+}
+
+export function sceneSelectionKind(item, selection = {}) {
+  if (selection.occurrenceKey && item.key === selection.occurrenceKey) return "occurrence";
+  if (item.pieceId === selection.pieceId || item.proposalId === selection.pieceId) return "component";
+  return "none";
+}
 
 export function observeContainerSize(root, resize, ResizeObserverClass = globalThis.ResizeObserver) {
   resize();
@@ -27,6 +44,7 @@ export class SceneViewer {
   constructor(root, { onSelect = () => {} } = {}) {
     this.root = root;
     this.onSelect = onSelect;
+    this.displayUpAxis = "y";
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xfffcf6);
     this.camera = new THREE.PerspectiveCamera(40, 1, 1, 50000);
@@ -57,17 +75,24 @@ export class SceneViewer {
   }
 
   setScene(raw) {
-    this.model = normaliseScene(raw);
+    this.rawScene = raw;
+    this.model = sceneForDisplayUp(normaliseScene(raw),this.displayUpAxis);
     this.clearGroup();
-    const material = () => new THREE.MeshStandardMaterial({ color: 0xb9c2c9, roughness: .72, metalness: 0, transparent: true, opacity: .94 });
+    const material = () => new THREE.MeshStandardMaterial({ color: 0xb9c2c9, roughness: .72, metalness: 0, transparent: true, opacity: .94, side: THREE.DoubleSide });
     this.model.objects.forEach((item) => {
       const [width, height, depth] = item.dimensions;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material());
-      mesh.position.set(...sceneMeshCenter(item)); mesh.userData = item;
+      const geometry=item.renderKind==="surface"?new THREE.PlaneGeometry(width,height):new THREE.BoxGeometry(width,height,depth);
+      const mesh = new THREE.Mesh(geometry, material());
+      applySceneMeshTransform(mesh, item); mesh.userData = item;
       const edges = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: 0x344048 }));
       mesh.add(edges); this.group.add(mesh);
     });
     this.fit(); this.draw(); return this.model;
+  }
+
+  setDisplayUpAxis(axis, refresh = true) {
+    this.displayUpAxis=["x","y","z"].includes(axis)?axis:"y";
+    if(refresh&&this.rawScene)this.setScene(this.rawScene);
   }
 
   setExploded(exploded) {
@@ -80,8 +105,11 @@ export class SceneViewer {
     this.draw();
   }
 
-  select(pieceId) {
-    this.group.children.forEach((mesh) => { mesh.material.color.set(mesh.userData.pieceId === pieceId || mesh.userData.proposalId === pieceId ? 0x4c67ff : 0xb9c2c9); });
+  select(pieceId, occurrenceKey = null) {
+    this.group.children.forEach((mesh) => {
+      const kind = sceneSelectionKind(mesh.userData, { pieceId, occurrenceKey });
+      mesh.material.color.set(kind === "occurrence" ? 0x4c67ff : kind === "component" ? 0x91a0ff : 0xb9c2c9);
+    });
     this.draw();
   }
 

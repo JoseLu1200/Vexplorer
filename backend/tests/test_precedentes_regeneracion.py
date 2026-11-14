@@ -4,6 +4,7 @@ import hashlib
 import sqlite3
 from pathlib import Path
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -18,6 +19,8 @@ from backend.app.semantic.embeddings import EmbeddingResult
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
 URL = f"{PREFIJO_API}/embeddings/regenerar"
+ROTAR = f"{PREFIJO_API}/embeddings/espacio/rotar"
+REFERENCIA = f"{PREFIJO_API}/embeddings/espacio"
 RELOJ = "2026-11-14T00:00:00+00:00"
 
 
@@ -25,13 +28,16 @@ class ProveedorFalso:
     model = "modelo-falso"
     dimensions = 4
 
-    def __init__(self) -> None:
+    def __init__(self, deriva: float = 0.0) -> None:
         self.llamadas = 0
+        self.deriva = deriva
 
     def embed(self, text: str) -> EmbeddingResult:
         self.llamadas += 1
         digest = hashlib.sha256(text.encode("utf-8")).digest()
-        return EmbeddingResult(vector=tuple(1.0 + digest[index] / 255 for index in range(4)), model=self.model, dimensions=4)
+        vector = [1.0 + digest[index] / 255 for index in range(4)]
+        vector[0] += self.deriva
+        return EmbeddingResult(vector=tuple(vector), model=self.model, dimensions=4)
 
 
 def _entorno(tmp_path: Path, monkeypatch, proveedor=None) -> tuple[TestClient, TestClient]:
@@ -213,4 +219,97 @@ def test_regeneraciones_concurrentes_dan_409(tmp_path: Path, monkeypatch) -> Non
     hilo.join(5)
     assert segunda.status_code == 409 and segunda.json()["error"]["code"] == "operacion_en_curso"
     assert simulada.status_code == 200
+    assert respuestas[0].status_code == 200
+
+
+def test_rotar_invalida_cache_y_habilita_regeneracion_normal(tmp_path: Path, monkeypatch) -> None:
+    proveedor = ProveedorFalso()
+    principal, cliente = _entorno(tmp_path, monkeypatch, proveedor)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id, 2)
+    cliente.post(URL, json={"simular": False})
+    repositorio = principal.app.state.repository
+    item = repositorio.get_library_item(run_id)
+    vector_anterior = repositorio.get_embedding(
+        item.embedding.cache_key,
+        item.embedding.model,
+        item.embedding.dimensions,
+        item.embedding.descriptor_version,
+    )
+    assert cliente.post(f"{REFERENCIA}/verificar").status_code == 200
+    derivado = _router(principal, tmp_path, ProveedorFalso(deriva=0.5))
+
+    rotado = derivado.post(ROTAR)
+
+    assert rotado.status_code == 200
+    assert rotado.json()["data"]["embeddings_invalidados"] == 1
+    with pytest.raises(KeyError):
+        repositorio.get_embedding(
+            item.embedding.cache_key,
+            item.embedding.model,
+            item.embedding.dimensions,
+            item.embedding.descriptor_version,
+        )
+    simulado = derivado.post(URL, json={}).json()["data"]
+    assert simulado["total_obsoletos"] == 1
+    assert simulado["elementos"][0]["motivos"] == ["embedding_ausente"]
+    derivado.post(URL, json={"simular": False})
+    vector_nuevo = repositorio.get_embedding(
+        item.embedding.cache_key,
+        item.embedding.model,
+        item.embedding.dimensions,
+        item.embedding.descriptor_version,
+    )
+    assert vector_nuevo != vector_anterior
+
+
+def test_fallo_al_invalidar_no_rota_referencia_ni_expone_detalle(tmp_path: Path, monkeypatch) -> None:
+    principal, cliente = _entorno(tmp_path, monkeypatch, ProveedorFalso())
+    assert cliente.post(f"{REFERENCIA}/verificar").status_code == 200
+    referencia_original = cliente.get(REFERENCIA).json()["data"][0]["huella_id"]
+
+    def falla_invalidacion(modelo: str, dimensiones: int) -> int:
+        raise RuntimeError("ruta-secreta-de-la-base")
+
+    monkeypatch.setattr(
+        principal.app.state.repository,
+        "invalidate_embeddings",
+        falla_invalidacion,
+        raising=False,
+    )
+    fallido = _router(principal, tmp_path, ProveedorFalso()).post(ROTAR)
+
+    assert fallido.status_code == 500
+    assert fallido.json()["error"]["code"] == "invalidacion_embeddings_fallida"
+    assert "ruta-secreta" not in fallido.text
+    assert cliente.get(REFERENCIA).json()["data"][0]["huella_id"] == referencia_original
+
+
+def test_rotacion_y_regeneracion_comparten_exclusion_mutua(tmp_path: Path, monkeypatch) -> None:
+    import threading
+
+    dentro, soltar = threading.Event(), threading.Event()
+
+    class ProveedorLentoUnaVez(ProveedorFalso):
+        def embed(self, text: str) -> EmbeddingResult:
+            if not dentro.is_set():
+                dentro.set()
+                soltar.wait(5)
+            return super().embed(text)
+
+    proveedor = ProveedorLentoUnaVez()
+    principal, cliente = _entorno(tmp_path, monkeypatch, proveedor)
+    _guardar(principal, _run_revisado(principal, "a"), 2)
+    respuestas = []
+    hilo = threading.Thread(
+        target=lambda: respuestas.append(cliente.post(URL, json={"simular": False}))
+    )
+    hilo.start()
+    assert dentro.wait(5)
+    rotacion = cliente.post(ROTAR)
+    soltar.set()
+    hilo.join(5)
+
+    assert rotacion.status_code == 409
+    assert rotacion.json()["error"]["code"] == "operacion_en_curso"
     assert respuestas[0].status_code == 200

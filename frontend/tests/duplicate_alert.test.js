@@ -1,11 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import {
   DEFAULT_NEAR_DUPLICATE_THRESHOLD,
   evaluateDuplicatePrecedent,
   formatDuplicatePrecedentBanner,
 } from "../core/duplicate_alert.js";
+
+const appSource = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
 test("DEFAULT_NEAR_DUPLICATE_THRESHOLD defaults to 0.97", () => {
   assert.equal(DEFAULT_NEAR_DUPLICATE_THRESHOLD, 0.97);
@@ -89,4 +92,15 @@ test("formatDuplicatePrecedentBanner formats Spanish copy and link metadata", ()
   assert.equal(formatted.linkText, "Abrir Mesa comedor 200x100 (rev. 4)");
   assert.equal(formatted.linkUrl, "?run=run-prev-9");
   assert.equal(formatted.scoreText, "0.99");
+});
+
+test("starting another document clears and invalidates the previous duplicate alert", () => {
+  const resetBody = appSource.match(/function resetRunUi\(\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(resetBody, /duplicateFence\.invalidate\(\)/);
+  assert.match(resetBody, /hideDuplicatePrecedentBanner\(\)/);
+});
+
+test("automatic duplicate alert reuses the library label for the matched item", () => {
+  const checkBody = appSource.match(/async function checkDuplicatePrecedent\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(checkBody, /state\.libraryItems\.get\(match\.library_item_id\)\?\.label/);
 });

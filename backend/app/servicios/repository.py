@@ -1006,6 +1006,15 @@ class DemoRepository:
         with self._connect() as db:
             db.execute("INSERT OR REPLACE INTO embedding_cache VALUES (?, ?, ?, ?, ?, ?)", (cache_key, model, dimensions, descriptor_version, json.dumps(validated), _now()))
 
+    def invalidate_embeddings(self, model: str, dimensions: int) -> int:
+        """Elimina atómicamente la caché de un espacio semántico de biblioteca."""
+        with self._connect() as db:
+            cursor = db.execute(
+                "DELETE FROM embedding_cache WHERE model=? AND dimensions=?",
+                (model, dimensions),
+            )
+        return cursor.rowcount
+
     def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]:
         from backend.app.semantic.embeddings import validate_embedding
 

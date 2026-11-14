@@ -18,7 +18,7 @@ from uuid import uuid4
 from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -35,7 +35,7 @@ from backend.app.agente.replay import (
 )
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
+from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -48,6 +48,8 @@ from backend.app.historico.models import ProvisionalDimension, ProvisionalQuanti
 from backend.app.api.history import create_history_router
 from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
 from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
+from backend.app.general_furniture.assembly import validate_assembly
+from backend.app.general_furniture.assembly_live import AssemblyAgentContext, AssemblyAgentLimits, AssemblyLiveError, build_terminal_assembly_attempt, run_general_assembly_agent
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
 from backend.app.general_furniture.visual_evidence import render_visual_evidence
@@ -63,8 +65,9 @@ from backend.app.servicios.reconstruction import reconstruct_parts_scene, recons
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
-from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
-from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_similarity_threshold
+from backend.app.similarity.service import canonical_design_key, deduplicate_designs, geometric_groups, geometric_match, rank_semantic_candidates, semantic_groups
+from backend.app.similarity.publication import PublicLibraryEligibilityError, ensure_public_library_eligible
+from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_near_duplicate_threshold, resolve_similarity_threshold
 from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
 from backend.app.operacion.jobs import BoundedJobExecutor
 from backend.app.operacion.public_access import PublicAdmissionStore
@@ -161,10 +164,24 @@ class EstimateRequest(RequestModel):
     result_revision: int = Field(gt=0)
 
 
+class LibraryPublicationRequest(RequestModel):
+    source_kind: Literal["real_furniture"]
+    source_reference: str = Field(min_length=1, max_length=500)
+    approved_for_public_library: Literal[True]
+
+    @field_validator("source_reference")
+    @classmethod
+    def source_reference_is_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("source reference cannot be blank")
+        return value.strip()
+
+
 class LibrarySaveRequest(RequestModel):
     result_revision: int = Field(gt=0)
     label: str = Field(min_length=1, max_length=120)
     embedding_mode: Literal["offline", "openai"]
+    publication: LibraryPublicationRequest | None = None
 
 
 class SimilarityRequest(RequestModel):
@@ -174,12 +191,15 @@ class SimilarityRequest(RequestModel):
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
     min_score: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     include_abstention: bool = False
+    threshold_kind: Literal["similarity", "near_duplicate"] = "similarity"
+    include_summary: bool = False
 
 
 class GroupRequest(RequestModel):
     mode: Literal["geometric", "semantic"]
     threshold: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
+    include_summary: bool = False
 
 
 class TableCostRequest(RequestModel):
@@ -195,6 +215,11 @@ class PdfPageSelectionRequest(RequestModel):
     mm_per_pdf_point: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     confirmed_by: str | None = Field(default=None, min_length=1, max_length=120)
     reason: str = Field(min_length=1, max_length=500)
+
+
+class GeneralAssemblyRetryRequest(RequestModel):
+    base_proposal_revision: int = Field(gt=0)
+    base_review_revision: int = Field(gt=0)
 
 
 def _ok(data, status_code: int = 200):
@@ -235,7 +260,7 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
 
 
-def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
+def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None, general_assembly_provider=None) -> FastAPI:
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
@@ -279,6 +304,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
         general_review_max_semantic_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2"))
         general_review_max_output_tokens = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS", "16384"))
+        general_assembly_max_calls = int(os.getenv("VEXPLORER_GENERAL_ASSEMBLY_MAX_CALLS", "5"))
+        general_assembly_timeout_s = float(os.getenv("VEXPLORER_GENERAL_ASSEMBLY_TIMEOUT_SECONDS", "180"))
     except ValueError as exc:
         raise ValueError("invalid_numeric_production_limit") from exc
     if max_storage_bytes < MAX_UPLOAD_BYTES:
@@ -289,6 +316,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         raise ValueError("invalid_public_live_quota")
     if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 0 <= general_review_max_semantic_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
         raise ValueError("invalid_general_review_policy")
+    if not 1 <= general_assembly_max_calls <= 5 or not 1 <= general_assembly_timeout_s <= 180:
+        raise ValueError("invalid_general_assembly_policy")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
     staging_dir = root / ".document-staging"
@@ -325,6 +354,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         general_review_provider = agent_provider
     if general_review_provider is None and review_settings.available:
         general_review_provider = OpenAIResponsesProvider(review_settings, instructions=GENERAL_AUTO_REVIEW_PROMPT)
+    assembly_model = os.getenv("VEXPLORER_GENERAL_ASSEMBLY_MODEL") or settings.model
+    if general_assembly_provider is None and settings.available:
+        assembly_settings = ProviderSettings(
+            api_key=settings.api_key,
+            model=assembly_model,
+            base_url=settings.base_url,
+            max_output_tokens=general_review_max_output_tokens,
+            vision_enabled=False,
+        )
+        general_assembly_provider = OpenAIResponsesProvider(
+            assembly_settings,
+            instructions=(
+                "Reconstruye montaje ortogonal solo con referencias geométricas provistas. "
+                "Usa herramientas nativas, evalúa y corrige; nunca inventes coordenadas libres."
+            ),
+        )
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         yield
@@ -470,6 +515,111 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             previous_review=previous_review,
             checkpoint_sink=checkpoint_sink,
         )
+
+    def execute_general_assembly(
+        run_id: str,
+        proposal_revision: int,
+        review_revision: int,
+        cancelled=None,
+        cancellation_job_id: str | None = None,
+    ) -> GeneralAssemblyAttempt:
+        if general_assembly_provider is None:
+            raise RuntimeError("general_assembly_unavailable")
+        record = general_furniture_repository.get(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
+        if (
+            record is None
+            or record.review is None
+            or record.proposal_revision != proposal_revision
+            or record.review_revision != review_revision
+        ):
+            raise ValueError("general_assembly_revision_conflict")
+        context = general_furniture_context(run_id)
+        latest = general_furniture_repository.get_assembly_attempt(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
+        base_revision = latest.assembly_revision if latest is not None else 0
+        agent_context = AssemblyAgentContext(
+            run_id=run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+            extraction=context.extraction,
+            review=record.review,
+            visual_pages=context.visual_pages,
+        )
+
+        def persist_attempt(attempt: GeneralAssemblyAttempt) -> None:
+            general_furniture_repository.save_assembly_attempt(
+                run_id,
+                attempt,
+                base_assembly_revision=attempt.assembly_revision - 1,
+                cancellation_job_id=cancellation_job_id,
+            )
+
+        try:
+            outcome = run_general_assembly_agent(
+                agent_context,
+                provider=general_assembly_provider,
+                evaluator=lambda candidate: validate_assembly(
+                    context.extraction, record.review, candidate
+                ),
+                base_assembly_revision=base_revision,
+                limits=AssemblyAgentLimits(
+                    max_model_calls=general_assembly_max_calls,
+                    timeout_s=general_assembly_timeout_s,
+                ),
+                attempt_sink=persist_attempt,
+                cancelled=cancelled,
+            )
+            repository.append_event(run_id, "general_assembly_completed", {
+                "proposal_revision": proposal_revision,
+                "review_revision": review_revision,
+                "assembly_revision": outcome.attempt.assembly_revision,
+                "status": outcome.attempt.report.status,
+                "model_calls": outcome.model_calls,
+                "tool_calls": outcome.tool_calls,
+            })
+            return outcome.attempt
+        except Exception as exc:
+            assembly_error_code = (
+                exc.code
+                if isinstance(exc, AssemblyLiveError)
+                else str(exc)
+                if str(exc).startswith("assembly_")
+                else "assembly_runtime_failed"
+            )
+            latest_after = general_furniture_repository.get_assembly_attempt(
+                run_id,
+                proposal_revision=proposal_revision,
+                review_revision=review_revision,
+            )
+            terminal_base = (
+                latest_after.assembly_revision if latest_after is not None else base_revision
+            )
+            terminal = build_terminal_assembly_attempt(
+                agent_context,
+                assembly_revision=terminal_base + 1,
+                attempt_index=terminal_base + 1,
+                model=assembly_model or f"injected:{type(general_assembly_provider).__name__}",
+                error=exc,
+            )
+            persist_attempt(terminal)
+            repository.append_event(run_id, "general_assembly_failed", {
+                "proposal_revision": proposal_revision,
+                "review_revision": review_revision,
+                "code": assembly_error_code,
+                "model_calls": exc.model_calls if isinstance(exc, AssemblyLiveError) else 0,
+                "tool_calls": exc.tool_calls if isinstance(exc, AssemblyLiveError) else 0,
+                "provider_status_code": exc.provider_status_code if isinstance(exc, AssemblyLiveError) else None,
+                "provider_code": exc.provider_code if isinstance(exc, AssemblyLiveError) else None,
+                "provider_incomplete_reason": exc.provider_incomplete_reason if isinstance(exc, AssemblyLiveError) else None,
+            })
+            raise
 
     def record_general_live_events(run_id: str, proposal_revision: int, outcome) -> None:
         for item in outcome.trace:
@@ -698,6 +848,14 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     return response
         return await call_next(request)
 
+    @app.middleware("http")
+    async def revalidate_unhashed_frontend_code(request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if request.method in {"GET", "HEAD"} and not path.startswith("/api/") and (path == "/" or Path(path).suffix.lower() in {".html", ".js", ".css"}):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @app.get("/health")
     @app.get("/api/v1/health")
     def health():
@@ -769,7 +927,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "history": {"available": not public_production and _module_available("backend.app.api.history")},
             "evaluation": {"available": False, "reason": "offline_private_reference"},
         }
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "library_requires_real_reviewed": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -859,6 +1017,106 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         auto_review_event_sink=record_general_auto_review_events if general_review_provider is not None else None,
         direct_auto_review_enabled=False,
     ))
+
+    @app.post("/api/v1/runs/{run_id}/general/assembly/retry")
+    def retry_general_assembly(
+        run_id: str,
+        body: GeneralAssemblyRetryRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
+        record = general_furniture_repository.get(run_id)
+        if record is None or record.review is None:
+            return _error(404, "general_review_not_found", "No existe una revisión de BOM para montar.")
+        if (
+            record.proposal_revision != body.base_proposal_revision
+            or record.review_revision != body.base_review_revision
+        ):
+            return _error(409, "general_assembly_revision_conflict", "La revisión cambió antes del reintento.")
+        if general_assembly_provider is None:
+            return _error(503, "general_assembly_unavailable", "El proveedor de montaje no está disponible.", True)
+        if environment == "production" and not idempotency_key:
+            return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
+        if idempotency_key is not None and not 1 <= len(idempotency_key) <= 128:
+            return _error(422, "invalid_idempotency_key", "Idempotency-Key no es válido.")
+        request_json = json.dumps({
+            "kind": "general_assembly_retry",
+            "run_id": run_id,
+            **body.model_dump(mode="json"),
+        }, sort_keys=True, separators=(",", ":"))
+        if idempotency_key is not None:
+            try:
+                replay = repository.get_idempotent_job(
+                    request_json,
+                    actor=http_request.state.actor,
+                    idempotency_key=idempotency_key,
+                )
+            except ValueError as exc:
+                return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+            if replay is not None:
+                return _ok(replay, 202)
+        if not job_executor.reserve():
+            return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
+        job_id = f"job-{uuid4().hex}"
+        try:
+            job, created = repository.reserve_job(
+                job_id,
+                request_json,
+                actor=http_request.state.actor,
+                idempotency_key=idempotency_key,
+            )
+        except ValueError as exc:
+            job_executor.release()
+            return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+        if not created:
+            job_executor.release()
+            return _ok(job, 202)
+
+        def process_assembly_retry() -> None:
+            try:
+                repository.start_job(job_id)
+                execute_general_assembly(
+                    run_id,
+                    body.base_proposal_revision,
+                    body.base_review_revision,
+                    cancelled=lambda: general_furniture_repository.is_assembly_cancelled(
+                        job_id, run_id
+                    ),
+                    cancellation_job_id=job_id,
+                )
+                repository.finish_job(job_id, run_id=run_id)
+            except Exception as exc:
+                repository.finish_job(job_id, run_id=run_id, error={
+                    "code": exc.code if isinstance(exc, AssemblyLiveError) else "general_assembly_failed",
+                    "message": "El reintento de montaje no terminó con una escena validada.",
+                    "retryable": True,
+                    "run_id": run_id,
+                })
+
+        job_executor.submit_reserved(process_assembly_retry)
+        return _ok(job, 202)
+
+    @app.post("/api/v1/runs/{run_id}/general/assembly/retry/{job_id}/cancel")
+    def cancel_general_assembly_retry(run_id: str, job_id: str):
+        try:
+            job = repository.get_job(job_id)
+            request_payload = json.loads(repository.get_job_request(job_id))
+        except (KeyError, json.JSONDecodeError):
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        if (
+            request_payload.get("kind") != "general_assembly_retry"
+            or request_payload.get("run_id") != run_id
+        ):
+            return _error(404, "general_assembly_job_not_found", "El trabajo no pertenece a este montaje.")
+        if job["state"] not in {"queued", "running"}:
+            return _error(409, "general_assembly_job_not_cancellable", "El trabajo ya terminó.")
+        general_furniture_repository.request_assembly_cancellation(
+            job_id, run_id, datetime.now(UTC).isoformat()
+        )
+        repository.append_event(run_id, "general_assembly_cancel_requested", {
+            "job_id": job_id,
+        })
+        return _ok({"job_id": job_id, "cancel_requested": True}, 202)
 
     @app.post("/api/v1/documents")
     async def upload_document(http_request: Request, file: UploadFile = File(...)):
@@ -1410,6 +1668,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "error": {
                         "code": "general_live_provider_failed",
                         "reason_code": exc.code,
+                        "provider_status_code": exc.provider_status_code,
+                        "provider_code": exc.provider_code,
+                        "provider_incomplete_reason": exc.provider_incomplete_reason,
                         "message": "La propuesta general live falló de forma acotada.",
                         "retryable": True,
                         "model_calls": exc.model_calls,
@@ -1491,6 +1752,26 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     run_id, general_auto_outcome.review, general_auto_outcome.derived,
                 )
                 record_general_auto_review_events(run_id, general_auto_outcome)
+                repository.append_event(run_id, "general_assembly_started", {
+                    "proposal_revision": general_auto_outcome.review.proposal_revision,
+                    "review_revision": general_auto_outcome.review.review_revision,
+                })
+                if general_assembly_provider is None:
+                    repository.append_event(run_id, "general_assembly_unavailable", {
+                        "proposal_revision": general_auto_outcome.review.proposal_revision,
+                        "review_revision": general_auto_outcome.review.review_revision,
+                    })
+                else:
+                    try:
+                        execute_general_assembly(
+                            run_id,
+                            general_auto_outcome.review.proposal_revision,
+                            general_auto_outcome.review.review_revision,
+                        )
+                    except Exception:
+                        # Assembly is an independent, retryable phase. Its persisted
+                        # failure never discards the reviewed BOM or the durable run.
+                        pass
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
@@ -1685,7 +1966,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         try:
-            estimate = repository.get_estimate(run_id, result.result_revision).model_dump(mode="json")
+            load_estimate = (
+                repository.get_table_cost_estimate
+                if result.input_semantics == "mounted_orthographic_views"
+                else repository.get_estimate
+            )
+            estimate = load_estimate(run_id, result.result_revision).model_dump(mode="json")
         except KeyError:
             estimate = None
         return _ok({"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json"), "estimate": estimate})
@@ -1840,12 +2126,33 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok([item.model_dump(mode="json") for item in find_comparables(result, limit)])
 
     @app.post("/api/v1/runs/{run_id}/library")
-    def save_to_library(run_id: str, request: LibrarySaveRequest):
+    def save_to_library(run_id: str, request: LibrarySaveRequest, http_request: Request):
         try:
             result = repository.get_result(run_id, request.result_revision)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        descriptor = build_descriptor(result)
+        publication = None
+        if environment == "production":
+            try:
+                run = repository.get_run(run_id)
+                extraction = repository.get_extraction(run_id)
+                manifest = load_document_manifest(run.document_id) if run.document_id is not None else None
+                source_sha256 = (manifest.get("sha256") or manifest.get("source", {}).get("sha256")) if manifest is not None else None
+                ensure_public_library_eligible(result=result, extraction=extraction, document_sha256=source_sha256, has_attestation=request.publication is not None)
+            except PublicLibraryEligibilityError as exc:
+                code = str(exc)
+                status_code = 422 if code == "public_library_attestation_required" else 409
+                return _error(status_code, code, "La revisión no cumple la política de publicación de mobiliario declarado como real y revisado.")
+        if request.publication is not None and result.review is not None:
+            publication = LibraryPublicationProvenance(
+                **request.publication.model_dump(),
+                attested_by=http_request.state.actor or result.review.reviewer_name,
+                attested_at=datetime.now(UTC).isoformat(),
+            )
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError as exc:
+            return _error(409, str(exc), "Completa la revisión del mueble antes de guardarlo en la biblioteca.")
         embedding = None
         if request.embedding_mode == "openai":
             if semantic_provider is None:
@@ -1869,17 +2176,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             except (ValueError, EmbeddingProviderError) as exc:
                 return _error(409, str(exc), "El caché pertenece a un espacio de embedding incompatible.")
             embedding = EmbeddingMetadata(model=model, dimensions=dimensions, descriptor_version=descriptor.descriptor_version, cache_key=cache_key, status=status)
-        item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding)
+        item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding, publication=publication)
         repository.save_library_item(item)
         return _ok(item.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/library")
-    def list_library(descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None):
+    def list_library(descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None, include_summary: bool = False):
         items = repository.get_library_items()
-        if descriptor_version is None:
-            return _ok([item.model_dump(mode="json") for item in items])
-        selected = [item for item in items if item.descriptor.descriptor_version == descriptor_version]
-        return _ok({"items": [item.model_dump(mode="json") for item in selected], "descriptor_version": descriptor_version, "excluded_count": len(items) - len(selected)})
+        selected = tuple(item for item in items if descriptor_version is None or item.descriptor.descriptor_version == descriptor_version)
+        if descriptor_version is None and not include_summary:
+            return _ok([item.model_dump(mode="json") for item in selected])
+        design_count = len(deduplicate_designs(selected))
+        payload = {"items": [item.model_dump(mode="json") for item in selected], "record_count": len(selected), "design_count": design_count, "duplicate_record_count": len(selected) - design_count}
+        if descriptor_version is not None:
+            payload.update({"descriptor_version": descriptor_version, "excluded_count": len(items) - len(selected)})
+            if not include_summary:
+                payload = {key: payload[key] for key in ("items", "descriptor_version", "excluded_count")}
+        return _ok(payload)
 
     @app.post("/api/v1/runs/{run_id}/similarity")
     def similar(run_id: str, request: SimilarityRequest):
@@ -1887,9 +2200,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             result = repository.get_result(run_id, request.result_revision)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        all_candidates = [item for item in repository.get_library_items() if item.run_id != run_id]
-        descriptor_version = request.descriptor_version or build_descriptor(result).descriptor_version
-        candidates = [item for item in all_candidates if item.descriptor.descriptor_version == descriptor_version]
+        all_candidates = tuple(item for item in repository.get_library_items() if item.run_id != run_id)
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError as exc:
+            return _error(409, str(exc), "Completa la revisión del mueble antes de buscar similares.")
+        if request.descriptor_version is not None and request.descriptor_version != descriptor.descriptor_version:
+            return _error(409, "descriptor_space_incompatible", "La revisión consultada pertenece a otra versión de descriptor.")
+        descriptor_version = request.descriptor_version or descriptor.descriptor_version
+        candidates = tuple(item for item in all_candidates if item.descriptor.descriptor_version == descriptor_version)
         excluded_count = len(all_candidates) - len(candidates)
         semantic_model: str | None = None
         if request.mode == "semantic":
@@ -1899,44 +2218,56 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     raise KeyError(run_id)
                 semantic_model = query.embedding.model
                 query_vector = repository.get_embedding(query.embedding.cache_key, query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version)
-                matches = []
+                candidates_with_vectors = []
                 for item in candidates:
-                    if item.embedding is None:
+                    if item.embedding is None or (item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version) != (query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version):
+                        excluded_count += 1
                         continue
-                    candidate_vector = repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
-                    matches.append(semantic_match(query, query_vector, item, candidate_vector))
+                    try:
+                        candidate_vector = repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
+                    except (KeyError, ValueError, EmbeddingProviderError):
+                        excluded_count += 1
+                        continue
+                    candidates_with_vectors.append((item, candidate_vector))
+                eligible_candidates = tuple(item for item, _ in candidates_with_vectors)
+                matches = list(rank_semantic_candidates(query, query_vector, tuple(candidates_with_vectors)))
             except KeyError:
                 return _error(409, "semantic_embedding_missing", "La revisión no tiene un embedding semántico compatible.")
             except (ValueError, EmbeddingProviderError) as exc:
                 return _error(409, str(exc), "Los embeddings pertenecen a espacios incompatibles o son inválidos.")
-            if candidates and not matches:
-                return _error(409, "embedding_space_incompatible", "No hay candidatos en el mismo espacio de embedding.")
         else:
-            descriptor = build_descriptor(result)
-            matches = [geometric_match(descriptor, item) for item in candidates]
-        matches.sort(key=lambda item: (-item.score, item.library_item_id))
-        if request.include_abstention:
-            threshold = (
-                request.min_score
-                if request.min_score is not None
-                else resolve_similarity_threshold(request.mode, descriptor_version, model=semantic_model)
-            )
-            abstention = evaluate_similarity_abstention(matches, threshold)
-            payload = [item.model_dump(mode="json") for item in abstention.filtered_matches[:request.limit]]
-            return _ok({
-                "matches": payload,
-                "abstained": abstention.abstained,
-                "abstention_reason": abstention.abstention_reason,
-                "threshold_used": abstention.threshold_used,
-                "descriptor_version": descriptor_version,
-                "excluded_count": excluded_count,
+            eligible_candidates = candidates
+            matches = [geometric_match(descriptor, item) for item in deduplicate_designs(candidates)]
+            matches.sort(key=lambda item: (-(item.technical_score or 0.0), -item.score, item.library_item_id))
+        candidate_by_id = {item.id: item for item in eligible_candidates}
+        equivalent_ids_by_key: dict[str, list[str]] = {}
+        for item in eligible_candidates:
+            equivalent_ids_by_key.setdefault(canonical_design_key(item.descriptor), []).append(item.id)
+        matches = [
+            item.model_copy(update={
+                "equivalent_record_ids": tuple(sorted(equivalent_ids_by_key[canonical_design_key(candidate_by_id[item.library_item_id].descriptor)])),
+                "duplicate_record_count": len(equivalent_ids_by_key[canonical_design_key(candidate_by_id[item.library_item_id].descriptor)]) - 1,
             })
-        if request.min_score is not None:
+            for item in matches
+        ]
+        design_count = len(deduplicate_designs(eligible_candidates))
+        abstention = None
+        if request.include_abstention:
+            resolve_search_threshold = resolve_near_duplicate_threshold if request.threshold_kind == "near_duplicate" else resolve_similarity_threshold
+            threshold = request.min_score if request.min_score is not None else resolve_search_threshold(request.mode, descriptor_version, model=semantic_model)
+            abstention = evaluate_similarity_abstention(matches, threshold)
+            matches = list(abstention.filtered_matches)
+        elif request.min_score is not None:
             matches = [item for item in matches if item.score >= request.min_score]
-        payload = [item.model_dump(mode="json") for item in matches[:request.limit]]
-        if request.descriptor_version is not None:
-            return _ok({"matches": payload, "descriptor_version": descriptor_version, "excluded_count": excluded_count})
-        return _ok(payload)
+        match_payload = [item.model_dump(mode="json") for item in matches[:request.limit]]
+        if not request.include_summary and not request.include_abstention and request.descriptor_version is None:
+            return _ok(match_payload)
+        response = {"matches": match_payload, "descriptor_version": descriptor_version, "excluded_count": excluded_count}
+        if abstention is not None:
+            response.update({"abstained": abstention.abstained, "abstention_reason": abstention.abstention_reason, "threshold_used": abstention.threshold_used})
+        if request.include_summary:
+            response.update({"record_count": len(eligible_candidates), "design_count": design_count, "duplicate_record_count": len(eligible_candidates) - design_count})
+        return _ok(response)
 
     @app.post("/api/v1/library/groups")
     def groups(request: GroupRequest):
@@ -1967,9 +2298,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             except ValueError as exc:
                 return _error(409, str(exc), "Los descriptores pertenecen a espacios incompatibles.")
         payload = [item.model_dump(mode="json") for item in values]
+        design_count = len(deduplicate_designs(items))
+        response = {"groups": payload, "record_count": len(items), "design_count": design_count, "duplicate_record_count": len(items) - design_count}
         if request.descriptor_version is not None:
-            return _ok({"groups": payload, "descriptor_version": request.descriptor_version, "excluded_count": excluded_count})
-        return _ok(payload)
+            response.update({"descriptor_version": request.descriptor_version, "excluded_count": excluded_count})
+        if not request.include_summary:
+            if request.descriptor_version is None:
+                return _ok(payload)
+            response = {key: response[key] for key in ("groups", "descriptor_version", "excluded_count")}
+        return _ok(response)
 
     @app.post("/api/v1/runs/{run_id}/estimate")
     def estimate(run_id: str, request: EstimateRequest):

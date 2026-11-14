@@ -148,17 +148,22 @@ def test_sin_clasificar_nunca_se_mezcla() -> None:
     assert resultado.sin_clasificar.grupo == "sin_clasificar"
 
 
-def test_superficie_y_estimacion_de_tableros() -> None:
-    # 2 m² por pieza × 2 unidades + 1 m² = 5 m²; útil = 2,9768 × 0,8 = 2,38144 → 3 tableros.
+def test_cantidad_desconocida_no_entra_en_estimacion_de_tableros() -> None:
+    # Solo las 2 unidades conocidas (4 m²) entran en la estimación. La pieza
+    # ambigua conserva cantidad=None y queda fuera del lote calculado.
     piezas = [
         pieza("P1", "a", largo=2000, ancho=1000, cantidad=2),
         pieza("P2", "b", largo=1000, ancho=1000, cantidad=None),
     ]
-    lote = preparar_lotes(piezas, ConfiguracionLotes()).lotes[0]
-    assert lote.superficie_m2 == 5.0
-    assert lote.unidades == 3 and lote.unidades_con_cantidad_supuesta == 1
-    assert lote.estimacion.es_estimacion is True and lote.estimacion.tableros == 3
+    resultado = preparar_lotes(piezas, ConfiguracionLotes())
+    lote = resultado.lotes[0]
+    assert lote.superficie_m2 == 4.0
+    assert lote.unidades == 2 and lote.unidades_con_cantidad_supuesta == 0
+    assert lote.estimacion.es_estimacion is True and lote.estimacion.tableros == 2
     assert "nesting" in lote.estimacion.nota
+    assert [(item.pieza.pieza_id, item.pieza.cantidad, item.motivo) for item in resultado.sin_clasificar.piezas] == [
+        ("b", None, "cantidad desconocida")
+    ]
     otra = ConfiguracionLotes(
         tablero_largo_mm=2500, tablero_ancho_mm=2000, aprovechamiento=1
     )

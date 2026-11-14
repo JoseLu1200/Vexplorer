@@ -1,7 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import * as table from "../core/table.js";
 
 import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "../core/table.js";
+
+test("row selection opens only the drawing of that component, never the first unrelated sheet", () => {
+  assert.equal(typeof table.componentDrawingSheet, "function");
+  const top = { id: "sheet-top", componentId: "top" };
+  const side = { id: "sheet-side", componentId: "side" };
+  const manifest = { byKind: { components: [top, side] } };
+  assert.equal(table.componentDrawingSheet(manifest, "side"), side);
+  assert.equal(table.componentDrawingSheet(manifest, "top"), top);
+  assert.equal(table.componentDrawingSheet(manifest, "absent"), null);
+  assert.equal(table.componentDrawingSheet(null, "top"), null);
+});
 
 test("table run options keep catalog baseline and live model generation visibly distinct", () => {
   assert.deepEqual(tableRunOptions("geometry_only", "side_supports_v1"), {
@@ -15,7 +27,7 @@ test("table run options keep catalog baseline and live model generation visibly 
   });
   assert.deepEqual(tableRunOptions("recorded_replay"), {
     table_profile: "rectangular_table_v1",
-    proposal_mode: "none",
+    proposal_mode: "model_generated",
   });
 });
 

@@ -16,6 +16,7 @@ from typing import Any
 import numpy as np
 
 from backend.app.contratos.modelos import LibraryItem
+from backend.app.similarity.math_utils import normalize_matrix
 from backend.app.similarity.service import geometric_match
 
 DEFAULT_DB_PATH = Path(".vexplorer-data/vexplorer.sqlite3")
@@ -113,6 +114,7 @@ def suggest_thresholds(
     if overall_stats["count"] == 0:
         return {
             "similarity_threshold": None,
+            "group_threshold": None,
             "near_duplicate_threshold": None,
             "basis": "insufficient_pairs",
         }
@@ -121,17 +123,23 @@ def suggest_thresholds(
         same_p25 = float(same_stats["percentiles"]["p25"])
         same_p90 = float(same_stats["percentiles"]["p90"])
         sim_thresh = _round6(np.clip(0.5 * (diff_p90 + same_p25), 0.0, 1.0))
+        group_thresh = _round6(np.clip(max(sim_thresh, same_p25), 0.0, 1.0))
         near_dup = _round6(np.clip(max(sim_thresh, same_p90), 0.0, 1.0))
         return {
             "similarity_threshold": sim_thresh,
+            "group_threshold": group_thresh,
             "near_duplicate_threshold": near_dup,
             "basis": "same_vs_different_type",
         }
     ref = same_stats if same_stats["count"] > 0 else overall_stats
     sim_thresh = _round6(np.clip(float(ref["percentiles"]["p50"]), 0.0, 1.0))
+    group_thresh = _round6(
+        np.clip(max(sim_thresh, float(ref["percentiles"]["p75"])), 0.0, 1.0)
+    )
     near_dup = _round6(np.clip(max(sim_thresh, float(ref["percentiles"]["p90"])), 0.0, 1.0))
     return {
         "similarity_threshold": sim_thresh,
+        "group_threshold": group_thresh,
         "near_duplicate_threshold": near_dup,
         "basis": "overall_percentiles",
     }
@@ -168,10 +176,12 @@ def pairwise_cosine_scores(
         raise ValueError("invalid embedding matrix")
     if not np.all(np.isfinite(mat)):
         raise ValueError("invalid_embedding: non-finite values")
-    norms = np.linalg.norm(mat, axis=1, keepdims=True)
-    if np.any(norms <= 0.0):
-        raise ValueError("invalid_embedding: zero-norm vector")
-    normed = mat / norms
+    try:
+        normed = normalize_matrix(mat)
+    except ValueError as exc:
+        if str(exc) == "invalid_embedding":
+            raise ValueError("invalid_embedding: zero-norm vector") from exc
+        raise ValueError("invalid embedding matrix") from exc
     sim_matrix = np.clip(normed @ normed.T, -1.0, 1.0)
     idx_i, idx_j = np.triu_indices(mat.shape[0], k=1)
     all_scores = sim_matrix[idx_i, idx_j]
@@ -384,6 +394,31 @@ def calibrate_database(
     }
 
 
+def build_runtime_threshold_config(report: dict[str, Any]) -> dict[str, dict[str, float]]:
+    """Convert a calibration report to the schema consumed by similarity.thresholds."""
+    config: dict[str, dict[str, float]] = {
+        "similarity": {},
+        "group": {},
+        "near_duplicate": {},
+    }
+    for section, mode in (("semantic", "semantic"), ("geometric", "geometric")):
+        for entry in report.get(section, []):
+            descriptor_version = entry["descriptor_version"]
+            key = f"{mode}:{descriptor_version}"
+            if mode == "semantic":
+                key = f"{key}:{entry['model']}"
+            suggested = entry["suggested_thresholds"]
+            for config_kind, suggested_key in (
+                ("similarity", "similarity_threshold"),
+                ("group", "group_threshold"),
+                ("near_duplicate", "near_duplicate_threshold"),
+            ):
+                value = suggested.get(suggested_key)
+                if value is not None:
+                    config[config_kind][key] = float(value)
+    return config
+
+
 def _format_stats_line(label: str, stats: dict[str, Any]) -> str:
     if stats["count"] == 0:
         return f"  {label}: count=0"
@@ -455,12 +490,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Output machine-readable JSON",
     )
+    parser.add_argument(
+        "--thresholds-output",
+        type=Path,
+        default=None,
+        help="Write runtime-compatible similarity thresholds to this JSON file",
+    )
     args = parser.parse_args(argv)
     try:
         report = calibrate_database(args.db, history_db_path=args.history_db)
     except (FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    if args.thresholds_output is not None:
+        try:
+            args.thresholds_output.write_text(
+                json.dumps(build_runtime_threshold_config(report), indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
