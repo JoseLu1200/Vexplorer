@@ -197,7 +197,7 @@ def test_cli_writes_machine_report_without_overwriting_inputs(
     assert json.loads(report.read_text("utf-8"))["utility_pass"] is True
 
 
-def test_preregistered_role_aliases_measure_construction_not_word_choice(
+def test_postfreeze_generic_role_aliases_measure_construction_not_word_choice(
     tmp_path: Path,
 ) -> None:
     build_controls(tmp_path / "public", tmp_path / "private", case_ids=("F01",))
@@ -210,5 +210,119 @@ def test_preregistered_role_aliases_measure_construction_not_word_choice(
     report = evaluate_cad_completion(reference, outcome)
 
     assert report["necessary_piece_types"]["matched"] == 4
-    assert report["role_matching"] == "preregistered_furniture_aliases_v1"
+    assert report["role_matching"] == "postfreeze_generic_furniture_aliases_v2"
     assert report["utility_pass"] is True
+
+
+def test_actual_contract_piece_ids_and_observed_copy_are_adapted_honestly(
+    tmp_path: Path,
+) -> None:
+    build_controls(tmp_path / "public", tmp_path / "private", case_ids=("F03",))
+    reference = json.loads((tmp_path / "private" / "F03.reference.json").read_text("utf-8"))
+    outcome = {
+        "derived": {
+            "package": {
+                "construction": {
+                    "scenario_id": "scenario-source",
+                    "pieces": [
+                        _piece(
+                            "costados_portantes",
+                            2,
+                            (_dimension(1800, "deduced"), _dimension(300, "deduced"), _dimension(18, "deduced")),
+                            sheet="side",
+                        ),
+                        _piece(
+                            "cierres_horizontales",
+                            2,
+                            (_dimension(764, "deduced"), _dimension(300, "deduced"), _dimension(18, "deduced")),
+                            sheet="closures",
+                        ),
+                        _piece(
+                            "estantes_interiores",
+                            4,
+                            (_dimension(764, "deduced"), _dimension(300, "deduced"), _dimension(18, "deduced")),
+                            sheet="shelves",
+                        ),
+                    ],
+                    "sheets": [],
+                },
+                "artifacts": [],
+            }
+        },
+        "latest": {
+            "review": {
+                "construction_validation": {"status": "valid", "constraint_results": []}
+            }
+        },
+    }
+    for piece in outcome["derived"]["package"]["construction"]["pieces"]:
+        piece["piece_id"] = piece.pop("id")
+        piece["component_id"] = piece["piece_id"]
+        for name in ("length", "width", "thickness"):
+            field = piece["dimensions"][name]
+            if field["state"] == "deduced":
+                field["method"] = "observed_copy"
+                field["source_refs"] = ["dimension:source"]
+
+    report = evaluate_cad_completion(reference, outcome)
+
+    assert report["necessary_piece_types"]["matched"] == 3
+    assert report["dimensions"]["correct"] == 9
+    # Four reference fields are source dimensions copied into a semantically
+    # deduced piece assignment; this is compatible, not source confirmation.
+    assert report["dimensions"]["basis_correct"] == 9
+    assert report["piece_drawings"]["with_svg_and_dxf"] == 0
+    assert report["construction_requirements"] == {
+        "satisfied": 0,
+        "required": 1,
+        "missing": ["anti_racking_or_anchoring_detail"],
+    }
+    assert report["utility_pass"] is False
+
+
+def test_incomplete_extra_back_does_not_satisfy_selected_structural_back_scenario(
+    tmp_path: Path,
+) -> None:
+    build_controls(tmp_path / "public", tmp_path / "private", case_ids=("F03",))
+    reference = json.loads((tmp_path / "private" / "F03.reference.json").read_text("utf-8"))
+    outcome = {
+        "package": {
+            "construction": {
+                "scenario_id": "candidate",
+                "validation": {"status": "valid", "constraint_results": []},
+                "pieces": [
+                    _piece(
+                        "side_panel", 2,
+                        (_dimension(1800, "observed"), _dimension(300, "observed"), _dimension(18, "deduced")),
+                        sheet="side",
+                    ),
+                    _piece(
+                        "top_bottom_panel", 2,
+                        (_dimension(764, "deduced"), _dimension(300, "observed"), _dimension(18, "deduced")),
+                        sheet="horizontal",
+                    ),
+                    _piece(
+                        "internal_shelf", 4,
+                        (_dimension(764, "deduced"), _dimension(300, "observed"), _dimension(18, "deduced")),
+                        sheet="shelf",
+                    ),
+                    _piece(
+                        "back_panel", 1,
+                        ({"value_mm": None, "state": "unknown"}, _dimension(800, "deduced"), _dimension(4, "estimated", ranged=True)),
+                        sheet="back",
+                    ),
+                ],
+                "details": [],
+            },
+            "artifacts": [],
+        }
+    }
+
+    report = evaluate_cad_completion(reference, outcome)
+
+    assert report["selected_reference_scenario"] == "thin_structural_back"
+    assert report["construction_requirements"]["satisfied"] == 0
+    assert report["construction_requirements"]["missing"] == [
+        "anti_racking_or_anchoring_detail"
+    ]
+    assert report["utility_pass"] is False

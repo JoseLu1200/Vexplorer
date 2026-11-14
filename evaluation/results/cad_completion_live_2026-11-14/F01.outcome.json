@@ -1,0 +1,1560 @@
+{
+  "fixture": {
+    "name": "F01.dxf",
+    "sha256": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8",
+    "size_bytes": 54508
+  },
+  "job": {
+    "id": "job-db0d650a42214c308632b32e8fb6882b",
+    "state": "succeeded",
+    "run_id": "run-4346ad807a8a4b34a617bd3b3def01d6",
+    "error": null
+  },
+  "source_report_sha256": "8ca1b2c4983cccd82b5d248af8aedc5b5db6a239e40b23aeb4b4e575e09bb481",
+  "derived": {
+    "package": {
+      "construction": {
+        "run_id": "run-4346ad807a8a4b34a617bd3b3def01d6",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "basis_revision": "run:run-4346ad807a8a4b34a617bd3b3def01d6:proposal:1:review:1:scenario:mesa-bastidor-01",
+        "scenario_id": "mesa-bastidor-01",
+        "summary": {
+          "label": "Escenario constructivo mesa-bastidor-01",
+          "component_count": 4,
+          "occurrence_count": 9,
+          "source_refs": [
+            "view-unknown",
+            "observation-view-unknown",
+            "contour-entity-8E",
+            "contour-entity-93",
+            "contour-entity-98",
+            "evidence-contour-entity-98",
+            "dimension-entity-9E",
+            "dimension-entity-BE",
+            "dimension-entity-CE",
+            "contour-entity-8F",
+            "contour-entity-90",
+            "contour-entity-94",
+            "contour-entity-95",
+            "contour-entity-99",
+            "contour-entity-9A",
+            "contour-entity-9B",
+            "contour-entity-9C",
+            "evidence-contour-entity-99",
+            "evidence-contour-entity-9A",
+            "evidence-contour-entity-9B",
+            "evidence-contour-entity-9C",
+            "dimension-entity-AE",
+            "contour-entity-91",
+            "evidence-contour-entity-91",
+            "contour-entity-96",
+            "evidence-contour-entity-96"
+          ],
+          "top_decision_ids": [
+            "projection-identity",
+            "closed-frame",
+            "thickness-choice"
+          ],
+          "warnings": [
+            {
+              "severity": "info",
+              "code": "assembly_placements_unavailable",
+              "message": "No se dibuja montaje: el escenario no declara posiciones 2D.",
+              "component_refs": [
+                "top",
+                "legs",
+                "long-aprons",
+                "short-aprons"
+              ],
+              "field_refs": [],
+              "consequence": "provisional_only"
+            }
+          ]
+        },
+        "pieces": [
+          {
+            "piece_id": "top",
+            "component_id": "top",
+            "scenario_id": "mesa-bastidor-01",
+            "label": "Tapa rectangular única",
+            "role": "superficie_horizontal",
+            "quantity": {
+              "value": 1,
+              "min_value": 1,
+              "max_value": 1,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:identity",
+                "evidence-contour-entity-8E",
+                "evidence-contour-entity-93",
+                "evidence-contour-entity-98"
+              ],
+              "assumption_refs": [
+                "premise:identity",
+                "contour:contour-entity-98",
+                "contour:contour-entity-8E",
+                "contour:contour-entity-93"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:mesa-bastidor-01:top:1"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [
+                "contour-entity-98"
+              ],
+              "basis_refs": [
+                "contour:contour-entity-98",
+                "premise:identity"
+              ],
+              "rationale": "La cara rectangular completa y sus cantos en las elevaciones sostienen una tapa, no tres paneles."
+            },
+            "length": {
+              "value_mm": 1200.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bL)",
+              "operand_refs": [
+                "binding:bL"
+              ],
+              "source_refs": [
+                "binding:bL",
+                "evidence-dimension-entity-9E",
+                "dimension-entity-9E"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 600.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bD)",
+              "operand_refs": [
+                "binding:bD"
+              ],
+              "source_refs": [
+                "binding:bD",
+                "evidence-dimension-entity-BE",
+                "dimension-entity-BE"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 30.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bT)",
+              "operand_refs": [
+                "binding:bT"
+              ],
+              "source_refs": [
+                "binding:bT",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "fix-top"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-8E",
+              "contour-entity-93",
+              "contour-entity-98",
+              "evidence-contour-entity-98",
+              "dimension-entity-9E",
+              "dimension-entity-BE",
+              "dimension-entity-CE"
+            ],
+            "sheet_ids": [
+              "construction:piece:top"
+            ]
+          },
+          {
+            "piece_id": "legs",
+            "component_id": "legs",
+            "scenario_id": "mesa-bastidor-01",
+            "label": "Patas de sección cuadrada",
+            "role": "soporte_vertical",
+            "quantity": {
+              "value": 4,
+              "min_value": 4,
+              "max_value": 4,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:fourlegs",
+                "evidence-contour-entity-99",
+                "evidence-contour-entity-9A",
+                "evidence-contour-entity-9B",
+                "evidence-contour-entity-9C"
+              ],
+              "assumption_refs": [
+                "premise:fourlegs",
+                "contour:contour-entity-99",
+                "contour:contour-entity-9A",
+                "contour:contour-entity-9B",
+                "contour:contour-entity-9C"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:mesa-bastidor-01:legs:1",
+              "provisional:mesa-bastidor-01:legs:2",
+              "provisional:mesa-bastidor-01:legs:3",
+              "provisional:mesa-bastidor-01:legs:4"
+            ],
+            "geometry": {
+              "shape_kind": "linear",
+              "source_contour_ids": [
+                "contour-entity-8F",
+                "contour-entity-99"
+              ],
+              "basis_refs": [
+                "contour:contour-entity-8F",
+                "contour:contour-entity-99",
+                "premise:fourlegs"
+              ],
+              "rationale": "Prismas rectos de sección cuadrada; 720 mm deducidos por cierre vertical y compatibles con las elevaciones."
+            },
+            "length": {
+              "value_mm": 720.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "arithmetic",
+              "formula": "parameter:H subtract parameter:T",
+              "operand_refs": [
+                "binding:bLeg"
+              ],
+              "source_refs": [
+                "binding:bLeg"
+              ],
+              "assumption_refs": [
+                "premise:identity"
+              ],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 50.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bS)",
+              "operand_refs": [
+                "binding:bS"
+              ],
+              "source_refs": [
+                "binding:bS"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 50.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bS)",
+              "operand_refs": [
+                "binding:bS"
+              ],
+              "source_refs": [
+                "binding:bS"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "joint-frame"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-8F",
+              "contour-entity-90",
+              "contour-entity-94",
+              "contour-entity-95",
+              "contour-entity-99",
+              "contour-entity-9A",
+              "contour-entity-9B",
+              "contour-entity-9C",
+              "evidence-contour-entity-99",
+              "evidence-contour-entity-9A",
+              "evidence-contour-entity-9B",
+              "evidence-contour-entity-9C",
+              "dimension-entity-AE",
+              "dimension-entity-CE"
+            ],
+            "sheet_ids": [
+              "construction:piece:legs"
+            ]
+          },
+          {
+            "piece_id": "long-aprons",
+            "component_id": "long-aprons",
+            "scenario_id": "mesa-bastidor-01",
+            "label": "Faldones longitudinales del bastidor",
+            "role": "arriostramiento_longitudinal",
+            "quantity": {
+              "value": 2,
+              "min_value": 2,
+              "max_value": 2,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:frame",
+                "evidence-contour-entity-91"
+              ],
+              "assumption_refs": [
+                "premise:frame",
+                "contour:contour-entity-91"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:mesa-bastidor-01:long-aprons:1",
+              "provisional:mesa-bastidor-01:long-aprons:2"
+            ],
+            "geometry": {
+              "shape_kind": "linear",
+              "source_contour_ids": [
+                "contour-entity-91"
+              ],
+              "basis_refs": [
+                "contour:contour-entity-91",
+                "premise:frame"
+              ],
+              "rationale": "Miembros prismáticos de 980 × 100 mm en elevación; el espesor fuera del plano se estima separadamente."
+            },
+            "length": {
+              "value_mm": 980.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bLong)",
+              "operand_refs": [
+                "binding:bLong"
+              ],
+              "source_refs": [
+                "binding:bLong"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 100.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bApronH)",
+              "operand_refs": [
+                "binding:bApronH"
+              ],
+              "source_refs": [
+                "binding:bApronH"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 22.0,
+              "range_mm": {
+                "min_mm": 18.0,
+                "max_mm": 30.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "construction_assumption",
+              "formula": "parameter:ApronT",
+              "operand_refs": [
+                "binding:bApronT"
+              ],
+              "source_refs": [
+                "binding:bApronT"
+              ],
+              "assumption_refs": [
+                "premise:apron-thickness",
+                "premise:frame"
+              ],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "joint-frame",
+              "fix-top"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-91",
+              "evidence-contour-entity-91"
+            ],
+            "sheet_ids": [
+              "construction:piece:long-aprons"
+            ]
+          },
+          {
+            "piece_id": "short-aprons",
+            "component_id": "short-aprons",
+            "scenario_id": "mesa-bastidor-01",
+            "label": "Faldones transversales del bastidor",
+            "role": "arriostramiento_transversal",
+            "quantity": {
+              "value": 2,
+              "min_value": 2,
+              "max_value": 2,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:frame",
+                "evidence-contour-entity-96"
+              ],
+              "assumption_refs": [
+                "premise:frame",
+                "contour:contour-entity-96"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:mesa-bastidor-01:short-aprons:1",
+              "provisional:mesa-bastidor-01:short-aprons:2"
+            ],
+            "geometry": {
+              "shape_kind": "linear",
+              "source_contour_ids": [
+                "contour-entity-96"
+              ],
+              "basis_refs": [
+                "contour:contour-entity-96",
+                "premise:frame"
+              ],
+              "rationale": "Prismas con cara lateral de 380 × 100 mm y espesor compartido estimado."
+            },
+            "length": {
+              "value_mm": 380.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bShort)",
+              "operand_refs": [
+                "binding:bShort"
+              ],
+              "source_refs": [
+                "binding:bShort"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 100.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:bApronH)",
+              "operand_refs": [
+                "binding:bApronH"
+              ],
+              "source_refs": [
+                "binding:bApronH"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 22.0,
+              "range_mm": {
+                "min_mm": 18.0,
+                "max_mm": 30.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "construction_assumption",
+              "formula": "parameter:ApronT",
+              "operand_refs": [
+                "binding:bApronT"
+              ],
+              "source_refs": [
+                "binding:bApronT"
+              ],
+              "assumption_refs": [
+                "premise:apron-thickness",
+                "premise:frame"
+              ],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "joint-frame",
+              "fix-top"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-96",
+              "evidence-contour-entity-96"
+            ],
+            "sheet_ids": [
+              "construction:piece:short-aprons"
+            ]
+          }
+        ],
+        "placements": [],
+        "details": [
+          {
+            "id": "joint-frame",
+            "kind": "joint",
+            "component_ids": [
+              "legs",
+              "long-aprons",
+              "short-aprons"
+            ],
+            "parameter_refs": [
+              "parameter:S",
+              "parameter:ApronT"
+            ],
+            "quantity": 8,
+            "state": "estimated",
+            "source_refs": [
+              "contour:contour-entity-91",
+              "contour:contour-entity-96"
+            ],
+            "assumption_refs": [
+              "premise:connections",
+              "premise:frame"
+            ],
+            "rationale": "Ocho encuentros de extremo de faldón a pata, a tope y con herrajes interiores de bastidor. Ocho uniones, no ocho tornillos; selección y resistencia pendientes.",
+            "geometry": null
+          },
+          {
+            "id": "fix-top",
+            "kind": "fastener",
+            "component_ids": [
+              "top",
+              "long-aprons",
+              "short-aprons"
+            ],
+            "parameter_refs": [
+              "parameter:T",
+              "parameter:ApronT"
+            ],
+            "quantity": 4,
+            "state": "estimated",
+            "source_refs": [
+              "contour:contour-entity-8E",
+              "contour:contour-entity-91",
+              "contour:contour-entity-96"
+            ],
+            "assumption_refs": [
+              "premise:connections",
+              "premise:frame"
+            ],
+            "rationale": "Cuatro puntos provisionales de fijación bastidor-tapa mediante herrajes con holgura de movimiento; no se fijan diámetros ni profundidad sin conocer el material.",
+            "geometry": null
+          }
+        ],
+        "decisions": [
+          {
+            "id": "projection-identity",
+            "category": "component",
+            "summary": "Una tapa y cuatro patas; los cuadrados ocultos no son piezas adicionales ni perforaciones.",
+            "target_refs": [
+              "component:top.quantity",
+              "component:legs.quantity",
+              "component:legs.geometry"
+            ],
+            "basis_refs": [
+              "premise:identity",
+              "premise:fourlegs",
+              "contour:contour-entity-99",
+              "contour:contour-entity-9A",
+              "contour:contour-entity-9B",
+              "contour:contour-entity-9C"
+            ],
+            "alternatives": [
+              "Revisar la identidad física si los cuadrados ocultos resultan ser alojamientos."
+            ],
+            "rationale": "Las líneas discontinuas y la correspondencia con las elevaciones sostienen cuatro soportes físicos bajo una misma tapa.",
+            "impact": "high"
+          },
+          {
+            "id": "closed-frame",
+            "category": "assembly",
+            "summary": "Adoptar un bastidor cerrado de dos faldones largos y dos cortos entre patas.",
+            "target_refs": [
+              "component:long-aprons.quantity",
+              "component:short-aprons.quantity",
+              "constraint:longitudinal",
+              "constraint:transversal",
+              "detail:joint-frame"
+            ],
+            "basis_refs": [
+              "premise:frame",
+              "premise:connections",
+              "contour:contour-entity-91",
+              "contour:contour-entity-96"
+            ],
+            "alternatives": [
+              "La ausencia de faldones posteriores requeriría revisar el arriostramiento y el recuento."
+            ],
+            "rationale": "Completa un camino estructural coherente; la duplicación oculta se declara estimada, no observada.",
+            "impact": "high"
+          },
+          {
+            "id": "thickness-choice",
+            "category": "dimension",
+            "summary": "Usar 22 mm provisionales de espesor de faldón, rango 18–30 mm.",
+            "target_refs": [
+              "parameter:ApronT",
+              "component:long-aprons.thickness",
+              "component:short-aprons.thickness"
+            ],
+            "basis_refs": [
+              "premise:apron-thickness",
+              "parameter:S"
+            ],
+            "alternatives": [
+              "Ajustar el espesor dentro del rango tras definir material, carga y herrajes."
+            ],
+            "rationale": "El espesor no está acotado; el rango hace explícita la incertidumbre y permite revisar el encaje.",
+            "impact": "high"
+          }
+        ],
+        "warnings": [
+          {
+            "severity": "info",
+            "code": "assembly_placements_unavailable",
+            "message": "No se dibuja montaje: el escenario no declara posiciones 2D.",
+            "component_refs": [
+              "top",
+              "legs",
+              "long-aprons",
+              "short-aprons"
+            ],
+            "field_refs": [],
+            "consequence": "provisional_only"
+          }
+        ],
+        "sheets": [
+          {
+            "sheet_id": "construction:piece:top",
+            "kind": "piece",
+            "piece_id": "top",
+            "title": "Pieza · Tapa rectangular única",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1200.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1200.0,
+                    "y": 600.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 600.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-8E",
+                  "contour-entity-93",
+                  "contour-entity-98",
+                  "evidence-contour-entity-98",
+                  "dimension-entity-9E",
+                  "dimension-entity-BE",
+                  "dimension-entity-CE",
+                  "contour:contour-entity-98",
+                  "premise:identity"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 1300.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1330.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1330.0,
+                    "y": 600.0
+                  },
+                  {
+                    "x": 1300.0,
+                    "y": 600.0
+                  },
+                  {
+                    "x": 1300.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bT",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1200.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "1200 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bL",
+                  "evidence-dimension-entity-9E",
+                  "dimension-entity-9E"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 600.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "600 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bD",
+                  "evidence-dimension-entity-BE",
+                  "dimension-entity-BE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 1300.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1330.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1300.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "30 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bT",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 660.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 1 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:identity",
+                  "evidence-contour-entity-8E",
+                  "evidence-contour-entity-93",
+                  "evidence-contour-entity-98"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:legs",
+            "kind": "piece",
+            "piece_id": "legs",
+            "title": "Pieza · Patas de sección cuadrada",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 720.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 720.0,
+                    "y": 50.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 50.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-8F",
+                  "contour-entity-90",
+                  "contour-entity-94",
+                  "contour-entity-95",
+                  "contour-entity-99",
+                  "contour-entity-9A",
+                  "contour-entity-9B",
+                  "contour-entity-9C",
+                  "evidence-contour-entity-99",
+                  "evidence-contour-entity-9A",
+                  "evidence-contour-entity-9B",
+                  "evidence-contour-entity-9C",
+                  "dimension-entity-AE",
+                  "dimension-entity-CE",
+                  "contour:contour-entity-8F",
+                  "contour:contour-entity-99",
+                  "premise:fourlegs"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 820.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 870.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 870.0,
+                    "y": 50.0
+                  },
+                  {
+                    "x": 820.0,
+                    "y": 50.0
+                  },
+                  {
+                    "x": 820.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bS"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 720.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "720 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bLeg"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 50.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "50 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bS"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 820.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 870.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 820.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "50 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bS"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 110.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 4 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:fourlegs",
+                  "evidence-contour-entity-99",
+                  "evidence-contour-entity-9A",
+                  "evidence-contour-entity-9B",
+                  "evidence-contour-entity-9C"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:long-aprons",
+            "kind": "piece",
+            "piece_id": "long-aprons",
+            "title": "Pieza · Faldones longitudinales del bastidor",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 980.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 980.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-91",
+                  "evidence-contour-entity-91",
+                  "contour:contour-entity-91",
+                  "premise:frame"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 1080.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1102.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1102.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 1080.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 1080.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bApronT"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 980.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "980 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bLong"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "100 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bApronH"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 1080.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1102.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 1080.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 22 mm [18–30]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bApronT"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 160.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 2 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:frame",
+                  "evidence-contour-entity-91"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:short-aprons",
+            "kind": "piece",
+            "piece_id": "short-aprons",
+            "title": "Pieza · Faldones transversales del bastidor",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 380.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 380.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-96",
+                  "evidence-contour-entity-96",
+                  "contour:contour-entity-96",
+                  "premise:frame"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 480.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 502.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 502.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 480.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 480.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bApronT"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 380.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "380 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bShort"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "100 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:bApronH"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 480.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 502.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 480.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 22 mm [18–30]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bApronT"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 160.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 2 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:frame",
+                  "evidence-contour-entity-96"
+                ]
+              }
+            ],
+            "warnings": []
+          }
+        ],
+        "authority": "provisional_not_manufacturing"
+      },
+      "artifacts": [
+        {
+          "id": "general-r1-bom_csv",
+          "kind": "bom_csv",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.csv",
+          "media_type": "text/csv",
+          "incomplete_reasons": [
+            "finish",
+            "legs:finish_machine_abstained",
+            "legs:material_machine_abstained",
+            "length",
+            "long-aprons:finish_machine_abstained",
+            "long-aprons:material_machine_abstained",
+            "material",
+            "quantity",
+            "short-aprons:finish_machine_abstained",
+            "short-aprons:material_machine_abstained",
+            "top:finish_machine_abstained",
+            "top:material_machine_abstained",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-r1-bom_json",
+          "kind": "bom_json",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.json",
+          "media_type": "application/json",
+          "incomplete_reasons": [
+            "finish",
+            "legs:finish_machine_abstained",
+            "legs:material_machine_abstained",
+            "length",
+            "long-aprons:finish_machine_abstained",
+            "long-aprons:material_machine_abstained",
+            "material",
+            "quantity",
+            "short-aprons:finish_machine_abstained",
+            "short-aprons:material_machine_abstained",
+            "top:finish_machine_abstained",
+            "top:material_machine_abstained",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-drawing-svg-r1",
+          "kind": "drawing_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "general-components-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-drawing-dxf-r1",
+          "kind": "drawing_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "general-components-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "construction:piece:top:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-top-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:top",
+          "component_id": "top"
+        },
+        {
+          "id": "construction:piece:top:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-top-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:top",
+          "component_id": "top"
+        },
+        {
+          "id": "construction:piece:legs:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-legs-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:legs",
+          "component_id": "legs"
+        },
+        {
+          "id": "construction:piece:legs:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-legs-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:legs",
+          "component_id": "legs"
+        },
+        {
+          "id": "construction:piece:long-aprons:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-long-aprons-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:long-aprons",
+          "component_id": "long-aprons"
+        },
+        {
+          "id": "construction:piece:long-aprons:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-long-aprons-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:long-aprons",
+          "component_id": "long-aprons"
+        },
+        {
+          "id": "construction:piece:short-aprons:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-short-aprons-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:short-aprons",
+          "component_id": "short-aprons"
+        },
+        {
+          "id": "construction:piece:short-aprons:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-short-aprons-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:short-aprons",
+          "component_id": "short-aprons"
+        }
+      ]
+    }
+  },
+  "latest": {
+    "review": {
+      "construction_validation": {
+        "status": "valid",
+        "parameter_order": [
+          "L",
+          "D",
+          "H",
+          "T",
+          "Leg",
+          "S",
+          "Long",
+          "Short",
+          "ApronH",
+          "ApronT",
+          "Over"
+        ],
+        "max_depth": 3,
+        "constraint_results": [
+          {
+            "constraint_id": "vertical",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 750.0,
+              "max_mm": 750.0
+            },
+            "right_range_mm": {
+              "min_mm": 750.0,
+              "max_mm": 750.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "longitudinal",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 1200.0,
+              "max_mm": 1200.0
+            },
+            "right_range_mm": {
+              "min_mm": 1200.0,
+              "max_mm": 1200.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "transversal",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 600.0,
+              "max_mm": 600.0
+            },
+            "right_range_mm": {
+              "min_mm": 600.0,
+              "max_mm": 600.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "apron-fit",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 50.0,
+              "max_mm": 50.0
+            },
+            "right_range_mm": {
+              "min_mm": 18.0,
+              "max_mm": 30.0
+            },
+            "residual_mm": 0.0
+          }
+        ],
+        "issues": []
+      }
+    }
+  }
+}

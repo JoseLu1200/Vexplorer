@@ -1,0 +1,2657 @@
+{
+  "fixture": {
+    "name": "F02.dxf",
+    "sha256": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5",
+    "size_bytes": 54107
+  },
+  "job": {
+    "id": "job-53f3a95384784f7fbd79d563aeb351c8",
+    "state": "succeeded",
+    "run_id": "run-b47b19c8b6454b27986b9b0891a85527",
+    "error": null
+  },
+  "source_report_sha256": "41f6f2a1d4322c522412caa38c8ef815a4d9b710b140c44b0908eedc0249b6bf",
+  "derived": {
+    "package": {
+      "construction": {
+        "run_id": "run-b47b19c8b6454b27986b9b0891a85527",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "basis_revision": "run:run-b47b19c8b6454b27986b9b0891a85527:proposal:1:review:1:scenario:cajonera",
+        "scenario_id": "cajonera",
+        "summary": {
+          "label": "Escenario constructivo cajonera",
+          "component_count": 8,
+          "occurrence_count": 26,
+          "source_refs": [
+            "view-unknown",
+            "observation-view-unknown",
+            "contour-entity-94",
+            "contour-entity-8E",
+            "contour-entity-9A",
+            "dimension-entity-AE",
+            "dimension-entity-BE",
+            "dimension-entity-CE",
+            "contour-entity-8F",
+            "contour-entity-90",
+            "contour-entity-91",
+            "contour-entity-92",
+            "evidence-contour-entity-8F",
+            "evidence-contour-entity-90",
+            "evidence-contour-entity-91",
+            "evidence-contour-entity-92"
+          ],
+          "top_decision_ids": [
+            "D1",
+            "D2"
+          ],
+          "warnings": [
+            {
+              "severity": "info",
+              "code": "assembly_placements_unavailable",
+              "message": "No se dibuja montaje: el escenario no declara posiciones 2D.",
+              "component_refs": [
+                "costados",
+                "horizontales",
+                "frentes",
+                "trasera",
+                "caja_lados",
+                "caja_testeros",
+                "caja_fondos",
+                "guias"
+              ],
+              "field_refs": [],
+              "consequence": "provisional_only"
+            }
+          ]
+        },
+        "pieces": [
+          {
+            "piece_id": "costados",
+            "component_id": "costados",
+            "scenario_id": "cajonera",
+            "label": "Costados completos",
+            "role": "carcasa_lateral",
+            "quantity": {
+              "value": 2,
+              "min_value": 2,
+              "max_value": 2,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:P",
+                "evidence-contour-entity-8E",
+                "evidence-contour-entity-9A"
+              ],
+              "assumption_refs": [
+                "premise:P",
+                "contour:contour-entity-8E",
+                "contour:contour-entity-9A"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:costados:1",
+              "provisional:cajonera:costados:2"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [
+                "contour-entity-94"
+              ],
+              "basis_refs": [
+                "premise:P",
+                "contour:contour-entity-94"
+              ],
+              "rationale": "Cara lateral rectangular; la pareja se identifica en bordes izquierdo/derecho, no contando vistas."
+            },
+            "length": {
+              "value_mm": 800.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:h)",
+              "operand_refs": [
+                "binding:h"
+              ],
+              "source_refs": [
+                "binding:h",
+                "evidence-dimension-entity-AE",
+                "dimension-entity-AE"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 450.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:d)",
+              "operand_refs": [
+                "binding:d"
+              ],
+              "source_refs": [
+                "binding:d",
+                "evidence-dimension-entity-BE",
+                "dimension-entity-BE"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:t)",
+              "operand_refs": [
+                "binding:t"
+              ],
+              "source_refs": [
+                "binding:t",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J1"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-94",
+              "contour-entity-8E",
+              "contour-entity-9A",
+              "dimension-entity-AE",
+              "dimension-entity-BE",
+              "dimension-entity-CE"
+            ],
+            "sheet_ids": [
+              "construction:piece:costados"
+            ]
+          },
+          {
+            "piece_id": "horizontales",
+            "component_id": "horizontales",
+            "scenario_id": "cajonera",
+            "label": "Tapa y base entre costados",
+            "role": "carcasa_horizontal",
+            "quantity": {
+              "value": 2,
+              "min_value": 2,
+              "max_value": 2,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:P",
+                "evidence-contour-entity-8E",
+                "evidence-contour-entity-8F"
+              ],
+              "assumption_refs": [
+                "premise:P",
+                "contour:contour-entity-8E",
+                "contour:contour-entity-8F"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:horizontales:1",
+              "provisional:cajonera:horizontales:2"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:P",
+                "contour:contour-entity-8E",
+                "contour:contour-entity-8F"
+              ],
+              "rationale": "Dos bandas superior e inferior de carcasa interpretadas como paneles."
+            },
+            "length": {
+              "value_mm": 864.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:wi)",
+              "operand_refs": [
+                "binding:wi"
+              ],
+              "source_refs": [
+                "binding:wi"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 450.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:d)",
+              "operand_refs": [
+                "binding:d"
+              ],
+              "source_refs": [
+                "binding:d",
+                "evidence-dimension-entity-BE",
+                "dimension-entity-BE"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:t)",
+              "operand_refs": [
+                "binding:t"
+              ],
+              "source_refs": [
+                "binding:t",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J1"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-8E",
+              "contour-entity-8F",
+              "dimension-entity-CE"
+            ],
+            "sheet_ids": [
+              "construction:piece:horizontales"
+            ]
+          },
+          {
+            "piece_id": "frentes",
+            "component_id": "frentes",
+            "scenario_id": "cajonera",
+            "label": "Tres frentes de cajón interiores",
+            "role": "frentes_moviles",
+            "quantity": {
+              "value": 3,
+              "min_value": 3,
+              "max_value": 3,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:P",
+                "evidence-contour-entity-90",
+                "evidence-contour-entity-91",
+                "evidence-contour-entity-92"
+              ],
+              "assumption_refs": [
+                "premise:P",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:frentes:1",
+              "provisional:cajonera:frentes:2",
+              "provisional:cajonera:frentes:3"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [
+                "contour-entity-90",
+                "contour-entity-91",
+                "contour-entity-92"
+              ],
+              "basis_refs": [
+                "premise:P",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "rationale": "Tres caras iguales rodeadas por pequeñas juntas, compatibles con frentes interiores."
+            },
+            "length": {
+              "value_mm": 858.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:fw)",
+              "operand_refs": [
+                "binding:fw"
+              ],
+              "source_refs": [
+                "binding:fw"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 250.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:fh)",
+              "operand_refs": [
+                "binding:fh"
+              ],
+              "source_refs": [
+                "binding:fh"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:t)",
+              "operand_refs": [
+                "binding:t"
+              ],
+              "source_refs": [
+                "binding:t",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J3"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "contour-entity-90",
+              "contour-entity-91",
+              "contour-entity-92",
+              "dimension-entity-CE"
+            ],
+            "sheet_ids": [
+              "construction:piece:frentes"
+            ]
+          },
+          {
+            "piece_id": "trasera",
+            "component_id": "trasera",
+            "scenario_id": "cajonera",
+            "label": "Trasera interior añadida",
+            "role": "arriostramiento",
+            "quantity": {
+              "value": 1,
+              "min_value": 1,
+              "max_value": 1,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:Q",
+                "evidence-contour-entity-8F"
+              ],
+              "assumption_refs": [
+                "premise:Q",
+                "contour:contour-entity-8F"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:trasera:1"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:Q",
+                "contour:contour-entity-8F"
+              ],
+              "rationale": "Arriostramiento no identificado directamente; añadido constructivo explícito."
+            },
+            "length": {
+              "value_mm": 864.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:wi)",
+              "operand_refs": [
+                "binding:wi"
+              ],
+              "source_refs": [
+                "binding:wi"
+              ],
+              "assumption_refs": [],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 764.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:hi)",
+              "operand_refs": [
+                "binding:hi"
+              ],
+              "source_refs": [
+                "binding:hi"
+              ],
+              "assumption_refs": [],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 6.0,
+              "range_mm": {
+                "min_mm": 5.0,
+                "max_mm": 8.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "construction_assumption",
+              "formula": "parameter:THIN",
+              "operand_refs": [
+                "binding:thin"
+              ],
+              "source_refs": [
+                "binding:thin"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J2"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "evidence-contour-entity-8F"
+            ],
+            "sheet_ids": [
+              "construction:piece:trasera"
+            ]
+          },
+          {
+            "piece_id": "caja_lados",
+            "component_id": "caja_lados",
+            "scenario_id": "cajonera",
+            "label": "Costados de cajas",
+            "role": "paredes_laterales_cajones",
+            "quantity": {
+              "value": 6,
+              "min_value": 6,
+              "max_value": 6,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:Q",
+                "evidence-contour-entity-90",
+                "evidence-contour-entity-91",
+                "evidence-contour-entity-92"
+              ],
+              "assumption_refs": [
+                "premise:Q",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:caja_lados:1",
+              "provisional:cajonera:caja_lados:2",
+              "provisional:cajonera:caja_lados:3",
+              "provisional:cajonera:caja_lados:4",
+              "provisional:cajonera:caja_lados:5",
+              "provisional:cajonera:caja_lados:6"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:Q",
+                "contour:contour-entity-90"
+              ],
+              "rationale": "Piezas ocultas necesarias para la interpretación como cajones."
+            },
+            "length": {
+              "value_mm": 400.0,
+              "range_mm": {
+                "min_mm": 380.0,
+                "max_mm": 410.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "fit",
+              "formula": "parameter:BD",
+              "operand_refs": [
+                "binding:bd"
+              ],
+              "source_refs": [
+                "binding:bd"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 180.0,
+              "range_mm": {
+                "min_mm": 160.0,
+                "max_mm": 200.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "fit",
+              "formula": "parameter:BH",
+              "operand_refs": [
+                "binding:bh"
+              ],
+              "source_refs": [
+                "binding:bh"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:t)",
+              "operand_refs": [
+                "binding:t"
+              ],
+              "source_refs": [
+                "binding:t",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J3"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "evidence-contour-entity-90",
+              "evidence-contour-entity-91",
+              "evidence-contour-entity-92"
+            ],
+            "sheet_ids": [
+              "construction:piece:caja_lados"
+            ]
+          },
+          {
+            "piece_id": "caja_testeros",
+            "component_id": "caja_testeros",
+            "scenario_id": "cajonera",
+            "label": "Testeros delanteros y posteriores de cajas",
+            "role": "paredes_transversales_cajones",
+            "quantity": {
+              "value": 6,
+              "min_value": 6,
+              "max_value": 6,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:Q",
+                "evidence-contour-entity-90",
+                "evidence-contour-entity-91",
+                "evidence-contour-entity-92"
+              ],
+              "assumption_refs": [
+                "premise:Q",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:caja_testeros:1",
+              "provisional:cajonera:caja_testeros:2",
+              "provisional:cajonera:caja_testeros:3",
+              "provisional:cajonera:caja_testeros:4",
+              "provisional:cajonera:caja_testeros:5",
+              "provisional:cajonera:caja_testeros:6"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:Q",
+                "parameter:CROSS"
+              ],
+              "rationale": "Largo depende de reserva estimada de guías, sin elevar su autoridad."
+            },
+            "length": {
+              "value_mm": 802.0,
+              "range_mm": {
+                "min_mm": 800.0,
+                "max_mm": 804.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "arithmetic",
+              "formula": "parameter:BW subtract binding:twot",
+              "operand_refs": [
+                "binding:cross"
+              ],
+              "source_refs": [
+                "binding:cross"
+              ],
+              "assumption_refs": [
+                "premise:P",
+                "premise:Q"
+              ],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 180.0,
+              "range_mm": {
+                "min_mm": 160.0,
+                "max_mm": 200.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "fit",
+              "formula": "parameter:BH",
+              "operand_refs": [
+                "binding:bh"
+              ],
+              "source_refs": [
+                "binding:bh"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "range_mm": null,
+              "state": "deduced",
+              "review_status": "accepted",
+              "method": "observed_copy",
+              "formula": "copy(binding:t)",
+              "operand_refs": [
+                "binding:t"
+              ],
+              "source_refs": [
+                "binding:t",
+                "evidence-dimension-entity-CE",
+                "dimension-entity-CE"
+              ],
+              "assumption_refs": [],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J3"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "evidence-contour-entity-90",
+              "evidence-contour-entity-91",
+              "evidence-contour-entity-92"
+            ],
+            "sheet_ids": [
+              "construction:piece:caja_testeros"
+            ]
+          },
+          {
+            "piece_id": "caja_fondos",
+            "component_id": "caja_fondos",
+            "scenario_id": "cajonera",
+            "label": "Fondos inferiores de cajas",
+            "role": "fondos_cajones",
+            "quantity": {
+              "value": 3,
+              "min_value": 3,
+              "max_value": 3,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:Q",
+                "evidence-contour-entity-90",
+                "evidence-contour-entity-91",
+                "evidence-contour-entity-92"
+              ],
+              "assumption_refs": [
+                "premise:Q",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:caja_fondos:1",
+              "provisional:cajonera:caja_fondos:2",
+              "provisional:cajonera:caja_fondos:3"
+            ],
+            "geometry": {
+              "shape_kind": "rectangle",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:Q",
+                "parameter:BW",
+                "parameter:BD"
+              ],
+              "rationale": "Fondo del tamaño exterior de cada caja."
+            },
+            "length": {
+              "value_mm": 838.0,
+              "range_mm": {
+                "min_mm": 836.0,
+                "max_mm": 840.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "arithmetic",
+              "formula": "parameter:WI subtract parameter:SLIDE",
+              "operand_refs": [
+                "binding:boxw"
+              ],
+              "source_refs": [
+                "binding:boxw"
+              ],
+              "assumption_refs": [
+                "premise:P",
+                "premise:Q"
+              ],
+              "explanation": "length del escenario revisado."
+            },
+            "width": {
+              "value_mm": 400.0,
+              "range_mm": {
+                "min_mm": 380.0,
+                "max_mm": 410.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "fit",
+              "formula": "parameter:BD",
+              "operand_refs": [
+                "binding:bd"
+              ],
+              "source_refs": [
+                "binding:bd"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "width del escenario revisado."
+            },
+            "thickness": {
+              "value_mm": 6.0,
+              "range_mm": {
+                "min_mm": 5.0,
+                "max_mm": 8.0
+              },
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "construction_assumption",
+              "formula": "parameter:THIN",
+              "operand_refs": [
+                "binding:thin"
+              ],
+              "source_refs": [
+                "binding:thin"
+              ],
+              "assumption_refs": [
+                "premise:Q"
+              ],
+              "explanation": "thickness del escenario revisado."
+            },
+            "detail_ids": [
+              "J3"
+            ],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "evidence-contour-entity-90",
+              "evidence-contour-entity-91",
+              "evidence-contour-entity-92"
+            ],
+            "sheet_ids": [
+              "construction:piece:caja_fondos"
+            ]
+          },
+          {
+            "piece_id": "guias",
+            "component_id": "guias",
+            "scenario_id": "cajonera",
+            "label": "Juegos de guías laterales (pares)",
+            "role": "guiado_cajones",
+            "quantity": {
+              "value": 3,
+              "min_value": 3,
+              "max_value": 3,
+              "state": "estimated",
+              "review_status": "accepted",
+              "method": "scenario_quantity",
+              "source_refs": [
+                "premise:Q",
+                "evidence-contour-entity-90",
+                "evidence-contour-entity-91",
+                "evidence-contour-entity-92"
+              ],
+              "assumption_refs": [
+                "premise:Q",
+                "contour:contour-entity-90",
+                "contour:contour-entity-91",
+                "contour:contour-entity-92"
+              ],
+              "explanation": "Cantidad del escenario; no deriva del número de vistas."
+            },
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:cajonera:guias:1",
+              "provisional:cajonera:guias:2",
+              "provisional:cajonera:guias:3"
+            ],
+            "geometry": {
+              "shape_kind": "hardware",
+              "source_contour_ids": [],
+              "basis_refs": [
+                "premise:Q"
+              ],
+              "rationale": "Guiado lateral adoptado; reserva transversal estimada separada de dimensiones reales del herraje."
+            },
+            "length": {
+              "value_mm": null,
+              "range_mm": null,
+              "state": "unknown",
+              "review_status": "abstained",
+              "method": null,
+              "formula": null,
+              "operand_refs": [],
+              "source_refs": [],
+              "assumption_refs": [],
+              "explanation": "length no aceptado para el escenario constructivo."
+            },
+            "width": {
+              "value_mm": null,
+              "range_mm": null,
+              "state": "unknown",
+              "review_status": "abstained",
+              "method": null,
+              "formula": null,
+              "operand_refs": [],
+              "source_refs": [],
+              "assumption_refs": [],
+              "explanation": "width no aceptado para el escenario constructivo."
+            },
+            "thickness": {
+              "value_mm": null,
+              "range_mm": null,
+              "state": "unknown",
+              "review_status": "abstained",
+              "method": null,
+              "formula": null,
+              "operand_refs": [],
+              "source_refs": [],
+              "assumption_refs": [],
+              "explanation": "thickness no aceptado para el escenario constructivo."
+            },
+            "detail_ids": [],
+            "source_refs": [
+              "view-unknown",
+              "observation-view-unknown",
+              "evidence-contour-entity-90",
+              "evidence-contour-entity-91",
+              "evidence-contour-entity-92"
+            ],
+            "sheet_ids": [
+              "construction:piece:guias"
+            ]
+          }
+        ],
+        "placements": [],
+        "details": [
+          {
+            "id": "J1",
+            "kind": "joint",
+            "component_ids": [
+              "costados",
+              "horizontales"
+            ],
+            "parameter_refs": [
+              "parameter:T"
+            ],
+            "quantity": 4,
+            "state": "estimated",
+            "source_refs": [
+              "contour:contour-entity-8E",
+              "contour:contour-entity-8F"
+            ],
+            "assumption_refs": [
+              "premise:P",
+              "premise:R"
+            ],
+            "rationale": "Cuatro encuentros a tope de tapa/base con costados. Fijaciones sin posición ni cantidad especificada.",
+            "geometry": null
+          },
+          {
+            "id": "J2",
+            "kind": "joint",
+            "component_ids": [
+              "trasera",
+              "costados",
+              "horizontales"
+            ],
+            "parameter_refs": [
+              "parameter:THIN"
+            ],
+            "quantity": 1,
+            "state": "estimated",
+            "source_refs": [
+              "contour:contour-entity-8F"
+            ],
+            "assumption_refs": [
+              "premise:Q",
+              "premise:R"
+            ],
+            "rationale": "Fijación perimetral de trasera interior para arriostrar; definir según material y carga.",
+            "geometry": null
+          },
+          {
+            "id": "J3",
+            "kind": "joint",
+            "component_ids": [
+              "caja_lados",
+              "caja_testeros",
+              "caja_fondos",
+              "frentes"
+            ],
+            "parameter_refs": [
+              "parameter:T",
+              "parameter:THIN",
+              "parameter:GAP",
+              "parameter:SEAM"
+            ],
+            "quantity": 3,
+            "state": "estimated",
+            "source_refs": [
+              "contour:contour-entity-90",
+              "contour:contour-entity-91",
+              "contour:contour-entity-92"
+            ],
+            "assumption_refs": [
+              "premise:P",
+              "premise:Q",
+              "premise:R"
+            ],
+            "rationale": "Tres conjuntos: testeros entre costados, fondo fijado debajo y frente ajustable fijado desde testero delantero. Sin ranuras supuestas.",
+            "geometry": null
+          }
+        ],
+        "decisions": [
+          {
+            "id": "D1",
+            "category": "assembly",
+            "summary": "Un único mueble con tres cajones interiores; envolvente y hueco no son piezas adicionales.",
+            "target_refs": [
+              "component:frentes",
+              "component:costados",
+              "component:horizontales"
+            ],
+            "basis_refs": [
+              "premise:P",
+              "contour:contour-entity-90",
+              "contour:contour-entity-91",
+              "contour:contour-entity-92"
+            ],
+            "alternatives": [
+              "Otra interpretación funcional de los rectángulos requeriría un escenario distinto."
+            ],
+            "rationale": "Las tres caras separadas por juntas pequeñas favorecen frentes móviles; las proyecciones no incrementan cantidades.",
+            "impact": "high"
+          },
+          {
+            "id": "D2",
+            "category": "dimension",
+            "summary": "Añadir cajas, guías y trasera con dimensiones estimadas y rangos propagados.",
+            "target_refs": [
+              "component:trasera",
+              "component:caja_lados",
+              "component:caja_testeros",
+              "component:caja_fondos",
+              "component:guias",
+              "parameter:BW",
+              "parameter:CROSS"
+            ],
+            "basis_refs": [
+              "premise:Q"
+            ],
+            "alternatives": [
+              "Recalcular tras seleccionar guías y materiales."
+            ],
+            "rationale": "No hay cotas de piezas ocultas. Los resultados aritméticos de estimaciones conservan autoridad estimated; no se convierten en observaciones.",
+            "impact": "high"
+          }
+        ],
+        "warnings": [
+          {
+            "severity": "info",
+            "code": "assembly_placements_unavailable",
+            "message": "No se dibuja montaje: el escenario no declara posiciones 2D.",
+            "component_refs": [
+              "costados",
+              "horizontales",
+              "frentes",
+              "trasera",
+              "caja_lados",
+              "caja_testeros",
+              "caja_fondos",
+              "guias"
+            ],
+            "field_refs": [],
+            "consequence": "provisional_only"
+          }
+        ],
+        "sheets": [
+          {
+            "sheet_id": "construction:piece:costados",
+            "kind": "piece",
+            "piece_id": "costados",
+            "title": "Pieza · Costados completos",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 800.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 800.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-94",
+                  "contour-entity-8E",
+                  "contour-entity-9A",
+                  "dimension-entity-AE",
+                  "dimension-entity-BE",
+                  "dimension-entity-CE",
+                  "premise:P",
+                  "contour:contour-entity-94"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 900.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 918.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 918.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 900.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 900.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 800.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "800 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:h",
+                  "evidence-dimension-entity-AE",
+                  "dimension-entity-AE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "450 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:d",
+                  "evidence-dimension-entity-BE",
+                  "dimension-entity-BE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 900.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 918.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 900.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "18 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 510.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 2 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:P",
+                  "evidence-contour-entity-8E",
+                  "evidence-contour-entity-9A"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:horizontales",
+            "kind": "piece",
+            "piece_id": "horizontales",
+            "title": "Pieza · Tapa y base entre costados",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-8E",
+                  "contour-entity-8F",
+                  "dimension-entity-CE",
+                  "premise:P",
+                  "contour:contour-entity-8E",
+                  "contour:contour-entity-8F"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 982.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 982.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "864 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:wi"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 450.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "450 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:d",
+                  "evidence-dimension-entity-BE",
+                  "dimension-entity-BE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 982.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "18 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 510.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 2 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:P",
+                  "evidence-contour-entity-8E",
+                  "evidence-contour-entity-8F"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:frentes",
+            "kind": "piece",
+            "piece_id": "frentes",
+            "title": "Pieza · Tres frentes de cajón interiores",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 858.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 858.0,
+                    "y": 250.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 250.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "contour-entity-90",
+                  "contour-entity-91",
+                  "contour-entity-92",
+                  "dimension-entity-CE",
+                  "premise:P",
+                  "contour:contour-entity-90",
+                  "contour:contour-entity-91",
+                  "contour:contour-entity-92"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 958.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 976.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 976.0,
+                    "y": 250.0
+                  },
+                  {
+                    "x": 958.0,
+                    "y": 250.0
+                  },
+                  {
+                    "x": 958.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 858.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "858 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:fw"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 250.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "250 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:fh"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 958.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 976.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 958.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "18 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 310.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 3 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:P",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:trasera",
+            "kind": "piece",
+            "piece_id": "trasera",
+            "title": "Pieza · Trasera interior añadida",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 764.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 764.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "evidence-contour-entity-8F",
+                  "premise:Q",
+                  "contour:contour-entity-8F"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 970.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 970.0,
+                    "y": 764.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": 764.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "binding:thin"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 864.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "864 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:wi"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 764.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "764 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:hi"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 964.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 970.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 964.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 6 mm [5–8]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:thin"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 824.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 1 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:Q",
+                  "evidence-contour-entity-8F"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:caja_lados",
+            "kind": "piece",
+            "piece_id": "caja_lados",
+            "title": "Pieza · Costados de cajas",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 400.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 400.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92",
+                  "premise:Q",
+                  "contour:contour-entity-90"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 500.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 518.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 518.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 500.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 500.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 400.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 400 mm [380–410]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bd"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "≈ 180 mm [160–200]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bh"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 500.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 518.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 500.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "18 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 240.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 6 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:Q",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:caja_testeros",
+            "kind": "piece",
+            "piece_id": "caja_testeros",
+            "title": "Pieza · Testeros delanteros y posteriores de cajas",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 802.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 802.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92",
+                  "premise:Q",
+                  "parameter:CROSS"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 902.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 920.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 920.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 902.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": 902.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 802.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 802 mm [800–804]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:cross"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 180.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "≈ 180 mm [160–200]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bh"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 902.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 920.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 902.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "18 mm",
+                "state": "deduced",
+                "source_refs": [
+                  "binding:t",
+                  "evidence-dimension-entity-CE",
+                  "dimension-entity-CE"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 240.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 6 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:Q",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:caja_fondos",
+            "kind": "piece",
+            "piece_id": "caja_fondos",
+            "title": "Pieza · Fondos inferiores de cajas",
+            "primitives": [
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 838.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 838.0,
+                    "y": 400.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 400.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "view-unknown",
+                  "observation-view-unknown",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92",
+                  "premise:Q",
+                  "parameter:BW",
+                  "parameter:BD"
+                ]
+              },
+              {
+                "kind": "polyline",
+                "points_mm": [
+                  {
+                    "x": 938.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 944.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 944.0,
+                    "y": 400.0
+                  },
+                  {
+                    "x": 938.0,
+                    "y": 400.0
+                  },
+                  {
+                    "x": 938.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": null,
+                "state": "estimated",
+                "source_refs": [
+                  "binding:thin"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 838.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 838 mm [836–840]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:boxw"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 0.0,
+                    "y": 400.0
+                  },
+                  {
+                    "x": -45.0,
+                    "y": 0.0
+                  }
+                ],
+                "text": "≈ 400 mm [380–410]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:bd"
+                ]
+              },
+              {
+                "kind": "dimension",
+                "points_mm": [
+                  {
+                    "x": 938.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 944.0,
+                    "y": 0.0
+                  },
+                  {
+                    "x": 938.0,
+                    "y": -45.0
+                  }
+                ],
+                "text": "≈ 6 mm [5–8]",
+                "state": "estimated",
+                "source_refs": [
+                  "binding:thin"
+                ]
+              },
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 460.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 3 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:Q",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92"
+                ]
+              }
+            ],
+            "warnings": []
+          },
+          {
+            "sheet_id": "construction:piece:guias",
+            "kind": "piece",
+            "piece_id": "guias",
+            "title": "Pieza · Juegos de guías laterales (pares)",
+            "primitives": [
+              {
+                "kind": "text",
+                "points_mm": [
+                  {
+                    "x": 0.0,
+                    "y": 60.0
+                  }
+                ],
+                "text": "Cantidad propuesta: ≈ 3 uds.",
+                "state": "estimated",
+                "source_refs": [
+                  "premise:Q",
+                  "evidence-contour-entity-90",
+                  "evidence-contour-entity-91",
+                  "evidence-contour-entity-92"
+                ]
+              }
+            ],
+            "warnings": [
+              {
+                "severity": "warning",
+                "code": "piece_geometry_incomplete",
+                "message": "La pieza no tiene forma explícita y tres dimensiones aceptadas.",
+                "component_refs": [
+                  "guias"
+                ],
+                "field_refs": [
+                  "length",
+                  "width",
+                  "thickness"
+                ],
+                "consequence": "provisional_only"
+              }
+            ]
+          }
+        ],
+        "authority": "provisional_not_manufacturing"
+      },
+      "artifacts": [
+        {
+          "id": "general-r1-bom_csv",
+          "kind": "bom_csv",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.csv",
+          "media_type": "text/csv",
+          "incomplete_reasons": [
+            "caja_fondos:finish_machine_abstained",
+            "caja_fondos:material_machine_abstained",
+            "caja_lados:finish_machine_abstained",
+            "caja_lados:material_machine_abstained",
+            "caja_testeros:finish_machine_abstained",
+            "caja_testeros:material_machine_abstained",
+            "carga_admisible",
+            "costados:finish_machine_abstained",
+            "costados:material_machine_abstained",
+            "finish",
+            "frentes:finish_machine_abstained",
+            "frentes:material_machine_abstained",
+            "guias:finish_machine_abstained",
+            "guias:length_machine_abstained",
+            "guias:material_machine_abstained",
+            "guias:thickness_machine_abstained",
+            "guias:width_machine_abstained",
+            "horizontales:finish_machine_abstained",
+            "horizontales:material_machine_abstained",
+            "length",
+            "material",
+            "modelo",
+            "quantity",
+            "sistema_de_apertura",
+            "thickness",
+            "trasera:finish_machine_abstained",
+            "trasera:material_machine_abstained",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-r1-bom_json",
+          "kind": "bom_json",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.json",
+          "media_type": "application/json",
+          "incomplete_reasons": [
+            "caja_fondos:finish_machine_abstained",
+            "caja_fondos:material_machine_abstained",
+            "caja_lados:finish_machine_abstained",
+            "caja_lados:material_machine_abstained",
+            "caja_testeros:finish_machine_abstained",
+            "caja_testeros:material_machine_abstained",
+            "carga_admisible",
+            "costados:finish_machine_abstained",
+            "costados:material_machine_abstained",
+            "finish",
+            "frentes:finish_machine_abstained",
+            "frentes:material_machine_abstained",
+            "guias:finish_machine_abstained",
+            "guias:length_machine_abstained",
+            "guias:material_machine_abstained",
+            "guias:thickness_machine_abstained",
+            "guias:width_machine_abstained",
+            "horizontales:finish_machine_abstained",
+            "horizontales:material_machine_abstained",
+            "length",
+            "material",
+            "modelo",
+            "quantity",
+            "sistema_de_apertura",
+            "thickness",
+            "trasera:finish_machine_abstained",
+            "trasera:material_machine_abstained",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-drawing-svg-r1",
+          "kind": "drawing_svg",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "general-components-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [
+            "guias:length_unknown",
+            "guias:width_unknown",
+            "guias:thickness_unknown"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "general-drawing-dxf-r1",
+          "kind": "drawing_dxf",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "general-components-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [
+            "guias:length_unknown",
+            "guias:width_unknown",
+            "guias:thickness_unknown"
+          ],
+          "sheet_id": null,
+          "component_id": null
+        },
+        {
+          "id": "construction:piece:costados:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-costados-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:costados",
+          "component_id": "costados"
+        },
+        {
+          "id": "construction:piece:costados:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-costados-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:costados",
+          "component_id": "costados"
+        },
+        {
+          "id": "construction:piece:horizontales:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-horizontales-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:horizontales",
+          "component_id": "horizontales"
+        },
+        {
+          "id": "construction:piece:horizontales:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-horizontales-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:horizontales",
+          "component_id": "horizontales"
+        },
+        {
+          "id": "construction:piece:frentes:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-frentes-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:frentes",
+          "component_id": "frentes"
+        },
+        {
+          "id": "construction:piece:frentes:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-frentes-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:frentes",
+          "component_id": "frentes"
+        },
+        {
+          "id": "construction:piece:trasera:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-trasera-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:trasera",
+          "component_id": "trasera"
+        },
+        {
+          "id": "construction:piece:trasera:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-trasera-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:trasera",
+          "component_id": "trasera"
+        },
+        {
+          "id": "construction:piece:caja_lados:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_lados-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_lados",
+          "component_id": "caja_lados"
+        },
+        {
+          "id": "construction:piece:caja_lados:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_lados-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_lados",
+          "component_id": "caja_lados"
+        },
+        {
+          "id": "construction:piece:caja_testeros:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_testeros-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_testeros",
+          "component_id": "caja_testeros"
+        },
+        {
+          "id": "construction:piece:caja_testeros:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_testeros-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_testeros",
+          "component_id": "caja_testeros"
+        },
+        {
+          "id": "construction:piece:caja_fondos:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_fondos-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_fondos",
+          "component_id": "caja_fondos"
+        },
+        {
+          "id": "construction:piece:caja_fondos:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-caja_fondos-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:caja_fondos",
+          "component_id": "caja_fondos"
+        },
+        {
+          "id": "construction:piece:guias:svg:p1-r1",
+          "kind": "piece_sheet_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-guias-p1-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:guias",
+          "component_id": "guias"
+        },
+        {
+          "id": "construction:piece:guias:dxf:p1-r1",
+          "kind": "piece_sheet_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "pieza-guias-p1-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": "construction:piece:guias",
+          "component_id": "guias"
+        }
+      ]
+    }
+  },
+  "latest": {
+    "review": {
+      "construction_validation": {
+        "status": "valid",
+        "parameter_order": [
+          "W",
+          "H",
+          "D",
+          "T",
+          "WI",
+          "HI",
+          "FW",
+          "FH",
+          "GAP",
+          "SEAM",
+          "THIN",
+          "BD",
+          "BH",
+          "SLIDE",
+          "BW",
+          "CROSS"
+        ],
+        "max_depth": 5,
+        "constraint_results": [
+          {
+            "constraint_id": "CW",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 900.0,
+              "max_mm": 900.0
+            },
+            "right_range_mm": {
+              "min_mm": 900.0,
+              "max_mm": 900.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "CH",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 800.0,
+              "max_mm": 800.0
+            },
+            "right_range_mm": {
+              "min_mm": 800.0,
+              "max_mm": 800.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "CF",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 764.0,
+              "max_mm": 764.0
+            },
+            "right_range_mm": {
+              "min_mm": 764.0,
+              "max_mm": 764.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "CD",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 450.0,
+              "max_mm": 450.0
+            },
+            "right_range_mm": {
+              "min_mm": 403.0,
+              "max_mm": 436.0
+            },
+            "residual_mm": 0.0
+          },
+          {
+            "constraint_id": "CBH",
+            "status": "pass",
+            "left_range_mm": {
+              "min_mm": 250.0,
+              "max_mm": 250.0
+            },
+            "right_range_mm": {
+              "min_mm": 165.0,
+              "max_mm": 208.0
+            },
+            "residual_mm": 0.0
+          }
+        ],
+        "issues": []
+      }
+    }
+  }
+}
