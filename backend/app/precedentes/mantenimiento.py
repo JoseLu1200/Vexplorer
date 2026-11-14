@@ -27,7 +27,6 @@ import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -111,8 +110,16 @@ def _transaccion(conexion: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
 
 
 def _asegurar_columna(db: sqlite3.Connection, tabla: str, columna: str, definicion: str) -> None:
-    if columna not in {fila[1] for fila in db.execute(f"PRAGMA table_info({tabla})")}:
+    """Migra esquemas antiguos. Las tablas nuevas ya declaran la columna en su CREATE TABLE; con varios
+    procesos arrancando a la vez sobre un esquema antiguo, el perdedor de la carrera ve
+    ``duplicate column name`` y basta con ignorarlo."""
+    if columna in {fila[1] for fila in db.execute(f"PRAGMA table_info({tabla})")}:
+        return
+    try:
         db.execute(f"ALTER TABLE {tabla} ADD COLUMN {columna} {definicion}")
+    except sqlite3.OperationalError as exc:
+        if "duplicate column" not in str(exc).lower():
+            raise
 
 
 def _lease_activo(titular: object, expira_en: float, ttl_s: float, ahora: float) -> bool:
@@ -133,7 +140,7 @@ class Lease:
                     "UPDATE candados SET expira_en=? WHERE nombre=? AND titular=?",
                     (self._candado.reloj() + self._ttl_s, self._nombre, self._titular),
                 ).rowcount
-        except sqlite3.OperationalError as exc:
+        except sqlite3.DatabaseError as exc:
             raise CandadoPerdido(f"{self._nombre}:no_renovable") from exc
         if cambiadas == 0:
             raise CandadoPerdido(self._nombre)
@@ -152,7 +159,7 @@ class CandadoPersistente:
         with _conexion(self.ruta, timeout_s) as db:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS candados ("
-                "nombre TEXT PRIMARY KEY, titular TEXT, expira_en REAL NOT NULL DEFAULT 0, ultima_llamada REAL)"
+                "nombre TEXT PRIMARY KEY, titular TEXT, expira_en REAL NOT NULL DEFAULT 0, ultima_llamada REAL, ttl_s REAL)"
             )
             _asegurar_columna(db, "candados", "ttl_s", "REAL")
 
@@ -183,7 +190,7 @@ class CandadoPersistente:
                     "INSERT OR REPLACE INTO candados (nombre, titular, expira_en, ultima_llamada, ttl_s) VALUES (?, ?, ?, ?, ?)",
                     (nombre, titular, ahora + ttl_s, ultima, ttl_s),
                 )
-        except sqlite3.OperationalError as exc:
+        except sqlite3.DatabaseError as exc:
             raise CandadoNoDisponible(str(exc)) from exc
         try:
             yield Lease(self, nombre, titular, ttl_s)
@@ -191,7 +198,7 @@ class CandadoPersistente:
             try:
                 with _conexion(self.ruta, self.timeout_s) as db:
                     db.execute("UPDATE candados SET titular=NULL, expira_en=0 WHERE nombre=? AND titular=?", (nombre, titular))
-            except sqlite3.OperationalError:
+            except sqlite3.DatabaseError:
                 # La operación ya terminó: no se convierte en error. El lease expira solo.
                 logger.warning("no se pudo liberar el candado %s; expirara por lease", nombre, exc_info=True)
 
@@ -231,7 +238,8 @@ class RegistroEspacio:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS sellos_embedding ("
                 "cache_key TEXT PRIMARY KEY, modelo TEXT NOT NULL, dimensiones INTEGER NOT NULL, "
-                "descriptor_version TEXT NOT NULL, huella_id TEXT NOT NULL, sellado_en TEXT NOT NULL)"
+                "descriptor_version TEXT NOT NULL, huella_id TEXT NOT NULL, sellado_en TEXT NOT NULL, "
+                "version_frases TEXT NOT NULL DEFAULT 'control-v1')"
             )
             _asegurar_columna(db, "sellos_embedding", "version_frases", "TEXT NOT NULL DEFAULT 'control-v1'")
             db.execute(
@@ -321,76 +329,77 @@ class RegistroEspacio:
 # ------------------------------------------------------------------------- cola de fondo
 
 
-@dataclass
-class _Cola:
-    ejecutor: ThreadPoolExecutor
-    detener: threading.Event = field(default_factory=threading.Event)
-    pendientes: set[str] = field(default_factory=set)
+class ColaMantenimiento:
+    """Cola de fondo de un solo hilo, acotada (``COLA_MAXIMA``) y deduplicada por clave.
+
+    Es una instancia, no un global: cada app (``create_app``) tiene la suya, de modo que apagar una no
+    cancela el trabajo de otra en el mismo proceso. ``tras_guardar_biblioteca`` usa ``COLA_PROCESO``
+    cuando no se le pasa una.
+    """
+
+    def __init__(self) -> None:
+        self._cerrojo = threading.Lock()
+        self._ejecutor: ThreadPoolExecutor | None = None
+        self._pendientes: set[str] = set()
+        self.detener = threading.Event()
+
+    def encolar(self, clave: str, tarea: Callable[[], None]) -> None:
+        """Una tarea cuenta como pendiente hasta que empieza a ejecutarse: si se guarda de nuevo el
+        mismo elemento mientras corre, se encola otra. El exceso se descarta con un aviso."""
+        with self._cerrojo:
+            if clave in self._pendientes:
+                return
+            if len(self._pendientes) >= COLA_MAXIMA:
+                logger.warning("cola de regeneracion llena; se omite %s", clave)
+                return
+            if self._ejecutor is None:
+                self._ejecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="precedentes-regeneracion")
+            ejecutor, pendientes, detener = self._ejecutor, self._pendientes, self.detener
+            pendientes.add(clave)
+
+        def ejecutar() -> None:
+            with self._cerrojo:
+                pendientes.discard(clave)
+            if not detener.is_set():
+                tarea()
+
+        ejecutor.submit(ejecutar)
+
+    def pendientes(self) -> int:
+        with self._cerrojo:
+            return len(self._pendientes)
+
+    def esperar(self, timeout_s: float = 30.0) -> None:
+        """Bloquea hasta que termine lo ya encolado (cola FIFO de un hilo); para tests."""
+        with self._cerrojo:
+            sentinela = None if self._ejecutor is None else self._ejecutor.submit(lambda: None)
+        if sentinela is not None:
+            sentinela.result(timeout_s)
+
+    def apagar(self) -> None:
+        """Descarta lo pendiente y avisa a la tarea en curso (aborta en su siguiente latido); no espera a
+        una llamada al proveedor ya iniciada. La cola queda reutilizable."""
+        with self._cerrojo:
+            ejecutor, detener = self._ejecutor, self.detener
+            self._ejecutor, self._pendientes, self.detener = None, set(), threading.Event()
+        detener.set()
+        if ejecutor is not None:
+            ejecutor.shutdown(wait=False, cancel_futures=True)
 
 
-_COLA: _Cola | None = None
-_CERROJO_COLA = threading.Lock()
-
-
-def _cola_actual() -> _Cola:
-    global _COLA
-    if _COLA is None:
-        _COLA = _Cola(ThreadPoolExecutor(max_workers=1, thread_name_prefix="precedentes-regeneracion"))
-    return _COLA
-
-
-def detener_actual() -> threading.Event:
-    """Evento que se activa al apagar; las tareas lo consultan en cada latido."""
-    with _CERROJO_COLA:
-        return _cola_actual().detener
+COLA_PROCESO = ColaMantenimiento()
 
 
 def pendientes() -> int:
-    with _CERROJO_COLA:
-        return 0 if _COLA is None else len(_COLA.pendientes)
-
-
-def _encolar(clave: str, tarea: Callable[[], None]) -> None:
-    """Un solo hilo de fondo, cola acotada (``COLA_MAXIMA``) y deduplicada por ``clave``.
-
-    Una tarea cuenta como pendiente hasta que empieza a ejecutarse: si se guarda de nuevo el mismo
-    elemento mientras corre, se encola otra. El exceso se descarta con un aviso.
-    """
-    with _CERROJO_COLA:
-        cola = _cola_actual()
-        if clave in cola.pendientes:
-            return
-        if len(cola.pendientes) >= COLA_MAXIMA:
-            logger.warning("cola de regeneracion llena; se omite %s", clave)
-            return
-        cola.pendientes.add(clave)
-
-    def ejecutar() -> None:
-        with _CERROJO_COLA:
-            cola.pendientes.discard(clave)
-        if not cola.detener.is_set():
-            tarea()
-
-    cola.ejecutor.submit(ejecutar)
+    return COLA_PROCESO.pendientes()
 
 
 def esperar_pendientes(timeout_s: float = 30.0) -> None:
-    """Bloquea hasta que termine lo ya encolado (cola FIFO de un hilo); para tests."""
-    with _CERROJO_COLA:
-        sentinela = None if _COLA is None else _COLA.ejecutor.submit(lambda: None)
-    if sentinela is not None:
-        sentinela.result(timeout_s)
+    COLA_PROCESO.esperar(timeout_s)
 
 
 def apagar_mantenimiento() -> None:
-    """Apagado de la app: descarta lo pendiente y avisa a la tarea en curso (aborta en su siguiente
-    latido); no espera a que termine una llamada al proveedor ya iniciada."""
-    global _COLA
-    with _CERROJO_COLA:
-        cola, _COLA = _COLA, None
-    if cola is not None:
-        cola.detener.set()
-        cola.ejecutor.shutdown(wait=False, cancel_futures=True)
+    COLA_PROCESO.apagar()
 
 
 # ------------------------------------------------------------------------- enganche tras guardar
@@ -432,7 +441,13 @@ def regenerar_elemento_en_segundo_plano(
         logger.warning("regeneracion tras guardar fallida (%s)", library_item_id, exc_info=True)
 
 
-def tras_guardar_biblioteca(root: Path, repositorio: RepositorioBiblioteca, proveedor: ProveedorEmbeddings | None, item: LibraryItem) -> None:
+def tras_guardar_biblioteca(
+    root: Path,
+    repositorio: RepositorioBiblioteca,
+    proveedor: ProveedorEmbeddings | None,
+    item: LibraryItem,
+    cola: ColaMantenimiento | None = None,
+) -> None:
     """Enganche único tras ``save_library_item``. Nunca lanza: no puede alterar la respuesta del guardado.
 
     1. Anota el embedding vigente del elemento y marca el anterior como reemplazado.
@@ -454,7 +469,8 @@ def tras_guardar_biblioteca(root: Path, repositorio: RepositorioBiblioteca, prov
         if metadatos.status == "generated":
             registro.sellar(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version, generado_en=item.created_at)
         if proveedor is not None and regeneracion_auto_activada():
-            detener = detener_actual()
-            _encolar(item.id, lambda: regenerar_elemento_en_segundo_plano(ruta, repositorio, proveedor, item.id, detener))
+            cola = cola or COLA_PROCESO
+            detener = cola.detener
+            cola.encolar(item.id, lambda: regenerar_elemento_en_segundo_plano(ruta, repositorio, proveedor, item.id, detener))
     except Exception:
         logger.warning("mantenimiento tras guardar omitido (%s)", item.id, exc_info=True)

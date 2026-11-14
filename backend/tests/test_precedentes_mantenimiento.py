@@ -329,7 +329,7 @@ def _preparar_cache_retirada(principal, router, proveedor, monkeypatch):
 def test_regeneracion_tras_guardar_desactivada_por_defecto_no_llama_al_proveedor(tmp_path: Path, monkeypatch) -> None:
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"]["status"] == "cache" and llamadas == 0
     assert len(_obsoletos(router)) == 2  # A y B siguen apuntando a la cache retirada
@@ -339,7 +339,7 @@ def test_regeneracion_tras_guardar_activada_regenera_solo_ese_elemento(tmp_path:
     principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"]["status"] == "cache"
     assert llamadas == 1
@@ -352,7 +352,7 @@ def test_regeneracion_tras_guardar_se_salta_si_el_candado_esta_ocupado(tmp_path:
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     with CandadoPersistente(tmp_path / "precedentes_espacio.sqlite3").ocupar("regeneracion", 60):
         guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b))
     assert guardado["embedding"] is not None and llamadas == 0
@@ -375,7 +375,7 @@ def test_regeneracion_tras_guardar_no_bloquea_la_respuesta(tmp_path: Path, monke
     assert dentro.wait(10)
     assert router.get(MANTENIMIENTO).json()["data"]["candados"]["regeneracion"]["ocupado"] is True
     soltar.set()
-    mantenimiento.esperar_pendientes(10)
+    principal.app.state.cola_mantenimiento.esperar(10)
     assert router.get(MANTENIMIENTO).json()["data"]["candados"]["regeneracion"]["ocupado"] is False
     assert _obsoletos(router) == []
 
@@ -384,7 +384,7 @@ def test_guardado_en_modo_offline_no_toca_el_proveedor(tmp_path: Path, monkeypat
     principal, router, _, proveedor = _entorno(tmp_path, monkeypatch)
     _, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_b, modo="offline"))
     assert guardado["embedding"] is None and llamadas == 0
 
@@ -407,7 +407,7 @@ def test_auto_con_revision_antigua_no_reescribe_la_revision_guardada(tmp_path: P
     principal, _, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
     run_id = _run_revisado(principal, "a")  # la revision vigente del run es la 2
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
     assert guardado["result_revision"] == 1
     assert llamadas == 1  # solo el embedding del propio guardado: sin llamada de pago extra
@@ -424,7 +424,7 @@ def test_auto_con_revision_antigua_y_huella_retirada_regenera_sin_cambiar_la_rev
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
-    monkeypatch.setattr(mantenimiento, "_encolar", lambda clave, tarea: tarea())
+    monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
     assert guardado["embedding"]["status"] == "cache" and llamadas == 1
     elemento = repositorio.get_library_item(run_id)
@@ -456,24 +456,25 @@ def test_salto_de_reloj_hacia_atras_no_deja_el_candado_colgado(tmp_path: Path) -
 
 
 def test_cola_de_fondo_acotada_deduplicada_y_cancelable() -> None:
-    mantenimiento.apagar_mantenimiento()
+    cola = mantenimiento.ColaMantenimiento()
+    cola.apagar()
     dentro, soltar = threading.Event(), threading.Event()
     ejecutadas: list[str] = []
-    mantenimiento._encolar("bloqueante", lambda: (dentro.set(), soltar.wait(10)))
+    cola.encolar("bloqueante", lambda: (dentro.set(), soltar.wait(10)))
     assert dentro.wait(5)
     for clave in ("x", "x", "x", "y"):
-        mantenimiento._encolar(clave, lambda clave=clave: ejecutadas.append(clave))
-    assert mantenimiento.pendientes() == 2  # "x" deduplicada
+        cola.encolar(clave, lambda clave=clave: ejecutadas.append(clave))
+    assert cola.pendientes() == 2  # "x" deduplicada
     for numero in range(100):
-        mantenimiento._encolar(f"k{numero}", lambda: None)
-    assert mantenimiento.pendientes() <= mantenimiento.COLA_MAXIMA
+        cola.encolar(f"k{numero}", lambda: None)
+    assert cola.pendientes() <= mantenimiento.COLA_MAXIMA
     inicio = time.time()
-    mantenimiento.apagar_mantenimiento()  # cancela lo pendiente y no espera a la tarea en curso
+    cola.apagar()  # cancela lo pendiente y no espera a la tarea en curso
     assert time.time() - inicio < 2
     soltar.set()
     time.sleep(0.3)
     assert ejecutadas == []
-    assert mantenimiento.pendientes() == 0
+    assert cola.pendientes() == 0
 
 
 def test_enganche_con_la_bd_bloqueada_no_retrasa_ni_rompe_el_201(tmp_path: Path, monkeypatch) -> None:
@@ -605,3 +606,120 @@ def test_version_de_frases_distinta_es_huella_desconocida_no_retirada(tmp_path: 
     assert _obsoletos(router) == []
     [elemento] = _obsoletos(router, incluir_sin_huella=True)
     assert elemento["motivos"] == ["huella_desconocida"]
+
+
+# ---------------------------------------------------------------- segunda revision: lost update, esquema antiguo, cola por app
+
+
+def test_apagar_una_cola_no_cancela_la_de_otra_app(tmp_path: Path, monkeypatch) -> None:
+    uno = create_app(data_dir=tmp_path / "uno")
+    dos = create_app(data_dir=tmp_path / "dos")
+    assert uno.state.cola_mantenimiento is not dos.state.cola_mantenimiento
+    dentro, soltar = threading.Event(), threading.Event()
+    ejecutadas: list[str] = []
+    dos.state.cola_mantenimiento.encolar("bloqueante", lambda: (dentro.set(), soltar.wait(10)))
+    assert dentro.wait(5)
+    dos.state.cola_mantenimiento.encolar("pendiente", lambda: ejecutadas.append("dos"))
+    uno.state.cola_mantenimiento.apagar()  # apagado de otra app en el mismo proceso
+    assert dos.state.cola_mantenimiento.pendientes() == 1
+    soltar.set()
+    dos.state.cola_mantenimiento.esperar(10)
+    assert ejecutadas == ["dos"]
+    dos.state.cola_mantenimiento.apagar()
+
+
+def test_un_guardado_concurrente_no_se_pierde_con_la_regeneracion_de_fondo(tmp_path: Path, monkeypatch) -> None:
+    principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    run_a, run_b = _preparar_cache_retirada(principal, router, proveedor, monkeypatch)
+    monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
+    dentro, soltar = threading.Event(), threading.Event()
+    embed, primera = proveedor.embed, [True]
+
+    def embed_bloqueante_la_primera_vez(texto: str) -> EmbeddingResult:
+        if primera[0]:
+            primera[0] = False
+            dentro.set()
+            soltar.wait(10)
+        return embed(texto)
+
+    monkeypatch.setattr(proveedor, "embed", embed_bloqueante_la_primera_vez)
+    _guardar(principal, run_b, revision=2)  # cache hit con huella retirada: encola la regeneracion de fondo
+    assert dentro.wait(10)
+    nuevo = principal.post(f"/api/v1/runs/{run_b}/library", json={"result_revision": 1, "label": "NUEVA", "embedding_mode": "openai"})
+    assert nuevo.status_code == 201
+    soltar.set()
+    principal.app.state.cola_mantenimiento.esperar(10)
+    elemento = repositorio.get_library_item(run_b)
+    assert elemento.result_revision == 1 and elemento.label == "NUEVA"
+    assert RegistroEspacio(AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3")).revision_vigente(f"library-{run_b}") == 1
+    del run_a
+
+
+def test_regeneracion_manual_no_pisa_un_guardado_hecho_durante_el_embed(tmp_path: Path, monkeypatch) -> None:
+    principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id, revision=1, modo="offline")
+    embed = proveedor.embed
+
+    def embed_con_guardado_concurrente(texto: str) -> EmbeddingResult:
+        resultado = embed(texto)
+        principal.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 1, "label": "NUEVA", "embedding_mode": "offline"})
+        return resultado
+
+    monkeypatch.setattr(proveedor, "embed", embed_con_guardado_concurrente)
+    [elemento] = router.post(REGENERAR, json={"simular": False}).json()["data"]["elementos"]
+    assert elemento["estado"] == "omitido" and elemento["motivo_omision"] == "modificado_durante_regeneracion"
+    guardado = repositorio.get_library_item(run_id)
+    assert guardado.label == "NUEVA" and guardado.result_revision == 1
+
+
+ESQUEMA_ANTIGUO = """
+CREATE TABLE candados (nombre TEXT PRIMARY KEY, titular TEXT, expira_en REAL NOT NULL DEFAULT 0, ultima_llamada REAL);
+CREATE TABLE sellos_embedding (cache_key TEXT PRIMARY KEY, modelo TEXT NOT NULL, dimensiones INTEGER NOT NULL,
+    descriptor_version TEXT NOT NULL, huella_id TEXT NOT NULL, sellado_en TEXT NOT NULL);
+"""
+
+SCRIPT_MIGRACION = """
+import sys, time
+from pathlib import Path
+from backend.app.precedentes.espacio import AlmacenEspacio
+from backend.app.precedentes.mantenimiento import CandadoPersistente, RegistroEspacio
+ruta, inicio = Path(sys.argv[1]), float(sys.argv[2])
+while time.time() < inicio:
+    time.sleep(0.002)
+CandadoPersistente(ruta)
+RegistroEspacio(AlmacenEspacio(ruta))
+print('OK', flush=True)
+"""
+
+
+def test_migracion_de_esquema_antiguo_con_procesos_concurrentes(tmp_path: Path) -> None:
+    ruta = tmp_path / "precedentes_espacio.sqlite3"
+    with sqlite3.connect(ruta) as db:
+        db.executescript(ESQUEMA_ANTIGUO)
+    inicio = time.time() + 5.0
+    procesos = [
+        subprocess.Popen([sys.executable, "-c", SCRIPT_MIGRACION, str(ruta), str(inicio)], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        for _ in range(8)
+    ]
+    resultados = [proceso.communicate(timeout=90) for proceso in procesos]
+    assert [proceso.returncode for proceso in procesos] == [0] * 8, [r[1][-300:] for r in resultados if r[1]]
+    with sqlite3.connect(ruta) as db:
+        assert "ttl_s" in {fila[1] for fila in db.execute("PRAGMA table_info(candados)")}
+        assert "version_frases" in {fila[1] for fila in db.execute("PRAGMA table_info(sellos_embedding)")}
+
+
+def test_base_ilegible_no_es_un_500(tmp_path: Path, monkeypatch) -> None:
+    candado = CandadoPersistente(tmp_path / "espacio.sqlite3")
+    original = mantenimiento._conexion
+    primera = [True]
+
+    def ilegible(ruta, timeout_s=30.0):
+        if primera[0]:
+            primera[0] = False
+            raise sqlite3.DatabaseError("file is not a database")
+        return original(ruta, timeout_s)
+
+    monkeypatch.setattr(mantenimiento, "_conexion", ilegible)
+    with pytest.raises(CandadoNoDisponible), candado.ocupar("espacio", 60):
+        pass

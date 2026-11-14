@@ -61,6 +61,8 @@ class RepositorioBiblioteca(Protocol):
 
     def get_run(self, run_id: str) -> RunSnapshot: ...
 
+    def get_library_item(self, run_id: str) -> LibraryItem: ...
+
     def get_result(self, run_id: str, revision: int | None = None) -> Result: ...
 
     def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]: ...
@@ -243,6 +245,16 @@ def _cache_en_espacio_retirado(contexto: ContextoEspacio | None, obsoleto: Eleme
     return vigente is not None and sello is not None and sello != vigente
 
 
+def _modificado_durante_regeneracion(repositorio: RepositorioBiblioteca, leido: LibraryItem) -> bool:
+    """Relee el elemento justo antes de escribir (no hay escritura condicional en el repositorio: queda
+    solo la ventana entre esta lectura y ``save_library_item``)."""
+    try:
+        actual = repositorio.get_library_item(leido.run_id)
+    except KeyError:
+        return True
+    return (actual.created_at, actual.result_revision, actual.descriptor_fingerprint) != (leido.created_at, leido.result_revision, leido.descriptor_fingerprint)
+
+
 def regenerar_elemento(
     repositorio: RepositorioBiblioteca,
     proveedor: ProveedorEmbeddings,
@@ -307,6 +319,9 @@ def regenerar_elemento(
     )
     if latido is not None:
         latido()
+    if _modificado_durante_regeneracion(repositorio, elemento):
+        # El usuario guardó otra cosa mientras se embebía: escribir ahora pisaría su guardado.
+        return _resultado(obsoleto, "omitido", motivo_omision="modificado_durante_regeneracion")
     try:
         repositorio.save_library_item(actualizado)
     except (KeyError, ValueError) as exc:
