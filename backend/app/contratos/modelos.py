@@ -454,17 +454,20 @@ class TableMeasure(StrictModel):
     evidence_ids: tuple[str, ...] = ()
     source_entity_ids: tuple[str, ...] = ()
     slot_origin: Literal["drawing", "profile_required_slot"] = "drawing"
+    geometry_relation: Literal["dimension_annotation", "offset_from_min_x", "offset_from_max_x", "offset_from_min_y", "offset_from_max_y", "opposite_offsets", "profile_required_slot"] = "dimension_annotation"
 
     @model_validator(mode="after")
     def value_matches_state(self) -> "TableMeasure":
-        if self.state == "observed" and (self.value_mm is None or not self.measurement_ids or not self.view_ids or not self.evidence_ids):
+        if self.state == "observed" and (self.value_mm is None or not self.view_ids or not self.evidence_ids or not (self.measurement_ids or self.source_entity_ids)):
             raise ValueError("observed table measure requires value and drawing provenance")
         if self.state != "observed" and self.value_mm is not None:
             raise ValueError("unknown or conflict table measure must have null value")
         if self.state == "conflict" and len(self.evidence_ids) < 2:
             raise ValueError("conflict table measure requires incompatible evidence")
-        if self.slot_origin == "profile_required_slot" and (self.state != "unknown" or self.measurement_ids or self.view_ids or self.evidence_ids or self.source_entity_ids):
+        if self.slot_origin == "profile_required_slot" and (self.state != "unknown" or self.geometry_relation != "profile_required_slot" or self.measurement_ids or self.view_ids or self.evidence_ids or self.source_entity_ids):
             raise ValueError("profile slot must be an unobserved unknown")
+        if self.slot_origin == "drawing" and self.geometry_relation == "profile_required_slot":
+            raise ValueError("drawing measure cannot claim a profile slot relation")
         return self
 
 
