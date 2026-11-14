@@ -26,6 +26,7 @@ nesting con motivo ``medida_desconocida``.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -119,12 +120,44 @@ class ResultadoNesting(ModeloEstricto):
     nota: str = NOTA_NESTING
 
 
-def _um(mm: float) -> int:
-    return round(mm * _UM)
+def _um_arriba(mm: float) -> int:
+    # El redondeo previo a 6 decimales elimina el ruido de coma flotante (1220.3 mm
+    # es 1220300.0000000002 µm) para que ``ceil`` no sume un micrómetro espurio.
+    return math.ceil(round(mm * _UM, 6))
+
+
+def _um_abajo(mm: float) -> int:
+    return math.floor(round(mm * _UM, 6))
 
 
 def _um_pieza(mm: float) -> int:
-    return max(1, _um(mm))
+    """Piezas, margen y kerf se redondean hacia arriba; el tablero, hacia abajo.
+
+    Todo error de redondeo juega en contra de la pieza, nunca a su favor: lo que se
+    declara colocado cabe de verdad en el tablero físico.
+    """
+    return max(1, _um_arriba(mm))
+
+
+class _Geometria(NamedTuple):
+    margen: int
+    kerf: int
+    ancho_util: int
+    alto_util: int
+    area_tablero: int
+
+
+def _geometria(parametros: ParametrosNesting) -> _Geometria:
+    margen = _um_arriba(parametros.margen_mm)
+    largo = _um_abajo(parametros.tablero_largo_mm)
+    ancho = _um_abajo(parametros.tablero_ancho_mm)
+    return _Geometria(
+        margen=margen,
+        kerf=_um_arriba(parametros.kerf_mm),
+        ancho_util=largo - 2 * margen,
+        alto_util=ancho - 2 * margen,
+        area_tablero=largo * ancho,
+    )
 
 
 def _cabe(w: int, h: int, ancho_util: int, alto_util: int, girable: bool) -> bool:
@@ -140,13 +173,12 @@ def cabe_en_area_util(
     rotable: bool = True,
 ) -> bool:
     """La pieza entra, sola, en el área útil del tablero (con rotación si procede)."""
-    util_l = _um(parametros.tablero_largo_mm) - 2 * _um(parametros.margen_mm)
-    util_a = _um(parametros.tablero_ancho_mm) - 2 * _um(parametros.margen_mm)
+    geo = _geometria(parametros)
     return _cabe(
         _um_pieza(largo_mm),
         _um_pieza(ancho_mm),
-        util_l,
-        util_a,
+        geo.ancho_util,
+        geo.alto_util,
         parametros.permitir_rotacion and rotable,
     )
 
@@ -239,9 +271,14 @@ def nestear(
     """Coloca todas las ocurrencias de ``piezas`` en tableros del tamaño dado.
 
     Lanza ``DemasiadasOcurrencias`` si hay más de ``LIMITE_OCURRENCIAS`` ocurrencias
-    con medidas conocidas. No agrupa por material: eso lo hace quien llama.
+    con medidas conocidas y ``ValueError`` si hay pares (origen_id, pieza_id)
+    duplicados. No agrupa por material: eso lo hace quien llama.
     """
     ordenadas = sorted(piezas, key=lambda p: (p.origen_id, p.pieza_id))
+    claves = [(p.origen_id, p.pieza_id) for p in ordenadas]
+    if len(set(claves)) != len(claves):
+        repetidas = sorted({f"{o}/{i}" for o, i in claves if claves.count((o, i)) > 1})
+        raise ValueError("Piezas duplicadas: " + ", ".join(repetidas))
     total = sum(
         unidades(p)
         for p in ordenadas
@@ -250,11 +287,7 @@ def nestear(
     if total > LIMITE_OCURRENCIAS:
         raise DemasiadasOcurrencias(total)
 
-    margen = _um(parametros.margen_mm)
-    kerf = _um(parametros.kerf_mm)
-    ancho_util = _um(parametros.tablero_largo_mm) - 2 * margen
-    alto_util = _um(parametros.tablero_ancho_mm) - 2 * margen
-    area_tablero = _um(parametros.tablero_largo_mm) * _um(parametros.tablero_ancho_mm)
+    margen, kerf, ancho_util, alto_util, area_tablero = _geometria(parametros)
 
     items: list[_Item] = []
     no_colocadas: list[PiezaNoColocada] = []
@@ -288,20 +321,27 @@ def nestear(
     minimo = min((min(i.w, i.h) for i in items), default=1)
     tableros: list[_Tablero] = []
     area_util = _Hueco(margen, margen, ancho_util, alto_util)
+    # Los huecos de un tablero solo se reducen: si una forma no cupo en un tablero,
+    # no cabrá nunca. ``primer_candidato`` recuerda, por forma, desde qué tablero
+    # buscar. Evita el coste cuadrático (una pieza por tablero) sin cambiar el
+    # resultado del first-fit.
+    primer_candidato: dict[tuple[int, int, bool], int] = {}
     for item in items:
-        elegido: tuple[_Tablero, int, bool] | None = None
-        for tablero in tableros:
-            ajuste = tablero.mejor_ajuste(item)
+        forma = (item.w, item.h, item.girable)
+        elegido: tuple[int, int, bool] | None = None
+        for indice in range(primer_candidato.get(forma, 0), len(tableros)):
+            ajuste = tableros[indice].mejor_ajuste(item)
             if ajuste is not None:
-                elegido = (tablero, ajuste[1], ajuste[2])
+                elegido = (indice, ajuste[1], ajuste[2])
                 break
         if elegido is None:
             nuevo = _Tablero(area_util)
             ajuste = nuevo.mejor_ajuste(item)
             assert ajuste is not None  # ya comprobado que cabe en el área útil
             tableros.append(nuevo)
-            elegido = (nuevo, ajuste[1], ajuste[2])
-        elegido[0].colocar(item, elegido[1], elegido[2], kerf, minimo)
+            elegido = (len(tableros) - 1, ajuste[1], ajuste[2])
+        primer_candidato[forma] = elegido[0]
+        tableros[elegido[0]].colocar(item, elegido[1], elegido[2], kerf, minimo)
 
     colocaciones: list[Colocacion] = []
     detalle: list[TableroNesting] = []

@@ -25,7 +25,6 @@ from backend.app.precedentes.comun import ModeloEstricto, normalizar_texto
 from backend.app.precedentes.nesting import (
     LIMITE_OCURRENCIAS,
     MOTIVOS_NO_CABE,
-    DemasiadasOcurrencias,
     ParametrosNesting,
     ResultadoNesting,
     cabe_en_area_util,
@@ -37,6 +36,13 @@ from backend.app.precedentes.piezas import (
     contar_origen,
     unidades,
 )
+
+# El límite por lote (``LIMITE_OCURRENCIAS``) protege cada nesting; este presupuesto
+# acota el trabajo total de una petición con muchos lotes. Un lote que no entra
+# conserva su estimación por superficie y se marca con el motivo.
+LIMITE_OCURRENCIAS_TOTAL = 15_000
+MOTIVO_DEMASIADAS_OCURRENCIAS = "demasiadas_ocurrencias"
+MOTIVO_LIMITE_TOTAL = "limite_total_de_calculo"
 
 NOTA_ESTIMACION = (
     "Referencia por superficie: ceil(superficie / (área de tablero × aprovechamiento)). "
@@ -82,7 +88,9 @@ class LoteCorte(ModeloEstricto):
     unidades_con_cantidad_supuesta: int
     superficie_m2: float
     estimacion: EstimacionTableros
-    nesting: ResultadoNesting
+    # ``None`` si no se calculó: ver ``nesting_omitido``; la estimación siempre existe.
+    nesting: ResultadoNesting | None
+    nesting_omitido: str | None = None
     piezas_que_no_caben: tuple[PiezaNoCabe, ...]
 
 
@@ -169,35 +177,73 @@ def preparar_lotes(
             pieza
         )
 
-    total_ocurrencias = sum(unidades(p) for m in por_clave.values() for p in m)
-    if total_ocurrencias > LIMITE_OCURRENCIAS:
-        raise DemasiadasOcurrencias(total_ocurrencias)
-
-    lotes: list[LoteCorte] = []
+    grupos = []
     for (espesor, material, acabado), miembros in por_clave.items():
         superficie_mm2 = sum(
             float(p.largo_mm or 0) * float(p.ancho_mm or 0) * unidades(p)
             for p in miembros
         )
-        resultado_nesting = nestear(miembros, configuracion)
-        no_caben = tuple(
-            PiezaNoCabe(
-                origen_id=n.origen_id,
-                pieza_id=n.pieza_id,
-                largo_mm=float(n.largo_mm or 0),
-                ancho_mm=float(n.ancho_mm or 0),
-            )
-            for n in resultado_nesting.no_colocadas
-            if n.motivo in MOTIVOS_NO_CABE
+        grupos.append((espesor, material, acabado, miembros, superficie_mm2))
+    grupos.sort(
+        key=lambda g: (
+            -round(g[4] / 1_000_000, 6),
+            g[0],
+            g[1],
+            g[2] is None,
+            g[2] or "",
         )
+    )
+
+    lotes: list[LoteCorte] = []
+    presupuesto = LIMITE_OCURRENCIAS_TOTAL
+    for indice, (espesor, material, acabado, miembros, superficie_mm2) in enumerate(
+        grupos, start=1
+    ):
+        ocurrencias = sum(unidades(p) for p in miembros)
+        omitido: str | None = None
+        if ocurrencias > LIMITE_OCURRENCIAS:
+            omitido = MOTIVO_DEMASIADAS_OCURRENCIAS
+        elif ocurrencias > presupuesto:
+            omitido = MOTIVO_LIMITE_TOTAL
+        resultado_nesting: ResultadoNesting | None = None
+        if omitido is None:
+            presupuesto -= ocurrencias
+            resultado_nesting = nestear(miembros, configuracion)
+            no_caben = tuple(
+                PiezaNoCabe(
+                    origen_id=n.origen_id,
+                    pieza_id=n.pieza_id,
+                    largo_mm=float(n.largo_mm or 0),
+                    ancho_mm=float(n.ancho_mm or 0),
+                )
+                for n in resultado_nesting.no_colocadas
+                if n.motivo in MOTIVOS_NO_CABE
+            )
+        else:
+            # Sin nesting solo se puede comprobar cada pieza por separado.
+            no_caben = tuple(
+                PiezaNoCabe(
+                    origen_id=p.origen_id,
+                    pieza_id=p.pieza_id,
+                    largo_mm=float(p.largo_mm or 0),
+                    ancho_mm=float(p.ancho_mm or 0),
+                )
+                for p in miembros
+                if not cabe_en_tablero(
+                    float(p.largo_mm or 0),
+                    float(p.ancho_mm or 0),
+                    configuracion,
+                    p.rotable,
+                )
+            )
         lotes.append(
             LoteCorte(
-                lote_id="",
+                lote_id=f"lote-{indice:03d}",
                 clave=ClaveLote(espesor_mm=espesor, material=material, acabado=acabado),
                 pedidos=tuple(sorted({p.origen_id for p in miembros})),
                 piezas=tuple(miembros),
                 referencias=len(miembros),
-                unidades=sum(unidades(p) for p in miembros),
+                unidades=ocurrencias,
                 unidades_con_cantidad_supuesta=sum(
                     1 for p in miembros if p.cantidad is None
                 ),
@@ -209,23 +255,12 @@ def preparar_lotes(
                     aprovechamiento=configuracion.aprovechamiento,
                 ),
                 nesting=resultado_nesting,
+                nesting_omitido=omitido,
                 piezas_que_no_caben=no_caben,
             )
         )
 
-    lotes.sort(
-        key=lambda lote: (
-            -lote.superficie_m2,
-            lote.clave.espesor_mm,
-            lote.clave.material,
-            lote.clave.acabado is None,
-            lote.clave.acabado or "",
-        )
-    )
-    numerados = tuple(
-        lote.model_copy(update={"lote_id": f"lote-{indice:03d}"})
-        for indice, lote in enumerate(lotes, start=1)
-    )
+    numerados = tuple(lotes)
     con_piezas = {p.origen_id for p in piezas}
     todos = sorted(set(pedidos) | con_piezas)
     return ResultadoLotes(

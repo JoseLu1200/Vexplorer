@@ -4,13 +4,25 @@ from __future__ import annotations
 
 import itertools
 import random
+import time
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from backend.app.contratos.modelos import (
+    DescriptorDimensions,
+    DescriptorPartFeature,
+    FurnitureDescriptorV2,
+    LibraryItem,
+    RoleQuantity,
+)
 from backend.app.precedentes.api_piezas import crear_router_piezas
-from backend.app.precedentes.lotes import ConfiguracionLotes, preparar_lotes
+from backend.app.precedentes.lotes import (
+    LIMITE_OCURRENCIAS_TOTAL,
+    ConfiguracionLotes,
+    preparar_lotes,
+)
 from backend.app.precedentes.nesting import (
     LIMITE_OCURRENCIAS,
     DemasiadasOcurrencias,
@@ -276,6 +288,19 @@ def test_propiedad_sin_solapes_ni_salidas(semilla: int) -> None:
     ]
     r = nestear(piezas, parametros)
     comprobar_geometria(r, piezas, parametros)
+    # Ninguna pieza que cabe sola en el área útil puede quedar sin colocar.
+    no_colocadas_ids = {(n.origen_id, n.pieza_id) for n in r.no_colocadas}
+    util_l = parametros.tablero_largo_mm - 2 * parametros.margen_mm
+    util_a = parametros.tablero_ancho_mm - 2 * parametros.margen_mm
+    for p in piezas:
+        cabe = (p.largo_mm <= util_l and p.ancho_mm <= util_a) or (
+            parametros.permitir_rotacion
+            and p.rotable
+            and p.ancho_mm <= util_l
+            and p.largo_mm <= util_a
+        )
+        if cabe:
+            assert (p.origen_id, p.pieza_id) not in no_colocadas_ids, p
     total = sum(p.cantidad or 1 for p in piezas)
     no_colocadas = sum(n.ocurrencias for n in r.no_colocadas)
     assert len(r.colocaciones) + no_colocadas == total
@@ -300,6 +325,46 @@ def test_rendimiento_con_el_maximo_de_ocurrencias() -> None:
     ]
     r = nestear(piezas, ParametrosNesting())
     assert len(r.colocaciones) == 60 * (LIMITE_OCURRENCIAS // 60)
+
+
+def test_redondeo_del_lado_seguro() -> None:
+    # Una pieza 0,4 µm más grande que el área útil no cabe (no se redondea a favor).
+    r = nestear([pieza("a", largo=2440.0004, ancho=1220)], sin_kerf())
+    assert r.tableros == 0 and r.no_colocadas[0].motivo == "mas_grande_que_el_area_util"
+    # Un tablero 0,4 µm más pequeño que la pieza tampoco la admite.
+    pequeno = ParametrosNesting(tablero_largo_mm=2439.9996, kerf_mm=0, margen_mm=0)
+    assert nestear([pieza("a", largo=2440, ancho=1220)], pequeno).tableros == 0
+    # El ruido de coma flotante no expulsa una pieza que mide exactamente lo mismo.
+    exacto = ParametrosNesting(
+        tablero_largo_mm=1220.3, tablero_ancho_mm=610.7, kerf_mm=0
+    )
+    assert nestear([pieza("a", largo=1220.3, ancho=610.7)], exacto).tableros == 1
+
+
+def test_pares_duplicados_son_un_error() -> None:
+    with pytest.raises(ValueError, match="duplicad"):
+        nestear([pieza("a"), pieza("a", largo=300)], ParametrosNesting())
+    # El mismo pieza_id en orígenes distintos es válido.
+    r = nestear([pieza("a", pedido="P1"), pieza("a", pedido="P2")], ParametrosNesting())
+    assert len(r.colocaciones) == 2
+
+
+def test_peor_caso_una_pieza_por_tablero() -> None:
+    # 1300x700 no admite una segunda pieza en 2440x1220 (ni girada): un tablero por pieza.
+    piezas = [pieza("a", largo=1300, ancho=700, cantidad=LIMITE_OCURRENCIAS)]
+    inicio = time.perf_counter()
+    r = nestear(piezas, ParametrosNesting())
+    assert time.perf_counter() - inicio < 10
+    assert r.tableros == LIMITE_OCURRENCIAS
+    # Formas todas distintas: el coste sigue acotado.
+    distintas = [
+        pieza(f"p{i:04d}", largo=1300 + i / 100, ancho=700)
+        for i in range(LIMITE_OCURRENCIAS)
+    ]
+    inicio = time.perf_counter()
+    r = nestear(distintas, ParametrosNesting())
+    assert time.perf_counter() - inicio < 10
+    assert r.tableros == LIMITE_OCURRENCIAS
 
 
 # ---------- integración con lotes ----------
@@ -343,10 +408,37 @@ def test_lotes_separan_grupos_y_numeran_tableros_por_grupo() -> None:
     assert resultado.configuracion.kerf_mm == 3
 
 
-def test_demasiadas_ocurrencias_en_lotes() -> None:
-    piezas = [pieza("a", cantidad=LIMITE_OCURRENCIAS), pieza("b", cantidad=1)]
-    with pytest.raises(DemasiadasOcurrencias):
-        preparar_lotes(piezas, ConfiguracionLotes())
+def test_limite_de_ocurrencias_es_por_lote() -> None:
+    piezas = [
+        pieza("grande", cantidad=LIMITE_OCURRENCIAS + 1, material="a"),
+        pieza("larga", largo=3000, cantidad=LIMITE_OCURRENCIAS + 1, material="a"),
+        pieza("pequena", cantidad=2, material="b"),
+    ]
+    resultado = preparar_lotes(piezas, ConfiguracionLotes())
+    por_material = {lote.clave.material: lote for lote in resultado.lotes}
+    excedido = por_material["a"]
+    assert excedido.nesting is None
+    assert excedido.nesting_omitido == "demasiadas_ocurrencias"
+    assert excedido.estimacion.tableros >= 1
+    assert [p.pieza_id for p in excedido.piezas_que_no_caben] == ["larga"]
+    assert por_material["b"].nesting is not None
+    assert por_material["b"].nesting_omitido is None
+    assert por_material["b"].nesting.tableros == 1
+
+
+def test_presupuesto_total_de_calculo() -> None:
+    piezas = [
+        pieza(f"p{i}", cantidad=LIMITE_OCURRENCIAS, material=f"m{i}")
+        for i in range(LIMITE_OCURRENCIAS_TOTAL // LIMITE_OCURRENCIAS + 1)
+    ]
+    config = ConfiguracionLotes(tablero_largo_mm=10000, tablero_ancho_mm=10000)
+    resultado = preparar_lotes(piezas, config)
+    omitidos = [lote for lote in resultado.lotes if lote.nesting is None]
+    assert len(omitidos) == 1
+    assert omitidos[0].nesting_omitido == "limite_total_de_calculo"
+    assert all(
+        lote.nesting is not None for lote in resultado.lotes if lote is not omitidos[0]
+    )
 
 
 def test_parametros_invalidos() -> None:
@@ -429,18 +521,80 @@ def test_endpoint_rotable_false_y_permitir_rotacion() -> None:
     assert r.json()["data"]["lotes"][0]["nesting"]["tableros"] == 0
 
 
-def test_endpoint_limite_de_ocurrencias() -> None:
+def test_endpoint_limite_de_ocurrencias_por_lote() -> None:
     piezas = [pieza_json("a", 100, 100, cantidad=LIMITE_OCURRENCIAS + 1)]
     r = cliente().post(RUTA, json=cuerpo(piezas))
-    assert r.status_code == 422
-    assert r.json()["error"]["code"] == "demasiadas_ocurrencias"
+    assert r.status_code == 200
+    lote = r.json()["data"]["lotes"][0]
+    assert lote["nesting"] is None
+    assert lote["nesting_omitido"] == "demasiadas_ocurrencias"
+    assert lote["estimacion"]["tableros"] >= 1
 
 
-def test_endpoint_configuracion_invalida() -> None:
-    r = cliente().post(RUTA, json=cuerpo([pieza_json("a", 100, 100)], margen_mm=700))
-    assert r.status_code == 422
-    r = cliente().post(RUTA, json=cuerpo([pieza_json("a", 100, 100)], kerf_mm=-1))
-    assert r.status_code == 422
+def item_v2(run_id: str, material: str, cantidad: int) -> LibraryItem:
+    return LibraryItem(
+        id=f"lib-{run_id}",
+        run_id=run_id,
+        result_revision=1,
+        label=run_id,
+        descriptor=FurnitureDescriptorV2(
+            family="rectangular_shelving",
+            dimensions=DescriptorDimensions(),
+            roles=(RoleQuantity(role="side", quantity=2),),
+            structure="unknown",
+            material=material,
+            finish="mate",
+            thicknesses_mm=(18.0,),
+            classification_status="hypothesis",
+            part_features=(
+                DescriptorPartFeature(
+                    length_mm=500, width_mm=400, thickness_mm=18, quantity=cantidad
+                ),
+            ),
+            unknown_fields=(),
+        ),
+        descriptor_fingerprint="a" * 64,
+        created_at="2026-01-01T00:00:00Z",
+    )
+
+
+def test_endpoint_biblioteca_con_un_lote_excedido_sigue_dando_200() -> None:
+    class Biblioteca:
+        def get_library_items(self) -> tuple[LibraryItem, ...]:
+            return (
+                item_v2("run-grande", "melamina", LIMITE_OCURRENCIAS + 1),
+                item_v2("run-pequeno", "roble", 3),
+            )
+
+    app = FastAPI()
+    app.include_router(crear_router_piezas(Biblioteca()))
+    r = TestClient(app).post(RUTA, json={"incluir_biblioteca": True})
+    assert r.status_code == 200
+    por_material = {
+        lote["clave"]["material"]: lote for lote in r.json()["data"]["lotes"]
+    }
+    assert por_material["melamina"]["nesting"] is None
+    assert por_material["melamina"]["nesting_omitido"] == "demasiadas_ocurrencias"
+    assert por_material["roble"]["nesting"]["tableros"] == 1
+    # Las piezas de biblioteca no traen información de veta: salen rotables.
+    assert por_material["roble"]["piezas"][0]["rotable"] is True
+
+
+def test_endpoint_configuracion_invalida_mismo_formato() -> None:
+    piezas = [pieza_json("a", 100, 100)]
+    casos = [
+        {"margen_mm": 700},
+        {"kerf_mm": -1},
+        {"margen_mm": 400, "tablero_largo_mm": 600, "tablero_ancho_mm": 600},
+    ]
+    detalles = []
+    for extra in casos:
+        r = cliente().post(RUTA, json=cuerpo(piezas, **extra))
+        assert r.status_code == 422
+        detalles.append(r.json()["detail"])
+    assert all(isinstance(d, list) and d for d in detalles)
+    assert "margen" in detalles[2][0]["msg"].lower()
+    assert "margen" not in detalles[1][0]["msg"].lower()
 
 
 def test_endpoint_sin_campos_nuevos_sigue_funcionando() -> None:
