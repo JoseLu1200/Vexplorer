@@ -254,6 +254,35 @@ def test_planner_builds_dimensioned_piece_sheet_and_typed_bore_detail() -> None:
     assert callout.points_mm[1].y == callout.points_mm[0].y
 
 
+def test_planner_wraps_maximum_detail_rationale_without_losing_content() -> None:
+    review = _review()
+    rationale = (
+        "Conjunto estabilizador con escuadras repartidas y anclajes antivuelco; "
+        "la geometría identifica el perímetro propuesto, conserva la autoridad "
+        "estimada y documenta que la capacidad de carga no está certificada. "
+    )
+    rationale = (rationale * 4)[:500]
+    detail = review.construction_details[0].model_copy(update={"rationale": rationale})
+    review = review.model_copy(update={"construction_details": (detail,)})
+
+    plan = plan_general_construction(review, _validation())
+
+    sheet = next(item for item in plan.sheets if item.kind == "piece")
+    detail_lines = [
+        item for item in sheet.primitives
+        if item.kind in {"detail_callout", "text"}
+        and item.source_refs == ("contour:side", "premise:hardware", "parameter:bore-diameter")
+    ]
+    assert len(detail_lines) > 1
+    assert detail_lines[0].kind == "detail_callout"
+    assert all(len(item.text or "") <= 120 for item in detail_lines)
+    prefix = f"{detail.id} · {detail.kind}: "
+    rendered_rationale = (detail_lines[0].text or "").removeprefix(prefix) + "".join(
+        item.text or "" for item in detail_lines[1:]
+    )
+    assert rendered_rationale == rationale
+
+
 def test_planner_omits_assembly_without_explicit_placements_but_keeps_piece_sheet() -> None:
     plan = plan_general_construction(_review(placements=False), _validation())
 

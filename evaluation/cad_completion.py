@@ -18,41 +18,53 @@ _ROLE_ALIASES = {
     "work_surface": {
         "work_surface", "worktop", "tabletop", "table_top", "top_panel",
         "surface_panel", "encimera", "tablero_superior", "tapa",
+        "superficie_horizontal",
     },
     "vertical_support": {
         "vertical_support", "leg", "table_leg", "support_leg", "pata",
-        "apoyo_vertical", "soporte_vertical",
+        "apoyo_vertical", "soporte_vertical", "costados_portantes",
     },
     "longitudinal_apron": {
         "longitudinal_apron", "apron_long", "long_apron", "long_rail",
         "longitudinal_rail", "faldon_largo", "larguero_longitudinal",
+        "arriostramiento_longitudinal",
     },
     "transverse_apron": {
         "transverse_apron", "apron_short", "short_apron", "cross_apron",
         "short_rail", "cross_rail", "faldon_corto", "travesano",
+        "arriostramiento_transversal",
     },
     "side_panel": {
         "side_panel", "side", "cabinet_side", "carcass_side", "lateral", "costado",
+        "carcasa_lateral", "costados_portantes",
     },
     "top_bottom_panel": {
         "top_bottom_panel", "horizontal_panel", "carcass_horizontal_panel",
         "top_panel", "bottom_panel", "tapa_base", "panel_superior_inferior",
+        "carcasa_horizontal", "cierres_horizontales",
     },
-    "back_panel": {"back_panel", "back", "rear_panel", "trasera", "fondo"},
+    "back_panel": {
+        "back_panel", "back", "rear_panel", "trasera", "fondo", "arriostramiento",
+    },
     "internal_shelf": {
         "internal_shelf", "shelf", "adjustable_shelf", "balda", "estante",
+        "estantes_interiores",
     },
     "drawer_front": {
         "drawer_front", "drawer_face", "front_drawer", "frente_cajon",
+        "frentes_moviles",
     },
     "drawer_box_side": {
         "drawer_box_side", "drawer_side", "costado_cajon", "lateral_cajon",
+        "paredes_laterales_cajones",
     },
     "drawer_box_front_back": {
         "drawer_box_front_back", "drawer_box_end", "drawer_front_back",
-        "frente_trasera_cajon",
+        "frente_trasera_cajon", "paredes_transversales_cajones",
     },
-    "drawer_bottom": {"drawer_bottom", "drawer_base", "fondo_cajon"},
+    "drawer_bottom": {
+        "drawer_bottom", "drawer_base", "fondo_cajon", "fondos_cajones",
+    },
 }
 
 
@@ -157,7 +169,14 @@ def _expected_dimension_score(expected: dict[str, Any], predicted: dict[str, Any
         correct = int(
             minimum is not None and maximum is not None and minimum <= value <= maximum
         )
-    basis_correct = int(correct == 1 and predicted.get("state") == kind)
+    state = predicted.get("state")
+    observed_copy = (
+        kind == "observed"
+        and state == "deduced"
+        and predicted.get("method") == "observed_copy"
+        and bool(predicted.get("source_refs"))
+    )
+    basis_correct = int(correct == 1 and (state == kind or observed_copy))
     declared_estimate = 0
     if kind == "estimated":
         interval = _range(predicted)
@@ -223,7 +242,9 @@ def _scenario_metrics(scenario: dict[str, Any], pieces: list[dict[str, Any]]) ->
         )
         if piece is None:
             continue
-        matched_piece_ids.append(str(piece.get("id", "")))
+        matched_piece_ids.append(
+            str(piece.get("piece_id") or piece.get("component_id") or piece.get("id", ""))
+        )
         quantity_correct += int(_quantity_value(piece) == reference_piece.get("quantity"))
         if _quantity(piece).get("state") not in _SAFE_QUANTITY_STATES:
             unsafe_roles.append(str(reference_piece.get("role")))
@@ -257,7 +278,7 @@ def _scenario_metrics(scenario: dict[str, Any], pieces: list[dict[str, Any]]) ->
 def _artifact_formats(package: dict[str, Any], plan: dict[str, Any], piece: dict[str, Any]) -> set[str]:
     artifacts = package.get("artifacts", plan.get("artifacts", ()))
     sheet_ids = set(piece.get("sheet_ids", ()))
-    piece_id = piece.get("id")
+    piece_id = piece.get("component_id") or piece.get("piece_id") or piece.get("id")
     result: set[str] = set()
     for raw in artifacts if isinstance(artifacts, (list, tuple)) else ():
         if not isinstance(raw, dict) or raw.get("status") != "ready":
@@ -270,6 +291,49 @@ def _artifact_formats(package: dict[str, Any], plan: dict[str, Any], piece: dict
         elif kind in {"drawing_dxf", "piece_sheet_dxf"}:
             result.add("dxf")
     return result
+
+
+def _construction_requirements(
+    scenario: dict[str, Any],
+    plan: dict[str, Any],
+    aligned: list[tuple[dict[str, Any], dict[str, Any] | None]],
+) -> dict[str, Any]:
+    constraints = scenario.get("closure_constraints", ())
+    constraint_text = " ".join(str(item) for item in constraints).lower()
+    requires_stabilization = any(
+        token in constraint_text
+        for token in ("anchoring", "anti-racking", "anti racking", "bracing")
+    )
+    if not requires_stabilization:
+        return {"satisfied": 0, "required": 0, "missing": []}
+
+    has_structural_back = False
+    for reference_piece, piece in aligned:
+        if _normal(reference_piece.get("role")) != "back_panel" or piece is None:
+            continue
+        quantity_correct, dimensions_correct, _ = _candidate_score(
+            reference_piece, piece
+        )
+        if quantity_correct == 1 and dimensions_correct == 3:
+            has_structural_back = True
+            break
+    details = plan.get("details", ())
+    has_explicit_anchor = any(
+        isinstance(detail, dict)
+        and detail.get("kind") == "fastener"
+        and bool(detail.get("source_refs") or detail.get("assumption_refs"))
+        and any(
+            token in str(detail.get("rationale", "")).lower()
+            for token in ("anchor", "ancl", "wall", "muro", "anti-rack", "antivuelco")
+        )
+        for detail in details if isinstance(details, (list, tuple))
+    )
+    satisfied = has_structural_back or has_explicit_anchor
+    return {
+        "satisfied": int(satisfied),
+        "required": 1,
+        "missing": [] if satisfied else ["anti_racking_or_anchoring_detail"],
+    }
 
 
 def _validation(outcome: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
@@ -325,6 +389,12 @@ def evaluate_cad_completion(reference: dict[str, Any], outcome: dict[str, Any]) 
         isinstance(item, dict) and item.get("status") == "fail" for item in constraint_results
     )
     closure_valid = validation.get("status") == "valid" and constraints_clean
+    selected_scenario = next(
+        item for item in scenarios if item.get("key") == selected["key"]
+    )
+    construction_requirements = _construction_requirements(
+        selected_scenario, plan, selected["aligned"]
+    )
     required = selected["required"]
     dimension_required = selected["dimension_required"]
     utility_pass = all(
@@ -338,6 +408,8 @@ def evaluate_cad_completion(reference: dict[str, Any], outcome: dict[str, Any]) 
             drawing_complete == required,
             not selected["unsafe_roles"],
             closure_valid,
+            construction_requirements["satisfied"]
+            == construction_requirements["required"],
         )
     )
     return {
@@ -345,7 +417,7 @@ def evaluate_cad_completion(reference: dict[str, Any], outcome: dict[str, Any]) 
         "case_id": reference.get("case_id"),
         "control_kind": reference.get("reference_kind"),
         "selected_reference_scenario": selected["key"],
-        "role_matching": "preregistered_furniture_aliases_v1",
+        "role_matching": "postfreeze_generic_furniture_aliases_v2",
         "necessary_piece_types": {
             "matched": selected["matched"],
             "required": required,
@@ -370,6 +442,7 @@ def evaluate_cad_completion(reference: dict[str, Any], outcome: dict[str, Any]) 
             "server_validation": validation.get("status", "missing"),
             "no_failed_constraints": constraints_clean,
         },
+        "construction_requirements": construction_requirements,
         "piece_drawings": {
             "with_svg_and_dxf": drawing_complete,
             "required": required,
@@ -383,5 +456,6 @@ def evaluate_cad_completion(reference: dict[str, Any], outcome: dict[str, Any]) 
         "limitations": [
             "Authored developer control; not blind or independent evidence.",
             "Passing means one coherent accepted scenario, not manufacturing certification.",
+            "Role aliases v2 were added after F01-F03 outputs froze; role-aligned results are diagnostic, not preregistered evidence.",
         ],
     }
