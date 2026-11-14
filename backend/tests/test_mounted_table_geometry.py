@@ -263,6 +263,29 @@ def test_review_cannot_confirm_a_support_section_outside_the_table_envelope() ->
     assert any(item.state == "conflict" for item in evaluated.placements)
 
 
+def test_redundant_observed_measure_is_visible_but_non_blocking() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[0]
+    width = next(item for item in analysis.measures if item.semantic == "overall_width")
+    redundant = width.model_copy(update={"id": "table-measure-overall-width-redundant"})
+    analysis_with_redundancy = analysis.model_copy(update={
+        "measures": (*analysis.measures, redundant),
+        "admitted_measurement_ids": (*analysis.admitted_measurement_ids, redundant.id),
+    })
+
+    evaluated = _evaluate(
+        analysis_with_redundancy, program, decisions=_accept_all(program),
+    )
+
+    disposition = next(
+        item for item in evaluated.measurement_dispositions
+        if item.measurement_id == redundant.id
+    )
+    assert disposition.blocking is False
+    assert "redundant" in disposition.reason.lower()
+    assert evaluated.state == "completed"
+
+
 def test_corner_support_program_needs_one_explicit_section_before_five_placements() -> None:
     _, analysis = _analyze("mesa_demo_001.dxf")
     program = _catalog(analysis)[1]

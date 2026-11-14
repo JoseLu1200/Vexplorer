@@ -452,8 +452,9 @@ def evaluate_table_program(
         (accepted if decision.action == "accept" else rejected).add(target)
 
     measures = {item.id: item for item in analysis.measures}
-    measure_by_semantic = {
-        item.semantic: item for item in analysis.measures if item.semantic != "unknown"
+    measure_ids_by_semantic = {
+        semantic: {item.id for item in analysis.measures if item.semantic == semantic}
+        for semantic in {item.semantic for item in analysis.measures if item.semantic != "unknown"}
     }
     confirmed = {item.target_id: item for item in confirmed_values}
     if len(confirmed) != len(confirmed_values):
@@ -522,25 +523,26 @@ def evaluate_table_program(
         }
         top_valid = (
             top.quantity_rule_id == "top_one" and top.placement_rule_id == "top_flush"
-            and is_copy(top.length_binding_id, {measure_by_semantic["overall_width"].id})
-            and is_copy(top.width_binding_id, {measure_by_semantic["overall_depth"].id})
+            and is_copy(top.length_binding_id, measure_ids_by_semantic["overall_width"])
+            and is_copy(top.width_binding_id, measure_ids_by_semantic["overall_depth"])
             and is_copy(top.thickness_binding_id, top_thickness_ids)
         )
         support_length = binding_specs[support.length_binding_id]
         support_width_ids = (
-            {measure_by_semantic["overall_depth"].id}
+            measure_ids_by_semantic["overall_depth"]
             if support.role == "side_support"
-            else {measure_by_semantic["support_depth"].id}
+            else measure_ids_by_semantic["support_depth"]
         )
+        support_operands = tuple((item.ref_type, item.ref_id) for item in support_length.operand_refs)
         support_valid = (
             support.quantity_rule_id == expected[1] and support.placement_rule_id == expected[2]
             and is_copy(support.width_binding_id, support_width_ids)
             and is_copy(support.thickness_binding_id, support_thickness_ids)
             and support_length.operation == "subtract"
-            and tuple((item.ref_type, item.ref_id) for item in support_length.operand_refs) == (
-                ("measure", measure_by_semantic["overall_height"].id),
-                ("binding", top.thickness_binding_id),
-            )
+            and len(support_operands) == 2
+            and support_operands[0][0] == "measure"
+            and support_operands[0][1] in measure_ids_by_semantic["overall_height"]
+            and support_operands[1] == ("binding", top.thickness_binding_id)
         )
         if not top_valid:
             semantic_invalid_components.add(top.id)
@@ -713,15 +715,33 @@ def evaluate_table_program(
         for binding in program.bindings for operand in binding.operand_refs
         if operand.ref_type == "measure"
     }))
-    dispositions = tuple(
-        TableMeasurementDisposition(
-            measurement_id=item.id,
-            reason="Profile slot is not required by the selected support topology."
-            if item.slot_origin == "profile_required_slot"
-            else "Observed drawing measure is not assigned by the proposed program.",
-            blocking=item.slot_origin != "profile_required_slot",
+    consumed_measures = [measures[item_id] for item_id in consumed]
+
+    def disposition(item: TableMeasure) -> TableMeasurementDisposition:
+        if item.slot_origin == "profile_required_slot":
+            return TableMeasurementDisposition(
+                measurement_id=item.id,
+                reason="Profile slot is not required by the selected support topology.",
+                blocking=False,
+            )
+        redundant = item.state == "observed" and item.value_mm is not None and any(
+            other.state == "observed" and other.value_mm is not None
+            and item.semantic == other.semantic and item.axis == other.axis
+            and item.geometry_relation == other.geometry_relation
+            and abs(item.value_mm - other.value_mm) <= 0.1
+            for other in consumed_measures
         )
-        for item in analysis.measures if item.id not in consumed
+        return TableMeasurementDisposition(
+            measurement_id=item.id,
+            reason=(
+                "Observed drawing measure is redundant with an assigned measure."
+                if redundant else "Observed drawing measure is not assigned by the proposed program."
+            ),
+            blocking=not redundant,
+        )
+
+    dispositions = tuple(
+        disposition(item) for item in analysis.measures if item.id not in consumed
     )
     for item in dispositions:
         if item.blocking:
