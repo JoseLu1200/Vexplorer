@@ -29,14 +29,20 @@ class _Tariff:
 
 
 _MATERIAL_TARIFFS = {
-    "demo_board_area_v1": _Tariff("demo_board_area_v1", "material_area", 42.0, "EUR/m2"),
-    "demo_solid_volume_v1": _Tariff("demo_solid_volume_v1", "material_volume", 900.0, "EUR/m3"),
+    "demo_board_area_v1": _Tariff(
+        "demo_board_area_v1", "material_area", 42.0, "EUR/m2"
+    ),
+    "demo_solid_volume_v1": _Tariff(
+        "demo_solid_volume_v1", "material_volume", 900.0, "EUR/m3"
+    ),
 }
 _EDGE_TARIFF = _Tariff("demo_edge_exposed_v1", "edge", 2.5, "EUR/m")
 _OPERATION_TARIFFS = {
-    "demo_machining_hour_v1": _Tariff("demo_machining_hour_v1", "operation", 36.0, "EUR/h"),
+    "demo_machining_hour_v1": _Tariff(
+        "demo_machining_hour_v1", "operation", 36.0, "EUR/h"
+    ),
 }
-_SETUP_RATE_EUR = 25.0
+_SETUP_TARIFF = _Tariff("demo_preparation_fixed_v1", "fixed", 25.0, "EUR/unit")
 
 
 def get_table_cost_catalog() -> TableCostCatalog:
@@ -76,6 +82,14 @@ def get_table_cost_catalog() -> TableCostCatalog:
                 rate_eur_per_unit=36.0,
                 rate_unit="EUR/h",
             ),
+            TableCostTariff(
+                id=_SETUP_TARIFF.id,
+                label="Preparación fija sintética",
+                concept_type=_SETUP_TARIFF.concept_type,
+                scope="preparation",
+                rate_eur_per_unit=_SETUP_TARIFF.rate,
+                rate_unit=_SETUP_TARIFF.rate_unit,
+            ),
         ),
     )
 
@@ -88,16 +102,18 @@ def _quantity(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.000000001")))
 
 
-def _catalog_refs(tariff_id: str) -> tuple[str, ...]:
-    return (
-        f"tariff:{tariff_id}",
+def _catalog_refs(tariff_id: str | None = None) -> tuple[str, ...]:
+    tariff_refs = (f"tariff:{tariff_id}",) if tariff_id is not None else ()
+    return tariff_refs + (
         f"catalog:{CATALOG_VERSION}",
         f"source:{CATALOG_SOURCE}",
         f"date:{CATALOG_DATE}",
     )
 
 
-def _occurrences_by_component(evaluated: EvaluatedTableProgram) -> dict[str, tuple[str, ...]]:
+def _occurrences_by_component(
+    evaluated: EvaluatedTableProgram,
+) -> dict[str, tuple[str, ...]]:
     component_ids = {component.id for component in evaluated.components}
     occurrence_ids: set[str] = set()
     grouped: dict[str, list[str]] = {component_id: [] for component_id in component_ids}
@@ -105,13 +121,17 @@ def _occurrences_by_component(evaluated: EvaluatedTableProgram) -> dict[str, tup
         if occurrence.id in occurrence_ids:
             raise ValueError(f"duplicate occurrence id: {occurrence.id}")
         if occurrence.component_id not in component_ids:
-            raise ValueError(f"occurrence references unknown component: {occurrence.component_id}")
+            raise ValueError(
+                f"occurrence references unknown component: {occurrence.component_id}"
+            )
         occurrence_ids.add(occurrence.id)
         grouped[occurrence.component_id].append(occurrence.id)
 
     result = {component_id: tuple(ids) for component_id, ids in grouped.items()}
     for component in evaluated.components:
-        if component.quantity is not None and component.quantity != len(result[component.id]):
+        if component.quantity is not None and component.quantity != len(
+            result[component.id]
+        ):
             raise ValueError(
                 "occurrence quantity mismatch for "
                 f"{component.id}: declared {component.quantity}, found {len(result[component.id])}"
@@ -144,8 +164,11 @@ def _material_concept(
 
     resolved = component.accepted and tariff is not None and quantity is not None
     rate = tariff.rate if tariff is not None else None
-    amount = _money(quantity * rate) if resolved and quantity is not None and rate is not None else None
-    tariff_ref = requested_tariff_id or "material_tariff_unselected"
+    amount = (
+        _money(quantity * rate)
+        if resolved and quantity is not None and rate is not None
+        else None
+    )
     dependency_refs = (
         f"component:{component.id}",
         f"field:{component.id}.length_mm",
@@ -153,8 +176,12 @@ def _material_concept(
     )
     if is_volume:
         dependency_refs += (f"field:{component.id}.thickness_mm",)
-    dependency_refs += _catalog_refs(tariff_ref)
-    formula_dimensions = "length_mm * width_mm * thickness_mm" if is_volume else "length_mm * width_mm"
+    dependency_refs += _catalog_refs(tariff.id if tariff is not None else None)
+    if requested_tariff_id is not None and tariff is None:
+        dependency_refs += (f"requested_tariff:{requested_tariff_id}",)
+    formula_dimensions = (
+        "length_mm * width_mm * thickness_mm" if is_volume else "length_mm * width_mm"
+    )
 
     return TableCostConcept(
         id=f"material:{component.id}",
@@ -187,10 +214,20 @@ def _edge_concept(
     )
     if scope.edge_scope == "none":
         return TableCostConcept(
-            id=f"edge:{component.id}", label=f"Canto de {component.id}", concept_type="edge",
-            component_id=component.id, occurrence_ids=occurrence_ids, formula="edge_scope=none",
-            quantity=None, quantity_unit="m", rate_eur_per_unit=None, rate_unit="EUR/m",
-            amount_eur=None, state="not_applicable", required=False, dependency_refs=dependency_refs,
+            id=f"edge:{component.id}",
+            label=f"Canto de {component.id}",
+            concept_type="edge",
+            component_id=component.id,
+            occurrence_ids=occurrence_ids,
+            formula="edge_scope=none",
+            quantity=None,
+            quantity_unit="m",
+            rate_eur_per_unit=None,
+            rate_unit="EUR/m",
+            amount_eur=None,
+            state="not_applicable",
+            required=False,
+            dependency_refs=dependency_refs,
         )
 
     length = component.length.value_mm
@@ -199,13 +236,25 @@ def _edge_concept(
     if length is not None and width is not None:
         quantity = _quantity(2.0 * (length + width) * len(occurrence_ids) / 1_000)
     resolved = component.accepted and quantity is not None
-    amount = _money(quantity * _EDGE_TARIFF.rate) if resolved and quantity is not None else None
+    amount = (
+        _money(quantity * _EDGE_TARIFF.rate)
+        if resolved and quantity is not None
+        else None
+    )
     return TableCostConcept(
-        id=f"edge:{component.id}", label=f"Canto expuesto de {component.id}", concept_type="edge",
-        component_id=component.id, occurrence_ids=occurrence_ids,
-        formula="2 * (length_mm + width_mm) * occurrence_count -> m", quantity=quantity,
-        quantity_unit="m", rate_eur_per_unit=_EDGE_TARIFF.rate, rate_unit="EUR/m",
-        amount_eur=amount, state="resolved" if resolved else "unknown", required=True,
+        id=f"edge:{component.id}",
+        label=f"Canto expuesto de {component.id}",
+        concept_type="edge",
+        component_id=component.id,
+        occurrence_ids=occurrence_ids,
+        formula="2 * (length_mm + width_mm) * occurrence_count -> m",
+        quantity=quantity,
+        quantity_unit="m",
+        rate_eur_per_unit=_EDGE_TARIFF.rate,
+        rate_unit="EUR/m",
+        amount_eur=amount,
+        state="resolved" if resolved else "unknown",
+        required=True,
         dependency_refs=dependency_refs,
     )
 
@@ -218,14 +267,28 @@ def _pending_concept(
     quantity_unit: str,
     rate_unit: str,
     tariff: _Tariff | None = None,
+    requested_tariff_id: str | None = None,
 ) -> TableCostConcept:
     return TableCostConcept(
-        id=concept_id, label=label, concept_type=concept_type,
+        id=concept_id,
+        label=label,
+        concept_type=concept_type,
         formula="pending: no validated quantity basis in evaluated table program",
-        quantity=None, quantity_unit=quantity_unit,
-        rate_eur_per_unit=tariff.rate if tariff is not None else None, rate_unit=rate_unit,
-        amount_eur=None, state="unknown", required=True,
-        dependency_refs=_catalog_refs(tariff.id if tariff is not None else concept_id),
+        quantity=None,
+        quantity_unit=quantity_unit,
+        rate_eur_per_unit=tariff.rate if tariff is not None else None,
+        rate_unit=rate_unit,
+        amount_eur=None,
+        state="unknown",
+        required=True,
+        dependency_refs=(
+            _catalog_refs(tariff.id if tariff is not None else None)
+            + (
+                (f"requested_tariff:{requested_tariff_id}",)
+                if tariff is None and requested_tariff_id is not None
+                else ()
+            )
+        ),
     )
 
 
@@ -239,17 +302,29 @@ def estimate_table_costs(
     material_tariff = _MATERIAL_TARIFFS.get(scope.material_tariff_id or "")
     concepts: list[TableCostConcept] = [
         TableCostConcept(
-            id="fixed:preparation", label="Preparación fija", concept_type="fixed",
-            formula="1 setup per estimate", quantity=1.0, quantity_unit="unit",
-            rate_eur_per_unit=_SETUP_RATE_EUR, rate_unit="EUR/unit",
-            amount_eur=_SETUP_RATE_EUR, state="resolved", required=True,
-            dependency_refs=_catalog_refs("demo_preparation_fixed_v1"),
+            id="fixed:preparation",
+            label="Preparación fija",
+            concept_type=_SETUP_TARIFF.concept_type,
+            formula="1 setup per estimate",
+            quantity=1.0,
+            quantity_unit="unit",
+            rate_eur_per_unit=_SETUP_TARIFF.rate,
+            rate_unit=_SETUP_TARIFF.rate_unit,
+            amount_eur=_money(1.0 * _SETUP_TARIFF.rate),
+            state="resolved",
+            required=True,
+            dependency_refs=_catalog_refs(_SETUP_TARIFF.id),
         )
     ]
     for component in evaluated.components:
         component_occurrences = occurrences[component.id]
         concepts.append(
-            _material_concept(component, component_occurrences, material_tariff, scope.material_tariff_id)
+            _material_concept(
+                component,
+                component_occurrences,
+                material_tariff,
+                scope.material_tariff_id,
+            )
         )
         concepts.append(_edge_concept(component, component_occurrences, scope))
 
@@ -257,23 +332,38 @@ def estimate_table_costs(
         tariff = _OPERATION_TARIFFS.get(tariff_id)
         concepts.append(
             _pending_concept(
-                concept_id=f"operation:{tariff_id}", label=f"Operación {tariff_id}",
-                concept_type="operation", quantity_unit="h", rate_unit="EUR/h", tariff=tariff,
+                concept_id=f"operation:{tariff_id}",
+                label=f"Operación {tariff_id}",
+                concept_type="operation",
+                quantity_unit="h",
+                rate_unit="EUR/h",
+                tariff=tariff,
+                requested_tariff_id=tariff_id,
             )
         )
-    concepts.extend((
-        _pending_concept(
-            concept_id="labor:unbased", label="Mano de obra pendiente de base horaria",
-            concept_type="labor", quantity_unit="h", rate_unit="EUR/h",
-        ),
-        _pending_concept(
-            concept_id="finish:unbased", label="Acabado pendiente de alcance",
-            concept_type="finish", quantity_unit="m2", rate_unit="EUR/m2",
-        ),
-    ))
+    concepts.extend(
+        (
+            _pending_concept(
+                concept_id="labor:unbased",
+                label="Mano de obra pendiente de base horaria",
+                concept_type="labor",
+                quantity_unit="h",
+                rate_unit="EUR/h",
+            ),
+            _pending_concept(
+                concept_id="finish:unbased",
+                label="Acabado pendiente de alcance",
+                concept_type="finish",
+                quantity_unit="m2",
+                rate_unit="EUR/m2",
+            ),
+        )
+    )
 
     known_subtotal = _money(sum(item.amount_eur or 0.0 for item in concepts))
-    required_unknown = any(item.required and item.state == "unknown" for item in concepts)
+    required_unknown = any(
+        item.required and item.state == "unknown" for item in concepts
+    )
     return TableCostEstimate(
         result_revision=result_revision,
         program_hash=evaluated.program_hash,

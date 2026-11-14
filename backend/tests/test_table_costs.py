@@ -276,6 +276,14 @@ def test_missing_dimension_and_unbased_work_stay_unknown_not_zero():
         None,
     )
     assert unknown_operation.rate_eur_per_unit is None
+    assert "requested_tariff:external_operation" in unknown_operation.dependency_refs
+    labor = next(item for item in estimate.concepts if item.id == "labor:unbased")
+    finish = next(item for item in estimate.concepts if item.id == "finish:unbased")
+    assert not any(
+        ref.startswith(("tariff:", "requested_tariff:"))
+        for concept in (labor, finish)
+        for ref in concept.dependency_refs
+    )
     assert (
         estimate.known_subtotal_eur,
         estimate.grand_total_eur,
@@ -342,6 +350,7 @@ def test_catalog_exposes_every_selectable_synthetic_tariff():
         "demo_solid_volume_v1",
         "demo_edge_exposed_v1",
         "demo_machining_hour_v1",
+        "demo_preparation_fixed_v1",
     }
     assert (
         by_id["demo_board_area_v1"].scope,
@@ -359,4 +368,52 @@ def test_catalog_exposes_every_selectable_synthetic_tariff():
     )
     assert by_id["demo_edge_exposed_v1"].scope == "edge"
     assert by_id["demo_machining_hour_v1"].scope == "operation"
+    assert (
+        by_id["demo_preparation_fixed_v1"].scope,
+        by_id["demo_preparation_fixed_v1"].concept_type,
+    ) == ("preparation", "fixed")
     assert all(item.synthetic is True for item in catalog.tariffs)
+
+
+def test_every_emitted_tariff_reference_resolves_and_setup_uses_catalog_rate():
+    catalog = get_table_cost_catalog()
+    catalog_by_id = {item.id: item for item in catalog.tariffs}
+    estimates = (
+        estimate_table_costs(
+            _evaluated(),
+            result_revision=3,
+            scope=TableCostScope(
+                material_tariff_id="demo_board_area_v1",
+                edge_scope="all_exposed",
+                operation_tariff_ids=("demo_machining_hour_v1",),
+            ),
+        ),
+        estimate_table_costs(_evaluated(), result_revision=3, scope=TableCostScope()),
+        estimate_table_costs(
+            _evaluated(),
+            result_revision=3,
+            scope=TableCostScope(
+                material_tariff_id="external_material",
+                operation_tariff_ids=("external_operation",),
+            ),
+        ),
+    )
+
+    referenced_tariff_ids = {
+        reference.removeprefix("tariff:")
+        for estimate in estimates
+        for concept in estimate.concepts
+        for reference in concept.dependency_refs
+        if reference.startswith("tariff:")
+    }
+    assert referenced_tariff_ids <= set(catalog_by_id)
+
+    setup = [item for item in estimates[0].concepts if item.id == "fixed:preparation"]
+    assert len(setup) == 1
+    setup_tariff = catalog_by_id["demo_preparation_fixed_v1"]
+    assert setup_tariff.concept_type == "fixed"
+    assert setup_tariff.rate_unit == "EUR/unit"
+    assert (setup[0].rate_eur_per_unit, setup[0].amount_eur) == (
+        setup_tariff.rate_eur_per_unit,
+        setup_tariff.rate_eur_per_unit,
+    )
