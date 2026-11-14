@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +11,7 @@ from tools.audit_autonomous import (
     _assert_occurrence_authority,
     _extract_image_hashes,
     _parse_sse_events,
+    _resume_resources,
     _validate_history_scenarios,
     _validate_provisional_exports,
 )
@@ -38,6 +40,43 @@ def test_sse_parser_preserves_checkpoint_lineage_and_real_image_hashes() -> None
         "general_auto_review_completed",
     ]
     assert events[1]["data"]["proposal_revision"] == 2
+    assert _extract_image_hashes(events) == (image_hash,)
+
+
+def test_sse_parser_unwraps_real_canonical_event_envelope_once() -> None:
+    # Reduced verbatim shape from acceptance-autonomous-local-v1.json event 8.
+    image_hash = "cd5b35963c6ca50b79a917956d07cbeda6a106b15750959aa7a3e95b2662f67b"
+    source_hash = "c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82"
+    payload = {
+        "schema_version": "0.2.0",
+        "run_id": "run-ea59dd9db4244132a6e43aaa020d0e66",
+        "sequence": 8,
+        "event_type": "general_auto_review_started",
+        "data": {
+            "timestamp": "2026-11-14T05:00:10.830808+00:00",
+            "proposal_revision": 1,
+            "reviewer_kind": "machine",
+            "reviewer_model": "gpt-6-astra",
+            "visual_artifacts": [
+                {
+                    "reference": f"{source_hash}:view:view-front:overview",
+                    "sha256": image_hash,
+                    "source_view_ids": ["view-front"],
+                    "source_contour_ids": ["contour-entity-8D"],
+                    "crop_bounds_source": [-110.0, -90.0, 1200.0, 855.0],
+                    "marks": [],
+                }
+            ],
+        },
+    }
+    events = _parse_sse_events(
+        "id: 8\nevent: general_auto_review_started\ndata: "
+        + json.dumps(payload)
+        + "\n\n"
+    )
+
+    assert events[0]["data"]["reviewer_model"] == "gpt-6-astra"
+    assert "schema_version" not in events[0]["data"]
     assert _extract_image_hashes(events) == (image_hash,)
 
 
@@ -130,3 +169,25 @@ def test_history_scenarios_accept_missing_numbers_but_require_exact_snapshot_pro
     assert evidence["numeric_cost_count"] == 0
     assert evidence["numeric_hours_count"] == 0
     assert evidence["provenance_origins"] == ["published"]
+
+
+def test_resume_report_requires_existing_document_job_and_run_ids(tmp_path: Path) -> None:
+    report = tmp_path / "prior.json"
+    report.write_text(
+        json.dumps(
+            {
+                "resources": {
+                    "document_id": "doc-existing",
+                    "job_id": "job-existing",
+                    "run_id": "run-existing",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert _resume_resources(report) == (
+        "doc-existing",
+        "job-existing",
+        "run-existing",
+    )

@@ -44,6 +44,7 @@ class AuditConfig:
     origin: str | None
     timeout_s: float = 600.0
     request_timeout_s: float = 60.0
+    resume_report: Path | None = None
 
 
 def _parse_sse_events(body: str) -> tuple[dict[str, Any], ...]:
@@ -69,6 +70,8 @@ def _parse_sse_events(body: str) -> tuple[dict[str, Any], ...]:
             raise AcceptanceFailure("invalid_sse_json") from exc
         if not isinstance(data, dict):
             raise AcceptanceFailure("invalid_sse_data")
+        if isinstance(data.get("data"), dict) and data.get("event_type") == event_type:
+            data = data["data"]
         events.append({"id": event_id, "event_type": event_type, "data": data})
     return tuple(events)
 
@@ -385,6 +388,20 @@ def _provider_event_evidence(events: tuple[dict[str, Any], ...]) -> tuple[str, .
     return tuple(dict.fromkeys(response_ids))
 
 
+def _resume_resources(path: Path) -> tuple[str, str, str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        resources = payload["resources"]
+        document_id = resources["document_id"]
+        job_id = resources["job_id"]
+        run_id = resources["run_id"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise AcceptanceFailure("invalid_resume_report") from exc
+    if not all(isinstance(item, str) and item for item in (document_id, job_id, run_id)):
+        raise AcceptanceFailure("invalid_resume_report")
+    return document_id, job_id, run_id
+
+
 def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
     audit = AutonomousAudit(config)
     run_id: str | None = None
@@ -397,22 +414,45 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             environment=session.get("environment"),
             authenticated=session.get("authenticated"),
         )
-        fixture_bytes = config.fixture.read_bytes()
-        manifest = audit.data(
-            audit.client.post(
-                "api/v1/documents",
-                files={
-                    "file": (
-                        f"{audit.qa_id}-{config.fixture.name}",
-                        fixture_bytes,
-                        "application/dxf",
-                    )
-                },
-            ),
-            201,
-        )
-        document_id = manifest["document_id"]
-        audit.report["resources"]["document_id"] = document_id
+        if config.resume_report is not None:
+            document_id, job_id, expected_run_id = _resume_resources(
+                config.resume_report
+            )
+            audit.report["resumed_from"] = config.resume_report.name
+            audit.report["resources"].update(
+                {"document_id": document_id, "job_id": job_id, "run_id": expected_run_id}
+            )
+            manifest = audit.data(
+                audit.client.get(f"api/v1/documents/{document_id}"), 200
+            )
+            job = audit.poll_job(job_id)
+            run_id = job.get("run_id")
+            audit.check(
+                "resumed_existing_job",
+                job.get("state") == "succeeded" and run_id == expected_run_id,
+                "Verification reused the existing durable job without submitting another model run.",
+                document_id=document_id,
+                job_id=job_id,
+                run_id=run_id,
+                state=job.get("state"),
+            )
+        else:
+            fixture_bytes = config.fixture.read_bytes()
+            manifest = audit.data(
+                audit.client.post(
+                    "api/v1/documents",
+                    files={
+                        "file": (
+                            f"{audit.qa_id}-{config.fixture.name}",
+                            fixture_bytes,
+                            "application/dxf",
+                        )
+                    },
+                ),
+                201,
+            )
+            document_id = manifest["document_id"]
+            audit.report["resources"]["document_id"] = document_id
         audit.check(
             "source_manifest",
             manifest.get("sha256") == audit.report["fixture_sha256"]
@@ -423,23 +463,24 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             source_sha256=manifest.get("sha256"),
             normalized_sha256=(manifest.get("artifacts", {}).get("normalized_dxf") or {}).get("sha256"),
         )
-        submitted = audit.data(
-            audit.client.post(
-                "api/v1/jobs",
-                json={
-                    "document_id": document_id,
-                    "mode": "live",
-                    "input_kind": "general_furniture",
-                    "proposal_mode": "model_generated",
-                },
-                headers={"Idempotency-Key": f"{audit.qa_id}-job"},
-            ),
-            202,
-        )
-        job_id = submitted["id"]
-        audit.report["resources"]["job_id"] = job_id
-        job = audit.poll_job(job_id)
-        run_id = job.get("run_id")
+        if config.resume_report is None:
+            submitted = audit.data(
+                audit.client.post(
+                    "api/v1/jobs",
+                    json={
+                        "document_id": document_id,
+                        "mode": "live",
+                        "input_kind": "general_furniture",
+                        "proposal_mode": "model_generated",
+                    },
+                    headers={"Idempotency-Key": f"{audit.qa_id}-job"},
+                ),
+                202,
+            )
+            job_id = submitted["id"]
+            audit.report["resources"]["job_id"] = job_id
+            job = audit.poll_job(job_id)
+            run_id = job.get("run_id")
         if job.get("state") != "succeeded" or not run_id:
             audit.capture_partial(run_id)
             audit.check(
@@ -680,11 +721,18 @@ def main() -> None:
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=600.0)
+    parser.add_argument(
+        "--resume-report",
+        type=Path,
+        help="Reuse document/job/run IDs from an earlier report; never submits a new job.",
+    )
     args = parser.parse_args()
     if not args.fixture.is_file() or args.fixture.suffix.lower() != ".dxf":
         parser.error("--fixture must be an existing public DXF")
     if args.timeout < 300:
         parser.error("--timeout must be at least 300 seconds for real model execution")
+    if args.resume_report is not None and not args.resume_report.is_file():
+        parser.error("--resume-report must be an existing autonomous audit JSON")
     username, password = _credentials()
     try:
         report = run_autonomous_acceptance(
@@ -696,6 +744,9 @@ def main() -> None:
                 password=password,
                 origin=os.getenv("VEXPLORER_QA_ORIGIN"),
                 timeout_s=args.timeout,
+                resume_report=args.resume_report.resolve()
+                if args.resume_report is not None
+                else None,
             )
         )
     except Exception as exc:
