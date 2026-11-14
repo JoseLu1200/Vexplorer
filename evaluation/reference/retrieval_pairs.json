@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "reference_version": "1.0.0",
+  "provenance": {
+    "kind": "original_synthetic_development_library",
+    "derived_from_external_corpus": false,
+    "plankassembly_used": false,
+    "industrial_validation": false
+  },
+  "relevance_scale": {
+    "3": "identical_or_translated",
+    "2": "dimensional_variant_or_incomplete_same_structure",
+    "1": "same_family_different_structure",
+    "0": "non_relevant"
+  },
+  "evaluation_policy": {
+    "runtime_must_not_read_this_file": true,
+    "compare_only_after_outputs_are_frozen": true,
+    "descriptor_must_ignore_filenames_and_ids": true,
+    "semantic_boundary_mock_only_in_identified_tests": true
+  },
+  "queries": [
+    {
+      "query_id": "estanteria_montada.dxf",
+      "perspective": "complete_primary_shelving",
+      "notes": "Canonical 900x1200x300 two-shelf shelving unit. Translated twin (mueble_demo_004) is grade 3; incomplete-thickness twin (estanteria_incompleta) and dimensional two-shelf variant (mueble_demo_002) are grade 2; single-shelf family member (mueble_demo_003) is grade 1; negative fixtures are grade 0.",
+      "relevance_by_id": {
+        "mueble_demo_004.dxf": 3,
+        "estanteria_incompleta.dxf": 2,
+        "mueble_demo_002.dxf": 2,
+        "mueble_demo_003.dxf": 1,
+        "mueble_demo_unidades_desconocidas.dxf": 0,
+        "mueble_demo_trapecio.dxf": 0
+      }
+    },
+    {
+      "query_id": "mueble_demo_004.dxf",
+      "perspective": "translated_duplicate_shelving",
+      "notes": "Translated duplicate of estanteria_montada (origin shifted to 5000,2500). Canonical twin (estanteria_montada) is grade 3; incomplete-thickness twin and dimensional two-shelf variant are grade 2; single-shelf variant is grade 1; negative fixtures are grade 0.",
+      "relevance_by_id": {
+        "estanteria_montada.dxf": 3,
+        "estanteria_incompleta.dxf": 2,
+        "mueble_demo_002.dxf": 2,
+        "mueble_demo_003.dxf": 1,
+        "mueble_demo_unidades_desconocidas.dxf": 0,
+        "mueble_demo_trapecio.dxf": 0
+      }
+    },
+    {
+      "query_id": "mueble_demo_002.dxf",
+      "perspective": "dimensional_variant_shelving",
+      "notes": "Larger two-shelf shelving unit (1000x1300x320). No grade 3 twin exists in the library; all three 900x1200x300 two-shelf units are dimensional variants with the same structure (grade 2); single-shelf unit is grade 1; negative fixtures are grade 0.",
+      "relevance_by_id": {
+        "estanteria_montada.dxf": 2,
+        "mueble_demo_004.dxf": 2,
+        "estanteria_incompleta.dxf": 2,
+        "mueble_demo_003.dxf": 1,
+        "mueble_demo_unidades_desconocidas.dxf": 0,
+        "mueble_demo_trapecio.dxf": 0
+      }
+    },
+    {
+      "query_id": "mueble_demo_003.dxf",
+      "perspective": "structural_variant_shelving",
+      "notes": "Smaller single-shelf shelving unit (700x800x280, 1 shelf). No grade 3 or grade 2 matches exist; all two-shelf rectangular shelving units are same family with different internal structure (grade 1); negative fixtures are grade 0.",
+      "relevance_by_id": {
+        "estanteria_montada.dxf": 1,
+        "mueble_demo_004.dxf": 1,
+        "estanteria_incompleta.dxf": 1,
+        "mueble_demo_002.dxf": 1,
+        "mueble_demo_unidades_desconocidas.dxf": 0,
+        "mueble_demo_trapecio.dxf": 0
+      }
+    },
+    {
+      "query_id": "estanteria_incompleta.dxf",
+      "perspective": "incomplete_evidence_shelving",
+      "notes": "900x1200x300 two-shelf unit missing thickness annotation. Same-envelope two-shelf units (estanteria_montada, mueble_demo_004) and dimensional two-shelf variant (mueble_demo_002) are grade 2; single-shelf unit is grade 1; negative fixtures are grade 0.",
+      "relevance_by_id": {
+        "estanteria_montada.dxf": 2,
+        "mueble_demo_004.dxf": 2,
+        "mueble_demo_002.dxf": 2,
+        "mueble_demo_003.dxf": 1,
+        "mueble_demo_unidades_desconocidas.dxf": 0,
+        "mueble_demo_trapecio.dxf": 0
+      }
+    }
+  ]
+}
