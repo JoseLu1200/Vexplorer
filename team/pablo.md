@@ -40,7 +40,17 @@
 - Documentación del incremento en `docs/PRECEDENTES.md`.
 - Fusión en `origin/embeddings` sobre el nivel 1 de Sergio, sin conflictos de texto. Integración semántica: umbrales calibrados de 1.2 en 2.1 (score relativo al techo de la consulta) y 2.3 (umbral combinado y abstención), coseno unificado de 1.4 en 3.3.
 
-## Bloque 2 (2026-11-14): similitud y evaluación — en curso
+## Bloque 2 (2026-11-14): similitud y evaluación — terminado, integrado en `feat/similitud-evaluacion`
+
+- Resultado: las cuatro ramas revisadas por Opus (1–3 rondas cada una) e integradas. Suite Python: 1198 passed, 1 skip; los mismos 2 fallos (`test_explorer_models.py`, falta `joblib`) y 6 errores de colección (dependencias opcionales del laboratorio, p. ej. `scipy`) que la línea base. Frontend sin cambios (no se ejecutó `npm test`).
+- Enganches en `backend/app/main.py`: import de `precedentes.mantenimiento`, `ColaMantenimiento` en el `lifespan` y `tras_guardar_biblioteca(...)` tras `save_library_item` en `save_to_library`.
+- `.gitignore`: añade `.claude/worktrees/`.
+- Pendientes conocidos (no corregidos por falta de presupuesto):
+  - Corpus, media: `_agrupar_cliques` deja casi duplicados dentro de una misma partición (representante de un grupo nuevo a ≤ tolerancia de otro representante). Corregir aplicando la misma regla que entre particiones a los supervivientes de la partición actual.
+  - Corpus, baja: traslación independiente por vista en variantes (puede solapar vistas; usar un desplazamiento común). La tarea de identidad sigue siendo fácil para métodos que normalicen coordenadas: documentarlo.
+  - Mantenimiento: sin escritura condicional en el repositorio (ventana mínima entre relectura y guardado); sin cola persistente; verificación de huella no programada.
+  - Comparativa: B/C/D sin adaptador de proveedor real (lo lleva quien lleva el harness); D sin índice histórico anotado; la variante A apenas extrae tableros en vistas montadas de PlankAssembly (tableros que se tocan se fusionan): requiere extractor en `geometria/`.
+  - Dataset PlankAssembly no descargado en esta máquina: el corpus solo se ha probado con fixtures sintéticos.
 
 - Pedido por el usuario: "Lanza lo que no esté hecho ya" de las opciones 3, 4, 6 y 7 tras comprobar que 2.4, 3.1, 2.5/2.6 y 2.7 ya existían. Subagentes Sonnet en worktrees propios + revisor Opus en solo lectura.
 - Rama de integración: `feat/similitud-evaluacion` (desde `embeddings`, con `main` fusionado). Ramas por agente: `feat/sim-nesting`, `feat/sim-mantenimiento`, `feat/sim-corpus`, `feat/sim-comparativa`.
