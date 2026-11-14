@@ -7,11 +7,11 @@ place that asks for the reference, and it does so with a verified freeze token.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-import json
 from pathlib import Path
 from typing import Any
 
