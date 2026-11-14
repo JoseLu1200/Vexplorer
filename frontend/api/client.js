@@ -58,7 +58,14 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
       form.append("file", file);
       return json("/api/v1/documents", { method: "POST", headers: { "Idempotency-Key": idFactory() }, body: form });
     },
-    createRun: (documentId, mode, inputKind) => post("/api/v1/runs", { document_id: documentId, mode, ...(inputKind ? { input_kind: inputKind } : {}) }),
+    createRun: (documentId, mode, inputKind, table = {}) => post("/api/v1/runs", {
+      document_id: documentId,
+      mode,
+      ...(inputKind ? { input_kind: inputKind } : {}),
+      ...(table.table_profile ? { table_profile: table.table_profile } : {}),
+      ...(table.proposal_mode ? { proposal_mode: table.proposal_mode } : {}),
+      ...(table.table_template_id ? { table_template_id: table.table_template_id } : {}),
+    }),
     getDocumentDrawing: (documentId, inputKind) => json(`/api/v1/documents/${encodeURIComponent(documentId)}/drawing${inputKind ? `?input_kind=${encodeURIComponent(inputKind)}` : ""}`),
     documentPreviewUrl: (documentId) => `/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`,
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),
@@ -66,6 +73,15 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     getLedger: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/ledger`),
     getRevisions: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/revisions`),
     getParts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/parts${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
+    getTable: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
+    generateTableDrawings: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-drawings`, body),
+    getTableDrawings: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-drawings${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
+    tableDrawingUrl: (runId, sheetId, format, revision, programHash) => {
+      const query = new URLSearchParams({ result_revision: String(revision), program_hash: programHash });
+      return `/api/v1/runs/${encodeURIComponent(runId)}/table-drawings/${encodeURIComponent(sheetId)}.${encodeURIComponent(format)}?${query}`;
+    },
+    generateTableCosts: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs`, body),
+    getTableCosts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
     getExplanations: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/explanations?result_revision=${encodeURIComponent(revision)}`),
     getScene: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/scene?result_revision=${encodeURIComponent(revision)}`),
     getLibrary: () => json("/api/v1/library"),

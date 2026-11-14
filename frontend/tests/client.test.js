@@ -88,3 +88,34 @@ test("parts-only run is explicit and parts convenience endpoint is revisioned by
   assert.equal(requests[1][0], "/api/v1/runs/run%20parts/parts");
   assert.equal(requests[2][0], "/api/v1/runs/run%20parts/parts?result_revision=2");
 });
+
+test("table runs and revisioned artifacts preserve the frozen 0.5 request fields", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "key" });
+  await client.createRun("doc-table", "geometry_only", "mounted_orthographic_views", {
+    table_profile: "rectangular_table_v1",
+    proposal_mode: "catalog_baseline",
+    table_template_id: "side_supports_v1",
+  });
+  await client.getTable("run table", 2);
+  await client.generateTableDrawings("run table", { result_revision: 2 });
+  await client.getTableDrawings("run table", 2);
+  await client.generateTableCosts("run table", { result_revision: 2, scope: { edge_scope: "none" } });
+  await client.getTableCosts("run table", 2);
+
+  assert.deepEqual(JSON.parse(requests[0][1].body), {
+    document_id: "doc-table",
+    mode: "geometry_only",
+    input_kind: "mounted_orthographic_views",
+    table_profile: "rectangular_table_v1",
+    proposal_mode: "catalog_baseline",
+    table_template_id: "side_supports_v1",
+  });
+  assert.equal(requests[1][0], "/api/v1/runs/run%20table/table?result_revision=2");
+  assert.equal(requests[2][0], "/api/v1/runs/run%20table/table-drawings");
+  assert.equal(requests[3][0], "/api/v1/runs/run%20table/table-drawings?result_revision=2");
+  assert.equal(requests[4][0], "/api/v1/runs/run%20table/table-costs");
+  assert.equal(requests[5][0], "/api/v1/runs/run%20table/table-costs?result_revision=2");
+  assert.equal(client.tableDrawingUrl("run table", "sheet/1", "svg", 2, "hash +1"), "/api/v1/runs/run%20table/table-drawings/sheet%2F1.svg?result_revision=2&program_hash=hash+%2B1");
+});
