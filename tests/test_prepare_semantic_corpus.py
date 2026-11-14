@@ -27,9 +27,23 @@ def _tree_hash(root: Path) -> dict[str, str]:
 
 
 def _tree_digest(root: Path) -> str:
-    lines = "".join(
-        f"{name}={digest}\n" for name, digest in _tree_hash(root).items()
-    )
+    # Compare every payload byte, independently of the host's zlib encoder.
+    entries = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.name == "SHA256SUMS":
+            continue
+        name = path.relative_to(root).as_posix()
+        if path.suffix == ".zip":
+            with zipfile.ZipFile(path) as archive:
+                for member in sorted(archive.namelist()):
+                    entries[f"{name}/{member}"] = hashlib.sha256(archive.read(member)).hexdigest()
+        else:
+            entries[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    # The checksum index contains compressed ZIP hashes; validate it separately.
+    for line in (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+        digest, name = line.split("  ", 1)
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+    lines = "".join(f"{name}={digest}\n" for name, digest in sorted(entries.items()))
     return hashlib.sha256(lines.encode()).hexdigest()
 
 
@@ -77,7 +91,7 @@ def test_v1_remains_available_as_a_frozen_compatibility_generation(tmp_path: Pat
     assert _json(public / "manifest.json")["dataset_id"] == "semantic-furniture-synthetic-v1"
 
 
-def test_v1_matches_the_original_generator_byte_snapshot(tmp_path: Path):
+def test_v1_matches_the_original_generator_payload_snapshot(tmp_path: Path):
     public = tmp_path / "public-v1"
     reference = tmp_path / "reference-v1"
     environment = os.environ.copy()
@@ -97,9 +111,10 @@ def test_v1_matches_the_original_generator_byte_snapshot(tmp_path: Path):
     )
 
     assert completed.returncode == 0, completed.stderr
-    # Captured from the untouched v1 generator under the same fixed hash seed.
-    assert _tree_digest(public) == "b093ecf35b931575f83242d26f00526cafdc4134dea07534187bd59483dc8169"
-    assert _tree_digest(reference) == "13363ad842ad17a5c94c4e0573c63d34bbeacd50c70137252de548f74c7bf930"
+    # Captured from commit 48dac99, before portability changes, with hash seed 0.
+    # zlib-ng (Windows) and zlib (Linux) may encode identical ZIP payloads differently.
+    assert _tree_digest(public) == "a029d807e5c0bc5b6a6e489877d23f62532836444c95dd56293032cb92dfea85"
+    assert _tree_digest(reference) == "3cd1a80acda3cfdd47a9ca358bcd78cc80167571ffcd2d1a23beff4dca9e1b7c"
 
 
 def test_v2_reserved_topologies_exclude_every_previously_used_v1_holdout(tmp_path: Path):
