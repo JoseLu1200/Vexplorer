@@ -54,12 +54,13 @@ Registra en `METODOS` de `tools/evaluar_recuperacion.py` una función `(consulta
 ```powershell
 hf download manycore-research/PlankAssembly --repo-type dataset --revision d1d4308f0ee0aac2f9f407b3533ff83ecee22d34 --local-dir ../plankassembly_dataset
 # extraer data.zip en ../plankassembly_dataset/extracted/
-python -m tools.plankassembly_corpus --source ../plankassembly_dataset --public-output ../plankassembly_corpus_public --private-output ../plankassembly_corpus_private --seed 20261114 --train 2000 --valid 200 --test 200 --poor-variants
+python -c "import secrets; print(secrets.token_hex(32))" > ../plankassembly_corpus.salt   # sal secreta de los ids; no la subas a Git
+python -m tools.plankassembly_corpus --source ../plankassembly_dataset --public-output ../plankassembly_corpus_public --private-output ../plankassembly_corpus_private --seed <semilla-de-muestreo> --salt-file ../plankassembly_corpus.salt --train 2000 --valid 200 --test 200 --poor-variants
 python -m tools.evaluar_recuperacion --biblioteca <biblioteca.json> --juicios ../plankassembly_corpus_private/juicios/juicios_test.json --k 5 --metodo geometrico
 ```
 
 - Archivos: `juicios_test.json` (similitud graduada, consultas = test), `juicios_test_<tipo>.json` (consultas empobrecidas; las variantes candidatas heredan el grado de su base) y `juicios_identidad_<tipo>.json` (identidad entre vistas: solo el mueble completo propio es relevante).
 - **La biblioteca depende del archivo.** `juicios/bibliotecas.json` indica, por archivo, los `case_ids` que debe contener la biblioteca y los `run_id_overrides` (por defecto `run_id` = id). Con esa biblioteca cada archivo es denso (`cobertura_juicios` 1,0, sin `candidatos_sin_juicio`). Con otra biblioteca (p. ej. completas + variantes de varios tipos) habrá candidatos sin juicio y la cobertura bajará. En `juicios_test_<tipo>` la variante lleva `run_id` = id de su base; en `juicios_identidad_<tipo>`, el suyo propio.
-- Las consultas de test nunca tienen entre sus candidatos su propio duplicado: el generador descarta duplicados entre particiones y deja un representante por grupo. Los ids son opacos y no revelan qué variante pertenece a qué base; esa relación está solo en `references.json` (privado).
+- Las consultas de test nunca tienen entre sus candidatos su propio duplicado: el generador descarta duplicados entre particiones y deja un representante por grupo. Los ids son HMAC con una sal secreta (la semilla de muestreo no es secreta) y no revelan qué variante pertenece a qué base; esa relación y las traslaciones privadas de las variantes están solo en `references.json` (privado).
 - Con `--zeros-per-query` la cobertura baja de forma deliberada. Detalle de la regla, particiones, auditoría y limitaciones: [PLANKASSEMBLY](../../docs/PLANKASSEMBLY.md#corpus-de-evaluación-por-particiones-y-juicios-derivados).
 - Revisa una muestra con dos personas (sección anterior) antes de tratarlos como evidencia.
