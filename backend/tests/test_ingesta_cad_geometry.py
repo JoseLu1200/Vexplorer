@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import ezdxf
 import pytest
 
 from backend.app.geometria.extraction import extract_drawing
 from backend.app.ingesta.dxf_reader import parse_dxf
+import backend.app.ingesta.dxf_reader as dxf_reader
 
 
 def _save(document, tmp_path: Path, name: str) -> Path:
@@ -115,3 +117,23 @@ def test_exact_regular_circle_row_is_grouped_as_neutral_geometry_evidence(tmp_pa
     assert rows[0].kind == "geometry"
     assert set(rows[0].source_entity_ids) == {f"entity-{item.dxf.handle}" for item in circles}
     assert "system" not in rows[0].description.lower()
+
+
+def test_recovered_document_is_explicitly_gated_for_review(tmp_path: Path, monkeypatch) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    document.modelspace().add_line((0, 0), (10, 0))
+    path = _save(document, tmp_path, "recoverable.dxf")
+    monkeypatch.setattr(
+        dxf_reader.ezdxf, "readfile",
+        lambda _: (_ for _ in ()).throw(ezdxf.DXFStructureError("damaged")),
+    )
+    monkeypatch.setattr(
+        dxf_reader.recover, "readfile",
+        lambda _: (document, SimpleNamespace(fixes=(1,), errors=())),
+    )
+
+    extraction = extract_drawing(path)
+
+    assert extraction.status == "needs_review"
+    assert "recovered_dxf:fixes=1:errors=0" in extraction.warnings

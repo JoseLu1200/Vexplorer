@@ -8,6 +8,7 @@ import re
 from typing import Any, Iterable, Iterator
 
 import ezdxf
+from ezdxf import recover
 
 
 UNIT_BY_INSUNITS = {1: ("in", 25.4), 4: ("mm", 1.0), 5: ("cm", 10.0), 6: ("m", 1000.0)}
@@ -88,6 +89,15 @@ def _finite_points(points: Iterable[tuple[float, float]]) -> tuple[tuple[float, 
     return result
 
 
+def _read_document(path: Path, warnings: list[str]) -> object:
+    try:
+        return ezdxf.readfile(path)
+    except ezdxf.DXFStructureError:
+        document, auditor = recover.readfile(path)
+        warnings.append(f"recovered_dxf:fixes={len(auditor.fixes)}:errors={len(auditor.errors)}")
+        return document
+
+
 def _linetype(
     document: object,
     entity: object,
@@ -162,13 +172,13 @@ def _expanded_entities(
 def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
     """Read the deliberately small, documented DXF subset used by the demo."""
     raw = path.read_bytes()
-    document = ezdxf.readfile(path)
+    warnings: list[str] = []
+    document = _read_document(path, warnings)
     modelspace = document.modelspace()
     if len(modelspace) > max_entities:
         raise ValueError(f"entity limit exceeded: {len(modelspace)} > {max_entities}")
     unit_code = int(document.header.get("$INSUNITS", 0) or 0)
     unit, scale = UNIT_BY_INSUNITS.get(unit_code, ("unknown", None))
-    warnings: list[str] = []
     if scale is None:
         warnings.append("source_unit_unknown")
 
