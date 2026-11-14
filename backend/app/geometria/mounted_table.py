@@ -107,6 +107,7 @@ def _overall_measure(
     entity_ids = {entity_id for _, contour in geometry for entity_id in contour.source_entity_ids}
     evidence_ids = set(_geometry_evidence(extraction, entity_ids))
     measurement_ids = tuple(sorted(item.id for item in dimension_items))
+    geometry_relation = "dimension_annotation" if measurement_ids else "envelope_extent"
     view_ids = {contour.view_id for _, contour in geometry}
     for item in dimension_items:
         evidence_ids.update(item.evidence_ids)
@@ -123,18 +124,18 @@ def _overall_measure(
             id=f"table-measure-{semantic}", semantic=semantic, axis=axis,
             value_mm=None, state="conflict", measurement_ids=measurement_ids,
             view_ids=tuple(sorted(view_ids)), evidence_ids=tuple(sorted(evidence_ids)),
-            source_entity_ids=tuple(sorted(entity_ids)), geometry_relation="dimension_annotation",
+            source_entity_ids=tuple(sorted(entity_ids)), geometry_relation=geometry_relation,
         )
     if resolved_values:
         return TableMeasure(
             id=f"table-measure-{semantic}", semantic=semantic, axis=axis,
             value_mm=resolved_values[0], state="observed", measurement_ids=measurement_ids,
             view_ids=tuple(sorted(view_ids)), evidence_ids=tuple(sorted(evidence_ids)),
-            source_entity_ids=tuple(sorted(entity_ids)), geometry_relation="dimension_annotation",
+            source_entity_ids=tuple(sorted(entity_ids)), geometry_relation=geometry_relation,
         )
     return TableMeasure(
         id=f"table-measure-{semantic}", semantic=semantic, axis=axis,
-        value_mm=None, state="unknown", geometry_relation="dimension_annotation",
+        value_mm=None, state="unknown", geometry_relation=geometry_relation,
     )
 
 
