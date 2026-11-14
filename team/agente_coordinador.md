@@ -145,9 +145,19 @@ Auditoría: 495 commits, Markdown y módulos propios revisados. Base fresca 313 
 
 Coordinación actual: B backend posee API/repositorio/operación; B economía es único escritor contractual y del motor económico; A geometría ingesta/geometría/reconstrucción/salida; C frontend; D aceptación/datasets; apoyo harness runner/provider/config; apoyo operaciones despliegue/backup/CI. Root posee documentación/integración/verificación y revisión final Astra. Archivos personales nuevos corresponden a agentes IA subordinados autorizados por esta solicitud, no personas deducidas de Git. Los agentes no hacen commits concurrentes; integra root.
 
-Los datos reales, la aceptación por técnicos y el despliegue a un servidor aún no identificado no se simulan. Los contratos adicionales se acuerdan A/B antes de modificar y se notifican a C.
+Los datos reales y la aceptación por técnicos no se simulan. El usuario identificó después el VPS mediante `ssh kripta` y autorizó un endpoint propio preservando las aplicaciones existentes. Los contratos adicionales se acuerdan A/B antes de modificar y se notifican a C.
 
 Alcance adicional del coordinador: `.env.example` para apuntar al despliegue privado sin activar producción ni incluir secretos; README y banners históricos. Verificación global y navegador se ejecutan desde este worktree aislado.
 
 ## PR1 solicitada durante implementación
 Root coordina integración de PR1 head0fe4be7. Snapshot productivo precede ports. A PR-CAD (`pr1_analysis`) posee ingesta/extraction/decomposition/plausibilidad y pruebas PR; B PR-harness (`pr1_replay`) posee agente/herramientas/main/repositorio y pasa a ser único escritor contractual tras cierre de economía. A geometría participa en acuerdo de contrato de replay/comparación; C recibe interfaces para conectar la UI. No cambios concurrentes en esas rutas por propietarios anteriores. Root realiza merge, revisión y publicación después de comprobar el árbol integrado.
+
+## Cierre de integración y despliegue privado
+
+PR1 merged mediante `9a7aeac`, con ambos padres y árbol idéntico al revisado `d3d5e3a`; main publicado por fast-forward/push normal. Swarm GPT-6.1 Sol y revisión independiente GPT-6 Astra completados. Suite integrada 423 Python / 108 JavaScript. CI del runtime `cd57f4f` correcto, incluida construcción Docker; en el VPS se usa venv y systemd de usuario.
+
+Servicio operativo en `https://gex-dashboard.hopto.org/vexplorer/`, release `cd57f4f4ac3dca81b82a2d520057dfe3261b07be`. Se corrigieron y revisaron los dos problemas observados de entorno: directivas no soportadas en systemd de usuario y schema `items` del proveedor. Las ocho rutas ajenas conservaron sus respuestas HTTP; sólo se reinició nuestro servicio.
+
+Ensayos sobre fixture propio: autenticación/origen, job, revisión con identidad del servidor, cuatro láminas/ocho artefactos, coste parcial y exportaciones; navegador remoto con plano general. Live real GPT-6.1 Sol y replay succeeded, resultados iguales salvo identidad/fecha. Reinicio propio y copia descargada/restaurada en destino nuevo conservaron los cuerpos de 18 endpoints; SQLite íntegro. Evidencia completa en docs/VERIFICACION_PRIVADA_2026-11-14.md y reportes ignorados .runtime/production.
+
+No hay trabajo de implementación pendiente del plan privado. Permanecen datos comerciales reales, aceptación industrial con técnicos y selección de una política periódica de custodia externa; no se presentan como resultados implementados. Las credenciales iniciales se guardan en archivo local privado ignorado y hashes remotos, nunca en Git.

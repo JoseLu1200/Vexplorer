@@ -73,10 +73,10 @@ Files: tools/audit_production.py, tests/test_production_acceptance.py, evaluatio
 User identified SSH alias `kripta` and `gex-dashboard.hopto.org` on 2026-11-14, explicitly requiring preservation of every existing site/app.
 - [x] Read-only inventory of existing proxy, ports, containers, storage and health; do not read secrets.
 - [x] Add base-path support for a dedicated endpoint (`/vexplorer/`) without intercepting existing root/API routes.
-- [ ] After acceptance/Astra review, transfer only runtime/config; use the prepared venv and a dedicated user service on free loopback port 18792. Docker is an alternative for new hosts, not this VPS.
-- [ ] Add the smallest validated proxy route, with backup of the exact changed configuration and reversible rollback; never stop/recreate existing stacks.
-- [ ] Verify TLS/auth and full application at new endpoint; compare existing service health before/after.
-- [ ] Record deployed image digest, route, data/backup location and outstanding business-data validation.
+- [x] After acceptance/Astra review, transfer only runtime/config; use the prepared venv and a dedicated user service on free loopback port 18792. Docker is an alternative for new hosts, not this VPS.
+- [x] Add the smallest validated proxy route, with backup of the exact changed configuration and reversible rollback; never stop/recreate existing stacks.
+- [x] Verify TLS/auth and full application at new endpoint; compare existing service health before/after.
+- [x] Record deployed runtime digest, route, data/backup location and outstanding business-data validation. Release cd57f4f; observed live/replay, own-service restart and verified downloaded-backup restore are recorded in docs/VERIFICACION_PRIVADA_2026-11-14.md.
 
 ### Task 8: PR #1 reviewed integration
 User explicitly requests merging PR1 after conflict resolution and adopting improvements. Current head 0fe4be7 (14 commits); baseline blocks 1/2 already selectively adapted. Root preserves current production snapshot, ports useful block3 changes, then records a real merge with both parents and explicit resolutions preserving adapted code.

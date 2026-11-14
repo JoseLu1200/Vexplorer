@@ -4,6 +4,8 @@ Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. 
 
 Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca usa atributos geométricos o embeddings reales. El incremento privado permite un catálogo económico propio con fuente y fecha; el catálogo de demostración se mantiene identificado como sintético. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
+**Aplicación privada del equipo:** [abrir Vexplorer](https://gex-dashboard.hopto.org/vexplorer/). Requiere credenciales individuales. El despliegue del 2026-11-14 incluye API, almacenamiento persistente, inferencia live y replay verificado; se comprobaron reinicio y recuperación de copia. Las tarifas iniciales son demo. Evidencia y límites en la [verificación privada](docs/VERIFICACION_PRIVADA_2026-11-14.md).
+
 El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) conserva el cierre anterior con API, navegador, inferencia y visión reales. La [integración de PR1](docs/INTEGRACION_PR1_2026-11-14.md) documenta los 14 commits revisados y sus adaptaciones. El incremento privado añade contratos económicos 0.6, jobs durables y replay verificado; las aceptaciones históricas no sustituyen su revisión actual.
 
 ## Auditoría e incremento privado

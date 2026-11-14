@@ -1,22 +1,22 @@
 # Operación privada de Vexplorer
 
-Este despliegue está preparado para un único servidor privado del equipo. No es un diseño SaaS multiempresa. El destino autorizado es `https://gex-dashboard.hopto.org/vexplorer/`; DNS, TLS y Caddy ya existen. En este host se elige un venv y servicio `systemd --user` por su menor huella y porque `kripta` no accede al socket Docker. La ejecución del release, servicio y ruta Caddy espera únicamente que terminen la integración PR1 y la revisión final en curso; no falta autorización del usuario.
+Vexplorer está desplegado como producto privado de un solo equipo en `https://gex-dashboard.hopto.org/vexplorer/`. No es un diseño SaaS multiempresa. El release activo es `cd57f4f4ac3dca81b82a2d520057dfe3261b07be`; incluye PR1, integrado previamente en `9a7aeac`, y la CI del release terminó correctamente en el run `43549417513`. En este host se usa un venv y un servicio `systemd --user` por su menor huella y porque `kripta` no accede al socket Docker.
 
 ### Nota sobre `gex-dashboard.hopto.org`
 
-La inspección de solo lectura del 2026-11-14 encontró Caddy y TLS operativos, varios servicios bajo el mismo dominio, `/api/*` reservado por otra aplicación y el puerto loopback `18792` libre. No se debe arrancar el servicio `proxy` de Compose allí porque competiría por 80/443. La integración elegida liga Uvicorn exclusivamente a `127.0.0.1:18792` y añade handles Caddy `/vexplorer/*` antes del catch-all existente.
+La inspección inicial del 2026-11-14 encontró Caddy y TLS operativos, varios servicios bajo el mismo dominio y `/api/*` reservado por otra aplicación. La integración observada liga Uvicorn exclusivamente a `127.0.0.1:18792`; Caddy publica `/vexplorer/*` antes del catch-all existente. No se debe arrancar el servicio `proxy` de Compose en este host porque competiría por 80/443.
 
 Frontend y backend admiten `VEXPLORER_ROOT_PATH=/vexplorer`: los assets son relativos al documento, el cliente antepone el base path y los enlaces de artefactos lo conservan. El snippet `deploy/vps-vexplorer.caddy` usa `handle_path /vexplorer/*` para retirar el prefijo antes del proxy; la API interna sigue siendo `/api/v1` y no captura el `/api` existente del host. Limita cada body a 21 MiB antes de FastAPI, protegiendo `/tmp`; la app limita cada DXF a 20 MiB y el total de documentos mediante `VEXPLORER_MAX_STORAGE_BYTES` (1 GiB por defecto).
 
-El baseline fresco tiene 8,19 GB libres (95% usado), 3,41 GB de RAM disponible y swap en uso. La vía venv evita transferir una imagen pesada; aun así se debe vigilar espacio. `kripta` es propietario del Caddyfile, el admin Caddy local está accesible y `caddy reload` no requiere sudo. No se debe pedir ni registrar una contraseña sudo.
+El snapshot posterior al release registró 8.179.417.088 bytes libres; el disco sigue cerca del 95% usado y debe vigilarse. `kripta` es propietario del Caddyfile, el admin Caddy local está accesible y `caddy reload` no requiere sudo. No se debe pedir ni registrar una contraseña sudo.
 
-Python 3.12.3, pip y `venv` están disponibles; el home de `kripta` es escribible, Caddy 2.11.7 y su admin local 2019 están activos. `Linger=yes`, de modo que el futuro servicio `systemd --user` persistirá tras logout/reboot. El venv ya existe y fue verificado; el servicio, release, secretos y ruta Caddy todavía no se han instalado.
+Python 3.12.3, el venv y sus dependencias están instalados en `/home/kripta/apps/vexplorer`. `vexplorer.service` está activo y habilitado en el gestor de usuario; `Linger=yes` permite que persista tras logout y reinicio. Caddy 2.11.7 sirve la ruta pública con TLS. El snapshot observado muestra el listener loopback ocupado por la aplicación, health público `200` y la raíz privada `/vexplorer/` protegida con `401` sin credenciales.
 
-### Instalación venv prevista para el VPS
+### Instalación venv observada en el VPS
 
-El bootstrap de dependencias ya existe en `/home/kripta/apps/vexplorer/venv`: se transfirió solo `deploy/requirements-runtime.txt`, coincidió su SHA-256 local/remoto, la instalación Python 3.12.3 terminó y `pip check` no encontró incompatibilidades. Ocupa 251 MiB. Todavía no hay código, secretos, servicio ni listener.
+El bootstrap de dependencias existe en `/home/kripta/apps/vexplorer/venv`: se transfirió solo `deploy/requirements-runtime.txt`, coincidió su SHA-256 local/remoto, la instalación Python 3.12.3 terminó y `pip check` no encontró incompatibilidades. El código vive en releases inmutables y `current` apunta al release activo.
 
-Después de la revisión final, la instalación debe usar esta estructura privada:
+La instalación usa esta estructura privada:
 
 ```text
 /home/kripta/apps/vexplorer/
@@ -31,7 +31,7 @@ Después de la revisión final, la instalación debe usar esta estructura privad
     └── production.env
 ```
 
-`shared/production.env` (0600) debe declarar, sin registrar valores secretos:
+`shared/production.env` (0600) declara, sin documentar valores secretos:
 
 ```dotenv
 VEXPLORER_ENV=production
@@ -51,37 +51,26 @@ OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_EMBEDDING_DIMENSIONS=256
 ```
 
-La clave de proveedor, si se habilita live, se añade al env privado; no se pasa en argv ni se copia al release. Tras crear `shared/data`, instalar `deploy/systemd-user/vexplorer.service` en `~/.config/systemd/user/`, revisar rutas y permisos, el futuro operador ejecutará `systemctl --user daemon-reload` y `systemctl --user enable --now vexplorer`. La unidad liga solo `127.0.0.1:18792`, usa un worker y permite escritura exclusivamente en `shared/data`. En el gestor de usuario systemd 255 de este host se omiten deliberadamente `PrivateDevices=yes` y `ProtectKernelModules=yes`: ambas fallan por separado con `status=218/CAPABILITIES`. El resto de directivas de endurecimiento se probó conjuntamente y la unidad arrancó correctamente.
+La clave de proveedor está en el env privado; no se pasa en argv ni se copia al release. La unidad instalada liga solo `127.0.0.1:18792`, usa un worker y permite escritura persistente exclusivamente en `shared/data`; `PrivateTmp=yes` proporciona además un `/tmp` efímero y aislado. En el gestor de usuario systemd 255 de este host se omiten deliberadamente `PrivateDevices=yes` y `ProtectKernelModules=yes`: ambas fallan por separado con `status=218/CAPABILITIES`. El resto de directivas de endurecimiento se probó conjuntamente y la unidad arrancó correctamente.
 
-El snippet `deploy/vps-vexplorer.caddy` se inserta dentro del bloque existente `gex-dashboard.hopto.org`, inmediatamente después del import estable `casinosantiago.caddy` y antes de los catch-all. Primero se guarda una copia recuperable del Caddyfile. `caddy validate` como `kripta` no puede abrir un log preexistente de otra aplicación; el cierre ejecuta `caddy adapt` sobre el candidato exacto y `caddy validate` sobre una copia equivalente que cambia únicamente ese writer por `/tmp`. Después vuelve a comprobar el hash original y recarga el candidato exacto mediante el admin Caddy. Las comprobaciones son `curl http://127.0.0.1:18792/api/v1/health` y `curl https://gex-dashboard.hopto.org/vexplorer/api/v1/health`. Ningún paso debe detener ni reiniciar otras aplicaciones.
+El snippet `deploy/vps-vexplorer.caddy` quedó insertado dentro del bloque existente `gex-dashboard.hopto.org`, inmediatamente después del import estable `casinosantiago.caddy` y antes de los catch-all. El Caddyfile activo tiene SHA-256 `c297ea0be19686a5e0a0539e0a9220383f5170c7f4dfa086ddd14c37dab835d4`; la copia anterior recuperable está en `/home/kripta/apps/vexplorer/rollback/Caddyfile.before-vexplorer-06deea06fb25`. Los ocho endpoints preexistentes conservaron sus códigos tras la recarga. No se debe detener ni reiniciar otras aplicaciones al operar Vexplorer.
 
-### Ejecutor de cierre
+### Aceptación observada
 
-`.runtime/production/deploy_vps.py` está ignorado por Git y es inerte sin `--apply`. El dry-run captura hash Caddy, puerto, unidad, release, disco y los códigos de las rutas existentes; no usa PM2 ni escribe en el host:
+La aceptación remota guardada fuera de Git terminó con estado `passed`:
 
-```console
-C:\Users\Álvaro Schwiedop\Desktop\KriptaStudios\1hack\Vexplorer\.venv\Scripts\python.exe .runtime/production/deploy_vps.py
-```
+- una ejecución `geometry_only` completó ingesta, geometría, revisión, cuatro láminas SVG/DXF, costes parciales y exportaciones;
+- el coste se identifica como `synthetic:true` y `partial`: prueba la integración, no tarifas empresariales ni precisión industrial;
+- una ejecución real `live` con `gpt-6.1-sol` terminó correctamente;
+- el replay de su grabación terminó en modo `recorded_replay` y conserva procedencia, fingerprint y hash del transcript;
+- health público, autenticación, prefijo `/vexplorer`, persistencia y aislamiento de los endpoints existentes quedaron comprobados.
+- se reinició únicamente `vexplorer.service`; continuó habilitado, con linger activo y bind `127.0.0.1:18792`;
+- 18 respuestas GET conservaron código y SHA-256 de cuerpo tras el reinicio y al abrir una restauración con la aplicación local;
+- live y replay devolvieron el mismo resultado salvo los campos esperados `run_id` y `created_at`.
 
-Coordinación preparará fuera de Git:
+La copia de aceptación observada es `/home/kripta/apps/vexplorer/shared/backups/accepted-20261114T030644Z.zip`, SHA-256 `5baff7999f687a9fa2f8189eebc45836f9dd19404b0758e2075c8bf5e9eea836`. Se descargó, se restauró a un destino nuevo y SQLite devolvió `integrity_check=ok`; contenía tres runs, cuatro jobs, una grabación, cero reservas pendientes, cuatro revisiones, una estimación de coste y ocho artefactos de planos. Esta es evidencia puntual, no una programación automática de copias.
 
-- `.runtime/production/vps-access.json`, con `username` exactamente `operador-inicial`, `password` y `api_key` opcional;
-- un catálogo JSON configurado. Mientras no haya tarifas empresariales se admite el catálogo demo existente solo con `synthetic:true`, rotulado como demo y usando `--allow-demo-catalog`; no se inventan tarifas reales;
-- `.runtime/production/credentials.txt` para entrega privada al usuario, nunca como entrada del proceso ni salida de logs.
-
-La interfaz preparada para el GO final es:
-
-```console
-C:\Users\Álvaro Schwiedop\Desktop\KriptaStudios\1hack\Vexplorer\.venv\Scripts\python.exe .runtime/production/deploy_vps.py \
-  --revision SHA_COMPLETO_REVISADO \
-  --cost-catalog RUTA_CATALOGO_JSON \
-  --access-file .runtime/production/vps-access.json \
-  --allow-demo-catalog \
-  --confirm SHA_COMPLETO_REVISADO \
-  --apply
-```
-
-El script exige que la revisión sea `HEAD` y que los archivos runtime/build/despliegue estén limpios. Ejecuta `npm ci` y prepara el vendor local fijado, comprueba que el venv remoto corresponde al mismo `requirements-runtime.txt`, y empaqueta solo `backend/app`, frontend runtime/vendor y las herramientas operativas, con manifiesto y SHA-256. Transfiere los secretos por stdin (no argv), fija permisos 0600, liga 18792, prueba health interno, prepara un candidato Caddy desde el hash esperado, ejecuta `caddy adapt` y `caddy validate`, vuelve a comprobar el hash justo antes de escribir y hace `caddy reload`. Si falla, restaura el Caddyfile byte a byte y el release/unidad anterior. Tras el reload compara todos los códigos baseline ajenos a Vexplorer; cualquier cambio provoca rollback.
+Esta evidencia no sustituye revisión técnica de cada resultado. Las credenciales, claves y transcripciones no deben copiarse a documentación ni logs. El despliegue no configura copias automáticas: las copias y ensayos de restauración siguen siendo tareas explícitas del operador.
 
 ## Frontera de seguridad
 
@@ -97,9 +86,9 @@ El script exige que la revisión sea `HEAD` y que los archivos runtime/build/des
 
 Los artefactos Docker siguientes están verificados para un host dedicado, pero no son la vía elegida en `gex-dashboard.hopto.org`. Allí competirían con Caddy existente y exigirían privilegios Docker que `kripta` no tiene.
 
-## Preparación del operador
+## Preparación del operador para la alternativa Docker
 
-Requisitos: Docker Engine con Compose v2, un checkout de esta revisión, DNS y un correo ACME reales. Cree fuera del repositorio `/srv/vexplorer/{config,secrets,backups}` con acceso restringido. Copie `deploy/production.env.example` a `/srv/vexplorer/production.env` y reemplace todos los ejemplos.
+Esta sección no describe el host activo, sino la alternativa para un servidor dedicado. Requiere Docker Engine con Compose v2, un checkout de la revisión, DNS y un correo ACME reales. Cree fuera del repositorio `/srv/vexplorer/{config,secrets,backups}` con acceso restringido. Copie `deploy/production.env.example` a `/srv/vexplorer/production.env` y reemplace todos los ejemplos.
 
 El primer usuario se genera de forma interactiva; la contraseña nunca va en argv ni se imprime:
 
@@ -143,17 +132,19 @@ Las grabaciones live tienen una política separada de los límites por ejecució
 
 No se borran grabaciones automáticamente: pueden estar referenciadas por replays y auditorías. Al alcanzar capacidad, las ejecuciones geométricas y replays existentes continúan disponibles; el operador debe respaldar los datos y revisar el presupuesto antes de aumentar estos límites. La cuota de transcripts no incluye el resto de SQLite, los documentos ni las copias: revisar también el espacio real del disco. El perfil soportado mantiene un único proceso de aplicación; el arranque recupera las reservas interrumpidas junto con los trabajos sin reintentar llamadas pagadas.
 
-`VEXPLORER_DATA_VOLUME` nombra el volumen persistente. Dentro guarda `/var/lib/vexplorer/data/vexplorer.sqlite3` y `documents/`; SQLite incluye runs, revisiones, trabajos, eventos, estimaciones y artefactos persistidos. `docker compose restart` y recrear contenedores no eliminan el volumen.
+En el host activo, los datos persistentes están en `/home/kripta/apps/vexplorer/shared/data`: contiene `vexplorer.sqlite3`, `documents/` y los artefactos gestionados. Cambiar el enlace `current` o reiniciar `vexplorer.service` no elimina ese directorio. En la alternativa Docker, `VEXPLORER_DATA_VOLUME` nombra el volumen que se monta como `/var/lib/vexplorer/data`.
 
-Antes de actualizar desde la base auditada o cualquier versión:
+Antes de actualizar el host venv activo:
 
-1. Cree y verifique una copia según la sección siguiente.
-2. Registre la versión de imagen y el volumen actuales.
-3. Construya la nueva imagen sin borrar la anterior.
-4. Arranque contra una copia restaurada en un volumen nuevo y compruebe health, login, runs históricos, trabajos, exportaciones y artefactos.
-5. Solo entonces cambie `VEXPLORER_DATA_VOLUME` al volumen validado. Conserve el volumen anterior para rollback.
+1. Cree y verifique una copia según la sección siguiente; restaure esa copia a un destino nuevo.
+2. Instale la nueva versión en un directorio inmutable `releases/<revision>` y compruebe que el venv satisface sus dependencias. No sobrescriba el release actual.
+3. Ejecute la nueva versión contra los datos restaurados y compruebe compatibilidad de esquema, health, login, runs históricos, trabajos, exportaciones y artefactos.
+4. Registre el destino anterior de `current`, cambie el enlace al release validado y reinicie únicamente `vexplorer.service`. No modifique ni recargue Caddy para una actualización ordinaria de la aplicación.
+5. Repita las comprobaciones externas. Si fallan y el esquema sigue siendo compatible con el release anterior, restaure `current` y reinicie solo el servicio propio. Si una migración rompió esa compatibilidad, conserve los datos actuales y restaure la copia en otra ruta antes de volver a la versión anterior; no ejecute código antiguo sobre un esquema incompatible. Conserve ambos releases y la copia hasta cerrar la aceptación.
 
-Las migraciones de esquema pertenecen al backend. No edite SQLite manualmente ni dé por compatible una actualización porque el contenedor arranque: la aceptación exige lectura de datos previos, reinicio y nuevo backup/restore.
+Para la alternativa Docker, cree y verifique una copia, registre imagen y volumen actuales, construya la nueva imagen sin borrar la anterior y pruébela contra un volumen restaurado nuevo. Solo tras validar compatibilidad cambie `VEXPLORER_DATA_VOLUME`; conserve imagen y volumen anteriores para rollback.
+
+Las migraciones de esquema pertenecen al backend. No edite SQLite manualmente ni dé por compatible una actualización porque el proceso o contenedor arranque: la aceptación exige lectura de datos previos, reinicio y nuevo backup/restore.
 
 ## Copia consistente
 
@@ -162,9 +153,19 @@ Las migraciones de esquema pertenecen al backend. No edite SQLite manualmente ni
 - base SQLite: runs, revisiones, trabajos, eventos, estimaciones y artefactos almacenados;
 - `documents/`: uploads conservados por la aplicación.
 
-No cubre identidades, catálogo, claves de proveedor, configuración de Caddy ni certificados. Guarde `users.json`, el catálogo y `/srv/vexplorer/production.env` por separado en un almacén cifrado y con control de acceso. Deben restaurarse antes de iniciar el modo privado.
+No cubre identidades, catálogo, claves de proveedor, configuración de Caddy ni certificados. En el host activo, custodie por separado `/home/kripta/apps/vexplorer/shared/secrets/users.json`, `/home/kripta/apps/vexplorer/shared/config/cost-catalog.json` y `/home/kripta/apps/vexplorer/shared/production.env`. En la alternativa Docker, custodie los archivos equivalentes y `/srv/vexplorer/production.env`. Guárdelos en un almacén cifrado con control de acceso y restáurelos antes de iniciar el modo privado.
 
-Prepare `/srv/vexplorer/backups` para UID `10001` y cree una ruta nueva en cada ejecución; el comando rechaza sobrescribir un ZIP existente:
+En el host venv activo, cree un nombre nuevo en cada ejecución; el comando rechaza sobrescribir un ZIP existente:
+
+```console
+cd /home/kripta/apps/vexplorer/current
+PYTHONPATH=/home/kripta/apps/vexplorer/current \
+  /home/kripta/apps/vexplorer/venv/bin/python -m tools.backup create \
+  --data-dir /home/kripta/apps/vexplorer/shared/data \
+  --output /home/kripta/apps/vexplorer/shared/backups/vexplorer-AAAA-MM-DDTHHMMSSZ.zip
+```
+
+Para la alternativa Docker, prepare `/srv/vexplorer/backups` para UID `10001` y use:
 
 ```console
 docker compose --env-file /srv/vexplorer/production.env run --rm --no-deps \
@@ -180,23 +181,26 @@ Copie el ZIP a otro sistema y aplique retención. Un archivo que no se haya rest
 
 La restauración rechaza rutas absolutas, `..`, formas de unidad Windows, miembros extra/duplicados, symlinks, tamaños o hashes incorrectos y SQLite corrupta. Solo publica un destino nuevo tras validar todo; nunca restaura encima de datos existentes.
 
+En el host activo, restaure siempre a un directorio nuevo y no cambie `shared/data` hasta validar el resultado:
+
 ```console
-docker volume create vexplorer_data_restore_AAAAMMDD
-docker run --rm --user 10001:10001 \
-  -v vexplorer_data_restore_AAAAMMDD:/var/lib/vexplorer \
-  -v /srv/vexplorer/backups:/backup:ro \
-  vexplorer:local python -m tools.backup restore \
-  --archive /backup/vexplorer-AAAA-MM-DDTHHMMSSZ.zip \
-  --destination /var/lib/vexplorer/data
+cd /home/kripta/apps/vexplorer/current
+PYTHONPATH=/home/kripta/apps/vexplorer/current \
+  /home/kripta/apps/vexplorer/venv/bin/python -m tools.backup restore \
+  --archive /home/kripta/apps/vexplorer/shared/backups/vexplorer-AAAA-MM-DDTHHMMSSZ.zip \
+  --destination /home/kripta/apps/vexplorer/shared/restores/restore-AAAA-MM-DDTHHMMSSZ
 ```
 
-Restaure también usuarios, catálogo y env desde su custodia separada. Cambie `VEXPLORER_DATA_VOLUME=vexplorer_data_restore_AAAAMMDD`, ejecute `up -d`, y valide identidad, historial, trabajos, documentos y exportaciones. Si falla, vuelva al nombre del volumen anterior; no copie archivos parcialmente sobre él.
+La alternativa Docker puede restaurar de igual forma a un volumen nuevo montado en una ruta de destino vacía.
+
+Restaure también usuarios, catálogo y env desde su custodia separada. Valide identidad, historial, trabajos, documentos y exportaciones antes de cambiar la ruta activa. En Docker, cambie `VEXPLORER_DATA_VOLUME` solo tras validar el volumen nuevo. Si falla, conserve la ruta o volumen anterior; no copie archivos parcialmente sobre ellos.
 
 ## Comprobaciones periódicas
 
-- `docker compose ps` debe mostrar `app` saludable y `proxy` activo.
+- `systemctl --user is-active vexplorer.service` debe devolver `active`; `ss` debe mostrar `127.0.0.1:18792`, nunca un bind público.
+- `GET https://gex-dashboard.hopto.org/vexplorer/api/v1/health` debe devolver 200 y una ruta privada sin Basic debe devolver 401.
 - Ambos health checks son deliberadamente públicos y no deben revelar configuración.
 - Verifique login válido/inválido y que una mutación con `Origin` ajeno devuelve 403.
 - Revise espacio del volumen, cola (`VEXPLORER_JOB_MAX_PENDING`, por defecto 8), expiración TLS y fecha/procedencia del catálogo.
-- Ejecute un ensayo periódico de restauración en un volumen nuevo y compruebe runs, documentos, jobs y artefactos.
+- Ejecute copias manuales con retención externa y un ensayo periódico de restauración en una ruta nueva; compruebe runs, documentos, jobs y artefactos.
 - No interprete health como validación industrial de resultados CAD o costes.
