@@ -113,6 +113,10 @@ test("table workspace keeps source measures separate from generated and evaluate
   assert.equal(workspace.measures[2].informationClass, "unknown");
   assert.equal(workspace.measures[2].confirmable, true);
   assert.equal(workspace.measures[2].effectiveValue, 18);
+  assert.equal(workspace.measures[2].effectiveState, "calculated");
+  assert.equal(workspace.measures[2].effectivePrefix, "Propuesta");
+  assert.equal(workspace.measures[2].effectiveLabel, "Calculado");
+  assert.equal(workspace.measures[2].humanEffective, false);
   assert.equal(workspace.programs[0].originLabel, "Baseline de catálogo");
   assert.equal(workspace.programs[0].components[1].quantity, 2);
   assert.equal(workspace.evaluated.components[0].thickness.state, "unknown");
@@ -195,6 +199,10 @@ test("a prior human table value stays editable and supersedes its confirmation",
   const workspace = normaliseTableWorkspace(snapshot);
   assert.equal(workspace.measures[0].confirmable, true);
   assert.equal(workspace.measures[0].effectiveValue, 18);
+  assert.equal(workspace.measures[0].effectiveState, "confirmed");
+  assert.equal(workspace.measures[0].effectivePrefix, "Vigente");
+  assert.equal(workspace.measures[0].effectiveLabel, "Confirmado por persona");
+  assert.equal(workspace.measures[0].humanEffective, true);
   assert.equal(workspace.measures[0].confirmation.reason, "Medición anterior");
 
   const payload = buildTableReviewPayload(snapshot, workspace, {
@@ -223,6 +231,43 @@ test("observed corrections and recovered source decisions preserve evidence and 
   });
   assert.deepEqual(payload.table_observed_value_corrections, [{ correction_id: "correction-1", measurement_id: "m-width", value_mm: 1200.05, reason: "Comprobado", evidence_ids: ["evidence-1"], source: "human" }]);
   assert.deepEqual(payload.table_source_review_decisions, [{ warning_id: "source-warning-1", warning_code: "recovered_dxf:fixes=1:errors=0", action: "accept", reason: "Comparado con el DXF original" }]);
+});
+
+test("copy bindings never turn an observed source measure into a human confirmation", () => {
+  const workspace = normaliseTableWorkspace({ result_revision: 1, result: {
+    input_semantics: "mounted_orthographic_views",
+    table_analysis: { measures: [{ id: "m-width", semantic: "overall_width", value_mm: 1200, state: "observed", evidence_ids: ["e-1"] }] },
+    table_programs: [{ id: "program", proposal_origin: "catalog_baseline", assumptions: [], premises: [], components: [] }],
+    evaluated_table_program: { raw_program: { id: "program" }, state: "hypothesis", components: [], issues: [], bindings: [{ operation: "copy", operand_refs: [{ ref_type: "measure", ref_id: "m-width" }], result: { value_mm: 1200, state: "calculated" } }] },
+  } });
+  const measure = workspace.measures[0];
+  assert.equal(measure.state, "observed");
+  assert.equal(measure.effectiveValue, 1200);
+  assert.equal(measure.effectiveState, "calculated");
+  assert.equal(measure.effectivePrefix, "Propuesta");
+  assert.equal(measure.effectiveLabel, "Calculado");
+  assert.equal(measure.humanEffective, false);
+});
+
+test("accepted and rejected source decisions remain visible and rectifiable", () => {
+  const warningCode = "recovered_dxf:fixes=1:errors=0";
+  const base = {
+    input_semantics: "mounted_orthographic_views",
+    table_analysis: { ledger_revision: "ledger-1", warnings: [warningCode], measures: [] },
+    table_programs: [{ id: "program", proposal_origin: "catalog_baseline", assumptions: [], premises: [], components: [] }],
+    table_source_review_decisions: [{ warning_id: "source-warning-1", warning_code: warningCode, action: "accept", reason: "Fuente cotejada" }],
+    evaluated_table_program: { raw_program: { id: "program" }, state: "needs_review", bindings: [], components: [], issues: [] },
+  };
+  const accepted = normaliseTableWorkspace({ result_revision: 2, result: base });
+  assert.deepEqual(accepted.sourceWarnings[0], { id: "source-warning-1", code: warningCode, message: warningCode, currentAction: "accept", currentReason: "Fuente cotejada" });
+
+  const rejected = normaliseTableWorkspace({ result_revision: 3, result: { ...base,
+    table_source_review_decisions: [{ warning_id: "source-warning-1", warning_code: warningCode, action: "reject", reason: "Fuente ilegible" }],
+    evaluated_table_program: { ...base.evaluated_table_program, issues: [{ code: "source_recovery_rejected", severity: "error", message: "Fuente rechazada", target_ids: ["source-warning-1", warningCode] }] },
+  } });
+  assert.equal(rejected.sourceWarnings.length, 1);
+  assert.equal(rejected.sourceWarnings[0].currentAction, "reject");
+  assert.equal(rejected.sourceWarnings[0].currentReason, "Fuente ilegible");
 });
 
 test("table costs expose explicit tariffs, partial subtotal and largest known contribution", () => {
@@ -285,14 +330,17 @@ test("complete economic scope sends selected hours, finish, exclusions and expli
     materialTariffId: "material-1", edgeScope: "all_exposed", edgeTariffId: "edge-1",
     operations: [{ id: "cut-1", hours: "1.5" }, { id: "drill-1", hours: "" }],
     laborTariffId: "labor-1", laborHours: "3", finishTariffId: "finish-1", finishQuantity: "2.25",
-    exclusions: [{ scope: "operation", reason: "Taladrado realizado por proveedor" }], marginPercent: "30",
+    exclusions: [], marginPercent: "30",
   }), {
     material_tariff_id: "material-1", component_material_tariff_ids: {}, edge_scope: "all_exposed", edge_tariff_id: "edge-1",
     operation_tariff_ids: ["cut-1", "drill-1"], operation_hours_by_tariff: { "cut-1": 1.5 },
     labor_tariff_id: "labor-1", labor_hours: 3, finish_tariff_id: "finish-1", finish_quantity_m2: 2.25,
-    exclusions: [{ scope: "operation", reason: "Taladrado realizado por proveedor" }], provisional_margin_percent: 30,
+    exclusions: [], provisional_margin_percent: 30,
   });
+  assert.deepEqual(buildTableCostScope({ exclusions: [{ scope: "operation", reason: "Taladrado realizado por proveedor" }] }).exclusions, [{ scope: "operation", reason: "Taladrado realizado por proveedor" }]);
   assert.throws(() => buildTableCostScope({ exclusions: [{ scope: "labor", reason: " " }] }), /motivo/i);
+  assert.throws(() => buildTableCostScope({ operations: [{ id: "cut-1", hours: "1" }], exclusions: [{ scope: "operation", reason: "No aplica" }] }), /operaciones.*excluidas/i);
+  assert.throws(() => buildTableCostScope({ edgeScope: "all_exposed", edgeTariffId: "edge-1", exclusions: [{ scope: "edge", reason: "No aplica" }] }), /canteado.*excluido/i);
 });
 
 test("table explanation presents backend formulas, premises and unknowns without recomputing them", () => {

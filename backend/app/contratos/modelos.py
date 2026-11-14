@@ -882,6 +882,12 @@ class ReviewRequest(StrictModel):
         confirmed_targets = [item.target_id for item in self.table_confirmed_values]
         if len(confirmed_targets) != len(set(confirmed_targets)):
             raise ValueError("duplicate table confirmed values")
+        confirmation_ids = [
+            item.confirmation_id for item in self.table_confirmed_values
+            if item.confirmation_id is not None
+        ]
+        if len(confirmation_ids) != len(set(confirmation_ids)):
+            raise ValueError("duplicate table confirmation ids")
         correction_ids = [item.correction_id for item in self.table_observed_value_corrections]
         correction_targets = [item.measurement_id for item in self.table_observed_value_corrections]
         if len(correction_ids) != len(set(correction_ids)):
@@ -1427,10 +1433,29 @@ class SimilarityGroup(StrictModel):
     explanation: str = Field(min_length=1)
 
 
+class ReplaySource(StrictModel):
+    recording_id: str = Field(pattern=r"^recording-[0-9a-f]{64}$")
+    recording_version: Literal[1] = 1
+    source_live_run_id: str = Field(pattern=r"^run-[0-9a-f]{32}$")
+    source_result_revision: int = Field(gt=0)
+    source_actor: str = Field(min_length=1, max_length=64)
+    provider_model: str = Field(min_length=1, max_length=128)
+    provider_response_ids: tuple[str, ...] = Field(min_length=1, max_length=15)
+    transcript_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    recorded_at: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def response_ids_are_unique(self) -> "ReplaySource":
+        if len(self.provider_response_ids) != len(set(self.provider_response_ids)):
+            raise ValueError("duplicate provider response ids")
+        return self
+
+
 class RunSnapshot(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     id: str
-    mode: Literal["live", "geometry_only"]
+    mode: Literal["live", "geometry_only", "recorded_replay"]
     state: Literal["completed", "needs_review", "failed", "cancelled", "timed_out"]
     reason_code: str | None = None
     candidate_revision: str
@@ -1441,6 +1466,13 @@ class RunSnapshot(StrictModel):
     agent_selected_table_program_id: str | None = None
     document_id: str | None = None
     input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    replay_source: ReplaySource | None = None
+
+    @model_validator(mode="after")
+    def replay_provenance_matches_mode(self) -> "RunSnapshot":
+        if (self.mode == "recorded_replay") != (self.replay_source is not None):
+            raise ValueError("recorded replay requires exclusive live source provenance")
+        return self
 
 
 class RunRequest(StrictModel):
@@ -1459,9 +1491,9 @@ class RunRequest(StrictModel):
             return self
         if self.table_profile != "rectangular_table_v1":
             raise ValueError("mounted table input requires an explicit table profile")
-        if self.mode == "live":
+        if self.mode in {"live", "recorded_replay"}:
             if self.proposal_mode != "model_generated" or self.table_template_id is not None:
-                raise ValueError("live table mode requires model_generated without catalog template")
+                raise ValueError("live and replay table modes require model_generated without catalog template")
         elif self.mode == "geometry_only":
             if self.proposal_mode == "model_generated":
                 raise ValueError("geometry_only cannot generate a model program")
@@ -1539,3 +1571,14 @@ class InspectSeparatedPartArgs(StrictModel):
 class SelectAssemblyCandidateArgs(StrictModel):
     candidate_revision: str = Field(min_length=1)
     assembly_candidate_id: str = Field(min_length=1)
+
+
+class CompareCandidatesArgs(StrictModel):
+    candidate_revision: str = Field(min_length=1)
+    candidate_ids: tuple[str, str]
+
+    @model_validator(mode="after")
+    def candidate_ids_are_distinct(self) -> "CompareCandidatesArgs":
+        if self.candidate_ids[0] == self.candidate_ids[1]:
+            raise ValueError("candidate ids must be distinct")
+        return self

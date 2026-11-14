@@ -24,6 +24,19 @@ class _EntityLimitExceeded(ValueError):
 
 
 @dataclass
+class _EntityBudget:
+    limit: int
+    used: int = 0
+
+    def consume(self) -> None:
+        self.used += 1
+        if self.used > self.limit:
+            raise _EntityLimitExceeded(
+                f"entity limit exceeded after block expansion: > {self.limit}"
+            )
+
+
+@dataclass
 class _PointBudget:
     limit: int
     used: int = 0
@@ -178,19 +191,11 @@ def _linetype(
 
 def _expanded_entities(
     document: object,
-    modelspace: object,
+    layout: object,
     *,
-    max_entities: int,
+    entity_budget: _EntityBudget,
     warnings: list[str],
 ) -> Iterator[tuple[object, str, str, str | None]]:
-    visits = 0
-
-    def count() -> None:
-        nonlocal visits
-        visits += 1
-        if visits > max_entities:
-            raise _EntityLimitExceeded(f"entity limit exceeded after block expansion: > {max_entities}")
-
     def walk(
         entity: object,
         entity_id: str,
@@ -198,7 +203,7 @@ def _expanded_entities(
         parent_linetype: str | None = None,
         depth: int = 0,
     ) -> Iterator[tuple[object, str, str, str | None]]:
-        count()
+        entity_budget.consume()
         own_layer = str(entity.dxf.layer)  # type: ignore[attr-defined]
         layer = parent_layer if parent_layer is not None and own_layer == "0" else own_layer
         linetype = _linetype(document, entity, layer, parent_linetype)
@@ -213,7 +218,7 @@ def _expanded_entities(
         cells = entity.multi_insert() if getattr(entity, "mcount", 1) > 1 else (entity,)  # type: ignore[attr-defined]
         for cell_index, cell in enumerate(cells, start=1):
             if cell is not entity:
-                count()
+                entity_budget.consume()
             cell_id = f"{entity_id}-m{cell_index}" if getattr(entity, "mcount", 1) > 1 else entity_id
             try:
                 children = cell.virtual_entities()  # type: ignore[attr-defined]
@@ -226,8 +231,41 @@ def _expanded_entities(
             except (ezdxf.DXFError, KeyError, ValueError, ZeroDivisionError):
                 warnings.append(f"unsupported_block:{cell_id}")
 
-    for ordinal, entity in enumerate(modelspace, start=1):  # type: ignore[arg-type]
+    for ordinal, entity in enumerate(layout, start=1):  # type: ignore[arg-type]
         yield from walk(entity, _entity_id(entity, ordinal))
+
+
+def _paperspace_warnings(
+    document: object,
+    *,
+    entity_budget: _EntityBudget,
+    warnings: list[str],
+) -> None:
+    dimension_kinds = {"DIMENSION", "ARC_DIMENSION", "LEADER", "MLEADER"}
+    for layout in document.layouts:  # type: ignore[attr-defined]
+        if layout.name == "Model":
+            continue
+        dimensions = 0
+        annotations = 0
+        layout_warnings: list[str] = []
+        for entity, _, _, _ in _expanded_entities(
+            document,
+            layout,
+            entity_budget=entity_budget,
+            warnings=layout_warnings,
+        ):
+            if entity.dxftype() == "VIEWPORT":
+                continue
+            if entity.dxftype() in dimension_kinds:
+                dimensions += 1
+            else:
+                annotations += 1
+        warnings.extend(layout_warnings)
+        label = re.sub(r"[^A-Za-z0-9_. -]", "_", str(layout.name))[:80] or "unnamed"
+        if dimensions:
+            warnings.append(f"paperspace_dimensions:{label}:{dimensions}")
+        if annotations:
+            warnings.append(f"paperspace_annotations:{label}:{annotations}")
 
 
 def parse_dxf(
@@ -249,9 +287,10 @@ def parse_dxf(
         warnings.append("source_unit_unknown")
 
     parsed: list[ParsedEntity] = []
+    entity_budget = _EntityBudget(max_entities)
     point_budget = _PointBudget(max_points)
     for entity, entity_id, layer, linetype in _expanded_entities(
-        document, modelspace, max_entities=max_entities, warnings=warnings,
+        document, modelspace, entity_budget=entity_budget, warnings=warnings,
     ):
         parsed_before = len(parsed)
         kind = entity.dxftype()
@@ -414,6 +453,8 @@ def parse_dxf(
 
         for item in parsed[parsed_before:]:
             point_budget.consume(len(item.points), item.id)
+
+    _paperspace_warnings(document, entity_budget=entity_budget, warnings=warnings)
 
     return ParsedDrawing(
         drawing_id=f"drawing-{sha256(raw).hexdigest()[:16]}",

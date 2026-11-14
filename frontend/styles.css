@@ -19,6 +19,7 @@
 .navigator{gap:8px}
 .navigator__head{flex:1;min-width:0;gap:8px}
 .navigator__head>span{flex:1;min-width:0;max-width:430px}
+.navigator__head>#restore-run-retry{min-height:26px;padding:2px 8px;border:1px solid #9b6a22;border-radius:3px;color:#70400a;background:#fff4df;font:600 11px var(--mono)}
 .secondary-tabs{flex:none}
 .cad-pane{grid-template-rows:69px minmax(260px,1fr) 30px minmax(180px,31vh)}
 .cad-toolbar{padding:4px 8px;align-content:center;flex-wrap:wrap;gap:3px 10px;overflow:hidden}
@@ -33,6 +34,7 @@
 .review-values{margin-top:9px;padding:8px;border:1px solid #9fc8b8;border-radius:4px;background:#edf8f3}.review-values p{margin:5px 0 0}.allocation-decision input.is-reviewed{color:#165f44;border-color:#71a993;background:#edf8f3}
 @media(max-width:620px){.quick-upload{display:grid;grid-template-columns:minmax(0,1fr) auto}.quick-upload .file-button{grid-column:1/-1}.quick-upload select{max-width:none}.allocation-decision{grid-template-columns:1fr}.allocation-decision small{grid-column:auto}.parts-dock>header{height:auto;min-height:48px}.parts-dock .status-chip{display:none}th,td{padding:6px 8px}}
 #run-mode-label{display:inline-flex;white-space:nowrap}
+#replay-source{display:inline-block;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:620px){.session-meta{max-width:100%;overflow-x:auto;white-space:nowrap}}
 @media(max-width:980px){.workbench{grid-template-columns:minmax(0,1fr)}.quick-upload{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;flex:1 0 100%}.quick-upload .file-button{grid-column:1/-1;width:100%;min-width:0}.quick-upload select{width:100%;min-width:0;max-width:none}}
 @media(max-width:620px){.quick-upload{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.quick-upload>.button{grid-column:1/-1;width:100%}.navigator__head{flex:1 0 100%;width:100%}.session-meta{width:100%;min-width:0}.secondary-tabs{min-width:0}}

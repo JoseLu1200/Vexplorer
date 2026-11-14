@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import StringIO
 from xml.etree import ElementTree as ET
 
@@ -246,6 +247,64 @@ def test_component_has_quantity_and_three_dimensions_and_cut_sheet_uses_occurren
     ]
     assert len(occurrence_rectangles) == 4
     assert len(occurrence_rectangles) != 3  # the source fixture has three orthographic views
+
+
+def test_long_component_provenance_is_summarized_visually_and_preserved_in_metadata():
+    from backend.app.salida.technical_drawings import render_table_drawings
+
+    evidence_ids = tuple(f"evidence-dimension-entity-{index:03d}" for index in range(1, 41))
+    full_text = "PROVENANCE=" + ",".join(evidence_ids)
+    sheet = TableSheetPlan(
+        sheet_id="component-long-provenance",
+        kind="component",
+        title="Detalle · tablero",
+        component_id="tabletop",
+        page=1,
+        status="ready",
+        primitives=(
+            TableDrawingPrimitive(
+                id="tabletop-face",
+                kind="rect",
+                points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=700)),
+                state="calculated",
+            ),
+            TableDrawingPrimitive(
+                id="tabletop-provenance",
+                kind="text",
+                points_mm=(Point2D(x=0, y=810),),
+                text=full_text,
+                state="calculated",
+                dependency_refs=evidence_ids,
+            ),
+        ),
+    )
+
+    exports = render_table_drawings(_plan(sheet, occurrences=1))
+
+    svg_root = ET.fromstring(_artifact(exports, sheet.sheet_id, "svg"))
+    provenance_group = next(
+        item for item in svg_root.iter()
+        if item.attrib.get("data-primitive-id") == "tabletop-provenance"
+    )
+    visible_text = "".join(provenance_group.itertext())
+    assert visible_text == "PROCEDENCIA: 40 referencias · detalle completo en metadatos"
+    assert provenance_group.attrib["data-full-text"] == full_text
+    assert provenance_group.attrib["data-dependencies"].split() == list(evidence_ids)
+    assert len(visible_text) < 80
+
+    document = _read_dxf(_artifact(exports, sheet.sheet_id, "dxf"))
+    provenance = next(
+        item for item in document.modelspace().query("TEXT")
+        if item.dxf.text.startswith("PROCEDENCIA:")
+    )
+    assert provenance.dxf.text == visible_text
+    encoded = "".join(tag.value for tag in provenance.get_xdata("VEXPLORER"))
+    metadata = json.loads(encoded)
+    assert metadata == {
+        "dependency_refs": list(evidence_ids),
+        "primitive_id": "tabletop-provenance",
+        "text": full_text,
+    }
 
 
 def test_svg_escapes_untrusted_text_and_contains_no_active_elements():

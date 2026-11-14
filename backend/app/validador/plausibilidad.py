@@ -8,11 +8,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib import resources
 import json
-from math import hypot, isfinite
+from math import atan2, cos, degrees, hypot, isfinite, radians, sin
 from pathlib import Path
 from typing import Any
 
 from backend.app.contratos.modelos import DrawingExtraction
+
+
+DIMENSION_ATTACH_TOLERANCE_MM = 0.5
+MAX_DIMENSIONS_CHECKED = 200
 
 
 @dataclass(frozen=True)
@@ -211,6 +215,158 @@ def _best_system(
     )
 
 
+def _point_segment_distance(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> float:
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    length_squared = dx * dx + dy * dy
+    if length_squared == 0:
+        return hypot(point[0] - start[0], point[1] - start[1])
+    projection = max(
+        0.0,
+        min(1.0, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / length_squared),
+    )
+    nearest = start[0] + projection * dx, start[1] + projection * dy
+    return hypot(point[0] - nearest[0], point[1] - nearest[1])
+
+
+def _feature_segment_distance(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+    measurement_direction: tuple[float, float],
+) -> float:
+    """Distance to an endpoint or to a feature line transverse to the measured axis."""
+    endpoint_distance = min(
+        hypot(point[0] - start[0], point[1] - start[1]),
+        hypot(point[0] - end[0], point[1] - end[1]),
+    )
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    length = hypot(dx, dy)
+    if length == 0:
+        return endpoint_distance
+    alignment = abs(
+        (dx / length) * measurement_direction[0]
+        + (dy / length) * measurement_direction[1]
+    )
+    if alignment <= 1e-6:
+        return min(endpoint_distance, _point_segment_distance(point, start, end))
+    return endpoint_distance
+
+
+def _angle_on_arc(angle: float, start: float, end: float, tolerance_deg: float = 1e-7) -> bool:
+    sweep = (end - start) % 360.0
+    offset = (angle - start) % 360.0
+    return offset <= sweep + tolerance_deg
+
+
+def _circular_distance(point: tuple[float, float], circular: object) -> float:
+    center = circular.center_mm
+    radius = float(circular.radius_mm)
+    radial = hypot(point[0] - center.x, point[1] - center.y)
+    if circular.kind == "circle":
+        return abs(radial - radius)
+    angle = degrees(atan2(point[1] - center.y, point[0] - center.x)) % 360.0
+    if _angle_on_arc(angle, float(circular.start_angle_deg), float(circular.end_angle_deg)):
+        return abs(radial - radius)
+    endpoints = []
+    for degrees_value in (float(circular.start_angle_deg), float(circular.end_angle_deg)):
+        radians_value = radians(degrees_value)
+        endpoints.append(
+            (
+                center.x + radius * cos(radians_value),
+                center.y + radius * sin(radians_value),
+            )
+        )
+    return min(hypot(point[0] - x, point[1] - y) for x, y in endpoints)
+
+
+def _dimension_findings(extraction: DrawingExtraction) -> list[dict[str, Any]]:
+    if extraction.coordinate_unit != "mm":
+        return []
+    entities = {entity.id: entity for entity in extraction.entities}
+    closed_entity_ids = {
+        entity_id
+        for contour in extraction.contours
+        if contour.closed
+        for entity_id in contour.source_entity_ids
+    }
+    geometry_by_view: dict[str, list[object]] = {}
+    for view in extraction.views:
+        geometry = []
+        for entity_id in view.entity_ids:
+            entity = entities.get(entity_id)
+            if entity is None or entity.kind in {"DIMENSION", "TEXT", "MTEXT", "ATTRIB"}:
+                continue
+            circular = entity.circular
+            if circular is not None and circular.center_mm is not None and circular.radius_mm is not None:
+                geometry.append(("circular", circular))
+                continue
+            if not entity.points_mm or len(entity.points_mm) < 2:
+                continue
+            points = [(point.x, point.y) for point in entity.points_mm]
+            pairs = list(zip(points, points[1:]))
+            if entity_id in closed_entity_ids and points[0] != points[-1]:
+                pairs.append((points[-1], points[0]))
+            geometry.extend(("segment", pair) for pair in pairs)
+        geometry_by_view[view.id] = geometry
+
+    evidence_by_dimension = {
+        dimension.id: list(dimension.evidence_ids) for dimension in extraction.dimensions
+    }
+    result = []
+    for graphic in extraction.dimension_graphics[:MAX_DIMENSIONS_CHECKED]:
+        anchors = (graphic.extension_start_a_mm, graphic.extension_start_b_mm)
+        dimension_line = (graphic.dimension_start_mm, graphic.dimension_end_mm)
+        geometry = geometry_by_view.get(graphic.view_id, [])
+        if (
+            any(anchor is None for anchor in anchors)
+            or any(point is None for point in dimension_line)
+            or not geometry
+        ):
+            continue
+        line_dx = dimension_line[1].x - dimension_line[0].x
+        line_dy = dimension_line[1].y - dimension_line[0].y
+        line_length = hypot(line_dx, line_dy)
+        if line_length <= 1e-9:
+            continue
+        measurement_direction = line_dx / line_length, line_dy / line_length
+        distances = []
+        for anchor in anchors:
+            point = (anchor.x, anchor.y)
+            distances.append(
+                min(
+                    _circular_distance(point, value)
+                    if kind == "circular"
+                    else _feature_segment_distance(
+                        point, value[0], value[1], measurement_direction
+                    )
+                    for kind, value in geometry
+                )
+            )
+        worst = max(distances)
+        passed = worst <= DIMENSION_ATTACH_TOLERANCE_MM
+        result.append(
+            {
+                "id": f"plausibility-{graphic.dimension_id}",
+                "check": "dimension_attached_to_geometry",
+                "status": "pass" if passed else "fail",
+                "message": (
+                    "Los dos puntos medidos por la cota se apoyan en geometría dibujada de su vista."
+                    if passed
+                    else f"Un punto medido por la cota queda a {worst:.1f} mm de la geometría dibujada más cercana; la cota debe revisarse."
+                ),
+                "system_id": None,
+                "observed": {"maximum_attachment_gap_mm": worst},
+                "evidence_ids": evidence_by_dimension.get(graphic.dimension_id, []),
+                "entity_ids": [graphic.source_entity_id],
+            }
+        )
+    return result
+
+
 def evaluate_plausibility(
     extraction: DrawingExtraction, catalog_path: Path | None = None
 ) -> tuple[dict, ...]:
@@ -270,4 +426,5 @@ def evaluate_plausibility(
                 "entity_ids": list(evidence.source_entity_ids),
             }
         )
+    findings.extend(_dimension_findings(extraction))
     return tuple(findings)

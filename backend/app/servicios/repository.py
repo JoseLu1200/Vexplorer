@@ -27,6 +27,15 @@ from backend.app.contratos.modelos import (
 )
 from backend.app.geometria.parts import recompute_reviewed_assembly_candidate
 from backend.app.geometria.mounted_table import evaluate_table_program
+from backend.app.agente.replay import (
+    MAX_RECORDED_RESPONSES,
+    MAX_RECORDED_TRANSCRIPT_BYTES,
+    MAX_STORED_RECORDING_BYTES,
+    MAX_STORED_RECORDINGS,
+    RECORDING_VERSION,
+    RecordingDraft,
+    StoredRecording,
+)
 
 DIMENSION_TOLERANCE_MM = 0.1
 
@@ -75,6 +84,18 @@ class DemoRepository:
                     request_hash TEXT NOT NULL, job_id TEXT NOT NULL,
                     PRIMARY KEY (actor, idempotency_key)
                 );
+                CREATE TABLE IF NOT EXISTS agent_recordings (
+                    id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL,
+                    source_run_id TEXT NOT NULL UNIQUE, source_result_revision INTEGER NOT NULL,
+                    source_actor TEXT NOT NULL, document_id TEXT NOT NULL, input_kind TEXT NOT NULL,
+                    provider_model TEXT NOT NULL, response_ids_json TEXT NOT NULL,
+                    transcript_json TEXT NOT NULL, transcript_sha256 TEXT NOT NULL,
+                    output_sha256 TEXT NOT NULL, recorded_at TEXT NOT NULL,
+                    recording_version INTEGER NOT NULL, response_count INTEGER NOT NULL,
+                    transcript_bytes INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS agent_recordings_fingerprint
+                    ON agent_recordings(fingerprint, recorded_at DESC, id DESC);
                 CREATE TABLE IF NOT EXISTS library_items (
                     run_id TEXT PRIMARY KEY, payload TEXT NOT NULL
                 );
@@ -110,6 +131,8 @@ class DemoRepository:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_assembly_candidate_id TEXT")
             if "agent_selected_table_program_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_table_program_id TEXT")
+            if "replay_source_recording_id" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN replay_source_recording_id TEXT")
             cost_columns = db.execute("PRAGMA table_info(table_cost_estimates)").fetchall()
             if cost_columns and "estimate_id" not in {row[1] for row in cost_columns}:
                 db.execute("ALTER TABLE table_cost_estimates RENAME TO table_cost_estimates_legacy")
@@ -135,15 +158,15 @@ class DemoRepository:
         connection.execute("PRAGMA busy_timeout=10000")
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
         created_at = _now()
         input_semantics = extraction.input_kind
         candidate_revision = part_analysis.candidate_revision if part_analysis is not None else table_analysis.ledger_revision if table_analysis is not None else extraction.drawing_id
         initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id, input_semantics=input_semantics, part_analysis=part_analysis, assembly_candidates=assembly_candidates, table_analysis=table_analysis, table_programs=table_programs, evaluated_table_program=evaluated_table_program)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id,agent_selected_table_program_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id, agent_selected_table_program_id),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id,agent_selected_table_program_id,replay_source_recording_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id, agent_selected_table_program_id, replay_source_recording_id),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -155,7 +178,67 @@ class DemoRepository:
             db.execute("INSERT INTO events VALUES (?, ?, 'result_committed', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "result_revision": 1, "state": "needs_review"})))
             sequence += 1
             db.execute("INSERT INTO events VALUES (?, ?, 'run_finished', ?)", (run_id, sequence, json.dumps({"timestamp": created_at, "state": "needs_review", "result_revision": 1})))
+            if recording_draft is not None:
+                if mode != "live" or not recording_fingerprint or not document_id:
+                    raise ValueError("invalid_live_recording_scope")
+                if not 1 <= recording_draft.response_count <= MAX_RECORDED_RESPONSES:
+                    raise ValueError("recording_response_limit_exceeded")
+                if not 1 <= recording_draft.transcript_bytes <= MAX_RECORDED_TRANSCRIPT_BYTES:
+                    raise ValueError("recording_byte_limit_exceeded")
+                usage = db.execute(
+                    "SELECT COUNT(*) AS count,COALESCE(SUM(transcript_bytes),0) AS bytes FROM agent_recordings"
+                ).fetchone()
+                if (
+                    usage["count"] + 1 > MAX_STORED_RECORDINGS
+                    or usage["bytes"] + recording_draft.transcript_bytes > MAX_STORED_RECORDING_BYTES
+                ):
+                    raise ValueError("recording_storage_exhausted")
+                recording_id = "recording-" + hashlib.sha256(
+                    f"{recording_fingerprint}:{run_id}:{recording_draft.transcript_sha256}".encode("utf-8")
+                ).hexdigest()
+                db.execute(
+                    "INSERT INTO agent_recordings VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        recording_id, recording_fingerprint, run_id, recording_actor or "local-demo",
+                        document_id, extraction.input_kind, recording_draft.provider_model,
+                        json.dumps(recording_draft.response_ids), recording_draft.transcript_json,
+                        recording_draft.transcript_sha256, recording_draft.output_sha256, created_at,
+                        RECORDING_VERSION, recording_draft.response_count, recording_draft.transcript_bytes,
+                    ),
+                )
         return self.get_run(run_id)
+
+    @staticmethod
+    def _recording_from_row(row: sqlite3.Row) -> StoredRecording:
+        return StoredRecording(
+            recording_id=row["id"], fingerprint=row["fingerprint"],
+            source_live_run_id=row["source_run_id"],
+            source_result_revision=row["source_result_revision"],
+            source_actor=row["source_actor"], provider_model=row["provider_model"],
+            response_ids=tuple(json.loads(row["response_ids_json"])),
+            transcript_json=row["transcript_json"], transcript_sha256=row["transcript_sha256"],
+            output_sha256=row["output_sha256"], recorded_at=row["recorded_at"],
+            response_count=row["response_count"], transcript_bytes=row["transcript_bytes"],
+        )
+
+    def find_agent_recording(self, fingerprint: str) -> StoredRecording | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT * FROM agent_recordings WHERE fingerprint=? "
+                "ORDER BY recorded_at DESC,id DESC LIMIT 1", (fingerprint,),
+            ).fetchone()
+        return self._recording_from_row(row) if row is not None else None
+
+    def has_agent_recordings(self) -> bool:
+        with self._connect() as db:
+            return db.execute("SELECT 1 FROM agent_recordings LIMIT 1").fetchone() is not None
+
+    def get_agent_recording(self, recording_id: str) -> StoredRecording:
+        with self._connect() as db:
+            row = db.execute("SELECT * FROM agent_recordings WHERE id=?", (recording_id,)).fetchone()
+        if row is None:
+            raise KeyError(recording_id)
+        return self._recording_from_row(row)
 
     def reserve_job(
         self,
@@ -275,7 +358,10 @@ class DemoRepository:
             row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if row is None:
             raise KeyError(run_id)
-        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], agent_selected_assembly_candidate_id=row["agent_selected_assembly_candidate_id"], agent_selected_table_program_id=row["agent_selected_table_program_id"], document_id=row["document_id"], input_kind=row["input_kind"])
+        replay_source = None
+        if row["replay_source_recording_id"] is not None:
+            replay_source = self.get_agent_recording(row["replay_source_recording_id"]).replay_source()
+        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], agent_selected_assembly_candidate_id=row["agent_selected_assembly_candidate_id"], agent_selected_table_program_id=row["agent_selected_table_program_id"], document_id=row["document_id"], input_kind=row["input_kind"], replay_source=replay_source)
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -467,6 +553,8 @@ class DemoRepository:
             if item.confirmation_id is not None and owner not in (None, item.target_id):
                 raise ValueError("duplicate_confirmation_id")
             confirmed[item.target_id] = item
+            if item.confirmation_id is not None:
+                existing_confirmation_ids[item.confirmation_id] = item.target_id
         existing_correction_ids = {
             item.correction_id: target for target, item in corrections.items()
         }

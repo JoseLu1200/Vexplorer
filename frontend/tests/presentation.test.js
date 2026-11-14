@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "../core/presentation.js";
+import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, presentReplaySource, snapshotStatusPresentation } from "../core/presentation.js";
 
 test("geometry only stays available while unconfigured provider modes stay disabled", () => {
   assert.deepEqual(availableModes({ live_available: false, replay_available: false }), [
@@ -92,4 +92,19 @@ test("terminal review state no longer reads as processing", () => {
 test("restored execution mode is labeled independently from the next run selector", () => {
   assert.equal(executionModeLabel("geometry_only"), "Ejecución: solo geometría");
   assert.equal(executionModeLabel("live"), "Ejecución: agente en vivo");
+});
+
+test("recorded replay is presented as offline provenance rather than a new inference", () => {
+  const replay = presentReplaySource({ mode: "recorded_replay", replay_source: {
+    recording_id: `recording-${"a".repeat(64)}`, recording_version: 1,
+    source_live_run_id: `run-${"b".repeat(32)}`, source_result_revision: 3, source_actor: "ana",
+    provider_model: "gpt-model", provider_response_ids: ["response-1"], transcript_sha256: "c".repeat(64), fingerprint: "d".repeat(64), recorded_at: "2026-11-14T12:00:00Z",
+  } });
+  assert.equal(replay.available, true);
+  assert.match(replay.summary, /Reproducción offline/);
+  assert.match(replay.summary, /origen live/);
+  assert.match(replay.summary, /ana/);
+  assert.match(replay.detail, /gpt-model/);
+  assert.equal(presentReplaySource({ mode: "live" }).available, false);
+  assert.equal(executionModeLabel("recorded_replay"), "Ejecución: reproducción offline");
 });

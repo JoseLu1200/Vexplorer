@@ -82,6 +82,41 @@ def test_invalid_configured_catalog_fails_instead_of_falling_back(tmp_path, monk
         get_table_cost_catalog()
 
 
+def test_configured_catalog_without_tariffs_fails_closed(tmp_path, monkeypatch) -> None:
+    payload = _real_catalog_payload()
+    payload["tariffs"] = []
+    path = tmp_path / "empty-real-costs.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(path))
+
+    with pytest.raises(ValueError, match="at least one tariff"):
+        get_table_cost_catalog()
+
+
+def test_empty_catalog_cannot_start_private_app_or_calculate(tmp_path, monkeypatch) -> None:
+    from backend.app.main import create_app
+    from backend.app.operacion.auth import hash_password
+
+    payload = _real_catalog_payload()
+    payload["tariffs"] = []
+    catalog_path = tmp_path / "catalog.json"
+    catalog_path.write_text(json.dumps(payload), encoding="utf-8")
+    users = tmp_path / "users.json"
+    users.write_text(json.dumps({"auditor": hash_password("test-only")}), encoding="utf-8")
+    monkeypatch.setenv("VEXPLORER_ENV", "production")
+    monkeypatch.setenv("VEXPLORER_USERS_FILE", str(users))
+    monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
+    monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(catalog_path))
+
+    with pytest.raises(ValueError, match="at least one tariff"):
+        create_app(data_dir=tmp_path / "data")
+    with pytest.raises(ValueError, match="at least one tariff"):
+        estimate_table_costs(
+            _evaluated(), result_revision=3, scope=_real_scope(),
+            catalog=TableCostCatalog.model_validate(payload),
+        )
+
+
 def test_complete_real_estimate_has_snapshot_hours_margin_and_cost_contributor() -> None:
     catalog = TableCostCatalog.model_validate(_real_catalog_payload())
 
@@ -105,6 +140,60 @@ def test_complete_real_estimate_has_snapshot_hours_margin_and_cost_contributor()
     assert by_id["material:top"].tariff_id == "board-real"
     assert by_id["material:supports"].tariff_id == "solid-real"
     assert by_id["operation:cut-real"].tariff_id == "cut-real"
+
+
+def test_unknown_component_material_override_is_rejected_not_silently_ignored() -> None:
+    catalog = TableCostCatalog.model_validate(_real_catalog_payload())
+    scope = TableCostScope(
+        material_tariff_id="board-real",
+        component_material_tariff_ids={"typo-component": "solid-real"},
+        exclusions=(
+            TableCostExclusion(scope="edge", reason="No requiere canto."),
+            TableCostExclusion(scope="operation", reason="Sin operaciones."),
+            TableCostExclusion(scope="labor", reason="Sin mano de obra."),
+            TableCostExclusion(scope="finishing", reason="Sin acabado."),
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="unknown component material override ids: typo-component",
+    ):
+        estimate_table_costs(
+            _evaluated(), result_revision=3, scope=scope, catalog=catalog
+        )
+
+
+def test_api_rejects_unknown_component_override_without_persisting_estimate(tmp_path, monkeypatch) -> None:
+    from backend.tests.test_backend_table_api import _accept_all, _client, _create_baseline
+
+    catalog_path = tmp_path / "real-costs.json"
+    catalog_path.write_text(json.dumps(_real_catalog_payload()), encoding="utf-8")
+    monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(catalog_path))
+    client = _client(tmp_path / "data", monkeypatch)
+    created = _create_baseline(client)
+    run_id = created["run"]["id"]
+    program = created["result"]["table_programs"][0]
+    reviewed = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Automated audit",
+        "table_program_id": program["id"],
+        "table_decisions": _accept_all(program),
+        "notes": "Synthetic integration test",
+    })
+    assert reviewed.status_code == 201, reviewed.text
+    rejected = client.post(f"/api/v1/runs/{run_id}/table-costs", json={
+        "result_revision": 2,
+        "scope": {
+            "material_tariff_id": "board-real",
+            "component_material_tariff_ids": {"typo-component": "solid-real"},
+        },
+    })
+    assert rejected.status_code == 422, rejected.text
+    assert "unknown component material override ids" in rejected.json()["error"]["code"]
+    assert client.get(
+        f"/api/v1/runs/{run_id}/table-costs", params={"result_revision": 2},
+    ).status_code == 404
 
 
 def test_estimate_identity_is_reproducible_and_changes_with_scope() -> None:

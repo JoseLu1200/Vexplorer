@@ -71,6 +71,8 @@ test("private identity, job progress and event gap status are announced", () => 
   assert.match(html, /id="job-status"[^>]*role="status"/);
   assert.match(html, /id="trace-gap-status"[^>]*role="status"/);
   assert.match(html, /id="trace-drawer"[^>]*role="dialog"[^>]*aria-modal="true"/);
+  assert.match(html, /id="replay-source"[^>]*role="status"/);
+  assert.match(html, /id="restore-run-retry"[^>]*type="button"[^>]*hidden/);
 });
 
 test("static assets remain relative for a prefixed private deployment", () => {

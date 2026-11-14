@@ -235,7 +235,9 @@ def test_parts_agent_inspects_grounded_part_and_selects_existing_candidate() -> 
     assert inspected["part_observation"]["dimensions"]["length"]["value_mm"] is not None
     assert outcome.selected_assembly_candidate_id == selected.id
     assert [item.tool_name for item in outcome.actions] == ["inspeccionar_pieza", "entregar_candidato_montaje"]
-    assert {item["name"] for item in parts_tool_schemas()} == {"inspeccionar_pieza", "entregar_candidato_montaje"}
+    assert {item["name"] for item in parts_tool_schemas()} == {
+        "inspeccionar_pieza", "entregar_candidato_montaje", "comparar_candidatas",
+    }
     assert "vistas 2D de piezas separadas" in SYSTEM_PROMPT
     assert "no calculas medidas" in SYSTEM_PROMPT
 

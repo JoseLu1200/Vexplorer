@@ -15,7 +15,7 @@
 
 ## Contrato coordinado con backend
 
-- Producción: `VEXPLORER_ENV=production`, `VEXPLORER_DATA_DIR=/data`, `VEXPLORER_USERS_FILE=/run/secrets/vexplorer_users`, `VEXPLORER_COST_CATALOG` configurable y `VEXPLORER_ALLOWED_ORIGINS` obligatorio.
+- Producción: `VEXPLORER_ENV=production`, `VEXPLORER_DATA_DIR` persistente (`/var/lib/vexplorer/data` en Compose), `VEXPLORER_USERS_FILE=/run/secrets/vexplorer_users`, `VEXPLORER_COST_CATALOG` configurable y `VEXPLORER_ALLOWED_ORIGINS` obligatorio.
 - Usuarios JSON: objeto `username -> $scrypt$ln=14,r=8,p=1$<salt_base64url>$<digest_base64url>`; nombres ASCII `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`.
 - HTTP Basic en todo salvo `GET /api/v1/health` y `GET /health`; identidad autenticada en `request.state.actor`.
 - Un proceso Uvicorn y un worker de trabajos por proceso; cola acotada mediante `VEXPLORER_JOB_MAX_PENDING`.
@@ -23,14 +23,14 @@
 
 ## Estado
 
-- Implementación terminada dentro del alcance propio; pendiente verificación integrada contra Task 1/2 cuando sus cambios estén disponibles.
+- Implementación y verificación integrada de Task 5 terminadas dentro del alcance propio.
 
 ## Dependencias y avisos
 
 - Backend confirmó nombres, formato scrypt, health checks, política de origen y límite de trabajos.
 - Economía aportará un catálogo configurable real; operaciones solo montará la ruta y documentará su obligatoriedad/procedencia.
-- El hostname TLS real y la instalación remota permanecen pendientes del operador.
-- Inspección VPS autorizada y solo lectura: Caddy/TLS existentes, `/api/*` ocupado, puerto loopback 18792 libre, disco al 95% y usuario SSH sin Docker/sudo no interactivo. `/vexplorer/` requiere primero soporte de prefijo en frontend/backend; no se modificó el host.
+- El hostname TLS real es `gex-dashboard.hopto.org`; publicar la aplicación permanece pendiente de revisión final y autorización concreta.
+- Inspección VPS inicial de solo lectura: Caddy/TLS existentes, `/api/*` ocupado, puerto loopback 18792 libre, disco al 95% y usuario SSH sin Docker/sudo no interactivo.
 - Backend/frontend incorporaron después `VEXPLORER_ROOT_PATH=/vexplorer`. Linger de `kripta` quedó habilitado con autorización para un futuro servicio de usuario; no se desplegó código ni se recargó Caddy.
 
 ## Registro de verificación
@@ -44,4 +44,5 @@
 - Caddy 2.10.2 validó el Caddyfile y sus políticas HTTPS sin errores.
 - Smoke final: auth/origen/root path/job/restart correctos; backup online restaurado en volumen nuevo y datos reabiertos; recursos efímeros eliminados.
 - VPS bootstrap autorizado: venv Python 3.12.3, constraints exactas y `pip check` correctos, 251 MiB; aún sin código/secretos/servicio/Caddy.
-- Verificación propia final: 15 tests, compileall, Compose, dos configuraciones Caddy, superficie de imagen y diff-check co
+- Verificación propia final: 15 tests, compileall, Compose, dos configuraciones Caddy, superficie de imagen y diff-check correctos.
+- Pendiente externo: copiar release/secretos, instalar la unidad, importar el snippet Caddy y ejecutar aceptación remota solo tras review/autorización. Ninguna aplicación existente fue reiniciada o modificada.

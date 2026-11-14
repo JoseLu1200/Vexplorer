@@ -34,6 +34,35 @@ def test_scrypt_password_file_verifies_named_users_without_plaintext(tmp_path: P
     assert "correct horse" not in path.read_text(encoding="utf-8")
 
 
+def test_unknown_and_known_wrong_users_execute_one_equal_cost_scrypt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import backend.app.operacion.auth as auth_module
+
+    users = PasswordFile.load(_users_file(tmp_path))
+    real_scrypt = auth_module.hashlib.scrypt
+    calls: list[tuple[int, int, int, int, int]] = []
+
+    def instrumented_scrypt(password: bytes, *, salt: bytes, n: int, r: int, p: int, dklen: int) -> bytes:
+        calls.append((len(password), n, r, p, dklen))
+        return real_scrypt(password, salt=salt, n=n, r=r, p=p, dklen=dklen)
+
+    monkeypatch.setattr(auth_module.hashlib, "scrypt", instrumented_scrypt)
+
+    assert users.authenticate("alice", "same wrong password") is None
+    assert users.authenticate("unknown", "same wrong password") is None
+    assert calls == [
+        (19, 2**14, 8, 1, 32),
+        (19, 2**14, 8, 1, 32),
+    ]
+
+    calls.clear()
+    over_limit = "x" * 1025
+    assert users.authenticate("alice", over_limit) is None
+    assert users.authenticate("unknown", over_limit) is None
+    assert calls == []
+
+
 def test_invalid_or_empty_production_password_file_is_rejected(tmp_path: Path) -> None:
     path = tmp_path / "users.json"
     path.write_text("{}", encoding="utf-8")

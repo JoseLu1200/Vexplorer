@@ -37,7 +37,17 @@ export function snapshotStatusPresentation(snapshot = {}) {
 }
 
 export function executionModeLabel(mode) {
-  return ({ geometry_only: "Ejecución: solo geometría", live: "Ejecución: agente en vivo", recorded_replay: "Ejecución: replay grabado" })[mode] ?? "Ejecución sin identificar";
+  return ({ geometry_only: "Ejecución: solo geometría", live: "Ejecución: agente en vivo", recorded_replay: "Ejecución: reproducción offline" })[mode] ?? "Ejecución sin identificar";
+}
+
+export function presentReplaySource(snapshot = {}) {
+  const source = snapshot.mode === "recorded_replay" ? snapshot.replay_source : null;
+  if (!source) return { available: false, summary: "", detail: "" };
+  return {
+    available: true,
+    summary: `Reproducción offline · origen live ${source.source_live_run_id} · revisión ${source.source_result_revision} · ${source.source_actor}`,
+    detail: `Modelo ${source.provider_model} · grabada ${source.recorded_at} · registro ${source.recording_id} v${source.recording_version}`,
+  };
 }
 
 export function componentsForSnapshot(snapshot = {}, ledger = {}) {

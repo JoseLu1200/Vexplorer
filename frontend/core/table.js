@@ -45,12 +45,27 @@ export function normaliseTableWorkspace(snapshot = {}) {
   const analysis = result.table_analysis ?? {};
   const evaluatedRaw = result.evaluated_table_program;
   const evaluatedBindings = (evaluatedRaw?.bindings ?? []).map((binding) => ({ ...binding, operandRefs: [...(binding.operand_refs ?? [])], result: tableField(binding.result) }));
+  const sourceDecisionsById = new Map((result.table_source_review_decisions ?? []).map((item) => [item.warning_id, item]));
+  const sourceWarningsById = new Map();
+  (evaluatedRaw?.issues ?? []).forEach((issue) => {
+    if (!issue.code?.startsWith("source_recovery_") || issue.target_ids?.length < 2) return;
+    const id = issue.target_ids[0];
+    const code = issue.code === "source_recovery_decision_mismatch" ? issue.target_ids[2] : issue.target_ids[1];
+    if (!id || !code) return;
+    const decision = sourceDecisionsById.get(id);
+    sourceWarningsById.set(id, { id, code, message: issue.message, currentAction: decision?.action ?? null, currentReason: decision?.reason ?? null });
+  });
+  sourceDecisionsById.forEach((decision, id) => {
+    if (!sourceWarningsById.has(id)) sourceWarningsById.set(id, { id, code: decision.warning_code, message: decision.warning_code, currentAction: decision.action, currentReason: decision.reason });
+  });
   const measurementDispositions = new Map((evaluatedRaw?.measurement_dispositions ?? []).map((item) => [item.measurement_id, item]));
   const confirmedByTarget = new Map((result.table_confirmed_values ?? []).map((item) => [item.target_id, item]));
   const correctionsByTarget = new Map((result.table_observed_value_corrections ?? []).map((item) => [item.measurement_id, item]));
   const measures = (analysis.measures ?? []).map((measure) => {
     const confirmation = confirmedByTarget.get(measure.id) ?? null;
     const correction = correctionsByTarget.get(measure.id) ?? null;
+    const effectiveBinding = evaluatedBindings.find((binding) => binding.operation === "copy" && binding.operandRefs.length === 1 && binding.operandRefs[0].ref_type === "measure" && binding.operandRefs[0].ref_id === measure.id);
+    const humanEffective = confirmation !== null || correction !== null;
     return ({
     id: measure.id,
     semantic: measure.semantic ?? "unknown",
@@ -70,7 +85,11 @@ export function normaliseTableWorkspace(snapshot = {}) {
     sourceEntityIds: [...(measure.source_entity_ids ?? [])],
     confirmation,
     correction,
-    effectiveValue: confirmation?.value_mm ?? correction?.value_mm ?? evaluatedBindings.find((binding) => binding.operation === "copy" && binding.operandRefs.length === 1 && binding.operandRefs[0].ref_type === "measure" && binding.operandRefs[0].ref_id === measure.id)?.result.value ?? null,
+    effectiveValue: confirmation?.value_mm ?? correction?.value_mm ?? effectiveBinding?.result.value ?? null,
+    effectiveState: humanEffective ? "confirmed" : effectiveBinding?.result.state ?? null,
+    effectivePrefix: humanEffective ? "Vigente" : effectiveBinding ? "Propuesta" : null,
+    effectiveLabel: humanEffective ? "Confirmado por persona" : ({ calculated: "Calculado", observed: "Observado", proposed: "Propuesto", unknown: "Desconocido", conflict: "Conflicto" })[effectiveBinding?.result.state] ?? null,
+    humanEffective,
   }); });
   const programs = (result.table_programs ?? []).map((program) => ({
     id: program.id,
@@ -112,7 +131,7 @@ export function normaliseTableWorkspace(snapshot = {}) {
     analysisState: analysis.state ?? "needs_review",
     ledgerRevision: analysis.ledger_revision ?? null,
     warnings: [...(analysis.warnings ?? [])],
-    sourceWarnings: (evaluatedRaw?.issues ?? []).flatMap((issue) => issue.code === "source_recovery_review_required" && issue.target_ids?.length >= 2 ? [{ id: issue.target_ids[0], code: issue.target_ids[1], message: issue.message }] : []),
+    sourceWarnings: [...sourceWarningsById.values()],
     measures,
     programs,
     selectedProgramId: result.selected_table_program_id ?? null,
@@ -216,6 +235,12 @@ export function buildTableCostScope(values = {}) {
   }));
   const margin = optionalNumber(values.marginPercent, "El margen provisional");
   if (margin != null && margin >= 100) throw new TypeError("El margen provisional debe ser menor que 100.");
+  const excludedScopes = new Set(exclusions.map((item) => item.scope));
+  if (excludedScopes.has("material") && (values.materialTariffId || Object.keys(values.componentMaterialTariffIds ?? {}).length)) throw new TypeError("El material excluido no puede incluir tarifas.");
+  if (excludedScopes.has("edge") && (values.edgeScope === "all_exposed" || values.edgeTariffId)) throw new TypeError("El canteado excluido no puede incluir alcance o tarifa.");
+  if (excludedScopes.has("operation") && (operations.length || Object.keys(operationHours).length)) throw new TypeError("Las operaciones excluidas no pueden incluir tarifas u horas.");
+  if (excludedScopes.has("labor") && (values.laborTariffId || values.laborHours !== "" && values.laborHours != null)) throw new TypeError("La mano de obra excluida no puede incluir tarifa u horas.");
+  if (excludedScopes.has("finishing") && (values.finishTariffId || values.finishQuantity !== "" && values.finishQuantity != null)) throw new TypeError("El acabado excluido no puede incluir tarifa o superficie.");
   return {
     material_tariff_id: values.materialTariffId || null,
     component_material_tariff_ids: { ...(values.componentMaterialTariffIds ?? {}) },

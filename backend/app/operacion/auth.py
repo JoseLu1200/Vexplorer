@@ -55,6 +55,11 @@ def hash_password(password: str, *, salt: bytes | None = None) -> str:
     return f"$scrypt$ln={ln},r={r},p={p}${_encode(salt)}${_encode(digest)}"
 
 
+# Unknown identities perform the same bounded password work as known identities.
+# This ephemeral hash never authenticates a user and is not persisted.
+_DUMMY_PASSWORD_HASH = hash_password(secrets.token_urlsafe(32))
+
+
 @dataclass(frozen=True)
 class PasswordFile:
     users: dict[str, str]
@@ -79,13 +84,14 @@ class PasswordFile:
 
     def authenticate(self, username: str, password: str) -> str | None:
         encoded = self.users.get(username)
-        if encoded is None or len(password.encode("utf-8")) > 1024:
+        if len(password.encode("utf-8")) > 1024:
             return None
-        ln, r, p, salt, expected = _parse(encoded)
+        ln, r, p, salt, expected = _parse(encoded or _DUMMY_PASSWORD_HASH)
         actual = hashlib.scrypt(
             password.encode("utf-8"), salt=salt, n=2**ln, r=r, p=p, dklen=32
         )
-        return username if hmac.compare_digest(actual, expected) else None
+        matches = hmac.compare_digest(actual, expected)
+        return username if matches and encoded is not None else None
 
 
 def decode_basic_authorization(value: str | None) -> tuple[str, str] | None:

@@ -46,9 +46,14 @@ def demo_table_cost_catalog() -> TableCostCatalog:
 def load_table_cost_catalog(path: Path) -> TableCostCatalog:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        return TableCostCatalog.model_validate(payload)
+        catalog = TableCostCatalog.model_validate(payload)
     except (OSError, json.JSONDecodeError, ValidationError) as exc:
         raise ValueError(f"invalid cost catalog: {path}") from exc
+    if not catalog.tariffs:
+        raise ValueError(
+            f"invalid cost catalog: {path} (at least one tariff required)"
+        )
+    return catalog
 
 
 def get_configured_table_cost_catalog() -> TableCostCatalog:

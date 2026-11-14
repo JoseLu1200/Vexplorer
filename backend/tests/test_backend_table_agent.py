@@ -99,7 +99,7 @@ def test_table_agent_inspects_source_values_then_proposes_reference_only_program
     assert outcome.program.proposal_origin == "model_generated"
     assert outcome.program.table_template_id is None
     assert [item.tool_name for item in outcome.actions] == ["inspeccionar_medidas_mesa", "proponer_descomposicion"]
-    assert {item["name"] for item in table_tool_schemas()} == {"inspeccionar_medidas_mesa", "proponer_descomposicion"}
+    assert {item["name"] for item in table_tool_schemas()} == {"inspeccionar_medidas_mesa", "proponer_descomposicion", "comparar_candidatas"}
 
 
 def test_table_agent_unknown_measure_returns_bounded_valid_ids_for_repair():
@@ -139,7 +139,7 @@ def test_table_agent_vision_is_explicit_bounded_context_not_measurement_source()
     tool_output = json.loads(visual_turn[0]["output"])
     assert vision_action.artifact_sha256 == tool_output["sha256"]
     assert vision_action.mark_count == len(tool_output["marks"])
-    assert {item["name"] for item in table_tool_schemas(include_vision=True)} == {"inspeccionar_medidas_mesa", "visualizar_vista", "proponer_descomposicion"}
+    assert {item["name"] for item in table_tool_schemas(include_vision=True)} == {"inspeccionar_medidas_mesa", "visualizar_vista", "proponer_descomposicion", "comparar_candidatas"}
 
 
 def test_table_agent_caps_visual_tool_attempts_not_only_unique_views():

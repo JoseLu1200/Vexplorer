@@ -264,7 +264,18 @@ def estimate_table_costs(
     catalog: TableCostCatalog | None = None,
 ) -> TableCostEstimate:
     catalog = catalog or get_table_cost_catalog()
+    if not catalog.tariffs:
+        raise ValueError("invalid cost catalog: at least one tariff required")
     tariffs = {item.id: item for item in catalog.tariffs}
+    component_ids = {item.id for item in evaluated.components}
+    unknown_override_ids = sorted(
+        set(scope.component_material_tariff_ids) - component_ids
+    )
+    if unknown_override_ids:
+        raise ValueError(
+            "unknown component material override ids: "
+            + ", ".join(unknown_override_ids)
+        )
     occurrences = _occurrences_by_component(evaluated)
     exclusions = {item.scope: item.reason for item in scope.exclusions}
 

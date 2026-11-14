@@ -107,6 +107,15 @@ test("private session and durable jobs use their explicit API resources", async 
   assert.equal(requests[2][0], "/api/v1/jobs/job%201");
 });
 
+test("replay availability is checked with the exact server resolved run request", async () => {
+  let request;
+  const client = createApiClient({ fetchImpl: async (url, init) => { request = [url, init]; return response(200, { data: { available: true } }); } });
+  const body = { document_id: "doc-1", mode: "recorded_replay", input_kind: "mounted_views_legacy" };
+  assert.deepEqual(await client.getReplayAvailability(body), { available: true });
+  assert.equal(request[0], "/api/v1/replay-availability");
+  assert.deepEqual(JSON.parse(request[1].body), body);
+});
+
 test("a deployment base path prefixes API and generated artifact URLs without changing local routes", async () => {
   const requests = [];
   const client = createApiClient({ basePath: "/vexplorer/", fetchImpl: async (url) => { requests.push(url); return response(200, { data: {} }); } });

@@ -5,6 +5,7 @@ import json
 import os
 import re
 import time
+from dataclasses import asdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -20,6 +21,8 @@ from starlette.concurrency import run_in_threadpool
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
+from backend.app.agente.prompts import SYSTEM_PROMPT, VISION_SYSTEM_PROMPT
+from backend.app.agente.replay import RecordingProvider, ReplayProvider, recording_fingerprint
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
@@ -194,7 +197,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     @app.get("/api/v1/config")
     def config():
         all_tools = tool_schemas() + parts_tool_schemas() + table_tool_schemas(include_vision=settings.vision_enabled)
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        replay_available = repository.has_agent_recordings()
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "modes": ["geometry_only"] + (["live"] if live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -264,40 +268,88 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, code, "No se pudo generar la previsualización SVG.")
         return Response(svg, media_type="image/svg+xml", headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff"})
 
-    def _execute_run(request: RunRequest):
-        if request.mode == "recorded_replay":
-            return _error(409, "recorded_replay_unavailable", "No existe una grabación real autorizada para replay.")
+    def _prepare_run(request: RunRequest):
         if request.mode == "live" and not live_available:
-            return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
+            raise RuntimeError("live_provider_unavailable")
         path = documents_dir / f"{request.document_id}.dxf"
         if not path.is_file():
-            return _error(404, "document_not_found", "Documento inexistente.")
+            raise FileNotFoundError(request.document_id)
+        extraction = extract_drawing(path, input_kind=request.input_kind)
+        if request.input_kind == "separated_part_views":
+            part_analysis = extract_separated_parts(extraction)
+            assembly_candidates = derive_assembly_candidates(part_analysis)
+            scenarios = ()
+            table_analysis = None
+            table_programs = ()
+            evaluated_table_program = None
+            comparison_candidates = assembly_candidates
+            schemas = parts_tool_schemas()
+        elif request.input_kind == "mounted_orthographic_views":
+            part_analysis = None
+            assembly_candidates = ()
+            scenarios = ()
+            table_analysis = analyze_mounted_table(extraction)
+            comparison_candidates = catalog_table_programs(table_analysis)
+            available_programs = comparison_candidates if request.proposal_mode == "catalog_baseline" else ()
+            table_programs = tuple(item for item in available_programs if item.table_template_id == request.table_template_id)
+            if request.proposal_mode == "catalog_baseline" and len(table_programs) != 1:
+                raise ValueError("table_template_unavailable")
+            evaluated_table_program = evaluate_table_program(table_analysis, table_programs[0]) if table_programs else None
+            schemas = table_tool_schemas(include_vision=settings.vision_enabled)
+        else:
+            part_analysis = None
+            assembly_candidates = ()
+            scenarios = derive_decomposition_scenarios(extraction)
+            table_analysis = None
+            table_programs = ()
+            evaluated_table_program = None
+            comparison_candidates = scenarios
+            schemas = tool_schemas()
+        limits = AgentLimits()
+        fingerprint = recording_fingerprint({
+            "request": request.model_copy(update={"mode": "live"}).model_dump(mode="json"),
+            "document_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "extraction": extraction.model_dump(mode="json"),
+            "part_analysis": part_analysis.model_dump(mode="json") if part_analysis else None,
+            "assembly_candidates": [item.model_dump(mode="json") for item in assembly_candidates],
+            "scenarios": [item.model_dump(mode="json") for item in scenarios],
+            "table_analysis": table_analysis.model_dump(mode="json") if table_analysis else None,
+            "comparison_candidates": [item.model_dump(mode="json") for item in comparison_candidates],
+            "provider": {"model": settings.model, "max_output_tokens": settings.max_output_tokens},
+            "prompt": VISION_SYSTEM_PROMPT if settings.vision_enabled else SYSTEM_PROMPT,
+            "tools": schemas,
+            "limits": asdict(limits),
+            "registry_version": "pr1-replay-v1",
+            "vision": {"enabled": settings.vision_enabled, "renderer_version": "ledger-set-of-mark-v1"},
+        })
+        return (extraction, part_analysis, assembly_candidates, scenarios, table_analysis,
+                table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint)
+
+    @app.post("/api/v1/replay-availability")
+    def replay_availability(request: RunRequest):
+        if request.mode != "recorded_replay":
+            return _error(422, "recorded_replay_mode_required", "La consulta requiere mode recorded_replay.")
         try:
-            extraction = extract_drawing(path, input_kind=request.input_kind)
-            if request.input_kind == "separated_part_views":
-                part_analysis = extract_separated_parts(extraction)
-                assembly_candidates = derive_assembly_candidates(part_analysis)
-                scenarios = ()
-                table_analysis = None
-                table_programs = ()
-                evaluated_table_program = None
-            elif request.input_kind == "mounted_orthographic_views":
-                part_analysis = None
-                assembly_candidates = ()
-                scenarios = ()
-                table_analysis = analyze_mounted_table(extraction)
-                available_programs = catalog_table_programs(table_analysis) if request.proposal_mode == "catalog_baseline" else ()
-                table_programs = tuple(item for item in available_programs if item.table_template_id == request.table_template_id)
-                if request.proposal_mode == "catalog_baseline" and len(table_programs) != 1:
-                    return _error(422, "table_template_unavailable", "La plantilla de mesa solicitada no está disponible para este ledger.")
-                evaluated_table_program = evaluate_table_program(table_analysis, table_programs[0]) if table_programs else None
-            else:
-                part_analysis = None
-                assembly_candidates = ()
-                scenarios = derive_decomposition_scenarios(extraction)
-                table_analysis = None
-                table_programs = ()
-                evaluated_table_program = None
+            *_, fingerprint = _prepare_run(request)
+        except FileNotFoundError:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        except Exception as exc:
+            return _error(422, "invalid_dxf", f"No se pudo preparar el documento: {type(exc).__name__}.")
+        recording = repository.find_agent_recording(fingerprint)
+        return _ok({"available": recording is not None, "document_id": request.document_id, "input_kind": request.input_kind})
+
+    def _execute_run(request: RunRequest, *, actor: str | None = None):
+        if request.mode == "live" and not live_available:
+            return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
+        try:
+            (extraction, part_analysis, assembly_candidates, scenarios, table_analysis,
+             table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint) = _prepare_run(request)
+        except FileNotFoundError:
+            return _error(404, "document_not_found", "Documento inexistente.")
+        except ValueError as exc:
+            if str(exc) == "table_template_unavailable":
+                return _error(422, "table_template_unavailable", "La plantilla de mesa solicitada no está disponible para este ledger.")
+            return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
         except Exception as exc:
             return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
         if request.input_kind == "mounted_views_legacy" and not scenarios:
@@ -306,26 +358,52 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         agent_selected_scenario_id = None
         agent_selected_assembly_candidate_id = None
         agent_selected_table_program_id = None
-        if request.mode == "live":
+        recording_draft = None
+        source_recording = None
+        if request.mode in {"live", "recorded_replay"}:
             try:
-                provider = agent_provider or OpenAIResponsesProvider(settings)
+                if request.mode == "live":
+                    recording_model = settings.model or f"injected:{type(agent_provider).__name__}"
+                    provider = RecordingProvider(
+                        agent_provider or OpenAIResponsesProvider(settings),
+                        provider_model=recording_model,
+                    )
+                else:
+                    source_recording = repository.find_agent_recording(fingerprint)
+                    if source_recording is None:
+                        return _error(409, "recorded_replay_unavailable", "No existe una grabación real para este documento y configuración.")
+                    provider = ReplayProvider(
+                        source_recording.transcript_json,
+                        source_recording.transcript_sha256,
+                        source_recording.output_sha256,
+                    )
                 if request.input_kind == "mounted_orthographic_views":
-                    outcome = run_table_agent(extraction, table_analysis, provider, AgentLimits(), vision_enabled=settings.vision_enabled)
+                    outcome = run_table_agent(
+                        extraction, table_analysis, provider, limits,
+                        vision_enabled=settings.vision_enabled,
+                        comparison_candidates=comparison_candidates,
+                    )
                     table_programs = (outcome.program,)
                     evaluated_table_program = evaluate_table_program(table_analysis, outcome.program)
                     agent_selected_table_program_id = outcome.program.id
                 elif request.input_kind == "separated_part_views":
-                    outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, AgentLimits())
+                    outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, limits)
                     assembly_candidates = tuple(sorted(
                         assembly_candidates,
                         key=lambda item: item.id != outcome.selected_assembly_candidate_id,
                     ))
                     agent_selected_assembly_candidate_id = outcome.selected_assembly_candidate_id
                 else:
-                    outcome = run_agent(extraction, scenarios, provider, AgentLimits())
+                    outcome = run_agent(extraction, scenarios, provider, limits)
                     scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
                     agent_selected_scenario_id = outcome.selected_scenario_id
+                if request.mode == "live":
+                    recording_draft = provider.finalize(outcome)
+                else:
+                    provider.assert_complete(outcome)
             except Exception as exc:
+                if request.mode == "recorded_replay":
+                    return _error(409, "recorded_replay_stale", f"La grabación no coincide con el estado actual: {type(exc).__name__}.")
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
             trace_events = tuple({
                 "tool_name": action.tool_name,
@@ -345,24 +423,36 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 "provider_input_tokens": action.provider_input_tokens,
                 "provider_output_tokens": action.provider_output_tokens,
                 "provider_total_tokens": action.provider_total_tokens,
+                "provenance": request.mode,
+                "source_live_run_id": source_recording.source_live_run_id if source_recording else None,
+                "source_result_revision": source_recording.source_result_revision if source_recording else None,
             } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
-        run = repository.create_run(
-            run_id,
-            request.mode,
-            extraction,
-            scenarios,
-            trace_events,
-            agent_selected_scenario_id,
-            request.document_id,
-            part_analysis,
-            assembly_candidates,
-            agent_selected_assembly_candidate_id,
-            table_analysis,
-            table_programs,
-            agent_selected_table_program_id,
-            evaluated_table_program,
-        )
+        try:
+            run = repository.create_run(
+                run_id,
+                request.mode,
+                extraction,
+                scenarios,
+                trace_events,
+                agent_selected_scenario_id,
+                request.document_id,
+                part_analysis,
+                assembly_candidates,
+                agent_selected_assembly_candidate_id,
+                table_analysis,
+                table_programs,
+                agent_selected_table_program_id,
+                evaluated_table_program,
+                recording_draft=recording_draft,
+                recording_fingerprint=fingerprint if recording_draft is not None else None,
+                recording_actor=actor or "local-demo",
+                replay_source_recording_id=source_recording.recording_id if source_recording else None,
+            )
+        except ValueError as exc:
+            if str(exc) == "recording_storage_exhausted":
+                return _error(507, "recording_storage_exhausted", "El almacenamiento acotado de grabaciones está completo.")
+            raise
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
@@ -413,7 +503,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         def process() -> None:
             try:
                 repository.start_job(job_id)
-                response = _execute_run(request)
+                response = _execute_run(request, actor=http_request.state.actor)
                 payload = json.loads(response.body)
                 if response.status_code == 201:
                     repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])

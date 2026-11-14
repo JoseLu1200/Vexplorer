@@ -87,6 +87,7 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     }),
     createJob: (request) => post("/api/v1/jobs", request),
     getJob: (jobId) => json(`/api/v1/jobs/${encodeURIComponent(jobId)}`),
+    getReplayAvailability: (request) => post("/api/v1/replay-availability", request, { idempotent: false }),
     getDocumentDrawing: (documentId, inputKind) => json(`/api/v1/documents/${encodeURIComponent(documentId)}/drawing${inputKind ? `?input_kind=${encodeURIComponent(inputKind)}` : ""}`),
     documentPreviewUrl: (documentId) => resourceUrl(`/api/v1/documents/${encodeURIComponent(documentId)}/preview.svg`),
     getRun: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}`),

@@ -8,10 +8,12 @@ from dataclasses import dataclass, replace
 from typing import Protocol
 
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
+from backend.app.agente.comparacion import compare_assembly_candidates, compare_legacy_candidates, compare_table_programs
 from backend.app.agente.vision import render_view
 from backend.app.validador.plausibilidad import evaluate_plausibility
 from backend.app.contratos.modelos import (
     AssemblyCandidate,
+    CompareCandidatesArgs,
     DecompositionScenario,
     DrawingExtraction,
     ExplainPieceArgs,
@@ -200,6 +202,19 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
                         return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls, actions=tuple(actions))
+                elif call.name == "comparar_candidatas":
+                    args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    unknown = [item for item in args.candidate_ids if item not in proposals]
+                    if args.candidate_revision != extraction.drawing_id:
+                        data = {"ok": False, "error": "candidate_revision_mismatch"}
+                        actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
+                    elif unknown:
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(proposals)}
+                        actions.append(AgentAction(call.name, False, (), "Propuesta desconocida rechazada."))
+                    else:
+                        comparison = compare_legacy_candidates(proposals[args.candidate_ids[0]], proposals[args.candidate_ids[1]])
+                        data = {"ok": True, "comparison": comparison}
+                        actions.append(AgentAction(call.name, True, tuple(comparison["shared_evidence_ids"]), "Comparación determinista de propuestas consultada."))
                 else:
                     data = {"ok": False, "error": "unknown_tool"}
                     actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Herramienta no autorizada rechazada."))
@@ -316,6 +331,20 @@ def run_parts_agent(
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
                         return PartsAgentOutcome(args.assembly_candidate_id, model_calls, tool_calls, tuple(actions))
+                elif call.name == "comparar_candidatas":
+                    args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    candidates_by_id = {item.id: item for item in candidates}
+                    unknown = [item for item in args.candidate_ids if item not in candidates_by_id]
+                    if args.candidate_revision != parts.candidate_revision:
+                        data = {"ok": False, "error": "candidate_revision_mismatch"}
+                        actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
+                    elif unknown:
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(candidates_by_id)}
+                        actions.append(AgentAction(call.name, False, (), "Candidato de montaje desconocido rechazado."))
+                    else:
+                        comparison = compare_assembly_candidates(candidates_by_id[args.candidate_ids[0]], candidates_by_id[args.candidate_ids[1]])
+                        data = {"ok": True, "comparison": comparison}
+                        actions.append(AgentAction(call.name, True, tuple(comparison["shared_evidence_ids"]), "Comparación determinista de montajes consultada."))
                 else:
                     data = {"ok": False, "error": "unknown_tool"}
                     actions.append(AgentAction(call.name, False, (), "Herramienta no autorizada rechazada."))
@@ -341,6 +370,7 @@ def run_table_agent(
     limits: AgentLimits = AgentLimits(),
     *,
     vision_enabled: bool = False,
+    comparison_candidates: tuple[TableProgramProposal, ...] = (),
 ) -> TableAgentOutcome:
     if extraction.drawing_id != analysis.drawing_id or extraction.input_kind != "mounted_orthographic_views":
         raise ValueError("table_analysis_scope_mismatch")
@@ -371,6 +401,16 @@ def run_table_agent(
             "authority": "advisory_workshop_catalog_not_measurement_source",
         },
     }
+    context["program_candidates"] = [
+        {
+            "id": item.id,
+            "proposal_origin": item.proposal_origin,
+            "table_template_id": item.table_template_id,
+            "roles": [component.role for component in item.components],
+            "assumptions": item.assumptions,
+        }
+        for item in comparison_candidates
+    ]
     actions: list[AgentAction] = []
     visualized_view_ids: set[str] = set()
     vision_calls = 0
@@ -502,6 +542,20 @@ def run_table_agent(
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
                         return TableAgentOutcome(program, model_calls, tool_calls, tuple(actions))
+                elif call.name == "comparar_candidatas":
+                    args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    programs_by_id = {item.id: item for item in comparison_candidates}
+                    unknown = [item for item in args.candidate_ids if item not in programs_by_id]
+                    if args.candidate_revision != analysis.ledger_revision:
+                        data = {"ok": False, "error": "candidate_revision_mismatch"}
+                        actions.append(AgentAction(call.name, False, (), "Revisión candidata ajena al ledger rechazada."))
+                    elif unknown:
+                        data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(programs_by_id)}
+                        actions.append(AgentAction(call.name, False, (), "Programa no anunciado en el contexto rechazado."))
+                    else:
+                        comparison = compare_table_programs(programs_by_id[args.candidate_ids[0]], programs_by_id[args.candidate_ids[1]])
+                        data = {"ok": True, "comparison": comparison}
+                        actions.append(AgentAction(call.name, True, tuple(comparison["shared_evidence_ids"]), "Comparación determinista de programas consultada."))
                 else:
                     data = {"ok": False, "error": "unknown_tool"}
                     actions.append(AgentAction(call.name, False, (), "Herramienta no autorizada rechazada."))

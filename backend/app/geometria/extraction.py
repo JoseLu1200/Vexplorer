@@ -10,6 +10,9 @@ from backend.app.ingesta.dxf_reader import ParsedDrawing, ParsedEntity, parse_dx
 
 
 VIEW_LABELS = {"FRONT": "FRONT", "TOP": "TOP", "RIGHT": "SIDE", "SIDE": "SIDE"}
+REGION_KINDS = {"DIMENSION", "LINE", "CIRCLE", "ARC", "ELLIPSE", "SPLINE"}
+HIDDEN_LINETYPE_MARKERS = ("HIDDEN", "DASHED", "ACAD_ISO02", "ACAD_ISO03")
+HIDDEN_MIN_SPAN = 0.8
 PART_VIEW_LABEL = re.compile(
     r"^PART\s+(?P<key>[A-Za-z0-9_-]+)\s+(?P<role>FRONT|TOP|SIDE)(?:\s+QTY\s+[1-9]\d*)?$",
     re.IGNORECASE,
@@ -175,8 +178,13 @@ def _assign_view(
 ) -> str:
     if not labels or not entity.points:
         return "UNKNOWN"
-    region_points = entity.extension_starts if entity.kind == "DIMENSION" else entity.points
-    if entity.kind in {"DIMENSION", "LINE"} and region_points and regions:
+    if entity.kind == "DIMENSION":
+        region_points = entity.extension_starts or entity.points
+    elif entity.kind == "CIRCLE" and entity.circular is not None:
+        region_points = (entity.circular["center_source"],)
+    else:
+        region_points = entity.points
+    if entity.kind in REGION_KINDS and region_points and regions:
         def distance_to_region(region: tuple[float, float, float, float]) -> float:
             min_x, min_y, max_x, max_y = region
             total = 0.0
@@ -195,23 +203,31 @@ def _line_components(lines: list[ParsedEntity], tolerance: float = 1e-6) -> list
     def key(point: tuple[float, float]) -> tuple[int, int]:
         return (round(point[0] / tolerance), round(point[1] / tolerance))
 
-    remaining = set(range(len(lines)))
-    components: list[list[ParsedEntity]] = []
-    while remaining:
-        seed = remaining.pop()
-        indexes = {seed}
-        endpoints = {key(point) for point in lines[seed].points}
-        changed = True
-        while changed:
-            changed = False
-            for index in tuple(remaining):
-                if endpoints & {key(point) for point in lines[index].points}:
-                    remaining.remove(index)
-                    indexes.add(index)
-                    endpoints.update(key(point) for point in lines[index].points)
-                    changed = True
-        components.append([lines[index] for index in sorted(indexes)])
-    return components
+    parent = list(range(len(lines)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    owner: dict[tuple[int, int], int] = {}
+    for index, line in enumerate(lines):
+        for point in line.points:
+            endpoint = key(point)
+            previous = owner.get(endpoint)
+            if previous is None:
+                owner[endpoint] = index
+                continue
+            first, second = find(previous), find(index)
+            if first != second:
+                parent[max(first, second)] = min(first, second)
+
+    groups: dict[int, list[int]] = {}
+    for index in range(len(lines)):
+        groups.setdefault(find(index), []).append(index)
+    ordered = sorted(groups.values(), key=lambda indexes: indexes[0])
+    return [[lines[index] for index in indexes] for indexes in ordered]
 
 
 def _rectangular_line_contour(component: list[ParsedEntity], tolerance: float = 1e-6) -> tuple[tuple[float, float], ...] | None:
@@ -262,6 +278,81 @@ def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, 
     if abs(lengths[1] - lengths[3]) > tolerance * max(lengths[1], lengths[3]):
         return None
     return tuple(sorted((lengths[0], lengths[1]), reverse=True))
+
+
+def _hidden_line_evidence(
+    drawing: ParsedDrawing,
+    view_of: dict[str, str],
+    contours: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    boxes = []
+    for contour in contours:
+        if not contour["closed"]:
+            continue
+        xs = [point["x"] for point in contour["points_source"]]
+        ys = [point["y"] for point in contour["points_source"]]
+        boxes.append(
+            (
+                contour["view_id"],
+                contour["id"],
+                min(xs),
+                min(ys),
+                max(xs),
+                max(ys),
+            )
+        )
+    result = []
+    for entity in drawing.entities:
+        if (
+            entity.kind != "LINE"
+            or not entity.linetype
+            or not any(marker in entity.linetype.upper() for marker in HIDDEN_LINETYPE_MARKERS)
+        ):
+            continue
+        (x1, y1), (x2, y2) = entity.points
+        horizontal = abs(y1 - y2) <= 1e-9
+        vertical = abs(x1 - x2) <= 1e-9
+        if horizontal == vertical:
+            continue
+        view_id = _view_id(view_of.get(entity.id, "UNKNOWN"))
+        holders = [
+            box
+            for box in boxes
+            if box[0] == view_id
+            and box[2] <= min(x1, x2)
+            and max(x1, x2) <= box[4]
+            and box[3] <= min(y1, y2)
+            and max(y1, y2) <= box[5]
+        ]
+        if not holders:
+            continue
+        _, contour_id, min_x, min_y, max_x, max_y = min(
+            holders,
+            key=lambda box: ((box[4] - box[2]) * (box[5] - box[3]), box[1]),
+        )
+        extent = max_x - min_x if horizontal else max_y - min_y
+        across = max_y - min_y if horizontal else max_x - min_x
+        if extent <= 0 or across <= 0:
+            continue
+        span = (abs(x2 - x1) if horizontal else abs(y2 - y1)) / extent
+        if span < HIDDEN_MIN_SPAN:
+            continue
+        position = (y1 - min_y) / across if horizontal else (x1 - min_x) / across
+        orientation = "horizontal" if horizontal else "vertical"
+        axis = "height" if horizontal else "width"
+        result.append(
+            {
+                "id": f"evidence-hidden-{entity.id}",
+                "kind": "geometry",
+                "source_entity_ids": [entity.id],
+                "description": (
+                    f"Hidden-type line ({entity.linetype[:40]}), {orientation}, spanning "
+                    f"{span:.0%} of contour {contour_id} at {position:.0%} of its {axis}; "
+                    "what it represents is not established"
+                ),
+            }
+        )
+    return result
 
 
 def extraction_payload(
@@ -372,9 +463,10 @@ def extraction_payload(
         for view_label, entity_ids in sorted(by_view.items()):
             if view_label == "UNKNOWN":
                 continue
+            view_entity_ids = set(entity_ids)
             circles = [
                 entity for entity in drawing.entities
-                if entity.id in entity_ids and entity.kind == "CIRCLE" and entity.circular is not None
+                if entity.id in view_entity_ids and entity.kind == "CIRCLE" and entity.circular is not None
             ]
             seen_rows: set[tuple[str, ...]] = set()
             radius_groups: dict[int, list[ParsedEntity]] = {}
@@ -406,7 +498,12 @@ def extraction_payload(
                         })
 
     for view_label in sorted(by_view):
-        view_lines = [entity for entity in drawing.entities if entity.kind == "LINE" and entity.id in by_view[view_label]]
+        view_entity_ids = set(by_view[view_label])
+        view_lines = [
+            entity
+            for entity in drawing.entities
+            if entity.kind == "LINE" and entity.id in view_entity_ids
+        ]
         for index, component in enumerate(_line_components(view_lines), start=1):
             rectangle = _rectangular_line_contour(component)
             if rectangle is None:
@@ -423,10 +520,14 @@ def extraction_payload(
                 "description": "Axis-aligned closed contour derived from connected source lines",
             })
 
+    view_of = {entity_id: label for label, ids in by_view.items() for entity_id in ids}
+    evidence.extend(_hidden_line_evidence(drawing, view_of, contours))
+
     views = []
     for label in sorted(by_view):
         ids = by_view[label]
-        view_points = [point for entity in drawing.entities if entity.id in ids for point in entity.points]
+        id_set = set(ids)
+        view_points = [point for entity in drawing.entities if entity.id in id_set for point in entity.points]
         if not view_points:
             continue
         bounds_source = _bounds(view_points)
@@ -435,16 +536,22 @@ def extraction_payload(
 
     status = "needs_review" if inferred_labels or drawing.unit_scale_to_mm is None or any(
         warning.startswith(("unsupported_", "recovered_dxf", "approximated_", "curve_point_limit"))
+        or warning.startswith("paperspace_dimensions")
         or "conflict" in warning or "override" in warning
         for warning in drawing.warnings
     ) else "ready"
     observations = []
+    view_entity_sets = {view["id"]: set(view["entity_ids"]) for view in views}
     for view in views:
         observations.append({
             "id": f"observation-{view['id']}",
             "view_id": view["id"],
             "contour_ids": [item["id"] for item in contours if item["view_id"] == view["id"]],
-            "dimension_ids": [item["id"] for item in dimensions if set(item["source_entity_ids"]) & set(view["entity_ids"])],
+            "dimension_ids": [
+                item["id"]
+                for item in dimensions
+                if set(item["source_entity_ids"]) & view_entity_sets[view["id"]]
+            ],
         })
     return {
         "drawing_id": drawing.drawing_id, "input_kind": input_kind, "status": status, "source_unit": drawing.source_unit,

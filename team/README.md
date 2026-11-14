@@ -27,3 +27,9 @@ La ampliación aditiva 0.3 fue acordada de nuevo por A/B y comunicada a C/D: dib
 - [DEMO_IMPLEMENTACION](../docs/DEMO_IMPLEMENTACION.md) recoge alcance y secuencia. [VERIFICACION_DEMO](../docs/VERIFICACION_DEMO.md) distingue pruebas observadas y capacidades pendientes.
 
 La [plantilla](_TEMPLATE.md) permanece disponible para incorporaciones futuras; no concede autorización ni identidad por sí sola.
+
+## Incremento privado y PR1
+
+El usuario renovó la autorización del swarm GPT-6.1 Sol y revisión GPT-6 Astra el 2026-11-14. La integración actual utiliza la rama aislada `feat/private-production`, con propiedad de archivos disjunta y commits centralizados por el coordinador. Los registros adicionales son [economía](agente_costes_produccion.md), [operaciones](agente_operacion.md), [integración CAD de PR1](agente_integracion_pr1.md) y [replay de PR1](agente_replay_pr1.md). El escritor contractual pasó de economía a replay tras cerrar el primer bloque y acordar el delta con A.
+
+El destino autorizado es un servicio nuevo bajo `https://gex-dashboard.hopto.org/vexplorer/`, mediante `ssh kripta`. La revisión final y la verificación del despliegue deben registrar resultados observados; las aceptaciones anteriores no aprueban automáticamente este incremento.

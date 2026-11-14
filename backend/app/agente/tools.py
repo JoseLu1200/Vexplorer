@@ -8,6 +8,7 @@ from backend.app.contratos.modelos import (
     InspectTableMeasuresArgs,
     ProposeTableProgramArgs,
     SelectAssemblyCandidateArgs,
+    CompareCandidatesArgs,
     SelectScenarioArgs,
     VisualizeTableViewArgs,
 )
@@ -36,6 +37,7 @@ def tool_schemas() -> list[dict]:
         _schema("inspeccionar_evidencia", "Consulta evidencias por ID dentro del ledger autorizado del run actual.", InspectEvidenceArgs),
         _schema("entregar_despiece", "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas.", SelectScenarioArgs),
         _schema("explicar_pieza", "Devuelve fuentes, estados, premisas y desconocidos de una hipótesis de componente en la revisión 1; no la confirma ni revela razonamiento interno.", ExplainPieceArgs),
+        _schema("comparar_candidatas", "Compara exactamente dos propuestas existentes de la revisión actual; no acepta medidas ni confirma identidad.", CompareCandidatesArgs),
     ]
 
 
@@ -51,6 +53,7 @@ def parts_tool_schemas() -> list[dict]:
             "Entrega por ID un candidato de montaje ya calculado; no confirma el montaje ni permite aportar medidas o cantidades.",
             SelectAssemblyCandidateArgs,
         ),
+        _schema("comparar_candidatas", "Compara exactamente dos candidatos de montaje existentes de la revisión actual; no acepta medidas ni confirma el montaje.", CompareCandidatesArgs),
     ]
 
 
@@ -66,6 +69,7 @@ def table_tool_schemas(*, include_vision: bool = False) -> list[dict]:
             "Propone un programa acotado por referencias y reglas; no admite números, coordenadas, cantidades ni placements libres.",
             ProposeTableProgramArgs,
         ),
+        _schema("comparar_candidatas", "Compara exactamente dos programas anunciados de la revisión actual; no acepta medidas ni confirma un programa.", CompareCandidatesArgs),
     ]
     if include_vision:
         schemas.insert(1, _schema(

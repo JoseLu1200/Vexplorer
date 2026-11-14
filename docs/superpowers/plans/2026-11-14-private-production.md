@@ -11,8 +11,8 @@
 - Read-only audit baseline 10da225 passed 313 Python and 82 JS tests.
 - Implementation agents: gpt-6.1-sol; final reviewer: gpt-6-astra.
 - No source measurements invented or overwritten, no unknown silently treated as zero.
-- One writer for contratos/modelos.py (economics agent B); A/B explicitly agree additive interfaces and notify C before contract edits.
-- No provider charges needed for offline checks. Do not publish/deploy remotely or commit secrets.
+- One writer for contratos/modelos.py (economics agent B, transferred to PR-replay B after its completion); A/B explicitly agree additive interfaces and notify C before contract edits.
+- Offline checks do not call a provider. The user's subsequent explicit authorization covers normal main/PR publication and an isolated deployment through SSH `kripta`; never commit secrets or interfere with existing applications.
 - Shared isolated worktree, disjoint ownership, no worker git commits; coordinator integrates and commits inspected files.
 
 ## Review Focus
@@ -71,9 +71,9 @@ Files: tools/audit_production.py, tests/test_production_acceptance.py, evaluatio
 
 ### Task 7: Authorized isolated VPS deployment
 User identified SSH alias `kripta` and `gex-dashboard.hopto.org` on 2026-11-14, explicitly requiring preservation of every existing site/app.
-- [ ] Read-only inventory of existing proxy, ports, containers, storage and health; do not read secrets.
-- [ ] Add base-path support for a dedicated endpoint (proposed `/vexplorer/`) without intercepting existing root/API routes.
-- [ ] After acceptance/Astra review, transfer only runtime image/config; create uniquely named app/container/volume on a free loopback port.
+- [x] Read-only inventory of existing proxy, ports, containers, storage and health; do not read secrets.
+- [x] Add base-path support for a dedicated endpoint (`/vexplorer/`) without intercepting existing root/API routes.
+- [ ] After acceptance/Astra review, transfer only runtime/config; use the prepared venv and a dedicated user service on free loopback port 18792. Docker is an alternative for new hosts, not this VPS.
 - [ ] Add the smallest validated proxy route, with backup of the exact changed configuration and reversible rollback; never stop/recreate existing stacks.
 - [ ] Verify TLS/auth and full application at new endpoint; compare existing service health before/after.
 - [ ] Record deployed image digest, route, data/backup location and outstanding business-data validation.

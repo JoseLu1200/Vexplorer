@@ -3,6 +3,52 @@ from __future__ import annotations
 from backend.app.contratos.modelos import ComponentProposal, DecompositionScenario, DrawingContour, DrawingExtraction
 
 
+def _inside_polygon(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
+    x, y = point
+    inside = False
+    previous = polygon[-1]
+    for current in polygon:
+        x1, y1 = previous
+        x2, y2 = current
+        if (y1 > y) != (y2 > y):
+            crossing = (x2 - x1) * (y - y1) / (y2 - y1) + x1
+            if x < crossing:
+                inside = not inside
+        previous = current
+    return inside
+
+
+def _contained_hole_rows(
+    extraction: DrawingExtraction,
+    contours: tuple[DrawingContour, ...],
+) -> tuple[str, ...]:
+    """Return neutral row evidence drawn inside one of the scenario contours."""
+    entities = {entity.id: entity for entity in extraction.entities}
+    polygons = [
+        [(point.x, point.y) for point in contour.points_mm]
+        for contour in contours
+        if contour.closed and contour.points_mm and len(contour.points_mm) >= 3
+    ]
+    result = []
+    for evidence in extraction.evidence:
+        if not evidence.id.startswith("evidence-holes-"):
+            continue
+        centers = []
+        for entity_id in evidence.source_entity_ids:
+            entity = entities.get(entity_id)
+            circular = entity.circular if entity is not None else None
+            if circular is None or circular.kind != "circle" or circular.center_mm is None:
+                break
+            centers.append((circular.center_mm.x, circular.center_mm.y))
+        else:
+            if centers and any(
+                all(_inside_polygon(center, polygon) for center in centers)
+                for polygon in polygons
+            ):
+                result.append(evidence.id)
+    return tuple(sorted(result))
+
+
 def _axis_aligned_rectangle_size(contour: DrawingContour, tolerance_mm: float = 1e-6) -> tuple[float, float] | None:
     """Accept only a closed four-corner rectangle supported by source entities."""
     if not contour.closed or not contour.source_entity_ids or contour.points_mm is None or len(contour.points_mm) != 4:
@@ -87,6 +133,8 @@ def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[Decom
     observation_ids = tuple(item.id for item in extraction.observations if set(item.contour_ids) & set(contour_ids))
     entity_ids = set(front.source_entity_ids) | set(top.source_entity_ids) | set(side.source_entity_ids)
     evidence_ids = tuple(item.id for item in extraction.evidence if set(item.source_entity_ids) & entity_ids)
+    contained_rows = _contained_hole_rows(extraction, (front, top, side))
+    evidence_ids = tuple(dict.fromkeys((*evidence_ids, *contained_rows)))
     common = dict(source_observation_ids=observation_ids, source_contour_ids=contour_ids, evidence_ids=evidence_ids)
 
     def proposal(scenario: str, role: str, label: str, quantity: int | None, length: float | None, derivation: str, basis: float) -> ComponentProposal:

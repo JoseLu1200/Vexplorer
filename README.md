@@ -4,7 +4,7 @@ Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. 
 
 Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca usa atributos geométricos o embeddings reales. El incremento privado permite un catálogo económico propio con fuente y fecha; el catálogo de demostración se mantiene identificado como sintético. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
-El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el nuevo recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) recoge **313 pruebas Python, 82 JavaScript, API y navegador reales, inferencia y visión con proveedor real**, y revisión final GPT-6 Astra SHIP. La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) conserva el cierre anterior. Las [adaptaciones de CAD/harness](docs/INTEGRACION_CAD_HARNESS.md) identifican los cambios de Pablo adoptados y sus exclusiones.
+El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) conserva el cierre anterior con API, navegador, inferencia y visión reales. La [integración de PR1](docs/INTEGRACION_PR1_2026-11-14.md) documenta los 14 commits revisados y sus adaptaciones. El incremento privado añade contratos económicos 0.6, jobs durables y replay verificado; las aceptaciones históricas no sustituyen su revisión actual.
 
 ## Auditoría e incremento privado
 
@@ -23,7 +23,7 @@ npm ci --prefix frontend
 
 Abrir **http://127.0.0.1:8765**. FastAPI sirve también el frontend JS/HTML: no hay otro proceso de frontend. `npm ci` prepara Three.js local, sin CDN durante el uso. La geometría, el visor, la revisión y la similitud geométrica funcionan sin credenciales. Instalación comprobada en Windows con Python 3.14.2 y Node 25.8.1; [requirements-demo.txt](requirements-demo.txt) registra las dependencias Python verificadas. Para repetir esas versiones en un entorno compatible, instalar con `-c requirements-demo.txt`.
 
-El arranque anterior usa modo local: documentos, resultados y revisiones en `.vexplorer-data/`, ignorado por Git; mantener ese modo en `127.0.0.1`. Para el equipo existe un perfil privado con cuentas individuales, trabajos persistidos y TLS mediante proxy: seguir [PRODUCCION](docs/PRODUCCION.md). No se ha desplegado a un servidor remoto en esta entrega.
+El arranque anterior usa modo local: documentos, resultados y revisiones en `.vexplorer-data/`, ignorado por Git; mantener ese modo en `127.0.0.1`. Para el equipo existe un perfil privado con cuentas individuales, trabajos persistidos y TLS mediante proxy: seguir [PRODUCCION](docs/PRODUCCION.md), que registra la configuración y el estado del despliegue.
 
 La biblioteca puede conservar descriptores v1/v2/v3. La interfaz de mesa filtra v3; las comparaciones rechazan mezclas de versiones incompatibles. Para una demo con almacenamiento separado:
 
@@ -63,7 +63,7 @@ La entrada no contiene una BOM ni nombres de piezas. La referencia propia está 
 
 - **geometry_only**: extracción y candidatos deterministas compatibles de la familia admitida; no llama a un proveedor.
 - **live**: OpenAI Responses con herramientas nativas, bucle propio y validación local. En mesa genera bindings y componentes dentro del perfil acotado; en los otros recorridos inspecciona y elige hipótesis existentes. Las explicaciones conservan fuentes, fórmulas y premisas. El canal predeterminado es evidencia vectorial estructurada; no demuestra descomposición libre de cualquier mueble.
-- **recorded_replay**: no habilitado; el servidor lo rechaza porque no existe un mecanismo de replay admitido con grabaciones verificadas.
+- **recorded_replay**: reproduce offline una ejecución live grabada por el servidor con la misma entrada y configuración. Verifica transcript y resultados de herramientas, conserva procedencia y no importa decisiones humanas. Si no existe una grabación válida coincidente, lo comunica y rechaza la ejecución. No admite grabaciones subidas por el cliente.
 
 Para live, configurar `OPENAI_API_KEY` en un `.env` local ignorado por Git. [`.env.example`](.env.example) muestra los nombres, sin credenciales. Con la clave ya configurada:
 
@@ -100,7 +100,7 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 
 ## Alcance y trabajo pendiente
 
-- Lectura DXF: modelspace, bloques anidados y atributos, líneas y polilíneas rectas, círculos/arcos tipados, textos y cotas lineales o por ordenadas. ELLIPSE/SPLINE son aproximaciones visuales declaradas; no generan paneles ni medidas exactas. Se detectan filas regulares de círculos como evidencia neutral y se contrasta un catálogo de taller que por defecto no está confirmado. DXF recuperados requieren revisión. Límites: 100.000 entidades, 20.000 puntos por entidad y 200.000 por dibujo. HATCH, bulges, paperspace y ARC con OCS negativo no están admitidos por el lector. No hay lector general de croquis, PDF, DWG ni muebles arbitrarios.
+- Lectura DXF: modelspace, bloques anidados y atributos, líneas y polilíneas rectas, círculos/arcos tipados, textos y cotas lineales o por ordenadas. ELLIPSE/SPLINE son aproximaciones visuales declaradas; no generan paneles ni medidas exactas. Se detectan filas regulares de círculos y líneas ocultas como evidencia neutral y se contrasta un catálogo de taller que por defecto no está confirmado. DXF recuperados requieren revisión. Límites: 100.000 entidades, 20.000 puntos por entidad y 200.000 por dibujo. Paperspace se clasifica y limita: anotaciones informativas, cotas que requieren revisión y no se proyectan a modelspace. HATCH, bulges y ARC con OCS negativo quedan fuera. No hay lector general de croquis, PDF, DWG ni muebles arbitrarios.
 - La revisión de piezas separadas permite elegir asignación y completar cantidad o dimensiones desconocidas, con material/acabado y motivo. Dividir/unir componentes y crear elementos ocultos arbitrarios desde la interfaz quedan pendientes.
 - Biblioteca geométrica/semántica de revisiones guardadas, separada del histórico económico de tres ejemplos inventados. Agrupación por componentes conexos y umbral, sin evaluación estadística de relevancia. No se infieren tiempos industriales, mecanizados, acabado cotizado ni impuestos. No es un presupuesto de fabricación completo.
 - Reconstrucción por cajas de tableros según montaje revisado y niveles observados, sin traseras ocultas añadidas, mecanizados, uniones detalladas ni certificación de colisiones. Las ejecuciones antiguas se abren, pero para obtener cotas enriquecidas y vínculo al CAD original deben analizarse de nuevo.

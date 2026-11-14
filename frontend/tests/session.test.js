@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { clearRunSession, persistJob, persistRunId, restoreJob, restoreRunId } from "../core/session.js";
+import { clearRunSession, persistJob, persistRunId, restoredRunRecovery, restoreJob, restoreRunId } from "../core/session.js";
 
 function storage() {
   const values = new Map();
@@ -38,4 +38,17 @@ test("an unfinished job survives reload until a run replaces it", () => {
 test("invalid persisted job data is ignored", () => {
   const store = storage(); store.setItem("vexplorer.job", "not-json");
   assert.equal(restoreJob(store), null);
+});
+
+test("transient restored run failures preserve the only recovery pointer and allow retry", () => {
+  for (const error of [{ status: 0, code: "network_error", retryable: true }, { status: 502, code: "bad_gateway" }, { status: 401, code: "unauthorized" }]) {
+    assert.deepEqual(restoredRunRecovery("run-abc123", error), { discard: false, retry: true, reason: "temporarily_unavailable" });
+  }
+});
+
+test("only an invalid run id or confirmed 404 discards a restored pointer", () => {
+  assert.deepEqual(restoredRunRecovery("../not-a-run", { status: 0 }), { discard: true, retry: false, reason: "invalid_run_id" });
+  assert.deepEqual(restoredRunRecovery("run-abc123", { status: 404, code: "run_not_found" }), { discard: true, retry: false, reason: "run_not_found" });
+  assert.deepEqual(restoredRunRecovery("run-abc123", { status: 404, code: "invalid_response" }), { discard: false, retry: true, reason: "temporarily_unavailable" });
+  assert.equal(restoredRunRecovery("run-abc123", { status: 422 }).discard, false);
 });

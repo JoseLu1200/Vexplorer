@@ -6,6 +6,7 @@ bindings, expand quantities, place occurrences or infer missing dimensions.
 """
 from __future__ import annotations
 
+import json
 from io import StringIO
 from math import atan2, degrees, hypot
 import re
@@ -39,6 +40,8 @@ _STATE_STYLE = {
 }
 _DXF_LAYER = {state: f"VX_{state.upper()}" for state in _STATE_STYLE}
 _SAFE_FILENAME = re.compile(r"[^A-Za-z0-9._-]+")
+_DXF_XDATA_APPID = "VEXPLORER"
+_DXF_XDATA_CHUNK_SIZE = 240
 
 
 def _svg_tag(name: str) -> str:
@@ -52,6 +55,30 @@ def _format_mm(value: float) -> str:
 def _filename(sheet_id: str, revision: int, extension: str) -> str:
     slug = _SAFE_FILENAME.sub("-", sheet_id).strip("-._") or "sheet"
     return f"{slug}-r{revision}.{extension}"
+
+
+def _presentation_text(primitive: TableDrawingPrimitive) -> str:
+    """Keep dense provenance machine-readable without printing it beyond the sheet."""
+    value = primitive.text or "?"
+    if not value.upper().startswith("PROVENANCE="):
+        return value
+    reference_count = len(primitive.dependency_refs)
+    if reference_count == 0:
+        reference_count = len(tuple(item for item in value.partition("=")[2].split(",") if item))
+    return f"PROCEDENCIA: {reference_count} referencias · detalle completo en metadatos"
+
+
+def _text_metadata(primitive: TableDrawingPrimitive) -> str:
+    return json.dumps(
+        {
+            "dependency_refs": list(primitive.dependency_refs),
+            "primitive_id": primitive.id,
+            "text": primitive.text,
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
 
 
 def _geometry_bounds(sheet: TableSheetPlan) -> tuple[float, float, float, float]:
@@ -194,6 +221,7 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                 "data-primitive-id": primitive.id,
                 "data-state": primitive.state,
                 "data-dependencies": " ".join(primitive.dependency_refs),
+                **({"data-full-text": primitive.text} if primitive.text is not None else {}),
             },
         )
         mapped = [map_point(point) for point in primitive.points_mm]
@@ -283,7 +311,7 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                     "font-family": "sans-serif",
                 },
             )
-            text.text = primitive.text or "?"
+            text.text = _presentation_text(primitive)
 
     legend_y = height - footer + 20 * font_scale
     legend = ET.SubElement(root, _svg_tag("g"), {"data-layer": "legend"})
@@ -347,6 +375,7 @@ def _render_dxf(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
     document = ezdxf.new("R2018", setup=True)
     document.units = 4
     _set_deterministic_header(document, plan, sheet)
+    document.appids.add(_DXF_XDATA_APPID)
     for state, (_, color, _) in _STATE_STYLE.items():
         document.layers.add(_DXF_LAYER[state], color=color)
     document.layers.add("VX_METADATA", color=7)
@@ -404,9 +433,17 @@ def _render_dxf(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
             )
             dimension.render()
         else:
-            modelspace.add_text(
-                primitive.text or "?",
+            text_entity = modelspace.add_text(
+                _presentation_text(primitive),
                 dxfattribs={"insert": points[0], "height": text_height, "layer": layer},
+            )
+            metadata_payload = _text_metadata(primitive)
+            text_entity.set_xdata(
+                _DXF_XDATA_APPID,
+                [
+                    (1000, metadata_payload[index:index + _DXF_XDATA_CHUNK_SIZE])
+                    for index in range(0, len(metadata_payload), _DXF_XDATA_CHUNK_SIZE)
+                ],
             )
 
     # ``Drawing.write()`` commits pending entities but also injects the current
