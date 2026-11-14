@@ -4,7 +4,11 @@ from pathlib import Path
 
 from backend.app.contratos.modelos import ReviewDecision, ReviewRequest
 from backend.app.geometria.extraction import extract_drawing
-from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
+from backend.app.geometria.parts import (
+    derive_assembly_candidates,
+    extract_separated_parts,
+    recompute_reviewed_assembly_candidate,
+)
 from backend.app.servicios.reconstruction import reconstruct_parts_scene
 from backend.app.servicios.repository import DemoRepository
 
@@ -187,3 +191,49 @@ def test_confirming_known_quantities_preserves_disjoint_source_occurrence_indice
     assert top_object.occurrence_index == 1
     assert base_object.occurrence_index == 2
     assert top_object.part_observation_id == base_object.part_observation_id
+
+
+def test_human_confirmed_thickness_recomputes_candidate_without_mutating_observation(tmp_path: Path) -> None:
+    extraction, parts, candidate, repository = _run(tmp_path, "piezas_espesor_desconocido.dxf")
+    shelf_use = next(
+        use for use in candidate.uses
+        if use.part_observation_id == "part-observation-k3" and use.role == "shelf"
+    )
+    revision_two = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=1, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id, notes="Conserva espesor K3 desconocido",
+        ),
+    )
+    revision_three = repository.review(
+        "run-parts-scene",
+        ReviewRequest(
+            base_result_revision=2, reviewer_name="Operador local",
+            assembly_candidate_id=candidate.id,
+            decisions=(ReviewDecision(
+                proposal_id=shelf_use.id, action="confirm", role="shelf",
+                thickness_mm=18, notes="Confirma espesor K3",
+            ),),
+            notes="Completa espesor mediante revisión humana",
+        ),
+    )
+
+    effective = recompute_reviewed_assembly_candidate(
+        candidate, parts, revision_three.pieces, result_revision=3,
+    )
+
+    raw_k3 = next(item for item in parts.observations if item.id == "part-observation-k3")
+    assert raw_k3.dimensions.thickness.value_mm is None
+    assert next(item for item in candidate.constraints if item.dimension == "thickness").status == "unknown"
+    assert all(item.status == "pass" for item in effective.constraints)
+    assert {item.axis: item.value_mm for item in effective.derived_dimensions} == {
+        "width": 900.0, "height": 1200.0, "depth": 300.0,
+    }
+    assert "human_confirmed_operands_used" in effective.assumptions
+    assert any(ref.startswith("review:3:piece:") for item in effective.constraints for ref in item.operand_refs)
+
+    completed = revision_three.model_copy(update={"state": "completed"})
+    scene = reconstruct_parts_scene(extraction, parts, completed)
+    assert scene.state == "ready"
+    assert len(scene.objects) == 6

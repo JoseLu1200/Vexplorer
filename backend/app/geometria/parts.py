@@ -10,7 +10,7 @@ from backend.app.contratos.modelos import (
     AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, Bounds2D,
     DerivedAssemblyDimension, DrawingContour, DrawingExtraction,
     ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference,
-    Point2D, SeparatedPartObservation, SeparatedPartsExtraction,
+    Point2D, ResolvedPiece, SeparatedPartObservation, SeparatedPartsExtraction,
 )
 
 
@@ -413,3 +413,163 @@ def derive_assembly_candidates(parts: SeparatedPartsExtraction) -> tuple[Assembl
                 ), evidence_ids=evidence_ids,
             ))
     return tuple(sorted(candidates, key=lambda item: item.id))
+
+
+def recompute_reviewed_assembly_candidate(
+    candidate: AssemblyCandidate,
+    parts: SeparatedPartsExtraction,
+    pieces: tuple[ResolvedPiece, ...],
+    *,
+    result_revision: int,
+) -> AssemblyCandidate:
+    if result_revision < 1:
+        raise ValueError("result_revision must be positive")
+    observation_ids = {item.id for item in parts.observations}
+    if not {item.part_observation_id for item in candidate.uses} <= observation_ids:
+        raise ValueError("candidate references an unknown part observation")
+
+    pieces_by_use = {item.proposal_id: item for item in pieces}
+    role_pieces: dict[str, list[ResolvedPiece]] = defaultdict(list)
+    for use in candidate.uses:
+        piece = pieces_by_use.get(use.id)
+        if piece is not None:
+            role_pieces[piece.role].append(piece)
+
+    def operand(piece: ResolvedPiece | None, field: str) -> tuple[str, float | None, tuple[str, ...]]:
+        if piece is None:
+            return (f"review:{result_revision}:missing.{field}", None, ())
+        return (
+            f"review:{result_revision}:piece:{piece.id}.{field}",
+            getattr(piece, field),
+            piece.evidence_ids,
+        )
+
+    def one(role: str) -> ResolvedPiece | None:
+        values = role_pieces.get(role, [])
+        return values[0] if len(values) == 1 else None
+
+    side, top, base, shelf = one("side_panel"), one("top_panel"), one("base_panel"), one("shelf")
+
+    def constraint_id(dimension: str, kind: str) -> str:
+        existing = next(
+            (item.id for item in candidate.constraints if item.dimension == dimension and item.kind == kind),
+            None,
+        )
+        return existing or f"constraint-{candidate.id}-reviewed-{dimension}"
+
+    def make_constraint(
+        *,
+        dimension: str,
+        kind: str,
+        operation: str,
+        operands: tuple[tuple[str, float | None, tuple[str, ...]], ...],
+        compatible_result: float | None,
+        incompatible: bool = False,
+    ) -> AssemblyConstraint:
+        refs = tuple(item[0] for item in operands)
+        evidence = tuple(sorted({evidence_id for item in operands for evidence_id in item[2]}))
+        if incompatible:
+            status = "conflict"
+            if len(evidence) < 2:
+                evidence = tuple(sorted(set(evidence) | set(candidate.evidence_ids)))
+        elif compatible_result is None or any(item[1] is None for item in operands):
+            status = "unknown"
+        else:
+            status = "pass"
+        return AssemblyConstraint(
+            id=constraint_id(dimension, kind), kind=kind, operation=operation,
+            dimension=dimension, operand_refs=refs,
+            result_mm=compatible_result if status == "pass" else None,
+            status=status, evidence_ids=evidence,
+        )
+
+    depth_operands = tuple(operand(piece, "width_mm") for piece in (side, top, base, shelf))
+    depth_values = [item[1] for item in depth_operands]
+    depth_conflict = all(value is not None for value in depth_values) and max(depth_values) - min(depth_values) > DIMENSION_TOLERANCE_MM
+    common_depth = depth_values[0] if depth_values and all(value is not None for value in depth_values) and not depth_conflict else None
+
+    thickness_operands = tuple(operand(piece, "thickness_mm") for piece in (side, top, base, shelf))
+    thickness_values = [item[1] for item in thickness_operands]
+    thickness_conflict = all(value is not None for value in thickness_values) and max(thickness_values) - min(thickness_values) > DIMENSION_TOLERANCE_MM
+    common_thickness = thickness_values[0] if thickness_values and all(value is not None for value in thickness_values) and not thickness_conflict else None
+
+    horizontal_operands = tuple(operand(piece, "length_mm") for piece in (top, base, shelf))
+    horizontal_values = [item[1] for item in horizontal_operands]
+    horizontal_result = None
+    horizontal_conflict = False
+    if all(value is not None for value in horizontal_values):
+        top_length, base_length, shelf_length = horizontal_values
+        assert top_length is not None and base_length is not None and shelf_length is not None
+        if candidate.layout == "between_sides":
+            horizontal_conflict = max(horizontal_values) - min(horizontal_values) > DIMENSION_TOLERANCE_MM
+            horizontal_result = top_length if not horizontal_conflict else None
+        elif candidate.layout == "cap_sides" and common_thickness is not None:
+            expected_shelf = top_length - 2 * common_thickness
+            horizontal_conflict = abs(top_length - base_length) > DIMENSION_TOLERANCE_MM or abs(shelf_length - expected_shelf) > DIMENSION_TOLERANCE_MM
+            horizontal_result = shelf_length if not horizontal_conflict else None
+
+    if candidate.layout == "between_sides":
+        width_operands = (operand(top, "length_mm"), operand(side, "thickness_mm"), operand(side, "thickness_mm"))
+        width_value = top.length_mm + 2 * side.thickness_mm if top and side and top.length_mm is not None and side.thickness_mm is not None else None
+        height_operands = (operand(side, "length_mm"),)
+        height_value = side.length_mm if side else None
+        width_operation, height_operation = "sum", "equal"
+    elif candidate.layout == "cap_sides":
+        width_operands = (operand(top, "length_mm"),)
+        width_value = top.length_mm if top else None
+        height_operands = (operand(side, "length_mm"), operand(top, "thickness_mm"), operand(top, "thickness_mm"))
+        height_value = side.length_mm + 2 * top.thickness_mm if side and top and side.length_mm is not None and top.thickness_mm is not None else None
+        width_operation, height_operation = "equal", "sum"
+    else:
+        width_operands = (operand(top, "length_mm"),)
+        height_operands = (operand(side, "length_mm"),)
+        width_value = height_value = None
+        width_operation = height_operation = "compatibility"
+
+    constraints = (
+        make_constraint(dimension="width", kind="equal_dimensions", operation="equal", operands=depth_operands, compatible_result=common_depth, incompatible=depth_conflict),
+        make_constraint(dimension="thickness", kind="equal_dimensions", operation="equal", operands=thickness_operands, compatible_result=common_thickness, incompatible=thickness_conflict),
+        make_constraint(dimension="length", kind="role_compatibility", operation="equal" if candidate.layout == "between_sides" else "difference", operands=horizontal_operands, compatible_result=horizontal_result, incompatible=horizontal_conflict),
+        make_constraint(dimension="assembled_width", kind="exterior_from_parts", operation=width_operation, operands=width_operands, compatible_result=width_value),
+        make_constraint(dimension="assembled_height", kind="exterior_from_parts", operation=height_operation, operands=height_operands, compatible_result=height_value),
+    )
+    width_constraint = next(item for item in constraints if item.dimension == "assembled_width")
+    height_constraint = next(item for item in constraints if item.dimension == "assembled_height")
+    depth_constraint = constraints[0]
+
+    def derived(axis: str, value: float | None, source: AssemblyConstraint) -> DerivedAssemblyDimension:
+        if source.status == "pass" and value is not None:
+            return DerivedAssemblyDimension(
+                axis=axis, value_mm=value, state="derived",
+                operand_refs=source.operand_refs, constraint_id=source.id,
+            )
+        return DerivedAssemblyDimension(
+            axis=axis, value_mm=None,
+            state="conflict" if source.status == "conflict" else "unknown",
+            operand_refs=source.operand_refs,
+        )
+
+    derived_dimensions = (
+        derived("width", width_value, width_constraint),
+        derived("height", height_value, height_constraint),
+        derived("depth", common_depth, depth_constraint),
+    )
+    unknown_fields = [
+        item for item in candidate.unknown_fields
+        if not item.startswith("dimensions.")
+    ]
+    unknown_fields.extend(
+        f"dimensions.{item.axis}" for item in derived_dimensions if item.state != "derived"
+    )
+    used_human_values = any(
+        piece.field_states.get(field) == "confirmed"
+        for piece in pieces
+        for field in ("length_mm", "width_mm", "thickness_mm", "quantity")
+    )
+    assumptions = candidate.assumptions + (("human_confirmed_operands_used",) if used_human_values and "human_confirmed_operands_used" not in candidate.assumptions else ())
+    return candidate.model_copy(update={
+        "constraints": constraints,
+        "derived_dimensions": derived_dimensions,
+        "unknown_fields": tuple(sorted(set(unknown_fields))),
+        "assumptions": assumptions,
+    })
