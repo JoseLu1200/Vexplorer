@@ -80,3 +80,12 @@
 - Pendientes: último recorrido de navegador compartido y verificación global a cargo del coordinador.
 - Reservas liberadas: `frontend/` al coordinador tras esta entrega.
 - Entrega a otra persona: `/root`, con contratos y comandos de verificación comunicados.
+
+## QA visual del commit 208c5d6
+
+- Worktree detached y limpio: `.worktrees/qa-208c5d6`, commit exacto `208c5d677c3c42fac08e682468abd464f4c37e4c`.
+- Servidor temporal read-only en `127.0.0.1:8770`: frontend del commit; proxy a `8768` limitado a GET/HEAD y POST de consulta `/api/v1/history/scenarios`.
+- Run inspeccionado sin mutaciones: `run-ea59dd9db4244132a6e43aaa020d0e66`.
+- Evidencia en `.runtime/qa-208c5d6/`: fuente, esquema general, coste/escenarios, botones BOM e histórico publicado, más `report.json`.
+- Resultado: auto-revisión con incógnitas visible; SVG/DXF disponibles; BOM CSV/JSON habilitados; escenarios primero y confirmado plegado; causa geométrica traducida con código; 19 publicados, 4 con coste/presupuesto y 19 con horas; cero errores de consola o red.
+- Hallazgo no bloqueante, no corregido durante blind20: al restaurar el run, el badge de procedencia conserva `Fuente pendiente` aunque dibujo y documento están cargados.

@@ -82,12 +82,16 @@ Para live, configurar `OPENAI_API_KEY` en un `.env` local ignorado por Git. [`.e
 
 ```powershell
 $env:OPENAI_MODEL="gpt-6.1-sol"
+$env:OPENAI_MAX_OUTPUT_TOKENS="16384"
+$env:VEXPLORER_GENERAL_REVIEW_MODEL="gpt-6-astra"
 .\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8765 --env-file .env
 ```
 
 Los errores de proveedor se muestran como tales; no se convierten en resultados geométricos etiquetados live. Límites: 15 llamadas de modelo, 30 herramientas, 2 reparaciones estructurales y 120 segundos para la fase del agente. `OPENAI_MAX_OUTPUT_TOKENS` vale 4096 por defecto y admite de 256 a 16384; una configuración inválida deshabilita el proveedor con motivo explícito. Nunca incorporar `.env` a Git.
 
-La visión está **desactivada por defecto**. En mesa live, `OPENAI_VISION_ENABLED=1` habilita la herramienta nativa `visualizar_vista`; el modelo debe consultar al menos una vista antes de entregar su programa. Se permiten tres intentos en total, con PNG locales del ledger de hasta 1024 px y 2 MB por vista. Las marcas identifican contornos o entidades; los píxeles no aportan medidas. La traza conserva vista, hash y número de marcas. Esta opción se probó contra la API real y sigue sin acreditar reconocimiento general de muebles. La lectura CAD y las herramientas vectoriales siguen siendo la fuente numérica.
+En **mueble general live**, el proponente y el crítico reciben imágenes de la fuente automáticamente: vista general y recortes con referencias del ledger. El ejemplo anterior usa GPT-6.1 Sol para proponer y GPT-6 Astra para revisar. El crítico emite decisiones sobre campos y comprobaciones; una reparación semántica, si procede, vuelve a pasar por el proponente y el crítico. Los valores inferidos siguen siendo hipótesis. El job dispone de 300 segundos por defecto, con hasta cinco llamadas de revisión y dos reparaciones de formato; conserva la propuesta previa si falla una fase posterior.
+
+En el recorrido especializado de **mesa live**, la visión continúa desactivada por defecto: `OPENAI_VISION_ENABLED=1` habilita la herramienta nativa `visualizar_vista`, que debe consultar al menos una vista antes de entregar su programa. Se permiten tres intentos en total, con PNG locales del ledger de hasta 1024 px y 2 MB por vista. Esta opción no desactiva las imágenes del recorrido general. Las marcas identifican contornos o entidades; los píxeles no aportan medidas. La traza conserva vista, hash y número de marcas. La lectura CAD y las herramientas vectoriales siguen siendo la fuente numérica.
 
 Los embeddings son independientes del modo de análisis del DXF. Usan `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small` y `OPENAI_EMBEDDING_DIMENSIONS=256` por defecto. La biblioteca los genera al guardar en modo semántico; el histórico los genera y cachea al solicitar recuperación semántica explícita. La caché distingue descriptor, modelo y dimensiones; se rechazan vectores corruptos o incompatibles. Los ejemplos de la misma familia tienen cosenos muy altos: la utilidad de esa agrupación sobre un histórico variado sigue pendiente de evaluación.
 

@@ -60,6 +60,7 @@
 | LibreDWG Windows real | `dwg2dxf 0.14` + `parse_dxf` en dos pares CADBLOCK | 130/896 entidades; unidades, tipos y bounds iguales a pares DXF | Warnings LibreDWG en clases no respaldadas; no prueba fidelidad universal |
 | LibreDWG Linux remoto | conversión aislada + lector del release actual | `m`, escala 1000, 130 entidades, 0 warnings del parser | Servicio y env no modificados |
 | Package candidato | extracción nueva + `GET /api/v1/health` | 200; 119 entradas, SHA-256 `78061f34cf1364c29d440043b0752802cf28172db5d4d6ef264a800e0aac22f9` | Obsoleto: archivos de app cambiaron después; no desplegar y regenerar tras freeze |
+| Empaquetador aislado | dry run de `build-final-package.ps1` sobre `b877594` | Worktree detached limpio, tar desde commit y health 200 | Artefacto/worktree de ensayo eliminados; esperar checkpoint final |
 
 ## Bloqueos y cierre
 

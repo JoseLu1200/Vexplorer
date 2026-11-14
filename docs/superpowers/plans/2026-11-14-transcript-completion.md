@@ -34,8 +34,8 @@
 - [x] Interfaz: upload multiformato, recorrido general revisable, derivados e histórico; tests JS y recorrido navegador.
 - [x] Integración: routers/config/uploads en `main.py`, límites y procedencia, pruebas HTTP en local/producción.
 - [ ] Verificación: pytest completo, npm test, compileall/diff check, smoke HTTP/navegador y revisión Astra; corregir hallazgos y registrar límites empíricos.
-- [ ] Revisión multimodal autónoma: imágenes reales de CAD/PDF, crítica separada, reparación acotada, estados factuales conservados y despiece provisional sin aprobación humana obligatoria.
-- [ ] Asociación de proyecciones: candidatos geométricos explícitos para ayudar al proponente y al crítico; ambigüedad y duplicados visibles.
+- [x] Revisión multimodal autónoma: imágenes reales de CAD/PDF, crítica separada, reparación acotada, estados factuales conservados y despiece provisional sin aprobación humana obligatoria. Ciclo HTTP real y dos casos diagnósticos v5 completados; las incógnitas permanecen explícitas.
+- [x] Asociación de proyecciones: candidatos geométricos explícitos para ayudar al proponente y al crítico; ambigüedad y duplicados visibles.
 - [ ] Evaluación pareada nueva: congelar propuesta inicial y salida corregida de veinte entradas nuevas antes de puntuar referencias privadas; registrar mejoras y regresiones.
 
 Cada implementador escribe pruebas de comportamiento antes del código y comunica resultados observados. El coordinador verifica conjuntamente; ningún conteo de pruebas equivale a cumplimiento industrial.

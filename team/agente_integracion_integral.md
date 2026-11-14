@@ -22,6 +22,13 @@
 
 ## Hecho en el último bloque
 
+- Levantada QA HTTP v5 aislada en `127.0.0.1:8769`, PID 48124 y data dir `.runtime/transcript-qa/v5-http`; no se tocó el proceso 8768.
+- Verificados por SHA-256 e importados 19 registros publicados: 4 presupuestos Grotowska y 15 coeficientes horarios Nuriyev, sin rechazos.
+- Ejecutado `tools.audit_autonomous` real sobre el DXF diagnóstico público `plank-001.dxf` con proposer `gpt-6.1-sol`, reviewer `gpt-6-astra`, 16.384 tokens y límites 5/2/300.
+- Auditoría HTTP real aprobada 10/10: P1/R1, reviewer separado, estado `incomplete`, 3 ocurrencias provisionales y cero físicas; 4 escenarios condicionales produjeron costes 285,68/238,89/140,01/242,38 PLN y 3,5/2,5/3/2,5 h con provenance publicada y alta incertidumbre explícita.
+- Smoke raster `visual-001.pdf`: página hija `needs_review`, sin DXF fabricado; PDF 57.735 B y PNG 57.360 B descartan cuota/render. El job duró 75,36 s, por debajo del timeout de 120 s, y falló antes de P1 (`general_live_provider_failed: RuntimeError`). La evidencia es consistente con tres tool args inválidos y `validation_repair_budget_exhausted`, no con transitorio; no se reintentó. La causa diagnóstica segura es que la frontera proposer no exporta error/trace tipado y main colapsa todos los `RuntimeError`; fix post-blind20: `GeneralLiveError` seguro equivalente al autónomo y trazas acotadas ligadas al job.
+- Actualizada `.env.example` a configuración QA 16k y reviewer Astra; `OPENAI_VISION_ENABLED` queda documentado como flag del flujo legacy de mesa, no del contexto fuente general.
+
 - Montados histórico real y mueble general antes del frontend estático, con bases `history.sqlite3` y `general_furniture.sqlite3` bajo el data dir por defecto.
 - Publicadas capacidades compatibles con frontend sin romper flags live/replay/semantic existentes.
 - Implementado upload DXF/DWG/PDF con cuota recursiva de originales y artefactos, manifests persistentes, descarga segura de original/normalizado, previews PDF y errores tipados.
@@ -72,6 +79,7 @@
 | Suite integral propia | `python -m pytest backend/tests/test_integral_api_integration.py -q` | 14 casos actuales | Incluye CAD/PDF raster visual, P1→P2, fallo C2 durable y escenario histórico positivo |
 | Autónomo/router/visual/integración | `python -m pytest backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_router.py backend/tests/test_general_furniture_visual_evidence.py backend/tests/test_integral_api_integration.py -q` | 28 passed | Verifica contrato dominio y composición HTTP |
 | Integración ampliada focal | `python -m pytest backend/tests/test_integral_api_integration.py backend/tests/test_private_jobs.py backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_router.py backend/tests/test_real_history.py -q` | 70 passed | Incluye jobs privados y economía provisional |
+| QA HTTP v5 real | `python tools/audit_autonomous.py --base-url http://127.0.0.1:8769 --fixture ../plankassembly_adapter_trial_v1/plank-001.dxf --output .runtime/transcript-qa/v5-http/audit-plank-001.json --timeout 600` | PASS, 10 checks | Online, no oracle privado; un run con `--resume-report` añade el check 11 `resumed_existing_job`, no es un check funcional ausente |
 | Suite Python completa fresca | `python -m pytest -q` | 578 passed, 99.83 s | Tras checkpoints autónomos y escenario económico provisional |
 | Compilación | `.venv/Scripts/python.exe -m compileall -q backend` | exit 0 | No sustituye despliegue |
 | Diff propio | `git diff --check -- backend/app/main.py backend/tests/test_integral_api_integration.py team/agente_integracion_integral.md` | sin salida | Trabajo compartido ajeno preservado |
