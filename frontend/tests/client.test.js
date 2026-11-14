@@ -103,6 +103,7 @@ test("table runs and revisioned artifacts preserve the frozen 0.5 request fields
   await client.getTableDrawings("run table", 2);
   await client.generateTableCosts("run table", { result_revision: 2, scope: { edge_scope: "none" } });
   await client.getTableCosts("run table", 2);
+  await client.getTableCostCatalog();
 
   assert.deepEqual(JSON.parse(requests[0][1].body), {
     document_id: "doc-table",
@@ -117,5 +118,6 @@ test("table runs and revisioned artifacts preserve the frozen 0.5 request fields
   assert.equal(requests[3][0], "/api/v1/runs/run%20table/table-drawings?result_revision=2");
   assert.equal(requests[4][0], "/api/v1/runs/run%20table/table-costs");
   assert.equal(requests[5][0], "/api/v1/runs/run%20table/table-costs?result_revision=2");
+  assert.equal(requests[6][0], "/api/v1/table-cost-catalog");
   assert.equal(client.tableDrawingUrl("run table", "sheet/1", "svg", 2, "hash +1"), "/api/v1/runs/run%20table/table-drawings/sheet%2F1.svg?result_revision=2&program_hash=hash+%2B1");
 });

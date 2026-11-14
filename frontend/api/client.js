@@ -82,6 +82,7 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     },
     generateTableCosts: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs`, body),
     getTableCosts: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/table-costs${Number.isInteger(revision) ? `?result_revision=${encodeURIComponent(revision)}` : ""}`),
+    getTableCostCatalog: () => json("/api/v1/table-cost-catalog"),
     getExplanations: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/explanations?result_revision=${encodeURIComponent(revision)}`),
     getScene: (runId, revision) => json(`/api/v1/runs/${encodeURIComponent(runId)}/scene?result_revision=${encodeURIComponent(revision)}`),
     getLibrary: () => json("/api/v1/library"),
