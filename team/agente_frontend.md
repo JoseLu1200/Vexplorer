@@ -24,18 +24,22 @@ Implementar el recorrido acotado `mounted_orthographic_views` para la familia `r
 
 ## Estado
 
-Fase 0.5 iniciada en `feat/table-frontend` desde `main` `164356b`. La especificación y el plan de mesa están aprobados en `4ba95e6`; el contrato A/B 0.5 todavía debe congelarse antes de implementar adaptadores dependientes de sus campos. Análisis UX y contraste del frontend existente en curso.
+Fase 0.5 implementada sobre el contrato A/B congelado: carga de mesa montada, ledger geométrico, programa de catálogo o generado, revisión explícita, planos derivados, costes por alcance y reconstrucción 3D conviven con piezas separadas 0.4 y legado. El smoke real del 2026-11-14 recorrió revisión 1→2, las cuatro láminas SVG/DXF, escena de tres ocurrencias y coste parcial versionado.
 
 ## Dependencias / avisos
 
-- Pendiente aviso de B con modelos Pydantic y rutas exactas 0.5 para programa generativo, baseline de catálogo, revisión, manifiesto de láminas, SVG/DXF y costes. No se mantendrá un esquema paralelo en el navegador.
-- Geometría ha confirmado que `unknown|conflict` conserva `value_mm=null` y que medidas, componentes y colocaciones llevarán IDs de medición, vista, evidencia, bindings y operandos; faltan los nombres definitivos.
+- Contrato y runtime 0.5 consumidos con sus nombres definitivos. Los slots desconocidos que el programa marca `blocking:false` permanecen visibles en el ledger, pero no se solicitan como confirmaciones humanas.
+- `unknown|conflict` conserva `value_mm=null`; medidas, componentes y colocaciones mantienen IDs de medición, vista, evidencia, bindings y operandos.
 - Contrato 0.2 acordado por A/B y consumido por IDs estables de entidad, contorno, evidencia y propuesta.
 - Three.js queda fijado en `0.187.0`; `npm ci` genera solo `three.module.js`, `three.core.js`, `OrbitControls.js` y la licencia bajo `frontend/vendor/`, sin CDN ni publicación de `node_modules`.
 - FastAPI sirve `frontend/` desde el mismo origen; las rutas de recursos son `/styles.css`, `/app.js` y módulos relativos.
 - El frontend no incluirá mocks prefijados que se presenten como inferencia. Los tests podrán usar fixtures contractuales explícitos y la UI mostrará estados vacíos o errores cuando la API no aporte datos.
 
 ## Verificación
+
+- `cd frontend; npm test`: 77 pruebas aprobadas, 0 fallos en el último ciclo local, incluidas identidad de láminas y filtrado de slots no bloqueantes.
+- Smoke aislado en navegador contra `http://127.0.0.1:8768`: revisión 1→2, plano general, dos planos por componente, despiece, enlaces SVG/DXF, escena 3D y coste parcial de 126,32 EUR con tarifa explícita. Los GET opcionales de manifiesto/coste aún no generados devuelven 404 y el frontend los trata como estado vacío.
+- Responsive comprobado en navegador a 1042 px y 501 px: sin solape ni ancho horizontal; todos los controles de carga permanecen accesibles.
 
 - `cd frontend; npm test`: 46 pruebas, 46 aprobadas, 0 fallos en el último ciclo local, incluidas respuestas/rechazos diferidos que no pueden pisar una sesión nueva.
 - `node --check app.js` y `node --check components/SceneViewer.js`: sin errores de sintaxis.

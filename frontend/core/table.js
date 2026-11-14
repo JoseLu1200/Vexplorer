@@ -41,6 +41,7 @@ export function normaliseTableWorkspace(snapshot = {}) {
   const analysis = result.table_analysis ?? {};
   const evaluatedRaw = result.evaluated_table_program;
   const evaluatedBindings = (evaluatedRaw?.bindings ?? []).map((binding) => ({ ...binding, operandRefs: [...(binding.operand_refs ?? [])], result: tableField(binding.result) }));
+  const measurementDispositions = new Map((evaluatedRaw?.measurement_dispositions ?? []).map((item) => [item.measurement_id, item]));
   const measures = (analysis.measures ?? []).map((measure) => ({
     id: measure.id,
     semantic: measure.semantic ?? "unknown",
@@ -48,7 +49,8 @@ export function normaliseTableWorkspace(snapshot = {}) {
     value: Number.isFinite(measure.value_mm) ? measure.value_mm : null,
     state: measure.state ?? "unknown",
     informationClass: measure.state ?? "unknown",
-    confirmable: ["unknown", "conflict"].includes(measure.state),
+    confirmable: ["unknown", "conflict"].includes(measure.state) && measurementDispositions.get(measure.id)?.blocking !== false,
+    dispositionReason: measurementDispositions.get(measure.id)?.reason ?? null,
     slotOrigin: measure.slot_origin ?? "drawing",
     geometryRelation: measure.geometry_relation ?? (measure.slot_origin === "profile_required_slot" ? "profile_required_slot" : "dimension_annotation"),
     sourceLabel: MEASURE_SOURCE_LABELS[measure.geometry_relation ?? (measure.slot_origin === "profile_required_slot" ? "profile_required_slot" : "dimension_annotation")] ?? "Medición CAD",
