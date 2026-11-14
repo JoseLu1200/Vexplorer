@@ -260,3 +260,31 @@ def test_concurrent_retry_and_resume_choose_one_recovery_action(tmp_path: Path, 
     assert sorted(response.status_code for response in responses) == [202, 409]
     conflict = next(response for response in responses if response.status_code == 409)
     assert conflict.json()["error"]["code"] == "job_recovery_action_conflict"
+
+
+def test_retry_conflicts_when_resume_wins_after_precheck(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    app = create_app(data_dir=tmp_path / "data", frontend_dir=tmp_path / "none")
+    client = TestClient(app)
+    repository = app.state.repository
+    source_id = "job-" + "b" * 32
+    repository.create_job(source_id, json.dumps({
+        "document_id": "doc-" + "1" * 32, "mode": "live",
+        "input_kind": "general_furniture", "proposal_mode": "model_generated",
+    }), actor=None)
+    repository.start_job(source_id)
+    repository.finish_job(source_id, error={"code": "provider_request_timeout", "retryable": True})
+    original_reserve = repository.reserve_job_retry
+    resume_id = "job-" + "c" * 32
+
+    def resume_wins_before_retry_reserves(*args, **kwargs):
+        _, created = original_reserve(source_id, resume_id, actor=None,
+                                      resume_checkpoint={"run_id": "saved-run"})
+        assert created is True
+        return original_reserve(*args, **kwargs)
+
+    monkeypatch.setattr(repository, "reserve_job_retry", resume_wins_before_retry_reserves)
+    response = client.post(f"/api/v1/jobs/{source_id}/retry")
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "job_recovery_action_conflict"
+    assert repository.get_job_retry(source_id, actor=None)["id"] == resume_id

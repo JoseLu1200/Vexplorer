@@ -7,3 +7,5 @@ Propiedad: documentación de diseño/plan, integración, verificación y desplie
 Base de trabajo exclusiva: `.worktrees/similarity-public`, conservando cambios V4 ya publicados. No se toca el checkout raíz concurrente ni sus datos. Biblioteca pública sigue reservada a muebles reales revisados.
 
 Estado: diagnóstico y definición de métricas en curso; motor/API/UI/evaluación delegados a agentes Sol existentes y revisión a Astra. Sin nuevos despliegues ni nuevas llamadas live de evaluación por ahora.
+
+Continuación: root asume evaluación y regresión de concurrencia tras agotarse la cuota de agentes. Se cierran cantidades desconocidas, autoridad de cantidad en herrajes, fase obligatoria y terminal interrupted antes del nuevo ensayo.

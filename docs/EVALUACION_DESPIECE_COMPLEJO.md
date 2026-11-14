@@ -21,7 +21,7 @@ Se puntúa el BOM derivado efectivo, nunca el `draft`. Los campos rechazados, en
 
 ## Métricas preregistradas
 
-La unidad es la ocurrencia física: `quantity=4` produce cuatro candidatos. `panel` y `linear_member` cuentan como piezas de corte. Un `hardware` solo se excluye si tipo y existencia están aceptados por la revisión; en otro caso permanece como candidato falso y bloquea el aprobado. El número de herrajes respaldados se informa aparte; su precisión no puede medirse porque la referencia PlankAssembly no anota herrajes.
+La unidad es la ocurrencia física: `quantity=4` produce cuatro candidatos. `panel` y `linear_member` cuentan como piezas de corte. Un `hardware` solo se excluye si tipo, existencia y cantidad están aceptados por la revisión; en otro caso permanece como candidato falso y bloquea el aprobado. El número de herrajes respaldados se informa aparte; su precisión no puede medirse porque la referencia PlankAssembly no anota herrajes.
 
 El emparejamiento es óptimo 1:1 (Hungarian), no greedy, e invariante al intercambio largo/ancho. Una pieza con una cota desconocida puede ser TP si sus dos cotas conocidas son compatibles; la cota ausente reduce cobertura. Con cero o una cota conocida no se identifica la pieza.
 
@@ -37,7 +37,7 @@ Por cada caso se exige simultáneamente:
 - precision de ocurrencias de corte ≥ 0,90;
 - `reference_dimension_coverage = celdas correctas / (3 × ocurrencias GT) ≥ 0,90`;
 - `predicted_dimension_precision = celdas correctas / todas las celdas numéricas predichas ≥ 0,90`;
-- salida final elegible y cero auxiliares sin autoridad.
+- salida final elegible, cero auxiliares sin autoridad y ninguna cantidad sin resolver.
 
 Se reportan además exactitud conjunta de las tres cotas, MAE por eje y `paired_known_accuracy`. Estas son diagnósticas y no sustituyen los denominadores anteriores. El resumen micro es informativo: cada caso, incluido el holdout, debe aprobar individualmente. Los fallos y timeouts cuentan; no hay cherry-picking.
 
@@ -62,3 +62,14 @@ La línea base V4 congelada con 600 s terminó 2/2 jobs, pero 0/2 casos superaro
 - `plank-016`: 8/14 piezas emparejadas, recall y cobertura de cotas 0,571. Ocho cotas tripletas predichas son correctas; una novena fila (`rail`) conserva cantidad desconocida. La revisión también quedó `incomplete`.
 
 Resumen micro informativo: 24/30 referencias emparejadas, recall 0,80 y precision 24/36 = 0,667. Predicciones congeladas: SHA-256 `5278c2e5b9b8cc5de378a96b41fd9459a6be1ef8e8784d37a8a24b18019c6aec`. No se abrió el holdout porque desarrollo no aprobó.
+
+
+## Candidato R1 (conservado, no publicado)
+
+Runtime reproducible `65034d261cde-tree17257ff4c11e7163`, archivo SHA-256 `b70a4d45e03bb77867a961eb0bb635f80855698cec955101088cc3ed58222532`; árbol sin cambios durante las dos ejecuciones. Presupuesto 600 s por trabajo; Sol proponente y Astra revisor.
+
+- `plank-030`: revisión aceptada y validación constructiva válida; 16/16 piezas, precisión 1,00 y 48/48 cotas dentro de tolerancia. Supera el objetivo geométrico; materiales, acabado y selección comercial de herrajes siguen pendientes.
+- `plank-016`: fallo `provider_response_incomplete` durante propuesta tras una corrección de asignación de evidencia. No produjo entrega, por tanto cobertura efectiva 0/14; no se excluye del resultado.
+- Conjunto: 1/2 casos aprobados. No se abre el holdout y no se acredita el objetivo general del 90 %.
+
+Predicciones congeladas y métricas: `.runtime/complex-cutlist-eval/candidate-r1/prediction-bundle.frozen.json` y `score.json`. La recuperación del borrador y el presupuesto de corrección se revisan antes del siguiente candidato.
