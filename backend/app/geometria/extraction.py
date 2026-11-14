@@ -11,6 +11,7 @@ from backend.app.ingesta.dxf_reader import ParsedDrawing, ParsedEntity, parse_dx
 
 VIEW_LABELS = {"FRONT": "FRONT", "TOP": "TOP", "RIGHT": "SIDE", "SIDE": "SIDE"}
 REGION_KINDS = {"DIMENSION", "LINE", "CIRCLE", "ARC", "ELLIPSE", "SPLINE"}
+PLANAR_POLYLINE_KINDS = {"LWPOLYLINE", "POLYLINE"}
 HIDDEN_LINETYPE_MARKERS = ("HIDDEN", "DASHED", "ACAD_ISO02", "ACAD_ISO03")
 HIDDEN_MIN_SPAN = 0.8
 PART_VIEW_LABEL = re.compile(
@@ -78,7 +79,7 @@ def _infer_mounted_view_labels(
     """Infer only an unambiguous aligned FRONT/TOP/SIDE envelope triple."""
     candidates: list[tuple[ParsedEntity, dict[str, float]]] = []
     for entity in drawing.entities:
-        if entity.kind != "LWPOLYLINE" or not entity.closed or len(entity.points) != 4:
+        if entity.kind not in PLANAR_POLYLINE_KINDS or not entity.closed or len(entity.points) != 4:
             continue
         bounds = _bounds(list(entity.points))
         corners = {
@@ -159,7 +160,7 @@ def _view_regions(
 ) -> list[tuple[str, tuple[float, float, float, float]]]:
     regions = []
     for entity in drawing.entities:
-        if entity.kind != "LWPOLYLINE" or not entity.closed or len(entity.points) < 4:
+        if entity.kind not in PLANAR_POLYLINE_KINDS or not entity.closed or len(entity.points) < 4:
             continue
         center = (
             sum(point[0] for point in entity.points) / len(entity.points),
@@ -425,7 +426,7 @@ def extraction_payload(
                 "id": f"evidence-text-{entity.id}", "kind": "annotation",
                 "source_entity_ids": [entity.id], "description": "Public text annotation observed in drawing",
             })
-        if entity.kind == "LWPOLYLINE" and entity.closed and len(entity.points) >= 4:
+        if entity.kind in PLANAR_POLYLINE_KINDS and entity.closed and len(entity.points) >= 4:
             contour_id = f"contour-{entity.id}"
             contours.append({"id": contour_id, "view_id": _view_id(view_label), "source_entity_ids": [entity.id], "points_source": points_source, "points_mm": points_mm, "closed": True})
             evidence.append({"id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": [entity.id], "description": "Closed source polyline observed in drawing"})

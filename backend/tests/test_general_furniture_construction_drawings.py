@@ -167,6 +167,74 @@ def test_piece_dxf_preserves_exact_mm_extents_and_separate_authority_layers() ->
     assert "RESTRICCION: Confirmar espesor dentro del rango 16-19 mm." in visible_text
 
 
+def test_visible_dimension_labels_use_hundredth_mm_without_changing_geometry() -> None:
+    raw_thickness = 4.999943339249739
+    sheet = SimpleNamespace(
+        sheet_id="piece:precision",
+        kind="piece",
+        piece_id="precision",
+        title="Pieza de precisión",
+        warnings=(),
+        primitives=(
+            _primitive(
+                "raw-precision",
+                "dimension",
+                ((0, 0), (raw_thickness, 0), (0, -45)),
+                state="deduced",
+                text="4.999943339249739 mm",
+            ),
+            _primitive(
+                "negative-zero",
+                "dimension",
+                ((0, 20), (10, 20), (0, -25)),
+                state="observed",
+                text="-0.0004 mm",
+            ),
+            _primitive(
+                "estimated-range",
+                "dimension",
+                ((0, 40), (18.004, 40), (0, -5)),
+                state="estimated",
+                text="≈ 18.004 mm [17.4999–18.5001]",
+            ),
+            _primitive(
+                "unknown",
+                "dimension",
+                ((0, 60), (10, 60), (0, 15)),
+                state="unknown",
+                text="?",
+            ),
+        ),
+    )
+
+    svg_root = ET.fromstring(render_construction_sheet_svg(sheet))
+    svg_text = [value.strip() for value in svg_root.itertext() if value.strip()]
+    assert "5 mm" in svg_text
+    assert "0 mm" in svg_text
+    assert "≈ 18 mm [17.5–18.5]" in svg_text
+    assert "?" in svg_text
+    assert "4.999943339249739 mm" not in svg_text
+    raw_group = svg_root.find(".//*[@data-primitive-id='raw-precision']")
+    assert raw_group is not None
+    assert any(line.attrib.get("x2") == "4.999943" for line in raw_group)
+
+    document = ezdxf.read(StringIO(render_construction_sheet_dxf(sheet).decode("utf-8")))
+    visible_text = {
+        entity.dxf.text
+        for entity in document.modelspace().query("TEXT")
+        if entity.dxf.layer != "VX_PROVENANCE"
+    }
+    assert {"5 mm", "0 mm", "~ 18 mm [17.5-18.5]", "?"} <= visible_text
+    raw_lines = [
+        entity
+        for entity in document.modelspace().query('LINE[layer=="VX_DEDUCED"]')
+        if entity.has_xdata("VEXPLORER")
+        and entity.get_xdata("VEXPLORER")[0].value == "raw-precision"
+    ]
+    assert any(entity.dxf.end.x == raw_thickness for entity in raw_lines)
+    assert sheet.primitives[0].text == "4.999943339249739 mm"
+
+
 def _assert_svg_text_inside_viewbox(root: ET.Element) -> None:
     view_x, view_y, view_width, view_height = (
         float(value) for value in root.attrib["viewBox"].split()

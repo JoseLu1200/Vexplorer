@@ -1,0 +1,29 @@
+{
+  "release": "datasets-demo-2026-11-14",
+  "assets": [
+    {
+      "filename": "furniture-costs-published.zip",
+      "bytes": 4669855,
+      "sha256": "cf8ffc282039f9ccb91e9c6e8cd528cc30103d19ba17629c4fc3906c160e0a18",
+      "url": "https://github.com/JoseLu1200/Vexplorer/releases/download/datasets-demo-2026-11-14/furniture-costs-published.zip"
+    },
+    {
+      "filename": "furniture-hours-published.zip",
+      "bytes": 629538,
+      "sha256": "3aea915208f7a99f695b281fd98a8405e9933b92cc76fdb2c114317efee118d1",
+      "url": "https://github.com/JoseLu1200/Vexplorer/releases/download/datasets-demo-2026-11-14/furniture-hours-published.zip"
+    },
+    {
+      "filename": "plankassembly-original.zip",
+      "bytes": 19607117,
+      "sha256": "3a7f6d0bb66ace28a3a05e286c127b5385954e29bfa7ed2e932121b2429a460c",
+      "url": "https://github.com/JoseLu1200/Vexplorer/releases/download/datasets-demo-2026-11-14/plankassembly-original.zip"
+    },
+    {
+      "filename": "vexplorer-demo-procesada.zip",
+      "bytes": 144107,
+      "sha256": "199955e700abbea2731430cb61627de56e995b4e67e65cd50bc0eeace1f5cef1",
+      "url": "https://github.com/JoseLu1200/Vexplorer/releases/download/datasets-demo-2026-11-14/vexplorer-demo-procesada.zip"
+    }
+  ]
+}

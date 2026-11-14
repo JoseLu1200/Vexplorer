@@ -1,0 +1,50 @@
+[
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"state\": \"needs_review\", \"mode\": \"live\"}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 2,
+    "event_type": "tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"tool_name\": \"visualizar_vista\", \"ok\": true, \"evidence_ids\": [], \"summary\": \"Vista PNG Set-of-Mark solicitada y derivada del ledger; no es fuente de medidas.\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": null, \"artifact_sha256\": \"3d05e20e5b45ed2a9c0ff805128984c45b3b76adf61f848b6b68f7a20ac6490b\", \"mark_count\": 5, \"view_id\": \"view-front\", \"provider_response_id\": \"resp_03aaac5908e227e0006af84d6f649487d29d9bf3754855d16b\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_EM7kIMjE3C7h3phSJ7p4JqjX\", \"provider_duration_ms\": 2178, \"provider_input_tokens\": 2221, \"provider_output_tokens\": 22, \"provider_total_tokens\": 2243, \"provenance\": \"live\", \"source_live_run_id\": null, \"source_result_revision\": null}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 3,
+    "event_type": "tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"tool_name\": \"inspeccionar_medidas_mesa\", \"ok\": true, \"evidence_ids\": [\"evidence-contour-entity-8D\", \"evidence-contour-entity-92\", \"evidence-dimension-entity-98\", \"evidence-contour-entity-8D\", \"evidence-contour-entity-94\", \"evidence-dimension-entity-A8\", \"evidence-contour-entity-92\", \"evidence-contour-entity-94\", \"evidence-dimension-entity-B8\", \"evidence-contour-entity-8D\", \"evidence-contour-entity-94\", \"evidence-geometry-entity-8E\", \"evidence-geometry-entity-95\", \"evidence-contour-entity-8D\", \"evidence-geometry-entity-8F\", \"evidence-geometry-entity-90\"], \"summary\": \"Medidas y fuentes del ledger inspeccionadas.\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": null, \"artifact_sha256\": null, \"mark_count\": null, \"view_id\": null, \"provider_response_id\": \"resp_03aaac5908e227e0006af84d7177c087d2864da59fcfa6eb1a\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_61hmGpnG17oJXKBWSkFezDzC\", \"provider_duration_ms\": 2974, \"provider_input_tokens\": 3485, \"provider_output_tokens\": 89, \"provider_total_tokens\": 3574, \"provenance\": \"live\", \"source_live_run_id\": null, \"source_result_revision\": null}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 4,
+    "event_type": "tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"tool_name\": \"proponer_descomposicion\", \"ok\": true, \"evidence_ids\": [\"evidence-contour-entity-8D\", \"evidence-contour-entity-92\", \"evidence-contour-entity-94\", \"evidence-dimension-entity-98\", \"evidence-dimension-entity-A8\", \"evidence-dimension-entity-B8\", \"evidence-geometry-entity-8E\", \"evidence-geometry-entity-8F\", \"evidence-geometry-entity-90\", \"evidence-geometry-entity-95\"], \"summary\": \"Programa de descomposici\\u00f3n referenciado entregado para validaci\\u00f3n y revisi\\u00f3n.\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": \"table-program-cc2d6015d2a3bccf\", \"artifact_sha256\": null, \"mark_count\": null, \"view_id\": null, \"provider_response_id\": \"resp_03aaac5908e227e0006af84d7476b487d2a806468aa3e99407\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_Yttx39LrJW8jT0TUMRmGJZjs\", \"provider_duration_ms\": 11557, \"provider_input_tokens\": 5947, \"provider_output_tokens\": 829, \"provider_total_tokens\": 6776, \"provenance\": \"live\", \"source_live_run_id\": null, \"source_result_revision\": null}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 5,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 6,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:03.941230+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 7,
+    "event_type": "human_review_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:28.664088+00:00\", \"result_revision\": 2, \"reviewer_name\": \"Demo automatizada\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": \"table-program-cc2d6015d2a3bccf\"}"
+  },
+  {
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "sequence": 8,
+    "event_type": "library_item_saved",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:28.689138+00:00\", \"result_revision\": 2}"
+  }
+]

@@ -1,0 +1,5866 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+    "status": "reviewed_incomplete",
+    "proposal_revision": 1,
+    "review_revision": 1,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "general-5f2d41963bd997b5",
+      "drawing_id": "drawing-a235d1053b6f0451",
+      "ledger_revision": "drawing-a235d1053b6f0451",
+      "proposal_origin": "native_tool",
+      "bindings": [
+        {
+          "id": "side_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-y"
+          ]
+        },
+        {
+          "id": "side_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-12:span-y"
+          ]
+        },
+        {
+          "id": "side_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-x"
+          ]
+        },
+        {
+          "id": "top_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-x"
+          ]
+        },
+        {
+          "id": "top_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-29:span-x"
+          ]
+        },
+        {
+          "id": "top_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-y"
+          ]
+        },
+        {
+          "id": "bottom_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-24:span-x"
+          ]
+        },
+        {
+          "id": "bottom_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-31:span-x"
+          ]
+        },
+        {
+          "id": "bottom_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-31:span-y"
+          ]
+        },
+        {
+          "id": "division_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-23:span-x"
+          ]
+        },
+        {
+          "id": "division_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-25:span-x"
+          ]
+        },
+        {
+          "id": "division_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-23:span-y"
+          ]
+        },
+        {
+          "id": "shelf_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-38:span-x"
+          ]
+        },
+        {
+          "id": "shelf_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-38:span-y"
+          ]
+        },
+        {
+          "id": "shelf_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-37:span-y"
+          ]
+        },
+        {
+          "id": "back_low_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-14:span-y"
+          ]
+        },
+        {
+          "id": "back_low_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-14:span-x"
+          ]
+        },
+        {
+          "id": "back_low_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-16:span-x"
+          ]
+        },
+        {
+          "id": "back_high_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-y"
+          ]
+        },
+        {
+          "id": "back_high_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-x"
+          ]
+        },
+        {
+          "id": "back_high_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-19:span-x"
+          ]
+        },
+        {
+          "id": "front_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-6:span-x"
+          ]
+        },
+        {
+          "id": "front_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-6:span-y"
+          ]
+        },
+        {
+          "id": "front_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-8:span-x"
+          ]
+        },
+        {
+          "id": "fascia_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-x"
+          ]
+        },
+        {
+          "id": "fascia_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-y"
+          ]
+        },
+        {
+          "id": "fascia_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-3:span-x"
+          ]
+        },
+        {
+          "id": "plinth_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-32:span-x"
+          ]
+        },
+        {
+          "id": "plinth_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-32:span-y"
+          ]
+        },
+        {
+          "id": "plinth_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-34:span-x"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "sides",
+          "label": "Laterales del cuerpo",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "side_l",
+          "width_binding_id": "side_w",
+          "thickness_binding_id": "side_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p_sides",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos cantos laterales separados corresponden a dos paneles, superpuestos en la proyección lateral; se asignan como hipótesis las medidas del primer lateral al grupo."
+          ],
+          "unknown_fields": [
+            "material",
+            "acabado",
+            "uniones",
+            "diferencias dimensionales entre instancias"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "top",
+          "label": "Panel superior entre laterales",
+          "kind": "panel",
+          "role": "top_panel",
+          "length_binding_id": "top_l",
+          "width_binding_id": "top_w",
+          "thickness_binding_id": "top_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p_top",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto superior frontal y el lateral se interpretan como una única tapa; el rectángulo interior en planta no añade otra pieza."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "bottom",
+          "label": "Base elevada sobre el zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length_binding_id": "bottom_l",
+          "width_binding_id": "bottom_w",
+          "thickness_binding_id": "bottom_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_bottom"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-24"
+            ]
+          },
+          "premise_ids": [
+            "p_bottom",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-24"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una base única por su canto lateral; la luz entre laterales de la planta se asigna provisionalmente a su largo, no como cara independiente."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divisions",
+          "label": "Paneles horizontales de separación",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "division_l",
+          "width_binding_id": "division_w",
+          "thickness_binding_id": "division_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_divisions"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "premise_ids": [
+            "p_divisions",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-27"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos niveles separados en alzado, cada uno con canto lateral correspondiente; no se afirma que sean fijos o desmontables."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelves",
+          "label": "Baldas interiores superiores",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "shelf_l",
+          "width_binding_id": "shelf_w",
+          "thickness_binding_id": "shelf_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelves"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "premise_ids": [
+            "p_shelves",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-38",
+            "evidence-contour-lines-unknown-40"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos niveles físicos del alzado comparten una proyección en planta; se asignan las medidas de esa proyección al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_low",
+          "label": "Trasera del compartimento inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length_binding_id": "back_low_l",
+          "width_binding_id": "back_low_w",
+          "thickness_binding_id": "back_low_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "premise_ids": [
+            "p_back_low",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara interior se interpreta como trasera por el canto delgado correspondiente al fondo en perfil, no solo por ser rectángulo cerrado; alternativa: límite interior pendiente de revisión."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_high",
+          "label": "Trasera del compartimento superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length_binding_id": "back_high_l",
+          "width_binding_id": "back_high_w",
+          "thickness_binding_id": "back_high_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "premise_ids": [
+            "p_back_high",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Una trasera superior se sostiene por cara y canto posterior concordantes; su planta se superpone con la trasera inferior y no representa otra instancia."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fronts",
+          "label": "Frentes rectangulares inferiores; función por confirmar",
+          "kind": "panel",
+          "role": "unknown",
+          "length_binding_id": "front_l",
+          "width_binding_id": "front_w",
+          "thickness_binding_id": "front_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fronts"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "premise_ids": [
+            "p_fronts",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos caras inferiores distintas tienen cantos delanteros separados en perfil; pueden ser frentes de cajón, puertas o paneles, sin elegir mecanismo."
+          ],
+          "unknown_fields": [
+            "función puerta o frente de cajón o panel",
+            "mecanismo",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fascias",
+          "label": "Fajas frontales de separación",
+          "kind": "panel",
+          "role": "unknown",
+          "length_binding_id": "fascia_l",
+          "width_binding_id": "fascia_w",
+          "thickness_binding_id": "fascia_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fascias"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "premise_ids": [
+            "p_fascias",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas frontales separadas se contrastan con dos cantos salientes en perfil; su función estructural o decorativa no se distingue."
+          ],
+          "unknown_fields": [
+            "función",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "plinths",
+          "label": "Fajas del zócalo delantera y trasera",
+          "kind": "panel",
+          "role": "support",
+          "length_binding_id": "plinth_l",
+          "width_binding_id": "plinth_w",
+          "thickness_binding_id": "plinth_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_plinths"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "premise_ids": [
+            "p_plinths",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos cantos distintos bajo la base en perfil y dos bandas en planta sostienen dos fajas; la altura y espesor de la primera se asignan al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "transmisión de carga",
+            "diferencias dimensionales entre instancias",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p_projection",
+          "description": "Las regiones y capas ORTHO_FRONT, ORTHO_TOP y ORTHO_SIDE se interpretan como proyecciones del mismo mueble; las correspondencias y asignaciones dimensionales son hipótesis, no identidades confirmadas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_sides",
+          "description": "Los contornos 11 y 20 del alzado y 12 y 21 de planta son dos instancias laterales distintas; 13 y 22 son sus proyecciones superpuestas, no piezas adicionales.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_top",
+          "description": "Los contornos 28 y 29 representan el mismo panel superior único, con planta superpuesta en 24.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_bottom",
+          "description": "El canto 31 se interpreta como una única base; se asigna provisionalmente la luz transversal de 24, sin contar ese contorno como pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_divisions",
+          "description": "Los grupos 23/25 y 26/27 corresponden a dos paneles horizontales físicos distintos, superpuestos en planta 24.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_shelves",
+          "description": "Los grupos 37/39 y 40/41 corresponden a dos baldas físicas distintas que comparten la planta 38; no se cuentan las proyecciones como instancias.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_back_low",
+          "description": "El grupo 14/15/16 corresponde a una única trasera inferior material; si la cara fuera un límite interior, retirar la propuesta.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_back_high",
+          "description": "El grupo 17/18/19 corresponde a una única trasera superior material, distinta de la inferior por su extensión vertical; confirmar frente a alternativa de límite interior.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_fronts",
+          "description": "Los grupos 6/8 y 9/10 son dos frentes físicos separados en altura, superpuestos en planta 7; no se identifica su mecanismo ni se confirma función de puerta.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_fascias",
+          "description": "Los grupos 1/3 y 4/5 son dos fajas físicas separadas, superpuestas en planta 2; función por confirmar.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_plinths",
+          "description": "Los cantos 34 y 36 y las bandas 33 y 35 sostienen dos fajas de zócalo distintas; 32 es la cara frontal de una de ellas, no una tercera pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_interfaces",
+          "description": "Los encuentros y solapes visibles solo permiten registrar interfaces candidatas. No distinguen apoyo de fijación, ni prueban contacto material o unión oculta; todas las relaciones de montaje permanecen unknown.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable derivada de contornos, capas y regiones visuales; no es documentación industrial ni lista de corte confirmada.",
+        "Todos los bindings asignan observaciones geométricas a dimensiones de componentes como hipótesis; se conserva la precisión original del ledger.",
+        "No se infieren materiales, acabados, mecanizados, herrajes ni uniones ocultas.",
+        "No se añaden piezas por cada rectángulo interior ni por proyección; no se propone trasera central por falta de evidencia.",
+        "Los grupos con varias instancias comparten dimensiones candidatas; diferencias entre instancias requieren revisión.",
+        "Las interfaces entre grupos no equivalen a relaciones entre cada combinación de instancias; los frentes y fajas solo muestran solapes con el cuerpo."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "top",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_top",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_bottom",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-13",
+            "contour:contour-lines-unknown-22"
+          ]
+        },
+        {
+          "subject_component_id": "divisions",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_divisions",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_shelves",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-37",
+            "contour:contour-lines-unknown-40",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_bottom"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-25"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "top",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_top"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-29"
+          ]
+        },
+        {
+          "subject_component_id": "shelves",
+          "relation": "unknown",
+          "object_component_id": "back_high",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_shelves",
+            "p_back_high"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-39",
+            "contour:contour-lines-unknown-41",
+            "contour:contour-lines-unknown-19"
+          ]
+        },
+        {
+          "subject_component_id": "plinths",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_plinths",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-32",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "plinths",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_bottom",
+            "p_plinths"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36"
+          ]
+        },
+        {
+          "subject_component_id": "fascias",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fascias",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "fascias",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fascias",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-3",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "fronts",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fronts",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        }
+      ],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "general-5f2d41963bd997b5",
+      "drawing_id": "drawing-a235d1053b6f0451",
+      "ledger_revision": "drawing-a235d1053b6f0451",
+      "components": [
+        {
+          "id": "sides",
+          "label": "Laterales del cuerpo",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 2400.0000013176855,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999824307751624,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p_sides",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos cantos laterales separados corresponden a dos paneles, superpuestos en la proyección lateral; se asignan como hipótesis las medidas del primer lateral al grupo."
+          ],
+          "unknown_fields": [
+            "material",
+            "acabado",
+            "uniones",
+            "diferencias dimensionales entre instancias"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "top",
+          "label": "Panel superior entre laterales",
+          "kind": "panel",
+          "role": "top_panel",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999973824643348,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p_top",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto superior frontal y el lateral se interpretan como una única tapa; el rectángulo interior en planta no añade otra pieza."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "bottom",
+          "label": "Base elevada sobre el zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length": {
+            "value_mm": 564.0000008353832,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_bottom"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-24"
+            ]
+          },
+          "premise_ids": [
+            "p_bottom",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-24"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una base única por su canto lateral; la luz entre laterales de la planta se asigna provisionalmente a su largo, no como cara independiente."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divisions",
+          "label": "Paneles horizontales de separación",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99997382464346,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_divisions"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "premise_ids": [
+            "p_divisions",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-27"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos niveles separados en alzado, cada uno con canto lateral correspondiente; no se afirma que sean fijos o desmontables."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelves",
+          "label": "Baldas interiores superiores",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 563.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 515.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelves"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "premise_ids": [
+            "p_shelves",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-38",
+            "evidence-contour-lines-unknown-40"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos niveles físicos del alzado comparten una proyección en planta; se asignan las medidas de esa proyección al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_low",
+          "label": "Trasera del compartimento inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 774.0000003660234,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999943339249739,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "premise_ids": [
+            "p_back_low",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara interior se interpreta como trasera por el canto delgado correspondiente al fondo en perfil, no solo por ser rectángulo cerrado; alternativa: límite interior pendiente de revisión."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_high",
+          "label": "Trasera del compartimento superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 874.0000003660233,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.99993601873939,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "premise_ids": [
+            "p_back_high",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Una trasera superior se sostiene por cara y canto posterior concordantes; su planta se superpone con la trasera inferior y no representa otra instancia."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fronts",
+          "label": "Frentes rectangulares inferiores; función por confirmar",
+          "kind": "panel",
+          "role": "unknown",
+          "length": {
+            "value_mm": 597.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 346.99999868230725,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000025402170877,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fronts"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "premise_ids": [
+            "p_fronts",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos caras inferiores distintas tienen cantos delanteros separados en perfil; pueden ser frentes de cajón, puertas o paneles, sin elegir mecanismo."
+          ],
+          "unknown_fields": [
+            "función puerta o frente de cajón o panel",
+            "mecanismo",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fascias",
+          "label": "Fajas frontales de separación",
+          "kind": "panel",
+          "role": "unknown",
+          "length": {
+            "value_mm": 600.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 50.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999633974494,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fascias"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "premise_ids": [
+            "p_fascias",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas frontales separadas se contrastan con dos cantos salientes en perfil; su función estructural o decorativa no se distingue."
+          ],
+          "unknown_fields": [
+            "función",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "plinths",
+          "label": "Fajas del zócalo delantera y trasera",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 564.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 99.9999986823077,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.00000732051035,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_plinths"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "premise_ids": [
+            "p_plinths",
+            "p_projection"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos cantos distintos bajo la base en perfil y dos bandas en planta sostienen dos fajas; la altura y espesor de la primera se asignan al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "transmisión de carga",
+            "diferencias dimensionales entre instancias",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p_projection",
+          "description": "Las regiones y capas ORTHO_FRONT, ORTHO_TOP y ORTHO_SIDE se interpretan como proyecciones del mismo mueble; las correspondencias y asignaciones dimensionales son hipótesis, no identidades confirmadas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_sides",
+          "description": "Los contornos 11 y 20 del alzado y 12 y 21 de planta son dos instancias laterales distintas; 13 y 22 son sus proyecciones superpuestas, no piezas adicionales.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_top",
+          "description": "Los contornos 28 y 29 representan el mismo panel superior único, con planta superpuesta en 24.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_bottom",
+          "description": "El canto 31 se interpreta como una única base; se asigna provisionalmente la luz transversal de 24, sin contar ese contorno como pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_divisions",
+          "description": "Los grupos 23/25 y 26/27 corresponden a dos paneles horizontales físicos distintos, superpuestos en planta 24.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_shelves",
+          "description": "Los grupos 37/39 y 40/41 corresponden a dos baldas físicas distintas que comparten la planta 38; no se cuentan las proyecciones como instancias.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_back_low",
+          "description": "El grupo 14/15/16 corresponde a una única trasera inferior material; si la cara fuera un límite interior, retirar la propuesta.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_back_high",
+          "description": "El grupo 17/18/19 corresponde a una única trasera superior material, distinta de la inferior por su extensión vertical; confirmar frente a alternativa de límite interior.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_fronts",
+          "description": "Los grupos 6/8 y 9/10 son dos frentes físicos separados en altura, superpuestos en planta 7; no se identifica su mecanismo ni se confirma función de puerta.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_fascias",
+          "description": "Los grupos 1/3 y 4/5 son dos fajas físicas separadas, superpuestas en planta 2; función por confirmar.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_plinths",
+          "description": "Los cantos 34 y 36 y las bandas 33 y 35 sostienen dos fajas de zócalo distintas; 32 es la cara frontal de una de ellas, no una tercera pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_interfaces",
+          "description": "Los encuentros y solapes visibles solo permiten registrar interfaces candidatas. No distinguen apoyo de fijación, ni prueban contacto material o unión oculta; todas las relaciones de montaje permanecen unknown.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable derivada de contornos, capas y regiones visuales; no es documentación industrial ni lista de corte confirmada.",
+        "Todos los bindings asignan observaciones geométricas a dimensiones de componentes como hipótesis; se conserva la precisión original del ledger.",
+        "No se infieren materiales, acabados, mecanizados, herrajes ni uniones ocultas.",
+        "No se añaden piezas por cada rectángulo interior ni por proyección; no se propone trasera central por falta de evidencia.",
+        "Los grupos con varias instancias comparten dimensiones candidatas; diferencias entre instancias requieren revisión.",
+        "Las interfaces entre grupos no equivalen a relaciones entre cada combinación de instancias; los frentes y fajas solo muestran solapes con el cuerpo."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "top",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_top",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_bottom",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-13",
+            "contour:contour-lines-unknown-22"
+          ]
+        },
+        {
+          "subject_component_id": "divisions",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_divisions",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_shelves",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-37",
+            "contour:contour-lines-unknown-40",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_bottom"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "back_low",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_low",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-25"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "back_high",
+          "relation": "unknown",
+          "object_component_id": "top",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_back_high",
+            "p_top"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-29"
+          ]
+        },
+        {
+          "subject_component_id": "shelves",
+          "relation": "unknown",
+          "object_component_id": "back_high",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_shelves",
+            "p_back_high"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-39",
+            "contour:contour-lines-unknown-41",
+            "contour:contour-lines-unknown-19"
+          ]
+        },
+        {
+          "subject_component_id": "plinths",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_plinths",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-32",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "plinths",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_bottom",
+            "p_plinths"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36"
+          ]
+        },
+        {
+          "subject_component_id": "fascias",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fascias",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "fascias",
+          "relation": "unknown",
+          "object_component_id": "divisions",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fascias",
+            "p_divisions"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-3",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "fronts",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p_interfaces",
+            "p_fronts",
+            "p_sides"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        }
+      ],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": {
+      "schema_version": "0.6.0",
+      "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+      "proposal_id": "general-5f2d41963bd997b5",
+      "proposal_revision": 1,
+      "review_revision": 1,
+      "reviewer_name": "autonomous-reviewer",
+      "reviewer_kind": "machine",
+      "machine_provenance": {
+        "model": "gpt-6-astra",
+        "policy_version": "general-auto-review-v2",
+        "response_ids": [
+          "resp_09454529c0be3b8c006af8524dc9bc87d29e5c89ce4738e042"
+        ],
+        "review_relation": "separate_model"
+      },
+      "reason": "Revisión multimodal autónoma provisional.",
+      "reviewed_at": "2026-11-14T12:22:23.756465+00:00",
+      "operations": [
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "sides"
+          ],
+          "result_component_ids": [
+            "sides"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "top"
+          ],
+          "result_component_ids": [
+            "top"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "bottom"
+          ],
+          "result_component_ids": [
+            "bottom"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "divisions"
+          ],
+          "result_component_ids": [
+            "divisions"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "shelves"
+          ],
+          "result_component_ids": [
+            "shelves"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "back_low"
+          ],
+          "result_component_ids": [
+            "back_low"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "back_high"
+          ],
+          "result_component_ids": [
+            "back_high"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "fronts"
+          ],
+          "result_component_ids": [
+            "fronts"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "fascias"
+          ],
+          "result_component_ids": [
+            "fascias"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "plinths"
+          ],
+          "result_component_ids": [
+            "plinths"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        }
+      ],
+      "components": [
+        {
+          "id": "sides",
+          "label": "Laterales del cuerpo",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 2400.0000013176855,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999824307751624,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "sides"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos cantos laterales separados corresponden a dos paneles, superpuestos en la proyección lateral; se asignan como hipótesis las medidas del primer lateral al grupo."
+          ],
+          "unknown_fields": [
+            "material",
+            "acabado",
+            "uniones",
+            "diferencias dimensionales entre instancias"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "top",
+          "label": "Panel superior entre laterales",
+          "kind": "panel",
+          "role": "top_panel",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999973824643348,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "top"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto superior frontal y el lateral se interpretan como una única tapa; el rectángulo interior en planta no añade otra pieza."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "bottom",
+          "label": "Base elevada sobre el zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length": {
+            "value_mm": 564.0000008353832,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_bottom"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-24"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "bottom"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-24"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una base única por su canto lateral; la luz entre laterales de la planta se asigna provisionalmente a su largo, no como cara independiente."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divisions",
+          "label": "Paneles horizontales de separación",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99997382464346,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_divisions"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "divisions"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-27"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos niveles separados en alzado, cada uno con canto lateral correspondiente; no se afirma que sean fijos o desmontables."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelves",
+          "label": "Baldas interiores superiores",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 563.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 515.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelves"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "shelves"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-38",
+            "evidence-contour-lines-unknown-40"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los dos niveles físicos del alzado comparten una proyección en planta; se asignan las medidas de esa proyección al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "sistema de apoyo o fijación",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_low",
+          "label": "Trasera del compartimento inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 774.0000003660234,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999943339249739,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "back_low"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara interior se interpreta como trasera por el canto delgado correspondiente al fondo en perfil, no solo por ser rectángulo cerrado; alternativa: límite interior pendiente de revisión."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_high",
+          "label": "Trasera del compartimento superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 874.0000003660233,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.99993601873939,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "back_high"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Una trasera superior se sostiene por cara y canto posterior concordantes; su planta se superpone con la trasera inferior y no representa otra instancia."
+          ],
+          "unknown_fields": [
+            "confirmación de cara material",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fronts",
+          "label": "Frentes rectangulares inferiores; función por confirmar",
+          "kind": "panel",
+          "role": "unknown",
+          "length": {
+            "value_mm": 597.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 346.99999868230725,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000025402170877,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fronts"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "fronts"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos caras inferiores distintas tienen cantos delanteros separados en perfil; pueden ser frentes de cajón, puertas o paneles, sin elegir mecanismo."
+          ],
+          "unknown_fields": [
+            "función puerta o frente de cajón o panel",
+            "mecanismo",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "fascias",
+          "label": "Fajas frontales de separación",
+          "kind": "panel",
+          "role": "unknown",
+          "length": {
+            "value_mm": 600.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 50.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999633974494,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fascias"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "fascias"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas frontales separadas se contrastan con dos cantos salientes en perfil; su función estructural o decorativa no se distingue."
+          ],
+          "unknown_fields": [
+            "función",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "plinths",
+          "label": "Fajas del zócalo delantera y trasera",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 564.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 99.9999986823077,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.00000732051035,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_plinths"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "plinths"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos cantos distintos bajo la base en perfil y dos bandas en planta sostienen dos fajas; la altura y espesor de la primera se asignan al grupo como hipótesis."
+          ],
+          "unknown_fields": [
+            "transmisión de carga",
+            "diferencias dimensionales entre instancias",
+            "uniones",
+            "material",
+            "acabado"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "occurrences": [],
+      "scenario_occurrences": [
+        {
+          "id": "provisional:general-5f2d41963bd997b5:sides:1",
+          "component_id": "sides",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:sides.quantity",
+          "check_ids": [
+            "sides_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_sides"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-21",
+            "premise:p_sides",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:sides:2",
+          "component_id": "sides",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:sides.quantity",
+          "check_ids": [
+            "sides_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_sides"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-21",
+            "premise:p_sides",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:top:1",
+          "component_id": "top",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:top.quantity",
+          "check_ids": [
+            "top_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_top"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "premise:p_top",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:bottom:1",
+          "component_id": "bottom",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:bottom.quantity",
+          "check_ids": [
+            "bottom_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_bottom"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "premise:p_bottom",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:divisions:1",
+          "component_id": "divisions",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:divisions.quantity",
+          "check_ids": [
+            "divisions_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_divisions"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "premise:p_divisions",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:divisions:2",
+          "component_id": "divisions",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:divisions.quantity",
+          "check_ids": [
+            "divisions_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_divisions"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "premise:p_divisions",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:shelves:1",
+          "component_id": "shelves",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:shelves.quantity",
+          "check_ids": [
+            "shelves_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_shelves"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41",
+            "premise:p_shelves",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-38"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:shelves:2",
+          "component_id": "shelves",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:shelves.quantity",
+          "check_ids": [
+            "shelves_count",
+            "duplicate_scan_body"
+          ],
+          "premise_refs": [
+            "premise:p_shelves"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41",
+            "premise:p_shelves",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-38"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:back_low:1",
+          "component_id": "back_low",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:back_low.quantity",
+          "check_ids": [
+            "back_low_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_back_low"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "premise:p_back_low",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:back_high:1",
+          "component_id": "back_high",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:back_high.quantity",
+          "check_ids": [
+            "back_high_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_back_high"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "premise:p_back_high",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:fronts:1",
+          "component_id": "fronts",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:fronts.quantity",
+          "check_ids": [
+            "fronts_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_fronts"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "premise:p_fronts",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:fronts:2",
+          "component_id": "fronts",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:fronts.quantity",
+          "check_ids": [
+            "fronts_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_fronts"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "premise:p_fronts",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:fascias:1",
+          "component_id": "fascias",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:fascias.quantity",
+          "check_ids": [
+            "fascias_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_fascias"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "premise:p_fascias",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:fascias:2",
+          "component_id": "fascias",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:fascias.quantity",
+          "check_ids": [
+            "fascias_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_fascias"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "premise:p_fascias",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:plinths:1",
+          "component_id": "plinths",
+          "occurrence_index": 1,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:plinths.quantity",
+          "check_ids": [
+            "plinths_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_plinths"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36",
+            "premise:p_plinths",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-5f2d41963bd997b5:plinths:2",
+          "component_id": "plinths",
+          "occurrence_index": 2,
+          "scenario_id": "general-5f2d41963bd997b5",
+          "quantity_target_ref": "component:plinths.quantity",
+          "check_ids": [
+            "plinths_count",
+            "duplicate_scan_faces"
+          ],
+          "premise_refs": [
+            "premise:p_plinths"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36",
+            "premise:p_plinths",
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "state": "provisional"
+        }
+      ],
+      "machine_checks": [
+        {
+          "id": "det:sides.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:sides.length"
+          ],
+          "source_refs": [
+            "binding:side_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:sides.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:sides.width"
+          ],
+          "source_refs": [
+            "binding:side_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:sides.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:sides.thickness"
+          ],
+          "source_refs": [
+            "binding:side_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:top.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:top.length"
+          ],
+          "source_refs": [
+            "binding:top_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:top.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:top.width"
+          ],
+          "source_refs": [
+            "binding:top_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:top.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:top.thickness"
+          ],
+          "source_refs": [
+            "binding:top_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:bottom.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:bottom.length"
+          ],
+          "source_refs": [
+            "binding:bottom_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:bottom.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:bottom.width"
+          ],
+          "source_refs": [
+            "binding:bottom_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:bottom.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:bottom.thickness"
+          ],
+          "source_refs": [
+            "binding:bottom_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divisions.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divisions.length"
+          ],
+          "source_refs": [
+            "binding:division_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divisions.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divisions.width"
+          ],
+          "source_refs": [
+            "binding:division_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divisions.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divisions.thickness"
+          ],
+          "source_refs": [
+            "binding:division_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelves.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelves.length"
+          ],
+          "source_refs": [
+            "binding:shelf_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelves.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelves.width"
+          ],
+          "source_refs": [
+            "binding:shelf_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelves.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelves.thickness"
+          ],
+          "source_refs": [
+            "binding:shelf_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_low.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_low.length"
+          ],
+          "source_refs": [
+            "binding:back_low_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_low.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_low.width"
+          ],
+          "source_refs": [
+            "binding:back_low_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_low.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_low.thickness"
+          ],
+          "source_refs": [
+            "binding:back_low_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_high.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_high.length"
+          ],
+          "source_refs": [
+            "binding:back_high_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_high.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_high.width"
+          ],
+          "source_refs": [
+            "binding:back_high_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back_high.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back_high.thickness"
+          ],
+          "source_refs": [
+            "binding:back_high_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fronts.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fronts.length"
+          ],
+          "source_refs": [
+            "binding:front_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fronts.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fronts.width"
+          ],
+          "source_refs": [
+            "binding:front_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fronts.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fronts.thickness"
+          ],
+          "source_refs": [
+            "binding:front_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fascias.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fascias.length"
+          ],
+          "source_refs": [
+            "binding:fascia_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fascias.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fascias.width"
+          ],
+          "source_refs": [
+            "binding:fascia_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:fascias.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:fascias.thickness"
+          ],
+          "source_refs": [
+            "binding:fascia_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:plinths.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:plinths.length"
+          ],
+          "source_refs": [
+            "binding:plinth_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:plinths.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:plinths.width"
+          ],
+          "source_refs": [
+            "binding:plinth_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:plinths.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:plinths.thickness"
+          ],
+          "source_refs": [
+            "binding:plinth_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "sides_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:sides.length",
+            "component:sides.width",
+            "component:sides.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22"
+          ],
+          "summary": "Los cantos exteriores del alzado y planta concuerdan con las caras superpuestas del perfil. La asignación de alto, fondo y espesor es coherente como hipótesis. Las pequeñas diferencias del ledger entre laterales no acreditan igualdad exacta entre instancias."
+        },
+        {
+          "id": "top_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:top.length",
+            "component:top.width",
+            "component:top.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "summary": "El canto superior del alzado corresponde al canto superior del perfil, entre los laterales. Los bindings son coherentes con esta tapa; la planta compartida no constituye una pieza adicional."
+        },
+        {
+          "id": "bottom_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:bottom.length",
+            "component:bottom.width",
+            "component:bottom.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-32",
+            "premise:p_bottom"
+          ],
+          "summary": "En perfil se distingue un canto horizontal sobre el zócalo. Fondo y espesor proceden de ese canto. Asignar el ancho interior de la planta al largo de la base es coherente bajo p_bottom, pero no una medición directa de una cara exclusiva de la base."
+        },
+        {
+          "id": "divisions_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:divisions.length",
+            "component:divisions.width",
+            "component:divisions.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "summary": "Los dos niveles de separación del alzado tienen cantos horizontales correspondientes en perfil. Las dimensiones asignadas son coherentes con paneles de fondo completo, no con las fajas delanteras salientes."
+        },
+        {
+          "id": "shelves_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelves.length",
+            "component:shelves.width",
+            "component:shelves.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "summary": "Las dos bandas superiores del alzado corresponden a cantos de menor fondo en perfil y a la planta interior 38. La asignación dimensional es coherente; el rectángulo de planta no se interpreta aisladamente como prueba de cara material."
+        },
+        {
+          "id": "back_low_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back_low.length",
+            "component:back_low.width",
+            "component:back_low.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "premise:p_back_low"
+          ],
+          "summary": "El límite inferior del alzado tiene correspondencia con un canto posterior delgado en perfil y una banda en planta. Esto sostiene la hipótesis de trasera, más que el mero cierre del contorno. Su ancho excede la luz entre laterales: puede haber solape o alojamiento, sin probar mecanizado ni unión."
+        },
+        {
+          "id": "back_high_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back_high.length",
+            "component:back_high.width",
+            "component:back_high.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "premise:p_back_high"
+          ],
+          "summary": "El contorno superior del alzado corresponde al canto posterior que recorre el compartimento superior en perfil. La banda de planta apoya el espesor candidato. Se acepta como hipótesis de trasera; el solape con laterales no demuestra rebajes ni fijaciones."
+        },
+        {
+          "id": "fronts_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:fronts.length",
+            "component:fronts.width",
+            "component:fronts.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10"
+          ],
+          "summary": "Las dos caras inferiores del alzado tienen cantos delanteros separados en perfil, compatibles con las dimensiones propuestas. La planta compartida representa sus proyecciones. No hay indicios suficientes para distinguir puerta, frente de cajón o panel fijo."
+        },
+        {
+          "id": "fascias_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:fascias.length",
+            "component:fascias.width",
+            "component:fascias.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "summary": "Las dos bandas del alzado se corresponden con cantos delanteros salientes en perfil. El largo exterior, altura de banda y espesor propuestos son coherentes. No se confunden con el fondo completo de los paneles horizontales."
+        },
+        {
+          "id": "plinths_dimensions",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:plinths.length",
+            "component:plinths.width",
+            "component:plinths.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "summary": "La cara baja del alzado y los dos cantos bajo la base en perfil son compatibles con las bandas separadas en planta. La asignación de dimensiones de la primera faja al grupo es coherente como hipótesis, no como igualdad exacta ni prueba de transmisión de carga."
+        },
+        {
+          "id": "sides_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:sides.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-21",
+            "premise:p_sides"
+          ],
+          "summary": "Dos posiciones exteriores distintas en alzado y planta sostienen dos laterales bajo p_sides; no se obtiene la cantidad contando vistas."
+        },
+        {
+          "id": "top_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:top.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "premise:p_top"
+          ],
+          "summary": "Un nivel superior con cantos concordantes en alzado y perfil sostiene una tapa como hipótesis bajo p_top."
+        },
+        {
+          "id": "bottom_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:bottom.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "premise:p_bottom"
+          ],
+          "summary": "Un canto de base sobre el zócalo sostiene una instancia candidata bajo p_bottom. La planta sirve como correspondencia dimensional, no como segunda instancia."
+        },
+        {
+          "id": "divisions_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:divisions.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "premise:p_divisions"
+          ],
+          "summary": "Dos niveles físicos separados, cada uno con correspondencia frontal y lateral, sostienen la cantidad dos como hipótesis bajo p_divisions."
+        },
+        {
+          "id": "shelves_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelves.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41",
+            "premise:p_shelves"
+          ],
+          "summary": "Dos niveles interiores superiores diferenciados en alzado y perfil sostienen dos baldas bajo p_shelves, no cuatro piezas ni una pieza por planta."
+        },
+        {
+          "id": "back_low_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back_low.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "premise:p_back_low"
+          ],
+          "summary": "Una extensión posterior inferior con cara candidata y canto correspondiente sostiene una trasera bajo p_back_low. La hipótesis no depende únicamente del rectángulo cerrado."
+        },
+        {
+          "id": "back_high_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back_high.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "premise:p_back_high"
+          ],
+          "summary": "Una extensión posterior superior, separada de la inferior por el compartimento central, sostiene una trasera bajo p_back_high; su proyección de planta no añade unidades."
+        },
+        {
+          "id": "fronts_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:fronts.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "premise:p_fronts"
+          ],
+          "summary": "Dos caras inferiores separadas en altura y dos cantos delanteros correspondientes sostienen dos frentes candidatos bajo p_fronts, sin inferir mecanismos."
+        },
+        {
+          "id": "fascias_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:fascias.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "premise:p_fascias"
+          ],
+          "summary": "Dos bandas a distintas alturas con dos cantos salientes correspondientes sostienen dos fajas bajo p_fascias."
+        },
+        {
+          "id": "plinths_count",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:plinths.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36",
+            "premise:p_plinths"
+          ],
+          "summary": "Dos posiciones bajo la base en perfil y dos bandas separadas en planta sostienen dos fajas bajo p_plinths. La cara frontal 32 no constituye una tercera."
+        },
+        {
+          "id": "duplicate_scan_body",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:sides.quantity",
+            "component:top.quantity",
+            "component:bottom.quantity",
+            "component:divisions.quantity",
+            "component:shelves.quantity"
+          ],
+          "source_refs": [
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "summary": "No se detecta doble conteo: 13/22 son perfiles superpuestos de los laterales; 24 es planta compartida de tapa, base y separaciones a distintas alturas; 38 corresponde a las dos baldas superiores. Los niveles y fondos distinguen estos grupos sin añadir unidades por proyección."
+        },
+        {
+          "id": "duplicate_scan_faces",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back_low.quantity",
+            "component:back_high.quantity",
+            "component:fronts.quantity",
+            "component:fascias.quantity",
+            "component:plinths.quantity"
+          ],
+          "source_refs": [
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "summary": "No se detectan instancias añadidas por proyección: traseras separadas verticalmente aunque superpuestas en planta; frentes y fajas con plantas compartidas y alturas distintas; zócalos separados en profundidad. Los cantos posteriores distinguen las traseras de los frentes y los salientes distinguen las fajas de las separaciones."
+        },
+        {
+          "id": "materials_finishes_unknown",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:sides.material",
+            "component:sides.finish",
+            "component:top.material",
+            "component:top.finish",
+            "component:bottom.material",
+            "component:bottom.finish",
+            "component:divisions.material",
+            "component:divisions.finish",
+            "component:shelves.material",
+            "component:shelves.finish",
+            "component:back_low.material",
+            "component:back_low.finish",
+            "component:back_high.material",
+            "component:back_high.finish",
+            "component:fronts.material",
+            "component:fronts.finish",
+            "component:fascias.material",
+            "component:fascias.finish",
+            "component:plinths.material",
+            "component:plinths.finish"
+          ],
+          "source_refs": [
+            "visual:a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview"
+          ],
+          "summary": "El dibujo lineal no aporta especificaciones de material o acabado. Ni los espesores ni el aspecto de los contornos permiten asignarlos."
+        }
+      ],
+      "machine_field_reviews": [
+        {
+          "target_ref": "component:sides.length",
+          "status": "accepted",
+          "check_ids": [
+            "sides_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:sides.width",
+          "status": "accepted",
+          "check_ids": [
+            "sides_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:sides.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "sides_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:sides.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "sides_count",
+            "duplicate_scan_body"
+          ]
+        },
+        {
+          "target_ref": "component:sides.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:sides.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:top.length",
+          "status": "accepted",
+          "check_ids": [
+            "top_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:top.width",
+          "status": "accepted",
+          "check_ids": [
+            "top_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:top.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "top_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:top.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "top_count",
+            "duplicate_scan_body"
+          ]
+        },
+        {
+          "target_ref": "component:top.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:top.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.length",
+          "status": "accepted",
+          "check_ids": [
+            "bottom_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.width",
+          "status": "accepted",
+          "check_ids": [
+            "bottom_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "bottom_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "bottom_count",
+            "duplicate_scan_body"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:bottom.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.length",
+          "status": "accepted",
+          "check_ids": [
+            "divisions_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.width",
+          "status": "accepted",
+          "check_ids": [
+            "divisions_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "divisions_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "divisions_count",
+            "duplicate_scan_body"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:divisions.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.length",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.width",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_count",
+            "duplicate_scan_body"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:shelves.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.length",
+          "status": "accepted",
+          "check_ids": [
+            "back_low_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.width",
+          "status": "accepted",
+          "check_ids": [
+            "back_low_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "back_low_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "back_low_count",
+            "duplicate_scan_faces"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:back_low.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.length",
+          "status": "accepted",
+          "check_ids": [
+            "back_high_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.width",
+          "status": "accepted",
+          "check_ids": [
+            "back_high_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "back_high_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "back_high_count",
+            "duplicate_scan_faces"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:back_high.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.length",
+          "status": "accepted",
+          "check_ids": [
+            "fronts_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.width",
+          "status": "accepted",
+          "check_ids": [
+            "fronts_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "fronts_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "fronts_count",
+            "duplicate_scan_faces"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:fronts.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.length",
+          "status": "accepted",
+          "check_ids": [
+            "fascias_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.width",
+          "status": "accepted",
+          "check_ids": [
+            "fascias_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "fascias_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "fascias_count",
+            "duplicate_scan_faces"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:fascias.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.length",
+          "status": "accepted",
+          "check_ids": [
+            "plinths_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.width",
+          "status": "accepted",
+          "check_ids": [
+            "plinths_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "plinths_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "plinths_count",
+            "duplicate_scan_faces"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        },
+        {
+          "target_ref": "component:plinths.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes_unknown"
+          ]
+        }
+      ],
+      "evidence_dispositions": [],
+      "auto_review_status": "incomplete",
+      "furniture_quantity": {
+        "value": null,
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": []
+      },
+      "currency": null,
+      "required_cost_scope": [],
+      "required_hours_scope": [],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_validation": null,
+      "construction_placements": [],
+      "status": "reviewed_incomplete"
+    }
+  }
+}

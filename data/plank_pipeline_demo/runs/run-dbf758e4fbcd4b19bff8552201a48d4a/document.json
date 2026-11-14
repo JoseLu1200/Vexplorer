@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "artifacts": {
+      "normalized_dxf": {
+        "media_type": "application/dxf",
+        "sha256": "91a1f89c04b31f35a5ef73828fb920134cebcce684f638c45184d7b7ca6459e7",
+        "url": "/api/v1/documents/doc-35b135320efd4b049395ef77e981fdfa/normalized.dxf"
+      },
+      "original": {
+        "media_type": "application/dxf",
+        "url": "/api/v1/documents/doc-35b135320efd4b049395ef77e981fdfa/original"
+      },
+      "pages": [],
+      "preview": {
+        "media_type": "image/svg+xml",
+        "url": "/api/v1/documents/doc-35b135320efd4b049395ef77e981fdfa/preview.svg"
+      }
+    },
+    "audit": {
+      "uploaded_at": "2026-11-14T12:55:59.184111+00:00",
+      "uploaded_by": null
+    },
+    "document_id": "doc-35b135320efd4b049395ef77e981fdfa",
+    "ingestion": {
+      "capabilities": {
+        "geometry_analysis": true,
+        "page_geometry_analysis": false,
+        "page_review": false
+      },
+      "errors": [],
+      "state": "ready",
+      "warnings": []
+    },
+    "original_filename": "plank-016.dxf",
+    "sha256": "91a1f89c04b31f35a5ef73828fb920134cebcce684f638c45184d7b7ca6459e7",
+    "size_bytes": 50834,
+    "source": {
+      "filename": "plank-016.dxf",
+      "format": "dxf",
+      "media_type": "application/dxf",
+      "sha256": "91a1f89c04b31f35a5ef73828fb920134cebcce684f638c45184d7b7ca6459e7",
+      "size_bytes": 50834,
+      "unit": "unknown"
+    },
+    "source_kind": "uploaded"
+  }
+}

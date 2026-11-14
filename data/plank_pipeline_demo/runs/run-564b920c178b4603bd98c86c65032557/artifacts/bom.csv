@@ -1,0 +1,3 @@
+﻿component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish
+demo-component-top,DEMO condicionada - Tablero superior candidato,tabletop,1,confirmed,confirmed,demo-component-top:1,,1200.0,700.0,30.0,post-production solid oak residues with wood particleboard and PVAc D3 glue,"natural oil, Cradle to Cradle Certified Silver"
+demo-component-sides,DEMO condicionada - Paneles laterales de soporte candidatos,side_panel,2,confirmed,confirmed,demo-component-sides:1|demo-component-sides:2,,720.0,700.0,18.0,post-production solid oak residues with wood particleboard and PVAc D3 glue,"natural oil, Cradle to Cradle Certified Silver"

@@ -127,9 +127,12 @@ def _motivo_sin_clasificar(pieza: PiezaRef) -> str | None:
             ("material", normalizar_texto(pieza.material)),
             ("largo", pieza.largo_mm),
             ("ancho", pieza.ancho_mm),
+            ("cantidad", pieza.cantidad),
         )
         if valor is None
     ]
+    if faltan == ["cantidad"]:
+        return "cantidad desconocida"
     return f"{', '.join(faltan)} desconocido" if faltan else None
 
 
@@ -199,7 +202,16 @@ def preparar_lotes(
     for indice, (espesor, material, acabado, miembros, superficie_mm2) in enumerate(
         grupos, start=1
     ):
-        ocurrencias = sum(unidades(p) for p in miembros)
+        ocurrencias = sum(
+            unidades(p)
+            for p in miembros
+            if cabe_en_tablero(
+                float(p.largo_mm or 0),
+                float(p.ancho_mm or 0),
+                configuracion,
+                p.rotable,
+            )
+        )
         omitido: str | None = None
         if ocurrencias > LIMITE_OCURRENCIAS:
             omitido = MOTIVO_DEMASIADAS_OCURRENCIAS

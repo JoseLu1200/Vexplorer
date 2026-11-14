@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import time
 from collections.abc import Callable
 
@@ -19,6 +20,7 @@ from backend.app.precedentes.comun import (
 from backend.app.precedentes.espacio import (
     TOLERANCIA_POR_DEFECTO,
     AlmacenEspacio,
+    ErrorInvalidacionEmbeddings,
     resumir,
     rotar_espacio,
     verificar_espacio,
@@ -230,7 +232,40 @@ def crear_router_embeddings(
     @router.post("/embeddings/espacio/rotar")
     def rotar():
         """Rotación explícita: guarda la huella actual como referencia y archiva la anterior con fecha."""
-        return _operacion_espacio(lambda: rotar_espacio(proveedor, almacen_espacio, ahora))
+        if proveedor is None:
+            return _error(503, "proveedor_no_disponible", "No hay proveedor de embeddings configurado.")
+        try:
+            with candado.ocupar(
+                NOMBRE_CANDADO_REGENERACION, TTL_REGENERACION_S
+            ), candado.ocupar(
+                NOMBRE_CANDADO_ESPACIO, TTL_ESPACIO_S, intervalo_minimo_verificacion_s
+            ):
+                try:
+                    resultado = rotar_espacio(
+                        proveedor,
+                        almacen_espacio,
+                        ahora,
+                        invalidar=getattr(repositorio, "invalidate_embeddings", None),
+                    )
+                    return respuesta_ok(resultado)
+                except ErrorInvalidacionEmbeddings:
+                    return _error(
+                        503,
+                        "invalidacion_embeddings_fallida",
+                        "No se pudo invalidar la caché semántica; la referencia no se ha rotado.",
+                    )
+                except EmbeddingProviderError as exc:
+                    return _fallo_proveedor(exc)
+        except OperacionEnCurso:
+            return _ocupado()
+        except (CandadoNoDisponible, sqlite3.DatabaseError):
+            return _candado_no_disponible()
+        except IntervaloNoCumplido as exc:
+            return _error(
+                429,
+                "verificacion_reciente",
+                f"Espera {exc.espera_s:.0f} s antes de volver a consultar el proveedor.",
+            )
 
     @router.get("/embeddings/mantenimiento")
     def mantenimiento():

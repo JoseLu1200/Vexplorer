@@ -254,3 +254,26 @@ def test_group_request_uses_calibrated_default_threshold_per_mode(tmp_path: Path
     assert sem_explicit.status_code == 200
     assert len(sem_explicit.json()["data"]) == 1
     assert sem_explicit.json()["data"][0]["threshold"] == pytest.approx(0.85)
+
+
+def test_near_duplicate_threshold_uses_calibration_and_preserves_summary(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    calibration = tmp_path / "thresholds.json"
+    calibration.write_text(json.dumps({"near_duplicate": {"geometric:furniture-v1": 0.995}}), encoding="utf-8")
+    monkeypatch.setenv(CALIBRATION_FILE_ENV_VAR, str(calibration))
+    client = TestClient(create_app(data_dir=tmp_path / "data"))
+    first = _reviewed_run(client, "query")
+    second = _reviewed_run(client, "precedent")
+    saved = client.post(f"/api/v1/runs/{second}/library", json={"result_revision": 2, "label": "Precedente", "embedding_mode": "offline"})
+    assert saved.status_code == 201
+    response = client.post(f"/api/v1/runs/{first}/similarity", json={
+        "result_revision": 2, "mode": "geometric", "include_abstention": True,
+        "include_summary": True, "threshold_kind": "near_duplicate",
+    })
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["threshold_used"] == pytest.approx(0.995)
+    assert data["record_count"] == data["design_count"] == 1
+    assert data["duplicate_record_count"] == 0
+    assert data["abstained"] is False
+    assert data["matches"][0]["run_id"] == second

@@ -1,0 +1,327 @@
+[
+  {
+    "component_id": "side_left",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Lateral izquierdo candidato",
+    "length": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:sides"
+      ],
+      "evidence_ids": [
+        "evidence-contour-entity-8D",
+        "evidence-contour-entity-93",
+        "evidence-geometry-entity-8E",
+        "evidence-geometry-entity-94"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-574b79fd7a54e129:side_left:1"
+    ],
+    "source_contour_ids": [
+      "contour-entity-8D",
+      "contour-entity-93"
+    ],
+    "source_dimension_ids": [
+      "dimension-entity-CC"
+    ],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-geometry-entity-8E",
+      "evidence-geometry-entity-94",
+      "evidence-dimension-entity-CC"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-top"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-top"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    }
+  },
+  {
+    "component_id": "side_right",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Lateral derecho candidato",
+    "length": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:sides"
+      ],
+      "evidence_ids": [
+        "evidence-contour-entity-8D",
+        "evidence-contour-entity-93",
+        "evidence-geometry-entity-8F",
+        "evidence-geometry-entity-95"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-574b79fd7a54e129:side_right:1"
+    ],
+    "source_contour_ids": [
+      "contour-entity-8D",
+      "contour-entity-93",
+      "contour-entity-97"
+    ],
+    "source_dimension_ids": [
+      "dimension-entity-CC"
+    ],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-geometry-entity-8F",
+      "evidence-geometry-entity-95",
+      "evidence-dimension-entity-CC"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-top",
+      "observation-view-side"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-top",
+      "view-side"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    }
+  },
+  {
+    "component_id": "shelf_upper",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Estante interior superior candidato",
+    "length": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:upper"
+      ],
+      "evidence_ids": [
+        "evidence-geometry-entity-91",
+        "evidence-geometry-entity-99",
+        "evidence-contour-entity-8D",
+        "evidence-contour-entity-97"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "shelf",
+    "scenario_occurrence_ids": [
+      "provisional:general-574b79fd7a54e129:shelf_upper:1"
+    ],
+    "source_contour_ids": [
+      "contour-entity-8D",
+      "contour-entity-97"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-geometry-entity-90",
+      "evidence-geometry-entity-91",
+      "evidence-geometry-entity-98",
+      "evidence-geometry-entity-99"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-side"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-side"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    }
+  },
+  {
+    "component_id": "shelf_lower",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Estante interior inferior candidato",
+    "length": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:lower"
+      ],
+      "evidence_ids": [
+        "evidence-geometry-entity-90",
+        "evidence-geometry-entity-98",
+        "evidence-contour-entity-8D",
+        "evidence-contour-entity-97"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "shelf",
+    "scenario_occurrence_ids": [
+      "provisional:general-574b79fd7a54e129:shelf_lower:1"
+    ],
+    "source_contour_ids": [
+      "contour-entity-8D",
+      "contour-entity-97"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-geometry-entity-90",
+      "evidence-geometry-entity-91",
+      "evidence-geometry-entity-98",
+      "evidence-geometry-entity-99"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-side"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-side"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    }
+  }
+]

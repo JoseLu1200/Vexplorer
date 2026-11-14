@@ -1,0 +1,236 @@
+{
+  "spaces": [
+    {
+      "id": "corpus:cad-eg2-logreg373",
+      "count": 373,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 768,
+        "preprocessing": "f6e9a1d1d412b03f077f35e75a80953ae5aa958359a59c9d55cb22b1b80342c3",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "3b54aaabfe8cf37807785640d275a6f96ef49530f9f68dae7d02755a7df6f122"
+    },
+    {
+      "id": "corpus:dinov3-image-384",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "facebook/dinov3-vits16-pretrain-lvd1689m",
+        "revision": "114c1379950215c8b35dfcd4e90a5c251dde0d32",
+        "mode": "image",
+        "dimensions": 384,
+        "preprocessing": "44525e99ab4e1ce310d2a1047a24ea2b03e4badefeda058533fec352d5fa10c9",
+        "precision": "float32",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "3e4822f3af60c122fbb4b52a61e97e5685f209a251b50c02566136f917edbc24"
+    },
+    {
+      "id": "corpus:eg2-image-256",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "image",
+        "dimensions": 256,
+        "preprocessing": "57e309f31b50222e326a2e3b0825c0b23a35bc8da33721c0599501132343bb7a",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "ec87dbe433462e144a29073d27c7b158dfcf6384cd11c71694b6f7b7f0854d81"
+    },
+    {
+      "id": "corpus:eg2-image-768",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "image",
+        "dimensions": 768,
+        "preprocessing": "57e309f31b50222e326a2e3b0825c0b23a35bc8da33721c0599501132343bb7a",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "dcb623c39bc7a8c66b01adc5661e8fd8f3db9cf1e5bd50920c6a1c123fb188e5"
+    },
+    {
+      "id": "corpus:eg2-mixed-256",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 256,
+        "preprocessing": "57e309f31b50222e326a2e3b0825c0b23a35bc8da33721c0599501132343bb7a",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "32abea07ba970a37b16eaecb4c7b4f9d4f7037602a05b45d4038d12932013e73"
+    },
+    {
+      "id": "corpus:eg2-mixed-768",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 768,
+        "preprocessing": "57e309f31b50222e326a2e3b0825c0b23a35bc8da33721c0599501132343bb7a",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "483dee14b495e11e7a724e0b405ce394921e4338985023ae2e1c7001ec4f6205"
+    },
+    {
+      "id": "corpus:eg2-text-256",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "text",
+        "dimensions": 256,
+        "preprocessing": "36928ad456d09fe93f7bf9b3d654ff597973482a1e51c06e1316426e0c4ddcd1",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "9c563afcbc4a888979beef3f20b88dccd871f782e89e56bf709fbae0082af834"
+    },
+    {
+      "id": "corpus:eg2-text-768",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "text",
+        "dimensions": 768,
+        "preprocessing": "36928ad456d09fe93f7bf9b3d654ff597973482a1e51c06e1316426e0c4ddcd1",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "0e1d57f6f81c2d0dc7a7741c0c7006e85a3fd1328248cc181701c2edda532022"
+    },
+    {
+      "id": "corpus:engineering-eg2-mixed-768",
+      "count": 14,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 768,
+        "preprocessing": "f6e9a1d1d412b03f077f35e75a80953ae5aa958359a59c9d55cb22b1b80342c3",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "84362e031f6ef83733c39a735fccebadc559122d762ebb91d3a6c367a12eb4f4"
+    },
+    {
+      "id": "corpus:minilm-text-384",
+      "count": 117,
+      "space": {
+        "provider": "local",
+        "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "mode": "text",
+        "dimensions": 384,
+        "preprocessing": "5a082f9abfdc2fe3197f78f80809be28e55c0e0deb952fe27ab726b47cd7eb3e",
+        "precision": "float32",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "9341b97800d5b4a52bdb2870309c4680e93567b499ddcf3bc2a6f5608f2f39b7"
+    },
+    {
+      "id": "corpus:pilot-eg2-demo",
+      "count": 119,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 768,
+        "preprocessing": "57e309f31b50222e326a2e3b0825c0b23a35bc8da33721c0599501132343bb7a",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "d39469752d745212afa91ec2c5f05f594a34e97ec37f1ecca2cd5b5f97d07aa9"
+    },
+    {
+      "id": "corpus:plank-views-eg2-mixed-768",
+      "count": 30,
+      "space": {
+        "provider": "local",
+        "model": "google/embeddinggemma-2",
+        "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+        "mode": "mixed",
+        "dimensions": 768,
+        "preprocessing": "f6e9a1d1d412b03f077f35e75a80953ae5aa958359a59c9d55cb22b1b80342c3",
+        "precision": "bfloat16",
+        "descriptor_version": null,
+        "normalization": "l2"
+      },
+      "source": "corpus",
+      "release_id": "7d58f75b1abfc54326f09f17f3822b6b77d08694cd4d900d3b96839fe9908578"
+    },
+    {
+      "id": "library:0fc4cdd3c8ae97bed1058f0c7d6e389989a262d98f9b58d080cdc34b65bcb555",
+      "count": 4,
+      "space": {
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "revision": "provider-managed",
+        "mode": "text",
+        "dimensions": 256,
+        "preprocessing": "semantic_text-v1",
+        "precision": "float32",
+        "descriptor_version": "furniture-v3",
+        "normalization": "l2"
+      },
+      "source": "library"
+    }
+  ],
+  "excluded": {
+    "no_embedding": 0,
+    "stale_revision": 0,
+    "invalid_embedding": 0
+  },
+  "errors": [],
+  "catalog_scope": "shared_authenticated_instance",
+  "review": {
+    "available": false,
+    "model": "jev-1.14.0",
+    "daily_attempt_limit": 0
+  }
+}

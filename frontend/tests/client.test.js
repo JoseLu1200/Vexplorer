@@ -121,6 +121,14 @@ test("retrying a terminal job creates a linked durable execution without reuploa
   assert.equal(requests[0][1].headers["Idempotency-Key"],"retry-key");
 });
 
+test("resuming a saved proposal uses the dedicated review-only endpoint",async()=>{
+  const requests=[],client=createApiClient({fetchImpl:async(url,init={})=>{requests.push([url,init]);return response(202,{data:{id:"job-3",state:"queued",resume_of_job_id:"job-1"}});},idFactory:()=>"resume-key"});
+  await client.resumeJob("job 1");
+  assert.equal(requests[0][0],"/api/v1/jobs/job%201/resume");
+  assert.equal(requests[0][1].method,"POST");
+  assert.equal(requests[0][1].headers["Idempotency-Key"],"resume-key");
+});
+
 test("replay availability is checked with the exact server resolved run request", async () => {
   let request;
   const client = createApiClient({ fetchImpl: async (url, init) => { request = [url, init]; return response(200, { data: { available: true } }); } });
@@ -193,6 +201,31 @@ test("general furniture endpoints keep proposal and review revisions explicit", 
   assert.deepEqual(JSON.parse(requests[2][1].body), { base_proposal_revision: 2, operations: [] });
   assert.equal(requests[3][0], "/api/v1/runs/run%20general/general/derived?proposal_revision=3&review_revision=2");
   assert.equal(client.generalArtifactUrl("run general","bom/1",3,2),"/api/v1/runs/run%20general/general/artifacts/bom%2F1?proposal_revision=3&review_revision=2");
+});
+
+test("general assembly reads exact revisions without spending and retries as a durable idempotent job", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(init.method === "POST" ? 202 : 200, { data: { id: "assembly-job", state: "queued" } }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "assembly-retry-key" });
+
+  await client.getGeneralAssembly("run assembly", 4, 2);
+  await client.retryGeneralAssembly("run assembly", { base_proposal_revision: 4, base_review_revision: 2 });
+
+  assert.equal(requests[0][0], "/api/v1/runs/run%20assembly/general/assembly?proposal_revision=4&review_revision=2");
+  assert.equal(requests[0][1].method, undefined, "read-only assembly inspection remains a GET");
+  assert.equal(requests[1][0], "/api/v1/runs/run%20assembly/general/assembly/retry");
+  assert.equal(requests[1][1].method, "POST");
+  assert.equal(requests[1][1].headers["Idempotency-Key"], "assembly-retry-key");
+  assert.deepEqual(JSON.parse(requests[1][1].body), { base_proposal_revision: 4, base_review_revision: 2 });
+});
+
+test("general assembly cancellation targets the durable retry job without a request body", async () => {
+  let request;
+  const client=createApiClient({fetchImpl:async(url,init={})=>{request=[url,init];return response(202,{data:{job_id:"job/7",cancel_requested:true}});}});
+  assert.deepEqual(await client.cancelGeneralAssembly("run assembly","job/7"),{job_id:"job/7",cancel_requested:true});
+  assert.equal(request[0],"/api/v1/runs/run%20assembly/general/assembly/retry/job%2F7/cancel");
+  assert.equal(request[1].method,"POST");
+  assert.equal(request[1].body,undefined);
 });
 
 test("historical imports, records, comparables and estimates have visible client operations", async () => {

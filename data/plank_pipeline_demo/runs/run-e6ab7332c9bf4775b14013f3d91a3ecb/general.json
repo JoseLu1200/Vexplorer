@@ -1,0 +1,2739 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "status": "needs_review",
+    "proposal_revision": 1,
+    "review_revision": 0,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "general-7eb98b3e11148b8b",
+      "drawing_id": "drawing-a235d1053b6f0451",
+      "ledger_revision": "drawing-a235d1053b6f0451",
+      "proposal_origin": "native_tool",
+      "bindings": [
+        {
+          "id": "side_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-y"
+          ]
+        },
+        {
+          "id": "side_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-12:span-y"
+          ]
+        },
+        {
+          "id": "side_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-x"
+          ]
+        },
+        {
+          "id": "top_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-x"
+          ]
+        },
+        {
+          "id": "horizontal_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-24:span-y"
+          ]
+        },
+        {
+          "id": "top_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-y"
+          ]
+        },
+        {
+          "id": "shelf_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-23:span-x"
+          ]
+        },
+        {
+          "id": "shelf_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-23:span-y"
+          ]
+        },
+        {
+          "id": "side_sum",
+          "operation": "add",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-x",
+            "measurement:contour:contour-lines-unknown-20:span-x"
+          ]
+        },
+        {
+          "id": "bottom_l",
+          "operation": "subtract",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-x",
+            "binding:side_sum"
+          ]
+        },
+        {
+          "id": "bottom_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-31:span-y"
+          ]
+        },
+        {
+          "id": "reduced_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-38:span-x"
+          ]
+        },
+        {
+          "id": "reduced_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-38:span-y"
+          ]
+        },
+        {
+          "id": "reduced_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-37:span-y"
+          ]
+        },
+        {
+          "id": "back_low_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-14:span-y"
+          ]
+        },
+        {
+          "id": "back_low_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-14:span-x"
+          ]
+        },
+        {
+          "id": "back_low_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-16:span-x"
+          ]
+        },
+        {
+          "id": "back_high_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-y"
+          ]
+        },
+        {
+          "id": "back_high_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-x"
+          ]
+        },
+        {
+          "id": "back_high_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-19:span-x"
+          ]
+        },
+        {
+          "id": "door_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-6:span-x"
+          ]
+        },
+        {
+          "id": "door_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-6:span-y"
+          ]
+        },
+        {
+          "id": "door_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-8:span-x"
+          ]
+        },
+        {
+          "id": "rail_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-x"
+          ]
+        },
+        {
+          "id": "rail_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-y"
+          ]
+        },
+        {
+          "id": "rail_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-3:span-x"
+          ]
+        },
+        {
+          "id": "plinth_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-32:span-x"
+          ]
+        },
+        {
+          "id": "plinth_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-32:span-y"
+          ]
+        },
+        {
+          "id": "plinth_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-34:span-x"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "sides",
+          "label": "Laterales de altura completa",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "side_l",
+          "width_binding_id": "side_w",
+          "thickness_binding_id": "side_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p-side"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas laterales distintas en alzado y planta sostienen dos piezas, no seis proyecciones. Las caras superpuestas del perfil son correspondencias candidatas.",
+            "Se asignan altura, fondo y espesor como hipótesis; las pequeñas diferencias vectoriales no se interpretan como tolerancias."
+          ],
+          "unknown_fields": [
+            "material",
+            "acabado",
+            "mecanizado",
+            "uniones",
+            "correspondencia_individual_en_perfil"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "top",
+          "label": "Panel horizontal superior",
+          "kind": "panel",
+          "role": "top_panel",
+          "length_binding_id": "top_l",
+          "width_binding_id": "horizontal_w",
+          "thickness_binding_id": "top_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La banda superior representa una pieza y su perfil, no dos unidades.",
+            "La profundidad compartida en planta se asigna provisionalmente al panel."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "correspondencia_de_planta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "bottom",
+          "label": "Panel horizontal inferior sobre zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length_binding_id": "bottom_l",
+          "width_binding_id": "horizontal_w",
+          "thickness_binding_id": "bottom_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-1"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-geometry-entity-B6",
+            "evidence-geometry-entity-B7",
+            "evidence-geometry-entity-B8",
+            "evidence-geometry-entity-B9"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El perfil inferior corresponde a una base entre laterales.",
+            "El largo se deriva del ancho exterior menos los dos espesores laterales; el encaje entre laterales sigue siendo hipótesis."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "correspondencia_de_planta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "full_shelves",
+          "label": "Divisiones horizontales de fondo completo",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "shelf_l",
+          "width_binding_id": "horizontal_w",
+          "thickness_binding_id": "shelf_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-26"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las dos bandas a niveles distintos delimitan el compartimento central y representan dos instancias físicas.",
+            "La cara de planta puede agrupar proyecciones coincidentes; no constituye una tercera pieza."
+          ],
+          "unknown_fields": [
+            "caracter_fijo_o_regulable",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "reduced_shelves",
+          "label": "Estantes interiores de menor fondo",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "reduced_l",
+          "width_binding_id": "reduced_w",
+          "thickness_binding_id": "reduced_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-reduced"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "premise_ids": [
+            "p-reduced"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-40",
+            "evidence-contour-lines-unknown-38"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos niveles interiores distintos del sector superior sostienen dos estantes.",
+            "El contorno de planta compartido se interpreta como cara candidata de esos estantes, no como panel adicional."
+          ],
+          "unknown_fields": [
+            "caracter_fijo_o_regulable",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_lower",
+          "label": "Trasera parcial del sector inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length_binding_id": "back_low_l",
+          "width_binding_id": "back_low_w",
+          "thickness_binding_id": "back_low_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-back-low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-15",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "premise_ids": [
+            "p-back-low"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara rectangular inferior con perfiles delgados compatibles puede ser una trasera parcial única.",
+            "Alternativa conservada: límite interior o hueco si no se confirma que el perfil delgado corresponda a una cara material."
+          ],
+          "unknown_fields": [
+            "confirmacion_cara_material",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_upper",
+          "label": "Trasera parcial del sector superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length_binding_id": "back_high_l",
+          "width_binding_id": "back_high_w",
+          "thickness_binding_id": "back_high_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-back-high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-18",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "premise_ids": [
+            "p-back-high"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Cara superior y perfiles delgados compatibles sostienen una trasera parcial candidata, no tres piezas.",
+            "Alternativa conservada: hueco o límite interior; no se extrapola una trasera al compartimento central."
+          ],
+          "unknown_fields": [
+            "confirmacion_cara_material",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "doors",
+          "label": "Frentes inferiores candidatos a puertas",
+          "kind": "panel",
+          "role": "door",
+          "length_binding_id": "door_l",
+          "width_binding_id": "door_w",
+          "thickness_binding_id": "door_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-door"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "premise_ids": [
+            "p-door"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos caras apiladas distintas con perfiles anteriores compatibles sostienen dos frentes materiales candidatos.",
+            "La función puerta es provisional: también podrían ser frentes de otro sistema; no se infieren bisagras, apertura ni cajones."
+          ],
+          "unknown_fields": [
+            "tipo_de_frente",
+            "sistema_de_apertura",
+            "herrajes",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rails",
+          "label": "Bandas transversales de fachada",
+          "kind": "panel",
+          "role": "stretcher",
+          "length_binding_id": "rail_l",
+          "width_binding_id": "rail_w",
+          "thickness_binding_id": "rail_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-rail"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "premise_ids": [
+            "p-rail"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las bandas de fachada en dos niveles diferentes se interpretan como dos travesaños candidatos.",
+            "Podrían ser tapetas sin función resistente; la proyección de planta coincidente no aumenta la cantidad."
+          ],
+          "unknown_fields": [
+            "funcion_resistente_o_tapeta",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "plinth",
+          "label": "Fajas inferiores candidatas a zócalo",
+          "kind": "panel",
+          "role": "support",
+          "length_binding_id": "plinth_l",
+          "width_binding_id": "plinth_w",
+          "thickness_binding_id": "plinth_t",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-plinth"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "premise_ids": [
+            "p-plinth"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-33",
+            "evidence-contour-lines-unknown-35",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas separadas en planta y dos perfiles inferiores sostienen dos fajas distintas, provisionalmente iguales.",
+            "Alternativa: una banda puede pertenecer a otra pieza; confirmar cantidad y función de apoyo frente a simple cierre."
+          ],
+          "unknown_fields": [
+            "confirmacion_cantidad",
+            "funcion_de_apoyo",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p-side",
+          "description": "Las bandas externas izquierda y derecha son dos laterales materiales distintos; alzado, planta y perfil son proyecciones candidatas del mismo conjunto. Se asume igualdad dimensional nominal para agruparlas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-horizontal",
+          "description": "Se interpretan cuatro niveles horizontales de fondo completo: uno superior, dos divisiones intermedias y una base. Los contornos de planta coincidentes no añaden instancias. Fondo común y montaje entre laterales son hipótesis a revisar.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-reduced",
+          "description": "Dos bandas superiores a alturas distintas son dos estantes de menor fondo; sus contornos en planta y perfil son correspondencias candidatas. Se agrupan con iguales dimensiones nominales.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-back-low",
+          "description": "El grupo de cara 14 y perfiles 15/16 representa una única trasera inferior material. Permanece alternativa de límite interior/hueco si se rechaza la correspondencia de perfiles.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-back-high",
+          "description": "El grupo de cara 17 y perfiles 18/19 representa una única trasera superior material, distinta de la inferior. Permanece alternativa de hueco o límite interior.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-door",
+          "description": "Las caras 6 y 9 son dos frentes físicos apilados; 7/8/10 son sus proyecciones candidatas, no unidades adicionales. La interpretación como puertas y la igualdad dimensional requieren revisión.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-rail",
+          "description": "Las caras 1 y 4 en niveles separados y los perfiles 3 y 5 representan dos bandas materiales iguales de fachada, provisionalmente travesaños; podrían ser tapetas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-plinth",
+          "description": "Los grupos de planta 33 y 35 y perfiles 34 y 36 representan dos fajas inferiores distintas con dimensión de cara compatible con 32. Cantidad dos y función de apoyo son hipótesis; una banda podría corresponder a otra pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-contact",
+          "description": "Las intersecciones y coincidencias visibles permiten revisar interacción entre grupos, pero no distinguen apoyo, fijación o mera superposición de proyecciones. Cada relación unknown conserva esta indeterminación sin inferir herrajes.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable construida desde los grupos del dibujo, sin plantilla.",
+        "Todos los bindings asignan observaciones geométricas a dimensiones de componentes como hipótesis, no como cotas industriales confirmadas.",
+        "No se interpreta cada rectángulo como pieza: las caras compartidas de planta y los perfiles superpuestos son correspondencias ambiguas.",
+        "Las cantidades son hipótesis de instancias físicas distintas; nunca se suman vistas ni proyecciones.",
+        "No se especifican materiales, acabados, mecanizados ni uniones ocultas.",
+        "Las relaciones entre grupos no determinan contactos entre cada una de sus instancias; no se demuestra contacto de los dos frentes entre sí ni entre ambas traseras."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "top",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-side",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "full_shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "reduced_shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-reduced",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-37",
+            "contour:contour-lines-unknown-40",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-19",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-16",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "top",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-19"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "reduced_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-reduced"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-39",
+            "contour:contour-lines-unknown-41"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-25"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "rails",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-rail",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "rails",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-rail",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "back_lower",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-back-low"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-16"
+          ]
+        },
+        {
+          "subject_component_id": "plinth",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-plinth",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-32",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "plinth",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-plinth"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "rails",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-rail"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-3"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-31",
+            "view:view-unknown"
+          ]
+        }
+      ],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "general-7eb98b3e11148b8b",
+      "drawing_id": "drawing-a235d1053b6f0451",
+      "ledger_revision": "drawing-a235d1053b6f0451",
+      "components": [
+        {
+          "id": "sides",
+          "label": "Laterales de altura completa",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 2400.0000013176855,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999824307751624,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p-side"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas laterales distintas en alzado y planta sostienen dos piezas, no seis proyecciones. Las caras superpuestas del perfil son correspondencias candidatas.",
+            "Se asignan altura, fondo y espesor como hipótesis; las pequeñas diferencias vectoriales no se interpretan como tolerancias."
+          ],
+          "unknown_fields": [
+            "material",
+            "acabado",
+            "mecanizado",
+            "uniones",
+            "correspondencia_individual_en_perfil"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "top",
+          "label": "Panel horizontal superior",
+          "kind": "panel",
+          "role": "top_panel",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:horizontal_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999973824643348,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La banda superior representa una pieza y su perfil, no dos unidades.",
+            "La profundidad compartida en planta se asigna provisionalmente al panel."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "correspondencia_de_planta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "bottom",
+          "label": "Panel horizontal inferior sobre zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length": {
+            "value_mm": 564.0000000000001,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:horizontal_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-1"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-geometry-entity-B6",
+            "evidence-geometry-entity-B7",
+            "evidence-geometry-entity-B8",
+            "evidence-geometry-entity-B9"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El perfil inferior corresponde a una base entre laterales.",
+            "El largo se deriva del ancho exterior menos los dos espesores laterales; el encaje entre laterales sigue siendo hipótesis."
+          ],
+          "unknown_fields": [
+            "uniones",
+            "material",
+            "correspondencia_de_planta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "full_shelves",
+          "label": "Divisiones horizontales de fondo completo",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:horizontal_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99997382464346,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-horizontal"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "premise_ids": [
+            "p-horizontal"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-26"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las dos bandas a niveles distintos delimitan el compartimento central y representan dos instancias físicas.",
+            "La cara de planta puede agrupar proyecciones coincidentes; no constituye una tercera pieza."
+          ],
+          "unknown_fields": [
+            "caracter_fijo_o_regulable",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "reduced_shelves",
+          "label": "Estantes interiores de menor fondo",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 563.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:reduced_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 515.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:reduced_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:reduced_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-reduced"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "premise_ids": [
+            "p-reduced"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-40",
+            "evidence-contour-lines-unknown-38"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos niveles interiores distintos del sector superior sostienen dos estantes.",
+            "El contorno de planta compartido se interpreta como cara candidata de esos estantes, no como panel adicional."
+          ],
+          "unknown_fields": [
+            "caracter_fijo_o_regulable",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_lower",
+          "label": "Trasera parcial del sector inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 774.0000003660234,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999943339249739,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-back-low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-15",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "premise_ids": [
+            "p-back-low"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara rectangular inferior con perfiles delgados compatibles puede ser una trasera parcial única.",
+            "Alternativa conservada: límite interior o hueco si no se confirma que el perfil delgado corresponda a una cara material."
+          ],
+          "unknown_fields": [
+            "confirmacion_cara_material",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back_upper",
+          "label": "Trasera parcial del sector superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 874.0000003660233,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.99993601873939,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-back-high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-18",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "premise_ids": [
+            "p-back-high"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Cara superior y perfiles delgados compatibles sostienen una trasera parcial candidata, no tres piezas.",
+            "Alternativa conservada: hueco o límite interior; no se extrapola una trasera al compartimento central."
+          ],
+          "unknown_fields": [
+            "confirmacion_cara_material",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "doors",
+          "label": "Frentes inferiores candidatos a puertas",
+          "kind": "panel",
+          "role": "door",
+          "length": {
+            "value_mm": 597.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:door_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 346.99999868230725,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:door_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000025402170877,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:door_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-door"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "premise_ids": [
+            "p-door"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos caras apiladas distintas con perfiles anteriores compatibles sostienen dos frentes materiales candidatos.",
+            "La función puerta es provisional: también podrían ser frentes de otro sistema; no se infieren bisagras, apertura ni cajones."
+          ],
+          "unknown_fields": [
+            "tipo_de_frente",
+            "sistema_de_apertura",
+            "herrajes",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rails",
+          "label": "Bandas transversales de fachada",
+          "kind": "panel",
+          "role": "stretcher",
+          "length": {
+            "value_mm": 600.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 50.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999633974494,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-rail"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "premise_ids": [
+            "p-rail"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las bandas de fachada en dos niveles diferentes se interpretan como dos travesaños candidatos.",
+            "Podrían ser tapetas sin función resistente; la proyección de planta coincidente no aumenta la cantidad."
+          ],
+          "unknown_fields": [
+            "funcion_resistente_o_tapeta",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "plinth",
+          "label": "Fajas inferiores candidatas a zócalo",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 564.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 99.9999986823077,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.00000732051035,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-plinth"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "premise_ids": [
+            "p-plinth"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-33",
+            "evidence-contour-lines-unknown-35",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Dos bandas separadas en planta y dos perfiles inferiores sostienen dos fajas distintas, provisionalmente iguales.",
+            "Alternativa: una banda puede pertenecer a otra pieza; confirmar cantidad y función de apoyo frente a simple cierre."
+          ],
+          "unknown_fields": [
+            "confirmacion_cantidad",
+            "funcion_de_apoyo",
+            "uniones",
+            "material"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p-side",
+          "description": "Las bandas externas izquierda y derecha son dos laterales materiales distintos; alzado, planta y perfil son proyecciones candidatas del mismo conjunto. Se asume igualdad dimensional nominal para agruparlas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-horizontal",
+          "description": "Se interpretan cuatro niveles horizontales de fondo completo: uno superior, dos divisiones intermedias y una base. Los contornos de planta coincidentes no añaden instancias. Fondo común y montaje entre laterales son hipótesis a revisar.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-reduced",
+          "description": "Dos bandas superiores a alturas distintas son dos estantes de menor fondo; sus contornos en planta y perfil son correspondencias candidatas. Se agrupan con iguales dimensiones nominales.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-back-low",
+          "description": "El grupo de cara 14 y perfiles 15/16 representa una única trasera inferior material. Permanece alternativa de límite interior/hueco si se rechaza la correspondencia de perfiles.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-back-high",
+          "description": "El grupo de cara 17 y perfiles 18/19 representa una única trasera superior material, distinta de la inferior. Permanece alternativa de hueco o límite interior.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-door",
+          "description": "Las caras 6 y 9 son dos frentes físicos apilados; 7/8/10 son sus proyecciones candidatas, no unidades adicionales. La interpretación como puertas y la igualdad dimensional requieren revisión.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-rail",
+          "description": "Las caras 1 y 4 en niveles separados y los perfiles 3 y 5 representan dos bandas materiales iguales de fachada, provisionalmente travesaños; podrían ser tapetas.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-plinth",
+          "description": "Los grupos de planta 33 y 35 y perfiles 34 y 36 representan dos fajas inferiores distintas con dimensión de cara compatible con 32. Cantidad dos y función de apoyo son hipótesis; una banda podría corresponder a otra pieza.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-contact",
+          "description": "Las intersecciones y coincidencias visibles permiten revisar interacción entre grupos, pero no distinguen apoyo, fijación o mera superposición de proyecciones. Cada relación unknown conserva esta indeterminación sin inferir herrajes.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable construida desde los grupos del dibujo, sin plantilla.",
+        "Todos los bindings asignan observaciones geométricas a dimensiones de componentes como hipótesis, no como cotas industriales confirmadas.",
+        "No se interpreta cada rectángulo como pieza: las caras compartidas de planta y los perfiles superpuestos son correspondencias ambiguas.",
+        "Las cantidades son hipótesis de instancias físicas distintas; nunca se suman vistas ni proyecciones.",
+        "No se especifican materiales, acabados, mecanizados ni uniones ocultas.",
+        "Las relaciones entre grupos no determinan contactos entre cada una de sus instancias; no se demuestra contacto de los dos frentes entre sí ni entre ambas traseras."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "top",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-side",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "full_shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "reduced_shelves",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-reduced",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-37",
+            "contour:contour-lines-unknown-40",
+            "contour:contour-lines-unknown-11",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-19",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-16",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "top",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-19"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-27"
+          ]
+        },
+        {
+          "subject_component_id": "back_upper",
+          "relation": "unknown",
+          "object_component_id": "reduced_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-high",
+            "p-reduced"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-39",
+            "contour:contour-lines-unknown-41"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-25"
+          ]
+        },
+        {
+          "subject_component_id": "back_lower",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-back-low",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-16",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "rails",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-rail",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "rails",
+          "relation": "unknown",
+          "object_component_id": "full_shelves",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-rail",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-23",
+            "contour:contour-lines-unknown-26"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "back_lower",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-back-low"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-9",
+            "contour:contour-lines-unknown-14",
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-16"
+          ]
+        },
+        {
+          "subject_component_id": "plinth",
+          "relation": "unknown",
+          "object_component_id": "sides",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-plinth",
+            "p-side"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-32",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36",
+            "view:view-unknown"
+          ]
+        },
+        {
+          "subject_component_id": "bottom",
+          "relation": "unknown",
+          "object_component_id": "plinth",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-horizontal",
+            "p-plinth"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-34",
+            "contour:contour-lines-unknown-36"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "rails",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-rail"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-6",
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-3"
+          ]
+        },
+        {
+          "subject_component_id": "doors",
+          "relation": "unknown",
+          "object_component_id": "bottom",
+          "state": "unknown",
+          "premise_ids": [
+            "p-contact",
+            "p-door",
+            "p-horizontal"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-8",
+            "contour:contour-lines-unknown-31",
+            "view:view-unknown"
+          ]
+        }
+      ],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": null
+  }
+}

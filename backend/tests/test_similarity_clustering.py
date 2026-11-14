@@ -202,5 +202,5 @@ def test_clustering_edge_cases_and_validation_errors() -> None:
         descriptor_fingerprint=hashlib.sha256(b"v2").hexdigest(),
         created_at="2026-01-01T00:00:00Z",
     )
-    with pytest.raises(ValueError, match="descriptor_space_incompatible"):
-        geometric_groups((single, v2_item), threshold=0.8)
+    # Mixed libraries exclude incomparable descriptor spaces without losing valid groups.
+    assert geometric_groups((single, v2_item), threshold=0.8) == ()

@@ -51,7 +51,7 @@ Selección complementaria evaluada en esta sesión, no un ranking universal de n
 
 Instaladas en el directorio personal `.codex/skills`; las skills existentes se preservan. Las nuevas entradas estarán disponibles automáticamente en el siguiente turno. Sus pautas de foco, reflow, contraste, formularios y pruebas ya se han aplicado tras leerlas. La skill de Vercel consulta reglas vigentes remotas aunque el paquete instalado esté fijado por commit.
 
-## Cierre y despliegue
+## Cierre y despliegue del candidato UX autenticado
 
 El revisor independiente emitió **SHIP** sobre el árbol final. La biblioteca muestra dimensiones comparadas en español y conserva la representación técnica completa bajo «Datos de comparación», cerrada inicialmente. Coordinación lo comprobó con dos mesas y respuesta real del servidor.
 
@@ -70,3 +70,11 @@ El ensayo adicional de carga de un DXF en la instancia restaurada detectó prime
 **Limpieza completada:** cuenta QA retirada y credencial antigua comprobada con HTTP 401; el archivo de usuarios vuelve a una entrada y su hash coincide exactamente con la copia anterior al QA. Candidato y túnel detenidos; puertos de ensayo sin listener. Se eliminaron credencial local, netrc, copia candidata de usuarios y clave/certificado TLS efímeros. Se conservaron backups, restauraciones y releases. El servicio productivo sigue activo en el release aceptado, health público 200 y raíz anónima 401.
 
 Las pruebas de esta reparación no reevalúan la calidad de inferencia con modelos live, embeddings, conversiones DWG ni precisión industrial. Esos límites no se sustituyen por resultados sintéticos ni por puntuaciones de auditoría visual.
+
+## Cambio operativo posterior: acceso público
+
+La evidencia anterior corresponde al candidato UX `a61f97a89a86-treec58bbe42140dd03c` mientras la autenticación seguía activa; por eso sus comprobaciones de 401 y Playwright autenticado continúan siendo correctas como historia. Después, el usuario solicitó expresamente retirar usuario/contraseña. El backend incorporó `VEXPLORER_AUTH_ENABLED=false` como opt-out explícito, conservando autenticación por defecto, validación estricta de la variable, guard de origen de mutaciones, límites y jobs de producción.
+
+El estado operativo posterior apunta a `/home/kripta/apps/vexplorer/releases/public-access-20261114-071821`. Las comprobaciones anónimas registradas por coordinación devolvieron 200 para raíz, sesión y config en VPS y localhost, sin `WWW-Authenticate`; Playwright mostró ambas interfaces sin credenciales y sin errores JavaScript. La comprobación read-only de este cierre volvió a observar HTTP 200 en raíz y health. Este cambio supersede el requisito operativo de 401, no borra la aceptación del paquete UX anterior ni amplía sus pruebas de inferencia.
+
+Tras el cambio de acceso, coordinación registró 11 pruebas focales de autenticación y 162 de frontend aprobadas. La primera suite Python terminó con 605 aprobadas y un `MemoryError` al leer evidencia visual; el nodo aislado pasó después. La verificación fresca de cierre sobre el árbol posterior registró 606 pruebas Python y 162 JavaScript aprobadas, con dos avisos de deprecación. La segunda ejecución completa es la evidencia vigente; el fallo transitorio se conserva para no reescribir la cronología.

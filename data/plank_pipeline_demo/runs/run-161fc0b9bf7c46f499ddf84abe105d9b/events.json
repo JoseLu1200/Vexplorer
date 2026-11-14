@@ -1,0 +1,74 @@
+[
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:53:45.799501+00:00\", \"state\": \"needs_review\", \"mode\": \"geometry_only\"}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 2,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:53:45.799501+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 3,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T11:53:45.799501+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 4,
+    "event_type": "table_drawings_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:54:04.344954+00:00\", \"result_revision\": 1, \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"sheet_count\": 4}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 5,
+    "event_type": "human_review_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:07.544799+00:00\", \"result_revision\": 2, \"reviewer_name\": \"Demo automatizada\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": \"catalog-side_supports_v1\"}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 6,
+    "event_type": "table_drawings_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:54.821591+00:00\", \"result_revision\": 2, \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"sheet_count\": 4}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 7,
+    "event_type": "table_cost_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:59:12.667534+00:00\", \"result_revision\": 2, \"estimate_id\": \"76cb441f62e26df59747a38a13235642f57837fe05600561e18b568872aa009b\", \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"total_state\": \"complete\"}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 8,
+    "event_type": "library_item_saved",
+    "payload": "{\"timestamp\": \"2026-11-14T11:59:28.231954+00:00\", \"result_revision\": 2}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 9,
+    "event_type": "table_cost_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:00:36.261843+00:00\", \"result_revision\": 2, \"estimate_id\": \"1a71b938b1373269e5b8966142a514e6c311d642fb779482f2d8893454d0ec77\", \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"total_state\": \"complete\"}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 10,
+    "event_type": "table_drawings_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:01:20.097252+00:00\", \"result_revision\": 2, \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"sheet_count\": 4}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 11,
+    "event_type": "table_drawings_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:54.525564+00:00\", \"result_revision\": 2, \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"sheet_count\": 4}"
+  },
+  {
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "sequence": 12,
+    "event_type": "table_drawings_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T13:03:50.007752+00:00\", \"result_revision\": 2, \"program_hash\": \"74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64\", \"sheet_count\": 4}"
+  }
+]

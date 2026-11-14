@@ -127,8 +127,6 @@ test("collectCoincidences derives Spanish coincidence bullets from score_compone
   assert.deepEqual(coincidences, [
     "Mismas dimensiones generales",
     "Mismo espesor (18 mm)",
-    "Misma estructura (entre costados)",
-    "Mismo material (Melamina blanca)",
   ]);
 });
 
@@ -191,7 +189,6 @@ test("explainSimilarityMatch combines coincidences, differences, scoreBreakdown 
   assert.equal(explained.scoreText, "0.912");
   assert.deepEqual(explained.coincidences, [
     "Mismo espesor (18 mm)",
-    "Misma estructura (entre costados)",
   ]);
   assert.deepEqual(explained.differences, [
     "Ancho: 900 mm -> 950 mm (+50 mm)",
@@ -200,4 +197,11 @@ test("explainSimilarityMatch combines coincidences, differences, scoreBreakdown 
   ]);
   assert.equal(explained.scoreBreakdown.length, 3);
   assert.equal(explained.technical.length, 3);
+});
+
+test("candidate metadata alone cannot establish matching material finish or structure", () => {
+  const coincidences = collectCoincidences({score_components: {}, differences: []}, {
+    candidateDescriptor: {material: "roble", finish: "barniz", structure: "top_base_between_sides", thicknesses_mm: [18]},
+  });
+  assert.deepEqual(coincidences, []);
 });

@@ -25,14 +25,23 @@ def _accepted_dimension_decisions(required_targets: list[str], visual_ref: str):
     checks = []
     field_reviews = []
     for index, target in enumerate(required_targets, start=1):
-        check_id = f"visual-dimension-{index}"
-        checks.append({
-            "id": check_id, "kind": "visual_consistency", "outcome": "pass",
-            "method": "model_visual", "target_refs": [target],
-            "source_refs": [visual_ref], "summary": "Asignación dimensional contrastada.",
-        })
+        kinds = (
+            ("quantity_basis", "duplicate_scan")
+            if target.endswith(".quantity")
+            else (("duplicate_scan",) if target.startswith("evidence_region:") else ("visual_consistency",))
+        )
+        check_ids = []
+        for kind in kinds:
+            check_id = f"visual-{index}-{kind}"
+            check_ids.append(check_id)
+            checks.append({
+                "id": check_id, "kind": kind, "outcome": "pass",
+                "method": "model_visual", "target_refs": [target],
+                "source_refs": [visual_ref],
+                "summary": "Target requerido contrastado por el fixture.",
+            })
         field_reviews.append({
-            "target_ref": target, "status": "accepted", "check_ids": [check_id],
+            "target_ref": target, "status": "accepted", "check_ids": check_ids,
         })
     return checks, field_reviews
 
@@ -51,8 +60,26 @@ class _GeneralLiveProvider:
             self.review_visual_page_count += sum(
                 item.get("type") == "input_image" for item in input_items[0]["content"]
             )
+            required_targets = list(context["required_dimension_field_review_targets"])
+            required_targets.extend(
+                context.get("required_existence_field_review_targets", [])
+            )
+            required_targets.extend(
+                context.get("required_evidence_disposition_review_targets", [])
+            )
+            required_targets.extend(
+                context.get("required_cut_piece_field_review_targets", [])
+            )
+            required_targets.extend(
+                context.get("required_hardware_field_review_targets", [])
+            )
+            for group in context.get(
+                "required_hardware_classification_field_review_targets", []
+            ):
+                if group.get("any_of"):
+                    required_targets.append(group["any_of"][0])
             checks, field_reviews = _accepted_dimension_decisions(
-                context["required_dimension_field_review_targets"],
+                list(dict.fromkeys(required_targets)),
                 context["visual_artifacts"][0]["reference"],
             )
             arguments = {
@@ -74,18 +101,66 @@ class _GeneralLiveProvider:
         view = context["views"][0] if context["views"] else None
         observation = context["observations"][0] if context["observations"] else None
         visual_refs = [item["reference"] for item in context.get("visual_pages", [])]
+        candidate_regions = context.get("evidence_accounting", {}).get(
+            "candidate_regions", []
+        )
+        candidate_contour_ids = list(dict.fromkeys(
+            contour_id
+            for region in candidate_regions
+            for contour_id in region["contour_ids"]
+        ))
+        components = [{
+            "id": "panel", "label": "Panel propuesto", "kind": "panel",
+            "role": "unknown",
+            "length_binding_id": "length" if dimension else None,
+            "width_binding_id": "panel-width",
+            "thickness_binding_id": "panel-thickness",
+            "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+            "premise_ids": ["premise"],
+            "source_view_ids": [view["id"]] if view else [],
+            "source_observation_ids": [observation["id"]] if observation else [],
+            "source_contour_ids": candidate_contour_ids,
+            "source_evidence_ids": dimension["evidence_ids"] if dimension else [],
+            "source_dimension_ids": [dimension["id"]] if dimension else [],
+            "source_document_refs": visual_refs,
+            "assumptions": ["Rol pendiente de revisión."],
+            "unknown_fields": (["quantity", "material", "finish", "placement"] if dimension else ["length", "quantity", "material", "finish", "placement"]),
+        }]
         arguments = {
-            "bindings": ([{"id": "length", "operation": "copy", "operand_refs": [f"dimension:{dimension['id']}"]}] if dimension else []),
-            "components": [{
-                "id": "panel", "label": "Panel propuesto", "kind": "panel", "role": "unknown",
-                "length_binding_id": "length" if dimension else None, "width_binding_id": None, "thickness_binding_id": None,
-                "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "premise_ids": ["premise"], "source_view_ids": [view["id"]] if view else [],
-                "source_observation_ids": [observation["id"]] if observation else [], "source_contour_ids": [],
-                "source_evidence_ids": dimension["evidence_ids"] if dimension else [], "source_dimension_ids": [dimension["id"]] if dimension else [],
-                "source_document_refs": visual_refs, "assumptions": ["Rol pendiente de revisión."],
-                "unknown_fields": (["width", "thickness", "quantity", "material", "finish", "placement"] if dimension else ["length", "width", "thickness", "quantity", "material", "finish", "placement"]),
-            }],
+            "bindings": ([{"id": "length", "operation": "copy", "operand_refs": [f"dimension:{dimension['id']}"]}] if dimension else []) + [
+                {"id": "panel-width", "operation": "copy", "operand_refs": ["parameter:panel-width"]},
+                {"id": "panel-thickness", "operation": "copy", "operand_refs": ["parameter:panel-thickness"]},
+            ],
+            "construction_parameters": [
+                {
+                    "id": "panel-width", "label": "Fondo provisional",
+                    "basis": "estimated", "nominal_mm": 400,
+                    "range_mm": {"min_mm": 350, "max_mm": 450},
+                    "method": "construction_assumption", "binding_id": None,
+                    "source_refs": ["premise:premise"],
+                    "assumption_refs": ["premise:premise"],
+                    "rationale": "Estimación acotada del fixture para revisar el flujo.",
+                },
+                {
+                    "id": "panel-thickness", "label": "Espesor provisional",
+                    "basis": "estimated", "nominal_mm": 18,
+                    "range_mm": {"min_mm": 16, "max_mm": 20},
+                    "method": "construction_assumption", "binding_id": None,
+                    "source_refs": ["premise:premise"],
+                    "assumption_refs": ["premise:premise"],
+                    "rationale": "Estimación acotada del fixture para revisar el flujo.",
+                },
+            ],
+            "components": components,
+            "evidence_dispositions": [
+                {
+                    "candidate_region_id": region["id"], "kind": "assigned",
+                    "component_id": "panel",
+                    "source_refs": [f"contour:{item}" for item in region["contour_ids"]],
+                    "rationale": "Asignación provisional del fixture, pendiente de crítica visual.",
+                }
+                for region in candidate_regions
+            ],
             "premises": [{"id": "premise", "description": "La vista puede corresponder a un panel.", "required": True, "blocking": True}],
             "assumptions": ["Propuesta revisable."],
         }
@@ -98,7 +173,11 @@ class _GeneralLiveProvider:
 
 class _FailingGeneralProvider:
     def create_response(self, **kwargs):
-        raise RuntimeError("provider unavailable")
+        raise ProviderError(
+            "provider_response_incomplete", status_code=200,
+            request_id="req-internal", response_id="resp-internal",
+            incomplete_reason="max_output_tokens",
+        )
 
 
 class _TraceThenFailingGeneralProvider:
@@ -144,7 +223,8 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
         if "content" in input_items[0]:
             context = json.loads(input_items[0]["content"][0]["text"])
             self.review_context = context
-            source = context["draft"]["components"][0]
+            self.review_targets = context["required_dimension_field_review_targets"]
+            source = context["components"][0]
             visual_ref = context["visual_artifacts"][0]["reference"]
             arguments = {
                 "scenario_id": "scenario-repair-1",
@@ -152,13 +232,15 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
                 "field_reviews": [{"target_ref": f"component:{source['id']}.length", "status": "rejected", "check_ids": ["semantic-conflict"]}],
                 "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
             }
+            _abstain_missing_review_targets(arguments, self.review_targets)
             return ProviderResponse(id="critic-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-1", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
         output = json.loads(input_items[0]["output"])
         if output["status"] == "repair_requested":
-            proposal = self.review_context["proposal"]
+            proposal = output["proposal"]
             components = [dict(item) for item in proposal["components"]]
             components[0]["label"] = "Panel reparado semánticamente"
-            arguments = {"bindings": proposal["bindings"], "components": components, "premises": proposal["premises"], "assumptions": [*proposal["assumptions"], "Reparación automática trazable."]}
+            arguments = {key: value for key, value in proposal.items() if key not in {"id", "drawing_id", "ledger_revision", "proposal_origin", "schema_version"}}
+            arguments.update(components=components, assumptions=[*proposal["assumptions"], "Reparación automática trazable."])
             return ProviderResponse(id="repair-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="repair-call-1", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
         checks, field_reviews = _accepted_dimension_decisions(
             output["required_dimension_field_review_targets"],
@@ -200,17 +282,19 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
             )
         if "content" in input_items[0]:
             context = json.loads(input_items[0]["content"][0]["text"])
-            self.current_proposal = context["proposal"]
+            self.current_proposal = None
+            self.review_targets = context["required_dimension_field_review_targets"]
             self.visual_ref = context["visual_artifacts"][0]["reference"]
-            source_id = context["draft"]["components"][0]["id"]
+            source_id = context["components"][0]["id"]
             return self._critic(source_id)
         output = json.loads(input_items[0]["output"])
         if output["status"] == "repair_requested":
             self.repair_count += 1
-            proposal = self.current_proposal
+            proposal = output["proposal"]
             components = [dict(item) for item in proposal["components"]]
             components[0]["label"] = f"Panel reparación {self.repair_count}"
             arguments = {
+                **{key: value for key, value in proposal.items() if key not in {"id", "drawing_id", "ledger_revision", "proposal_origin", "schema_version"}},
                 "bindings": proposal["bindings"], "components": components,
                 "premises": proposal["premises"],
                 "assumptions": [*proposal["assumptions"], f"Reparación {self.repair_count}."],
@@ -219,8 +303,9 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
                 id=f"repair-response-{self.repair_count}", model="test-general-reviewer",
                 tool_calls=(ToolCall(call_id=f"repair-call-{self.repair_count}", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),),
             )
-        self.current_proposal = output["proposal"]
-        source_id = output["draft"]["components"][0]["id"]
+        self.current_proposal = None
+        self.review_targets = output["required_dimension_field_review_targets"]
+        source_id = output["components"][0]["id"]
         if self.repair_count < 2:
             return self._critic(source_id)
         self.review_count += 1
@@ -253,6 +338,7 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
             }],
             "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
         }
+        _abstain_missing_review_targets(arguments, self.review_targets)
         return ProviderResponse(
             id=f"critic-response-{self.review_count}", model="test-general-reviewer",
             tool_calls=(ToolCall(call_id=f"critic-call-{self.review_count}", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),),
@@ -264,7 +350,7 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
         if tools[0]["name"] == "entregar_revision_autonoma" and "output" in input_items[0]:
             output = json.loads(input_items[0]["output"])
             if output.get("status") == "repair_requested":
-                proposal = self.review_context["proposal"]
+                proposal = output["proposal"]
                 component = dict(proposal["components"][0])
                 component.update({
                     "id": "scenario-panel", "label": "Panel provisional",
@@ -283,12 +369,16 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                         {"id": "scenario-thickness", "operation": "copy", "operand_refs": ["dimension:dimension-entity-CC"]},
                     ],
                     "components": [component],
+                    "evidence_dispositions": [
+                        {**item, "component_id": "scenario-panel" if item.get("component_id") else None}
+                        for item in proposal.get("evidence_dispositions", [])
+                    ],
                     "premises": [{"id": "two-items", "description": "Dos grupos visuales distintos bajo el escenario provisional.", "required": True, "blocking": True}],
                     "assumptions": ["Escenario provisional auto-revisado."],
                 }
                 return ProviderResponse(id="scenario-repair", model="test-general-reviewer", tool_calls=(ToolCall(call_id="scenario-repair-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
             if output.get("status") == "proposal_repaired":
-                source = output["draft"]["components"][0]
+                source = output["components"][0]
                 component = {
                     **{key: value for key, value in source.items() if key != "premise_ids"},
                     "id": "scenario-reviewed-panel", "replaces_component_ids": [source["id"]],
@@ -355,7 +445,7 @@ def test_config_advertises_integral_capabilities_without_exposing_evaluation(
     assert capabilities["general_furniture"]["autonomous_review"]["max_visual_artifacts"] == 4
     assert capabilities["general_furniture"]["autonomous_review"]["limits"] == {
             "max_model_calls": 5, "max_validation_repairs": 2,
-            "max_semantic_repairs": 2, "job_timeout_s": 300.0,
+            "max_semantic_repairs": 2, "job_timeout_s": 300.0, "review_attempt_timeout_s": 300.0,
     }
     assert capabilities["general_furniture"]["construction_completion"] == {
         "available": True,
@@ -544,7 +634,13 @@ def test_general_live_failure_does_not_leave_a_run_ghost(tmp_path: Path, monkeyp
     )
 
     assert response.status_code == 502
-    assert response.json()["error"]["code"] == "general_live_provider_failed"
+    error = response.json()["error"]
+    assert error["code"] == "general_live_provider_failed"
+    assert error["reason_code"] == "provider_response_incomplete"
+    assert error["provider_status_code"] == 200
+    assert error["provider_incomplete_reason"] == "max_output_tokens"
+    assert "req-internal" not in response.text
+    assert "resp-internal" not in response.text
     with sqlite3.connect(data / "vexplorer.sqlite3") as database:
         assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
 
@@ -1074,3 +1170,90 @@ def test_production_job_integrates_general_review_derived_and_history_persistent
     persisted = restarted.get(f"/api/v1/runs/{run_id}/general", auth=auth)
     assert persisted.status_code == 200
     assert persisted.json()["data"]["review"]["reviewer_name"] == "alice"
+
+
+class _CountingAssemblyProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_response(self, **kwargs):
+        self.calls += 1
+        raise AssertionError("insufficient reviewed geometry must fail before provider spend")
+
+def test_general_assembly_phase_persists_failure_and_retry_uses_durable_job(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    assembly_provider = _CountingAssemblyProvider()
+    app = create_app(
+        data_dir=tmp_path,
+        frontend_dir=tmp_path / "none",
+        agent_provider=_GeneralLiveProvider(),
+        general_assembly_provider=assembly_provider,
+    )
+    client = TestClient(app)
+    uploaded = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]
+    created = client.post(
+        "/api/v1/runs",
+        json={
+            "document_id": uploaded["document_id"],
+            "mode": "live",
+            "input_kind": "general_furniture",
+            "proposal_mode": "model_generated",
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    run_id = created.json()["data"]["run"]["id"]
+    record = client.get(f"/api/v1/runs/{run_id}/general").json()["data"]
+    query = (
+        f"proposal_revision={record['proposal_revision']}"
+        f"&review_revision={record['review_revision']}"
+    )
+    first = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    again = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+
+    assert first.status_code == 200
+    assert first.json()["current"]["report"]["status"] == "incomplete"
+    assert first.json()["current"]["report"]["scene"] is None
+    assert first.json()["current"]["report"]["issues"][0]["code"].startswith("assembly_")
+    assert first.json()["current"]["report"]["issues"][0]["code"] != "assembly_runtime_failed"
+    assert again.json()["assembly_revision"] == 1
+    assert assembly_provider.calls == 0
+
+    submitted = client.post(
+        f"/api/v1/runs/{run_id}/general/assembly/retry",
+        json={
+            "base_proposal_revision": record["proposal_revision"],
+            "base_review_revision": record["review_revision"],
+        },
+    )
+    assert submitted.status_code == 202, submitted.text
+    job_id = submitted.json()["data"]["id"]
+    for _ in range(100):
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["state"] in {"succeeded", "failed", "interrupted"}:
+            break
+        time.sleep(0.01)
+    latest = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    assert job["state"] == "failed"
+    assert latest.status_code == 200
+    assert latest.json()["assembly_revision"] == 2
+
+
+def _abstain_missing_review_targets(arguments, required):
+    reviewed = {entry["target_ref"] for entry in arguments["field_reviews"]}
+    for index, target in enumerate(required):
+        if target in reviewed:
+            continue
+        check_id = f"unknown-dimension-{index}"
+        arguments["checks"].append({
+            "id": check_id, "kind": "visual_consistency", "outcome": "unknown",
+            "method": "model_visual", "target_refs": [target],
+            "source_refs": arguments["checks"][0]["source_refs"],
+            "summary": "El fixture no decide esta dimensión en la crítica inicial.",
+        })
+        arguments["field_reviews"].append({"target_ref": target, "status": "abstained", "check_ids": [check_id]})

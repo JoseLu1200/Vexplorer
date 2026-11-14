@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-b754ccdf52b94503931b31207954cca1",
+    "result_revision": 1,
+    "state": "incomplete",
+    "selected_scenario_id": null,
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [],
+    "warnings": [
+      "table_review_required"
+    ],
+    "assumptions": [
+      "No table solids are created before a complete explicit review."
+    ],
+    "collision_status": "not_evaluated"
+  }
+}

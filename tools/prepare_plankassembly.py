@@ -10,7 +10,7 @@ import argparse
 import hashlib
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 import shutil
 import tempfile
@@ -19,7 +19,7 @@ import zipfile
 import ezdxf
 
 
-GENERATOR_VERSION = "plankassembly-adapter-1"
+GENERATOR_VERSION = "plankassembly-adapter-2"
 PUBLIC_INSTRUCTION = (
     "Use only geometry visible in the assembled orthographic views. "
     "Keep unsupported identity, dimensions, roles and quantities unknown."
@@ -48,6 +48,8 @@ def _load_model(source: Path, filename: str) -> tuple[dict[str, object], bytes]:
     if Path(filename).name != filename or not filename.endswith(".json"):
         raise ValueError(f"unsafe model filename: {filename!r}")
     model_path = source / "extracted" / "data" / "model" / filename
+    if model_path.is_symlink():
+        raise ValueError(f"symlink rejected: {filename!r}")
     data = model_path.read_bytes()
     model = json.loads(data)
     planks = model.get("planks")
@@ -87,14 +89,10 @@ def _add_rectangle(modelspace, layer: str, x0: float, y0: float, x1: float, y1: 
 
 def _write_assembled_dxf(
     path: Path,
-    physical_planks: list[list[float]],
+    physical_planks: Sequence[Sequence[float]],
     views: tuple[str, ...] = ("front", "top", "side"),
     shifts: Mapping[str, tuple[float, float]] | None = None,
 ) -> None:
-    """Write the orthographic views; ``views`` selects a subset (poor variants).
-
-    ``shifts`` translates whole views (view name -> (dx, dy) in mm) without changing any measure.
-    """
     document = ezdxf.new("R2010", setup=False)
     document.units = ezdxf.units.MM
     # Eliminate clock- and host-derived header values so equal inputs are byte-identical.
@@ -106,14 +104,15 @@ def _write_assembled_dxf(
     layers = ("ORTHO_FRONT", "ORTHO_TOP", "ORTHO_SIDE")
     for layer in layers:
         document.layers.add(layer, color=7)
-    extents = [
-        max(bounds[3] for bounds in physical_planks) - min(bounds[0] for bounds in physical_planks),
-        max(bounds[4] for bounds in physical_planks) - min(bounds[1] for bounds in physical_planks),
-    ]
-    offsets = (0.0, extents[0] + 100.0, extents[0] + extents[1] + 200.0)
+    origin = [min(bounds[axis] for bounds in physical_planks) for axis in range(3)]
+    width = max(bounds[3] for bounds in physical_planks) - origin[0]
+    # Front and top both occupy width, while side occupies depth.
+    offsets = (0.0, width + 100.0, 2 * width + 200.0)
     modelspace = document.modelspace()
     for bounds in physical_planks:
-        xmin, ymin, zmin, xmax, ymax, zmax = bounds
+        xmin, ymin, zmin, xmax, ymax, zmax = [
+            value - origin[index % 3] for index, value in enumerate(bounds)
+        ]
         if "front" in views:
             fx, fy = (shifts or {}).get("front", (0.0, 0.0))
             _add_rectangle(modelspace, layers[0], offsets[0] + xmin + fx, zmin + fy, offsets[0] + xmax + fx, zmax + fy)
@@ -222,6 +221,7 @@ def prepare_plankassembly(
             )
             references.append({
                 "id": case_id,
+                "public_dxf_sha256": input_hash,
                 "source_file": filename,
                 "source_sha256": _digest(source_bytes),
                 "family_hash": family_hash,
@@ -254,7 +254,11 @@ def prepare_plankassembly(
         _write_hashes(public_stage)
         _write_hashes(private_stage)
         public_stage.rename(public_destination)
-        private_stage.rename(private_destination)
+        try:
+            private_stage.rename(private_destination)
+        except Exception:
+            shutil.rmtree(public_destination, ignore_errors=True)
+            raise
         return manifest
     except Exception:
         shutil.rmtree(public_stage, ignore_errors=True)

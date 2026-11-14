@@ -1,0 +1,430 @@
+{
+  "schema_version": "0.2.0",
+  "result_revision": 1,
+  "result": {
+    "schema_version": "0.2.0",
+    "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+    "result_revision": 1,
+    "state": "needs_review",
+    "scenarios": [],
+    "pieces": [],
+    "rejected_proposal_ids": [],
+    "created_at": "2026-11-14T13:05:49.731158+00:00",
+    "review": null,
+    "agent_selected_scenario_id": null,
+    "input_semantics": "general_furniture",
+    "part_analysis": null,
+    "assembly_candidates": [],
+    "selected_assembly_candidate_id": null,
+    "table_analysis": null,
+    "table_programs": [],
+    "selected_table_program_id": null,
+    "evaluated_table_program": null,
+    "table_review_decisions": [],
+    "table_confirmed_values": [],
+    "table_observed_value_corrections": [],
+    "table_source_review_decisions": [],
+    "table_cost_scope": null
+  },
+  "scene": {
+    "schema_version": "0.3.0",
+    "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+    "result_revision": 1,
+    "state": "unavailable",
+    "selected_scenario_id": null,
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [],
+    "warnings": [
+      "human_review_required"
+    ],
+    "assumptions": [
+      "No 3D solid is created before mounting review."
+    ],
+    "collision_status": "not_evaluated"
+  },
+  "explanations": {
+    "schema_version": "0.3.0",
+    "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+    "result_revision": 1,
+    "pieces": [],
+    "warnings": [
+      "hypotheses_require_human_review"
+    ]
+  },
+  "descriptor": {
+    "descriptor_version": "furniture-v1",
+    "family": "unknown",
+    "dimensions": {
+      "width_mm": null,
+      "depth_mm": null,
+      "height_mm": null
+    },
+    "roles": [],
+    "structure": "unknown",
+    "material": null,
+    "finish": null,
+    "unknown_fields": [
+      "confirmed_components",
+      "dimensions.depth_mm",
+      "dimensions.height_mm",
+      "dimensions.width_mm",
+      "finish",
+      "material",
+      "structure"
+    ]
+  },
+  "library_item": null,
+  "comparables": [
+    {
+      "id": "hist-syn-1",
+      "name": "Estantería sintética compacta",
+      "family": "estanteria_rectangular",
+      "width_mm": 800.0,
+      "depth_mm": 300.0,
+      "height_mm": 1700.0,
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / melamina sintética"
+      ],
+      "fixed_cost_eur": 40.0,
+      "material_cost_eur": 60.0,
+      "reference_area_mm2": 1200000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-2",
+      "name": "Estantería sintética alta",
+      "family": "estanteria_rectangular",
+      "width_mm": 1000.0,
+      "depth_mm": 350.0,
+      "height_mm": 2100.0,
+      "material": "contrachapado sintético",
+      "finish": "barniz sintético",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / contrachapado sintético",
+        "acabado distinto: desconocido / barniz sintético"
+      ],
+      "fixed_cost_eur": 55.0,
+      "material_cost_eur": 95.0,
+      "reference_area_mm2": 1800000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-3",
+      "name": "Módulo sintético abierto",
+      "family": "estanteria_rectangular",
+      "width_mm": 700.0,
+      "depth_mm": 280.0,
+      "height_mm": 1500.0,
+      "material": "tablero sintético",
+      "finish": "sin acabado",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / sin acabado"
+      ],
+      "fixed_cost_eur": 35.0,
+      "material_cost_eur": 48.0,
+      "reference_area_mm2": 980000.0,
+      "hours": null,
+      "synthetic": true
+    }
+  ],
+  "estimate": null,
+  "table_drawings": null,
+  "events": [
+    {
+      "sequence": 1,
+      "event_type": "run_state_changed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.731158+00:00",
+        "state": "needs_review",
+        "mode": "live"
+      }
+    },
+    {
+      "sequence": 2,
+      "event_type": "result_committed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.731158+00:00",
+        "result_revision": 1,
+        "state": "needs_review"
+      }
+    },
+    {
+      "sequence": 3,
+      "event_type": "run_finished",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.731158+00:00",
+        "state": "needs_review",
+        "result_revision": 1
+      }
+    },
+    {
+      "sequence": 4,
+      "event_type": "general_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.764469+00:00",
+        "tool_name": "inspeccionar_evidencia_general",
+        "ok": true,
+        "summary": "Ledger evidence inspected.",
+        "proposal_origin": "native_tool",
+        "provider_response_id": "resp_09efa49389bafa7c006af85c895b5c87d2af0576973c690659",
+        "provider_model": "gpt-6.1-sol",
+        "provider_call_id": "call_yyGkU9QrFSv4ge1MRNEvXAQp",
+        "provider_duration_ms": 3899,
+        "provider_input_tokens": 7826,
+        "provider_output_tokens": 131,
+        "provider_total_tokens": 7957
+      }
+    },
+    {
+      "sequence": 5,
+      "event_type": "general_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.777322+00:00",
+        "tool_name": "inspeccionar_evidencia_general",
+        "ok": true,
+        "summary": "Ledger evidence inspected.",
+        "proposal_origin": "native_tool",
+        "provider_response_id": "resp_09efa49389bafa7c006af85c8d214887d299f495e9f7be089e",
+        "provider_model": "gpt-6.1-sol",
+        "provider_call_id": "call_o3tZBCJPGAzyuZungn3tJZ3M",
+        "provider_duration_ms": 10795,
+        "provider_input_tokens": 10935,
+        "provider_output_tokens": 271,
+        "provider_total_tokens": 11206
+      }
+    },
+    {
+      "sequence": 6,
+      "event_type": "general_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.788595+00:00",
+        "tool_name": "proponer_mueble_general",
+        "ok": true,
+        "summary": "Evidence-grounded component proposal created for review.",
+        "proposal_origin": "native_tool",
+        "provider_response_id": "resp_09efa49389bafa7c006af85c97f06487d29b8129c27de30ab2",
+        "provider_model": "gpt-6.1-sol",
+        "provider_call_id": "call_MuMqEA3VGyvBHfIOwdnEUDFj",
+        "provider_duration_ms": 21800,
+        "provider_input_tokens": 12725,
+        "provider_output_tokens": 2015,
+        "provider_total_tokens": 14740
+      }
+    },
+    {
+      "sequence": 7,
+      "event_type": "general_proposal_committed",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.798381+00:00",
+        "proposal_id": "general-574b79fd7a54e129",
+        "proposal_revision": 1,
+        "proposal_origin": "native_tool",
+        "provider_model": "gpt-6.1-sol",
+        "model_calls": 3,
+        "tool_calls": 3
+      }
+    },
+    {
+      "sequence": 8,
+      "event_type": "general_auto_review_started",
+      "data": {
+        "timestamp": "2026-11-14T13:05:49.808319+00:00",
+        "proposal_revision": 1,
+        "reviewer_kind": "machine",
+        "reviewer_model": "gpt-6-astra",
+        "visual_artifacts": [
+          {
+            "reference": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "sha256": "fcaf3429033ea479fad15e0bd2ef0d4b622265d1d03f134640278f2858e20750",
+            "source_view_ids": [
+              "view-front"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D"
+            ],
+            "crop_bounds_source": [
+              -110.0,
+              -90.0,
+              900.0,
+              1310.0
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-entity-8D"
+              }
+            ]
+          },
+          {
+            "reference": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "sha256": "4557f2310cfb0f4f73177bebbd050a85cbf0244f7e8b0b8faa23eca1c4e5cd2e",
+            "source_view_ids": [
+              "view-side"
+            ],
+            "source_contour_ids": [
+              "contour-entity-97"
+            ],
+            "crop_bounds_source": [
+              1200.0,
+              0.0,
+              1500.0,
+              1245.0
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-entity-97"
+              }
+            ]
+          },
+          {
+            "reference": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview",
+            "sha256": "6edaf87c3e92c6e4cbc9087e7691ac86ecb405e61d6a0432b62dfefd8e30df2e",
+            "source_view_ids": [
+              "view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-93"
+            ],
+            "crop_bounds_source": [
+              -120.0,
+              -575.0,
+              900.0,
+              -155.0
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-entity-93"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "sequence": 9,
+      "event_type": "general_auto_review_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T13:06:17.237203+00:00",
+        "tool_name": "entregar_revision_autonoma",
+        "ok": true,
+        "summary": "Revisión multimodal provisional completada.",
+        "reviewer_kind": "machine",
+        "phase": "general_auto_review",
+        "status": "incomplete",
+        "provider_response_id": "resp_01990c04dd2ca5d0006af85cadf18c87d2ad21255173ffb145",
+        "provider_model": "gpt-6-astra",
+        "provider_call_id": "call_N1wC5BFvMGtuP9Mig4C8ixQH",
+        "provider_input_tokens": 14237,
+        "provider_output_tokens": 2609,
+        "provider_total_tokens": 16846
+      }
+    },
+    {
+      "sequence": 10,
+      "event_type": "general_auto_review",
+      "data": {
+        "timestamp": "2026-11-14T13:06:17.254913+00:00",
+        "tool_name": "entregar_revision_autonoma",
+        "ok": true,
+        "summary": "Revisión multimodal provisional completada.",
+        "reviewer_kind": "machine",
+        "phase": "general_auto_review",
+        "status": "incomplete",
+        "provider_response_id": "resp_01990c04dd2ca5d0006af85cadf18c87d2ad21255173ffb145",
+        "provider_model": "gpt-6-astra",
+        "provider_call_id": "call_N1wC5BFvMGtuP9Mig4C8ixQH",
+        "provider_input_tokens": 14237,
+        "provider_output_tokens": 2609,
+        "provider_total_tokens": 16846
+      }
+    },
+    {
+      "sequence": 11,
+      "event_type": "general_auto_review_completed",
+      "data": {
+        "timestamp": "2026-11-14T13:06:17.270889+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "status": "incomplete",
+        "reviewer_kind": "machine",
+        "provider_model": "gpt-6-astra",
+        "review_relation": "separate_model",
+        "model_calls": 1,
+        "tool_calls": 1,
+        "semantic_repairs": 0,
+        "cost_tracking": "token_usage_only"
+      }
+    },
+    {
+      "sequence": 12,
+      "event_type": "general_assembly_started",
+      "data": {
+        "timestamp": "2026-11-14T13:06:17.283830+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1
+      }
+    },
+    {
+      "sequence": 13,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T13:06:17.440785+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_metric_scale_required",
+        "model_calls": 0,
+        "tool_calls": 0,
+        "provider_status_code": null,
+        "provider_code": null,
+        "provider_incomplete_reason": null
+      }
+    },
+    {
+      "sequence": 14,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T13:07:32.565567+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_metric_scale_required",
+        "model_calls": 0,
+        "tool_calls": 0,
+        "provider_status_code": null,
+        "provider_code": null,
+        "provider_incomplete_reason": null
+      }
+    },
+    {
+      "sequence": 15,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T13:11:42.362642+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_metric_scale_required",
+        "model_calls": 0,
+        "tool_calls": 0,
+        "provider_status_code": null,
+        "provider_code": null,
+        "provider_incomplete_reason": null
+      }
+    }
+  ]
+}

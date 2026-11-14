@@ -6,12 +6,49 @@ import pytest
 
 from backend.app.agente.config import ProviderSettings
 from backend.app.general_furniture.autonomous import GeneralAutonomousError
+from backend.app.general_furniture.live import GeneralLiveError
 import tools.run_general_benchmark as benchmark
 from tools.run_general_benchmark import (
+    _parser,
     export_prediction_manifests,
     freeze_paired_outcome,
     load_public_sources,
 )
+
+
+def test_cli_defaults_both_benchmark_phases_to_sol() -> None:
+    args = _parser().parse_args(
+        ["--input", "public", "--output", "run", "--dataset-id", "cohort-v2"]
+    )
+
+    assert args.proposer_model == "gpt-6.1-sol"
+    assert args.reviewer_model == "gpt-6.1-sol"
+
+
+def test_cli_supports_explicit_codex_subscription_transport():
+    args = _parser().parse_args(['--input', 'public', '--output', 'run',
+                                '--dataset-id', 'cohort', '--provider', 'codex-subscription'])
+    assert args.provider == 'codex-subscription'
+
+
+def test_subscription_does_not_load_api_credentials(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'must-not-be-used')
+    monkeypatch.setattr(benchmark, 'load_dotenv', lambda *a: pytest.fail('subscription read .env'))
+    settings = benchmark.provider_settings('codex-subscription')
+    assert settings.api_key is None
+
+
+def test_cleanup_failure_does_not_change_frozen_outcome(tmp_path: Path):
+    class BrokenClose:
+        def close(self):
+            raise RuntimeError('untrusted operational detail')
+    (tmp_path / 'baseline.json').write_text('baseline frozen')
+    (tmp_path / 'final.json').write_text('final frozen')
+    traced = benchmark._TracedProvider(BrokenClose(), tmp_path, 'proposer')
+    traced.close()
+    assert (tmp_path / 'final.json').read_text() == 'final frozen'
+    assert not (tmp_path / 'failure.json').exists()
+    assert json.loads((tmp_path / 'proposer-cleanup-warning.json').read_text()) == {'failure_type': 'RuntimeError'}
 
 
 def _bundle(path: Path, *, case_id: str = "plank-011", metadata_extra: dict | None = None) -> None:
@@ -97,6 +134,39 @@ def test_critic_failure_records_only_structured_action_evidence(tmp_path: Path) 
         "tool_calls": 1,
         "trace": [{"event": "tool_rejected", "tool": "entregar_revision_autonoma"}],
     }
+
+
+def test_proposer_failure_records_only_structured_live_action_evidence(tmp_path: Path) -> None:
+    case_dir = tmp_path / "case-live"
+    case_dir.mkdir()
+
+    result = freeze_paired_outcome(
+        case_id="case-live",
+        case_dir=case_dir,
+        metadata={"input_sha256": "c" * 64},
+        first_pass=lambda: (_ for _ in ()).throw(
+            GeneralLiveError(
+                "validation_repair_budget_exhausted",
+                trace=({"tool": "proponer_mueble_general", "ok": False, "details": [{"type": "value_error", "msg": "assembly_reference_outside_ledger", "loc": []}]},),
+                model_calls=2,
+                tool_calls=2,
+                provider_incomplete_reason="must-not-leak-unrelated-provider-detail",
+            )
+        ),
+        critic=lambda baseline: baseline,
+    )
+
+    failure = json.loads((case_dir / "failure.json").read_text(encoding="utf-8"))
+    assert result["status"] == "failed_before_baseline"
+    assert failure["action_evidence"] == {
+        "model_calls": 2,
+        "tool_calls": 2,
+        "trace": [{
+            "tool": "proponer_mueble_general", "ok": False,
+            "details": [{"type": "value_error", "msg": "assembly_reference_outside_ledger", "loc": []}],
+        }],
+    }
+    assert "must-not-leak" not in json.dumps(failure)
 
 
 def test_strict_bundle_validation_rejects_hostile_members_and_metadata_before_staging(tmp_path: Path) -> None:

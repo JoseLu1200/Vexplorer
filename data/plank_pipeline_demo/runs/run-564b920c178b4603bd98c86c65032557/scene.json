@@ -1,0 +1,123 @@
+{
+  "status": "schematic_incomplete",
+  "items": [
+    {
+      "id": "scene:demo-component-top",
+      "component_id": "demo-component-top",
+      "occurrence_ids": [
+        "demo-component-top:1"
+      ],
+      "scenario_occurrence_ids": [],
+      "occurrence_status": "confirmed",
+      "length": {
+        "value_mm": 1200.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": 700.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": 30.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "schematic_unplaced"
+    },
+    {
+      "id": "scene:demo-component-sides",
+      "component_id": "demo-component-sides",
+      "occurrence_ids": [
+        "demo-component-sides:1",
+        "demo-component-sides:2"
+      ],
+      "scenario_occurrence_ids": [],
+      "occurrence_status": "confirmed",
+      "length": {
+        "value_mm": 720.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": 700.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": 18.0,
+        "unit": "mm",
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "schematic_unplaced"
+    }
+  ],
+  "warnings": [
+    "Representación esquemática sin colocaciones de montaje validadas."
+  ]
+}

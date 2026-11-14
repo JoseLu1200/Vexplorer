@@ -1,0 +1,6077 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+    "status": "reviewed_incomplete",
+    "proposal_revision": 1,
+    "review_revision": 1,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "general-8ac869990544d764",
+      "drawing_id": "drawing-91a1f89c04b31f35",
+      "ledger_revision": "drawing-91a1f89c04b31f35",
+      "proposal_origin": "native_tool",
+      "bindings": [
+        {
+          "id": "base_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-8:span-x"
+          ]
+        },
+        {
+          "id": "base_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-8:span-y"
+          ]
+        },
+        {
+          "id": "base_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-7:span-y"
+          ]
+        },
+        {
+          "id": "left_h",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-10:span-y"
+          ]
+        },
+        {
+          "id": "left_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-11:span-y"
+          ]
+        },
+        {
+          "id": "left_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-10:span-x"
+          ]
+        },
+        {
+          "id": "right_h",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-22:span-y"
+          ]
+        },
+        {
+          "id": "right_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-23:span-y"
+          ]
+        },
+        {
+          "id": "right_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-22:span-x"
+          ]
+        },
+        {
+          "id": "div_left_h",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-y"
+          ]
+        },
+        {
+          "id": "div_left_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-18:span-y"
+          ]
+        },
+        {
+          "id": "div_left_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-17:span-x"
+          ]
+        },
+        {
+          "id": "div_right_h",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-31:span-y"
+          ]
+        },
+        {
+          "id": "div_right_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-32:span-y"
+          ]
+        },
+        {
+          "id": "div_right_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-31:span-x"
+          ]
+        },
+        {
+          "id": "back_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-x"
+          ]
+        },
+        {
+          "id": "back_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-1:span-y"
+          ]
+        },
+        {
+          "id": "back_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-2:span-y"
+          ]
+        },
+        {
+          "id": "shelf_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-x"
+          ]
+        },
+        {
+          "id": "shelf_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-28:span-y"
+          ]
+        },
+        {
+          "id": "shelf_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-27:span-y"
+          ]
+        },
+        {
+          "id": "support_a_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-4:span-y"
+          ]
+        },
+        {
+          "id": "support_a_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-4:span-x"
+          ]
+        },
+        {
+          "id": "support_a_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-5:span-y"
+          ]
+        },
+        {
+          "id": "support_b_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-19:span-y"
+          ]
+        },
+        {
+          "id": "support_b_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-21:span-x"
+          ]
+        },
+        {
+          "id": "support_b_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-19:span-x"
+          ]
+        },
+        {
+          "id": "rail_a_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-25:span-x"
+          ]
+        },
+        {
+          "id": "rail_a_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-26:span-y"
+          ]
+        },
+        {
+          "id": "rail_a_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-25:span-y"
+          ]
+        },
+        {
+          "id": "rail_b_l",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-33:span-x"
+          ]
+        },
+        {
+          "id": "rail_b_w",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-34:span-y"
+          ]
+        },
+        {
+          "id": "rail_b_t",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-lines-unknown-33:span-y"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "base",
+          "label": "Panel inferior continuo candidato",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length_binding_id": "base_l",
+          "width_binding_id": "base_w",
+          "thickness_binding_id": "base_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_base"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-7",
+              "evidence-contour-lines-unknown-8"
+            ]
+          },
+          "premise_ids": [
+            "p_base"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-7",
+            "evidence-contour-lines-unknown-8"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara en ORTHO_TOP y el canto inferior en ORTHO_FRONT corresponden a un solo panel, no dos instancias."
+          ],
+          "unknown_fields": [
+            "material",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_left",
+          "label": "Lateral exterior izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "left_h",
+          "width_binding_id": "left_w",
+          "thickness_binding_id": "left_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-10",
+              "evidence-contour-lines-unknown-11"
+            ]
+          },
+          "premise_ids": [
+            "p_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-10",
+            "evidence-contour-lines-unknown-11"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una sola instancia exterior izquierda; el tramo de planta se asigna como profundidad candidata, no como perfil completo confirmado."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral exterior derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "right_h",
+          "width_binding_id": "right_w",
+          "thickness_binding_id": "right_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-22",
+              "evidence-contour-lines-unknown-23"
+            ]
+          },
+          "premise_ids": [
+            "p_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-22",
+            "evidence-contour-lines-unknown-23"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Instancia exterior derecha distinta de la izquierda; se asigna el tramo de planta como profundidad candidata."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_left",
+          "label": "División interior izquierda candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length_binding_id": "div_left_h",
+          "width_binding_id": "div_left_w",
+          "thickness_binding_id": "div_left_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-18"
+            ]
+          },
+          "premise_ids": [
+            "p_div_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-18"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los cantos interior izquierdo frontal y de planta representan una sola división."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_right",
+          "label": "División interior derecha candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length_binding_id": "div_right_h",
+          "width_binding_id": "div_right_w",
+          "thickness_binding_id": "div_right_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-32"
+            ]
+          },
+          "premise_ids": [
+            "p_div_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-32"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La división interior derecha es distinta de la izquierda y se representa en varias proyecciones."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back",
+          "label": "Trasera central delgada candidata",
+          "kind": "panel",
+          "role": "back_panel",
+          "length_binding_id": "back_l",
+          "width_binding_id": "back_w",
+          "thickness_binding_id": "back_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-2",
+              "evidence-contour-lines-unknown-3"
+            ]
+          },
+          "premise_ids": [
+            "p_back"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-2",
+            "evidence-contour-lines-unknown-3"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara frontal se interpreta como material por sus cantos finos compatibles en planta y perfil; no se cuentan esos cantos como piezas."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "solape_con_base"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf",
+          "label": "Estante intermedio continuo candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "shelf_l",
+          "width_binding_id": "shelf_w",
+          "thickness_binding_id": "shelf_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelf"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-27",
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p_shelf"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-27",
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Cara en planta y cantos frontal/lateral sostienen un panel horizontal candidato; continuidad física frente a las divisiones requiere revisión."
+          ],
+          "unknown_fields": [
+            "continuidad_o_segmentacion",
+            "apoyo",
+            "fijaciones",
+            "encuentros_con_divisiones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_a",
+          "label": "Apoyo vertical de cara ancha candidato",
+          "kind": "panel",
+          "role": "support",
+          "length_binding_id": "support_a_l",
+          "width_binding_id": "support_a_w",
+          "thickness_binding_id": "support_a_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5",
+              "evidence-contour-lines-unknown-6"
+            ]
+          },
+          "premise_ids": [
+            "p_support_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5",
+            "evidence-contour-lines-unknown-6"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se interpreta como elemento vertical de apoyo, distinto del elemento estrecho superpuesto en frontal; las tres proyecciones no multiplican unidades."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_b",
+          "label": "Apoyo vertical de canto frontal candidato",
+          "kind": "panel",
+          "role": "support",
+          "length_binding_id": "support_b_l",
+          "width_binding_id": "support_b_w",
+          "thickness_binding_id": "support_b_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-19",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p_support_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-19",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-21"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto frontal, la sección de planta y la cara de perfil sostienen un elemento diferente del apoyo de cara ancha."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_a",
+          "label": "Travesaño longitudinal candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length_binding_id": "rail_a_l",
+          "width_binding_id": "rail_a_w",
+          "thickness_binding_id": "rail_a_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26"
+            ]
+          },
+          "premise_ids": [
+            "p_rail_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-13"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo 13 se superpone parcialmente al 25; no se añade otra pieza solo por ese rectángulo."
+          ],
+          "unknown_fields": [
+            "identidad_del_tramo_13",
+            "fijaciones",
+            "posicion_relativa_exacta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_b",
+          "label": "Travesaño central posterior candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length_binding_id": "rail_b_l",
+          "width_binding_id": "rail_b_w",
+          "thickness_binding_id": "rail_b_t",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34"
+            ]
+          },
+          "premise_ids": [
+            "p_rail_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-33",
+            "evidence-contour-lines-unknown-34"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo central de planta y su sección lateral son proyecciones candidatas de un solo travesaño, no un panel macizo que llene el hueco."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "contacto_con_trasera"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p_base",
+          "description": "La franja inferior frontal 7 y la cara de planta 8 representan un único panel inferior sobre el que terminan los montantes frontales.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_left",
+          "description": "Los contornos 10 frontal y 11 de planta corresponden a la instancia exterior izquierda; su correspondencia y profundidad son hipótesis.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_right",
+          "description": "Los contornos 22 frontal y 23 de planta corresponden a una instancia exterior derecha, físicamente distinta de la izquierda.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_div_left",
+          "description": "El grupo 17 frontal y 18 de planta identifica una división interior izquierda, no una unidad por proyección.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_div_right",
+          "description": "El grupo 31 frontal y 32 de planta identifica una división interior derecha distinta de la izquierda.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_back",
+          "description": "La cara 1 y los cantos delgados 2 y 3 son compatibles con una sola trasera central; se descarta provisionalmente que 1 sea exclusivamente un hueco.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_shelf",
+          "description": "Los contornos 27, 28 y 29 son compatibles con una sola superficie horizontal intermedia; se mantiene abierta su continuidad ante los cruces de las divisiones.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_support_a",
+          "description": "El grupo frontal 4, planta 5 y perfil 6 corresponde a un apoyo de cara ancha, una sola instancia candidata.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_support_b",
+          "description": "El grupo frontal 19, planta 20 y perfil 21 corresponde a otro apoyo; las orientaciones y secciones lo distinguen del grupo 4/5/6.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_rail_a",
+          "description": "El canto de planta 25 y la sección de perfil 26 son candidatos de un travesaño único; el contorno 13 superpuesto no prueba una segunda instancia.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_rail_b",
+          "description": "El canto central de planta 33 y la sección de perfil 34 son candidatos de un travesaño central único, distinto del longitudinal 25.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_contact",
+          "description": "Se interpretan solo encuentros visibles: los extremos inferiores de los cuatro paneles verticales frontales terminan sobre la base; cruces y proximidades restantes no prueban fijación ni transmisión de carga.",
+          "required": true,
+          "blocking": false
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable, no lista de fabricación; toda asignación dimensional y toda identidad entre proyecciones es hipotética.",
+        "Las capas ORTHO_FRONT, ORTHO_TOP y ORTHO_SIDE consultadas orientan la correspondencia; las dos regiones espaciales no son dos muebles ni dos ocurrencias.",
+        "No se especifican materiales, acabados, mecanizados ni uniones ocultas.",
+        "Los contornos superpuestos y los límites interiores no se convierten automáticamente en paneles adicionales; los tramos 14, 15, 16 y 30 no se desdoblan sin resolver sus correspondencias.",
+        "Los apoyos y travesaños son interpretaciones funcionales candidatas; los cruces en proyección no prueban contacto tridimensional."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "side_left",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_left",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-10",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_right",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_right",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-22",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_left",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_div_left",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_right",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_div_right",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_left",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-10",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_right",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-22",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_left",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_right",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "adjacent_to",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_shelf",
+            "p_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-10"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "adjacent_to",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_shelf",
+            "p_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-22"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "unknown",
+          "object_component_id": "divider_left",
+          "state": "unknown",
+          "premise_ids": [
+            "p_shelf",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-18"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "unknown",
+          "object_component_id": "divider_right",
+          "state": "unknown",
+          "premise_ids": [
+            "p_shelf",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-32"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_back",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-17"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_back",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_back",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_back",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-2",
+            "contour:contour-lines-unknown-28"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "support_b",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_support_b",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-28"
+          ]
+        },
+        {
+          "subject_component_id": "support_b",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_b",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-21",
+            "contour:contour-lines-unknown-29"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-7",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "support_b",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_b",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-7",
+            "contour:contour-lines-unknown-20",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "adjacent_to",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_a",
+            "p_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-11"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "adjacent_to",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_a",
+            "p_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-23"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_rail_a",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "unknown",
+          "object_component_id": "support_a",
+          "state": "unknown",
+          "premise_ids": [
+            "p_rail_a",
+            "p_support_a",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-6"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-18"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-32"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "back",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_back",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-2"
+          ]
+        }
+      ],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "general-8ac869990544d764",
+      "drawing_id": "drawing-91a1f89c04b31f35",
+      "ledger_revision": "drawing-91a1f89c04b31f35",
+      "components": [
+        {
+          "id": "base",
+          "label": "Panel inferior continuo candidato",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length": {
+            "value_mm": 1480.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_base"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-7",
+              "evidence-contour-lines-unknown-8"
+            ]
+          },
+          "premise_ids": [
+            "p_base"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-7",
+            "evidence-contour-lines-unknown-8"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara en ORTHO_TOP y el canto inferior en ORTHO_FRONT corresponden a un solo panel, no dos instancias."
+          ],
+          "unknown_fields": [
+            "material",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_left",
+          "label": "Lateral exterior izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 631.9999986823065,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 230.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000046265625315,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-10",
+              "evidence-contour-lines-unknown-11"
+            ]
+          },
+          "premise_ids": [
+            "p_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-10",
+            "evidence-contour-lines-unknown-11"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una sola instancia exterior izquierda; el tramo de planta se asigna como profundidad candidata, no como perfil completo confirmado."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral exterior derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 632.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 230.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999953734374458,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-22",
+              "evidence-contour-lines-unknown-23"
+            ]
+          },
+          "premise_ids": [
+            "p_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-22",
+            "evidence-contour-lines-unknown-23"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Instancia exterior derecha distinta de la izquierda; se asigna el tramo de planta como profundidad candidata."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_left",
+          "label": "División interior izquierda candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length": {
+            "value_mm": 631.9999986823065,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 320.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000046265625315,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-18"
+            ]
+          },
+          "premise_ids": [
+            "p_div_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-18"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los cantos interior izquierdo frontal y de planta representan una sola división."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_right",
+          "label": "División interior derecha candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length": {
+            "value_mm": 632.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 320.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99995373437457,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-32"
+            ]
+          },
+          "premise_ids": [
+            "p_div_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-32"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La división interior derecha es distinta de la izquierda y se representa en varias proyecciones."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back",
+          "label": "Trasera central delgada candidata",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 934.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 587.0000003660239,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999957028604285,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-2",
+              "evidence-contour-lines-unknown-3"
+            ]
+          },
+          "premise_ids": [
+            "p_back"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-2",
+            "evidence-contour-lines-unknown-3"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara frontal se interpreta como material por sus cantos finos compatibles en planta y perfil; no se cuentan esos cantos como piezas."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "solape_con_base"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf",
+          "label": "Estante intermedio continuo candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 1443.0000008353818,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 510.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99993303007176,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelf"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-27",
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "premise_ids": [
+            "p_shelf"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-27",
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Cara en planta y cantos frontal/lateral sostienen un panel horizontal candidato; continuidad física frente a las divisiones requiere revisión."
+          ],
+          "unknown_fields": [
+            "continuidad_o_segmentacion",
+            "apoyo",
+            "fijaciones",
+            "encuentros_con_divisiones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_a",
+          "label": "Apoyo vertical de cara ancha candidato",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 645.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 100.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999952782708192,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5",
+              "evidence-contour-lines-unknown-6"
+            ]
+          },
+          "premise_ids": [
+            "p_support_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5",
+            "evidence-contour-lines-unknown-6"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se interpreta como elemento vertical de apoyo, distinto del elemento estrecho superpuesto en frontal; las tres proyecciones no multiplican unidades."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_b",
+          "label": "Apoyo vertical de canto frontal candidato",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 645.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 49.99999868231134,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999956442963366,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-19",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "premise_ids": [
+            "p_support_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-19",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-21"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto frontal, la sección de planta y la cara de perfil sostienen un elemento diferente del apoyo de cara ancha."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_a",
+          "label": "Travesaño longitudinal candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length": {
+            "value_mm": 1444.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 60.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999560769379,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26"
+            ]
+          },
+          "premise_ids": [
+            "p_rail_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-13"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo 13 se superpone parcialmente al 25; no se añade otra pieza solo por ese rectángulo."
+          ],
+          "unknown_fields": [
+            "identidad_del_tramo_13",
+            "fijaciones",
+            "posicion_relativa_exacta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_b",
+          "label": "Travesaño central posterior candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length": {
+            "value_mm": 924.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 70.0000013176917,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999994875642642,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34"
+            ]
+          },
+          "premise_ids": [
+            "p_rail_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-33",
+            "evidence-contour-lines-unknown-34"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo central de planta y su sección lateral son proyecciones candidatas de un solo travesaño, no un panel macizo que llene el hueco."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "contacto_con_trasera"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p_base",
+          "description": "La franja inferior frontal 7 y la cara de planta 8 representan un único panel inferior sobre el que terminan los montantes frontales.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_left",
+          "description": "Los contornos 10 frontal y 11 de planta corresponden a la instancia exterior izquierda; su correspondencia y profundidad son hipótesis.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_right",
+          "description": "Los contornos 22 frontal y 23 de planta corresponden a una instancia exterior derecha, físicamente distinta de la izquierda.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_div_left",
+          "description": "El grupo 17 frontal y 18 de planta identifica una división interior izquierda, no una unidad por proyección.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_div_right",
+          "description": "El grupo 31 frontal y 32 de planta identifica una división interior derecha distinta de la izquierda.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_back",
+          "description": "La cara 1 y los cantos delgados 2 y 3 son compatibles con una sola trasera central; se descarta provisionalmente que 1 sea exclusivamente un hueco.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_shelf",
+          "description": "Los contornos 27, 28 y 29 son compatibles con una sola superficie horizontal intermedia; se mantiene abierta su continuidad ante los cruces de las divisiones.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p_support_a",
+          "description": "El grupo frontal 4, planta 5 y perfil 6 corresponde a un apoyo de cara ancha, una sola instancia candidata.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_support_b",
+          "description": "El grupo frontal 19, planta 20 y perfil 21 corresponde a otro apoyo; las orientaciones y secciones lo distinguen del grupo 4/5/6.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_rail_a",
+          "description": "El canto de planta 25 y la sección de perfil 26 son candidatos de un travesaño único; el contorno 13 superpuesto no prueba una segunda instancia.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_rail_b",
+          "description": "El canto central de planta 33 y la sección de perfil 34 son candidatos de un travesaño central único, distinto del longitudinal 25.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "p_contact",
+          "description": "Se interpretan solo encuentros visibles: los extremos inferiores de los cuatro paneles verticales frontales terminan sobre la base; cruces y proximidades restantes no prueban fijación ni transmisión de carga.",
+          "required": true,
+          "blocking": false
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable, no lista de fabricación; toda asignación dimensional y toda identidad entre proyecciones es hipotética.",
+        "Las capas ORTHO_FRONT, ORTHO_TOP y ORTHO_SIDE consultadas orientan la correspondencia; las dos regiones espaciales no son dos muebles ni dos ocurrencias.",
+        "No se especifican materiales, acabados, mecanizados ni uniones ocultas.",
+        "Los contornos superpuestos y los límites interiores no se convierten automáticamente en paneles adicionales; los tramos 14, 15, 16 y 30 no se desdoblan sin resolver sus correspondencias.",
+        "Los apoyos y travesaños son interpretaciones funcionales candidatas; los cruces en proyección no prueban contacto tridimensional."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "side_left",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_left",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-10",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_right",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_right",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-22",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_left",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_div_left",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_right",
+          "relation": "supported_by",
+          "object_component_id": "base",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_div_right",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_left",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-10",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "side_right",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-22",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_left",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "divider_right",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "adjacent_to",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_shelf",
+            "p_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-10"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "adjacent_to",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_shelf",
+            "p_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-22"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "unknown",
+          "object_component_id": "divider_left",
+          "state": "unknown",
+          "premise_ids": [
+            "p_shelf",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-17",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-18"
+          ]
+        },
+        {
+          "subject_component_id": "shelf",
+          "relation": "unknown",
+          "object_component_id": "divider_right",
+          "state": "unknown",
+          "premise_ids": [
+            "p_shelf",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-31",
+            "contour:contour-lines-unknown-28",
+            "contour:contour-lines-unknown-32"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_back",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-17"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_back",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-31"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_back",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-7"
+          ]
+        },
+        {
+          "subject_component_id": "back",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_back",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-1",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-2",
+            "contour:contour-lines-unknown-28"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "support_b",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_support_b",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-20"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-28"
+          ]
+        },
+        {
+          "subject_component_id": "support_b",
+          "relation": "unknown",
+          "object_component_id": "shelf",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_b",
+            "p_shelf",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-27",
+            "contour:contour-lines-unknown-21",
+            "contour:contour-lines-unknown-29"
+          ]
+        },
+        {
+          "subject_component_id": "support_a",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_a",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-4",
+            "contour:contour-lines-unknown-7",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "support_b",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_support_b",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-19",
+            "contour:contour-lines-unknown-7",
+            "contour:contour-lines-unknown-20",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "adjacent_to",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_a",
+            "p_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-11"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "adjacent_to",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_a",
+            "p_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-23"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "unknown",
+          "object_component_id": "base",
+          "state": "unknown",
+          "premise_ids": [
+            "p_rail_a",
+            "p_base",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-8"
+          ]
+        },
+        {
+          "subject_component_id": "rail_a",
+          "relation": "unknown",
+          "object_component_id": "support_a",
+          "state": "unknown",
+          "premise_ids": [
+            "p_rail_a",
+            "p_support_a",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-25",
+            "contour:contour-lines-unknown-5",
+            "contour:contour-lines-unknown-26",
+            "contour:contour-lines-unknown-6"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_div_left",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-18"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "divider_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_div_right",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-32"
+          ]
+        },
+        {
+          "subject_component_id": "rail_b",
+          "relation": "adjacent_to",
+          "object_component_id": "back",
+          "state": "hypothesis",
+          "premise_ids": [
+            "p_rail_b",
+            "p_back",
+            "p_contact"
+          ],
+          "source_refs": [
+            "contour:contour-lines-unknown-33",
+            "contour:contour-lines-unknown-2"
+          ]
+        }
+      ],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": {
+      "schema_version": "0.6.0",
+      "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+      "proposal_id": "general-8ac869990544d764",
+      "proposal_revision": 1,
+      "review_revision": 1,
+      "reviewer_name": "autonomous-reviewer",
+      "reviewer_kind": "machine",
+      "machine_provenance": {
+        "model": "gpt-6-astra",
+        "policy_version": "general-auto-review-v3",
+        "response_ids": [
+          "resp_068854dc9f746e6c006af85aa1c66087d29f1d89b50cb7aa5e"
+        ],
+        "review_relation": "separate_model"
+      },
+      "reason": "Revisión multimodal autónoma provisional.",
+      "reviewed_at": "2026-11-14T12:58:17.482663+00:00",
+      "operations": [
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "base"
+          ],
+          "result_component_ids": [
+            "base"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "side_left"
+          ],
+          "result_component_ids": [
+            "side_left"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "side_right"
+          ],
+          "result_component_ids": [
+            "side_right"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "divider_left"
+          ],
+          "result_component_ids": [
+            "divider_left"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "divider_right"
+          ],
+          "result_component_ids": [
+            "divider_right"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "back"
+          ],
+          "result_component_ids": [
+            "back"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "shelf"
+          ],
+          "result_component_ids": [
+            "shelf"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "support_a"
+          ],
+          "result_component_ids": [
+            "support_a"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "support_b"
+          ],
+          "result_component_ids": [
+            "support_b"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "rail_a"
+          ],
+          "result_component_ids": [
+            "rail_a"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "rail_b"
+          ],
+          "result_component_ids": [
+            "rail_b"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        }
+      ],
+      "components": [
+        {
+          "id": "base",
+          "label": "Panel inferior continuo candidato",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "length": {
+            "value_mm": 1480.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:base_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_base"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-7",
+              "evidence-contour-lines-unknown-8"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "base"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-7",
+            "evidence-contour-lines-unknown-8"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara en ORTHO_TOP y el canto inferior en ORTHO_FRONT corresponden a un solo panel, no dos instancias."
+          ],
+          "unknown_fields": [
+            "material",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_left",
+          "label": "Lateral exterior izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 631.9999986823065,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 230.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000046265625315,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:left_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-10",
+              "evidence-contour-lines-unknown-11"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "side_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-10",
+            "evidence-contour-lines-unknown-11"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se propone una sola instancia exterior izquierda; el tramo de planta se asigna como profundidad candidata, no como perfil completo confirmado."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral exterior derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 632.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 230.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999953734374458,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:right_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-22",
+              "evidence-contour-lines-unknown-23"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "side_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-22",
+            "evidence-contour-lines-unknown-23"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Instancia exterior derecha distinta de la izquierda; se asigna el tramo de planta como profundidad candidata."
+          ],
+          "unknown_fields": [
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_left",
+          "label": "División interior izquierda candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length": {
+            "value_mm": 631.9999986823065,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 320.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000046265625315,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_left_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_left"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-18"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "divider_left"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-18"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Los cantos interior izquierdo frontal y de planta representan una sola división."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "divider_right",
+          "label": "División interior derecha candidata",
+          "kind": "panel",
+          "role": "divider",
+          "length": {
+            "value_mm": 632.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_h"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 320.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99995373437457,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:div_right_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_div_right"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-32"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "divider_right"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-32"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La división interior derecha es distinta de la izquierda y se representa en varias proyecciones."
+          ],
+          "unknown_fields": [
+            "encuentro_con_estante",
+            "perfil_completo",
+            "fijaciones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "back",
+          "label": "Trasera central delgada candidata",
+          "kind": "panel",
+          "role": "back_panel",
+          "length": {
+            "value_mm": 934.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 587.0000003660239,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999957028604285,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-2",
+              "evidence-contour-lines-unknown-3"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "back"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-2",
+            "evidence-contour-lines-unknown-3"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "La cara frontal se interpreta como material por sus cantos finos compatibles en planta y perfil; no se cuentan esos cantos como piezas."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "solape_con_base"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf",
+          "label": "Estante intermedio continuo candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": 1443.0000008353818,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 510.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99993303007176,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelf"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-27",
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "shelf"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-27",
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Cara en planta y cantos frontal/lateral sostienen un panel horizontal candidato; continuidad física frente a las divisiones requiere revisión."
+          ],
+          "unknown_fields": [
+            "continuidad_o_segmentacion",
+            "apoyo",
+            "fijaciones",
+            "encuentros_con_divisiones"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_a",
+          "label": "Apoyo vertical de cara ancha candidato",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 645.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 100.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999952782708192,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_a_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5",
+              "evidence-contour-lines-unknown-6"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "support_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5",
+            "evidence-contour-lines-unknown-6"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Se interpreta como elemento vertical de apoyo, distinto del elemento estrecho superpuesto en frontal; las tres proyecciones no multiplican unidades."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "support_b",
+          "label": "Apoyo vertical de canto frontal candidato",
+          "kind": "panel",
+          "role": "support",
+          "length": {
+            "value_mm": 645.0000013176901,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 49.99999868231134,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999956442963366,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:support_b_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_support_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-19",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "support_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-19",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-21"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El canto frontal, la sección de planta y la cara de perfil sostienen un elemento diferente del apoyo de cara ancha."
+          ],
+          "unknown_fields": [
+            "funcion_estructural_exacta",
+            "fijaciones",
+            "contacto_con_suelo"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_a",
+          "label": "Travesaño longitudinal candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length": {
+            "value_mm": 1444.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 60.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999560769379,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_a_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_a"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "rail_a"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-13"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo 13 se superpone parcialmente al 25; no se añade otra pieza solo por ese rectángulo."
+          ],
+          "unknown_fields": [
+            "identidad_del_tramo_13",
+            "fijaciones",
+            "posicion_relativa_exacta"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "rail_b",
+          "label": "Travesaño central posterior candidato",
+          "kind": "panel",
+          "role": "stretcher",
+          "length": {
+            "value_mm": 924.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 70.0000013176917,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999994875642642,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:rail_b_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_rail_b"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "rail_b"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-33",
+            "evidence-contour-lines-unknown-34"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El tramo central de planta y su sección lateral son proyecciones candidatas de un solo travesaño, no un panel macizo que llene el hueco."
+          ],
+          "unknown_fields": [
+            "fijaciones",
+            "contacto_con_trasera"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "occurrences": [],
+      "scenario_occurrences": [
+        {
+          "id": "provisional:general-8ac869990544d764:base:1",
+          "component_id": "base",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:base.quantity",
+          "check_ids": [
+            "q_base_back",
+            "dup_base_back"
+          ],
+          "premise_refs": [
+            "premise:p_base"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "premise:p_base",
+            "premise:p_back",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:side_left:1",
+          "component_id": "side_left",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:side_left.quantity",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ],
+          "premise_refs": [
+            "premise:p_left"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_left",
+            "premise:p_right",
+            "premise:p_div_left",
+            "premise:p_div_right",
+            "contour-lines-unknown-16"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:side_right:1",
+          "component_id": "side_right",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:side_right.quantity",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ],
+          "premise_refs": [
+            "premise:p_right"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_left",
+            "premise:p_right",
+            "premise:p_div_left",
+            "premise:p_div_right",
+            "contour-lines-unknown-16"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:divider_left:1",
+          "component_id": "divider_left",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:divider_left.quantity",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ],
+          "premise_refs": [
+            "premise:p_div_left"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_left",
+            "premise:p_right",
+            "premise:p_div_left",
+            "premise:p_div_right",
+            "contour-lines-unknown-16"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:divider_right:1",
+          "component_id": "divider_right",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:divider_right.quantity",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ],
+          "premise_refs": [
+            "premise:p_div_right"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_left",
+            "premise:p_right",
+            "premise:p_div_left",
+            "premise:p_div_right",
+            "contour-lines-unknown-16"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:back:1",
+          "component_id": "back",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:back.quantity",
+          "check_ids": [
+            "q_base_back",
+            "dup_base_back"
+          ],
+          "premise_refs": [
+            "premise:p_back"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "premise:p_base",
+            "premise:p_back",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:support_a:1",
+          "component_id": "support_a",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:support_a.quantity",
+          "check_ids": [
+            "q_supports",
+            "dup_supports"
+          ],
+          "premise_refs": [
+            "premise:p_support_a"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "premise:p_support_a",
+            "premise:p_support_b"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:support_b:1",
+          "component_id": "support_b",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:support_b.quantity",
+          "check_ids": [
+            "q_supports",
+            "dup_supports"
+          ],
+          "premise_refs": [
+            "premise:p_support_b"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "premise:p_support_a",
+            "premise:p_support_b"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-8ac869990544d764:rail_b:1",
+          "component_id": "rail_b",
+          "occurrence_index": 1,
+          "scenario_id": "general-8ac869990544d764",
+          "quantity_target_ref": "component:rail_b.quantity",
+          "check_ids": [
+            "q_rail_b",
+            "dup_rail_b"
+          ],
+          "premise_refs": [
+            "premise:p_rail_b"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "premise:p_rail_b",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "state": "provisional"
+        }
+      ],
+      "machine_checks": [
+        {
+          "id": "det:base.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:base.length"
+          ],
+          "source_refs": [
+            "binding:base_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:base.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:base.width"
+          ],
+          "source_refs": [
+            "binding:base_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:base.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:base.thickness"
+          ],
+          "source_refs": [
+            "binding:base_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_left.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_left.length"
+          ],
+          "source_refs": [
+            "binding:left_h"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_left.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_left.width"
+          ],
+          "source_refs": [
+            "binding:left_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_left.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_left.thickness"
+          ],
+          "source_refs": [
+            "binding:left_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_right.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_right.length"
+          ],
+          "source_refs": [
+            "binding:right_h"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_right.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_right.width"
+          ],
+          "source_refs": [
+            "binding:right_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:side_right.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:side_right.thickness"
+          ],
+          "source_refs": [
+            "binding:right_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_left.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_left.length"
+          ],
+          "source_refs": [
+            "binding:div_left_h"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_left.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_left.width"
+          ],
+          "source_refs": [
+            "binding:div_left_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_left.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_left.thickness"
+          ],
+          "source_refs": [
+            "binding:div_left_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_right.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_right.length"
+          ],
+          "source_refs": [
+            "binding:div_right_h"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_right.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_right.width"
+          ],
+          "source_refs": [
+            "binding:div_right_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:divider_right.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:divider_right.thickness"
+          ],
+          "source_refs": [
+            "binding:div_right_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back.length"
+          ],
+          "source_refs": [
+            "binding:back_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back.width"
+          ],
+          "source_refs": [
+            "binding:back_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:back.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:back.thickness"
+          ],
+          "source_refs": [
+            "binding:back_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelf.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelf.length"
+          ],
+          "source_refs": [
+            "binding:shelf_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelf.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelf.width"
+          ],
+          "source_refs": [
+            "binding:shelf_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:shelf.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:shelf.thickness"
+          ],
+          "source_refs": [
+            "binding:shelf_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_a.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_a.length"
+          ],
+          "source_refs": [
+            "binding:support_a_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_a.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_a.width"
+          ],
+          "source_refs": [
+            "binding:support_a_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_a.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_a.thickness"
+          ],
+          "source_refs": [
+            "binding:support_a_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_b.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_b.length"
+          ],
+          "source_refs": [
+            "binding:support_b_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_b.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_b.width"
+          ],
+          "source_refs": [
+            "binding:support_b_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:support_b.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:support_b.thickness"
+          ],
+          "source_refs": [
+            "binding:support_b_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_a.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_a.length"
+          ],
+          "source_refs": [
+            "binding:rail_a_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_a.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_a.width"
+          ],
+          "source_refs": [
+            "binding:rail_a_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_a.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_a.thickness"
+          ],
+          "source_refs": [
+            "binding:rail_a_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_b.length",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_b.length"
+          ],
+          "source_refs": [
+            "binding:rail_b_l"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_b.width",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_b.width"
+          ],
+          "source_refs": [
+            "binding:rail_b_w"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "det:rail_b.thickness",
+          "kind": "dimension_binding",
+          "outcome": "pass",
+          "method": "deterministic",
+          "target_refs": [
+            "component:rail_b.thickness"
+          ],
+          "source_refs": [
+            "binding:rail_b_t"
+          ],
+          "summary": "El servidor recalculó el binding numérico sin introducir valores nuevos."
+        },
+        {
+          "id": "base_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:base.length",
+            "component:base.width",
+            "component:base.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8"
+          ],
+          "summary": "La franja inferior del frontal y el rectángulo exterior de planta son compatibles con una base única. Los spans enlazados sostienen las dimensiones propuestas como hipótesis; no se mide la imagen ni se confunde el interior del rectángulo con otra pieza."
+        },
+        {
+          "id": "left_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.length",
+            "component:side_left.width",
+            "component:side_left.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11"
+          ],
+          "summary": "El canto exterior izquierdo frontal y el tramo exterior izquierdo en planta admiten la correspondencia propuesta. Altura, profundidad y espesor enlazados son coherentes como hipótesis del tramo representado, sin establecer un perfil de fabricación completo."
+        },
+        {
+          "id": "right_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_right.length",
+            "component:side_right.width",
+            "component:side_right.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23"
+          ],
+          "summary": "El canto exterior derecho frontal y el tramo exterior derecho de planta son compatibles con las dimensiones enlazadas. La superposición con el perfil en región 002 no se interpreta como prolongación automática de la profundidad."
+        },
+        {
+          "id": "div_left_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:divider_left.length",
+            "component:divider_left.width",
+            "component:divider_left.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18"
+          ],
+          "summary": "La posición interior izquierda y los cantos frontal y de planta sostienen una división candidata con los spans asignados. Su encuentro con el estante no queda resuelto por esta correspondencia."
+        },
+        {
+          "id": "div_right_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:divider_right.length",
+            "component:divider_right.width",
+            "component:divider_right.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32"
+          ],
+          "summary": "Los cantos interior derecho frontal y de planta son compatibles con una división distinta de la izquierda y con las dimensiones enlazadas; no se deduce mecanizado del cruce con el estante."
+        },
+        {
+          "id": "back_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:back.length",
+            "component:back.width",
+            "component:back.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "summary": "El rectángulo central frontal no basta por sí solo para distinguir material y hueco. Sus correspondencias con una franja delgada de planta y un canto vertical de perfil sostienen, conjuntamente, la hipótesis de trasera y sus bindings. No se infiere material ni unión."
+        },
+        {
+          "id": "shelf_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf.width",
+            "component:shelf.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29"
+          ],
+          "summary": "La franja horizontal frontal, el rectángulo interior de planta y el canto horizontal de perfil son compatibles con una superficie intermedia. La profundidad y el espesor enlazados tienen correspondencia entre proyecciones, sin resolver la continuidad longitudinal."
+        },
+        {
+          "id": "shelf_continuity",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf.length",
+            "component:shelf.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_shelf"
+          ],
+          "summary": "El span longitudinal concuerda entre frontal y planta, pero el estante atraviesa en proyección las divisiones de altura completa. No se distinguen segmentación, pasos o rebajes. La longitud de la envolvente no resuelve la longitud de una pieza continua; la premisa bloqueante sigue abierta."
+        },
+        {
+          "id": "support_a_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:support_a.length",
+            "component:support_a.width",
+            "component:support_a.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6"
+          ],
+          "summary": "La cara vertical ancha frontal, la sección horizontal corta de planta y el canto alto de perfil son compatibles con el mismo elemento. Los bindings concuerdan con esa orientación. La función portante y el contacto con suelo no se establecen."
+        },
+        {
+          "id": "support_b_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:support_b.length",
+            "component:support_b.width",
+            "component:support_b.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21"
+          ],
+          "summary": "El canto frontal estrecho tiene una sección de planta diferenciada de la del apoyo ancho y una cara de perfil compatible. La orientación sostiene los bindings propuestos sin convertir la proximidad entre apoyos en una unión demostrada."
+        },
+        {
+          "id": "rail_a_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_a.length",
+            "component:rail_a.width",
+            "component:rail_a.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26"
+          ],
+          "summary": "La franja longitudinal de planta y la pequeña sección vertical de perfil son compatibles con un travesaño de las dimensiones enlazadas. Esta correspondencia no identifica el rectángulo parcialmente coincidente 13 ni establece que el inventario de travesaños esté completo."
+        },
+        {
+          "id": "rail_b_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_b.length",
+            "component:rail_b.width",
+            "component:rail_b.thickness"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "summary": "La franja central de planta y su sección alta de perfil son compatibles con un travesaño. Se distinguen de los cantos más delgados de la trasera; el rectángulo interior que delimitan no se añade como panel. Los bindings sostienen la hipótesis dimensional."
+        },
+        {
+          "id": "q_base_back",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:base.quantity",
+            "component:back.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "premise:p_base",
+            "premise:p_back"
+          ],
+          "summary": "Una base y una trasera son cantidades hipotéticas coherentes con sus respectivos grupos de cara y cantos. Las premisas declaradas fundamentan una instancia por grupo, no una instancia por vista."
+        },
+        {
+          "id": "dup_base_back",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:base.quantity",
+            "component:back.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28"
+          ],
+          "summary": "Las proyecciones de base y trasera se agrupan sin multiplicar piezas. La orientación, posición y espesor representados permiten distinguirlas entre sí y del estante candidato; no se aprecia duplicación de estos grupos en el inventario."
+        },
+        {
+          "id": "q_verticals",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity",
+            "component:divider_left.quantity",
+            "component:divider_right.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "premise:p_left",
+            "premise:p_right",
+            "premise:p_div_left",
+            "premise:p_div_right"
+          ],
+          "summary": "El frontal distingue cuatro posiciones de panel vertical: dos exteriores y dos interiores. Los tramos de planta son compatibles con esa separación. Una unidad hipotética por componente tiene base en sus premisas, sin sumar las proyecciones."
+        },
+        {
+          "id": "dup_verticals",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity",
+            "component:divider_left.quantity",
+            "component:divider_right.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-10",
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-22",
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-16"
+          ],
+          "summary": "Los cuatro cantos frontales ocupan posiciones distintas: no son duplicados entre sí. El perfil superpuesto 16 no autoriza otra unidad ni debe asignarse simultáneamente como una pieza adicional por cada correspondencia heurística."
+        },
+        {
+          "id": "q_supports",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:support_a.quantity",
+            "component:support_b.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "premise:p_support_a",
+            "premise:p_support_b"
+          ],
+          "summary": "Las secciones diferenciadas en planta sostienen dos elementos orientados de forma distinta, uno por componente. Cada cantidad permanece hypothesis y depende de su premisa; no se cuentan las tres proyecciones como tres apoyos."
+        },
+        {
+          "id": "dup_supports",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:support_a.quantity",
+            "component:support_b.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5",
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-19",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21"
+          ],
+          "summary": "La superposición frontal de la cara ancha y el canto estrecho no basta para fusionarlos. Sus secciones de planta y caras de perfil diferenciadas sostienen dos candidatos no duplicados. Las alturas coincidentes no se usan como prueba única de identidad."
+        },
+        {
+          "id": "q_shelf",
+          "kind": "quantity_basis",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "premise:p_shelf"
+          ],
+          "summary": "La cantidad uno representa una superficie continua candidata, pero su premisa mantiene abierta la continuidad física. Los cruces con divisiones no permiten cerrar si se trata de una pieza con encuentros especiales o de varios segmentos."
+        },
+        {
+          "id": "dup_shelf",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-25"
+          ],
+          "summary": "Los contornos 27/28/29 pueden ser proyecciones de la misma superficie; no deben sumarse. Se distingue de la base por su cota en frontal y del travesaño por su extensión en planta. Ausencia de duplicación no resuelve segmentación."
+        },
+        {
+          "id": "q_rail_a",
+          "kind": "quantity_basis",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_a.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-14",
+            "premise:p_rail_a"
+          ],
+          "summary": "Una instancia del grupo 25/26 es plausible, pero el tramo 13 superpuesto tiene cierre propio y su relación con 14 no queda resuelta. No se puede cerrar la base de cantidad del grupo longitudinal descartando que haya otro elemento coincidente."
+        },
+        {
+          "id": "dup_rail_a",
+          "kind": "duplicate_scan",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_a.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26"
+          ],
+          "summary": "El solapamiento parcial 13/25 no demuestra ni identidad física ni dos piezas. Sin una correspondencia inequívoca de 13/14 entre proyecciones, no se autoriza sumar, fusionar o descartar un elemento adicional."
+        },
+        {
+          "id": "q_rail_b",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_b.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "premise:p_rail_b"
+          ],
+          "summary": "Una unidad hipotética del travesaño central es coherente con la franja de planta y la sección de perfil. La premisa agrupa ambas representaciones, sin contarlas como unidades diferentes."
+        },
+        {
+          "id": "dup_rail_b",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:rail_b.quantity"
+          ],
+          "source_refs": [
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3"
+          ],
+          "summary": "El travesaño central ocupa una posición de planta distinta del longitudinal. Sus cantos y sección se distinguen también de la trasera delgada. No se identifica duplicación con esos componentes."
+        },
+        {
+          "id": "materials_finishes",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:base.material",
+            "component:base.finish",
+            "component:side_left.material",
+            "component:side_left.finish",
+            "component:side_right.material",
+            "component:side_right.finish",
+            "component:divider_left.material",
+            "component:divider_left.finish",
+            "component:divider_right.material",
+            "component:divider_right.finish",
+            "component:back.material",
+            "component:back.finish",
+            "component:shelf.material",
+            "component:shelf.finish",
+            "component:support_a.material",
+            "component:support_a.finish",
+            "component:support_b.material",
+            "component:support_b.finish",
+            "component:rail_a.material",
+            "component:rail_a.finish",
+            "component:rail_b.material",
+            "component:rail_b.finish"
+          ],
+          "source_refs": [
+            "visual:91a1f89c04b31f35a5ef73828fb920134cebcce684f638c45184d7b7ca6459e7:view:view-unknown:overview"
+          ],
+          "summary": "El dibujo lineal no aporta identificación de material, recubrimiento o acabado. Ni el espesor ni la denominación panel permiten inferirlos. No hay valores de estos campos que puedan aceptarse."
+        }
+      ],
+      "machine_field_reviews": [
+        {
+          "target_ref": "component:base.length",
+          "status": "accepted",
+          "check_ids": [
+            "base_identity"
+          ]
+        },
+        {
+          "target_ref": "component:base.width",
+          "status": "accepted",
+          "check_ids": [
+            "base_identity"
+          ]
+        },
+        {
+          "target_ref": "component:base.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "base_identity"
+          ]
+        },
+        {
+          "target_ref": "component:base.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_base_back",
+            "dup_base_back"
+          ]
+        },
+        {
+          "target_ref": "component:base.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:base.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.length",
+          "status": "accepted",
+          "check_ids": [
+            "left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.width",
+          "status": "accepted",
+          "check_ids": [
+            "left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.length",
+          "status": "accepted",
+          "check_ids": [
+            "right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.width",
+          "status": "accepted",
+          "check_ids": [
+            "right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.length",
+          "status": "accepted",
+          "check_ids": [
+            "div_left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.width",
+          "status": "accepted",
+          "check_ids": [
+            "div_left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "div_left_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:divider_left.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.length",
+          "status": "accepted",
+          "check_ids": [
+            "div_right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.width",
+          "status": "accepted",
+          "check_ids": [
+            "div_right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "div_right_identity"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_verticals",
+            "dup_verticals"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:divider_right.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:back.length",
+          "status": "accepted",
+          "check_ids": [
+            "back_identity"
+          ]
+        },
+        {
+          "target_ref": "component:back.width",
+          "status": "accepted",
+          "check_ids": [
+            "back_identity"
+          ]
+        },
+        {
+          "target_ref": "component:back.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "back_identity"
+          ]
+        },
+        {
+          "target_ref": "component:back.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_base_back",
+            "dup_base_back"
+          ]
+        },
+        {
+          "target_ref": "component:back.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:back.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.length",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_continuity"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.width",
+          "status": "accepted",
+          "check_ids": [
+            "shelf_identity"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "shelf_identity"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.quantity",
+          "status": "abstained",
+          "check_ids": [
+            "q_shelf",
+            "dup_shelf",
+            "shelf_continuity"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.length",
+          "status": "accepted",
+          "check_ids": [
+            "support_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.width",
+          "status": "accepted",
+          "check_ids": [
+            "support_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "support_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_supports",
+            "dup_supports"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:support_a.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.length",
+          "status": "accepted",
+          "check_ids": [
+            "support_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.width",
+          "status": "accepted",
+          "check_ids": [
+            "support_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "support_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_supports",
+            "dup_supports"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:support_b.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.length",
+          "status": "accepted",
+          "check_ids": [
+            "rail_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.width",
+          "status": "accepted",
+          "check_ids": [
+            "rail_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "rail_a_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.quantity",
+          "status": "abstained",
+          "check_ids": [
+            "q_rail_a",
+            "dup_rail_a"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:rail_a.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.length",
+          "status": "accepted",
+          "check_ids": [
+            "rail_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.width",
+          "status": "accepted",
+          "check_ids": [
+            "rail_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.thickness",
+          "status": "accepted",
+          "check_ids": [
+            "rail_b_identity"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "q_rail_b",
+            "dup_rail_b"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:rail_b.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        }
+      ],
+      "evidence_dispositions": [],
+      "auto_review_status": "incomplete",
+      "furniture_quantity": {
+        "value": null,
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": []
+      },
+      "currency": null,
+      "required_cost_scope": [],
+      "required_hours_scope": [],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_validation": null,
+      "construction_placements": [],
+      "status": "reviewed_incomplete"
+    }
+  }
+}

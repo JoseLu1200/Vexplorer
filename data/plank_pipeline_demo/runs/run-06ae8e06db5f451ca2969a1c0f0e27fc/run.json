@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "run": {
+      "schema_version": "0.2.0",
+      "id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+      "mode": "live",
+      "state": "needs_review",
+      "reason_code": null,
+      "candidate_revision": "drawing-c8aa3006c1098f06",
+      "result_revision": 1,
+      "created_at": "2026-11-14T12:07:27.792379+00:00",
+      "agent_selected_scenario_id": null,
+      "agent_selected_assembly_candidate_id": null,
+      "agent_selected_table_program_id": null,
+      "document_id": "doc-aaae261125564f80a83a5c3c0bb9ca68",
+      "input_kind": "general_furniture",
+      "replay_source": null
+    },
+    "result": {
+      "schema_version": "0.2.0",
+      "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+      "result_revision": 1,
+      "state": "needs_review",
+      "scenarios": [],
+      "pieces": [],
+      "rejected_proposal_ids": [],
+      "created_at": "2026-11-14T12:07:27.792379+00:00",
+      "review": null,
+      "agent_selected_scenario_id": null,
+      "input_semantics": "general_furniture",
+      "part_analysis": null,
+      "assembly_candidates": [],
+      "selected_assembly_candidate_id": null,
+      "table_analysis": null,
+      "table_programs": [],
+      "selected_table_program_id": null,
+      "evaluated_table_program": null,
+      "table_review_decisions": [],
+      "table_confirmed_values": [],
+      "table_observed_value_corrections": [],
+      "table_source_review_decisions": [],
+      "table_cost_scope": null
+    },
+    "estimate": null,
+    "latest_job": {
+      "id": "job-44ac359cfc0a41d5a6262222a32c19fc",
+      "state": "succeeded",
+      "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+      "error": null,
+      "checkpoint": {
+        "phase": "autonomous_review",
+        "proposal_saved": true,
+        "proposal_id": "general-24189eacf1206064",
+        "proposal_revision": 2,
+        "review_revision": 1
+      },
+      "recovery": {
+        "safe_action": null,
+        "endpoint": null,
+        "attempt_kind": null,
+        "repeats_proposer": false,
+        "continues_original_provider_call": false,
+        "review_attempt_timeout_s": 300.0,
+        "max_model_calls": 5,
+        "max_validation_repairs": 2,
+        "max_semantic_repairs": 2
+      }
+    }
+  }
+}

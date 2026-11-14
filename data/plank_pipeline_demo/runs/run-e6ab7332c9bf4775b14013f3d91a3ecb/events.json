@@ -1,0 +1,68 @@
+[
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.422361+00:00\", \"state\": \"needs_review\", \"mode\": \"live\"}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 2,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.422361+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 3,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.422361+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 4,
+    "event_type": "general_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.456004+00:00\", \"tool_name\": \"inspeccionar_evidencia_general\", \"ok\": true, \"summary\": \"Ledger evidence inspected.\", \"proposal_origin\": \"native_tool\", \"provider_response_id\": \"resp_0b42412eee124484006af8501e8ed087d2af71b4b0d7571c5c\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_Q9jflnq6Y4lSSrJtNsOSI6XK\", \"provider_duration_ms\": 7143, \"provider_input_tokens\": 46868, \"provider_output_tokens\": 254, \"provider_total_tokens\": 47122}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 5,
+    "event_type": "general_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.468089+00:00\", \"tool_name\": \"proponer_mueble_general\", \"ok\": true, \"summary\": \"Evidence-grounded component proposal created for review.\", \"proposal_origin\": \"native_tool\", \"provider_response_id\": \"resp_0b42412eee124484006af850257fbc87d2900424083dfc5c53\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_dEa8hYj6pXTulgVk4VNHJ2Ew\", \"provider_duration_ms\": 63994, \"provider_input_tokens\": 47660, \"provider_output_tokens\": 6338, \"provider_total_tokens\": 53998}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 6,
+    "event_type": "general_proposal_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.481889+00:00\", \"proposal_id\": \"general-7eb98b3e11148b8b\", \"proposal_revision\": 1, \"proposal_origin\": \"native_tool\", \"provider_model\": \"gpt-6.1-sol\", \"model_calls\": 2, \"tool_calls\": 2}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 7,
+    "event_type": "general_auto_review_started",
+    "payload": "{\"timestamp\": \"2026-11-14T12:13:25.493502+00:00\", \"proposal_revision\": 1, \"reviewer_kind\": \"machine\", \"reviewer_model\": \"gpt-6-astra\", \"visual_artifacts\": [{\"reference\": \"a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview\", \"sha256\": \"733f3eb1b7074fdd6125e37e9fde67ec44d7a467b1be3f22723a12cc9e877ed5\", \"source_view_ids\": [\"view-unknown\"], \"source_contour_ids\": [\"contour-lines-unknown-1\", \"contour-lines-unknown-10\", \"contour-lines-unknown-11\", \"contour-lines-unknown-12\", \"contour-lines-unknown-13\", \"contour-lines-unknown-14\", \"contour-lines-unknown-15\", \"contour-lines-unknown-16\", \"contour-lines-unknown-17\", \"contour-lines-unknown-18\", \"contour-lines-unknown-19\", \"contour-lines-unknown-2\", \"contour-lines-unknown-20\", \"contour-lines-unknown-21\", \"contour-lines-unknown-22\", \"contour-lines-unknown-23\", \"contour-lines-unknown-24\", \"contour-lines-unknown-25\", \"contour-lines-unknown-26\", \"contour-lines-unknown-27\", \"contour-lines-unknown-28\", \"contour-lines-unknown-29\", \"contour-lines-unknown-3\", \"contour-lines-unknown-31\", \"contour-lines-unknown-32\", \"contour-lines-unknown-33\", \"contour-lines-unknown-34\", \"contour-lines-unknown-35\", \"contour-lines-unknown-36\", \"contour-lines-unknown-37\", \"contour-lines-unknown-38\", \"contour-lines-unknown-39\", \"contour-lines-unknown-4\", \"contour-lines-unknown-40\", \"contour-lines-unknown-41\", \"contour-lines-unknown-5\", \"contour-lines-unknown-6\", \"contour-lines-unknown-7\", \"contour-lines-unknown-8\", \"contour-lines-unknown-9\"], \"crop_bounds_source\": [-300.0, -1200.000006873262, 1652.0001068977522, 1199.9999944444264], \"marks\": []}, {\"reference\": \"a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-001\", \"sha256\": \"78da1f2fef2d92098f5b117c1c0ef7b621eea50ad16e267f7168b77f5d3adb47\", \"source_view_ids\": [\"view-unknown\"], \"source_contour_ids\": [\"contour-lines-unknown-10\", \"contour-lines-unknown-13\", \"contour-lines-unknown-16\", \"contour-lines-unknown-19\", \"contour-lines-unknown-22\", \"contour-lines-unknown-25\", \"contour-lines-unknown-27\", \"contour-lines-unknown-29\", \"contour-lines-unknown-3\", \"contour-lines-unknown-31\", \"contour-lines-unknown-34\", \"contour-lines-unknown-36\", \"contour-lines-unknown-39\", \"contour-lines-unknown-41\", \"contour-lines-unknown-5\", \"contour-lines-unknown-8\"], \"crop_bounds_source\": [1084.0000941966669, -1200.000006873262, 1652.0001068977522, 1199.9999944444264], \"marks\": [{\"mark_id\": \"M001\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-10\"}, {\"mark_id\": \"M002\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-13\"}, {\"mark_id\": \"M003\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-16\"}, {\"mark_id\": \"M004\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-19\"}, {\"mark_id\": \"M005\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-22\"}, {\"mark_id\": \"M006\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-25\"}, {\"mark_id\": \"M007\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-27\"}, {\"mark_id\": \"M008\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-29\"}, {\"mark_id\": \"M009\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-3\"}, {\"mark_id\": \"M010\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-31\"}, {\"mark_id\": \"M011\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-34\"}, {\"mark_id\": \"M012\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-36\"}, {\"mark_id\": \"M013\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-39\"}, {\"mark_id\": \"M014\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-41\"}, {\"mark_id\": \"M015\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-5\"}, {\"mark_id\": \"M016\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-8\"}]}, {\"reference\": \"a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-002\", \"sha256\": \"1f50e48db4cd4f1a3d458323d30ab09a01b484e0880142d618a04c6f0b36ef68\", \"source_view_ids\": [\"view-unknown\"], \"source_contour_ids\": [\"contour-lines-unknown-1\", \"contour-lines-unknown-11\", \"contour-lines-unknown-14\", \"contour-lines-unknown-17\", \"contour-lines-unknown-20\", \"contour-lines-unknown-23\", \"contour-lines-unknown-26\", \"contour-lines-unknown-28\", \"contour-lines-unknown-32\", \"contour-lines-unknown-37\", \"contour-lines-unknown-4\", \"contour-lines-unknown-40\", \"contour-lines-unknown-6\", \"contour-lines-unknown-9\"], \"crop_bounds_source\": [-300.0, -1200.000006873259, 300.00008784612413, 1199.9999944444264], \"marks\": [{\"mark_id\": \"M001\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-1\"}, {\"mark_id\": \"M002\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-11\"}, {\"mark_id\": \"M003\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-14\"}, {\"mark_id\": \"M004\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-17\"}, {\"mark_id\": \"M005\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-20\"}, {\"mark_id\": \"M006\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-23\"}, {\"mark_id\": \"M007\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-26\"}, {\"mark_id\": \"M008\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-28\"}, {\"mark_id\": \"M009\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-32\"}, {\"mark_id\": \"M010\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-37\"}, {\"mark_id\": \"M011\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-4\"}, {\"mark_id\": \"M012\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-40\"}, {\"mark_id\": \"M013\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-6\"}, {\"mark_id\": \"M014\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-9\"}]}, {\"reference\": \"a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-003\", \"sha256\": \"1d03524f89376271d361f76f83c96a589fb5f4c8508995752ea14a1fdb7bdf60\", \"source_view_ids\": [\"view-unknown\"], \"source_contour_ids\": [\"contour-lines-unknown-12\", \"contour-lines-unknown-15\", \"contour-lines-unknown-18\", \"contour-lines-unknown-2\", \"contour-lines-unknown-21\", \"contour-lines-unknown-24\", \"contour-lines-unknown-33\", \"contour-lines-unknown-35\", \"contour-lines-unknown-38\", \"contour-lines-unknown-7\"], \"crop_bounds_source\": [400.0000878461242, -284.0000063505427, 1000.0001756922484, 284.0000063505427], \"marks\": [{\"mark_id\": \"M001\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-12\"}, {\"mark_id\": \"M002\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-15\"}, {\"mark_id\": \"M003\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-18\"}, {\"mark_id\": \"M004\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-2\"}, {\"mark_id\": \"M005\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-21\"}, {\"mark_id\": \"M006\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-24\"}, {\"mark_id\": \"M007\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-33\"}, {\"mark_id\": \"M008\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-35\"}, {\"mark_id\": \"M009\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-38\"}, {\"mark_id\": \"M010\", \"source_kind\": \"contour\", \"source_id\": \"contour-lines-unknown-7\"}]}]}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 8,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:14:33.281572+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": false, \"summary\": \"Herramienta aut\\u00f3noma inv\\u00e1lida rechazada.\", \"phase\": null, \"provider_response_id\": \"resp_060f6be214624b80006af85065ea2087d2883bd7ea28967b93\", \"provider_model\": null, \"provider_call_id\": null, \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null, \"reviewer_kind\": \"machine\"}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 9,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:14:33.293894+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": false, \"summary\": \"Herramienta aut\\u00f3noma inv\\u00e1lida rechazada.\", \"phase\": null, \"provider_response_id\": \"resp_060f6be214624b80006af850970cc087d2af0d34d035b4808d\", \"provider_model\": null, \"provider_call_id\": null, \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null, \"reviewer_kind\": \"machine\"}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 10,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:14:33.305369+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": false, \"summary\": \"Herramienta aut\\u00f3noma inv\\u00e1lida rechazada.\", \"phase\": null, \"provider_response_id\": \"resp_060f6be214624b80006af850a13ba087d28fb30745a3f5e305\", \"provider_model\": null, \"provider_call_id\": null, \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null, \"reviewer_kind\": \"machine\"}"
+  },
+  {
+    "run_id": "run-e6ab7332c9bf4775b14013f3d91a3ecb",
+    "sequence": 11,
+    "event_type": "general_auto_review_failed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:14:33.316467+00:00\", \"code\": \"general_auto_review_repair_budget_exhausted\", \"reviewer_kind\": \"machine\", \"model_calls\": 3, \"tool_calls\": 3}"
+  }
+]

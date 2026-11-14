@@ -1,0 +1,181 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+    "result_revision": 2,
+    "state": "ready",
+    "selected_scenario_id": "table-program-cc2d6015d2a3bccf",
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [
+      {
+        "id": "scene-occurrence-top-1",
+        "piece_id": "top",
+        "proposal_id": "table-program-cc2d6015d2a3bccf",
+        "role": "tabletop",
+        "label": "tabletop",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 0.0,
+          "y": 720.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 1200.0,
+          "y": 30.0,
+          "z": 700.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 0.0,
+            "y": 720.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 1200.0,
+            "y": 750.0,
+            "z": 700.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-92",
+          "contour-entity-94"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-92",
+          "evidence-contour-entity-94",
+          "evidence-dimension-entity-98",
+          "evidence-dimension-entity-B8",
+          "evidence-geometry-entity-8E",
+          "evidence-geometry-entity-95"
+        ],
+        "placement_basis": "top_flush@1; program 574324dac34ea26e51db38b26d2b4e52db29054eb70e4becd0603a94dbc0b2df",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": [
+          "measure:table-measure-overall_depth",
+          "measure:table-measure-overall_width",
+          "measure:table-measure-section-1"
+        ]
+      },
+      {
+        "id": "scene-occurrence-supports-1",
+        "piece_id": "supports",
+        "proposal_id": "table-program-cc2d6015d2a3bccf",
+        "role": "side_support",
+        "label": "side support",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 720.0,
+          "z": 700.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 18.0,
+            "y": 720.0,
+            "z": 700.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-92",
+          "contour-entity-94"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-92",
+          "evidence-contour-entity-94",
+          "evidence-dimension-entity-A8",
+          "evidence-dimension-entity-B8",
+          "evidence-geometry-entity-8E",
+          "evidence-geometry-entity-8F",
+          "evidence-geometry-entity-90",
+          "evidence-geometry-entity-95"
+        ],
+        "placement_basis": "side_supports_flush@1; program 574324dac34ea26e51db38b26d2b4e52db29054eb70e4becd0603a94dbc0b2df",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": [
+          "binding:top_thickness",
+          "measure:table-measure-overall_depth",
+          "measure:table-measure-overall_height",
+          "measure:table-measure-section-2"
+        ]
+      },
+      {
+        "id": "scene-occurrence-supports-2",
+        "piece_id": "supports",
+        "proposal_id": "table-program-cc2d6015d2a3bccf",
+        "role": "side_support",
+        "label": "side support",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 1182.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 720.0,
+          "z": 700.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 1182.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 1200.0,
+            "y": 720.0,
+            "z": 700.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-92",
+          "contour-entity-94"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-92",
+          "evidence-contour-entity-94",
+          "evidence-dimension-entity-A8",
+          "evidence-dimension-entity-B8",
+          "evidence-geometry-entity-8E",
+          "evidence-geometry-entity-8F",
+          "evidence-geometry-entity-90",
+          "evidence-geometry-entity-95"
+        ],
+        "placement_basis": "side_supports_flush@1; program 574324dac34ea26e51db38b26d2b4e52db29054eb70e4becd0603a94dbc0b2df",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": [
+          "binding:top_thickness",
+          "measure:table-measure-overall_depth",
+          "measure:table-measure-overall_height",
+          "measure:table-measure-section-2"
+        ]
+      }
+    ],
+    "warnings": [],
+    "assumptions": [
+      "Objects are reviewed schematic occurrences generated by versioned placement rules.",
+      "No joinery, material, strength, collision certification, or manufacturing readiness is inferred."
+    ],
+    "collision_status": "not_evaluated"
+  }
+}

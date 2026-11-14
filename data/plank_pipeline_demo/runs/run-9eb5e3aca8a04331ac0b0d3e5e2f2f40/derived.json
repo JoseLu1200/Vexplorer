@@ -1,0 +1,1940 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "package": {
+      "schema_version": "0.6.0",
+      "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+      "proposal_revision": 1,
+      "review_revision": 1,
+      "status": "incomplete",
+      "bom_rows": [
+        {
+          "component_id": "sides",
+          "label": "Laterales del cuerpo",
+          "kind": "panel",
+          "role": "side_panel",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:sides:1",
+            "provisional:general-5f2d41963bd997b5:sides:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-11",
+              "evidence-contour-lines-unknown-20",
+              "evidence-contour-lines-unknown-12",
+              "evidence-contour-lines-unknown-21"
+            ]
+          },
+          "length": {
+            "value_mm": 2400.0000013176855,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999824307751624,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:side_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-11",
+            "contour-lines-unknown-12",
+            "contour-lines-unknown-13",
+            "contour-lines-unknown-20",
+            "contour-lines-unknown-21",
+            "contour-lines-unknown-22"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-11",
+            "evidence-contour-lines-unknown-20",
+            "evidence-contour-lines-unknown-13"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "top",
+          "label": "Panel superior entre laterales",
+          "kind": "panel",
+          "role": "top_panel",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:top:1"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-28",
+              "evidence-contour-lines-unknown-29"
+            ]
+          },
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.999973824643348,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:top_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-28",
+            "contour-lines-unknown-29",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-28",
+            "evidence-contour-lines-unknown-29"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "bottom",
+          "label": "Base elevada sobre el zócalo",
+          "kind": "panel",
+          "role": "bottom_panel",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:bottom:1"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_bottom"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-31",
+              "evidence-contour-lines-unknown-24"
+            ]
+          },
+          "length": {
+            "value_mm": 564.0000008353832,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:bottom_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-31",
+            "contour-lines-unknown-24",
+            "contour-lines-unknown-32"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-31",
+            "evidence-contour-lines-unknown-24"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "divisions",
+          "label": "Paneles horizontales de separación",
+          "kind": "panel",
+          "role": "shelf",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:divisions:1",
+            "provisional:general-5f2d41963bd997b5:divisions:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_divisions"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-23",
+              "evidence-contour-lines-unknown-25",
+              "evidence-contour-lines-unknown-26",
+              "evidence-contour-lines-unknown-27"
+            ]
+          },
+          "length": {
+            "value_mm": 564.000000835383,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 550.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99997382464346,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:division_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-23",
+            "contour-lines-unknown-25",
+            "contour-lines-unknown-26",
+            "contour-lines-unknown-27",
+            "contour-lines-unknown-24"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-23",
+            "evidence-contour-lines-unknown-25",
+            "evidence-contour-lines-unknown-26",
+            "evidence-contour-lines-unknown-27"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "shelves",
+          "label": "Baldas interiores superiores",
+          "kind": "panel",
+          "role": "shelf",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:shelves:1",
+            "provisional:general-5f2d41963bd997b5:shelves:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_shelves"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-37",
+              "evidence-contour-lines-unknown-39",
+              "evidence-contour-lines-unknown-40",
+              "evidence-contour-lines-unknown-41"
+            ]
+          },
+          "length": {
+            "value_mm": 563.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 515.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:shelf_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-37",
+            "contour-lines-unknown-38",
+            "contour-lines-unknown-39",
+            "contour-lines-unknown-40",
+            "contour-lines-unknown-41"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-37",
+            "evidence-contour-lines-unknown-38",
+            "evidence-contour-lines-unknown-40"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "back_low",
+          "label": "Trasera del compartimento inferior",
+          "kind": "panel",
+          "role": "back_panel",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:back_low:1"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_low"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-14",
+              "evidence-contour-lines-unknown-16"
+            ]
+          },
+          "length": {
+            "value_mm": 774.0000003660234,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.999943339249739,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_low_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-14",
+            "contour-lines-unknown-15",
+            "contour-lines-unknown-16"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-14",
+            "evidence-contour-lines-unknown-16"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "back_high",
+          "label": "Trasera del compartimento superior",
+          "kind": "panel",
+          "role": "back_panel",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:back_high:1"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_back_high"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-17",
+              "evidence-contour-lines-unknown-19"
+            ]
+          },
+          "length": {
+            "value_mm": 874.0000003660233,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 574.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 4.99993601873939,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:back_high_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-17",
+            "contour-lines-unknown-18",
+            "contour-lines-unknown-19"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-17",
+            "evidence-contour-lines-unknown-19"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "fronts",
+          "label": "Frentes rectangulares inferiores; función por confirmar",
+          "kind": "panel",
+          "role": "unknown",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:fronts:1",
+            "provisional:general-5f2d41963bd997b5:fronts:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fronts"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-6",
+              "evidence-contour-lines-unknown-8",
+              "evidence-contour-lines-unknown-9",
+              "evidence-contour-lines-unknown-10"
+            ]
+          },
+          "length": {
+            "value_mm": 597.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 346.99999868230725,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.000025402170877,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:front_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-6",
+            "contour-lines-unknown-7",
+            "contour-lines-unknown-8",
+            "contour-lines-unknown-9",
+            "contour-lines-unknown-10"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-6",
+            "evidence-contour-lines-unknown-8",
+            "evidence-contour-lines-unknown-9",
+            "evidence-contour-lines-unknown-10"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "fascias",
+          "label": "Fajas frontales de separación",
+          "kind": "panel",
+          "role": "unknown",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:fascias:1",
+            "provisional:general-5f2d41963bd997b5:fascias:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_fascias"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-1",
+              "evidence-contour-lines-unknown-3",
+              "evidence-contour-lines-unknown-4",
+              "evidence-contour-lines-unknown-5"
+            ]
+          },
+          "length": {
+            "value_mm": 600.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 50.000001317691726,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 17.99999633974494,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:fascia_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-1",
+            "contour-lines-unknown-2",
+            "contour-lines-unknown-3",
+            "contour-lines-unknown-4",
+            "contour-lines-unknown-5"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-1",
+            "evidence-contour-lines-unknown-3",
+            "evidence-contour-lines-unknown-4",
+            "evidence-contour-lines-unknown-5"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        },
+        {
+          "component_id": "plinths",
+          "label": "Fajas del zócalo delantera y trasera",
+          "kind": "panel",
+          "role": "support",
+          "occurrence_ids": [],
+          "scenario_occurrence_ids": [
+            "provisional:general-5f2d41963bd997b5:plinths:1",
+            "provisional:general-5f2d41963bd997b5:plinths:2"
+          ],
+          "occurrence_status": "provisional",
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p_plinths"
+            ],
+            "evidence_ids": [
+              "evidence-contour-lines-unknown-32",
+              "evidence-contour-lines-unknown-33",
+              "evidence-contour-lines-unknown-34",
+              "evidence-contour-lines-unknown-35",
+              "evidence-contour-lines-unknown-36"
+            ]
+          },
+          "length": {
+            "value_mm": 564.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_l"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 99.9999986823077,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_w"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.00000732051035,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:plinth_t"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-lines-unknown-32",
+            "contour-lines-unknown-33",
+            "contour-lines-unknown-34",
+            "contour-lines-unknown-35",
+            "contour-lines-unknown-36"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-lines-unknown-32",
+            "evidence-contour-lines-unknown-34",
+            "evidence-contour-lines-unknown-36"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "machine_field_reviews": []
+        }
+      ],
+      "artifacts": [
+        {
+          "id": "general-r1-bom_csv",
+          "kind": "bom_csv",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.csv",
+          "media_type": "text/csv",
+          "incomplete_reasons": [
+            "acabado",
+            "confirmación de cara material",
+            "diferencias dimensionales entre instancias",
+            "finish",
+            "función",
+            "función puerta o frente de cajón o panel",
+            "length",
+            "material",
+            "mecanismo",
+            "quantity",
+            "sistema de apoyo o fijación",
+            "transmisión de carga",
+            "uniones",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null,
+          "content": "﻿component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish\r\nsides,Laterales del cuerpo,side_panel,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:sides:1|provisional:general-5f2d41963bd997b5:sides:2,2400.0000013176855,550.0,17.999824307751624,,\r\ntop,Panel superior entre laterales,top_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:top:1,564.000000835383,550.0,17.999973824643348,,\r\nbottom,Base elevada sobre el zócalo,bottom_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:bottom:1,564.0000008353832,550.0,18.0,,\r\ndivisions,Paneles horizontales de separación,shelf,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:divisions:1|provisional:general-5f2d41963bd997b5:divisions:2,564.000000835383,550.0,17.99997382464346,,\r\nshelves,Baldas interiores superiores,shelf,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:shelves:1|provisional:general-5f2d41963bd997b5:shelves:2,563.0,515.0,18.0,,\r\nback_low,Trasera del compartimento inferior,back_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:back_low:1,774.0000003660234,574.0,4.999943339249739,,\r\nback_high,Trasera del compartimento superior,back_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:back_high:1,874.0000003660233,574.0,4.99993601873939,,\r\nfronts,Frentes rectangulares inferiores; función por confirmar,unknown,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:fronts:1|provisional:general-5f2d41963bd997b5:fronts:2,597.0,346.99999868230725,18.000025402170877,,\r\nfascias,Fajas frontales de separación,unknown,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:fascias:1|provisional:general-5f2d41963bd997b5:fascias:2,600.0,50.000001317691726,17.99999633974494,,\r\nplinths,Fajas del zócalo delantera y trasera,support,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:plinths:1|provisional:general-5f2d41963bd997b5:plinths:2,564.0,99.9999986823077,18.00000732051035,,\r\n"
+        },
+        {
+          "id": "general-r1-bom_json",
+          "kind": "bom_json",
+          "status": "incomplete",
+          "review_revision": 1,
+          "filename": "bom.json",
+          "media_type": "application/json",
+          "incomplete_reasons": [
+            "acabado",
+            "confirmación de cara material",
+            "diferencias dimensionales entre instancias",
+            "finish",
+            "función",
+            "función puerta o frente de cajón o panel",
+            "length",
+            "material",
+            "mecanismo",
+            "quantity",
+            "sistema de apoyo o fijación",
+            "transmisión de carga",
+            "uniones",
+            "width"
+          ],
+          "sheet_id": null,
+          "component_id": null,
+          "content": "[{\"component_id\": \"sides\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Laterales del cuerpo\", \"length\": {\"dependency_refs\": [\"binding:side_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 2400.0000013176855}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_sides\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-11\", \"evidence-contour-lines-unknown-20\", \"evidence-contour-lines-unknown-12\", \"evidence-contour-lines-unknown-21\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"side_panel\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:sides:1\", \"provisional:general-5f2d41963bd997b5:sides:2\"], \"source_contour_ids\": [\"contour-lines-unknown-11\", \"contour-lines-unknown-12\", \"contour-lines-unknown-13\", \"contour-lines-unknown-20\", \"contour-lines-unknown-21\", \"contour-lines-unknown-22\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-11\", \"evidence-contour-lines-unknown-20\", \"evidence-contour-lines-unknown-13\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:side_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 17.999824307751624}, \"width\": {\"dependency_refs\": [\"binding:side_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 550.0}}, {\"component_id\": \"top\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Panel superior entre laterales\", \"length\": {\"dependency_refs\": [\"binding:top_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 564.000000835383}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_top\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-28\", \"evidence-contour-lines-unknown-29\"], \"state\": \"hypothesis\", \"value\": 1}, \"role\": \"top_panel\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:top:1\"], \"source_contour_ids\": [\"contour-lines-unknown-28\", \"contour-lines-unknown-29\", \"contour-lines-unknown-24\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-28\", \"evidence-contour-lines-unknown-29\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:top_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 17.999973824643348}, \"width\": {\"dependency_refs\": [\"binding:top_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 550.0}}, {\"component_id\": \"bottom\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Base elevada sobre el zócalo\", \"length\": {\"dependency_refs\": [\"binding:bottom_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 564.0000008353832}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_bottom\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-31\", \"evidence-contour-lines-unknown-24\"], \"state\": \"hypothesis\", \"value\": 1}, \"role\": \"bottom_panel\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:bottom:1\"], \"source_contour_ids\": [\"contour-lines-unknown-31\", \"contour-lines-unknown-24\", \"contour-lines-unknown-32\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-31\", \"evidence-contour-lines-unknown-24\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:bottom_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 18.0}, \"width\": {\"dependency_refs\": [\"binding:bottom_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 550.0}}, {\"component_id\": \"divisions\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Paneles horizontales de separación\", \"length\": {\"dependency_refs\": [\"binding:division_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 564.000000835383}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_divisions\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-23\", \"evidence-contour-lines-unknown-25\", \"evidence-contour-lines-unknown-26\", \"evidence-contour-lines-unknown-27\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"shelf\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:divisions:1\", \"provisional:general-5f2d41963bd997b5:divisions:2\"], \"source_contour_ids\": [\"contour-lines-unknown-23\", \"contour-lines-unknown-25\", \"contour-lines-unknown-26\", \"contour-lines-unknown-27\", \"contour-lines-unknown-24\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-23\", \"evidence-contour-lines-unknown-25\", \"evidence-contour-lines-unknown-26\", \"evidence-contour-lines-unknown-27\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:division_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 17.99997382464346}, \"width\": {\"dependency_refs\": [\"binding:division_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 550.0}}, {\"component_id\": \"shelves\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Baldas interiores superiores\", \"length\": {\"dependency_refs\": [\"binding:shelf_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 563.0}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_shelves\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-37\", \"evidence-contour-lines-unknown-39\", \"evidence-contour-lines-unknown-40\", \"evidence-contour-lines-unknown-41\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"shelf\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:shelves:1\", \"provisional:general-5f2d41963bd997b5:shelves:2\"], \"source_contour_ids\": [\"contour-lines-unknown-37\", \"contour-lines-unknown-38\", \"contour-lines-unknown-39\", \"contour-lines-unknown-40\", \"contour-lines-unknown-41\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-37\", \"evidence-contour-lines-unknown-38\", \"evidence-contour-lines-unknown-40\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:shelf_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 18.0}, \"width\": {\"dependency_refs\": [\"binding:shelf_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 515.0}}, {\"component_id\": \"back_low\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Trasera del compartimento inferior\", \"length\": {\"dependency_refs\": [\"binding:back_low_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 774.0000003660234}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_back_low\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-14\", \"evidence-contour-lines-unknown-16\"], \"state\": \"hypothesis\", \"value\": 1}, \"role\": \"back_panel\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:back_low:1\"], \"source_contour_ids\": [\"contour-lines-unknown-14\", \"contour-lines-unknown-15\", \"contour-lines-unknown-16\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-14\", \"evidence-contour-lines-unknown-16\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:back_low_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 4.999943339249739}, \"width\": {\"dependency_refs\": [\"binding:back_low_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 574.0}}, {\"component_id\": \"back_high\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Trasera del compartimento superior\", \"length\": {\"dependency_refs\": [\"binding:back_high_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 874.0000003660233}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_back_high\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-17\", \"evidence-contour-lines-unknown-19\"], \"state\": \"hypothesis\", \"value\": 1}, \"role\": \"back_panel\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:back_high:1\"], \"source_contour_ids\": [\"contour-lines-unknown-17\", \"contour-lines-unknown-18\", \"contour-lines-unknown-19\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-17\", \"evidence-contour-lines-unknown-19\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:back_high_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 4.99993601873939}, \"width\": {\"dependency_refs\": [\"binding:back_high_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 574.0}}, {\"component_id\": \"fronts\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Frentes rectangulares inferiores; función por confirmar\", \"length\": {\"dependency_refs\": [\"binding:front_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 597.0}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_fronts\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-6\", \"evidence-contour-lines-unknown-8\", \"evidence-contour-lines-unknown-9\", \"evidence-contour-lines-unknown-10\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"unknown\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:fronts:1\", \"provisional:general-5f2d41963bd997b5:fronts:2\"], \"source_contour_ids\": [\"contour-lines-unknown-6\", \"contour-lines-unknown-7\", \"contour-lines-unknown-8\", \"contour-lines-unknown-9\", \"contour-lines-unknown-10\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-6\", \"evidence-contour-lines-unknown-8\", \"evidence-contour-lines-unknown-9\", \"evidence-contour-lines-unknown-10\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:front_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 18.000025402170877}, \"width\": {\"dependency_refs\": [\"binding:front_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 346.99999868230725}}, {\"component_id\": \"fascias\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Fajas frontales de separación\", \"length\": {\"dependency_refs\": [\"binding:fascia_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 600.0}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_fascias\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-1\", \"evidence-contour-lines-unknown-3\", \"evidence-contour-lines-unknown-4\", \"evidence-contour-lines-unknown-5\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"unknown\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:fascias:1\", \"provisional:general-5f2d41963bd997b5:fascias:2\"], \"source_contour_ids\": [\"contour-lines-unknown-1\", \"contour-lines-unknown-2\", \"contour-lines-unknown-3\", \"contour-lines-unknown-4\", \"contour-lines-unknown-5\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-1\", \"evidence-contour-lines-unknown-3\", \"evidence-contour-lines-unknown-4\", \"evidence-contour-lines-unknown-5\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:fascia_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 17.99999633974494}, \"width\": {\"dependency_refs\": [\"binding:fascia_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 50.000001317691726}}, {\"component_id\": \"plinths\", \"finish\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"kind\": \"panel\", \"label\": \"Fajas del zócalo delantera y trasera\", \"length\": {\"dependency_refs\": [\"binding:plinth_l\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 564.0}, \"material\": {\"dependency_refs\": [], \"evidence_ids\": [], \"state\": \"unknown\", \"value\": null}, \"occurrence_ids\": [], \"occurrence_status\": \"provisional\", \"quantity\": {\"dependency_refs\": [\"premise:p_plinths\"], \"evidence_ids\": [\"evidence-contour-lines-unknown-32\", \"evidence-contour-lines-unknown-33\", \"evidence-contour-lines-unknown-34\", \"evidence-contour-lines-unknown-35\", \"evidence-contour-lines-unknown-36\"], \"state\": \"hypothesis\", \"value\": 2}, \"role\": \"support\", \"scenario_occurrence_ids\": [\"provisional:general-5f2d41963bd997b5:plinths:1\", \"provisional:general-5f2d41963bd997b5:plinths:2\"], \"source_contour_ids\": [\"contour-lines-unknown-32\", \"contour-lines-unknown-33\", \"contour-lines-unknown-34\", \"contour-lines-unknown-35\", \"contour-lines-unknown-36\"], \"source_dimension_ids\": [], \"source_document_refs\": [], \"source_evidence_ids\": [\"evidence-contour-lines-unknown-32\", \"evidence-contour-lines-unknown-34\", \"evidence-contour-lines-unknown-36\"], \"source_observation_ids\": [\"observation-view-unknown\"], \"source_view_ids\": [\"view-unknown\"], \"thickness\": {\"dependency_refs\": [\"binding:plinth_t\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 18.00000732051035}, \"width\": {\"dependency_refs\": [\"binding:plinth_w\"], \"dimension_ids\": [], \"evidence_ids\": [], \"state\": \"hypothesis\", \"unit\": \"mm\", \"value_mm\": 99.9999986823077}}]"
+        },
+        {
+          "id": "general-drawing-svg-r1",
+          "kind": "drawing_svg",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "general-components-r1.svg",
+          "media_type": "image/svg+xml",
+          "incomplete_reasons": [],
+          "sheet_id": null,
+          "component_id": null,
+          "content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1200\" height=\"1780\" viewBox=\"0 0 1200 1780\"><rect width=\"100%\" height=\"100%\" fill=\"#fff\"/><g font-family=\"monospace\" font-size=\"16\" fill=\"#111\" stroke=\"#111\"><text x=\"30\" y=\"35\" stroke=\"none\">schematic; not manufacturing-ready</text><rect x=\"30\" y=\"70\" width=\"192.5\" height=\"120\" fill=\"none\"/><text x=\"470\" y=\"88\" stroke=\"none\">Laterales del cuerpo / provisional:general-5f2d41963bd997b5:sides:1 [provisional scenario]</text><text x=\"470\" y=\"108\" stroke=\"none\">L=2400 mm [hypothesis]</text><text x=\"470\" y=\"128\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"148\" stroke=\"none\">T=17.9998 mm [hypothesis]</text><text x=\"470\" y=\"168\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"188\" stroke=\"none\">source: view-unknown; contour-lines-unknown-11; contour-lines-unknown-12; contour-lines-unknown-13; contour-lines-unknown-20; contour-lines-unknown-21; contour-lines-unknown-22; observation-view-unknown; evidence-contour-lines-unknown-11; evidence-contour-lines-unknown-20; evidence-contour-lines-unknown-13</text><rect x=\"30\" y=\"240\" width=\"192.5\" height=\"120\" fill=\"none\"/><text x=\"470\" y=\"258\" stroke=\"none\">Laterales del cuerpo / provisional:general-5f2d41963bd997b5:sides:2 [provisional scenario]</text><text x=\"470\" y=\"278\" stroke=\"none\">L=2400 mm [hypothesis]</text><text x=\"470\" y=\"298\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"318\" stroke=\"none\">T=17.9998 mm [hypothesis]</text><text x=\"470\" y=\"338\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"358\" stroke=\"none\">source: view-unknown; contour-lines-unknown-11; contour-lines-unknown-12; contour-lines-unknown-13; contour-lines-unknown-20; contour-lines-unknown-21; contour-lines-unknown-22; observation-view-unknown; evidence-contour-lines-unknown-11; evidence-contour-lines-unknown-20; evidence-contour-lines-unknown-13</text><rect x=\"30\" y=\"410\" width=\"192.5\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"428\" stroke=\"none\">Panel superior entre laterales / provisional:general-5f2d41963bd997b5:top:1 [provisional scenario]</text><text x=\"470\" y=\"448\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"468\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"488\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"508\" stroke=\"none\">Q=1 [hypothesis]</text><text x=\"470\" y=\"528\" stroke=\"none\">source: view-unknown; contour-lines-unknown-28; contour-lines-unknown-29; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-28; evidence-contour-lines-unknown-29</text><rect x=\"30\" y=\"580\" width=\"192.5\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"598\" stroke=\"none\">Base elevada sobre el zócalo / provisional:general-5f2d41963bd997b5:bottom:1 [provisional scenario]</text><text x=\"470\" y=\"618\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"638\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"658\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"678\" stroke=\"none\">Q=1 [hypothesis]</text><text x=\"470\" y=\"698\" stroke=\"none\">source: view-unknown; contour-lines-unknown-31; contour-lines-unknown-24; contour-lines-unknown-32; observation-view-unknown; evidence-contour-lines-unknown-31; evidence-contour-lines-unknown-24</text><rect x=\"30\" y=\"750\" width=\"192.5\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"768\" stroke=\"none\">Paneles horizontales de separación / provisional:general-5f2d41963bd997b5:divisions:1 [provisional scenario]</text><text x=\"470\" y=\"788\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"808\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"828\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"848\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"868\" stroke=\"none\">source: view-unknown; contour-lines-unknown-23; contour-lines-unknown-25; contour-lines-unknown-26; contour-lines-unknown-27; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-23; evidence-contour-lines-unknown-25; evidence-contour-lines-unknown-26; evidence-contour-lines-unknown-27</text><rect x=\"30\" y=\"920\" width=\"192.5\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"938\" stroke=\"none\">Paneles horizontales de separación / provisional:general-5f2d41963bd997b5:divisions:2 [provisional scenario]</text><text x=\"470\" y=\"958\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"978\" stroke=\"none\">W=550 mm [hypothesis]</text><text x=\"470\" y=\"998\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"1018\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"1038\" stroke=\"none\">source: view-unknown; contour-lines-unknown-23; contour-lines-unknown-25; contour-lines-unknown-26; contour-lines-unknown-27; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-23; evidence-contour-lines-unknown-25; evidence-contour-lines-unknown-26; evidence-contour-lines-unknown-27</text><rect x=\"30\" y=\"1090\" width=\"180.25\" height=\"67.56\" fill=\"none\"/><text x=\"470\" y=\"1108\" stroke=\"none\">Baldas interiores superiores / provisional:general-5f2d41963bd997b5:shelves:1 [provisional scenario]</text><text x=\"470\" y=\"1128\" stroke=\"none\">L=563 mm [hypothesis]</text><text x=\"470\" y=\"1148\" stroke=\"none\">W=515 mm [hypothesis]</text><text x=\"470\" y=\"1168\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"1188\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"1208\" stroke=\"none\">source: view-unknown; contour-lines-unknown-37; contour-lines-unknown-38; contour-lines-unknown-39; contour-lines-unknown-40; contour-lines-unknown-41; observation-view-unknown; evidence-contour-lines-unknown-37; evidence-contour-lines-unknown-38; evidence-contour-lines-unknown-40</text><rect x=\"30\" y=\"1260\" width=\"180.25\" height=\"67.56\" fill=\"none\"/><text x=\"470\" y=\"1278\" stroke=\"none\">Baldas interiores superiores / provisional:general-5f2d41963bd997b5:shelves:2 [provisional scenario]</text><text x=\"470\" y=\"1298\" stroke=\"none\">L=563 mm [hypothesis]</text><text x=\"470\" y=\"1318\" stroke=\"none\">W=515 mm [hypothesis]</text><text x=\"470\" y=\"1338\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"1358\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"1378\" stroke=\"none\">source: view-unknown; contour-lines-unknown-37; contour-lines-unknown-38; contour-lines-unknown-39; contour-lines-unknown-40; contour-lines-unknown-41; observation-view-unknown; evidence-contour-lines-unknown-37; evidence-contour-lines-unknown-38; evidence-contour-lines-unknown-40</text><rect x=\"30\" y=\"1430\" width=\"200.9\" height=\"92.88\" fill=\"none\"/><text x=\"470\" y=\"1448\" stroke=\"none\">Trasera del compartimento inferior / provisional:general-5f2d41963bd997b5:back_low:1 [provisional scenario]</text><text x=\"470\" y=\"1468\" stroke=\"none\">L=774 mm [hypothesis]</text><text x=\"470\" y=\"1488\" stroke=\"none\">W=574 mm [hypothesis]</text><text x=\"470\" y=\"1508\" stroke=\"none\">T=4.99994 mm [hypothesis]</text><text x=\"470\" y=\"1528\" stroke=\"none\">Q=1 [hypothesis]</text><text x=\"470\" y=\"1548\" stroke=\"none\">source: view-unknown; contour-lines-unknown-14; contour-lines-unknown-15; contour-lines-unknown-16; observation-view-unknown; evidence-contour-lines-unknown-14; evidence-contour-lines-unknown-16</text><rect x=\"30\" y=\"1600\" width=\"200.9\" height=\"104.88\" fill=\"none\"/><text x=\"470\" y=\"1618\" stroke=\"none\">Trasera del compartimento superior / provisional:general-5f2d41963bd997b5:back_high:1 [provisional scenario]</text><text x=\"470\" y=\"1638\" stroke=\"none\">L=874 mm [hypothesis]</text><text x=\"470\" y=\"1658\" stroke=\"none\">W=574 mm [hypothesis]</text><text x=\"470\" y=\"1678\" stroke=\"none\">T=4.99994 mm [hypothesis]</text><text x=\"470\" y=\"1698\" stroke=\"none\">Q=1 [hypothesis]</text><text x=\"470\" y=\"1718\" stroke=\"none\">source: view-unknown; contour-lines-unknown-17; contour-lines-unknown-18; contour-lines-unknown-19; observation-view-unknown; evidence-contour-lines-unknown-17; evidence-contour-lines-unknown-19</text><rect x=\"30\" y=\"1770\" width=\"121.45\" height=\"71.64\" fill=\"none\"/><text x=\"470\" y=\"1788\" stroke=\"none\">Frentes rectangulares inferiores; función por confirmar / provisional:general-5f2d41963bd997b5:fronts:1 [provisional scenario]</text><text x=\"470\" y=\"1808\" stroke=\"none\">L=597 mm [hypothesis]</text><text x=\"470\" y=\"1828\" stroke=\"none\">W=347 mm [hypothesis]</text><text x=\"470\" y=\"1848\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"1868\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"1888\" stroke=\"none\">source: view-unknown; contour-lines-unknown-6; contour-lines-unknown-7; contour-lines-unknown-8; contour-lines-unknown-9; contour-lines-unknown-10; observation-view-unknown; evidence-contour-lines-unknown-6; evidence-contour-lines-unknown-8; evidence-contour-lines-unknown-9; evidence-contour-lines-unknown-10</text><rect x=\"30\" y=\"1940\" width=\"121.45\" height=\"71.64\" fill=\"none\"/><text x=\"470\" y=\"1958\" stroke=\"none\">Frentes rectangulares inferiores; función por confirmar / provisional:general-5f2d41963bd997b5:fronts:2 [provisional scenario]</text><text x=\"470\" y=\"1978\" stroke=\"none\">L=597 mm [hypothesis]</text><text x=\"470\" y=\"1998\" stroke=\"none\">W=347 mm [hypothesis]</text><text x=\"470\" y=\"2018\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"2038\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"2058\" stroke=\"none\">source: view-unknown; contour-lines-unknown-6; contour-lines-unknown-7; contour-lines-unknown-8; contour-lines-unknown-9; contour-lines-unknown-10; observation-view-unknown; evidence-contour-lines-unknown-6; evidence-contour-lines-unknown-8; evidence-contour-lines-unknown-9; evidence-contour-lines-unknown-10</text><rect x=\"30\" y=\"2110\" width=\"80\" height=\"72\" fill=\"none\"/><text x=\"470\" y=\"2128\" stroke=\"none\">Fajas frontales de separación / provisional:general-5f2d41963bd997b5:fascias:1 [provisional scenario]</text><text x=\"470\" y=\"2148\" stroke=\"none\">L=600 mm [hypothesis]</text><text x=\"470\" y=\"2168\" stroke=\"none\">W=50 mm [hypothesis]</text><text x=\"470\" y=\"2188\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"2208\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"2228\" stroke=\"none\">source: view-unknown; contour-lines-unknown-1; contour-lines-unknown-2; contour-lines-unknown-3; contour-lines-unknown-4; contour-lines-unknown-5; observation-view-unknown; evidence-contour-lines-unknown-1; evidence-contour-lines-unknown-3; evidence-contour-lines-unknown-4; evidence-contour-lines-unknown-5</text><rect x=\"30\" y=\"2280\" width=\"80\" height=\"72\" fill=\"none\"/><text x=\"470\" y=\"2298\" stroke=\"none\">Fajas frontales de separación / provisional:general-5f2d41963bd997b5:fascias:2 [provisional scenario]</text><text x=\"470\" y=\"2318\" stroke=\"none\">L=600 mm [hypothesis]</text><text x=\"470\" y=\"2338\" stroke=\"none\">W=50 mm [hypothesis]</text><text x=\"470\" y=\"2358\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"2378\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"2398\" stroke=\"none\">source: view-unknown; contour-lines-unknown-1; contour-lines-unknown-2; contour-lines-unknown-3; contour-lines-unknown-4; contour-lines-unknown-5; observation-view-unknown; evidence-contour-lines-unknown-1; evidence-contour-lines-unknown-3; evidence-contour-lines-unknown-4; evidence-contour-lines-unknown-5</text><rect x=\"30\" y=\"2450\" width=\"80\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"2468\" stroke=\"none\">Fajas del zócalo delantera y trasera / provisional:general-5f2d41963bd997b5:plinths:1 [provisional scenario]</text><text x=\"470\" y=\"2488\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"2508\" stroke=\"none\">W=100 mm [hypothesis]</text><text x=\"470\" y=\"2528\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"2548\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"2568\" stroke=\"none\">source: view-unknown; contour-lines-unknown-32; contour-lines-unknown-33; contour-lines-unknown-34; contour-lines-unknown-35; contour-lines-unknown-36; observation-view-unknown; evidence-contour-lines-unknown-32; evidence-contour-lines-unknown-34; evidence-contour-lines-unknown-36</text><rect x=\"30\" y=\"2620\" width=\"80\" height=\"67.68\" fill=\"none\"/><text x=\"470\" y=\"2638\" stroke=\"none\">Fajas del zócalo delantera y trasera / provisional:general-5f2d41963bd997b5:plinths:2 [provisional scenario]</text><text x=\"470\" y=\"2658\" stroke=\"none\">L=564 mm [hypothesis]</text><text x=\"470\" y=\"2678\" stroke=\"none\">W=100 mm [hypothesis]</text><text x=\"470\" y=\"2698\" stroke=\"none\">T=18 mm [hypothesis]</text><text x=\"470\" y=\"2718\" stroke=\"none\">Q=2 [hypothesis]</text><text x=\"470\" y=\"2738\" stroke=\"none\">source: view-unknown; contour-lines-unknown-32; contour-lines-unknown-33; contour-lines-unknown-34; contour-lines-unknown-35; contour-lines-unknown-36; observation-view-unknown; evidence-contour-lines-unknown-32; evidence-contour-lines-unknown-34; evidence-contour-lines-unknown-36</text></g></svg>"
+        },
+        {
+          "id": "general-drawing-dxf-r1",
+          "kind": "drawing_dxf",
+          "status": "ready",
+          "review_revision": 1,
+          "filename": "general-components-r1.dxf",
+          "media_type": "application/dxf",
+          "incomplete_reasons": [],
+          "sheet_id": null,
+          "component_id": null,
+          "content": "  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1024\n  9\n$ACADMAINTVER\n 70\n6\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$LASTSAVEDBY\n  1\nezdxf\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1e+20\n 20\n1e+20\n 30\n1e+20\n  9\n$EXTMAX\n 10\n-1e+20\n 20\n-1e+20\n 30\n-1e+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n0\n  9\n$REGENMODE\n 70\n1\n  9\n$FILLMODE\n 70\n1\n  9\n$QTEXTMODE\n 70\n0\n  9\n$MIRRTEXT\n 70\n1\n  9\n$LTSCALE\n 40\n1.0\n  9\n$ATTMODE\n 70\n1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nStandard\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nByLayer\n  9\n$CECOLOR\n 62\n256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DISPSILH\n 70\n0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n0\n  9\n$DIMLIM\n 70\n0\n  9\n$DIMTIH\n 70\n0\n  9\n$DIMTOH\n 70\n0\n  9\n$DIMSE1\n 70\n0\n  9\n$DIMSE2\n 70\n0\n  9\n$DIMTAD\n 70\n1\n  9\n$DIMZIN\n 70\n8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n1\n  9\n$DIMSHO\n 70\n1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n0\n  9\n$DIMALTD\n 70\n3\n  9\n$DIMALTF\n 40\n0.03937007874\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n0\n  9\n$DIMSOXD\n 70\n0\n  9\n$DIMSAH\n 70\n0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n0\n  9\n$DIMCLRE\n 70\n0\n  9\n$DIMCLRT\n 70\n0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n0\n  9\n$DIMSD1\n 70\n0\n  9\n$DIMSD2\n 70\n0\n  9\n$DIMTOLJ\n 70\n0\n  9\n$DIMTZIN\n 70\n8\n  9\n$DIMALTZ\n 70\n0\n  9\n$DIMALTTZ\n 70\n0\n  9\n$DIMUPT\n 70\n0\n  9\n$DIMDEC\n 70\n2\n  9\n$DIMTDEC\n 70\n2\n  9\n$DIMALTU\n 70\n2\n  9\n$DIMALTTD\n 70\n3\n  9\n$DIMTXSTY\n  7\nStandard\n  9\n$DIMAUNIT\n 70\n0\n  9\n$DIMADEC\n 70\n0\n  9\n$DIMALTRND\n 40\n0.0\n  9\n$DIMAZIN\n 70\n0\n  9\n$DIMDSEP\n 70\n44\n  9\n$DIMATFIT\n 70\n3\n  9\n$DIMFRAC\n 70\n0\n  9\n$DIMLDRBLK\n  1\n\n  9\n$DIMLUNIT\n 70\n2\n  9\n$DIMLWD\n 70\n-2\n  9\n$DIMLWE\n 70\n-2\n  9\n$DIMTMOVE\n 70\n0\n  9\n$DIMFXL\n 40\n1.0\n  9\n$DIMFXLON\n 70\n0\n  9\n$DIMJOGANG\n 40\n0.785398163397\n  9\n$DIMTFILL\n 70\n0\n  9\n$DIMTFILLCLR\n 70\n0\n  9\n$DIMARCSYM\n 70\n0\n  9\n$DIMLTYPE\n  6\n\n  9\n$DIMLTEX1\n  6\n\n  9\n$DIMLTEX2\n  6\n\n  9\n$DIMTXTDIRECTION\n 70\n0\n  9\n$LUNITS\n 70\n2\n  9\n$LUPREC\n 70\n4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n10.0\n  9\n$AUNITS\n 70\n0\n  9\n$AUPREC\n 70\n2\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n0\n  9\n$TDCREATE\n 40\n2461359.557210648\n  9\n$TDUCREATE\n 40\n2458532.153996898\n  9\n$TDUPDATE\n 40\n2461359.557210648\n  9\n$TDUUPDATE\n 40\n2458532.1544311\n  9\n$TDINDWG\n 40\n0.0\n  9\n$TDUSRTIMER\n 40\n0.0\n  9\n$USRTIMER\n 70\n1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n0\n  9\n$PDMODE\n 70\n0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$SPLFRAME\n 70\n0\n  9\n$SPLINETYPE\n 70\n6\n  9\n$SPLINESEGS\n 70\n8\n  9\n$HANDSEED\n  5\nA3\n  9\n$SURFTAB1\n 70\n6\n  9\n$SURFTAB2\n 70\n6\n  9\n$SURFTYPE\n 70\n6\n  9\n$SURFU\n 70\n6\n  9\n$SURFV\n 70\n6\n  9\n$UCSBASE\n  2\n\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$UCSORTHOREF\n  2\n\n  9\n$UCSORTHOVIEW\n 70\n0\n  9\n$UCSORGTOP\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGBOTTOM\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGLEFT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGRIGHT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGFRONT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGBACK\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSBASE\n  2\n\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSORTHOREF\n  2\n\n  9\n$PUCSORTHOVIEW\n 70\n0\n  9\n$PUCSORGTOP\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGBOTTOM\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGLEFT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGRIGHT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGFRONT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGBACK\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$USERI1\n 70\n0\n  9\n$USERI2\n 70\n0\n  9\n$USERI3\n 70\n0\n  9\n$USERI4\n 70\n0\n  9\n$USERI5\n 70\n0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n1\n  9\n$SHADEDGE\n 70\n3\n  9\n$SHADEDIF\n 70\n70\n  9\n$TILEMODE\n 70\n1\n  9\n$MAXACTVP\n 70\n64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n0\n  9\n$PEXTMIN\n 10\n1e+20\n 20\n1e+20\n 30\n1e+20\n  9\n$PEXTMAX\n 10\n-1e+20\n 20\n-1e+20\n 30\n-1e+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n0\n  9\n$VISRETAIN\n 70\n1\n  9\n$PLINEGEN\n 70\n0\n  9\n$PSLTSCALE\n 70\n1\n  9\n$TREEDEPTH\n 70\n3020\n  9\n$CMLSTYLE\n  2\nStandard\n  9\n$CMLJUST\n 70\n0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n1\n  9\n$MEASUREMENT\n 70\n1\n  9\n$CELWEIGHT\n370\n-1\n  9\n$ENDCAPS\n280\n0\n  9\n$JOINSTYLE\n280\n0\n  9\n$LWDISPLAY\n290\n0\n  9\n$INSUNITS\n 70\n4\n  9\n$HYPERLINKBASE\n  1\n\n  9\n$STYLESHEET\n  1\n\n  9\n$XEDIT\n290\n1\n  9\n$CEPSNTYPE\n380\n0\n  9\n$PSTYLEMODE\n290\n1\n  9\n$FINGERPRINTGUID\n  2\n{A315FE9D-B8EE-4552-8C55-931B84A3C0C1}\n  9\n$VERSIONGUID\n  2\n{F98B4736-09C1-47E6-8469-F08A88D69430}\n  9\n$EXTNAMES\n290\n1\n  9\n$PSVPSCALE\n 40\n0.0\n  9\n$OLESTARTUP\n290\n0\n  9\n$SORTENTS\n280\n127\n  9\n$INDEXCTL\n280\n0\n  9\n$HIDETEXT\n280\n1\n  9\n$XCLIPFRAME\n280\n1\n  9\n$HALOGAP\n280\n0\n  9\n$OBSCOLOR\n 70\n257\n  9\n$OBSLTYPE\n280\n0\n  9\n$INTERSECTIONDISPLAY\n280\n0\n  9\n$INTERSECTIONCOLOR\n 70\n257\n  9\n$DIMASSOC\n280\n2\n  9\n$PROJECTNAME\n  1\n\n  9\n$CAMERADISPLAY\n290\n0\n  9\n$LENSLENGTH\n 40\n50.0\n  9\n$CAMERAHEIGHT\n 40\n0.0\n  9\n$STEPSPERSEC\n 40\n24.0\n  9\n$STEPSIZE\n 40\n100.0\n  9\n$3DDWFPREC\n 40\n2.0\n  9\n$PSOLWIDTH\n 40\n0.005\n  9\n$PSOLHEIGHT\n 40\n0.08\n  9\n$LOFTANG1\n 40\n1.570796326795\n  9\n$LOFTANG2\n 40\n1.570796326795\n  9\n$LOFTMAG1\n 40\n0.0\n  9\n$LOFTMAG2\n 40\n0.0\n  9\n$LOFTPARAM\n 70\n7\n  9\n$LOFTNORMALS\n280\n1\n  9\n$LATITUDE\n 40\n37.795\n  9\n$LONGITUDE\n 40\n-122.394\n  9\n$NORTHDIRECTION\n 40\n0.0\n  9\n$TIMEZONE\n 70\n-8000\n  9\n$LIGHTGLYPHDISPLAY\n280\n1\n  9\n$TILEMODELIGHTSYNCH\n280\n1\n  9\n$CMATERIAL\n347\n20\n  9\n$SOLIDHIST\n280\n0\n  9\n$SHOWHIST\n280\n1\n  9\n$DWFFRAME\n280\n2\n  9\n$DGNFRAME\n280\n2\n  9\n$REALWORLDSCALE\n290\n1\n  9\n$INTERFERECOLOR\n 62\n256\n  9\n$CSHADOW\n280\n0\n  9\n$SHADOWPLANELOCATION\n 40\n0.0\n  0\nENDSEC\n  0\nSECTION\n  2\nCLASSES\n  0\nCLASS\n  1\nACDBDICTIONARYWDFLT\n  2\nAcDbDictionaryWithDefault\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nSUN\n  2\nAcDbSun\n  3\nSCENEOE\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nVISUALSTYLE\n  2\nAcDbVisualStyle\n  3\nObjectDBX Classes\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMATERIAL\n  2\nAcDbMaterial\n  3\nObjectDBX Classes\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nSCALE\n  2\nAcDbScale\n  3\nObjectDBX Classes\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nTABLESTYLE\n  2\nAcDbTableStyle\n  3\nObjectDBX Classes\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMLEADERSTYLE\n  2\nAcDbMLeaderStyle\n  3\nACDB_MLEADERSTYLE_CLASS\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nDICTIONARYVAR\n  2\nAcDbDictionaryVar\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nCELLSTYLEMAP\n  2\nAcDbCellStyleMap\n  3\nObjectDBX Classes\n 90\n1152\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMENTALRAYRENDERSETTINGS\n  2\nAcDbMentalRayRenderSettings\n  3\nSCENEOE\n 90\n1024\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBDETAILVIEWSTYLE\n  2\nAcDbDetailViewStyle\n  3\nObjectDBX Classes\n 90\n1025\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBSECTIONVIEWSTYLE\n  2\nAcDbSectionViewStyle\n  3\nObjectDBX Classes\n 90\n1025\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nRASTERVARIABLES\n  2\nAcDbRasterVariables\n  3\nISM\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nLAYOUT\n  2\nAcDbLayout\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBPLACEHOLDER\n  2\nAcDbPlaceHolder\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nENDSEC\n  0\nSECTION\n  2\nTABLES\n  0\nTABLE\n  2\nVPORT\n  5\n8\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n  0\nVPORT\n  5\n23\n330\n8\n100\nAcDbSymbolTableRecord\n100\nAcDbViewportTableRecord\n  2\n*Active\n 70\n0\n 10\n0.0\n 20\n0.0\n 11\n1.0\n 21\n1.0\n 12\n0.0\n 22\n0.0\n 13\n0.0\n 23\n0.0\n 14\n0.5\n 24\n0.5\n 15\n0.5\n 25\n0.5\n 16\n0.0\n 26\n0.0\n 36\n1.0\n 17\n0.0\n 27\n0.0\n 37\n0.0\n 40\n1000.0\n 41\n1.34\n 42\n50.0\n 43\n0.0\n 44\n0.0\n 50\n0.0\n 51\n0.0\n 71\n0\n 72\n1000\n 73\n1\n 74\n3\n 75\n0\n 76\n0\n 77\n0\n 78\n0\n281\n0\n 65\n0\n146\n0.0\n  0\nENDTAB\n  0\nTABLE\n  2\nLTYPE\n  5\n2\n330\n0\n100\nAcDbSymbolTable\n 70\n3\n  0\nLTYPE\n  5\n24\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nByBlock\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nLTYPE\n  5\n25\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nByLayer\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nLTYPE\n  5\n26\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nContinuous\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nENDTAB\n  0\nTABLE\n  2\nLAYER\n  5\n1\n330\n0\n100\nAcDbSymbolTable\n 70\n2\n  0\nLAYER\n  5\n27\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\n0\n 70\n0\n 62\n7\n  6\nContinuous\n370\n-3\n390\n13\n347\n21\n  0\nLAYER\n  5\n28\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nDefpoints\n 70\n0\n 62\n7\n  6\nContinuous\n290\n0\n370\n-3\n390\n13\n347\n21\n  0\nENDTAB\n  0\nTABLE\n  2\nSTYLE\n  5\n5\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n  0\nSTYLE\n  5\n29\n330\n5\n100\nAcDbSymbolTableRecord\n100\nAcDbTextStyleTableRecord\n  2\nStandard\n 70\n0\n 40\n0.0\n 41\n1.0\n 50\n0.0\n 71\n0\n 42\n2.5\n  3\ntxt\n  4\n\n  0\nENDTAB\n  0\nTABLE\n  2\nVIEW\n  5\n7\n330\n0\n100\nAcDbSymbolTable\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nUCS\n  5\n6\n330\n0\n100\nAcDbSymbolTable\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nAPPID\n  5\n3\n330\n0\n100\nAcDbSymbolTable\n 70\n3\n  0\nAPPID\n  5\n2A\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nACAD\n 70\n0\n  0\nAPPID\n  5\nA0\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nHATCHBACKGROUNDCOLOR\n 70\n0\n  0\nAPPID\n  5\nA1\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nEZDXF\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nDIMSTYLE\n  5\n4\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n100\nAcDbDimStyleTable\n  0\nDIMSTYLE\n105\n2B\n330\n4\n100\nAcDbSymbolTableRecord\n100\nAcDbDimStyleTableRecord\n  2\nStandard\n 70\n0\n 40\n1.0\n 41\n2.5\n 42\n0.625\n 43\n3.75\n 44\n1.25\n 45\n0.0\n 46\n0.0\n 47\n0.0\n 48\n0.0\n 49\n2.5\n140\n2.5\n141\n2.5\n142\n0.0\n143\n0.03937007874\n144\n1.0\n145\n0.0\n146\n1.0\n147\n0.625\n148\n0.0\n 69\n0\n 70\n0\n 71\n0\n 72\n0\n 73\n0\n 74\n0\n 75\n0\n 76\n0\n 77\n1\n 78\n8\n 79\n3\n170\n0\n171\n3\n172\n1\n173\n0\n174\n0\n175\n0\n176\n0\n177\n0\n178\n0\n179\n2\n271\n2\n272\n2\n273\n2\n274\n3\n275\n0\n276\n0\n277\n2\n278\n44\n279\n0\n280\n0\n281\n0\n282\n0\n283\n0\n284\n8\n285\n0\n286\n0\n288\n0\n289\n3\n290\n0\n371\n-2\n372\n-2\n  0\nENDTAB\n  0\nTABLE\n  2\nBLOCK_RECORD\n  5\n9\n330\n0\n100\nAcDbSymbolTable\n 70\n2\n  0\nBLOCK_RECORD\n  5\n17\n330\n9\n100\nAcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n  2\n*Model_Space\n340\n1A\n 70\n0\n280\n1\n281\n0\n  0\nBLOCK_RECORD\n  5\n1B\n330\n9\n100\nAcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n  2\n*Paper_Space\n340\n1E\n 70\n0\n280\n1\n281\n0\n  0\nENDTAB\n  0\nENDSEC\n  0\nSECTION\n  2\nBLOCKS\n  0\nBLOCK\n  5\n18\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockBegin\n  2\n*Model_Space\n 70\n0\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  3\n*Model_Space\n  1\n\n  0\nENDBLK\n  5\n19\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockEnd\n  0\nBLOCK\n  5\n1C\n330\n1B\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockBegin\n  2\n*Paper_Space\n 70\n0\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  3\n*Paper_Space\n  1\n\n  0\nENDBLK\n  5\n1D\n330\n1B\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockEnd\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n  0\nTEXT\n  5\n2F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n0.0\n 20\n0.0\n 30\n0.0\n 40\n5.0\n  1\nschematic; not manufacturing-ready\n 11\n0.0\n 21\n0.0\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n30\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-15.0\n 10\n550.0\n 20\n-15.0\n 10\n550.0\n 20\n-2415.0000013176855\n 10\n0.0\n 20\n-2415.0000013176855\n  0\nTEXT\n  5\n31\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-15.0\n 30\n0.0\n 40\n5.0\n  1\nLaterales del cuerpo / provisional:general-5f2d41963bd997b5:sides:1 [provisional scenario]\n 11\n565.0\n 21\n-15.0\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n32\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-23.0\n 30\n0.0\n 40\n5.0\n  1\nL=2400 mm [hypothesis]\n 11\n565.0\n 21\n-23.0\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n33\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-31.0\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-31.0\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n34\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-39.0\n 30\n0.0\n 40\n5.0\n  1\nT=17.9998 mm [hypothesis]\n 11\n565.0\n 21\n-39.0\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n35\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-47.0\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n565.0\n 21\n-47.0\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n36\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-55.0\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-11; contour-lines-unknown-12; contour-lines-unknown-13; contour-lines-unknown-20; contour-lines-unknown-21; contour-lines-unknown-22; observation-view-unknown; evidence-contour-lines-unknown-11; evidence-contour-lines-unknown-20; evidence-contour-lines-unknown-13\n 11\n565.0\n 21\n-55.0\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n37\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-2440.0000013176855\n 10\n550.0\n 20\n-2440.0000013176855\n 10\n550.0\n 20\n-4840.000002635371\n 10\n0.0\n 20\n-4840.000002635371\n  0\nTEXT\n  5\n38\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2440.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nLaterales del cuerpo / provisional:general-5f2d41963bd997b5:sides:2 [provisional scenario]\n 11\n565.0\n 21\n-2440.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n39\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2448.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nL=2400 mm [hypothesis]\n 11\n565.0\n 21\n-2448.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n3A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2456.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-2456.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n3B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2464.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nT=17.9998 mm [hypothesis]\n 11\n565.0\n 21\n-2464.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n3C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2472.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n565.0\n 21\n-2472.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n3D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-2480.0000013176855\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-11; contour-lines-unknown-12; contour-lines-unknown-13; contour-lines-unknown-20; contour-lines-unknown-21; contour-lines-unknown-22; observation-view-unknown; evidence-contour-lines-unknown-11; evidence-contour-lines-unknown-20; evidence-contour-lines-unknown-13\n 11\n565.0\n 21\n-2480.0000013176855\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n3E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-4865.000002635371\n 10\n550.0\n 20\n-4865.000002635371\n 10\n550.0\n 20\n-5429.000003470754\n 10\n0.0\n 20\n-5429.000003470754\n  0\nTEXT\n  5\n3F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4865.000002635371\n 30\n0.0\n 40\n5.0\n  1\nPanel superior entre laterales / provisional:general-5f2d41963bd997b5:top:1 [provisional scenario]\n 11\n565.0\n 21\n-4865.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n40\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4873.000002635371\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n565.0\n 21\n-4873.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n41\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4881.000002635371\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-4881.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n42\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4889.000002635371\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n565.0\n 21\n-4889.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n43\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4897.000002635371\n 30\n0.0\n 40\n5.0\n  1\nQ=1 [hypothesis]\n 11\n565.0\n 21\n-4897.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n44\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-4905.000002635371\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-28; contour-lines-unknown-29; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-28; evidence-contour-lines-unknown-29\n 11\n565.0\n 21\n-4905.000002635371\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n45\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-5454.000003470754\n 10\n550.0\n 20\n-5454.000003470754\n 10\n550.0\n 20\n-6018.000004306137\n 10\n0.0\n 20\n-6018.000004306137\n  0\nTEXT\n  5\n46\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5454.000003470754\n 30\n0.0\n 40\n5.0\n  1\nBase elevada sobre el zócalo / provisional:general-5f2d41963bd997b5:bottom:1 [provisional scenario]\n 11\n565.0\n 21\n-5454.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n47\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5462.000003470754\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n565.0\n 21\n-5462.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n48\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5470.000003470754\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-5470.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n49\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5478.000003470754\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n565.0\n 21\n-5478.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n4A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5486.000003470754\n 30\n0.0\n 40\n5.0\n  1\nQ=1 [hypothesis]\n 11\n565.0\n 21\n-5486.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n4B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-5494.000003470754\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-31; contour-lines-unknown-24; contour-lines-unknown-32; observation-view-unknown; evidence-contour-lines-unknown-31; evidence-contour-lines-unknown-24\n 11\n565.0\n 21\n-5494.000003470754\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n4C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-6043.000004306137\n 10\n550.0\n 20\n-6043.000004306137\n 10\n550.0\n 20\n-6607.00000514152\n 10\n0.0\n 20\n-6607.00000514152\n  0\nTEXT\n  5\n4D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6043.000004306137\n 30\n0.0\n 40\n5.0\n  1\nPaneles horizontales de separación / provisional:general-5f2d41963bd997b5:divisions:1 [provisional scenario]\n 11\n565.0\n 21\n-6043.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n4E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6051.000004306137\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n565.0\n 21\n-6051.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n4F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6059.000004306137\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-6059.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n50\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6067.000004306137\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n565.0\n 21\n-6067.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n51\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6075.000004306137\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n565.0\n 21\n-6075.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n52\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6083.000004306137\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-23; contour-lines-unknown-25; contour-lines-unknown-26; contour-lines-unknown-27; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-23; evidence-contour-lines-unknown-25; evidence-contour-lines-unknown-26; evidence-contour-lines-unknown-27\n 11\n565.0\n 21\n-6083.000004306137\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n53\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-6632.00000514152\n 10\n550.0\n 20\n-6632.00000514152\n 10\n550.0\n 20\n-7196.000005976903\n 10\n0.0\n 20\n-7196.000005976903\n  0\nTEXT\n  5\n54\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6632.00000514152\n 30\n0.0\n 40\n5.0\n  1\nPaneles horizontales de separación / provisional:general-5f2d41963bd997b5:divisions:2 [provisional scenario]\n 11\n565.0\n 21\n-6632.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n55\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6640.00000514152\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n565.0\n 21\n-6640.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n56\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6648.00000514152\n 30\n0.0\n 40\n5.0\n  1\nW=550 mm [hypothesis]\n 11\n565.0\n 21\n-6648.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n57\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6656.00000514152\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n565.0\n 21\n-6656.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n58\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6664.00000514152\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n565.0\n 21\n-6664.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n59\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n565.0\n 20\n-6672.00000514152\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-23; contour-lines-unknown-25; contour-lines-unknown-26; contour-lines-unknown-27; contour-lines-unknown-24; observation-view-unknown; evidence-contour-lines-unknown-23; evidence-contour-lines-unknown-25; evidence-contour-lines-unknown-26; evidence-contour-lines-unknown-27\n 11\n565.0\n 21\n-6672.00000514152\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n5A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-7221.000005976903\n 10\n515.0\n 20\n-7221.000005976903\n 10\n515.0\n 20\n-7784.000005976903\n 10\n0.0\n 20\n-7784.000005976903\n  0\nTEXT\n  5\n5B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7221.000005976903\n 30\n0.0\n 40\n5.0\n  1\nBaldas interiores superiores / provisional:general-5f2d41963bd997b5:shelves:1 [provisional scenario]\n 11\n530.0\n 21\n-7221.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n5C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7229.000005976903\n 30\n0.0\n 40\n5.0\n  1\nL=563 mm [hypothesis]\n 11\n530.0\n 21\n-7229.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n5D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7237.000005976903\n 30\n0.0\n 40\n5.0\n  1\nW=515 mm [hypothesis]\n 11\n530.0\n 21\n-7237.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n5E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7245.000005976903\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n530.0\n 21\n-7245.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n5F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7253.000005976903\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n530.0\n 21\n-7253.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n60\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7261.000005976903\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-37; contour-lines-unknown-38; contour-lines-unknown-39; contour-lines-unknown-40; contour-lines-unknown-41; observation-view-unknown; evidence-contour-lines-unknown-37; evidence-contour-lines-unknown-38; evidence-contour-lines-unknown-40\n 11\n530.0\n 21\n-7261.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n61\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-7809.000005976903\n 10\n515.0\n 20\n-7809.000005976903\n 10\n515.0\n 20\n-8372.000005976903\n 10\n0.0\n 20\n-8372.000005976903\n  0\nTEXT\n  5\n62\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7809.000005976903\n 30\n0.0\n 40\n5.0\n  1\nBaldas interiores superiores / provisional:general-5f2d41963bd997b5:shelves:2 [provisional scenario]\n 11\n530.0\n 21\n-7809.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n63\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7817.000005976903\n 30\n0.0\n 40\n5.0\n  1\nL=563 mm [hypothesis]\n 11\n530.0\n 21\n-7817.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n64\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7825.000005976903\n 30\n0.0\n 40\n5.0\n  1\nW=515 mm [hypothesis]\n 11\n530.0\n 21\n-7825.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n65\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7833.000005976903\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n530.0\n 21\n-7833.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n66\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7841.000005976903\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n530.0\n 21\n-7841.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n67\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n530.0\n 20\n-7849.000005976903\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-37; contour-lines-unknown-38; contour-lines-unknown-39; contour-lines-unknown-40; contour-lines-unknown-41; observation-view-unknown; evidence-contour-lines-unknown-37; evidence-contour-lines-unknown-38; evidence-contour-lines-unknown-40\n 11\n530.0\n 21\n-7849.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n68\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-8397.000005976903\n 10\n574.0\n 20\n-8397.000005976903\n 10\n574.0\n 20\n-9171.000006342925\n 10\n0.0\n 20\n-9171.000006342925\n  0\nTEXT\n  5\n69\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8397.000005976903\n 30\n0.0\n 40\n5.0\n  1\nTrasera del compartimento inferior / provisional:general-5f2d41963bd997b5:back_low:1 [provisional scenario]\n 11\n589.0\n 21\n-8397.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n6A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8405.000005976903\n 30\n0.0\n 40\n5.0\n  1\nL=774 mm [hypothesis]\n 11\n589.0\n 21\n-8405.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n6B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8413.000005976903\n 30\n0.0\n 40\n5.0\n  1\nW=574 mm [hypothesis]\n 11\n589.0\n 21\n-8413.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n6C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8421.000005976903\n 30\n0.0\n 40\n5.0\n  1\nT=4.99994 mm [hypothesis]\n 11\n589.0\n 21\n-8421.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n6D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8429.000005976903\n 30\n0.0\n 40\n5.0\n  1\nQ=1 [hypothesis]\n 11\n589.0\n 21\n-8429.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n6E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-8437.000005976903\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-14; contour-lines-unknown-15; contour-lines-unknown-16; observation-view-unknown; evidence-contour-lines-unknown-14; evidence-contour-lines-unknown-16\n 11\n589.0\n 21\n-8437.000005976903\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n6F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-9196.000006342925\n 10\n574.0\n 20\n-9196.000006342925\n 10\n574.0\n 20\n-10070.000006708948\n 10\n0.0\n 20\n-10070.000006708948\n  0\nTEXT\n  5\n70\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9196.000006342925\n 30\n0.0\n 40\n5.0\n  1\nTrasera del compartimento superior / provisional:general-5f2d41963bd997b5:back_high:1 [provisional scenario]\n 11\n589.0\n 21\n-9196.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n71\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9204.000006342925\n 30\n0.0\n 40\n5.0\n  1\nL=874 mm [hypothesis]\n 11\n589.0\n 21\n-9204.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n72\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9212.000006342925\n 30\n0.0\n 40\n5.0\n  1\nW=574 mm [hypothesis]\n 11\n589.0\n 21\n-9212.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n73\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9220.000006342925\n 30\n0.0\n 40\n5.0\n  1\nT=4.99994 mm [hypothesis]\n 11\n589.0\n 21\n-9220.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n74\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9228.000006342925\n 30\n0.0\n 40\n5.0\n  1\nQ=1 [hypothesis]\n 11\n589.0\n 21\n-9228.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n75\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n589.0\n 20\n-9236.000006342925\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-17; contour-lines-unknown-18; contour-lines-unknown-19; observation-view-unknown; evidence-contour-lines-unknown-17; evidence-contour-lines-unknown-19\n 11\n589.0\n 21\n-9236.000006342925\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n76\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-10095.000006708948\n 10\n346.99999868230725\n 20\n-10095.000006708948\n 10\n346.99999868230725\n 20\n-10692.000006708948\n 10\n0.0\n 20\n-10692.000006708948\n  0\nTEXT\n  5\n77\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10095.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFrentes rectangulares inferiores; función por confirmar / provisional:general-5f2d41963bd997b5:fronts:1 [provisional scenario]\n 11\n361.99999868230725\n 21\n-10095.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n78\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10103.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=597 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10103.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n79\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10111.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=347 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10111.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n7A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10119.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10119.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n7B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10127.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n361.99999868230725\n 21\n-10127.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n7C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10135.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-6; contour-lines-unknown-7; contour-lines-unknown-8; contour-lines-unknown-9; contour-lines-unknown-10; observation-view-unknown; evidence-contour-lines-unknown-6; evidence-contour-lines-unknown-8; evidence-contour-lines-unknown-9; evidence-contour-lines-unknown-10\n 11\n361.99999868230725\n 21\n-10135.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n7D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-10717.000006708948\n 10\n346.99999868230725\n 20\n-10717.000006708948\n 10\n346.99999868230725\n 20\n-11314.000006708948\n 10\n0.0\n 20\n-11314.000006708948\n  0\nTEXT\n  5\n7E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10717.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFrentes rectangulares inferiores; función por confirmar / provisional:general-5f2d41963bd997b5:fronts:2 [provisional scenario]\n 11\n361.99999868230725\n 21\n-10717.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n7F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10725.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=597 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10725.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n80\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10733.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=347 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10733.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n81\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10741.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n361.99999868230725\n 21\n-10741.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n82\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10749.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n361.99999868230725\n 21\n-10749.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n83\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n361.99999868230725\n 20\n-10757.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-6; contour-lines-unknown-7; contour-lines-unknown-8; contour-lines-unknown-9; contour-lines-unknown-10; observation-view-unknown; evidence-contour-lines-unknown-6; evidence-contour-lines-unknown-8; evidence-contour-lines-unknown-9; evidence-contour-lines-unknown-10\n 11\n361.99999868230725\n 21\n-10757.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n84\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-11339.000006708948\n 10\n50.000001317691726\n 20\n-11339.000006708948\n 10\n50.000001317691726\n 20\n-11939.000006708948\n 10\n0.0\n 20\n-11939.000006708948\n  0\nTEXT\n  5\n85\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11339.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFajas frontales de separación / provisional:general-5f2d41963bd997b5:fascias:1 [provisional scenario]\n 11\n65.00000131769173\n 21\n-11339.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n86\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11347.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=600 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11347.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n87\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11355.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=50 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11355.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n88\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11363.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11363.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n89\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11371.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n65.00000131769173\n 21\n-11371.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n8A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11379.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-1; contour-lines-unknown-2; contour-lines-unknown-3; contour-lines-unknown-4; contour-lines-unknown-5; observation-view-unknown; evidence-contour-lines-unknown-1; evidence-contour-lines-unknown-3; evidence-contour-lines-unknown-4; evidence-contour-lines-unknown-5\n 11\n65.00000131769173\n 21\n-11379.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n8B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-11964.000006708948\n 10\n50.000001317691726\n 20\n-11964.000006708948\n 10\n50.000001317691726\n 20\n-12564.000006708948\n 10\n0.0\n 20\n-12564.000006708948\n  0\nTEXT\n  5\n8C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11964.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFajas frontales de separación / provisional:general-5f2d41963bd997b5:fascias:2 [provisional scenario]\n 11\n65.00000131769173\n 21\n-11964.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n8D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11972.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=600 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11972.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n8E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11980.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=50 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11980.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n8F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11988.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n65.00000131769173\n 21\n-11988.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n90\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-11996.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n65.00000131769173\n 21\n-11996.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n91\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n65.00000131769173\n 20\n-12004.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-1; contour-lines-unknown-2; contour-lines-unknown-3; contour-lines-unknown-4; contour-lines-unknown-5; observation-view-unknown; evidence-contour-lines-unknown-1; evidence-contour-lines-unknown-3; evidence-contour-lines-unknown-4; evidence-contour-lines-unknown-5\n 11\n65.00000131769173\n 21\n-12004.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n92\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-12589.000006708948\n 10\n99.9999986823077\n 20\n-12589.000006708948\n 10\n99.9999986823077\n 20\n-13153.000006708948\n 10\n0.0\n 20\n-13153.000006708948\n  0\nTEXT\n  5\n93\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12589.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFajas del zócalo delantera y trasera / provisional:general-5f2d41963bd997b5:plinths:1 [provisional scenario]\n 11\n114.9999986823077\n 21\n-12589.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n94\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12597.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-12597.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n95\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12605.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=100 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-12605.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n96\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12613.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-12613.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n97\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12621.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n114.9999986823077\n 21\n-12621.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n98\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-12629.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-32; contour-lines-unknown-33; contour-lines-unknown-34; contour-lines-unknown-35; contour-lines-unknown-36; observation-view-unknown; evidence-contour-lines-unknown-32; evidence-contour-lines-unknown-34; evidence-contour-lines-unknown-36\n 11\n114.9999986823077\n 21\n-12629.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nLWPOLYLINE\n  5\n99\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbPolyline\n 90\n4\n 70\n1\n 10\n0.0\n 20\n-13178.000006708948\n 10\n99.9999986823077\n 20\n-13178.000006708948\n 10\n99.9999986823077\n 20\n-13742.000006708948\n 10\n0.0\n 20\n-13742.000006708948\n  0\nTEXT\n  5\n9A\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13178.000006708948\n 30\n0.0\n 40\n5.0\n  1\nFajas del zócalo delantera y trasera / provisional:general-5f2d41963bd997b5:plinths:2 [provisional scenario]\n 11\n114.9999986823077\n 21\n-13178.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n9B\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13186.000006708948\n 30\n0.0\n 40\n5.0\n  1\nL=564 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-13186.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n9C\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13194.000006708948\n 30\n0.0\n 40\n5.0\n  1\nW=100 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-13194.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n9D\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13202.000006708948\n 30\n0.0\n 40\n5.0\n  1\nT=18 mm [hypothesis]\n 11\n114.9999986823077\n 21\n-13202.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n9E\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13210.000006708948\n 30\n0.0\n 40\n5.0\n  1\nQ=2 [hypothesis]\n 11\n114.9999986823077\n 21\n-13210.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nTEXT\n  5\n9F\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbText\n 10\n114.9999986823077\n 20\n-13218.000006708948\n 30\n0.0\n 40\n5.0\n  1\nsource: view-unknown; contour-lines-unknown-32; contour-lines-unknown-33; contour-lines-unknown-34; contour-lines-unknown-35; contour-lines-unknown-36; observation-view-unknown; evidence-contour-lines-unknown-32; evidence-contour-lines-unknown-34; evidence-contour-lines-unknown-36\n 11\n114.9999986823077\n 21\n-13218.000006708948\n 31\n0.0\n100\nAcDbText\n  0\nENDSEC\n  0\nSECTION\n  2\nOBJECTS\n  0\nDICTIONARY\n  5\nA\n330\n0\n100\nAcDbDictionary\n281\n1\n  3\nACAD_COLOR\n350\nB\n  3\nACAD_GROUP\n350\nC\n  3\nACAD_LAYOUT\n350\nD\n  3\nACAD_MATERIAL\n350\nE\n  3\nACAD_MLEADERSTYLE\n350\nF\n  3\nACAD_MLINESTYLE\n350\n10\n  3\nACAD_PLOTSETTINGS\n350\n11\n  3\nACAD_PLOTSTYLENAME\n350\n12\n  3\nACAD_SCALELIST\n350\n14\n  3\nACAD_TABLESTYLE\n350\n15\n  3\nACAD_VISUALSTYLE\n350\n16\n  3\nEZDXF_META\n350\n2D\n  0\nDICTIONARY\n  5\nB\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nDICTIONARY\n  5\nC\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nDICTIONARY\n  5\nD\n330\nA\n100\nAcDbDictionary\n281\n1\n  3\nModel\n350\n1A\n  3\nLayout1\n350\n1E\n  0\nDICTIONARY\n  5\nE\n330\nA\n100\nAcDbDictionary\n281\n1\n  3\nByBlock\n350\n1F\n  3\nByLayer\n350\n20\n  3\nGlobal\n350\n21\n  0\nDICTIONARY\n  5\nF\n330\nA\n100\nAcDbDictionary\n281\n1\n  3\nStandard\n350\n2C\n  0\nDICTIONARY\n  5\n10\n330\nA\n100\nAcDbDictionary\n281\n1\n  3\nStandard\n350\n22\n  0\nDICTIONARY\n  5\n11\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nACDBDICTIONARYWDFLT\n  5\n12\n330\nA\n100\nAcDbDictionary\n281\n1\n  3\nNormal\n350\n13\n100\nAcDbDictionaryWithDefault\n340\n13\n  0\nACDBPLACEHOLDER\n  5\n13\n330\n12\n  0\nDICTIONARY\n  5\n14\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nDICTIONARY\n  5\n15\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nDICTIONARY\n  5\n16\n330\nA\n100\nAcDbDictionary\n281\n1\n  0\nLAYOUT\n  5\n1A\n330\nD\n100\nAcDbPlotSettings\n  1\n\n  4\nA3\n  6\n\n 40\n7.5\n 41\n20.0\n 42\n7.5\n 43\n20.0\n 44\n420.0\n 45\n297.0\n 46\n0.0\n 47\n0.0\n 48\n0.0\n 49\n0.0\n140\n0.0\n141\n0.0\n142\n1.0\n143\n1.0\n 70\n1024\n 72\n1\n 73\n0\n 74\n5\n  7\n\n 75\n16\n 76\n0\n 77\n2\n 78\n300\n147\n1.0\n148\n0.0\n149\n0.0\n100\nAcDbLayout\n  1\nModel\n 70\n1\n 71\n0\n 10\n0.0\n 20\n0.0\n 11\n420.0\n 21\n297.0\n 12\n0.0\n 22\n0.0\n 32\n0.0\n 14\n1e+20\n 24\n1e+20\n 34\n1e+20\n 15\n-1e+20\n 25\n-1e+20\n 35\n-1e+20\n146\n0.0\n 13\n0.0\n 23\n0.0\n 33\n0.0\n 16\n1.0\n 26\n0.0\n 36\n0.0\n 17\n0.0\n 27\n1.0\n 37\n0.0\n 76\n1\n330\n17\n  0\nLAYOUT\n  5\n1E\n330\nD\n100\nAcDbPlotSettings\n  1\n\n  4\nA3\n  6\n\n 40\n7.5\n 41\n20.0\n 42\n7.5\n 43\n20.0\n 44\n420.0\n 45\n297.0\n 46\n0.0\n 47\n0.0\n 48\n0.0\n 49\n0.0\n140\n0.0\n141\n0.0\n142\n1.0\n143\n1.0\n 70\n0\n 72\n1\n 73\n0\n 74\n5\n  7\n\n 75\n16\n 76\n0\n 77\n2\n 78\n300\n147\n1.0\n148\n0.0\n149\n0.0\n100\nAcDbLayout\n  1\nLayout1\n 70\n1\n 71\n1\n 10\n0.0\n 20\n0.0\n 11\n420.0\n 21\n297.0\n 12\n0.0\n 22\n0.0\n 32\n0.0\n 14\n1e+20\n 24\n1e+20\n 34\n1e+20\n 15\n-1e+20\n 25\n-1e+20\n 35\n-1e+20\n146\n0.0\n 13\n0.0\n 23\n0.0\n 33\n0.0\n 16\n1.0\n 26\n0.0\n 36\n0.0\n 17\n0.0\n 27\n1.0\n 37\n0.0\n 76\n1\n330\n1B\n  0\nMATERIAL\n  5\n1F\n102\n{ACAD_REACTORS\n330\nE\n102\n}\n330\nE\n100\nAcDbMaterial\n  1\nByBlock\n  2\n\n 70\n0\n 40\n1.0\n 71\n1\n 41\n1.0\n 91\n-1023410177\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 44\n0.5\n 73\n0\n 45\n1.0\n 46\n1.0\n 77\n1\n  4\n\n 78\n1\n 79\n1\n170\n1\n 48\n1.0\n171\n1\n  6\n\n172\n1\n173\n1\n174\n1\n140\n1.0\n141\n1.0\n175\n1\n  7\n\n176\n1\n177\n1\n178\n1\n143\n1.0\n179\n1\n  8\n\n270\n1\n271\n1\n272\n1\n145\n1.0\n146\n1.0\n273\n1\n  9\n\n274\n1\n275\n1\n276\n1\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 94\n63\n  0\nMATERIAL\n  5\n20\n102\n{ACAD_REACTORS\n330\nE\n102\n}\n330\nE\n100\nAcDbMaterial\n  1\nByLayer\n  2\n\n 70\n0\n 40\n1.0\n 71\n1\n 41\n1.0\n 91\n-1023410177\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 44\n0.5\n 73\n0\n 45\n1.0\n 46\n1.0\n 77\n1\n  4\n\n 78\n1\n 79\n1\n170\n1\n 48\n1.0\n171\n1\n  6\n\n172\n1\n173\n1\n174\n1\n140\n1.0\n141\n1.0\n175\n1\n  7\n\n176\n1\n177\n1\n178\n1\n143\n1.0\n179\n1\n  8\n\n270\n1\n271\n1\n272\n1\n145\n1.0\n146\n1.0\n273\n1\n  9\n\n274\n1\n275\n1\n276\n1\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 94\n63\n  0\nMATERIAL\n  5\n21\n102\n{ACAD_REACTORS\n330\nE\n102\n}\n330\nE\n100\nAcDbMaterial\n  1\nGlobal\n  2\n\n 70\n0\n 40\n1.0\n 71\n1\n 41\n1.0\n 91\n-1023410177\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 44\n0.5\n 73\n0\n 45\n1.0\n 46\n1.0\n 77\n1\n  4\n\n 78\n1\n 79\n1\n170\n1\n 48\n1.0\n171\n1\n  6\n\n172\n1\n173\n1\n174\n1\n140\n1.0\n141\n1.0\n175\n1\n  7\n\n176\n1\n177\n1\n178\n1\n143\n1.0\n179\n1\n  8\n\n270\n1\n271\n1\n272\n1\n145\n1.0\n146\n1.0\n273\n1\n  9\n\n274\n1\n275\n1\n276\n1\n 42\n1.0\n 72\n1\n  3\n\n 73\n1\n 74\n1\n 75\n1\n 94\n63\n  0\nMLINESTYLE\n  5\n22\n102\n{ACAD_REACTORS\n330\n10\n102\n}\n330\n10\n100\nAcDbMlineStyle\n  2\nStandard\n 70\n0\n  3\n\n 62\n256\n 51\n90.0\n 52\n90.0\n 71\n2\n 49\n0.5\n 62\n256\n  6\nBYLAYER\n 49\n-0.5\n 62\n256\n  6\nBYLAYER\n  0\nMLEADERSTYLE\n  5\n2C\n102\n{ACAD_REACTORS\n330\nF\n102\n}\n330\nF\n100\nAcDbMLeaderStyle\n179\n2\n170\n2\n171\n1\n172\n0\n 90\n2\n 40\n0.0\n 41\n0.0\n173\n1\n 91\n-1056964608\n 92\n-2\n290\n1\n 42\n2.0\n291\n1\n 43\n8.0\n  3\nStandard\n 44\n4.0\n300\n\n342\n29\n174\n1\n175\n1\n176\n0\n178\n1\n 93\n-1056964608\n 45\n4.0\n292\n0\n297\n0\n 46\n4.0\n 94\n-1056964608\n 47\n1.0\n 49\n1.0\n140\n1.0\n294\n1\n141\n0.0\n177\n0\n142\n1.0\n295\n0\n296\n0\n143\n3.75\n271\n0\n272\n9\n273\n9\n  0\nDICTIONARY\n  5\n2D\n330\nA\n100\nAcDbDictionary\n280\n1\n281\n1\n  3\nCREATED_BY_EZDXF\n350\n2E\n  3\nWRITTEN_BY_EZDXF\n350\nA2\n  0\nDICTIONARYVAR\n  5\n2E\n330\n2D\n100\nDictionaryVariables\n280\n0\n  1\n1.4.5 @ 2026-11-14T12:22:23.758933+00:00\n  0\nDICTIONARYVAR\n  5\nA2\n330\n2D\n100\nDictionaryVariables\n280\n0\n  1\n1.4.5 @ 2026-11-14T12:22:23.761481+00:00\n  0\nENDSEC\n  0\nEOF\n"
+        }
+      ],
+      "scene": {
+        "status": "schematic_incomplete",
+        "items": [
+          {
+            "id": "scene:sides",
+            "component_id": "sides",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:sides:1",
+              "provisional:general-5f2d41963bd997b5:sides:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 2400.0000013176855,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:side_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 550.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:side_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 17.999824307751624,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:side_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:top",
+            "component_id": "top",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:top:1"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 564.000000835383,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:top_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 550.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:top_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 17.999973824643348,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:top_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:bottom",
+            "component_id": "bottom",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:bottom:1"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 564.0000008353832,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:bottom_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 550.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:bottom_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:bottom_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:divisions",
+            "component_id": "divisions",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:divisions:1",
+              "provisional:general-5f2d41963bd997b5:divisions:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 564.000000835383,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:division_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 550.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:division_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 17.99997382464346,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:division_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:shelves",
+            "component_id": "shelves",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:shelves:1",
+              "provisional:general-5f2d41963bd997b5:shelves:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 563.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:shelf_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 515.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:shelf_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:shelf_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:back_low",
+            "component_id": "back_low",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:back_low:1"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 774.0000003660234,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_low_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 574.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_low_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 4.999943339249739,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_low_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:back_high",
+            "component_id": "back_high",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:back_high:1"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 874.0000003660233,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_high_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 574.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_high_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 4.99993601873939,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:back_high_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:fronts",
+            "component_id": "fronts",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:fronts:1",
+              "provisional:general-5f2d41963bd997b5:fronts:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 597.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:front_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 346.99999868230725,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:front_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 18.000025402170877,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:front_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:fascias",
+            "component_id": "fascias",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:fascias:1",
+              "provisional:general-5f2d41963bd997b5:fascias:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 600.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:fascia_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 50.000001317691726,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:fascia_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 17.99999633974494,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:fascia_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          },
+          {
+            "id": "scene:plinths",
+            "component_id": "plinths",
+            "occurrence_ids": [],
+            "scenario_occurrence_ids": [
+              "provisional:general-5f2d41963bd997b5:plinths:1",
+              "provisional:general-5f2d41963bd997b5:plinths:2"
+            ],
+            "occurrence_status": "provisional",
+            "length": {
+              "value_mm": 564.0,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:plinth_l"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "width": {
+              "value_mm": 99.9999986823077,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:plinth_w"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "thickness": {
+              "value_mm": 18.00000732051035,
+              "unit": "mm",
+              "state": "hypothesis",
+              "dependency_refs": [
+                "binding:plinth_t"
+              ],
+              "evidence_ids": [],
+              "dimension_ids": [],
+              "range_mm": null,
+              "method": null,
+              "formula": null,
+              "assumption_refs": []
+            },
+            "position_mm": null,
+            "size_mm": null,
+            "occurrence_id": null,
+            "occurrence_index": null,
+            "orientation": null,
+            "status": "schematic_unplaced"
+          }
+        ],
+        "warnings": [
+          "Representación esquemática sin colocaciones de montaje validadas."
+        ]
+      },
+      "cost_basis": {
+        "status": "partial",
+        "contributors": [
+          {
+            "component_id": "sides",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "top",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "bottom",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "divisions",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "shelves",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "back_low",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "back_high",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "fronts",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "fascias",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          },
+          {
+            "component_id": "plinths",
+            "occurrence_ids": [],
+            "area_m2": null,
+            "volume_m3": null,
+            "material": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "finish": {
+              "value": null,
+              "state": "unknown",
+              "dependency_refs": [],
+              "evidence_ids": []
+            },
+            "missing_data": [
+              "quantity",
+              "length",
+              "width",
+              "material",
+              "finish"
+            ]
+          }
+        ],
+        "missing_data": [
+          "finish",
+          "length",
+          "material",
+          "quantity",
+          "width"
+        ]
+      },
+      "construction": null
+    },
+    "historical_target": {
+      "family": null,
+      "width_mm": null,
+      "depth_mm": null,
+      "height_mm": null,
+      "area_mm2": null,
+      "length_mm": null,
+      "volume_mm3": null,
+      "quantity": null,
+      "material": null,
+      "finish": null,
+      "currency": null,
+      "required_cost_scope": [],
+      "required_hours_scope": [],
+      "basis_revision": "proposal:1;review:1",
+      "exclude_project_id": null,
+      "exclude_record_ids": []
+    }
+  }
+}

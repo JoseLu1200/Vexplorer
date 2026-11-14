@@ -1,0 +1,5 @@
+record_id,product,net_sales_revenue_pln,upcycled_total_production_cost_pln,raw_wood_total_production_cost_pln,source_tables,note
+grotowska-2026-square-table,Square table,1300.00,250.90,414.90,"Tables 8 and 9","Retail/net-sales benchmark; not factory cost input"
+grotowska-2026-childrens-chair,Children's chair,250.00,107.90,143.90,"Tables 8 and 9","Retail/net-sales benchmark; not factory cost input"
+grotowska-2026-childrens-table,Children's table,500.00,111.80,189.80,"Tables 8 and 9","Retail/net-sales benchmark; not factory cost input"
+grotowska-2026-pouf,Pouf,300.00,162.50,272.50,"Tables 8 and 9","Retail/net-sales benchmark; not factory cost input"

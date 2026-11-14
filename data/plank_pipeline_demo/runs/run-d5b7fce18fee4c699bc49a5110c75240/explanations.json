@@ -1,0 +1,157 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "result_revision": 2,
+    "pieces": [
+      {
+        "piece_id": "component-tabletop",
+        "proposal_id": "component-tabletop",
+        "role": "tabletop",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-8E",
+          "entity-92",
+          "entity-94",
+          "entity-95"
+        ],
+        "source_contour_ids": [],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-92",
+          "evidence-contour-entity-94",
+          "evidence-dimension-entity-98",
+          "evidence-dimension-entity-B8",
+          "evidence-geometry-entity-8E",
+          "evidence-geometry-entity-95"
+        ],
+        "dimension_ids": [
+          "dimension-entity-98",
+          "dimension-entity-B8"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 1400.0,
+          "width_mm": 800.0,
+          "thickness_mm": 32.0
+        },
+        "formulas": [
+          {
+            "field": "length_mm",
+            "expression": "length_mm=binding:binding-top-length",
+            "operands_mm": {
+              "table-measure-overall_width": 1400.0
+            },
+            "result_mm": 1400.0
+          },
+          {
+            "field": "width_mm",
+            "expression": "width_mm=binding:binding-top-width",
+            "operands_mm": {
+              "table-measure-overall_depth": 800.0
+            },
+            "result_mm": 800.0
+          },
+          {
+            "field": "thickness_mm",
+            "expression": "thickness_mm=binding:binding-top-thickness",
+            "operands_mm": {
+              "table-measure-section-1": 32.0
+            },
+            "result_mm": 32.0
+          }
+        ],
+        "premises": [
+          "Supports and tabletop use the versioned flush placement rule.",
+          "Proposed components are rectangular solids without hidden joinery.",
+          "Observed section gaps are assigned to component fields by hypothesis."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "calculated",
+          "length_mm": "calculated",
+          "width_mm": "calculated",
+          "thickness_mm": "calculated"
+        }
+      },
+      {
+        "piece_id": "component-side-support",
+        "proposal_id": "component-side-support",
+        "role": "side_support",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-8E",
+          "entity-8F",
+          "entity-90",
+          "entity-92",
+          "entity-94",
+          "entity-95"
+        ],
+        "source_contour_ids": [],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-92",
+          "evidence-contour-entity-94",
+          "evidence-dimension-entity-A8",
+          "evidence-dimension-entity-B8",
+          "evidence-geometry-entity-8E",
+          "evidence-geometry-entity-8F",
+          "evidence-geometry-entity-90",
+          "evidence-geometry-entity-95"
+        ],
+        "dimension_ids": [
+          "dimension-entity-A8",
+          "dimension-entity-B8"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 728.0,
+          "width_mm": 800.0,
+          "thickness_mm": 20.0
+        },
+        "formulas": [
+          {
+            "field": "length_mm",
+            "expression": "length_mm=binding:binding-support-length",
+            "operands_mm": {
+              "table-measure-overall_height": 760.0,
+              "table-measure-section-1": 32.0
+            },
+            "result_mm": 728.0
+          },
+          {
+            "field": "width_mm",
+            "expression": "width_mm=binding:binding-support-width",
+            "operands_mm": {
+              "table-measure-overall_depth": 800.0
+            },
+            "result_mm": 800.0
+          },
+          {
+            "field": "thickness_mm",
+            "expression": "thickness_mm=binding:binding-support-thickness",
+            "operands_mm": {
+              "table-measure-section-2": 20.0
+            },
+            "result_mm": 20.0
+          }
+        ],
+        "premises": [
+          "The side_supports_v1 topology is a design hypothesis.",
+          "Supports and tabletop use the versioned flush placement rule.",
+          "Proposed components are rectangular solids without hidden joinery.",
+          "Observed section gaps are assigned to component fields by hypothesis."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "calculated",
+          "length_mm": "calculated",
+          "width_mm": "calculated",
+          "thickness_mm": "calculated"
+        }
+      }
+    ],
+    "warnings": []
+  }
+}

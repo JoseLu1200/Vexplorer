@@ -15,7 +15,7 @@
 
 ## Alcance y reservas
 
-- Archivos o carpetas que puedo editar: `team/sergio.md`, `tools/` (1.1), `backend/app/similarity/` (1.2, 1.3, 1.4), `backend/app/historico/real_service.py` y `backend/app/semantic_explorer/` (1.4), `backend/app/validador/` (1.6), `backend/app/main.py` (1.2, 1.3, 1.5), `frontend/` (1.5, 1.7), `backend/tests/` y `tests/`
+- Archivos o carpetas que puedo editar: `team/sergio.md`, `tools/` (1.1), `backend/app/similarity/` (1.2, 1.3, 1.4), `backend/app/historico/real_service.py` y `backend/app/semantic_explorer/` (1.4), `backend/app/validador/` (1.6), `backend/app/ingesta/` (Fase A/C), `backend/app/main.py` (1.2, 1.3, 1.5, Fase C), `frontend/` (1.5, 1.7, Fase B), `backend/tests/` y `tests/`
 - Dependencias que solo leeré: `backend/app/contratos/modelos.py` (sin cambios de contrato), `team/*.md`, `data/`, `evaluation/`
 - Archivos compartidos que requieren coordinación: `CLAUDE.md`, `team/README.md`
 - Solapes detectados y acuerdo para resolverlos: ninguno comprobado.
@@ -67,6 +67,8 @@
 | Pruebas unitarias de Frontend (previa) | `npm test --prefix frontend` | 46 passed | 0 errores |
 | Nivel 1 integrado Python (1.1–1.4, 1.6 + regresión) | `.venv\Scripts\python.exe -m pytest tests/test_calibrate_similarity.py backend/tests/test_similarity_unified.py backend/tests/test_similarity_clustering.py backend/tests/test_similarity_abstention.py backend/tests/test_validador_pandeo.py backend/tests/test_backend_semantic.py backend/tests/test_backend_library_api.py tests/test_demo_workbench.py -q` | 72 passed, 1 warning | Sin fallos |
 | Nivel 1 Frontend (1.5 y 1.7) | `node --test frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 12 passed, 0 failed | Nuevos módulos 100% verdes (en `npm test` global persiste 1 fallo preexistente en `scene.test.js`) |
+| Tarea 1 · Motor Geométrico e Ingesta CAD (Fase A, B, C + QA) | `pytest backend/tests/test_dxf_ingest_hardening.py backend/tests/test_geometry.py backend/tests/test_ingesta_dwg.py tests/test_demo_workbench.py -v` + `node --test frontend/tests/drawing*.test.js frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 33 passed (Python) / 27 passed (JS), dictamen QA: **SHIP (0 issues)** | `backend/app/contratos/modelos.py` intacto |
+| Bloque 2 · Pandeo en `runner.py` + A04 Alzado/Encajar en visor | `pytest backend/tests/test_runner_pandeo.py backend/tests/test_validador_pandeo.py backend/tests/test_backend_agent.py backend/tests/test_backend_flow.py backend/tests/test_backend_table_agent.py tests/test_demo_workbench.py -v` + `node --test frontend/tests/drawing*.test.js frontend/tests/viewport.test.js frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 41 passed (Python) / 34 passed (JS), dictamen QA: **SHIP (0 issues)** | `backend/app/contratos/modelos.py` intacto |
 | Verificación navegador interactivo | Navegación a `http://127.0.0.1:8765` en subagente de navegador | UI 100% funcional, 0 errores en consola, 13/13 peticiones HTTP 200 | Host-observed facts confirmados |
 
 ## Bloqueos y cierre

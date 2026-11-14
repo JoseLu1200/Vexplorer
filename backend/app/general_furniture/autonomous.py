@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from base64 import b64encode
 from dataclasses import asdict, dataclass
@@ -37,7 +38,13 @@ from backend.app.general_furniture.live import (
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
+    build_compact_review_context,
+    build_region_visual_links,
     query_compact_measurements,
+)
+from backend.app.general_furniture.evidence_accounting import (
+    EvidenceAccountingReport,
+    build_evidence_accounting_report,
 )
 from backend.app.general_furniture.construction_validation import (
     validate_construction_scenario,
@@ -50,7 +57,7 @@ from backend.app.general_furniture.projection_hypotheses import (
 from backend.app.general_furniture.review import apply_general_review
 
 
-AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v2"
+AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v3"
 GENERAL_AUTO_REVIEW_PROMPT = """Actúas como crítico multimodal separado del proponente. Contrasta cada propuesta con imágenes reales, geometría y referencias del ledger.
 Primero llama entregar_revision_autonoma. Si el servidor responde repair_requested, llama una sola vez proponer_mueble_general con una propuesta completa corregida; después vuelve a llamar entregar_revision_autonoma sobre esa propuesta.
 No midas píxeles ni inventes valores. Las dimensiones observadas solo proceden del ledger. Las dimensiones deduced/estimated pueden proceder de parámetros constructivos declarados, con nominal, rango, método, dependencias y supuestos explícitos; no las rechaces solo por no ser observadas. Una cantidad provisional hypothesis/deduced/estimated requiere premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
@@ -59,8 +66,229 @@ Aceptar significa que una hipótesis es coherente, no que sea un hecho observado
 Contrasta también la estabilidad global: vuelco, descuadre y arriostramiento. Cuando el escenario lo requiera, exige un detalle estimated explícito de estabilización o anclaje con premisa, ubicación y referencias; una simple nota pendiente no resuelve el escenario.
 Cada check model_visual debe citar en source_refs al menos una referencia visual exacta del contexto, también los checks de cantidad y duplicados de detalles estimados. Las premisas por sí solas no constituyen evidencia visual; no inventes referencias para completar un check.
 Decide explícitamente cada cota numérica anunciada en `required_dimension_field_review_targets`. Aceptar un parámetro no acepta automáticamente su asignación a length/width/thickness del componente: cada aceptación de campo cita un check model_visual pass dirigido a ese target exacto; cuando no puedas contrastarlo usa abstained, rejected o conflict. Para cada grupo `required_hardware_classification_field_review_targets`, decide al menos kind o geometry. Aceptar `kind=hardware` es una clasificación constructiva provisional del elemento propuesto como comprado/no fabricado: no identifica ni certifica un modelo comercial, fabricante, medidas de catálogo, capacidad o presencia observada. Puedes aceptar kind cuando función, detalle, cantidad, encaje, premisas y contexto visual sostienen su necesidad en el escenario aunque el herraje quede oculto; no exijas una ficha comercial. Mantén geometry específica, modelo, carga, fijación y cotas desconocidas o abstained cuando no estén justificadas.
+Decide también cada `required_existence_field_review_target` y cada `required_evidence_disposition_review_target`. La cobertura contable no confirma existencia, identidad física, cantidad ni fabricabilidad. Un descarte nonmaterial requiere contraste dirigido; una duplicate_projection aceptada requiere duplicate_scan o cross_view_identity dirigido al target exacto. Un check puede cubrir varios targets contrastados, pero cada target conserva su field_review individual.
 La geometry de un detalle usa coordenadas locales de la cara de cada pieza asociada, nunca coordenadas del mueble completo. Divide los detalles por pieza cuando tengan orígenes o dimensiones diferentes; comprueba sus límites antes de proponerlos.
 Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
+
+
+_CANONICAL_ROLES = frozenset({
+    "side_panel", "top_panel", "bottom_panel", "shelf", "divider",
+    "back_panel", "door", "tabletop", "table_leg", "leg_frame",
+    "stretcher", "support", "unknown",
+})
+_ASSEMBLY_RELATIONS = frozenset({
+    "supported_by", "fixed_to", "attached_to", "contained_by",
+    "aligned_with", "adjacent_to", "hinged_to",
+})
+
+
+def _valid_role(value: str) -> bool:
+    return bool(re.fullmatch(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*", value))
+
+
+def _valid_directive_id(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,119}", value))
+
+
+def _semantic_repair_directives(
+    unresolved: tuple[str, ...], *, component_ids: set[str],
+) -> tuple[str, ...]:
+    """Return only closed semantic repair directives; prose has no authority."""
+    directives: list[str] = []
+    announced_new_ids = {
+        parts[2]
+        for value in unresolved
+        for parts in (value.split(":"),)
+        if parts[0] == "missing_component" and len(parts) == 3
+    }
+    for value in unresolved:
+        prefix = value.partition(":")[0]
+        if prefix not in {
+            "missing_component", "role_correction", "assembly_missing",
+            "assembly_remove",
+        }:
+            continue
+        parts = value.split(":")
+        if prefix == "missing_component":
+            if len(parts) not in {2, 3}:
+                raise ValueError("semantic_directive_malformed")
+            if not _valid_role(parts[1]) or parts[1] == "unknown":
+                raise ValueError("semantic_directive_role_invalid")
+            if len(parts) == 3 and (
+                not _valid_directive_id(parts[2]) or parts[2] in component_ids
+            ):
+                raise ValueError("semantic_directive_component_invalid")
+        elif prefix == "role_correction":
+            if len(parts) != 3:
+                raise ValueError("semantic_directive_malformed")
+            if parts[1] not in component_ids:
+                raise ValueError("semantic_directive_component_unknown")
+            if not _valid_role(parts[2]):
+                raise ValueError("semantic_directive_role_invalid")
+        else:
+            if len(parts) != 4:
+                raise ValueError("semantic_directive_malformed")
+            if (
+                parts[1] not in component_ids | announced_new_ids
+                or parts[3] not in component_ids | announced_new_ids
+            ):
+                raise ValueError("semantic_directive_component_unknown")
+            if parts[1] == parts[3]:
+                raise ValueError("semantic_directive_self_relation")
+            if parts[2] not in _ASSEMBLY_RELATIONS:
+                raise ValueError("semantic_directive_relation_invalid")
+        directives.append(value)
+    return tuple(directives)
+
+
+def _assembly_edges(proposal: GeneralFurnitureProposal) -> set[tuple[str, str, str]]:
+    relations = list(proposal.assembly_relations)
+    relations.extend(
+        relation
+        for alternative in proposal.assembly_alternatives
+        for relation in alternative.relations
+    )
+    return {
+        (item.subject_component_id, item.relation, item.object_component_id)
+        for item in relations
+    }
+
+
+def _validate_semantic_repair_delta(
+    before: GeneralFurnitureProposal,
+    after: GeneralFurnitureProposal,
+    *,
+    directives: tuple[str, ...],
+    checks: tuple[GeneralAutoReviewCheck, ...],
+    field_reviews: tuple[object, ...] = (),
+) -> None:
+    before_components = {item.id: item for item in before.components}
+    after_components = {item.id: item for item in after.components}
+    missing_roles: list[str] = []
+    missing_by_id: dict[str, str] = {}
+    for item in directives:
+        if not item.startswith("missing_component:"):
+            continue
+        parts = item.split(":")
+        if len(parts) == 2:
+            missing_roles.append(parts[1])
+        else:
+            missing_by_id[parts[2]] = parts[1]
+    added = set(after_components) - set(before_components)
+    for component_id in sorted(added):
+        role = after_components[component_id].role
+        if component_id in missing_by_id:
+            if role != missing_by_id[component_id]:
+                raise ValueError("semantic_repair_unannounced_component_added")
+            continue
+        if role not in missing_roles:
+            raise ValueError("semantic_repair_unannounced_component_added")
+        missing_roles.remove(role)
+
+    removable_ids = {
+        target.split(":", 1)[1].split(".", 1)[0]
+        for check in checks
+        if check.outcome == "fail" and check.kind in {"duplicate_scan", "cross_view_identity"}
+        for target in check.target_refs
+        if target.startswith("component:")
+    }
+    removed = set(before_components) - set(after_components)
+    if not removed <= removable_ids:
+        raise ValueError("semantic_repair_unannounced_component_removed")
+
+    role_permissions = {
+        (parts[1], parts[2])
+        for item in directives
+        if item.startswith("role_correction:")
+        for parts in (item.split(":"),)
+    }
+    for component_id in set(before_components) & set(after_components):
+        old_role = before_components[component_id].role
+        new_role = after_components[component_id].role
+        if old_role != new_role and (component_id, new_role) not in role_permissions:
+            raise ValueError("semantic_repair_unannounced_role_change")
+
+    allowed_targets = {
+        target
+        for check in checks if check.outcome == "fail"
+        for target in check.target_refs
+    } | {
+        item.target_ref
+        for item in field_reviews
+        if getattr(item, "status", None) in {"rejected", "conflict"}
+    }
+    binding_fields = {
+        "length": "length_binding_id",
+        "width": "width_binding_id",
+        "thickness": "thickness_binding_id",
+    }
+    allowed_binding_ids: set[str] = set()
+    for component_id in removed:
+        component = before_components[component_id]
+        allowed_binding_ids.update(
+            value for value in (
+                component.length_binding_id,
+                component.width_binding_id,
+                component.thickness_binding_id,
+            ) if value is not None
+        )
+    for component_id in added:
+        component = after_components[component_id]
+        allowed_binding_ids.update(
+            value for value in (
+                component.length_binding_id,
+                component.width_binding_id,
+                component.thickness_binding_id,
+            ) if value is not None
+        )
+    for component_id in set(before_components) & set(after_components):
+        old = before_components[component_id]
+        new = after_components[component_id]
+        old_data = old.model_dump(mode="python")
+        new_data = new.model_dump(mode="python")
+        for field in ("role", "length_binding_id", "width_binding_id", "thickness_binding_id", "quantity", "unknown_fields"):
+            old_data.pop(field, None)
+            new_data.pop(field, None)
+        if old_data != new_data:
+            raise ValueError("semantic_repair_unannounced_component_field_change")
+        for field, attribute in (*binding_fields.items(), ("quantity", "quantity")):
+            old_value = getattr(old, attribute)
+            new_value = getattr(new, attribute)
+            if old_value == new_value:
+                continue
+            target = f"component:{component_id}.{field}"
+            if target not in allowed_targets:
+                raise ValueError("semantic_repair_unannounced_component_field_change")
+            if field != "quantity":
+                allowed_binding_ids.update(
+                    value for value in (old_value, new_value) if value is not None
+                )
+
+    before_bindings = {item.id: item for item in before.bindings}
+    after_bindings = {item.id: item for item in after.bindings}
+    for binding_id in set(before_bindings) | set(after_bindings):
+        if before_bindings.get(binding_id) != after_bindings.get(binding_id):
+            if binding_id not in allowed_binding_ids:
+                raise ValueError("semantic_repair_unannounced_binding_change")
+
+    before_edges = _assembly_edges(before)
+    after_edges = _assembly_edges(after)
+    added_edge_permissions = {
+        tuple(item.split(":")[1:])
+        for item in directives if item.startswith("assembly_missing:")
+    }
+    removed_edge_permissions = {
+        tuple(item.split(":")[1:])
+        for item in directives if item.startswith("assembly_remove:")
+    }
+    removed_incident = {
+        edge for edge in before_edges
+        if edge[0] in removed or edge[2] in removed
+    }
+    if not (after_edges - before_edges) <= added_edge_permissions:
+        raise ValueError("semantic_repair_unannounced_assembly_change")
+    if not (before_edges - after_edges) <= removed_edge_permissions | removed_incident:
+        raise ValueError("semantic_repair_unannounced_assembly_change")
 
 
 class ReviewerProvider(Protocol):
@@ -100,6 +328,12 @@ class _MissingHardwareClassificationReviews(ValueError):
         self.target_groups = target_groups
 
 
+class _MissingRequiredFieldReviews(ValueError):
+    def __init__(self, targets: tuple[str, ...]) -> None:
+        super().__init__("machine_required_field_reviews_missing")
+        self.targets = targets
+
+
 def _safe_autonomous_validation_details(
     error: Exception,
 ) -> list[dict[str, object]]:
@@ -126,6 +360,15 @@ def _safe_autonomous_validation_details(
             "missing_count": len(error.target_groups),
             "missing_any_of": [list(group) for group in error.target_groups[:64]],
             "truncated": len(error.target_groups) > 64,
+        }]
+    if isinstance(error, _MissingRequiredFieldReviews):
+        return [{
+            "loc": ["field_reviews"],
+            "msg": "machine_required_field_reviews_missing",
+            "type": "value_error",
+            "missing_count": len(error.targets),
+            "missing_targets": list(error.targets[:64]),
+            "truncated": len(error.targets) > 64,
         }]
     return _safe_validation_details(error)
 
@@ -227,7 +470,7 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
         )
     )
     return [
-        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Debes incluir un field_review explícito para cada target de required_dimension_field_review_targets y al menos un any_of de cada required_hardware_classification_field_review_targets; accepted exige un check model_visual pass dirigido al mismo target. kind=hardware accepted es clasificación constructiva provisional de elemento comprado/no fabricado, no certificación ni identificación comercial; geometry y especificaciones pueden quedar abstained. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
+        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Incluye un field_review individual para cada target requerido de dimensiones, existencia y disposición de evidencia, y al menos un any_of por hardware. accepted kind=hardware es clasificación constructiva provisional, no certificación ni identificación comercial. Un mismo check multitarjeta puede respaldar varios targets contrastados, pero accepted exige que incluya cada target exacto. duplicate_projection exige duplicate_scan o cross_view_identity dirigido; no acredita identidad física. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
         schema("proponer_mueble_general", repair_description, ProposeGeneralFurnitureArgs),
     ]
 
@@ -276,10 +519,7 @@ def _required_hardware_classification_target_groups(
     components,
 ) -> tuple[tuple[str, ...], ...]:
     return tuple(
-        (
-            f"component:{component.id}.kind",
-            f"component:{component.id}.geometry",
-        )
+        (f"component:{component.id}.kind",)
         for component in components
         if component.kind == "hardware"
         or (
@@ -287,6 +527,27 @@ def _required_hardware_classification_target_groups(
             and component.geometry.shape_kind == "hardware"
         )
     )
+
+
+def _required_cut_piece_review_targets(components) -> tuple[str, ...]:
+    return tuple(sorted(
+        f"component:{component.id}.{field}"
+        for component in components
+        if component.kind != "hardware"
+        for field in (
+            "kind", "existence", "geometry", "length", "width", "thickness",
+            "quantity",
+        )
+    ))
+
+
+def _required_hardware_review_targets(components) -> tuple[str, ...]:
+    return tuple(sorted(
+        f"component:{component.id}.{field}"
+        for component in components
+        if component.kind == "hardware"
+        for field in ("kind", "quantity")
+    ))
 
 
 def _validate_numeric_dimension_review_coverage(args: GeneralAutoReviewArgs) -> None:
@@ -304,6 +565,53 @@ def _validate_numeric_dimension_review_coverage(args: GeneralAutoReviewArgs) -> 
         raise _MissingDimensionFieldReviews(missing, missing_hardware)
     if missing_hardware:
         raise _MissingHardwareClassificationReviews(missing_hardware)
+
+
+def _validate_required_review_coverage(
+    field_reviews,
+    *,
+    required_existence_targets: tuple[str, ...],
+    required_disposition_targets: tuple[str, ...],
+    required_component_targets: tuple[str, ...] = (),
+) -> None:
+    reviewed = {item.target_ref for item in field_reviews}
+    required = tuple(dict.fromkeys(
+        target for target in (
+            *required_component_targets,
+            *required_existence_targets,
+            *required_disposition_targets,
+        )
+    ))
+    missing = tuple(target for target in required if target not in reviewed)
+    if missing:
+        raise _MissingRequiredFieldReviews(missing)
+
+
+def _validate_evidence_disposition_checks(
+    args: GeneralAutoReviewArgs,
+    disposition_kinds: dict[str, str],
+) -> None:
+    checks = {item.id: item for item in args.checks}
+    for review in args.field_reviews:
+        if (
+            review.status != "accepted"
+            or disposition_kinds.get(review.target_ref)
+            not in {"duplicate_projection", "multi_region_assigned"}
+        ):
+            continue
+        selected = tuple(checks.get(check_id) for check_id in review.check_ids)
+        if not any(
+            check is not None
+            and check.outcome == "pass"
+            and check.kind in {"duplicate_scan", "cross_view_identity"}
+            and review.target_ref in check.target_refs
+            for check in selected
+        ):
+            raise ValueError(
+                "duplicate_projection_requires_directed_duplicate_check"
+            )
+
+
 def _validate_visual_checks(
     args: GeneralAutoReviewArgs,
     allowed_source_refs: set[str],
@@ -414,28 +722,90 @@ def _server_review_args(
     )
 
 
-def _effective_auto_status(args: GeneralAutoReviewArgs, construction_validation=None) -> str:
+def _effective_auto_status(
+    args: GeneralAutoReviewArgs,
+    construction_validation=None,
+    accounting_report: EvidenceAccountingReport | None = None,
+    required_review_targets: tuple[str, ...] = (),
+) -> str:
     if construction_validation is not None and construction_validation.status == "invalid":
         return "conflict"
     if any(item.outcome == "fail" for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews):
         return "conflict"
     if args.status == "abstained":
         return "abstained"
+    if accounting_report is not None and not accounting_report.reviewable:
+        return "incomplete"
     accepted = {item.target_ref for item in args.field_reviews if item.status == "accepted"}
-    for component in args.components:
-        if component.unknown_fields:
+    if not set(required_review_targets) <= accepted:
+        return "incomplete"
+    if not args.components:
+        return "incomplete"
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    nonblocking_unknowns = {"material", "finish", "acabado"}
+    blocking_unresolved_markers = {
+        "identidad", "correspondencia", "proyecci", "montaje", "unión", "union",
+        "mecanizado", "cantidad", "quantity", "dimensi", "espesor", "ancho", "largo",
+        "geometr", "cara material",
+    }
+    for unresolved in args.unresolved:
+        normalized = unresolved.casefold()
+        if (
+            not any(marker in normalized for marker in nonblocking_unknowns)
+            or any(marker in normalized for marker in blocking_unresolved_markers)
+        ):
             return "incomplete"
-        for field in ("length", "width", "thickness", "quantity", "material", "finish"):
+    for component in args.components:
+        if component.kind != "hardware" and any(field.strip().lower() not in nonblocking_unknowns for field in component.unknown_fields):
+            return "incomplete"
+        fields = (
+            ("quantity",)
+            if component.kind == "hardware"
+            else ("length", "width", "thickness", "quantity")
+        )
+        for field in fields:
             if getattr(component, field).state in {"unknown", "conflict"} or f"component:{component.id}.{field}" not in accepted:
                 return "incomplete"
-    return "accepted" if args.status == "accepted" and not args.unresolved else "incomplete"
+        for field in (() if component.kind == "hardware" else ("material", "finish")):
+            target = f"component:{component.id}.{field}"
+            state = getattr(component, field).state
+            allowed_statuses = {None, "abstained"} if state == "unknown" else {"accepted"}
+            if state == "conflict" or field_status.get(target) not in allowed_statuses:
+                return "incomplete"
+    return "accepted"
 
 
-def _repair_is_supported(args: GeneralAutoReviewArgs, construction_validation=None) -> bool:
-    return (
+def _repair_is_supported(
+    args: GeneralAutoReviewArgs,
+    construction_validation=None,
+    accounting_report: EvidenceAccountingReport | None = None,
+) -> bool:
+    directives = _semantic_repair_directives(args.unresolved, component_ids={item.id for item in args.components})
+    return bool(directives) or (
         construction_validation is not None
         and construction_validation.status == "invalid"
+    ) or (
+        accounting_report is not None and not accounting_report.reviewable
     ) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+
+
+def _recoverable_dimension_measurements(args: GeneralAutoReviewArgs, measurements) -> tuple[dict[str, object], ...]:
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    needs_dimension_evidence = any(
+        getattr(component, field).state == "unknown"
+        and field_status.get(f"component:{component.id}.{field}") == "abstained"
+        for component in args.components
+        for field in ("length", "width", "thickness")
+    )
+    if not needs_dimension_evidence:
+        return ()
+    candidates = tuple(
+        item for item in measurements
+        if item.semantic == "contour_segment_length" and item.value_mm is not None
+    )
+    if not candidates:
+        return ()
+    return tuple(query_compact_measurements(candidates, offset=0, limit=64).to_payload()["items"])
 
 
 def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAutoReviewCheck, ...]) -> tuple[GeneralScenarioOccurrence, ...]:
@@ -452,9 +822,14 @@ def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAuto
         ):
             continue
         selected = [by_id.get(check_id) for check_id in field_review.check_ids]
-        if any(item is None or item.outcome != "pass" for item in selected) or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in selected if item is not None}:
+        targeted = [item for item in selected if item is not None and target in item.target_refs]
+        if (
+            len(targeted) != len(selected)
+            or any(item.outcome != "pass" for item in targeted)
+            or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in targeted}
+        ):
             continue
-        sources = tuple(dict.fromkeys(ref for item in selected if item is not None for ref in item.source_refs))
+        sources = tuple(dict.fromkeys(ref for item in targeted for ref in item.source_refs))
         result.extend(GeneralScenarioOccurrence(
             id=f"provisional:{args.scenario_id}:{component.id}:{index}", component_id=component.id, occurrence_index=index,
             scenario_id=args.scenario_id, quantity_target_ref=target, check_ids=field_review.check_ids,
@@ -476,7 +851,29 @@ def _visual_metadata(page) -> dict[str, object]:
     }
 
 
-def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
+def _accounting_report(
+    context,
+    outcome: GeneralFurnitureAgentOutcome,
+) -> EvidenceAccountingReport:
+    measurements = derive_geometry_measurements(context.extraction)
+    try:
+        projections = derive_projection_hypotheses(context.extraction, measurements)
+    except ValueError as exc:
+        if str(exc) != "projection_input_budget_exceeded":
+            raise
+        projections = ()
+    return build_evidence_accounting_report(
+        context.extraction,
+        outcome.proposal,
+        outcome.draft,
+        projection_hypotheses=projections,
+    )
+
+
+def _review_payload(
+    context,
+    outcome: GeneralFurnitureAgentOutcome,
+) -> dict[str, object]:
     measurements = derive_geometry_measurements(context.extraction)
     raster_without_metric_ledger = _is_raster_without_metric_ledger(
         context.extraction, measurements, context.visual_pages
@@ -522,7 +919,17 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         if page.next_offset is None:
             break
         offset = page.next_offset
-    allowed_target_refs = sorted(_review_target_refs(outcome.proposal, outcome.draft))
+    accounting = build_evidence_accounting_report(
+        context.extraction,
+        outcome.proposal,
+        outcome.draft,
+        projection_hypotheses=projections,
+    )
+    allowed_target_refs = sorted(
+        _review_target_refs(outcome.proposal, outcome.draft)
+        | set(accounting.required_existence_review_targets)
+        | set(accounting.required_disposition_review_targets)
+    )
     required_dimension_field_review_targets = list(
         _required_numeric_dimension_targets(outcome.draft.components)
     )
@@ -532,34 +939,84 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
             outcome.draft.components
         )
     ]
+    required_cut_piece_field_review_targets = list(
+        _required_cut_piece_review_targets(outcome.draft.components)
+    )
+    required_hardware_field_review_targets = list(
+        _required_hardware_review_targets(outcome.draft.components)
+    )
     visible_source_refs = set()
     for page in context.visual_pages:
         visible_source_refs.add(f"visual:{page.reference}")
         visible_source_refs.update(page.source_contour_ids)
         visible_source_refs.update(mark.source_id for mark in page.marks)
-        if raster_without_metric_ledger:
-            visible_source_refs.add(page.reference)
-            visible_source_refs.update(page.source_document_refs)
+    visible_source_refs.update(general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=_is_raster_without_metric_ledger(
+            context.extraction, measurements, context.visual_pages
+        ),
+    ))
     allowed_source_refs = sorted(
         visible_source_refs
         | {f"premise:{item.id}" for item in outcome.proposal.premises}
+        | set(accounting.required_disposition_review_targets)
     )
-    payload = {
-        "proposal": outcome.proposal.model_dump(mode="json"), "draft": outcome.draft.model_dump(mode="json"),
+    payload = build_compact_review_context(
+        outcome.proposal,
+        outcome.draft,
+        allowed_target_refs=tuple(allowed_target_refs),
+        required_dimension_field_review_targets=tuple(
+            required_dimension_field_review_targets
+        ),
+        required_hardware_classification_field_review_targets=tuple(
+            required_hardware_classification_field_review_targets
+        ),
+        required_existence_field_review_targets=(
+            accounting.required_existence_review_targets
+        ),
+        required_evidence_disposition_review_targets=(
+            accounting.required_disposition_review_targets
+        ),
+        allowed_source_refs=tuple(allowed_source_refs),
+    )
+    payload.update({
         "compact_geometry": build_compact_geometry_context(
             context.extraction, measurements, regions, projections
         ).to_payload(),
         "referenced_segment_measurements": referenced_measurements,
-        "allowed_target_refs": allowed_target_refs,
-        "required_dimension_field_review_targets": required_dimension_field_review_targets,
-        "required_hardware_classification_field_review_targets": required_hardware_classification_field_review_targets,
-        "allowed_source_refs": allowed_source_refs,
+        "required_cut_piece_field_review_targets": (
+            required_cut_piece_field_review_targets
+        ),
+        "required_hardware_field_review_targets": (
+            required_hardware_field_review_targets
+        ),
+        "evidence_accounting": accounting.to_payload(),
+        "region_visual_links": [
+            item.to_payload()
+            for item in build_region_visual_links(
+                context.extraction,
+                accounting.candidate_regions,
+                context.visual_pages,
+            )
+        ],
         "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish|existence|kind|role|geometry> or parameter:<id> or constraint:<id> or detail:<id> or decision:<id>",
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
+        "semantic_repair_directives": {
+            "allowed": [
+                "missing_component:<canonical_role>",
+                "missing_component:<role>:<new_component_id>",
+                "role_correction:<existing_component_id>:<canonical_role>",
+                "assembly_missing:<existing_subject_id>:<relation>:<existing_object_id>",
+                "assembly_remove:<existing_subject_id>:<relation>:<existing_object_id>",
+            ],
+            "canonical_roles": sorted(_CANONICAL_ROLES),
+            "assembly_relations": sorted(_ASSEMBLY_RELATIONS),
+            "authority": "repair_request_only_not_acceptance_or_confirmation",
+        },
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Debes decidir explícitamente cada required_dimension_field_review_target; aceptar un parameter no sustituye decidir su asignación al campo del componente. Para cada required_hardware_classification_field_review_target decide al menos uno de sus any_of. accepted kind=hardware es una clasificación constructiva provisional de elemento comprado/no fabricado, no una certificación comercial ni una afirmación de presencia observada; puede apoyarse en función, detalle, cantidad, encaje, premisas y contexto visual aunque el elemento quede oculto. Geometry, modelo, carga, fijación y cotas no justificadas permanecen abstained/unknown. accepted exige un check model_visual pass que incluya ese mismo target; si no basta la evidencia usa abstained/rejected/conflict. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
-    }
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status. Para cada pieza de corte decide kind, existence, geometry, length, width, thickness y quantity anunciados; material/finish no bloquean coherencia geométrica. Para hardware decide existence, quantity y al menos kind o geometry sin inventar cotas de catálogo. Decide también cada disposición. accepted kind=hardware es clasificación constructiva provisional, no una certificación comercial. Cada field_review es individual aunque un check contrastado cubra varios targets exactos. La cobertura contable no confirma piezas, cantidades, identidad ni fabricabilidad. duplicate_projection y asignaciones multi-región requieren duplicate_scan o cross_view_identity dirigido; nonmaterial requiere contraste dirigido. accepted exige check model_visual pass con el mismo target; evidencia insuficiente queda abstained/incomplete.",
+    })
     if raster_without_metric_ledger:
         payload["allowed_document_refs"] = list(allowed_document_refs)
         payload["raster_authority"] = {
@@ -572,6 +1029,11 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
                 "exactamente a allowed_source_document_refs."
             ),
         }
+    return payload
+
+
+def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
+    payload = _review_payload(context, outcome)
     content = [{"type": "input_text", "text": json.dumps(payload, ensure_ascii=False)}]
     content.extend({"type": "input_image", "image_url": f"data:{item.media_type};base64,{b64encode(item.content).decode('ascii')}", "detail": "high"} for item in context.visual_pages)
     return [{"role": "user", "content": content}]
@@ -618,7 +1080,9 @@ def run_general_autonomous(
     trace: list[dict[str, object]] = []
     snapshots: list[GeneralAutoReviewArgs] = []
     validation_repairs = semantic_repairs = tool_calls = 0
+    evidence_reinspection_requested = False
     effective = proposal_outcome
+    measurements = derive_geometry_measurements(context.extraction)
     visual_refs = {f"visual:{item.reference}" for item in context.visual_pages}
     for page in context.visual_pages:
         visual_refs.update(page.source_contour_ids)
@@ -627,6 +1091,12 @@ def run_general_autonomous(
     raster_without_metric_ledger = _is_raster_without_metric_ledger(
         context.extraction, measurements, context.visual_pages
     )
+    visual_refs.update(general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=_is_raster_without_metric_ledger(
+            context.extraction, measurements, context.visual_pages
+        ),
+    ))
     allowed_refs = set(visual_refs)
     if raster_without_metric_ledger:
         for page in context.visual_pages:
@@ -639,6 +1109,8 @@ def run_general_autonomous(
     allowed_refs.update(f"dimension:{item.id}" for item in context.extraction.dimensions)
     allowed_refs.update(f"evidence:{item.id}" for item in context.extraction.evidence)
     allowed_refs.update(item.binding_ref for item in measurements)
+    accounting_report = _accounting_report(context, effective)
+    allowed_refs.update(accounting_report.required_disposition_review_targets)
     input_items = _review_input(context, effective)
 
     for model_call in range(1, limits.max_model_calls + 1):
@@ -686,7 +1158,24 @@ def run_general_autonomous(
                 repaired = _materialize_repair(context, raw)
                 if repaired.proposal.id == effective.proposal.id:
                     raise ValueError("semantic_repair_must_change_proposal")
+                latest = snapshots[-1]
+                directives = _semantic_repair_directives(
+                    latest.unresolved,
+                    component_ids={item.id for item in latest.components},
+                )
+                if directives:
+                    _validate_semantic_repair_delta(
+                        effective.proposal,
+                        repaired.proposal,
+                        directives=directives,
+                        checks=latest.checks,
+                        field_reviews=latest.field_reviews,
+                    )
                 effective = repaired
+                accounting_report = _accounting_report(context, effective)
+                allowed_refs.update(
+                    accounting_report.required_disposition_review_targets
+                )
                 semantic_repairs += 1
                 event = {"tool": call.name, "ok": True, "summary": "Propuesta semántica reparada contra el mismo ledger.", "phase": "general_auto_semantic_repair", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id}
                 trace.append(event)
@@ -698,19 +1187,20 @@ def run_general_autonomous(
                         critic_snapshot=None,
                         trace_event=event,
                     ))
-                repaired_targets = sorted(
-                    _review_target_refs(effective.proposal, effective.draft)
-                )
-                repaired_required_dimensions = list(
-                    _required_numeric_dimension_targets(effective.draft.components)
-                )
-                repaired_hardware_targets = [
-                    {"component_id": group[0].split(":", 1)[1].rsplit(".", 1)[0], "any_of": list(group)}
-                    for group in _required_hardware_classification_target_groups(
-                        effective.draft.components
-                    )
-                ]
-                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "allowed_target_refs": repaired_targets, "required_dimension_field_review_targets": repaired_required_dimensions, "required_hardware_classification_field_review_targets": repaired_hardware_targets, "instruction": "Revisa ahora la propuesta reparada. Entrega solo checks/decisiones; no components/operations. Decide explícitamente cada required_dimension_field_review_target y al menos un any_of por clasificación hardware; accepted exige check model_visual pass dirigido al mismo target. kind=hardware accepted solo clasifica provisionalmente un elemento comprado/no fabricado; no certifica ni identifica un modelo comercial, y geometry/especificaciones pueden quedar abstained."}, ensure_ascii=False)}]
+                repaired_payload = _review_payload(context, effective)
+                repaired_payload.update({
+                    "ok": True,
+                    "status": "proposal_repaired",
+                    "instruction": (
+                        "Revisa el snapshot compacto reparado. Decide todos los targets "
+                        "requeridos sin convertir cobertura contable en confirmación."
+                    ),
+                })
+                input_items = [{
+                    "type": "function_call_output",
+                    "call_id": call.call_id,
+                    "output": json.dumps(repaired_payload, ensure_ascii=False),
+                }]
                 continue
             if call.name != "entregar_revision_autonoma":
                 raise ValueError("unknown_tool")
@@ -721,14 +1211,47 @@ def run_general_autonomous(
             )
             args = _server_review_args(decision, effective.draft, current_previous)
             _validate_numeric_dimension_review_coverage(args)
+            required_component_targets = tuple(sorted({
+                *_required_cut_piece_review_targets(effective.draft.components),
+                *_required_hardware_review_targets(effective.draft.components),
+            }))
+            if decision.status == "accepted":
+                _validate_required_review_coverage(
+                    args.field_reviews,
+                    required_existence_targets=(
+                        accounting_report.required_existence_review_targets
+                    ),
+                    required_disposition_targets=(
+                        accounting_report.required_disposition_review_targets
+                    ),
+                    required_component_targets=required_component_targets,
+                )
             current_allowed_refs = allowed_refs | {
                 f"premise:{item.id}" for item in effective.proposal.premises
             }
+            required_review_targets = (
+                set(accounting_report.required_existence_review_targets)
+                | set(accounting_report.required_disposition_review_targets)
+            )
             _validate_visual_checks(
                 args,
                 current_allowed_refs,
                 visual_refs,
-                _review_target_refs(effective.proposal, effective.draft),
+                _review_target_refs(effective.proposal, effective.draft)
+                | required_review_targets,
+            )
+            _validate_evidence_disposition_checks(
+                args,
+                {
+                    f"evidence_region:{item.candidate_region_id}": (
+                        "multi_region_assigned"
+                        if item.kind == "assigned"
+                        and item.component_id
+                        in set(accounting_report.multi_region_component_ids)
+                        else item.kind
+                    )
+                    for item in effective.proposal.evidence_dispositions
+                },
             )
             _reject_forged_machine_facts(args)
             request = GeneralFurnitureReviewRequest(
@@ -745,8 +1268,42 @@ def run_general_autonomous(
             construction_validation = validate_construction_scenario(
                 effective.proposal, effective.draft
             )
-            effective_status = _effective_auto_status(args, construction_validation)
-            if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args, construction_validation):
+            effective_status = _effective_auto_status(
+                args,
+                construction_validation,
+                accounting_report,
+                tuple(sorted({
+                    *required_component_targets,
+                    *accounting_report.required_existence_review_targets,
+                    *accounting_report.required_disposition_review_targets,
+                })),
+            )
+            recoverable_measurements = _recoverable_dimension_measurements(args, measurements)
+            if (
+                effective_status == "incomplete"
+                and semantic_repairs < limits.max_semantic_repairs
+                and not evidence_reinspection_requested
+                and recoverable_measurements
+            ):
+                evidence_reinspection_requested = True
+                trace.append({
+                    "tool": call.name,
+                    "ok": True,
+                    "summary": "Se aportó evidencia métrica acotada para una abstención dimensional reparable.",
+                    "phase": "general_auto_evidence_reinspection",
+                    "provider_response_id": response.id,
+                    "provider_model": getattr(response, "model", None),
+                    "provider_call_id": call.call_id,
+                    "status": effective_status,
+                })
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({
+                    "ok": True,
+                    "status": "repair_requested",
+                    "candidate_measurements": recoverable_measurements,
+                    "instruction": "Hay segmentos métricos del ledger que no se habían detallado. Si imagen y ledger sostienen una asignación, emite una propuesta completa corregida con bindings; si no, conserva la abstención. No midas píxeles ni inventes valores.",
+                }, ensure_ascii=False)}]
+                continue
+            if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args, construction_validation, accounting_report):
                 remaining_model_calls = limits.max_model_calls - model_call
                 remaining_tool_calls = limits.max_tool_calls - tool_calls
                 event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status, "remaining_model_calls": remaining_model_calls, "remaining_tool_calls": remaining_tool_calls}
@@ -763,9 +1320,13 @@ def run_general_autonomous(
                     repair_output = {
                         "ok": True,
                         "status": "repair_requested",
+                        "proposal": effective.proposal.model_dump(mode="json"),
+                        "draft": effective.draft.model_dump(mode="json"),
                         "unresolved": args.unresolved,
+                        "semantic_repair_directives": _semantic_repair_directives(args.unresolved, component_ids={item.id for item in args.components}),
+                        "evidence_accounting": accounting_report.to_payload(),
                         "construction_validation": construction_validation.model_dump(mode="json"),
-                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
+                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Resuelve regiones unresolved/invalid y cotas ausentes o sin traza sin inventar piezas, identidad ni cantidad. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
                     }
                     if construction_validation.status == "invalid":
                         repair_output["instruction"] = (

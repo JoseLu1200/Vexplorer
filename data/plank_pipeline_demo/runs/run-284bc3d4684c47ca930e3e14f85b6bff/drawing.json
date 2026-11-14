@@ -1,0 +1,837 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.2.0",
+    "drawing_id": "drawing-eb228c2a0727ac5d",
+    "input_kind": "mounted_orthographic_views",
+    "status": "ready",
+    "source_unit": "mm",
+    "unit_scale_to_mm": 1.0,
+    "coordinate_unit": "mm",
+    "entities": [
+      {
+        "id": "entity-8D",
+        "kind": "LWPOLYLINE",
+        "layer": "VIEW_GEOMETRY",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 750.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 750.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-8E",
+        "kind": "LINE",
+        "layer": "VIEW_GEOMETRY",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": 720.0
+          },
+          {
+            "x": 1200.0,
+            "y": 720.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": 720.0
+          },
+          {
+            "x": 1200.0,
+            "y": 720.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-8F",
+        "kind": "LINE",
+        "layer": "VIEW_GEOMETRY",
+        "source_points": [
+          {
+            "x": 18.0,
+            "y": 0.0
+          },
+          {
+            "x": 18.0,
+            "y": 720.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 18.0,
+            "y": 0.0
+          },
+          {
+            "x": 18.0,
+            "y": 720.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-90",
+        "kind": "LINE",
+        "layer": "VIEW_GEOMETRY",
+        "source_points": [
+          {
+            "x": 1182.0,
+            "y": 0.0
+          },
+          {
+            "x": 1182.0,
+            "y": 720.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 1182.0,
+            "y": 0.0
+          },
+          {
+            "x": 1182.0,
+            "y": 720.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-91",
+        "kind": "TEXT",
+        "layer": "LABELS",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": 795.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": 795.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-92",
+        "kind": "LWPOLYLINE",
+        "layer": "VIEW_GEOMETRY",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -300.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -300.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-93",
+        "kind": "TEXT",
+        "layer": "LABELS",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": -255.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": -255.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-94",
+        "kind": "TEXT",
+        "layer": "LABELS",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": 855.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": 855.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-95",
+        "kind": "DIMENSION",
+        "layer": "DIMENSIONS",
+        "source_points": [
+          {
+            "x": 0.0,
+            "y": -90.0
+          },
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": -90.0
+          },
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-A5",
+        "kind": "DIMENSION",
+        "layer": "DIMENSIONS",
+        "source_points": [
+          {
+            "x": -110.0,
+            "y": 0.0
+          },
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": -110.0,
+            "y": 0.0
+          },
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      },
+      {
+        "id": "entity-B5",
+        "kind": "DIMENSION",
+        "layer": "DIMENSIONS",
+        "source_points": [
+          {
+            "x": -120.0,
+            "y": -1000.0
+          },
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": -120.0,
+            "y": -1000.0
+          },
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "linetype": null,
+        "circular": null
+      }
+    ],
+    "views": [
+      {
+        "id": "view-front",
+        "label": "FRONT",
+        "entity_ids": [
+          "entity-8D",
+          "entity-8E",
+          "entity-8F",
+          "entity-90",
+          "entity-91",
+          "entity-94",
+          "entity-95",
+          "entity-A5"
+        ],
+        "bounds_source": {
+          "min_x": -110.0,
+          "min_y": -90.0,
+          "max_x": 1200.0,
+          "max_y": 855.0
+        },
+        "bounds_mm": {
+          "min_x": -110.0,
+          "min_y": -90.0,
+          "max_x": 1200.0,
+          "max_y": 855.0
+        }
+      },
+      {
+        "id": "view-top",
+        "label": "TOP",
+        "entity_ids": [
+          "entity-92",
+          "entity-93",
+          "entity-B5"
+        ],
+        "bounds_source": {
+          "min_x": -120.0,
+          "min_y": -1000.0,
+          "max_x": 1200.0,
+          "max_y": -255.0
+        },
+        "bounds_mm": {
+          "min_x": -120.0,
+          "min_y": -1000.0,
+          "max_x": 1200.0,
+          "max_y": -255.0
+        }
+      }
+    ],
+    "contours": [
+      {
+        "id": "contour-entity-8D",
+        "view_id": "view-front",
+        "source_entity_ids": [
+          "entity-8D"
+        ],
+        "points_source": [
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 750.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 0.0
+          },
+          {
+            "x": 1200.0,
+            "y": 750.0
+          },
+          {
+            "x": 0.0,
+            "y": 750.0
+          }
+        ],
+        "closed": true
+      },
+      {
+        "id": "contour-entity-92",
+        "view_id": "view-top",
+        "source_entity_ids": [
+          "entity-92"
+        ],
+        "points_source": [
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -300.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "points_mm": [
+          {
+            "x": 0.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -1000.0
+          },
+          {
+            "x": 1200.0,
+            "y": -300.0
+          },
+          {
+            "x": 0.0,
+            "y": -300.0
+          }
+        ],
+        "closed": true
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "dimension-entity-95",
+        "kind": "annotation",
+        "value_mm": 1200.0,
+        "source_entity_ids": [
+          "entity-95"
+        ],
+        "evidence_ids": [
+          "evidence-dimension-entity-95"
+        ],
+        "origin": "observed",
+        "view_id": "view-front",
+        "graphic_id": "graphic-entity-95"
+      },
+      {
+        "id": "dimension-entity-A5",
+        "kind": "annotation",
+        "value_mm": 750.0,
+        "source_entity_ids": [
+          "entity-A5"
+        ],
+        "evidence_ids": [
+          "evidence-dimension-entity-A5"
+        ],
+        "origin": "observed",
+        "view_id": "view-front",
+        "graphic_id": "graphic-entity-A5"
+      },
+      {
+        "id": "dimension-entity-B5",
+        "kind": "annotation",
+        "value_mm": 700.0,
+        "source_entity_ids": [
+          "entity-B5"
+        ],
+        "evidence_ids": [
+          "evidence-dimension-entity-B5"
+        ],
+        "origin": "observed",
+        "view_id": "view-top",
+        "graphic_id": "graphic-entity-B5"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-contour-entity-8D",
+        "kind": "geometry",
+        "source_entity_ids": [
+          "entity-8D"
+        ],
+        "description": "Closed source polyline observed in drawing"
+      },
+      {
+        "id": "evidence-geometry-entity-8E",
+        "kind": "geometry",
+        "source_entity_ids": [
+          "entity-8E"
+        ],
+        "description": "Geometric segment observed in drawing"
+      },
+      {
+        "id": "evidence-geometry-entity-8F",
+        "kind": "geometry",
+        "source_entity_ids": [
+          "entity-8F"
+        ],
+        "description": "Geometric segment observed in drawing"
+      },
+      {
+        "id": "evidence-geometry-entity-90",
+        "kind": "geometry",
+        "source_entity_ids": [
+          "entity-90"
+        ],
+        "description": "Geometric segment observed in drawing"
+      },
+      {
+        "id": "evidence-text-entity-91",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-91"
+        ],
+        "description": "Public text annotation observed in drawing"
+      },
+      {
+        "id": "evidence-contour-entity-92",
+        "kind": "geometry",
+        "source_entity_ids": [
+          "entity-92"
+        ],
+        "description": "Closed source polyline observed in drawing"
+      },
+      {
+        "id": "evidence-text-entity-93",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-93"
+        ],
+        "description": "Public text annotation observed in drawing"
+      },
+      {
+        "id": "evidence-text-entity-94",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-94"
+        ],
+        "description": "Public text annotation observed in drawing"
+      },
+      {
+        "id": "evidence-dimension-entity-95",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-95"
+        ],
+        "description": "Linear dimension annotation observed in drawing"
+      },
+      {
+        "id": "evidence-dimension-entity-A5",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-A5"
+        ],
+        "description": "Linear dimension annotation observed in drawing"
+      },
+      {
+        "id": "evidence-dimension-entity-B5",
+        "kind": "annotation",
+        "source_entity_ids": [
+          "entity-B5"
+        ],
+        "description": "Linear dimension annotation observed in drawing"
+      }
+    ],
+    "observations": [
+      {
+        "id": "observation-view-front",
+        "view_id": "view-front",
+        "contour_ids": [
+          "contour-entity-8D"
+        ],
+        "dimension_ids": [
+          "dimension-entity-95",
+          "dimension-entity-A5"
+        ]
+      },
+      {
+        "id": "observation-view-top",
+        "view_id": "view-top",
+        "contour_ids": [
+          "contour-entity-92"
+        ],
+        "dimension_ids": [
+          "dimension-entity-B5"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "id": "text-entity-91",
+        "source_entity_id": "entity-91",
+        "view_id": "view-front",
+        "layer": "LABELS",
+        "text": "FRONT",
+        "position_source": {
+          "x": 0.0,
+          "y": 795.0
+        },
+        "position_mm": {
+          "x": 0.0,
+          "y": 795.0
+        }
+      },
+      {
+        "id": "text-entity-93",
+        "source_entity_id": "entity-93",
+        "view_id": "view-top",
+        "layer": "LABELS",
+        "text": "TOP",
+        "position_source": {
+          "x": 0.0,
+          "y": -255.0
+        },
+        "position_mm": {
+          "x": 0.0,
+          "y": -255.0
+        }
+      },
+      {
+        "id": "text-entity-94",
+        "source_entity_id": "entity-94",
+        "view_id": "view-front",
+        "layer": "LABELS",
+        "text": "FIXTURE SINTETICO",
+        "position_source": {
+          "x": 0.0,
+          "y": 855.0
+        },
+        "position_mm": {
+          "x": 0.0,
+          "y": 855.0
+        }
+      }
+    ],
+    "dimension_graphics": [
+      {
+        "id": "graphic-entity-95",
+        "dimension_id": "dimension-entity-95",
+        "source_entity_id": "entity-95",
+        "view_id": "view-front",
+        "layer": "DIMENSIONS",
+        "display_text": "1200 mm",
+        "raw_text": "<>",
+        "extension_start_a_source": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "extension_start_a_mm": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "extension_start_b_source": {
+          "x": 1200.0,
+          "y": 0.0
+        },
+        "extension_start_b_mm": {
+          "x": 1200.0,
+          "y": 0.0
+        },
+        "dimension_start_source": {
+          "x": 0.0,
+          "y": -90.0
+        },
+        "dimension_start_mm": {
+          "x": 0.0,
+          "y": -90.0
+        },
+        "dimension_end_source": {
+          "x": 1200.0,
+          "y": -90.0
+        },
+        "dimension_end_mm": {
+          "x": 1200.0,
+          "y": -90.0
+        },
+        "text_position_source": {
+          "x": 600.0,
+          "y": -90.0
+        },
+        "text_position_mm": {
+          "x": 600.0,
+          "y": -90.0
+        }
+      },
+      {
+        "id": "graphic-entity-A5",
+        "dimension_id": "dimension-entity-A5",
+        "source_entity_id": "entity-A5",
+        "view_id": "view-front",
+        "layer": "DIMENSIONS",
+        "display_text": "750 mm",
+        "raw_text": "<>",
+        "extension_start_a_source": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "extension_start_a_mm": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "extension_start_b_source": {
+          "x": 0.0,
+          "y": 750.0
+        },
+        "extension_start_b_mm": {
+          "x": 0.0,
+          "y": 750.0
+        },
+        "dimension_start_source": {
+          "x": -110.0,
+          "y": 6.735557395310443e-15
+        },
+        "dimension_start_mm": {
+          "x": -110.0,
+          "y": 6.735557395310443e-15
+        },
+        "dimension_end_source": {
+          "x": -109.99999999999996,
+          "y": 750.0
+        },
+        "dimension_end_mm": {
+          "x": -109.99999999999996,
+          "y": 750.0
+        },
+        "text_position_source": {
+          "x": -110.0,
+          "y": 375.0
+        },
+        "text_position_mm": {
+          "x": -110.0,
+          "y": 375.0
+        }
+      },
+      {
+        "id": "graphic-entity-B5",
+        "dimension_id": "dimension-entity-B5",
+        "source_entity_id": "entity-B5",
+        "view_id": "view-top",
+        "layer": "DIMENSIONS",
+        "display_text": "700 mm",
+        "raw_text": "<>",
+        "extension_start_a_source": {
+          "x": 0.0,
+          "y": -1000.0
+        },
+        "extension_start_a_mm": {
+          "x": 0.0,
+          "y": -1000.0
+        },
+        "extension_start_b_source": {
+          "x": 0.0,
+          "y": -300.0
+        },
+        "extension_start_b_mm": {
+          "x": 0.0,
+          "y": -300.0
+        },
+        "dimension_start_source": {
+          "x": -120.0,
+          "y": -1000.0
+        },
+        "dimension_start_mm": {
+          "x": -120.0,
+          "y": -1000.0
+        },
+        "dimension_end_source": {
+          "x": -119.99999999999996,
+          "y": -300.0
+        },
+        "dimension_end_mm": {
+          "x": -119.99999999999996,
+          "y": -300.0
+        },
+        "text_position_source": {
+          "x": -120.0,
+          "y": -650.0
+        },
+        "text_position_mm": {
+          "x": -120.0,
+          "y": -650.0
+        }
+      }
+    ],
+    "warnings": [],
+    "synthetic": false
+  }
+}

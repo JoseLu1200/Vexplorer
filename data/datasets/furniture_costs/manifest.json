@@ -1,0 +1,36 @@
+{
+  "dataset_id": "grotowska-2026-upcycled-furniture-public-benchmark",
+  "retrieved_at": "2026-11-14",
+  "record_count": 4,
+  "source": {
+    "title": "Creative Upcycling of Wood Waste into Furniture: Bridging Durability Testing and Economic Viability, a Case Study",
+    "authors": ["Małgorzata Grotowska", "Emilia Grzegorzewska", "Piotr Beer", "Sylwia Oleńska"],
+    "publisher": "MDPI Sustainability",
+    "publication_date": "2026-07-30",
+    "doi": "10.3390/su18157720",
+    "landing_page": "https://www.mdpi.com/2071-1050/18/15/7720",
+    "pdf_url": "https://mdpi-res.com/d_attachment/sustainability/sustainability-18-07720/article_deploy/sustainability-18-07720.pdf",
+    "xml_url": "https://mdpi-res.com/d_attachment/sustainability/sustainability-18-07720/article_deploy/sustainability-18-07720.xml",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "classification": {
+    "production_cost_basis": "budget",
+    "contract_origin": "published",
+    "production_origin": "published academic case study",
+    "retail_values_separated": true,
+    "closed_erp_actuals": false,
+    "representative_factory_history": false
+  },
+  "files": [
+    {"path": "source_sustainability-18-07720.pdf", "sha256": "01f22841e81a1485a4fe7757a19312f25c4fe91f0767d524a0e3023a1057f502", "role": "unmodified source"},
+    {"path": "source_sustainability-18-07720.xml", "sha256": "ebc6d9d3954c514bcd38a11cf52924e4dfa83a860b6e68e201e53a6162cb3a76", "role": "unmodified machine-readable source"},
+    {"path": "production_budget.csv", "sha256": "aa2415eb44b0df059af215c7f0a511baa1c940b9f54269631e0358ee30f51076", "role": "normalized production-budget rows"},
+    {"path": "retail_benchmark.csv", "sha256": "adfe195adc2e57ac5773462656339a8610ac7b50e1e7869275143a8018ee4b01", "role": "separate retail/net-sales benchmark"},
+    {"path": "historical_import.json", "sha256": "75a6e8d2a0964dfe4eeca98c5ba0d2f67ec6bb285fb496b2ed5fd0cee4eb0e5c", "role": "Vexplorer HistoricalImport payload with explicit economic scopes"},
+    {"path": "README.md", "sha256": "4d3f45d273d47f4a71181611825144b878be9f139216b632e83d918ab81202b9", "role": "scope and limitations"}
+  ],
+  "known_source_conflicts": [
+    "The pouf particleboard dimensions differ between Table 2 (six 440 x 440 x 18 mm boards) and the section 3.3 narrative (a 380 x 380 x 18 mm board)."
+  ]
+}

@@ -1,0 +1,2 @@
+# Keep exact snapshot bytes so manifest SHA-256 values survive every checkout.
+* -text

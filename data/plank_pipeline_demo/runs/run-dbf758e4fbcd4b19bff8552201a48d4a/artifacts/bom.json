@@ -1,0 +1,892 @@
+[
+  {
+    "component_id": "base",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Panel inferior continuo candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:base_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 1480.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_base"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-7",
+        "evidence-contour-lines-unknown-8"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "bottom_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:base:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-7",
+      "contour-lines-unknown-8"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-7",
+      "evidence-contour-lines-unknown-8"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:base_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.0
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:base_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 550.0
+    }
+  },
+  {
+    "component_id": "side_left",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Lateral exterior izquierdo candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:left_h"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 631.9999986823065
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_left"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-10",
+        "evidence-contour-lines-unknown-11"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:side_left:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-10",
+      "contour-lines-unknown-11"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-10",
+      "evidence-contour-lines-unknown-11"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:left_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.000046265625315
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:left_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 230.0
+    }
+  },
+  {
+    "component_id": "side_right",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Lateral exterior derecho candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:right_h"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 632.0000013176901
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_right"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-22",
+        "evidence-contour-lines-unknown-23"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:side_right:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-22",
+      "contour-lines-unknown-23"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-22",
+      "evidence-contour-lines-unknown-23"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:right_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999953734374458
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:right_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 230.0
+    }
+  },
+  {
+    "component_id": "divider_left",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "División interior izquierda candidata",
+    "length": {
+      "dependency_refs": [
+        "binding:div_left_h"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 631.9999986823065
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_div_left"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-17",
+        "evidence-contour-lines-unknown-18"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "divider",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:divider_left:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-17",
+      "contour-lines-unknown-18"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-17",
+      "evidence-contour-lines-unknown-18"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:div_left_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.000046265625315
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:div_left_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 320.0
+    }
+  },
+  {
+    "component_id": "divider_right",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "División interior derecha candidata",
+    "length": {
+      "dependency_refs": [
+        "binding:div_right_h"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 632.0000013176901
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_div_right"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-31",
+        "evidence-contour-lines-unknown-32"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "divider",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:divider_right:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-31",
+      "contour-lines-unknown-32"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-31",
+      "evidence-contour-lines-unknown-32"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:div_right_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.99995373437457
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:div_right_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 320.0
+    }
+  },
+  {
+    "component_id": "back",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Trasera central delgada candidata",
+    "length": {
+      "dependency_refs": [
+        "binding:back_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 934.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_back"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-1",
+        "evidence-contour-lines-unknown-2",
+        "evidence-contour-lines-unknown-3"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "back_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:back:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-1",
+      "contour-lines-unknown-2",
+      "contour-lines-unknown-3"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-1",
+      "evidence-contour-lines-unknown-2",
+      "evidence-contour-lines-unknown-3"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:back_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 4.999957028604285
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:back_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 587.0000003660239
+    }
+  },
+  {
+    "component_id": "shelf",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Estante intermedio continuo candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:shelf_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 1443.0000008353818
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "unknown",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_shelf"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-27",
+        "evidence-contour-lines-unknown-28",
+        "evidence-contour-lines-unknown-29"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "shelf",
+    "scenario_occurrence_ids": [],
+    "source_contour_ids": [
+      "contour-lines-unknown-27",
+      "contour-lines-unknown-28",
+      "contour-lines-unknown-29"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-27",
+      "evidence-contour-lines-unknown-28",
+      "evidence-contour-lines-unknown-29"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:shelf_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.99993303007176
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:shelf_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 510.0
+    }
+  },
+  {
+    "component_id": "support_a",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Apoyo vertical de cara ancha candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:support_a_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 645.0000013176901
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_support_a"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-4",
+        "evidence-contour-lines-unknown-5",
+        "evidence-contour-lines-unknown-6"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "support",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:support_a:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-4",
+      "contour-lines-unknown-5",
+      "contour-lines-unknown-6"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-4",
+      "evidence-contour-lines-unknown-5",
+      "evidence-contour-lines-unknown-6"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:support_a_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999952782708192
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:support_a_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 100.0
+    }
+  },
+  {
+    "component_id": "support_b",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Apoyo vertical de canto frontal candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:support_b_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 645.0000013176901
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_support_b"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-19",
+        "evidence-contour-lines-unknown-20",
+        "evidence-contour-lines-unknown-21"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "support",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:support_b:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-19",
+      "contour-lines-unknown-20",
+      "contour-lines-unknown-21"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-19",
+      "evidence-contour-lines-unknown-20",
+      "evidence-contour-lines-unknown-21"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:support_b_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999956442963366
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:support_b_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 49.99999868231134
+    }
+  },
+  {
+    "component_id": "rail_a",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Travesaño longitudinal candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:rail_a_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 1444.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "unknown",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_rail_a"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-25",
+        "evidence-contour-lines-unknown-26"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "stretcher",
+    "scenario_occurrence_ids": [],
+    "source_contour_ids": [
+      "contour-lines-unknown-25",
+      "contour-lines-unknown-26",
+      "contour-lines-unknown-13"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-25",
+      "evidence-contour-lines-unknown-26",
+      "evidence-contour-lines-unknown-13"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:rail_a_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.99999560769379
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:rail_a_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 60.000001317691726
+    }
+  },
+  {
+    "component_id": "rail_b",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Travesaño central posterior candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:rail_b_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 924.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_rail_b"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-33",
+        "evidence-contour-lines-unknown-34"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "stretcher",
+    "scenario_occurrence_ids": [
+      "provisional:general-8ac869990544d764:rail_b:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-33",
+      "contour-lines-unknown-34"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-33",
+      "evidence-contour-lines-unknown-34"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:rail_b_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999994875642642
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:rail_b_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 70.0000013176917
+    }
+  }
+]

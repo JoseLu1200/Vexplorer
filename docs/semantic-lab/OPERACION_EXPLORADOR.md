@@ -1,5 +1,7 @@
 # Operación del explorador semántico
 
+**Demo sin encoders ni API:** el [paquete completo ya procesado](../../data/semantic_pipeline_demo/README.md) incluye doce catálogos activos, mapas, vecinos, renders y clasificaciones cacheadas, junto al pipeline de plank-030/plank-016. Restaurar ese backup permite usar esta pantalla sin volver a generar embeddings.
+
 Implementación desde `83df72d`, integrada en `main` mediante `6ea3b64`. No implica despliegue remoto. [Diseño](INTEGRACION_EXPLORADOR.md), [decisión](DECISION_ARQUITECTURA_PRODUCCION.md) y [arquitectura](DISENO_ARQUITECTURA_PRODUCCION.md).
 
 ## Arrancar y explorar

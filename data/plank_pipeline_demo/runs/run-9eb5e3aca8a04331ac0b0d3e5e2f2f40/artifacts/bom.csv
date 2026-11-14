@@ -1,0 +1,11 @@
+﻿component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish
+sides,Laterales del cuerpo,side_panel,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:sides:1|provisional:general-5f2d41963bd997b5:sides:2,2400.0000013176855,550.0,17.999824307751624,,
+top,Panel superior entre laterales,top_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:top:1,564.000000835383,550.0,17.999973824643348,,
+bottom,Base elevada sobre el zócalo,bottom_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:bottom:1,564.0000008353832,550.0,18.0,,
+divisions,Paneles horizontales de separación,shelf,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:divisions:1|provisional:general-5f2d41963bd997b5:divisions:2,564.000000835383,550.0,17.99997382464346,,
+shelves,Baldas interiores superiores,shelf,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:shelves:1|provisional:general-5f2d41963bd997b5:shelves:2,563.0,515.0,18.0,,
+back_low,Trasera del compartimento inferior,back_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:back_low:1,774.0000003660234,574.0,4.999943339249739,,
+back_high,Trasera del compartimento superior,back_panel,1,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:back_high:1,874.0000003660233,574.0,4.99993601873939,,
+fronts,Frentes rectangulares inferiores; función por confirmar,unknown,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:fronts:1|provisional:general-5f2d41963bd997b5:fronts:2,597.0,346.99999868230725,18.000025402170877,,
+fascias,Fajas frontales de separación,unknown,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:fascias:1|provisional:general-5f2d41963bd997b5:fascias:2,600.0,50.000001317691726,17.99999633974494,,
+plinths,Fajas del zócalo delantera y trasera,support,2,hypothesis,provisional,,provisional:general-5f2d41963bd997b5:plinths:1|provisional:general-5f2d41963bd997b5:plinths:2,564.0,99.9999986823077,18.00000732051035,,

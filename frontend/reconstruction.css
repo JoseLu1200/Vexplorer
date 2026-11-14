@@ -52,3 +52,4 @@
 .construction-dialog h2{margin:0;font-size:17px}
 .construction-dialog iframe{border:0;flex:1;width:100%;min-height:0}
 @media(max-width:800px){.reconstruction main{padding:16px}.reconstruction #source,.reconstruction #preview,.reconstruction #viewer{height:260px}.construction-dialog>header{padding:12px}.construction-dialog h2{font-size:15px}.reconstruction #refine-section{padding:16px}}
+@media(max-width:600px){.reconstruction #generate #purpose{flex-basis:100%}.reconstruction #generate-button{width:100%}}

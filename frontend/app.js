@@ -1,5 +1,5 @@
 import { createApiClient, ApiError } from "./api/client.js";
-import { normaliseDrawing, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
+import { normaliseDrawing, pathMatchesView, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, presentReplaySource, snapshotStatusPresentation } from "./core/presentation.js";
@@ -9,21 +9,23 @@ import { clearRunSession, persistJob, persistRunId, restoredRunRecovery, restore
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 import { fitImageViewport, imageViewportStyle, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
+import { generalAssemblyDiagnosticScene, generalAssemblyScene, generalSceneForViewer, normaliseGeneralAssemblyResponse, presentGeneralAssembly } from "./core/scene.js";
 import { jobStatusLabel, pollJob } from "./core/jobs.js";
 import { nextFocusTarget } from "./core/focus.js";
-import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "./core/table.js";
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived } from "./core/general.js";
+import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentDrawingSheet, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "./core/table.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalReviewMessage, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery } from "./core/general.js";
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
 import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
 import { generalSceneSelection, sceneLoadPlan } from "./core/scene.js";
 import { explainSimilarityMatch } from "./core/similarity_explain.js";
-import { evaluateDuplicatePrecedent, formatDuplicatePrecedentBanner } from "./core/duplicate_alert.js";
+import { DEFAULT_NEAR_DUPLICATE_THRESHOLD, evaluateDuplicatePrecedent, formatDuplicatePrecedentBanner } from "./core/duplicate_alert.js";
+import { formatSimilarityScore, libraryCounts, libraryEmptyMessage, presentPieceDifferences, similarityScoreLabel } from "./core/similarity-ui.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, jobRecovery: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 let reconstructionPanel;
 const reconstructionButton=document.createElement('button');
@@ -45,6 +47,13 @@ function setMessage(value, error = false) { const node = $("#global-message"); t
 
 function emptyParagraph(value) { const node = document.createElement("p"); node.className = "empty-copy"; node.textContent = value; return node; }
 function toggleHidden(node, hidden) { node?.toggleAttribute("hidden", Boolean(hidden)); }
+function semanticAvailabilityText(config = state.config) { const semantic=config.semantic??config.capabilities?.semantic??{},model=semantic.model??config.semantic_model??"modelo no publicado",rawDimensions=semantic.dimensions,dimensions=Number.isInteger(rawDimensions)?`${rawDimensions} dimensiones`:rawDimensions??"dimensiones no publicadas",indexed=Number.isInteger(semantic.indexed_record_count)?semantic.indexed_record_count:0,providerConfigured=Boolean(semantic.provider_configured||semantic.available),searchAvailable=Boolean(semantic.cached_search_available||semantic.available),provider=providerConfigured?"Proveedor semántico configurado":"Proveedor semántico no configurado",search=searchAvailable?"búsqueda semántica disponible":"búsqueda semántica no disponible",generation=semantic.generation_requires_authentication?"Generar embeddings requiere autenticación.":semantic.available?"Generación de embeddings disponible.":"Generación de embeddings no disponible.";return `${provider} · ${model} · ${dimensions} · ${indexed} registros indexados; ${search}. ${generation}`; }
+function previewFigure(src,label){const figure=document.createElement("figure"),image=document.createElement("img"),caption=document.createElement("figcaption");image.src=src;image.alt=label;image.loading="lazy";caption.textContent=label;figure.append(image,caption);return figure;}
+async function appendComparisonThumbnails(card,item,candidate){const candidateRunId=candidate?.run_id??item.candidate_run_id??item.run_id;if(!state.documentId||!candidateRunId)return;const root=document.createElement("div");root.className="comparison-thumbnails";root.append(previewFigure(api.documentPreviewUrl(state.documentId),"Diseño consultado"));const pending=emptyParagraph("Cargando referencia…");root.append(pending);card.append(root);try{const run=await api.getRun(candidateRunId),documentId=run.document_id??run.run?.document_id;if(!documentId)throw new TypeError();pending.replaceWith(previewFigure(api.documentPreviewUrl(documentId),"Diseño de referencia"));}catch{pending.textContent="Preview de referencia no disponible.";}}
+function appendPieceDifferences(card,item){const differences=presentPieceDifferences(item.differences);if(!differences.length)return;const section=document.createElement("div");section.className="piece-differences";const heading=document.createElement("b");heading.textContent="Diferencias por pieza";section.append(heading);differences.forEach((difference)=>{const line=document.createElement("span");line.textContent=`${difference.label} · ${difference.fieldLabel}: ${difference.summary}${difference.ratioLabel?` · ${difference.ratioLabel}`:""}`;section.append(line);});card.append(section);}
+function updateGroupingLabels(){const semantic=$("#similarity-mode").value==="semantic";text($("#threshold-label"),semantic?"Similitud coseno mínima":"Similitud geométrica mínima");text($("#threshold-help"),`Enlace completo: todos los pares del grupo deben alcanzar la similitud ${semantic?"coseno":"geométrica"} indicada. Los umbrales son orientativos y no certifican equivalencia de fabricación.`);}
+const typologyLabel=(value)=>({rectangular_table:"mesa rectangular",table:"mesa",cabinet:"armario",shelving:"estantería"})[value]??value??"no publicada";
+const compatibilityWarningLabel=(value)=>({material_unknown:"Material sin confirmar",material_tariff_id_unknown:"Material o tarifa sin confirmar",finish_unknown:"Acabado sin confirmar",process_unknown:"Proceso de fabricación sin confirmar",material_mismatch:"Los materiales difieren",finish_mismatch:"Los acabados difieren",technical_fields_unknown:"Datos técnicos incompletos",cosine_not_probability_or_technical_equivalence:"El coseno no es probabilidad ni equivalencia técnica"})[value]??`Advertencia técnica: ${value}`;
 
 function resetEstimateUi() {
   $("#estimate-lines").replaceChildren(emptyParagraph("La revisión actual todavía no tiene estimación. Calcula una nueva para evitar reutilizar importes anteriores."));
@@ -58,10 +67,13 @@ function resetEstimateUi() {
 function configureExportActions(){const table=state.tableWorkspace?.isTable===true; text($("#csv-export"),table?"Lista de corte CSV":"Ficha CSV"); if(table){const ready=state.snapshot?.result?.state==="completed"; $$('[data-export]').forEach((button)=>button.disabled=!ready);}}
 
 function resetRunUi() {
+  setAssemblyDiagnostic(false);
   reconstructionButton.disabled=true;
-  runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
+  runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate(); duplicateFence.invalidate();
+  hideDuplicatePrecedentBanner();
   state.jobAbort?.abort();
-  Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  state.jobRecovery=null;
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
@@ -90,7 +102,12 @@ function configureModes(config = {}) {
   state.config = config;
   state.features = publicFeatureAvailability(config);
   const libraryTab=$('[data-panel="library"]'),libraryPanel=$('[data-panel-content="library"]');
+  const estimateTab=$('[data-panel="estimate"]'),estimatePanel=$('[data-panel-content="estimate"]');
   toggleHidden(libraryTab,!state.features.library);toggleHidden(libraryPanel,!state.features.library);
+  toggleHidden(estimateTab,!state.features.costs);toggleHidden(estimatePanel,!state.features.costs);
+  toggleHidden($("#history-import-form"),!state.features.history);
+  toggleHidden($("#history-list"),!state.features.history);
+  toggleHidden($("#library-publication"),!config.library_requires_real_reviewed);
   toggleHidden($("#historical-scenarios"),!state.features.history);toggleHidden($("#historical-confirmed-details"),!state.features.history);
   availableModes(config.capabilities ?? config).forEach((mode) => {
     const input = $(`[name="mode"] [value="${mode.id}"]`) ?? $(`[name="mode"][value="${mode.id}"]`);
@@ -104,7 +121,7 @@ function configureModes(config = {}) {
   if (semanticOption) semanticOption.disabled = !semanticAvailable;
   const historySemanticOption = $('#history-retrieval-method option[value="semantic"]');
   if(historySemanticOption)historySemanticOption.disabled=!semanticAvailable;
-  text($("#semantic-note"), semanticAvailable ? `Semántico real · ${semantic.model ?? config.semantic_model ?? "modelo configurado"}` : "Semántico no disponible: usa el descriptor geométrico offline.");
+  text($("#semantic-note"), semanticAvailabilityText(config));
   const historyNote=$("#history-retrieval-note");if(historyNote)text(historyNote,semanticAvailable?`Registros empresariales y fuentes públicas por defecto; sin fixtures · embeddings disponibles: ${semantic.model??"modelo configurado"} · ${semantic.dimensions??"dimensiones no publicadas"}.`: `Registros empresariales y fuentes públicas por defecto; sin fixtures · embeddings no disponibles${semantic.unavailable_reason?`: ${semantic.unavailable_reason}`:""}.`);
   const generalCapability=config.general_furniture??config.capabilities?.general_furniture??{},liveAvailable=Boolean(config.live_available??config.capabilities?.live_available),autonomousReview=generalCapability.autonomous_review,automaticAvailable=typeof autonomousReview==="object"?autonomousReview.available!==false:autonomousReview!==false;
   if(liveAvailable&&automaticAvailable&&!$("#upload-form").dataset.userConfigured){$("#upload-form").elements.input_kind.value="general_furniture";$("#upload-form").elements.mode.value="live";updateTableRunControls();text($("#global-message"),"Modo recomendado: mueble general con revisión visual automática de hipótesis.");}
@@ -148,7 +165,10 @@ function renderDrawing() {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
     node.setAttribute("d", path.circular?svgCircularPath(path.circular):svgPath(path.points, path.closed));
     node.setAttribute("class", "drawing-path");
-    node.dataset.contourId = path.id; node.dataset.viewId = path.viewId ?? ""; node._entityIds = path.entityIds; node.classList.add("layer-entities");
+    node.dataset.contourId = path.id;
+    node.dataset.viewId = path.viewId ?? "";
+    node.dataset.viewIds = (Array.isArray(path.viewIds) && path.viewIds.length ? path.viewIds : (path.viewId ? [path.viewId] : [])).join(",");
+    node._entityIds = path.entityIds; node.classList.add("layer-entities");
     node.setAttribute("tabindex", "0");
     node.setAttribute("role", "button");
     node.setAttribute("aria-label", `Contorno ${path.id}`);
@@ -158,8 +178,32 @@ function renderDrawing() {
     svg.append(node);
   });
   model.dimensions.forEach((dimension) => {
-    dimension.segments.forEach((segment) => { const line = document.createElementNS("http://www.w3.org/2000/svg", "path"); line.setAttribute("d", svgPath(segment)); line.setAttribute("class", "dimension-line layer-dimensions"); line.dataset.viewId = dimension.viewId ?? ""; svg.append(line); });
-    if (dimension.position && dimension.label) { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", dimension.position[0]); label.setAttribute("y", -dimension.position[1]); label.setAttribute("class", "dimension-text layer-dimensions"); label.dataset.viewId = dimension.viewId ?? ""; label.textContent = dimension.label; svg.append(label); }
+    const conflict = dimension.conflict === true;
+    const conflictTitle = dimension.conflictReason || "Cota en conflicto (escala DIMLFAC o texto forzado distinto de la geometría)";
+    const appendConflictTitle = (node) => {
+      if (!conflict) return;
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = conflictTitle;
+      node.append(title);
+    };
+    dimension.segments.forEach((segment) => {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", svgPath(segment));
+      line.setAttribute("class", conflict ? "dimension-line layer-dimensions dimension-conflict" : "dimension-line layer-dimensions");
+      line.dataset.viewId = dimension.viewId ?? "";
+      appendConflictTitle(line);
+      svg.append(line);
+    });
+    if (dimension.position && dimension.label) {
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", dimension.position[0]);
+      label.setAttribute("y", -dimension.position[1]);
+      label.setAttribute("class", conflict ? "dimension-text layer-dimensions dimension-conflict" : "dimension-text layer-dimensions");
+      label.dataset.viewId = dimension.viewId ?? "";
+      label.textContent = dimension.label;
+      appendConflictTitle(label);
+      svg.append(label);
+    }
   });
   model.texts.forEach((item) => { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", item.position[0]); label.setAttribute("y", -item.position[1]); label.setAttribute("class", "drawing-text layer-texts"); label.dataset.viewId = item.viewId ?? ""; label.textContent = item.text; svg.append(label); });
   const tabs = $("#view-tabs");
@@ -190,9 +234,14 @@ function activateView(viewId, button) {
   toggleHidden($("#original-view"), viewId !== "original");
   toggleHidden($("#scene-viewer"), viewId !== "3d");
   toggleHidden($("#explode-control"), viewId !== "3d");
-  const partId=viewId.startsWith("part:")?viewId.slice(5):null;
-  const allowed=partId?partSelectionViewIds(state.partsWorkspace,partId):null;
-  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", viewId!=="all" && (allowed ? !allowed.has(node.dataset.viewId) : node.dataset.viewId!==viewId)));
+  const partId = viewId.startsWith("part:") ? viewId.slice(5) : null;
+  const allowed = partId ? partSelectionViewIds(state.partsWorkspace, partId) : null;
+  const activeFilter = allowed ?? viewId;
+  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => {
+    const viewIds = node.dataset.viewIds ? node.dataset.viewIds.split(",").filter(Boolean) : [];
+    const visible = pathMatchesView({ viewId: node.dataset.viewId || null, viewIds }, activeFilter);
+    node.classList.toggle("is-view-hidden", !visible);
+  });
   if (viewId === "3d") loadScene();
   else { text($("#scene-context"),viewId==="original"?"CAD original · representación visual":"2D fuente · evidencia observada"); if (!["original"].includes(viewId)) fitDrawing(); }
 }
@@ -251,13 +300,17 @@ function fitDrawing() {
   if(state.activeArtifact!=="source"){fitDerivedDrawing();return;}
   if(state.activeView==="3d"){sceneViewer?.fit(); sceneViewer?.draw(); return;}
   if (!state.drawingModel) return;
-  const partId=state.activeView.startsWith("part:")?state.activeView.slice(5):null;
-  const viewIds=partId?partSelectionViewIds(state.partsWorkspace,partId):(state.activeView==="all"?null:new Set([state.activeView]));
-  const points=state.drawingModel.pointsForViews(viewIds).map(([x,y])=>[x,-y]);
-  if (!points.length) return;
-  const rect=$("#cad-viewport").getBoundingClientRect();
-  state.viewport=fitViewport(boundsForPoints(points),rect.width||900,rect.height||520,state.drawingModel.fitPaddingForViews(viewIds));
-  if(state.activeView==="all")state.fittedViewport={...state.viewport};
+  const partId = state.activeView.startsWith("part:") ? state.activeView.slice(5) : null;
+  const viewIds = partId ? partSelectionViewIds(state.partsWorkspace, partId) : (state.activeView === "all" ? null : new Set([state.activeView]));
+  const scopedPoints = state.drawingModel.pointsForViews(viewIds);
+  const useScoped = state.activeView !== "all" && scopedPoints.length > 0;
+  const fitViewIds = useScoped ? viewIds : null;
+  const points = (useScoped ? scopedPoints : state.drawingModel.pointsForViews(null)).map(([x, y]) => [x, -y]);
+  const bounds = boundsForPoints(points);
+  if (!bounds) return;
+  const rect = $("#cad-viewport").getBoundingClientRect();
+  state.viewport = fitViewport(bounds, rect.width || 900, rect.height || 520, state.drawingModel.fitPaddingForViews(fitViewIds));
+  if (state.activeView === "all") state.fittedViewport = { ...state.viewport };
   applyViewport();
 }
 function applyLayerVisibility() { [["entities","#toggle-entities"],["texts","#toggle-texts"],["dimensions","#toggle-dimensions"]].forEach(([name,id]) => $$(`.layer-${name}`).forEach((node)=>node.classList.toggle("is-layer-hidden", !$(id).checked))); }
@@ -276,6 +329,26 @@ function selectContour(contourId) {
   renderEvidence(null, contourId);
 }
 
+function selectGeneralComponent(component, occurrence = null) {
+  state.selected=selectionForComponent({id:component.id,source_contour_ids:component.contourIds,evidence_ids:component.evidenceIds},state.drawing);
+  if(occurrence)Object.assign(state.selected,{occurrenceKey:occurrence.key,occurrenceId:occurrence.occurrenceId,occurrenceIndex:occurrence.occurrenceIndex});
+  if(state.activeView!=="3d"){
+    const all=$$(".view-tab").find((button)=>button.textContent==="Todas");
+    activateView("all",all);
+  }
+  applySelection();
+  $('[data-panel="inspect"]').click();
+  text($("#evidence-title"),`${component.label}${occurrence?` · ocurrencia ${occurrence.occurrenceId??Number(occurrence.occurrenceIndex)+1}`:""}`);
+  const summary=$("#piece-summary");summary.replaceChildren();
+  if(occurrence)summary.append(emptyParagraph(`Instancia física: ${occurrence.occurrenceId??occurrence.key} · índice ${occurrence.occurrenceIndex??"no publicado"} · selección agrupada con ${component.label}.`));
+  [["Largo",component.dimensions.length],["Ancho",component.dimensions.width],["Grosor",component.dimensions.thickness],["Cantidad",component.quantity]].forEach(([label,field])=>{
+    summary.append(emptyParagraph(`${label}: ${generalFieldValue(field)}`));
+  });
+  const detail=$("#evidence-detail");detail.replaceChildren(...(component.assumptions??[]).map(emptyParagraph));
+  $("#explanation-detail").replaceChildren(...component.unknownFields.map((field)=>emptyParagraph(`Pendiente: ${field}`)));
+  sceneViewer?.select(component.id,occurrence?.key??null);
+}
+
 function selectComponent(component) {
   state.selected = selectionForComponent(component, state.drawing);
   applySelection();
@@ -292,10 +365,29 @@ function selectPartObservation(observation) {
 
 function selectTableComponent(component){
   const program=state.tableWorkspace?.programs.find((item)=>item.id===(state.snapshot.preview_table_program_id??state.tableWorkspace.selectedProgramId??state.tableWorkspace.evaluated?.programId))??state.tableWorkspace?.programs[0], spec=program?.components.find((item)=>item.id===component.id)??component, evidenceIds=new Set(spec.evidenceIds??component.evidence_ids??[]);
-  state.selected={componentId:component.id,contourIds:new Set(),evidenceIds,entityIds:new Set()}; applySelection(); text($("#evidence-title"),TABLE_ROLE_LABELS[component.role]??component.role);
+  state.selected=selectionForComponent({...component,evidence_ids:[...evidenceIds]},state.drawing); applySelection(); text($("#evidence-title"),TABLE_ROLE_LABELS[component.role]??component.role);
+  $('[data-panel="inspect"]').click();
+  revealTableComponent(component.id);
   const summary=$("#piece-summary"); summary.replaceChildren(); [["Largo",component.length],["Ancho",component.width],["Grosor",component.thickness]].forEach(([label,field])=>{const line=document.createElement("p"); line.textContent=`${label}: ${field?.value==null?"Desconocido":formatMeasurement(field.value,"mm")} · ${tableStateLabel(field?.state)}`; summary.append(line); if(field?.dependencyRefs?.length){const formula=document.createElement("code"); formula.textContent=`Dependencias: ${field.dependencyRefs.join(" · ")}`; summary.append(formula);}}); const quantity=document.createElement("p"); quantity.textContent=`Cantidad: ${component.quantity??spec.quantity??"Desconocida"} · regla ${component.quantity_rule_id??spec.quantity_rule_id??"sin resolver"}`; summary.append(quantity);
   const root=$("#evidence-detail"); root.replaceChildren(); const evidences=(state.drawing?.evidence??state.ledger?.evidence??[]).filter((item)=>evidenceIds.has(item.id)); evidences.forEach((item)=>{const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent="Evidencia de fuente"; const copy=document.createElement("span"); copy.textContent=item.description??item.kind??"Evidencia vinculada"; const id=document.createElement("code"); id.textContent=item.id; card.append(title,copy,id); root.append(card);}); (program?.premises??[]).filter((premise)=>spec.premiseIds?.includes(premise.id)).forEach((premise)=>{const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent="Premisa propuesta"; const copy=document.createElement("span"); copy.textContent=premise.description; card.append(title,copy); root.append(card);}); if(!evidences.length)root.append(emptyParagraph("El rol es una propuesta; las medidas conservan sus dependencias del ledger."));
   const explanation=$("#explanation-detail"); explanation.replaceChildren(); const backed=presentTableComponentExplanation(state.explanations,component.id); if(backed.formulas.length){const heading=document.createElement("h3"); heading.textContent="Cálculo ejecutado por el servidor"; explanation.append(heading); backed.formulas.forEach((formula)=>{const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`${formula.fieldLabel}: ${formula.resultLabel}`; const expression=document.createElement("code"); expression.textContent=formula.expression; const operands=document.createElement("span"); operands.textContent=formula.operandsLabel||"Sin operandos métricos publicados"; card.append(title,expression,operands); explanation.append(card);});} [...new Set([...backed.premises,...(program?.assumptions??[])])].forEach((assumption)=>{const line=document.createElement("p"); line.textContent=`Premisa: ${assumption}`; explanation.append(line);}); backed.unknownLabels.forEach((field)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=`Desconocido: ${field}`; explanation.append(line);}); backed.warnings.forEach((warning)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=warning; explanation.append(line);}); sceneViewer?.select(component.id);
+}
+
+async function revealTableComponent(componentId) {
+  if (state.activeView === "3d" && state.activeArtifact === "source") {
+    sceneViewer?.select(componentId);
+    return;
+  }
+  const runId=state.runId, revision=state.snapshot?.result_revision;
+  const button=$('[data-artifact-view="components"]');
+  await activateArtifactView("components",button);
+  if(state.runId!==runId || state.snapshot?.result_revision!==revision || state.selected?.componentId!==componentId)return;
+  const sheet=componentDrawingSheet(state.tableDrawings,componentId);
+  if(sheet){
+    $("#derived-drawing-sheet").value=sheet.id;
+    selectDerivedSheet(sheet);
+    text($("#scene-context"),`Pieza seleccionada: ${sheet.title} · revisión ${revision}`);
+  }
 }
 
 function renderPartEvidence(observation) {
@@ -326,7 +418,11 @@ function applySelection() {
     path.classList.toggle("is-selected", Boolean(selected));
     path.classList.toggle("is-dimmed", Boolean(state.selected) && !selected);
   });
-  $$("#parts-body tr[data-component-id]").forEach((row) => row.classList.toggle("is-selected", row.dataset.componentId === state.selected?.componentId));
+  $$("#parts-body tr[data-component-id]").forEach((row) => {
+    const selected=row.dataset.componentId === state.selected?.componentId;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-selected",String(selected));
+  });
 }
 
 function renderEvidence(component, contourId) {
@@ -341,7 +437,7 @@ function renderEvidence(component, contourId) {
     details.textContent = typedDimensions?`Largo ${generalDimensionText(dims.length)} · Ancho ${generalDimensionText(dims.width)} · Grosor ${generalDimensionText(dims.thickness)} · Cantidad ${component.constructionPiece?generalQuantityText(component.quantity):(value(component.quantity) ?? "desconocida")}`:`Largo ${formatMeasurement(value(dims.length ?? component.length_mm),"mm")} · Ancho ${formatMeasurement(value(dims.width ?? component.width_mm),"mm")} · Grosor ${formatMeasurement(value(dims.thickness ?? component.thickness_mm),"mm")} · Cantidad ${value(component.quantity) ?? "desconocida"}`;
     summary.append(details);
     if(typedDimensions)Object.entries({Largo:dims.length,Ancho:dims.width,Grosor:dims.thickness}).forEach(([label,dimension])=>{const item=generalDimensionPresentation(dimension);if(item.value==null&&!item.explanation)return;const card=document.createElement("div");card.className="detail-item";const title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");title.textContent=`${label} · ${item.stateLabel}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.formula&&`fórmula ${item.formula}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.operandRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);});
-    if(component.constructionPiece){const item=presentGeneralConstructionQuantity(component.quantity),card=document.createElement("div"),title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");card.className="detail-item";title.textContent=`Cantidad · ${item.approximate?"Estimada":"Propuesta"}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);}
+    if(component.constructionPiece){const item=presentGeneralConstructionQuantity({...component.quantity,component_kind:component.quantity?.component_kind??component.kind}),card=document.createElement("div"),title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");card.className="detail-item";title.textContent=`${item.scopeLabel} · ${item.approximate?"Estimada":"Propuesta"}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);}
     if(component.rawHypothesis){const raw=component.rawHypothesis,rawLine=document.createElement("p");rawLine.textContent=`Hipótesis original, conservada solo para inspección: largo ${formatMeasurement(raw.dimensions.length.value,"mm")} · ancho ${formatMeasurement(raw.dimensions.width.value,"mm")} · grosor ${formatMeasurement(raw.dimensions.thickness.value,"mm")} · cantidad ${raw.quantity.value??"desconocida"}. Los valores rechazados, conflictivos o no revisados no se usan en la tabla ni en las exportaciones.`;summary.append(rawLine);}
     const formula = component.length_derivation ?? component.formula ?? component.derivation;
     if (formula) { const note = document.createElement("p"); note.textContent = `Fórmula: ${formula}`; summary.append(note); }
@@ -379,15 +475,22 @@ async function loadScene() {
   if(plan.kind==="legacy"&&!Number.isInteger(state.snapshot?.result_revision)){warning.hidden=false;text(warning,"3D no disponible: la ejecución actual no tiene una revisión geométrica consultable.");return;}
   const identity=plan.identity,token=sceneFence.issue(identity),currentIdentity=()=>sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived}).identity;
   try {
-    const raw = plan.fetchLegacy ? await api.getScene(state.runId, state.snapshot.result_revision) : plan.scene;
-    if (!sceneFence.isCurrent(token,currentIdentity())) return;
+    const diagnostic=state.assemblyDiagnostic?generalAssemblyDiagnosticScene(state.generalAssembly,plan.scene.state === "unavailable" ? {} : state.generalDerived?.scene??{}):null;
+    if(state.assemblyDiagnostic&&!diagnostic)setAssemblyDiagnostic(false);
+    const raw = state.generalWorkspace?.isGeneral
+      ? generalSceneForViewer(diagnostic??generalAssemblyScene(state.generalAssembly,plan.scene.state === "unavailable" ? {} : state.generalDerived?.scene??{}), state.generalWorkspace.components)
+      : await api.getScene(state.runId, state.snapshot.result_revision);
+    if (!sceneFence.isCurrent(token, currentIdentity())) return;
     state.scene = raw;
-    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token,currentIdentity())) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=generalSceneSelection(state.generalWorkspace,item);if(generalComponent){state.selected={type:"general",id:generalComponent.id};renderEvidence(generalComponent);return;} const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
-    const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, currentIdentity())) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=state.generalWorkspace?.components?.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(generalComponent)return selectGeneralComponent(generalComponent,item); const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    sceneViewer.setDisplayUpAxis(state.assemblyDiagnostic?state.assemblyDisplayUp:"y",false);const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
+    if(state.selected?.componentId)sceneViewer.select(state.selected.componentId,state.selected.occurrenceKey??null);
     const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
-    text($("#scene-context"),plan.kind==="general"?"3D de catálogo · piezas separadas · no es un montaje físico":sceneContextLabel(state.snapshot,raw));
+    text($("#scene-context"),diagnostic?`Candidato rechazado · no validado · solo inspección · ${model.objects.length} ocurrencias`:raw.display_layout?"Despiece esquemático · una vista por tipo · sin montaje inferido":raw.state==="mounted_hypothesis"?`Montaje ensamblado · hipótesis por instancia · ${model.objects.length} ocurrencias`: `${sceneContextLabel(state.snapshot,raw)}${raw.collision_status==="not_evaluated"?" · sin comprobación de colisiones":""}`);
     const premises=$("#scene-premises-list"); premises.replaceChildren(); assumptions.forEach((value)=>{const line=document.createElement("p"); line.textContent=value; premises.append(line);}); toggleHidden($("#scene-premises"),!assumptions.length);
-    const messages = [...model.warnings, ...(plan.kind!=="general"&&model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
+    const readableWarnings={human_review_required:"Este recorrido necesita una decisión de montaje. Abre Revisar y registra el programa y sus premisas.",table_review_required:"La propuesta de mesa sigue pendiente de revisión. Abre Revisar para aceptar o rechazar el programa y sus premisas.",metric_geometry_required:"Falta una escala métrica confirmada para representar el montaje."};
+    const messages = model.warnings.map((message)=>readableWarnings[message]??message);
+    if(!model.objects.length&&!messages.length)messages.push("No hay componentes con medidas suficientes para una vista espacial. Consulta la tabla y el plano fuente.");
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
   } catch (error) { if(!sceneFence.isCurrent(token,currentIdentity()))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para el snapshot actual: ${error.message}`); }
 }
@@ -472,7 +575,7 @@ function renderTableAndReview(){
   text($("#input-kind-label"),"Entrada: mesa · vistas montadas"); text($("#parts-title"),"Componentes propuestos"); text($("#parts-summary"),`${workspace.measures.length} medidas del ledger · ${program?.originLabel??"sin propuesta"}`); text($("#scenario-status"),tableStateLabel(evaluated?.state??"hypothesis"));
   $("#parts-head").innerHTML="<tr><th>Componente</th><th>Origen</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th></tr>";
   const body=$("#parts-body"); body.replaceChildren();
-  (program?.components??[]).forEach((component)=>{const effective=evaluated?.components.find((item)=>item.id===component.id),row=document.createElement("tr"); row.dataset.componentId=component.id; row.tabIndex=0; const name=document.createElement("td"); name.textContent=TABLE_ROLE_LABELS[component.role]??component.role; const origin=document.createElement("td"); origin.textContent=program.originLabel; origin.dataset.origin="hypothesis"; const quantity={value:effective?.quantity??component.quantity,state:effective?.accepted?"confirmed":"proposed"}; row.append(name,origin,tableValueCell(quantity,true),tableValueCell(effective?.length),tableValueCell(effective?.width),tableValueCell(effective?.thickness)); row.addEventListener("click",()=>selectTableComponent(effective??component)); row.addEventListener("keydown",(event)=>{if(event.key==="Enter")selectTableComponent(effective??component);}); body.append(row);});
+  (program?.components??[]).forEach((component)=>{const effective=evaluated?.components.find((item)=>item.id===component.id),row=document.createElement("tr"); row.dataset.componentId=component.id; row.tabIndex=0; const name=document.createElement("td"); name.textContent=TABLE_ROLE_LABELS[component.role]??component.role; const origin=document.createElement("td"); origin.textContent=program.originLabel; origin.dataset.origin="hypothesis"; const quantity={value:effective?.quantity??component.quantity,state:effective?.accepted?"confirmed":"proposed"}; row.append(name,origin,tableValueCell(quantity,true),tableValueCell(effective?.length),tableValueCell(effective?.width),tableValueCell(effective?.thickness)); row.addEventListener("click",()=>selectTableComponent(effective??component)); row.addEventListener("keydown",(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectTableComponent(effective??component);}}); body.append(row);});
   if(!program){const row=document.createElement("tr"); row.className="empty-row"; const cell=document.createElement("td"); cell.colSpan=6; cell.textContent="No hay propuesta de componentes. El plano fuente permanece disponible."; row.append(cell); body.append(row);}
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend"); legend.textContent="Programa de descomposición"; options.append(legend); workspace.programs.forEach((item)=>{const label=document.createElement("label"); label.className="scenario-option"; const input=document.createElement("input"); input.type="radio"; input.name="table-program"; input.value=item.id; input.checked=item.id===program?.id; input.addEventListener("change",()=>{state.snapshot.preview_table_program_id=item.id;renderTableAndReview();}); const content=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"),assumptions=document.createElement("details"),assumptionSummary=document.createElement("summary"); title.textContent=item.originLabel; detail.textContent=item.components.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · "); assumptionSummary.textContent=`Supuestos y límites (${item.assumptions.length})`; assumptions.append(assumptionSummary,...item.assumptions.map((value)=>emptyParagraph(tableDiagnosticLabel(value)))); content.append(title,detail); if(item.assumptions.length)content.append(assumptions); label.append(input,content); options.append(label);}); if(!workspace.programs.length)options.append(emptyParagraph("No hay programa válido para revisar."));
   const summary=$("#classification-summary"); summary.replaceChildren(); const source=document.createElement("b"),overview=document.createElement("p"),diagnostics=document.createElement("details"),diagnosticSummary=document.createElement("summary"); source.textContent=program?.originLabel??"Sin propuesta"; const pendingCount=workspace.measures.filter((measure)=>measure.value==null).length; overview.textContent=`${workspace.measures.length} medidas del ledger · ${pendingCount?`${pendingCount} pendientes`:"sin medidas pendientes"}`; diagnostics.className="table-diagnostics"; diagnosticSummary.textContent=`Ver diagnóstico y medidas (${workspace.measures.length})`; diagnostics.append(diagnosticSummary); workspace.measures.forEach((measure)=>{const line=document.createElement("p"),sourceValue=measure.value==null?"Desconocido":formatMeasurement(measure.value,"mm"),effective=measure.effectiveValue==null?"":` · ${measure.effectivePrefix} ${formatMeasurement(measure.effectiveValue,"mm")} · ${measure.effectiveLabel}`; line.textContent=`${TABLE_MEASURE_LABELS[measure.semantic]??measure.semantic}: ${sourceValue} · ${measure.sourceLabel} · ${tableStateLabel(measure.state)}${effective}`; if(measure.state!=="observed"&&measure.effectiveValue==null)line.className="unknown"; diagnostics.append(line);}); workspace.warnings.forEach((warning)=>{const line=document.createElement("p"); line.className="unknown"; line.textContent=tableDiagnosticLabel(warning); diagnostics.append(line);}); summary.append(source,overview,diagnostics);
@@ -515,12 +618,44 @@ function renderGeneralOperationEditors(workspace,root){
 async function createManualGeneralProposal(){try{const label=$("#general-manual-label").value,kind=$("#general-manual-kind").value,role=$("#general-manual-role").value,reason=$("#general-manual-reason").value,proposal=buildManualGeneralProposal({drawingId:state.drawing?.drawing_id??state.generalWorkspace?.drawingId,ledgerRevision:state.snapshot?.candidate_revision??state.generalWorkspace?.ledgerRevision,label,kind,role,reason});await api.createGeneralProposal(state.runId,{mode:"manual",base_proposal_revision:state.generalWorkspace?.proposalRevision??0,proposal});text($("#review-message"),"Propuesta manual opcional creada con medidas desconocidas. Puedes corregirla o lanzar la verificación automática.");await refreshRun();}catch(error){text($("#review-message"),error.message);}}
 
 function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-review-operations"),!visible);toggleHidden($("#review-form > .form-grid"),!visible);toggleHidden($("#review-submit"),!visible);}
-async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent;if(button){button.disabled=true;button.textContent="Iniciando nueva ejecución…";}try{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
+async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent,resume=state.jobRecovery?.safeAction==="resume_review";if(button){button.disabled=true;button.textContent=resume?"Reanudando revisión…":"Iniciando nueva ejecución…";}try{if(resume){text($("#review-message"),"Reanudando la revisión del borrador guardado sin repetir la propuesta.");await retryCurrentJob();}else{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
+
+async function retryGeneralAssembly(){
+  const proposal=state.generalWorkspace?.proposalRevision,review=state.generalWorkspace?.reviewRevision;
+  if(!Number.isInteger(proposal)||!Number.isInteger(review)||review<1)return;
+  const button=$("#general-assembly-retry");if(button)button.disabled=true;
+  try{
+    text($("#review-message"),"Montaje en cola: la BOM y la revisión actual permanecen disponibles.");
+    const job=await api.retryGeneralAssembly(state.runId,{base_proposal_revision:proposal,base_review_revision:review});
+    const cancel=document.createElement("button");cancel.type="button";cancel.id="general-assembly-cancel";cancel.className="button";cancel.textContent="Cancelar reintento";cancel.addEventListener("click",async()=>{cancel.disabled=true;try{await api.cancelGeneralAssembly(state.runId,job.id);text($("#review-message"),"Cancelación solicitada; se conserva el último estado persistido y la BOM.");text($("#job-status"),`Cancelación solicitada · ${job.id}`);}catch(error){cancel.disabled=false;text($("#review-message"),`No se pudo solicitar la cancelación: ${error.message}`);}});$("#general-derived-status")?.append(cancel);
+    try{await followJob(job);}finally{cancel.remove();}
+  }catch(error){text($("#review-message"),error.code==="interrupted"?"Reintento de montaje cancelado; la BOM y los intentos anteriores permanecen disponibles.":`No se pudo completar el montaje: ${error.message}`);if(button)button.disabled=false;}
+}
+
+function setAssemblyDiagnostic(active){
+  state.assemblyDiagnostic=Boolean(active);
+  if(!active){state.assemblyDisplayUp="y";sceneViewer?.setDisplayUpAxis("y");}
+  [...$$('[data-export]'),$("#save-library"),$("#estimate-button"),$("#review-submit")].filter(Boolean).forEach((control)=>{
+    if(active){if(control.dataset.diagnosticPreviousDisabled===undefined)control.dataset.diagnosticPreviousDisabled=String(control.disabled);control.disabled=true;control.title="No disponible durante la inspección de un candidato rechazado.";}
+    else if(control.dataset.diagnosticPreviousDisabled!==undefined){control.disabled=control.dataset.diagnosticPreviousDisabled==="true";delete control.dataset.diagnosticPreviousDisabled;if(control.title==="No disponible durante la inspección de un candidato rechazado.")control.removeAttribute("title");}
+  });
+}
+
+function appendGeneralAssemblyStatus(root){
+  const presentation=presentGeneralAssembly(state.generalAssembly),line=document.createElement("span");
+  const paintLine=()=>{line.textContent=state.assemblyDiagnostic?"Candidato rechazado · no validado · solo inspección. Las colocaciones se muestran únicamente para diagnóstico.":`${presentation.label} · ${presentation.detail}.`;};paintLine();root.append(line);
+  [...presentation.warnings,...(state.generalAssemblyError?[state.generalAssemblyError]:[])].forEach((warning)=>{const item=document.createElement("span");item.className="unknown";item.textContent=warning;root.append(item);});
+  if(presentation.issueGroups.length){const details=document.createElement("details"),summary=document.createElement("summary"),total=presentation.issueGroups.reduce((count,group)=>count+group.count,0);details.className="table-diagnostics";summary.textContent=`Ver diagnóstico técnico completo (${total} ${total===1?"incidencia":"incidencias"})`;details.append(summary);presentation.issueGroups.forEach((group)=>{const block=document.createElement("div"),heading=document.createElement("b"),scope=document.createElement("span");block.className="detail-item";heading.textContent=`${group.label} (${group.count})`;scope.textContent=`Instancias: ${group.occurrenceIds.join(", ")||"sin IDs publicados"}${group.sourceRefs.length?` · Referencias: ${group.sourceRefs.join(", ")}`:""}`;block.append(heading,scope);group.entries.forEach((entry)=>{const diagnostic=document.createElement("p"),code=document.createElement("code");code.textContent=entry.code;diagnostic.append(code,document.createTextNode(` · ${entry.message}${entry.occurrenceIds.length?` · instancias ${entry.occurrenceIds.join(", ")}`:""}${entry.sourceRefs.length?` · referencias ${entry.sourceRefs.join(", ")}`:""}`));block.append(diagnostic);});details.append(block);});root.append(details);}
+  const rejectedDiagnostic=generalAssemblyDiagnosticScene(state.generalAssembly,state.generalDerived?.scene??{});if(rejectedDiagnostic){const axisLabel=document.createElement("label"),axis=document.createElement("select"),inspect=document.createElement("button");axisLabel.textContent="Eje vertical de inspección";axis.id="general-assembly-display-up";[["y","Y (actual)"],["z","Z"],["x","X"]].forEach(([value,label])=>axis.append(new Option(label,value)));axis.value=state.assemblyDisplayUp;axis.addEventListener("change",()=>{state.assemblyDisplayUp=axis.value;if(state.assemblyDiagnostic)sceneViewer?.setDisplayUpAxis(axis.value);});axisLabel.append(axis);inspect.type="button";inspect.id="general-assembly-diagnostic";inspect.className="button";inspect.textContent=state.assemblyDiagnostic?"Volver al despiece normal":"Inspeccionar candidato no validado";inspect.addEventListener("click",()=>{const active=!state.assemblyDiagnostic;setAssemblyDiagnostic(active);if(active)state.assemblyDisplayUp=axis.value;paintLine();inspect.textContent=active?"Volver al despiece normal":"Inspeccionar candidato no validado";const tab=$$(".view-tab").find((item)=>item.textContent==="3D");if(active&&state.activeView!=="3d")activateView("3d",tab);else loadScene();});root.append(axisLabel,inspect);}
+  presentation.acceptedAlternatives.forEach((attempt)=>{const item=document.createElement("span"),id=attempt.candidate?.alternative_id??"sin identificador",current=attempt===presentation.current||attempt.assembly_revision===presentation.current?.assembly_revision;item.textContent=`Alternativa ${id} · revisión de montaje ${attempt.assembly_revision}${current?" · actual":" · conservada"}`;root.append(item);});
+  const eligible=Number.isInteger(state.generalWorkspace?.proposalRevision)&&state.generalWorkspace?.reviewRevision>0;
+  if(presentation.canRetry&&eligible){const retry=document.createElement("button");retry.type="button";retry.id="general-assembly-retry";retry.className="button";retry.textContent="Reintentar montaje";retry.addEventListener("click",retryGeneralAssembly);root.append(retry);}
+}
 
 function renderGeneralFurniture() {
   reconstructionButton.disabled=!state.runId;
-  const workspace=state.generalWorkspace,derived=state.generalDerived,components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:piece.role,role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:row.role??"pieza",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
-  text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${components.length} ${components.length===1?"pieza":"piezas"} · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
+  const workspace=state.generalWorkspace,derived=state.generalDerived,componentKinds=new Map(workspace.components.map((item)=>[item.id,item.kind])),components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:componentKinds.get(piece.componentId)??piece.quantity?.component_kind??"unknown",role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:componentKinds.get(row.componentId)??"unknown",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
+  const counts=presentConstructionCounts(components);text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${counts.typeCount} tipos · ${counts.cutPieceCount} piezas para corte · ${counts.hardwareEstimated} herrajes estimados · ${counts.unknownCount} cantidades sin resolver · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
   const constructionSummary=$("#general-construction-summary"),estimated=components.flatMap((item)=>Object.values(item.dimensions??{})).filter((item)=>item?.state==="estimated"&&item?.value!=null).length;constructionSummary.hidden=!components.length;constructionSummary.replaceChildren();if(components.length){const line=document.createElement("p");line.textContent=`${derived?.construction?.summary.label??"Propuesta provisional"}: ${components.length} tipos de pieza · ${estimated} cotas estimadas aceptadas. Las cifras con ≈ incluyen rango y fundamento en el inspector.`;constructionSummary.append(line);}
   const impact=$("#general-impact-decisions"),impactList=$("#general-impact-decisions > div"),decisions=derived?.construction?.topDecisions.length?derived.construction.topDecisions:[...workspace.constructionDecisions].sort((a,b)=>({high:0,medium:1,low:2}[a.impact]??3)-({high:0,medium:1,low:2}[b.impact]??3)).slice(0,3);impact.hidden=!decisions.length;impactList.replaceChildren();decisions.forEach((decision)=>{const card=document.createElement("article");card.className="impact-decision";const title=document.createElement("b"),copy=document.createElement("p");title.textContent=`${({high:"Impacto alto",medium:"Impacto medio",low:"Impacto bajo"})[decision.impact]??"Decisión"} · ${decision.summary}`;copy.textContent=decision.rationale;card.append(title,copy);if(decision.alternatives.length){const alternatives=document.createElement("small");alternatives.textContent=`Alternativas consideradas: ${decision.alternatives.join(" · ")}`;card.append(alternatives);}impactList.append(card);});
   $("#parts-head").innerHTML="<tr><th>Componente</th><th>Tipo</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th><th>Desconocidos</th></tr>";
@@ -529,9 +664,10 @@ function renderGeneralFurniture() {
   if(!components.length){const row=document.createElement("tr"),cell=document.createElement("td");row.className="empty-row";cell.colSpan=7;cell.textContent="La propuesta constructiva no contiene piezas utilizables; el plano fuente y los avisos siguen disponibles.";row.append(cell);body.append(row);}
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend");legend.textContent="Revisión visual automática de hipótesis";options.append(legend);const provenance=workspace.machineProvenance,autoStatus=({accepted:"coherencia aceptada",incomplete:"coherencia incompleta",conflict:"coherencia en conflicto",abstained:"abstención"})[workspace.autoReviewStatus]??"sin estado publicado",reviewRelation=({separate_model:"modelo revisor separado",self_review:"auto-revisión del mismo modelo"})[provenance?.review_relation]??"relación entre modelos no publicada",summary=emptyParagraph(workspace.reviewerKind==="machine"?`Revisión de máquina · ${autoStatus} · ${provenance?.model??workspace.reviewerName??"modelo configurado"} · ${reviewRelation} · política ${provenance?.policy_version??"no publicada"}. No confirma la hipótesis como hecho.`:`La revisión automática no publicó un resultado. Las incógnitas permanecen visibles y no bloquean el plano fuente.`);options.append(summary);workspace.autoChecks.forEach((check)=>{const item=document.createElement("p");item.textContent=`Comprobación de coherencia (${check.method==="model_visual"?"modelo visual":"determinista"}): ${check.summary??check.id??check.kind} · ${check.outcome??"sin resultado"}`;options.append(item);});const actions=document.createElement("div");actions.className="library-actions";const retry=document.createElement("button");retry.type="button";retry.id="general-auto-review";retry.className="button button--primary";retry.textContent="Nueva ejecución con auto-revisión";retry.disabled=!state.documentId;retry.addEventListener("click",requestGeneralAutoReview);const advanced=document.createElement("button");advanced.type="button";advanced.className="button";advanced.textContent="Corrección humana avanzada";advanced.setAttribute("aria-expanded","false");advanced.addEventListener("click",()=>{const visible=advanced.getAttribute("aria-expanded")!=="true";advanced.setAttribute("aria-expanded",String(visible));advanced.textContent=visible?"Ocultar corrección humana":"Corrección humana avanzada";setGeneralManualCorrectionVisible(visible);});actions.append(retry,advanced);options.append(actions);
   const controls=$("#general-operation-components");if(workspace.components.length)renderGeneralOperationEditors(workspace,controls);else{controls.replaceChildren();const manual=document.createElement("fieldset");manual.className="general-manual-proposal";const title=document.createElement("legend");title.textContent="Crear propuesta manual sin inventar medidas";manual.append(title);[["general-manual-label","Nombre del componente","text",""],["general-manual-kind","Tipo","text","panel"],["general-manual-role","Rol","text","unknown"],["general-manual-reason","Motivo técnico","text",""]].forEach(([id,labelText,type,value])=>{const label=document.createElement("label"),input=document.createElement("input");label.textContent=labelText;input.id=id;input.type=type;input.value=value;label.append(input);manual.append(label);});const create=document.createElement("button");create.type="button";create.className="button button--primary";create.textContent="Crear propuesta manual";create.addEventListener("click",createManualGeneralProposal);manual.append(create);controls.append(manual);}
-  setGeneralManualCorrectionVisible(false); toggleHidden($("#legacy-review-fields"),true); toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.components.length;text($("#review-message"),workspace.status==="reviewed_incomplete"?"El modelo se abstuvo en los campos sin respaldo suficiente. BOM, esquema y descargas conservan esas incógnitas; la corrección humana es opcional.":"La revisión automática publicó el resultado de coherencia actual. La corrección humana sigue disponible como opción avanzada.");
+  if(state.jobRecovery?.safeAction==="resume_review")text($("#general-auto-review"),"Reanudar revisión guardada");
+  setGeneralManualCorrectionVisible(false); toggleHidden($("#legacy-review-fields"),true); toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.components.length;text($("#review-message"),generalReviewMessage(workspace,state.jobRecovery));
   text($("#revision-label"),Number.isInteger(workspace.proposalRevision)?`Propuesta ${workspace.proposalRevision}`:"Propuesta pendiente");
-  const derivedStatus=$("#general-derived-status");toggleHidden(derivedStatus,!derived);if(derived){derivedStatus.replaceChildren(document.createTextNode(`${derived.bom.length} filas BOM · ${derived.artifacts.filter((item)=>item.status==="incomplete").length} artefactos incompletos · base de coste ${generalStatusLabel(derived.costBasis.status)}. `));derived.artifacts.forEach((artifact)=>{const link=document.createElement("a");link.className="button";link.href=api.generalArtifactUrl(state.runId,artifact.id,derived.proposalRevision,derived.reviewRevision);link.download=artifact.filename??"";link.textContent=`${generalArtifactLabel(artifact.kind)} · ${generalStatusLabel(artifact.status)}`;derivedStatus.append(link);});}
+  const derivedStatus=$("#general-derived-status"),assemblyEligible=Number.isInteger(workspace.proposalRevision)&&workspace.reviewRevision>0;toggleHidden(derivedStatus,!derived&&!assemblyEligible);derivedStatus.replaceChildren();if(derived){derivedStatus.append(document.createTextNode(`${derived.bom.length} filas BOM · ${derived.artifacts.filter((item)=>item.status==="incomplete").length} artefactos incompletos · base de coste ${generalStatusLabel(derived.costBasis.status)}. `));derived.artifacts.forEach((artifact)=>{const link=document.createElement("a");link.className="button";link.href=api.generalArtifactUrl(state.runId,artifact.id,derived.proposalRevision,derived.reviewRevision);link.download=artifact.filename??"";link.textContent=`${generalArtifactLabel(artifact.kind)} · ${generalStatusLabel(artifact.status)}`;derivedStatus.append(link);});}if(assemblyEligible)appendGeneralAssemblyStatus(derivedStatus);
   $("#integral-controls").hidden=false; const exportActions=$(".export-actions"); if(exportActions&&!$("#general-export-actions",exportActions))exportActions.append($("#general-export-actions")); $("#general-export-actions").hidden=false; $$('[data-export="bom_csv"],[data-export="bom_json"]').forEach((button)=>button.disabled=!derived?.bom.length);
   unlock("parts-stage");unlock("review-stage");
 }
@@ -620,13 +756,14 @@ async function refreshTraceHistory(attempts = 1) {
 
 async function refreshRun() {
   if (!state.runId) return;
+  setAssemblyDiagnostic(false);
   const requestedRun=state.runId, token=runFence.issue(requestedRun);
-  const snapshot=normaliseRunPayload(await api.getRun(requestedRun));
+  const runRecord=await api.getRun(requestedRun),snapshot=normaliseRunPayload(runRecord);
   if (!runFence.isCurrent(token,state.runId)) return;
   state.snapshot = snapshot;
   state.partsWorkspace = normalisePartsWorkspace(snapshot);
   state.tableWorkspace = normaliseTableWorkspace(snapshot);
-  state.generalWorkspace=null; state.generalDerived=null;
+  state.generalWorkspace=null; state.generalDerived=null;state.generalAssembly=null;state.generalAssemblyError=null;
   state.tableDrawings=null; showSourceArtifact(); updateArtifactTabs();
   state.documentId = state.snapshot.document_id ?? state.snapshot.document?.document_id ?? state.documentId;
   if(state.documentId&&!state.documentIngestion){const provenance=$("#document-provenance");text(provenance,"Documento restaurado · fuente persistida en servidor");provenance.title="La ejecución restaurada conserva el documento fuente en el servidor; abre la vista Fuente para inspeccionarlo.";}
@@ -634,6 +771,7 @@ async function refreshRun() {
   const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
+  const latestJob=runRecord.latest_job;if(latestJob&&["failed","interrupted"].includes(latestJob.state)){const recovery=presentJobRecovery(latestJob);state.jobId=latestJob.id;state.jobRecovery=recovery;text($("#job-status"),recovery.phaseLabel);setMessage(recovery.message,true);toggleHidden($("#job-retry"),!recovery.safeAction);$("#job-retry").disabled=!recovery.safeAction;text($("#job-retry"),recovery.actionLabel);}
   const replay=presentReplaySource(state.snapshot),replaySource=$("#replay-source"),replayText=replay.available?`${replay.summary} · ${replay.detail}`:""; toggleHidden(replaySource,!replay.available); text(replaySource,replayText); replaySource.title=replayText;
   try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); if(!state.documentIngestion){text($("#document-provenance"),restoredSourceLabel(drawing)); $("#document-provenance").title="Metadatos recuperados de la ejecución; el nombre original no forma parte de este endpoint.";} } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   try { const ledger=await api.getLedger(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.ledger=ledger; } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
@@ -643,6 +781,7 @@ async function refreshRun() {
     state.generalWorkspace=normaliseGeneralWorkspace(general);
     const machineStatus=generalMachineStatusPresentation(state.generalWorkspace);if(machineStatus){text($("#upload-status"),machineStatus.label);setMessage(machineStatus.message);}
     if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){const failure=generalDerivedLoadFailure(error);if(failure){text($("#upload-status"),failure.label);setMessage(failure.message,true);}else if(!(error instanceof ApiError)||error.status!==404)throw error;}}
+    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalAssembly=normaliseGeneralAssemblyResponse(await api.getGeneralAssembly(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))state.generalAssemblyError=error.message;}}
   }
   renderPartsAndReview(); updateArtifactTabs();
   const tableReady=tableResourcesReady(state.tableWorkspace,state.snapshot);
@@ -671,7 +810,12 @@ async function loadRevisionContext() {
   if(state.features.library)try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
   if (Number.isInteger(revision)) {
     try { const explanations=await api.getExplanations(runId, revision); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.explanations = explanations; } catch { if(contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))state.explanations = null; }
-    const libraryReady=!state.tableWorkspace?.isTable||tableResourcesReady(state.tableWorkspace,state.snapshot); $("#save-library").disabled = !libraryReady; $("#find-similar").disabled = !libraryReady; if(!libraryReady)text($("#semantic-note"),"Completa la revisión de mesa antes de guardar o buscar por descriptor.");
+    const supportedDescriptor=!state.generalWorkspace?.isGeneral;
+    const libraryReady=supportedDescriptor&&(!state.tableWorkspace?.isTable||tableResourcesReady(state.tableWorkspace,state.snapshot));
+    $("#save-library").disabled = !libraryReady; $("#find-similar").disabled = !libraryReady;
+    if(!supportedDescriptor)text($("#semantic-note"),"Biblioteca admite revisiones de piezas y mesa; el descriptor de mueble general está pendiente.");
+    else if(!libraryReady)text($("#semantic-note"),"Completa la revisión de mesa antes de guardar o buscar por descriptor.");
+    else text($("#semantic-note"),semanticAvailabilityText());
   } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
   state.scene = null;
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren(); text($("#scene-context"),"2D fuente · sin reconstrucción cargada");
@@ -703,10 +847,19 @@ async function checkDuplicatePrecedent(runId, revision) {
       result_revision: revision,
       mode: "geometric",
       limit: 3,
+      include_abstention: true,
+      threshold_kind: "near_duplicate",
     });
     if (!duplicateFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
     const matches = result?.matches ?? result?.items ?? result ?? [];
-    const evaluation = evaluateDuplicatePrecedent(matches);
+    const labelledMatches = matches.map((match) => ({
+      ...match,
+      label: state.libraryItems.get(match.library_item_id)?.label ?? match.label,
+    }));
+    const threshold = Number.isFinite(result?.threshold_used)
+      ? result.threshold_used
+      : DEFAULT_NEAR_DUPLICATE_THRESHOLD;
+    const evaluation = evaluateDuplicatePrecedent(labelledMatches, { threshold });
     if (!evaluation.found) {
       hideDuplicatePrecedentBanner();
       return;
@@ -773,6 +926,25 @@ function renderTableCostCatalog(raw){
   const exclusions=$("#table-exclusion-controls");exclusions.replaceChildren();[["material","Material"],["edge","Canteado"],["operation","Operaciones"],["labor","Mano de obra"],["finishing","Acabado"]].forEach(([scope,labelText])=>{const row=document.createElement("label"),check=document.createElement("input"),reason=document.createElement("input");check.type="checkbox";check.dataset.exclusionScope=scope;reason.type="text";reason.placeholder="Motivo obligatorio";reason.dataset.exclusionReason=scope;reason.disabled=true;check.addEventListener("change",()=>{reason.disabled=!check.checked;if(!check.checked)reason.value="";});row.append(check,document.createTextNode(` ${labelText} no aplica`),reason);exclusions.append(row);});
 }
 function renderTableCosts(raw){
+  const savedScope=raw.scope??{};
+  const restoreValue=(selector,value)=>{$(selector).value=value??"";};
+  restoreValue("#table-edge-tariff",savedScope.edge_tariff_id);
+  $("#table-edge-scope").checked=savedScope.edge_scope==="all_exposed";
+  restoreValue("#table-labor-tariff",savedScope.labor_tariff_id);
+  restoreValue("#table-labor-hours",savedScope.labor_hours);
+  restoreValue("#table-finish-tariff",savedScope.finish_tariff_id);
+  restoreValue("#table-finish-quantity",savedScope.finish_quantity_m2);
+  restoreValue("#table-margin",savedScope.provisional_margin_percent);
+  $$('#table-operation-tariffs input[type="checkbox"]').forEach((input)=>{
+    input.checked=(savedScope.operation_tariff_ids??[]).includes(input.value);
+    input.dispatchEvent(new Event("change"));
+    restoreValue(`[data-operation-hours="${CSS.escape(input.value)}"]`,savedScope.operation_hours_by_tariff?.[input.value]);
+  });
+  $$('[data-exclusion-scope]').forEach((input)=>{
+    const exclusion=(savedScope.exclusions??[]).find((item)=>item.scope===input.dataset.exclusionScope);
+    input.checked=Boolean(exclusion);input.dispatchEvent(new Event("change"));
+    restoreValue(`[data-exclusion-reason="${input.dataset.exclusionScope}"]`,exclusion?.reason);
+  });
   const estimate=presentTableCosts(raw),materialScope=tableMaterialScopeSelection(raw.scope??{},state.tableWorkspace?.evaluated?.components??[],state.tableCostCatalog?.materials??[]); text($("#estimate-revision"),`Revisión ${estimate.revision} · ${estimate.catalogLabel} · Horas ${estimate.hoursLabel}`); text($("#estimate-total"),estimate.totalLabel); const materialSelect=$("#table-material-tariff"); if(materialSelect)materialSelect.value=materialScope.materialTariffId; $$('#table-component-material-tariffs [data-component-id]').forEach((label)=>{const select=$("select",label);if(select)select.value=materialScope.componentMaterialTariffIds[label.dataset.componentId]??"";}); const scopeWarning=$("#table-material-scope-warning"); text(scopeWarning,materialScope.warnings.join(" ")); toggleHidden(scopeWarning,!materialScope.warnings.length); const root=$("#estimate-lines"); root.replaceChildren(); if(estimate.largestContribution){const lead=document.createElement("p"); lead.className="cost-lead"; lead.textContent=`Mayor contribución calculada: ${estimate.largestContribution.label} · ${estimate.largestContribution.amountLabel}`; root.append(lead);} estimate.items.forEach((item)=>{const row=document.createElement("div"); row.className="estimate-line"; const left=document.createElement("span"),title=document.createElement("b"),detail=document.createElement("small"),formula=document.createElement("small"),amount=document.createElement("b"); title.textContent=item.label; detail.textContent=`${item.component_id?`Pieza ${item.component_id} · `:""}${item.quantityLabel} × ${item.rateLabel} · ${item.stateLabel}`; formula.textContent=item.formula; amount.textContent=item.amountLabel; left.append(title,detail,formula); row.append(left,amount); root.append(row);}); const sale=document.createElement("p");sale.className=estimate.complete?"cost-lead":"estimate-note unknown";sale.textContent=estimate.complete?`Precio provisional ${estimate.salePriceLabel} · margen explícito ${estimate.marginLabel}`:"Presupuesto parcial: no se publica precio provisional.";root.append(sale); estimate.warnings.forEach((warning)=>{const note=document.createElement("p"); note.className="estimate-note unknown"; note.textContent=warning; root.append(note);}); $$('[data-export]').forEach((button)=>button.disabled=false);
 }
 
@@ -817,6 +989,7 @@ async function followJob(initialJob) {
     getJob: api.getJob,
     onUpdate: async (job) => {
       persistJob({ id: job.id, run_id: job.runId, state: job.state }, localStorage);
+      if(job.checkpoint||job.recovery)state.jobRecovery=presentJobRecovery(job);
       const automatic=$("#upload-form").elements.input_kind.value==="general_furniture"&&$("#upload-form").elements.mode.value==="live",label=automatic&&["queued","running"].includes(job.state)?`Revisión visual automática · ${jobStatusLabel(job)}`:jobStatusLabel(job);text($("#job-status"), `${label} · ${job.id}`);
       text($("#upload-status"), label);
       if (job.runId) {
@@ -824,12 +997,12 @@ async function followJob(initialJob) {
         try { await refreshTraceHistory(); } catch { text($("#trace-gap-status"), "La traza aún no está disponible; se volverá a consultar."); }
       }
     },
-  });}catch(error){state.jobAbort=null;throw error;}
+  });}catch(error){state.jobAbort=null;if(error?.name==="TimeoutError"&&state.jobRecovery){const recovery=state.jobRecovery,message=`La espera local agotó el tiempo. ${recovery.message}`;setMessage(message,true);text($("#job-status"),recovery.phaseLabel);toggleHidden($("#job-retry"),!recovery.safeAction);text($("#job-retry"),recovery.actionLabel);throw new ApiError(message,{code:"local_poll_timeout",retryable:Boolean(recovery.safeAction)});}throw error;}
   if (controller.signal.aborted) return null;
   state.jobAbort = null;
   if (result.state !== "succeeded" || !result.runId) {
-    const retryable=Boolean(result.error?.retryable)&&["failed","interrupted"].includes(result.state);toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;
-    const error = new ApiError(result.error?.message ?? "El trabajo no terminó correctamente.", { code: result.error?.code ?? result.state, retryable: Boolean(result.error?.retryable) });
+    const presented=presentJobRecovery(result),retryable=Boolean(presented.safeAction)&&["failed","interrupted"].includes(result.state);state.jobRecovery=presented;toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;text($("#job-retry"),presented.actionLabel);text($("#job-status"),presented.phaseLabel);setMessage(presented.message,true);
+    const error = new ApiError(presented.message, { code: result.error?.code ?? result.state, retryable });
     throw error;
   }
   toggleHidden($("#job-retry"),true);
@@ -838,7 +1011,7 @@ async function followJob(initialJob) {
   return result;
 }
 
-async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry");button.disabled=true;try{setMessage(`Creando una nueva ejecución enlazada a ${sourceJobId}; el trabajo original se conserva.`);const next=await api.retryJob(sourceJobId);text($("#job-status"),`Reintento de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
+async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry"),action=state.jobRecovery?.safeAction;button.disabled=true;try{const resume=action==="resume_review";setMessage(resume?`Reanudando la revisión de la propuesta recuperada; no se repetirá el proponente.`:`Repitiendo desde el inicio. Esta acción puede volver a consumir el proveedor; el trabajo original se conserva.`);const next=resume?await api.resumeJob(sourceJobId):await api.retryJob(sourceJobId);state.jobRecovery=null;text($("#job-status"),`${resume?"Reanudación":"Reintento"} de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
 
 async function runUpload(event) {
   event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
@@ -863,10 +1036,11 @@ async function normalizePdfPage(event) {
   event.preventDefault(); if(!state.documentId)return;
   const page=Number($("#pdf-page-select").value),rawScale=$("#pdf-mm-per-point").value.trim(),reason=$("#pdf-scale-reason").value.trim();
   if(!Number.isInteger(page)||page<1)return setMessage("Selecciona una página PDF válida.",true);
-  if(!reason)return setMessage("Explica por qué se prepara esta página y de dónde procede la escala.",true);
+  if(rawScale&&!reason)return setMessage("Explica de dónde procede la escala confirmada.",true);
   const mmPerPoint=rawScale===""?null:Number(rawScale); if(mmPerPoint!==null&&(!Number.isFinite(mmPerPoint)||mmPerPoint<=0))return setMessage("La escala debe ser positiva o quedar vacía si es desconocida.",true);
+  const scaleReason=reason||"Escala no confirmada; conservar unidades desconocidas.";
   const identity=`pdf:${state.documentId}:${page}`,token=actionFence.issue(identity); text($("#upload-status"),"Preparando PDF");
-  try{const record=await api.normalizePdfPage(state.documentId,page,{...(mmPerPoint===null?{}:{mm_per_pdf_point:mmPerPoint}),...(state.session?.username?{confirmed_by:state.session.username}:{}),reason});if(!actionFence.isCurrent(token,identity))return;state.documentId=record.document_id??record.id;const ingestion=renderDocumentIngestion(record);toggleHidden($("#pdf-page-controls"),true);if(ingestion.previewUrl)$("#original-preview").src=api.resourceUrl(ingestion.previewUrl);const form=$("#upload-form"),inputKind=form.elements.input_kind.value,mode=form.elements.mode.value;if(!canStartDocumentAnalysis(ingestion,{inputKind,mode}))throw new ApiError("La página conserva escala desconocida o no contiene geometría vectorial normalizable. Selecciona mueble general live para revisar visualmente la vista previa sin afirmar medidas.",{status:409,code:"normalized_dxf_unavailable"});const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,form.elements.table_template_id.value):inputKind==="general_furniture"?generalRunOptions(mode):{};await startRunForDocument({documentId:state.documentId,mode,inputKind,runOptions,stillCurrent:()=>actionFence.isCurrent(token,identity)});}catch(error){if(actionFence.isCurrent(token,identity)){setMessage(error.message,true);text($("#upload-status"),"Revisión PDF");toggleHidden($("#pdf-page-controls"),false);}}
+  try{const record=await api.normalizePdfPage(state.documentId,page,{...(mmPerPoint===null?{}:{mm_per_pdf_point:mmPerPoint}),...(state.session?.username?{confirmed_by:state.session.username}:{}),reason:scaleReason});if(!actionFence.isCurrent(token,identity))return;state.documentId=record.document_id??record.id;const ingestion=renderDocumentIngestion(record);toggleHidden($("#pdf-page-controls"),true);if(ingestion.previewUrl)$("#original-preview").src=api.resourceUrl(ingestion.previewUrl);const form=$("#upload-form"),inputKind=form.elements.input_kind.value,mode=form.elements.mode.value;if(!canStartDocumentAnalysis(ingestion,{inputKind,mode}))throw new ApiError("La página conserva escala desconocida o no contiene geometría vectorial normalizable. Selecciona mueble general live para revisar visualmente la vista previa sin afirmar medidas.",{status:409,code:"normalized_dxf_unavailable"});const runOptions=inputKind==="mounted_orthographic_views"?tableRunOptions(mode,form.elements.table_template_id.value):inputKind==="general_furniture"?generalRunOptions(mode):{};await startRunForDocument({documentId:state.documentId,mode,inputKind,runOptions,stillCurrent:()=>actionFence.isCurrent(token,identity)});}catch(error){if(actionFence.isCurrent(token,identity)){setMessage(error.message,true);text($("#upload-status"),"Revisión PDF");toggleHidden($("#pdf-page-controls"),false);}}
 }
 
 function renderHistoryRecords(raw) {
@@ -997,11 +1171,14 @@ function renderLibraryResults(raw, mode) {
   const root = $("#library-list");
   root.replaceChildren();
   const items = raw.matches ?? raw.items ?? raw.groups ?? raw ?? [];
+  const counts = libraryCounts(raw, items);
+  text($("#library-status"), `Comparación: ${counts.designs} diseños candidatos · ${counts.records} registros candidatos · ${counts.duplicates} duplicados detectados.`);
   const queryEntry = [...state.libraryItems.values()].find(
     (entry) => entry.run_id === state.runId && entry.result_revision === state.snapshot?.result_revision,
   );
   items.forEach((item) => {
     const candidate = state.libraryItems.get(item.library_item_id);
+    item.member_ids=item.member_ids??item.equivalent_record_ids;
     const card = document.createElement("div");
     card.className = "detail-item similarity-match-card";
     const title = document.createElement("b");
@@ -1013,7 +1190,7 @@ function renderLibraryResults(raw, mode) {
       item.library_item_id ??
       (item.id ? `Grupo ${item.id}` : "Elemento de biblioteca");
     const detail = document.createElement("span");
-    const score = Number.isFinite(item.score) ? ` · puntuación ${item.score.toFixed(3)}` : "";
+    const score = Number.isFinite(item.score) ? ` · ${similarityScoreLabel(item, mode)}` : "";
     const members = item.member_ids?.length ? ` · ${item.member_ids.length} miembros` : "";
     const threshold = Number.isFinite(item.threshold) ? ` · umbral ${item.threshold.toFixed(2)}` : "";
     detail.textContent = `${
@@ -1103,25 +1280,48 @@ function renderLibraryResults(raw, mode) {
       }
     }
 
-    const linked = item.member_ids?.map((id) => state.libraryItems.get(id)).filter(Boolean) ?? (candidate ? [candidate] : []);
+    const linked = (item.member_ids ?? item.equivalent_record_ids)?.map((id) => state.libraryItems.get(id)).filter(Boolean) ?? (candidate ? [candidate] : []);
     if (linked.length) {
       const links = document.createElement("div");
       links.className = "library-members";
       linked.forEach((entry) => links.append(libraryRunLink(entry)));
       card.append(links);
     }
+    card.append(emptyParagraph(`Coincidencia tipológica: ${typologyLabel(item.typology_label ?? item.family ?? candidate?.descriptor?.family)}`));
+    card.append(emptyParagraph("Comparación técnica: la similitud no certifica material, acabado ni proceso de fabricación."));
+    for (const warning of item.compatibility_warnings ?? []) card.append(emptyParagraph(compatibilityWarningLabel(warning)));
+    appendPieceDifferences(card, item);
+    appendComparisonThumbnails(card, item, candidate);
+    if (Number.isFinite(item.technical_score)) card.append(emptyParagraph(`Similitud técnica ${formatSimilarityScore(item.technical_score)}`));
+    if (item.linkage === "complete") card.append(emptyParagraph(`Agrupación por enlace completo · mínimo entre pares ${formatSimilarityScore(item.minimum_pair_score)}`));
     root.append(card);
   });
-  if (!items.length) root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
+  if (!items.length) root.append(emptyParagraph(libraryEmptyMessage(counts.records)));
   if (Number.isInteger(raw.excluded_count) && raw.excluded_count > 0)
     root.append(emptyParagraph(`${raw.excluded_count} elementos de otra versión de descriptor se excluyeron de la comparación.`));
 }
 
 function renderLibraryEntries(raw) {
   const items=raw.items??raw??[]; state.libraryItems=new Map(items.map((item)=>[item.id,item])); const root=$("#library-list"); root.replaceChildren();
+  const counts=libraryCounts(raw,items);text($("#library-status"),`Biblioteca: ${counts.designs} diseños únicos · ${counts.records} registros almacenados · ${counts.duplicates} duplicados detectados.`);text($("#provider-status"),semanticAvailabilityText());
   items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); if(descriptor.descriptor_version==="furniture-v2"){const presented=presentDescriptorV2(descriptor); detail.textContent=`Revisión ${item.result_revision} · ${presented.familyLabel} · ${presented.structureLabel} · ${presented.thicknessLabel} · Clasificación ${presented.classificationLabel.toLowerCase()}${presented.unknownLabels.length?` · Desconocidos: ${presented.unknownLabels.join(", ")}`:""}`;} else if(descriptor.descriptor_version==="furniture-v3")detail.textContent=`Revisión ${item.result_revision} · Mesa rectangular · ${descriptor.structure==="side_support_table"?"dos soportes laterales":"cuatro patas"} · ${descriptor.components?.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · ")??"sin componentes"} · Clasificación confirmada`; else detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
-  if(!items.length)root.append(emptyParagraph("La biblioteca técnica está vacía."));
+  if(!items.length)root.append(emptyParagraph(`${libraryEmptyMessage(0)} El proveedor semántico y el histórico tienen estados independientes.`));
   if(Number.isInteger(raw.excluded_count)&&raw.excluded_count>0)root.append(emptyParagraph(`${raw.excluded_count} elementos incompatibles quedaron fuera de este espacio de descriptor.`));
+}
+
+async function refreshInitialLibrary() {
+  text($("#provider-status"), semanticAvailabilityText());
+  if (!state.features.library) {
+    text($("#library-status"), "Biblioteca no disponible en este acceso.");
+    return;
+  }
+  try {
+    const library = await api.getLibrary();
+    renderLibraryEntries(library);
+  } catch (error) {
+    text($("#library-status"), `Biblioteca no disponible: ${error.message}`);
+    $("#library-list").replaceChildren(emptyParagraph("No se pudo consultar la Biblioteca."));
+  }
 }
 
 function libraryRunLink(item) {
@@ -1130,9 +1330,9 @@ function libraryRunLink(item) {
 }
 
 async function estimateCurrentRevision(){ if(state.tableWorkspace?.isTable)return estimateTableRevision(); const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral){const target=state.generalDerived?.historicalTarget;if(!target)throw new TypeError("La revisión general no tiene una base histórica autoritativa.");const {includeSynthetic}=historicalRetrievalOptions(),comparableResult=await loadHistoricalComparables();if(!actionFence.isCurrent(token,actionIdentity()))return;const comparableIds=(comparableResult?.items??[]).map((item)=>item.record_id);const estimate=await api.estimateFromHistory({target,comparable_ids:comparableIds,include_synthetic:includeSynthetic});if(!actionFence.isCurrent(token,actionIdentity()))return;renderHistoricalEstimate(estimate);return;}const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
-async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`; await api.saveToLibrary(state.runId,librarySavePayload({resultRevision:state.snapshot.result_revision,label,semantic:$("#similarity-mode").value==="semantic"})); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
-async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
-async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
+async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral)throw new TypeError("Biblioteca admite revisiones de piezas y mesa; el descriptor de mueble general está pendiente.");const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`,semanticRequested=$("#similarity-mode").value==="semantic"&&!state.config.semantic?.generation_requires_authentication,payload=librarySavePayload({resultRevision:state.snapshot.result_revision,label,semantic:semanticRequested});if(state.config.library_requires_real_reviewed){const sourceReference=$("#library-source-reference").value.trim(),approved=$("#library-public-approved").checked;if(!sourceReference||!approved)throw new TypeError("Declara una referencia verificable y confirma la publicación del mobiliario real revisado.");payload.publication={source_kind:"real_furniture",source_reference:sourceReference,approved_for_public_library:true};} await api.saveToLibrary(state.runId,payload); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),semanticRequested?"Revisión guardada con índice semántico.":"Revisión guardada offline en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
+async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
+async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 
 async function restoreRunReference(runId) {
   const retry=$("#restore-run-retry"), initial=restoredRunRecovery(runId);
@@ -1210,9 +1410,12 @@ async function boot() {
   $("#find-similar").addEventListener("click",findSimilarCurrent);
   $("#group-library").addEventListener("click",groupCurrentLibrary);
   $("#duplicate-precedent-dismiss")?.addEventListener("click", hideDuplicatePrecedentBanner);
+  $("#similarity-mode").addEventListener("change",updateGroupingLabels);updateGroupingLabels();
+  $$('[data-threshold-preset]').forEach((button)=>button.addEventListener("click",()=>{$("#group-threshold").value=button.dataset.thresholdPreset;}));
   $("#restore-run-retry").addEventListener("click",()=>{if(state.runId)restoreRunReference(state.runId);});
   $("#job-retry").addEventListener("click",retryCurrentJob);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
+  await refreshInitialLibrary();
   try {
     state.session=await api.getSession();
     const authenticated=state.session.authenticated===true&&Boolean(state.session.username), reviewer=$("#reviewer-name");

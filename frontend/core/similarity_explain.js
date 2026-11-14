@@ -239,14 +239,14 @@ export function collectCoincidences(match, options = {}) {
 
   const thicknessText = extractUniformThickness(candidateDescriptor) ?? extractUniformThickness(queryDescriptor);
   const sameThicknessByDesc = queryDescriptor && candidateDescriptor && extractUniformThickness(queryDescriptor) !== null && extractUniformThickness(queryDescriptor) === extractUniformThickness(candidateDescriptor);
-  if (!diffFields.has("thicknesses_mm") && (Number(components.thickness) >= 0.999 || sameThicknessByDesc || (candidateDescriptor && thicknessText && !diffFields.has("components")))) {
+  if (!diffFields.has("thicknesses_mm") && (Number(components.thickness) >= 0.999 || sameThicknessByDesc)) {
     add(thicknessText ? `Mismo espesor (${thicknessText})` : "Mismo espesor");
   }
 
   const structureVal = candidateDescriptor?.structure ?? queryDescriptor?.structure;
   const bothKnownStructure = queryDescriptor && candidateDescriptor
     ? !isUnknownValue(queryDescriptor.structure) && queryDescriptor.structure === candidateDescriptor.structure
-    : !isUnknownValue(structureVal) && !diffFields.has("structure") && Boolean(candidateDescriptor);
+    : false;
   if (bothKnownStructure) {
     add(`Misma estructura (${formatStructureValue(structureVal)})`);
   }
@@ -258,14 +258,14 @@ export function collectCoincidences(match, options = {}) {
 
   if (!diffFields.has("material")) {
     const material = candidateDescriptor?.material ?? queryDescriptor?.material;
-    if (!isUnknownValue(material) && (candidateDescriptor || (queryDescriptor && material))) {
+    if (!isUnknownValue(material) && queryDescriptor && candidateDescriptor && queryDescriptor.material === candidateDescriptor.material) {
       add(`Mismo material (${String(material).trim()})`);
     }
   }
 
   if (!diffFields.has("finish")) {
     const finish = candidateDescriptor?.finish ?? queryDescriptor?.finish;
-    if (!isUnknownValue(finish) && (candidateDescriptor || (queryDescriptor && finish))) {
+    if (!isUnknownValue(finish) && queryDescriptor && candidateDescriptor && queryDescriptor.finish === candidateDescriptor.finish) {
       add(`Mismo acabado (${String(finish).trim()})`);
     }
   }

@@ -1,0 +1,154 @@
+[
+  {
+    "record_id": "grotowska-2026-square-table",
+    "project_id": "grotowska-2026-square-table",
+    "revision": "published-2026-07-30",
+    "origin": "published",
+    "payload": "{\"record_id\":\"grotowska-2026-square-table\",\"project_id\":\"grotowska-2026-square-table\",\"revision\":\"published-2026-07-30\",\"family\":\"table\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":1640000.0,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":\"natural oil, Cradle to Cradle Certified Silver\",\"currency\":\"PLN\",\"actual_cost\":250.9,\"cost_basis\":\"budget\",\"manufacturing_hours\":3.5,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18157720; Tables 2, 6 and 7\",\"source_date\":\"2026-07-30\",\"imported_by\":null,\"notes\":\"Published academic case-study budget, not a closed ERP actual. Overall dimensions are not reported and remain null. Wood-use area is 1.64 m2.\"},\"concepts\":[{\"concept_id\":\"material\",\"kind\":\"material\",\"driver\":\"area\",\"cost\":50.0,\"hours\":null,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":null},{\"concept_id\":\"labor\",\"kind\":\"labor\",\"driver\":\"item\",\"cost\":143.0,\"hours\":3.5,\"material\":null,\"finish\":null},{\"concept_id\":\"indirect\",\"kind\":\"indirect\",\"driver\":\"fixed\",\"cost\":57.9,\"hours\":null,\"material\":null,\"finish\":null}],\"components\":[{\"component_id\":\"oak-block-70\",\"kind\":\"solid-wood block\",\"quantity\":336,\"length_mm\":70.0,\"width_mm\":70.0,\"thickness_mm\":20.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"post-production solid oak residue\",\"finish\":\"natural oil\"},{\"component_id\":\"particleboard-base\",\"kind\":\"panel\",\"quantity\":1,\"length_mm\":650.0,\"width_mm\":650.0,\"thickness_mm\":18.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"wood particleboard\",\"finish\":null}],\"included_scope\":[\"material\",\"labor\",\"indirect\"],\"cost_scope\":[\"material\",\"labor\",\"indirect\"],\"hours_scope\":[\"labor\"]}",
+    "payload_hash": "9ee7bff26dad5bd3802981503b2eb8de99278e2ab586c85d4398def02f62d619"
+  },
+  {
+    "record_id": "grotowska-2026-childrens-chair",
+    "project_id": "grotowska-2026-childrens-chair",
+    "revision": "published-2026-07-30",
+    "origin": "published",
+    "payload": "{\"record_id\":\"grotowska-2026-childrens-chair\",\"project_id\":\"grotowska-2026-childrens-chair\",\"revision\":\"published-2026-07-30\",\"family\":\"chair\",\"width_mm\":300.0,\"depth_mm\":350.0,\"height_mm\":580.0,\"area_mm2\":360000.0,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":\"natural oil, Cradle to Cradle Certified Silver\",\"currency\":\"PLN\",\"actual_cost\":107.9,\"cost_basis\":\"budget\",\"manufacturing_hours\":2.5,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3\",\"source_date\":\"2026-07-30\",\"imported_by\":null,\"notes\":\"Published academic case-study budget, not a closed ERP actual. The reported 30 x 35 x 58 cm sequence is mapped to width, depth and height. Wood-use area is 0.36 m2.\"},\"concepts\":[{\"concept_id\":\"material\",\"kind\":\"material\",\"driver\":\"area\",\"cost\":20.0,\"hours\":null,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":null},{\"concept_id\":\"labor\",\"kind\":\"labor\",\"driver\":\"item\",\"cost\":63.0,\"hours\":2.5,\"material\":null,\"finish\":null},{\"concept_id\":\"indirect\",\"kind\":\"indirect\",\"driver\":\"fixed\",\"cost\":24.9,\"hours\":null,\"material\":null,\"finish\":null}],\"components\":[{\"component_id\":\"oak-block-50\",\"kind\":\"solid-wood block\",\"quantity\":146,\"length_mm\":50.0,\"width_mm\":50.0,\"thickness_mm\":20.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"post-production solid oak residue\",\"finish\":\"natural oil\"},{\"component_id\":\"oak-rail-300\",\"kind\":\"solid-wood rail\",\"quantity\":2,\"length_mm\":300.0,\"width_mm\":50.0,\"thickness_mm\":20.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"post-production solid oak residue\",\"finish\":\"natural oil\"},{\"component_id\":\"particleboard-seat\",\"kind\":\"panel\",\"quantity\":1,\"length_mm\":300.0,\"width_mm\":250.0,\"thickness_mm\":18.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"wood particleboard\",\"finish\":null}],\"included_scope\":[\"material\",\"labor\",\"indirect\"],\"cost_scope\":[\"material\",\"labor\",\"indirect\"],\"hours_scope\":[\"labor\"]}",
+    "payload_hash": "f54d089e1e75609e2558b30c2767df6075c0ffc14c59d1bd663de4b475c6f915"
+  },
+  {
+    "record_id": "grotowska-2026-childrens-table",
+    "project_id": "grotowska-2026-childrens-table",
+    "revision": "published-2026-07-30",
+    "origin": "published",
+    "payload": "{\"record_id\":\"grotowska-2026-childrens-table\",\"project_id\":\"grotowska-2026-childrens-table\",\"revision\":\"published-2026-07-30\",\"family\":\"table\",\"width_mm\":500.0,\"depth_mm\":500.0,\"height_mm\":580.0,\"area_mm2\":780000.0,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":\"natural oil, Cradle to Cradle Certified Silver\",\"currency\":\"PLN\",\"actual_cost\":111.8,\"cost_basis\":\"budget\",\"manufacturing_hours\":3.0,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3\",\"source_date\":\"2026-07-30\",\"imported_by\":null,\"notes\":\"Published academic case-study budget, not a closed ERP actual. The reported 50 x 50 x 58 cm sequence is mapped to width, depth and height. Wood-use area is 0.78 m2.\"},\"concepts\":[{\"concept_id\":\"material\",\"kind\":\"material\",\"driver\":\"area\",\"cost\":11.0,\"hours\":null,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":null},{\"concept_id\":\"labor\",\"kind\":\"labor\",\"driver\":\"item\",\"cost\":75.0,\"hours\":3.0,\"material\":null,\"finish\":null},{\"concept_id\":\"indirect\",\"kind\":\"indirect\",\"driver\":\"fixed\",\"cost\":25.8,\"hours\":null,\"material\":null,\"finish\":null}],\"components\":[{\"component_id\":\"oak-block-50\",\"kind\":\"solid-wood block\",\"quantity\":312,\"length_mm\":50.0,\"width_mm\":50.0,\"thickness_mm\":20.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"post-production solid oak residue\",\"finish\":\"natural oil\"},{\"component_id\":\"particleboard-base\",\"kind\":\"panel\",\"quantity\":1,\"length_mm\":450.0,\"width_mm\":450.0,\"thickness_mm\":18.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"wood particleboard\",\"finish\":null}],\"included_scope\":[\"material\",\"labor\",\"indirect\"],\"cost_scope\":[\"material\",\"labor\",\"indirect\"],\"hours_scope\":[\"labor\"]}",
+    "payload_hash": "8b6a553a4629447233c3a54fcd7f6e09695ca02f402e22a1809a21aedea16090"
+  },
+  {
+    "record_id": "grotowska-2026-pouf",
+    "project_id": "grotowska-2026-pouf",
+    "revision": "published-2026-07-30",
+    "origin": "published",
+    "payload": "{\"record_id\":\"grotowska-2026-pouf\",\"project_id\":\"grotowska-2026-pouf\",\"revision\":\"published-2026-07-30\",\"family\":\"seating\",\"width_mm\":420.0,\"depth_mm\":420.0,\"height_mm\":420.0,\"area_mm2\":1100000.0,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":\"natural oil, Cradle to Cradle Certified Silver\",\"currency\":\"PLN\",\"actual_cost\":162.5,\"cost_basis\":\"budget\",\"manufacturing_hours\":2.5,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3\",\"source_date\":\"2026-07-30\",\"imported_by\":null,\"notes\":\"Published academic case-study budget, not a closed ERP actual. Table 2 reports six 440 x 440 x 18 mm boards; section 3.3 reports a 380 x 380 x 18 mm board. Components preserve Table 2 while this conflict remains unresolved. Wood-use area is 1.10 m2.\"},\"concepts\":[{\"concept_id\":\"material\",\"kind\":\"material\",\"driver\":\"area\",\"cost\":50.0,\"hours\":null,\"material\":\"post-production solid oak residues with wood particleboard and PVAc D3 glue\",\"finish\":null},{\"concept_id\":\"labor\",\"kind\":\"labor\",\"driver\":\"item\",\"cost\":75.0,\"hours\":2.5,\"material\":null,\"finish\":null},{\"concept_id\":\"indirect\",\"kind\":\"indirect\",\"driver\":\"fixed\",\"cost\":37.5,\"hours\":null,\"material\":null,\"finish\":null}],\"components\":[{\"component_id\":\"oak-block-70\",\"kind\":\"solid-wood block\",\"quantity\":216,\"length_mm\":70.0,\"width_mm\":70.0,\"thickness_mm\":20.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"post-production solid oak residue\",\"finish\":\"natural oil\"},{\"component_id\":\"particleboard-panels\",\"kind\":\"panel\",\"quantity\":6,\"length_mm\":440.0,\"width_mm\":440.0,\"thickness_mm\":18.0,\"area_mm2\":null,\"volume_mm3\":null,\"material\":\"wood particleboard\",\"finish\":null}],\"included_scope\":[\"material\",\"labor\",\"indirect\"],\"cost_scope\":[\"material\",\"labor\",\"indirect\"],\"hours_scope\":[\"labor\"]}",
+    "payload_hash": "f33eac802a71b139ff8bab5e889ee080daf22942294055bd92fe96c7bc87734e"
+  },
+  {
+    "record_id": "nuriyev-2026-e1-azure",
+    "project_id": "nuriyev-2026-e1-azure",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e1-azure\",\"project_id\":\"nuriyev-2026-e1-azure\",\"revision\":\"published-2026-09-20\",\"family\":\"bedroom furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.0,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 1 / Table A2\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 1. Z-number time A=(0.92, 1.0, 1.08), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.0,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "928e3b06adde1fff5b609b78a01b1c06515546477f475d7271e2cba236b21816"
+  },
+  {
+    "record_id": "nuriyev-2026-e1-peral",
+    "project_id": "nuriyev-2026-e1-peral",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e1-peral\",\"project_id\":\"nuriyev-2026-e1-peral\",\"revision\":\"published-2026-09-20\",\"family\":\"bedroom furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.3,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 1 / Table A2\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 1. Z-number time A=(1.196, 1.3, 1.404), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.3,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "1b71e835a725ebeea8b4ae32a0f6be9dc2142de3c6749bc90325dfff94fc2f10"
+  },
+  {
+    "record_id": "nuriyev-2026-e1-coslada",
+    "project_id": "nuriyev-2026-e1-coslada",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e1-coslada\",\"project_id\":\"nuriyev-2026-e1-coslada\",\"revision\":\"published-2026-09-20\",\"family\":\"bedroom furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":2.0,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 1 / Table A2\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 1. Z-number time A=(1.84, 2.0, 2.16), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":2.0,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "6ee9bc83c4ce5d91708fb2b4f3f87bd35bd9aaf9fbb2463f9e949d58460cb685"
+  },
+  {
+    "record_id": "nuriyev-2026-e1-fortuna",
+    "project_id": "nuriyev-2026-e1-fortuna",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e1-fortuna\",\"project_id\":\"nuriyev-2026-e1-fortuna\",\"revision\":\"published-2026-09-20\",\"family\":\"bedroom furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":2.3,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 1 / Table A2\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 1. Z-number time A=(2.116, 2.3, 2.484), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":2.3,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "e0bac5a9860d2e8d853ad836e71c43f52fb85f312e217c72a712f1f1b13adcd8"
+  },
+  {
+    "record_id": "nuriyev-2026-e1-vista",
+    "project_id": "nuriyev-2026-e1-vista",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e1-vista\",\"project_id\":\"nuriyev-2026-e1-vista\",\"revision\":\"published-2026-09-20\",\"family\":\"bedroom furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":2.5,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 1 / Table A2\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 1. Z-number time A=(2.3, 2.5, 2.7), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":2.5,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "dfdf229bd0bf40da1814f4fa9bc8bc708d2aca62f6a12027245caf77124994eb"
+  },
+  {
+    "record_id": "nuriyev-2026-e2-orion",
+    "project_id": "nuriyev-2026-e2-orion",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e2-orion\",\"project_id\":\"nuriyev-2026-e2-orion\",\"revision\":\"published-2026-09-20\",\"family\":\"children's furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.45,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 2 / Table A4\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 2. Z-number time A=(1.334, 1.45, 1.566), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.45,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "aace454553bab3fe2f5808ad9e6b965a7320232d2f6f2feb881142fd99bd4640"
+  },
+  {
+    "record_id": "nuriyev-2026-e2-lavin",
+    "project_id": "nuriyev-2026-e2-lavin",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e2-lavin\",\"project_id\":\"nuriyev-2026-e2-lavin\",\"revision\":\"published-2026-09-20\",\"family\":\"children's furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.65,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 2 / Table A4\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 2. Z-number time A=(1.518, 1.65, 1.782), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.65,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "d55aa12c1bf856a076dc3b7d27ff089a0a2094372ee4eea645d2832f31b3f36d"
+  },
+  {
+    "record_id": "nuriyev-2026-e2-pianta",
+    "project_id": "nuriyev-2026-e2-pianta",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e2-pianta\",\"project_id\":\"nuriyev-2026-e2-pianta\",\"revision\":\"published-2026-09-20\",\"family\":\"children's furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.32,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 2 / Table A4\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 2. Z-number time A=(1.214, 1.32, 1.426), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.32,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "aa428ff82ffa18a44feaaabdff2df621297e8df9535ca7672adba805b0ada625"
+  },
+  {
+    "record_id": "nuriyev-2026-e2-angel",
+    "project_id": "nuriyev-2026-e2-angel",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e2-angel\",\"project_id\":\"nuriyev-2026-e2-angel\",\"revision\":\"published-2026-09-20\",\"family\":\"children's furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.92,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 2 / Table A4\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 2. Z-number time A=(1.766, 1.92, 2.074), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.92,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "30f2a96223388cdb388783f92dc0bd70dc859c18021aa4c1d98a3612ec821894"
+  },
+  {
+    "record_id": "nuriyev-2026-e2-vancouver",
+    "project_id": "nuriyev-2026-e2-vancouver",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e2-vancouver\",\"project_id\":\"nuriyev-2026-e2-vancouver\",\"revision\":\"published-2026-09-20\",\"family\":\"children's furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.54,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 2 / Table A4\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 2. Z-number time A=(1.417, 1.54, 1.663), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.54,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "ccd64a962c23841038f14ac7f5989c4d71a39e3ee9066dc6a67d0e2d397ef5d2"
+  },
+  {
+    "record_id": "nuriyev-2026-e3-armadi",
+    "project_id": "nuriyev-2026-e3-armadi",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e3-armadi\",\"project_id\":\"nuriyev-2026-e3-armadi\",\"revision\":\"published-2026-09-20\",\"family\":\"living room furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.08,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 3 / Table A6\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 3. Z-number time A=(0.994, 1.08, 1.166), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.08,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "3c5539c7baf259380c19eeb430609610d610c01131388ee9b21e2e9f57bfe2c9"
+  },
+  {
+    "record_id": "nuriyev-2026-e3-remi",
+    "project_id": "nuriyev-2026-e3-remi",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e3-remi\",\"project_id\":\"nuriyev-2026-e3-remi\",\"revision\":\"published-2026-09-20\",\"family\":\"living room furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.18,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 3 / Table A6\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 3. Z-number time A=(1.086, 1.18, 1.274), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.18,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "66734298891e8f563cc64995c35f6f6a6e312303912486b7e6a4f4bec7e9d591"
+  },
+  {
+    "record_id": "nuriyev-2026-e3-diamond",
+    "project_id": "nuriyev-2026-e3-diamond",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e3-diamond\",\"project_id\":\"nuriyev-2026-e3-diamond\",\"revision\":\"published-2026-09-20\",\"family\":\"living room furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.32,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 3 / Table A6\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 3. Z-number time A=(1.214, 1.32, 1.426), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.32,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "d4ed00d997926f3872f30461770096351958d211e1c6a754ca57ed7b680431f4"
+  },
+  {
+    "record_id": "nuriyev-2026-e3-greystone",
+    "project_id": "nuriyev-2026-e3-greystone",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e3-greystone\",\"project_id\":\"nuriyev-2026-e3-greystone\",\"revision\":\"published-2026-09-20\",\"family\":\"living room furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.72,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 3 / Table A6\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 3. Z-number time A=(1.582, 1.72, 1.858), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.72,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "c406cbe734cf12e4b0c062d3ed5a112df3018d49a3cdac1e86fd692aed09dfb3"
+  },
+  {
+    "record_id": "nuriyev-2026-e3-karat",
+    "project_id": "nuriyev-2026-e3-karat",
+    "revision": "published-2026-09-20",
+    "origin": "published",
+    "payload": "{\"record_id\":\"nuriyev-2026-e3-karat\",\"project_id\":\"nuriyev-2026-e3-karat\",\"revision\":\"published-2026-09-20\",\"family\":\"living room furniture\",\"width_mm\":null,\"depth_mm\":null,\"height_mm\":null,\"area_mm2\":null,\"length_mm\":null,\"volume_mm3\":null,\"quantity\":1,\"material\":null,\"finish\":null,\"currency\":null,\"actual_cost\":null,\"cost_basis\":null,\"manufacturing_hours\":1.94,\"origin\":\"published\",\"provenance\":{\"source\":\"https://doi.org/10.3390/su18189636; Table 3 / Table A6\",\"source_date\":\"2026-09-20\",\"imported_by\":null,\"notes\":\"Published central per-unit production-time coefficient derived from real monthly data for anonymized Enterprise 3. Z-number time A=(1.785, 1.94, 2.095), reliability B=(0.76, 0.80, 0.84). Model coefficient, not a closed work-order actual or labor-hour breakdown.\"},\"concepts\":[{\"concept_id\":\"production_time\",\"kind\":\"production_time\",\"driver\":\"item\",\"cost\":null,\"hours\":1.94,\"material\":null,\"finish\":null}],\"components\":[],\"included_scope\":[\"production_time\"],\"cost_scope\":[],\"hours_scope\":[\"production_time\"]}",
+    "payload_hash": "446944c85f2b5213298ef6f6c1cd4a0b359d9d9dbe243385bd06d003841a911b"
+  }
+]

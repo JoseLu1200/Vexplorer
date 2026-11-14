@@ -210,6 +210,10 @@ def _expanded_entities(
         if entity.dxftype() != "INSERT":  # type: ignore[attr-defined]
             yield entity, entity_id, layer, linetype
             return
+        extrusion = entity.dxf.extrusion  # type: ignore[attr-defined]
+        if abs(float(extrusion.x)) > 1e-9 or abs(float(extrusion.y)) > 1e-9:
+            warnings.append(f"unsupported_block_transform:{entity_id}")
+            return
         if depth >= MAX_BLOCK_DEPTH:
             warnings.append(f"unsupported_block_depth:{entity_id}")
             return
@@ -311,6 +315,29 @@ def parse_dxf(
                 warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
                 continue
             parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.closed), linetype=linetype))
+        elif kind == "POLYLINE":
+            if entity.is_3d_polyline or entity.is_poly_face_mesh or entity.is_polygon_mesh:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            point_budget.ensure(len(entity), entity_id)
+            if any(abs(float(vertex.dxf.bulge)) > 1e-12 for vertex in entity.vertices):
+                warnings.append(f"unsupported_bulge:{entity_id}")
+                continue
+            ocs = entity.ocs()
+            elevation_z = float(getattr(entity.dxf, "elevation", (0.0, 0.0, 0.0))[2])
+            wcs_points = (
+                ocs.to_wcs((
+                    float(vertex.dxf.location.x),
+                    float(vertex.dxf.location.y),
+                    float(vertex.dxf.location.z) if abs(float(vertex.dxf.location.z)) > 1e-9 else elevation_z,
+                ))
+                for vertex in entity.vertices
+            )
+            points = _planar_xy_points(wcs_points)
+            if points is None:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.is_closed), linetype=linetype))
         elif kind in {"CIRCLE", "ARC"}:
             extrusion = entity.dxf.extrusion
             if abs(float(extrusion.x)) > 1e-9 or abs(float(extrusion.y)) > 1e-9 or abs(abs(float(extrusion.z)) - 1.0) > 1e-9:
@@ -448,6 +475,8 @@ def parse_dxf(
                 measurement=measurement, dimension_conflict=conflict, extension_starts=extension_starts,
                 dimension_line=dimension_line, text_position=text_position, display_text=display_text,
             ))
+        elif kind in {"3DFACE", "SOLID"}:
+            warnings.append(f"unsupported_entity:{kind}:{entity_id}")
         else:
             warnings.append(f"unsupported_entity:{kind}:{entity_id}")
 

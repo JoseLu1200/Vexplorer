@@ -1,0 +1,824 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "status": "reviewed_incomplete",
+    "proposal_revision": 1,
+    "review_revision": 1,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "demo-economic-scenario",
+      "drawing_id": "drawing-c8aa3006c1098f06",
+      "ledger_revision": "drawing-c8aa3006c1098f06",
+      "proposal_origin": "human",
+      "bindings": [
+        {
+          "id": "b-top-length",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "dimension:dimension-entity-98"
+          ]
+        },
+        {
+          "id": "b-depth",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-92:span-y"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "component-top",
+          "label": "Tablero superior candidato",
+          "kind": "panel",
+          "role": "tabletop",
+          "length_binding_id": "b-top-length",
+          "width_binding_id": "b-depth",
+          "thickness_binding_id": null,
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-92",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "p-top",
+            "p-projection"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-92",
+            "contour-entity-8D",
+            "contour-entity-94"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-92",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-98"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-98"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "El recinto de planta se interpreta provisionalmente como cara material del mismo tablero representado por las bandas superiores de alzado y lateral, no como tres piezas.",
+            "Los segmentos adicionales corresponden al perímetro exterior; no ofrecen una medida de espesor del tablero."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "finish",
+            "joint_type",
+            "confirm_surface_identity"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "component-sides",
+          "label": "Paneles laterales de soporte candidatos",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": null,
+          "width_binding_id": "b-depth",
+          "thickness_binding_id": null,
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90",
+              "evidence-contour-entity-94",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "p-sides",
+            "p-projection"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-94",
+            "contour-entity-92"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90",
+            "evidence-contour-entity-94",
+            "evidence-geometry-entity-95",
+            "evidence-contour-entity-92"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las franjas izquierda y derecha del alzado son dos soportes candidatos; la vista lateral no añade otra instancia.",
+            "La región lateral bajo la banda superior se interpreta condicionalmente como cara material de panel de fondo completo. Sigue abierta la alternativa de hueco o bastidor.",
+            "Los segmentos verticales adicionales miden el contorno exterior completo, no el soporte bajo el tablero. No se asignan a su longitud ni a su espesor.",
+            "El fondo de ambos soportes y la ausencia de retranqueos son hipótesis de correspondencia entre vistas, no hechos establecidos."
+          ],
+          "unknown_fields": [
+            "length",
+            "thickness",
+            "material",
+            "finish",
+            "joint_type",
+            "confirm_panel_vs_frame",
+            "confirm_depth_assignment"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p-top",
+          "description": "La región única de planta representa un tablero cuya proyección aparece en ambas bandas superiores. Cantidad hipotética uno; las vistas no son instancias.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-sides",
+          "description": "Las dos franjas verticales separadas del alzado representan dos soportes distintos, propuestos como paneles si el recinto lateral es material y no hueco o bastidor. La vista lateral no añade una unidad.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-projection",
+          "description": "Se adopta correspondencia provisional alzado-planta-lateral y fondo completo para ambos soportes. La coincidencia geométrica no demuestra identidad física ni ausencia de retranqueos.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-contact",
+          "description": "Los soportes candidatos encuentran la banda superior; las vistas no distinguen apoyo de fijación.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Se conserva la abstención dimensional tras examinar los segmentos adicionales: son bordes de contornos exteriores, no medidas de espesor o altura útil.",
+        "Aceptación de coherencia hipotética no equivale a despiece confirmado.",
+        "El recinto frontal interior no se añade como panel, trasera o puerta.",
+        "No se infieren materiales, acabados, herrajes ni uniones ocultas."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "demo-economic-scenario",
+      "drawing_id": "drawing-c8aa3006c1098f06",
+      "ledger_revision": "drawing-c8aa3006c1098f06",
+      "components": [
+        {
+          "id": "component-top",
+          "label": "Tablero superior candidato",
+          "kind": "panel",
+          "role": "tabletop",
+          "length": {
+            "value_mm": 1200.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:b-top-length"
+            ],
+            "evidence_ids": [
+              "evidence-dimension-entity-98"
+            ],
+            "dimension_ids": [
+              "dimension-entity-98"
+            ],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 700.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:b-depth"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-92",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "p-top",
+            "p-projection"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-92",
+            "contour-entity-8D",
+            "contour-entity-94"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-92",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-98"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-98"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "El recinto de planta se interpreta provisionalmente como cara material del mismo tablero representado por las bandas superiores de alzado y lateral, no como tres piezas.",
+            "Los segmentos adicionales corresponden al perímetro exterior; no ofrecen una medida de espesor del tablero."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "finish",
+            "joint_type",
+            "confirm_surface_identity"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "component-sides",
+          "label": "Paneles laterales de soporte candidatos",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 700.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:b-depth"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:p-sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90",
+              "evidence-contour-entity-94",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "p-sides",
+            "p-projection"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-94",
+            "contour-entity-92"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90",
+            "evidence-contour-entity-94",
+            "evidence-geometry-entity-95",
+            "evidence-contour-entity-92"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "Las franjas izquierda y derecha del alzado son dos soportes candidatos; la vista lateral no añade otra instancia.",
+            "La región lateral bajo la banda superior se interpreta condicionalmente como cara material de panel de fondo completo. Sigue abierta la alternativa de hueco o bastidor.",
+            "Los segmentos verticales adicionales miden el contorno exterior completo, no el soporte bajo el tablero. No se asignan a su longitud ni a su espesor.",
+            "El fondo de ambos soportes y la ausencia de retranqueos son hipótesis de correspondencia entre vistas, no hechos establecidos."
+          ],
+          "unknown_fields": [
+            "length",
+            "thickness",
+            "material",
+            "finish",
+            "joint_type",
+            "confirm_panel_vs_frame",
+            "confirm_depth_assignment"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "p-top",
+          "description": "La región única de planta representa un tablero cuya proyección aparece en ambas bandas superiores. Cantidad hipotética uno; las vistas no son instancias.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-sides",
+          "description": "Las dos franjas verticales separadas del alzado representan dos soportes distintos, propuestos como paneles si el recinto lateral es material y no hueco o bastidor. La vista lateral no añade una unidad.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-projection",
+          "description": "Se adopta correspondencia provisional alzado-planta-lateral y fondo completo para ambos soportes. La coincidencia geométrica no demuestra identidad física ni ausencia de retranqueos.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "p-contact",
+          "description": "Los soportes candidatos encuentran la banda superior; las vistas no distinguen apoyo de fijación.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "Se conserva la abstención dimensional tras examinar los segmentos adicionales: son bordes de contornos exteriores, no medidas de espesor o altura útil.",
+        "Aceptación de coherencia hipotética no equivale a despiece confirmado.",
+        "El recinto frontal interior no se añade como panel, trasera o puerta.",
+        "No se infieren materiales, acabados, herrajes ni uniones ocultas."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": {
+      "schema_version": "0.6.0",
+      "run_id": "run-564b920c178b4603bd98c86c65032557",
+      "proposal_id": "demo-economic-scenario",
+      "proposal_revision": 1,
+      "review_revision": 1,
+      "reviewer_name": "Demo automatizada - escenario simulado",
+      "reviewer_kind": "human",
+      "machine_provenance": null,
+      "reason": "SIMULACION DE DEMO: dimensiones y cantidades del fixture mesa_demo_001 bajo la alternativa aceptada de tapa y dos soportes. Material y acabado son condiciones hipoteticas elegidas para comparar el presupuesto publicado, no hechos inferidos del plano ni validacion industrial.",
+      "reviewed_at": "2026-11-14T12:09:59.577897+00:00",
+      "operations": [
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "component-top"
+          ],
+          "result_component_ids": [
+            "demo-component-top"
+          ],
+          "reason": "SIMULACION DE DEMO: dimensiones y cantidades del fixture mesa_demo_001 bajo la alternativa aceptada de tapa y dos soportes. Material y acabado son condiciones hipoteticas elegidas para comparar el presupuesto publicado, no hechos inferidos del plano ni validacion industrial."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "component-sides"
+          ],
+          "result_component_ids": [
+            "demo-component-sides"
+          ],
+          "reason": "SIMULACION DE DEMO: dimensiones y cantidades del fixture mesa_demo_001 bajo la alternativa aceptada de tapa y dos soportes. Material y acabado son condiciones hipoteticas elegidas para comparar el presupuesto publicado, no hechos inferidos del plano ni validacion industrial."
+        }
+      ],
+      "components": [
+        {
+          "id": "demo-component-top",
+          "label": "DEMO condicionada - Tablero superior candidato",
+          "kind": "panel",
+          "role": "tabletop",
+          "length": {
+            "value_mm": 1200.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 700.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 30.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "material": {
+            "value": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": "natural oil, Cradle to Cradle Certified Silver",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "component-top"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-92",
+            "contour-entity-8D",
+            "contour-entity-94"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-92",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-98"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-98"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "SIMULACION DE DEMO: dimensiones y cantidades del fixture mesa_demo_001 bajo la alternativa aceptada de tapa y dos soportes. Material y acabado son condiciones hipoteticas elegidas para comparar el presupuesto publicado, no hechos inferidos del plano ni validacion industrial."
+          ],
+          "unknown_fields": [
+            "placement",
+            "joinery"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "demo-component-sides",
+          "label": "DEMO condicionada - Paneles laterales de soporte candidatos",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": 720.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 700.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 18.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 2,
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "material": {
+            "value": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": "natural oil, Cradle to Cradle Certified Silver",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:Demo automatizada - escenario simulado:review:1"
+            ],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "component-sides"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-94",
+            "contour-entity-92"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90",
+            "evidence-contour-entity-94",
+            "evidence-geometry-entity-95",
+            "evidence-contour-entity-92"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "SIMULACION DE DEMO: dimensiones y cantidades del fixture mesa_demo_001 bajo la alternativa aceptada de tapa y dos soportes. Material y acabado son condiciones hipoteticas elegidas para comparar el presupuesto publicado, no hechos inferidos del plano ni validacion industrial."
+          ],
+          "unknown_fields": [
+            "placement",
+            "joinery"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "occurrences": [
+        {
+          "id": "demo-component-top:1",
+          "component_id": "demo-component-top",
+          "occurrence_index": 1
+        },
+        {
+          "id": "demo-component-sides:1",
+          "component_id": "demo-component-sides",
+          "occurrence_index": 1
+        },
+        {
+          "id": "demo-component-sides:2",
+          "component_id": "demo-component-sides",
+          "occurrence_index": 2
+        }
+      ],
+      "scenario_occurrences": [],
+      "machine_checks": [],
+      "machine_field_reviews": [],
+      "evidence_dispositions": [],
+      "auto_review_status": null,
+      "furniture_quantity": {
+        "value": 1,
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:Demo automatizada - escenario simulado:review:1"
+        ],
+        "evidence_ids": []
+      },
+      "currency": "PLN",
+      "required_cost_scope": [
+        "material",
+        "labor",
+        "indirect"
+      ],
+      "required_hours_scope": [
+        "labor"
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_validation": null,
+      "construction_placements": [],
+      "status": "reviewed_incomplete"
+    }
+  }
+}

@@ -9,6 +9,19 @@ import pytest
 from tools.prepare_plankassembly import prepare_plankassembly
 
 
+def test_wide_translated_model_has_separate_orthographic_views(tmp_path: Path):
+    from tools.prepare_plankassembly import _write_assembled_dxf
+    path = tmp_path / 'wide.dxf'
+    _write_assembled_dxf(path, [[-500, 300, -100, 1500, 600, 800]])
+    document = ezdxf.readfile(path)
+    ranges = []
+    for layer in ('ORTHO_FRONT', 'ORTHO_TOP', 'ORTHO_SIDE'):
+        xs = [point.x for line in document.modelspace().query(f'LINE[layer=="{layer}"]')
+              for point in (line.dxf.start, line.dxf.end)]
+        ranges.append((min(xs), max(xs)))
+    assert ranges == [(0, 2000), (2100, 4100), (4200, 4500)]
+
+
 def _write_fixture(root: Path) -> tuple[str, str]:
     model_dir = root / "extracted" / "data" / "model"
     split_dir = root / "extracted" / "data" / "splits"

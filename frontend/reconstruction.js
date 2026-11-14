@@ -1,5 +1,5 @@
 import { createApiClient } from './api/client.js';
-import { buildRefinement, clearProposal, createActionKeyStore, refinementAvailable, refinementQuestions } from './reconstruction-state.js';
+import { buildRefinement, clearProposal, createActionKeyStore, refinementAvailable, refinementQuestions, parentRevisionUrl } from './reconstruction-state.js';
 const api=createApiClient(),$=(id)=>document.getElementById(id),params=new URLSearchParams(location.search);
 const actionKeys=createActionKeyStore();
 let viewer,jobId=params.get('job'),active=true,currentState;
@@ -10,7 +10,7 @@ function link(name,path){const a=document.createElement('a');a.textContent=name;
 function showRefinement(state, proposal) {
   $('version').textContent = `Versión ${state.revision ?? 1} · Todas las piezas son una propuesta de diseño.`;
   $('previous-version').hidden = !state.parent_job_id;
-  if(state.parent_job_id) $('previous-version').href = `?job=${encodeURIComponent(state.parent_job_id)}`;
+  if(state.parent_job_id) $('previous-version').href = parentRevisionUrl(params,state.parent_job_id);
   const supported = refinementAvailable(state);
   $('refine-section').hidden = !supported;
   if(!supported) return;

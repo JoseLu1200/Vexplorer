@@ -1,0 +1,121 @@
+{
+  "status": "schematic_incomplete",
+  "items": [
+    {
+      "id": "scene:component-top",
+      "component_id": "component-top",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-24189eacf1206064:component-top:1"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": 1200.0,
+        "unit": "mm",
+        "state": "hypothesis",
+        "dependency_refs": [
+          "binding:b-top-length"
+        ],
+        "evidence_ids": [
+          "evidence-dimension-entity-98"
+        ],
+        "dimension_ids": [
+          "dimension-entity-98"
+        ],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": 700.0,
+        "unit": "mm",
+        "state": "hypothesis",
+        "dependency_refs": [
+          "binding:b-depth"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "schematic_unplaced"
+    },
+    {
+      "id": "scene:component-sides",
+      "component_id": "component-sides",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-24189eacf1206064:component-sides:1",
+        "provisional:general-24189eacf1206064:component-sides:2"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": 700.0,
+        "unit": "mm",
+        "state": "hypothesis",
+        "dependency_refs": [
+          "binding:b-depth"
+        ],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "unavailable"
+    }
+  ],
+  "warnings": [
+    "Representación esquemática sin colocaciones de montaje validadas."
+  ]
+}

@@ -1,0 +1,853 @@
+[
+  {
+    "component_id": "sides",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Laterales del cuerpo",
+    "length": {
+      "dependency_refs": [
+        "binding:side_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 2400.0000013176855
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_sides"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-11",
+        "evidence-contour-lines-unknown-20",
+        "evidence-contour-lines-unknown-12",
+        "evidence-contour-lines-unknown-21"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:sides:1",
+      "provisional:general-5f2d41963bd997b5:sides:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-11",
+      "contour-lines-unknown-12",
+      "contour-lines-unknown-13",
+      "contour-lines-unknown-20",
+      "contour-lines-unknown-21",
+      "contour-lines-unknown-22"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-11",
+      "evidence-contour-lines-unknown-20",
+      "evidence-contour-lines-unknown-13"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:side_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999824307751624
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:side_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 550.0
+    }
+  },
+  {
+    "component_id": "top",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Panel superior entre laterales",
+    "length": {
+      "dependency_refs": [
+        "binding:top_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 564.000000835383
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_top"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-28",
+        "evidence-contour-lines-unknown-29"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "top_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:top:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-28",
+      "contour-lines-unknown-29",
+      "contour-lines-unknown-24"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-28",
+      "evidence-contour-lines-unknown-29"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:top_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.999973824643348
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:top_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 550.0
+    }
+  },
+  {
+    "component_id": "bottom",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Base elevada sobre el zócalo",
+    "length": {
+      "dependency_refs": [
+        "binding:bottom_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 564.0000008353832
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_bottom"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-31",
+        "evidence-contour-lines-unknown-24"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "bottom_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:bottom:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-31",
+      "contour-lines-unknown-24",
+      "contour-lines-unknown-32"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-31",
+      "evidence-contour-lines-unknown-24"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:bottom_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.0
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:bottom_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 550.0
+    }
+  },
+  {
+    "component_id": "divisions",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Paneles horizontales de separación",
+    "length": {
+      "dependency_refs": [
+        "binding:division_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 564.000000835383
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_divisions"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-23",
+        "evidence-contour-lines-unknown-25",
+        "evidence-contour-lines-unknown-26",
+        "evidence-contour-lines-unknown-27"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "shelf",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:divisions:1",
+      "provisional:general-5f2d41963bd997b5:divisions:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-23",
+      "contour-lines-unknown-25",
+      "contour-lines-unknown-26",
+      "contour-lines-unknown-27",
+      "contour-lines-unknown-24"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-23",
+      "evidence-contour-lines-unknown-25",
+      "evidence-contour-lines-unknown-26",
+      "evidence-contour-lines-unknown-27"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:division_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.99997382464346
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:division_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 550.0
+    }
+  },
+  {
+    "component_id": "shelves",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Baldas interiores superiores",
+    "length": {
+      "dependency_refs": [
+        "binding:shelf_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 563.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_shelves"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-37",
+        "evidence-contour-lines-unknown-39",
+        "evidence-contour-lines-unknown-40",
+        "evidence-contour-lines-unknown-41"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "shelf",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:shelves:1",
+      "provisional:general-5f2d41963bd997b5:shelves:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-37",
+      "contour-lines-unknown-38",
+      "contour-lines-unknown-39",
+      "contour-lines-unknown-40",
+      "contour-lines-unknown-41"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-37",
+      "evidence-contour-lines-unknown-38",
+      "evidence-contour-lines-unknown-40"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:shelf_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.0
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:shelf_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 515.0
+    }
+  },
+  {
+    "component_id": "back_low",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Trasera del compartimento inferior",
+    "length": {
+      "dependency_refs": [
+        "binding:back_low_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 774.0000003660234
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_back_low"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-14",
+        "evidence-contour-lines-unknown-16"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "back_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:back_low:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-14",
+      "contour-lines-unknown-15",
+      "contour-lines-unknown-16"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-14",
+      "evidence-contour-lines-unknown-16"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:back_low_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 4.999943339249739
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:back_low_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 574.0
+    }
+  },
+  {
+    "component_id": "back_high",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Trasera del compartimento superior",
+    "length": {
+      "dependency_refs": [
+        "binding:back_high_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 874.0000003660233
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_back_high"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-17",
+        "evidence-contour-lines-unknown-19"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "back_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:back_high:1"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-17",
+      "contour-lines-unknown-18",
+      "contour-lines-unknown-19"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-17",
+      "evidence-contour-lines-unknown-19"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:back_high_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 4.99993601873939
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:back_high_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 574.0
+    }
+  },
+  {
+    "component_id": "fronts",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Frentes rectangulares inferiores; función por confirmar",
+    "length": {
+      "dependency_refs": [
+        "binding:front_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 597.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_fronts"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-6",
+        "evidence-contour-lines-unknown-8",
+        "evidence-contour-lines-unknown-9",
+        "evidence-contour-lines-unknown-10"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "unknown",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:fronts:1",
+      "provisional:general-5f2d41963bd997b5:fronts:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-6",
+      "contour-lines-unknown-7",
+      "contour-lines-unknown-8",
+      "contour-lines-unknown-9",
+      "contour-lines-unknown-10"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-6",
+      "evidence-contour-lines-unknown-8",
+      "evidence-contour-lines-unknown-9",
+      "evidence-contour-lines-unknown-10"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:front_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.000025402170877
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:front_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 346.99999868230725
+    }
+  },
+  {
+    "component_id": "fascias",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Fajas frontales de separación",
+    "length": {
+      "dependency_refs": [
+        "binding:fascia_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 600.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_fascias"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-1",
+        "evidence-contour-lines-unknown-3",
+        "evidence-contour-lines-unknown-4",
+        "evidence-contour-lines-unknown-5"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "unknown",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:fascias:1",
+      "provisional:general-5f2d41963bd997b5:fascias:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-1",
+      "contour-lines-unknown-2",
+      "contour-lines-unknown-3",
+      "contour-lines-unknown-4",
+      "contour-lines-unknown-5"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-1",
+      "evidence-contour-lines-unknown-3",
+      "evidence-contour-lines-unknown-4",
+      "evidence-contour-lines-unknown-5"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:fascia_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 17.99999633974494
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:fascia_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 50.000001317691726
+    }
+  },
+  {
+    "component_id": "plinths",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Fajas del zócalo delantera y trasera",
+    "length": {
+      "dependency_refs": [
+        "binding:plinth_l"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 564.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p_plinths"
+      ],
+      "evidence_ids": [
+        "evidence-contour-lines-unknown-32",
+        "evidence-contour-lines-unknown-33",
+        "evidence-contour-lines-unknown-34",
+        "evidence-contour-lines-unknown-35",
+        "evidence-contour-lines-unknown-36"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "support",
+    "scenario_occurrence_ids": [
+      "provisional:general-5f2d41963bd997b5:plinths:1",
+      "provisional:general-5f2d41963bd997b5:plinths:2"
+    ],
+    "source_contour_ids": [
+      "contour-lines-unknown-32",
+      "contour-lines-unknown-33",
+      "contour-lines-unknown-34",
+      "contour-lines-unknown-35",
+      "contour-lines-unknown-36"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-lines-unknown-32",
+      "evidence-contour-lines-unknown-34",
+      "evidence-contour-lines-unknown-36"
+    ],
+    "source_observation_ids": [
+      "observation-view-unknown"
+    ],
+    "source_view_ids": [
+      "view-unknown"
+    ],
+    "thickness": {
+      "dependency_refs": [
+        "binding:plinth_t"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 18.00000732051035
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:plinth_w"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 99.9999986823077
+    }
+  }
+]

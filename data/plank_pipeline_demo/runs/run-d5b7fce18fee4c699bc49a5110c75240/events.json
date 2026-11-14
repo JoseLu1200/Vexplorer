@@ -1,0 +1,32 @@
+[
+  {
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:12.872090+00:00\", \"state\": \"needs_review\", \"mode\": \"geometry_only\"}"
+  },
+  {
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "sequence": 2,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:12.872090+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "sequence": 3,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:12.872090+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  },
+  {
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "sequence": 4,
+    "event_type": "human_review_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:13.159331+00:00\", \"result_revision\": 2, \"reviewer_name\": \"Demo automatizada\", \"selected_scenario_id\": null, \"selected_assembly_candidate_id\": null, \"selected_table_program_id\": \"catalog-side_supports_v1\"}"
+  },
+  {
+    "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+    "sequence": 5,
+    "event_type": "library_item_saved",
+    "payload": "{\"timestamp\": \"2026-11-14T11:58:13.403760+00:00\", \"result_revision\": 2}"
+  }
+]

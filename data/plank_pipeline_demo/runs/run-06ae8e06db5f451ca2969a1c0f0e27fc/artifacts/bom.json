@@ -1,0 +1,183 @@
+[
+  {
+    "component_id": "component-top",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Tablero superior candidato",
+    "length": {
+      "dependency_refs": [
+        "binding:b-top-length"
+      ],
+      "dimension_ids": [
+        "dimension-entity-98"
+      ],
+      "evidence_ids": [
+        "evidence-dimension-entity-98"
+      ],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 1200.0
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p-top"
+      ],
+      "evidence_ids": [
+        "evidence-contour-entity-92",
+        "evidence-geometry-entity-8E",
+        "evidence-geometry-entity-95"
+      ],
+      "state": "hypothesis",
+      "value": 1
+    },
+    "role": "tabletop",
+    "scenario_occurrence_ids": [
+      "provisional:general-24189eacf1206064:component-top:1"
+    ],
+    "source_contour_ids": [
+      "contour-entity-92",
+      "contour-entity-8D",
+      "contour-entity-94"
+    ],
+    "source_dimension_ids": [
+      "dimension-entity-98"
+    ],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-entity-92",
+      "evidence-geometry-entity-8E",
+      "evidence-geometry-entity-95",
+      "evidence-dimension-entity-98"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-side",
+      "observation-view-top"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-side",
+      "view-top"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:b-depth"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 700.0
+    }
+  },
+  {
+    "component_id": "component-sides",
+    "finish": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "kind": "panel",
+    "label": "Paneles laterales de soporte candidatos",
+    "length": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "material": {
+      "dependency_refs": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "value": null
+    },
+    "occurrence_ids": [],
+    "occurrence_status": "provisional",
+    "quantity": {
+      "dependency_refs": [
+        "premise:p-sides"
+      ],
+      "evidence_ids": [
+        "evidence-contour-entity-8D",
+        "evidence-geometry-entity-8F",
+        "evidence-geometry-entity-90",
+        "evidence-contour-entity-94",
+        "evidence-geometry-entity-95"
+      ],
+      "state": "hypothesis",
+      "value": 2
+    },
+    "role": "side_panel",
+    "scenario_occurrence_ids": [
+      "provisional:general-24189eacf1206064:component-sides:1",
+      "provisional:general-24189eacf1206064:component-sides:2"
+    ],
+    "source_contour_ids": [
+      "contour-entity-8D",
+      "contour-entity-94",
+      "contour-entity-92"
+    ],
+    "source_dimension_ids": [],
+    "source_document_refs": [],
+    "source_evidence_ids": [
+      "evidence-contour-entity-8D",
+      "evidence-geometry-entity-8F",
+      "evidence-geometry-entity-90",
+      "evidence-contour-entity-94",
+      "evidence-geometry-entity-95",
+      "evidence-contour-entity-92"
+    ],
+    "source_observation_ids": [
+      "observation-view-front",
+      "observation-view-side",
+      "observation-view-top"
+    ],
+    "source_view_ids": [
+      "view-front",
+      "view-side",
+      "view-top"
+    ],
+    "thickness": {
+      "dependency_refs": [],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "unknown",
+      "unit": "mm",
+      "value_mm": null
+    },
+    "width": {
+      "dependency_refs": [
+        "binding:b-depth"
+      ],
+      "dimension_ids": [],
+      "evidence_ids": [],
+      "state": "hypothesis",
+      "unit": "mm",
+      "value_mm": 700.0
+    }
+  }
+]

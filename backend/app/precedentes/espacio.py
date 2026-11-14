@@ -96,6 +96,11 @@ class ResultadoRotacion(ModeloEstricto):
     version_frases: str
     referencia_nueva: ResumenHuella
     referencia_anterior: HuellaRetirada | None = None
+    embeddings_invalidados: int = Field(ge=0)
+
+
+class ErrorInvalidacionEmbeddings(RuntimeError):
+    """La caché no pudo invalidarse; la referencia no debe rotar."""
 
 
 def calcular_huella_id(modelo: str, dimensiones: int, version_frases: str, vectores: tuple[tuple[float, ...], ...]) -> str:
@@ -273,9 +278,18 @@ def verificar_espacio(proveedor: ProveedorEmbeddings, almacen: AlmacenEspacio, t
     return comparar_huellas(referencia, actual, tolerancia)
 
 
-def rotar_espacio(proveedor: ProveedorEmbeddings, almacen: AlmacenEspacio, ahora: Callable[[], str] = ahora_utc) -> ResultadoRotacion:
+def rotar_espacio(
+    proveedor: ProveedorEmbeddings,
+    almacen: AlmacenEspacio,
+    ahora: Callable[[], str] = ahora_utc,
+    invalidar: Callable[[str, int], int] | None = None,
+) -> ResultadoRotacion:
     """Rotación explícita: la huella actual pasa a ser la referencia; la anterior queda archivada."""
     actual = calcular_huella(proveedor, ahora)
+    try:
+        invalidados = invalidar(actual.modelo, actual.dimensiones) if invalidar else 0
+    except Exception as exc:
+        raise ErrorInvalidacionEmbeddings("invalidacion_embeddings_fallida") from exc
     anterior = almacen.rotar(actual, ahora())
     return ResultadoRotacion(
         modelo=actual.modelo,
@@ -283,4 +297,5 @@ def rotar_espacio(proveedor: ProveedorEmbeddings, almacen: AlmacenEspacio, ahora
         version_frases=actual.version_frases,
         referencia_nueva=resumir(actual),
         referencia_anterior=anterior,
+        embeddings_invalidados=invalidados,
     )

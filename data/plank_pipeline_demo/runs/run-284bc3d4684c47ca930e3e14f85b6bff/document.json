@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "artifacts": {
+      "normalized_dxf": {
+        "media_type": "application/dxf",
+        "sha256": "eb228c2a0727ac5d6f93ed839ed308b43087d5bb7396bd11a2ba5bbb6964cd1c",
+        "url": "/api/v1/documents/doc-50c6753e4cb548fe80a3b2ae6cd465a7/normalized.dxf"
+      },
+      "original": {
+        "media_type": "application/dxf",
+        "url": "/api/v1/documents/doc-50c6753e4cb548fe80a3b2ae6cd465a7/original"
+      },
+      "pages": [],
+      "preview": {
+        "media_type": "image/svg+xml",
+        "url": "/api/v1/documents/doc-50c6753e4cb548fe80a3b2ae6cd465a7/preview.svg"
+      }
+    },
+    "audit": {
+      "uploaded_at": "2026-11-14T11:58:13.441276+00:00",
+      "uploaded_by": null
+    },
+    "document_id": "doc-50c6753e4cb548fe80a3b2ae6cd465a7",
+    "ingestion": {
+      "capabilities": {
+        "geometry_analysis": true,
+        "page_geometry_analysis": false,
+        "page_review": false
+      },
+      "errors": [],
+      "state": "ready",
+      "warnings": []
+    },
+    "original_filename": "mesa_demo_003.dxf",
+    "sha256": "eb228c2a0727ac5d6f93ed839ed308b43087d5bb7396bd11a2ba5bbb6964cd1c",
+    "size_bytes": 50699,
+    "source": {
+      "filename": "mesa_demo_003.dxf",
+      "format": "dxf",
+      "media_type": "application/dxf",
+      "sha256": "eb228c2a0727ac5d6f93ed839ed308b43087d5bb7396bd11a2ba5bbb6964cd1c",
+      "size_bytes": 50699,
+      "unit": "unknown"
+    },
+    "source_kind": "uploaded"
+  }
+}

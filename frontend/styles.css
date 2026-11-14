@@ -203,7 +203,9 @@ h3{margin:18px 0 8px;font-size:13px;font-weight:500;letter-spacing:-0.015em}
 .drawing-path.is-dimmed{opacity:.16}
 .drawing-text{fill:var(--stroke-text);font:10px var(--font-mono);paint-order:stroke;stroke:var(--paper);stroke-width:3;stroke-linejoin:round}
 .dimension-line{fill:none;stroke:var(--dim-stroke);stroke-width:1;vector-effect:non-scaling-stroke}
+.dimension-line.dimension-conflict{stroke:var(--escalar);stroke-dasharray:4 3;stroke-width:1.4}
 .dimension-text{fill:var(--dim-text);font:10px var(--font-mono);paint-order:stroke;stroke:var(--paper);stroke-width:3}
+.dimension-text.dimension-conflict{fill:var(--escalar);font-weight:600}
 .is-layer-hidden,.is-view-hidden{display:none}
 .empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;color:var(--muted);text-align:center;pointer-events:none}
 .empty-state strong{color:var(--ink);font-size:22px;font-weight:500;letter-spacing:-0.035em}
@@ -448,3 +450,8 @@ legend{font-weight:500;letter-spacing:-0.01em}
 .duplicate-precedent-banner__link{min-height:28px;padding:4px 10px;flex:none;background:var(--surface);color:var(--ink);font-size:12px;white-space:nowrap}
 .duplicate-precedent-banner__dismiss{width:24px;height:24px;flex:none;color:var(--urgent);font-size:16px;line-height:1}
 @media(max-width:620px){.duplicate-precedent-banner{flex-wrap:wrap;padding:8px 12px}}
+.threshold-presets{display:flex;flex-wrap:wrap;gap:5px}.threshold-presets button{padding:5px 8px;border:0;border-radius:6px;background:var(--canvas);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:11px}
+.library-status{padding:8px 10px;border-radius:8px;background:var(--canvas);font-size:12px}.library-result{display:grid;gap:5px}.comparison-warning{padding:7px 8px;border-radius:6px;background:var(--escalar-soft);color:var(--escalar)}
+.piece-differences{display:grid;gap:3px;padding-top:6px;border-top:1px solid var(--hairline)}.piece-differences span{font-size:12px}
+.comparison-thumbnails{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.comparison-thumbnails figure{margin:0}.comparison-thumbnails img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;border-radius:6px;background:var(--canvas)}.comparison-thumbnails figcaption{margin-top:3px;color:var(--muted);font-size:10px}
+.library-publication{margin:0;padding:10px}.library-publication label{display:grid;gap:5px;margin-top:8px;font-size:12px}.library-publication .check-field{display:flex;align-items:flex-start}.library-publication input[type="checkbox"]{width:auto;margin-top:2px}

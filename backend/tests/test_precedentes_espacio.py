@@ -41,6 +41,9 @@ class RepositorioVacio:
     def get_library_items(self):
         return ()
 
+    def invalidate_embeddings(self, model: str, dimensions: int) -> int:
+        return 0
+
 
 def _cliente(tmp_path: Path, proveedor) -> TestClient:
     app = FastAPI()

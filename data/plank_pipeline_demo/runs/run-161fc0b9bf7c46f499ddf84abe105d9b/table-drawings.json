@@ -1,0 +1,103 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.5.0",
+    "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+    "result_revision": 2,
+    "program_hash": "74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64",
+    "sheets": [
+      {
+        "sheet_id": "table-general",
+        "kind": "general",
+        "title": "Mesa · vistas generales",
+        "component_id": null,
+        "page": 1,
+        "result_revision": 2,
+        "program_hash": "74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64",
+        "status": "ready",
+        "warnings": [],
+        "formats": [
+          {
+            "format": "dxf",
+            "media_type": "application/dxf",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-general.dxf?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          },
+          {
+            "format": "svg",
+            "media_type": "image/svg+xml",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-general.svg?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          }
+        ]
+      },
+      {
+        "sheet_id": "table-component-component-tabletop",
+        "kind": "component",
+        "title": "Detalle · tabletop",
+        "component_id": "component-tabletop",
+        "page": 2,
+        "result_revision": 2,
+        "program_hash": "74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64",
+        "status": "ready",
+        "warnings": [],
+        "formats": [
+          {
+            "format": "dxf",
+            "media_type": "application/dxf",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-component-component-tabletop.dxf?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          },
+          {
+            "format": "svg",
+            "media_type": "image/svg+xml",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-component-component-tabletop.svg?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          }
+        ]
+      },
+      {
+        "sheet_id": "table-component-component-side-support",
+        "kind": "component",
+        "title": "Detalle · side_support",
+        "component_id": "component-side-support",
+        "page": 3,
+        "result_revision": 2,
+        "program_hash": "74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64",
+        "status": "ready",
+        "warnings": [],
+        "formats": [
+          {
+            "format": "dxf",
+            "media_type": "application/dxf",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-component-component-side-support.dxf?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          },
+          {
+            "format": "svg",
+            "media_type": "image/svg+xml",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-component-component-side-support.svg?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          }
+        ]
+      },
+      {
+        "sheet_id": "table-cut-sheet",
+        "kind": "cut_sheet",
+        "title": "Hoja de despiece",
+        "component_id": null,
+        "page": 4,
+        "result_revision": 2,
+        "program_hash": "74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64",
+        "status": "ready",
+        "warnings": [],
+        "formats": [
+          {
+            "format": "dxf",
+            "media_type": "application/dxf",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-cut-sheet.dxf?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          },
+          {
+            "format": "svg",
+            "media_type": "image/svg+xml",
+            "url": "/api/v1/runs/run-161fc0b9bf7c46f499ddf84abe105d9b/table-drawings/table-cut-sheet.svg?result_revision=2&program_hash=74c9f8fc97c53b5564d03960a67b62f620eddea84862483297f0b02b7f681a64"
+          }
+        ]
+      }
+    ]
+  }
+}
