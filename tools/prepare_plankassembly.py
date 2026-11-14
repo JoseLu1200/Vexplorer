@@ -84,7 +84,12 @@ def _add_rectangle(modelspace, layer: str, x0: float, y0: float, x1: float, y1: 
         modelspace.add_line(start, end, dxfattribs={"layer": layer})
 
 
-def _write_assembled_dxf(path: Path, physical_planks: list[list[float]]) -> None:
+def _write_assembled_dxf(
+    path: Path,
+    physical_planks: list[list[float]],
+    views: tuple[str, ...] = ("front", "top", "side"),
+) -> None:
+    """Write the orthographic views; ``views`` selects a subset (poor variants) at unchanged positions."""
     document = ezdxf.new("R2010", setup=False)
     document.units = ezdxf.units.MM
     # Eliminate clock- and host-derived header values so equal inputs are byte-identical.
@@ -104,9 +109,12 @@ def _write_assembled_dxf(path: Path, physical_planks: list[list[float]]) -> None
     modelspace = document.modelspace()
     for bounds in physical_planks:
         xmin, ymin, zmin, xmax, ymax, zmax = bounds
-        _add_rectangle(modelspace, layers[0], offsets[0] + xmin, zmin, offsets[0] + xmax, zmax)
-        _add_rectangle(modelspace, layers[1], offsets[1] + xmin, ymin, offsets[1] + xmax, ymax)
-        _add_rectangle(modelspace, layers[2], offsets[2] + ymin, zmin, offsets[2] + ymax, zmax)
+        if "front" in views:
+            _add_rectangle(modelspace, layers[0], offsets[0] + xmin, zmin, offsets[0] + xmax, zmax)
+        if "top" in views:
+            _add_rectangle(modelspace, layers[1], offsets[1] + xmin, ymin, offsets[1] + xmax, ymax)
+        if "side" in views:
+            _add_rectangle(modelspace, layers[2], offsets[2] + ymin, zmin, offsets[2] + ymax, zmax)
     previous_fixed_metadata = ezdxf.options.write_fixed_meta_data_for_testing
     try:
         # ezdxf otherwise refreshes $VERSIONGUID, timestamps and EZDXF_META at write time.
