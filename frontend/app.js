@@ -7,13 +7,14 @@ import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, pr
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
+import { fitImageViewport, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
-import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableRunOptions } from "./core/table.js";
+import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "./core/table.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
@@ -32,10 +33,12 @@ function resetEstimateUi() {
   $$("[data-export]").forEach((button) => { button.disabled = true; });
 }
 
+function configureExportActions(){const table=state.tableWorkspace?.isTable===true; text($("#csv-export"),table?"Lista de corte CSV":"Ficha CSV"); if(table){const ready=state.snapshot?.result?.state==="completed"; $$('[data-export]').forEach((button)=>button.disabled=!ready);}}
+
 function resetRunUi() {
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
   state.eventSource?.close();
-  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", explanations: null, scene: null, libraryItems: new Map() });
+  Object.assign(state, { documentId: null, runId: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, eventSource: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
@@ -139,6 +142,7 @@ function activateView(viewId, button) {
 }
 
 function showSourceArtifact(){
+  state.activeArtifact="source";
   $$('[data-artifact-view]').forEach((tab)=>tab.setAttribute("aria-selected",String(tab.dataset.artifactView==="source")));
   toggleHidden($("#derived-drawing-view"),true);
   const viewId=state.activeView;
@@ -146,12 +150,15 @@ function showSourceArtifact(){
   ["#zoom-out","#zoom-in","#fit-view","#reset-view","#toggle-entities","#toggle-texts","#toggle-dimensions"].forEach((selector)=>$(selector).disabled=false);
 }
 
+function applyDerivedImageViewport(){const view=state.derivedImageViewport??fitImageViewport(); $("#derived-drawing-image").style.transform=`translate(${view.x}px, ${view.y}px) scale(${view.scale})`;}
+function fitDerivedDrawing(){state.derivedImageViewport=fitImageViewport();applyDerivedImageViewport();}
+
 function tableDrawingSheets(kind){return state.tableDrawings?.byKind?.[kind]??[];}
 function selectDerivedSheet(sheet){
   if(!sheet||!state.runId)return;
   const format=sheet.formats.includes("svg")?"svg":sheet.formats[0], identity=artifactRequestIdentity({runId:state.runId,revision:sheet.revision,programHash:sheet.programHash,sheetId:sheet.id,format}),token=artifactFence.issue(identity),image=$("#derived-drawing-image");
   text($("#derived-drawing-title"),sheet.title); text($("#derived-drawing-meta"),`Revisión ${sheet.revision} · ${sheet.status==="ready"?"lista":"incompleta"} · programa ${sheet.programHash.slice(0,10)}`); text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");
-  const source=sheet.formatLinks?.[format]??api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; image.onload=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
+  const source=sheet.formatLinks?.[format]??api.tableDrawingUrl(state.runId,sheet.id,format,sheet.revision,sheet.programHash); image.alt=`${sheet.title}, revisión ${sheet.revision}`; fitDerivedDrawing(); image.onload=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),sheet.warnings.join(" · ")||"Plano técnico derivado; no certifica fabricación.");}; image.onerror=()=>{if(artifactFence.isCurrent(token,identity))text($("#derived-drawing-warning"),"No se pudo cargar esta lámina. Puedes descargar el DXF si está disponible.");}; image.src=source;
   const downloads=$("#derived-drawing-downloads"); downloads.replaceChildren(); sheet.formats.forEach((itemFormat)=>{const link=document.createElement("a"); link.className="button"; link.textContent=`${itemFormat.toUpperCase()}`; link.href=sheet.formatLinks?.[itemFormat]??api.tableDrawingUrl(state.runId,sheet.id,itemFormat,sheet.revision,sheet.programHash); link.download=""; downloads.append(link);});
 }
 function renderDerivedSheetKind(kind){
@@ -162,7 +169,7 @@ async function activateArtifactView(kind,button){
   const runId=state.runId,revision=state.snapshot?.result_revision; if(!runId||!Number.isInteger(revision))return;
   let manifest=state.tableDrawings;
   if(!manifest){const identity=`${runId}:${revision}:manifest:${kind}`,token=artifactFence.issue(identity); text($("#derived-drawing-warning"),"Generando planos técnicos de esta revisión…"); try{const raw=await api.generateTableDrawings(runId,{result_revision:revision}); if(!artifactFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}:manifest:${kind}`))return; manifest=normaliseTableDrawingManifest(raw); state.tableDrawings=manifest;}catch(error){if(artifactFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}:manifest:${kind}`))setMessage(error.message,true);return;}}
-  $$('[data-artifact-view]').forEach((tab)=>tab.setAttribute("aria-selected",String(tab===button))); toggleHidden($("#drawing-viewer"),true); toggleHidden($("#original-view"),true); toggleHidden($("#scene-viewer"),true); toggleHidden($("#derived-drawing-view"),false); ["#zoom-out","#zoom-in","#fit-view","#reset-view","#toggle-entities","#toggle-texts","#toggle-dimensions"].forEach((selector)=>$(selector).disabled=true); renderDerivedSheetKind(kind); text($("#scene-context"),`Plano derivado · revisión ${manifest.revision}`);
+  state.activeArtifact=kind; $$('[data-artifact-view]').forEach((tab)=>tab.setAttribute("aria-selected",String(tab===button))); toggleHidden($("#drawing-viewer"),true); toggleHidden($("#original-view"),true); toggleHidden($("#scene-viewer"),true); toggleHidden($("#derived-drawing-view"),false); ["#zoom-out","#zoom-in","#fit-view","#reset-view"].forEach((selector)=>$(selector).disabled=false); ["#toggle-entities","#toggle-texts","#toggle-dimensions"].forEach((selector)=>$(selector).disabled=true); renderDerivedSheetKind(kind); text($("#scene-context"),`Plano derivado · revisión ${manifest.revision}`);
 }
 
 function updateArtifactTabs(){
@@ -177,6 +184,7 @@ function applySvgTextScale() {
   $$(".drawing-text,.dimension-text").forEach((node)=>{ node.style.fontSize=`${unitPerPixel*12}px`; node.style.strokeWidth=`${unitPerPixel*2.5}px`; });
 }
 function fitDrawing() {
+  if(state.activeArtifact!=="source"){fitDerivedDrawing();return;}
   if(state.activeView==="3d"){sceneViewer?.fit(); sceneViewer?.draw(); return;}
   if (!state.drawingModel) return;
   const partId=state.activeView.startsWith("part:")?state.activeView.slice(5):null;
@@ -508,7 +516,7 @@ async function refreshRun() {
   if(!runFence.isCurrent(token,state.runId))return;
   if (state.activeView === "3d") await loadScene();
   toggleHidden($("#table-cost-scope"),!state.tableWorkspace.isTable); text($("#estimate-button"),state.tableWorkspace.isTable?"Calcular costes de mesa":"Calcular estimación");
-  if(state.tableWorkspace.isTable){resetEstimateUi(); try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;} $("#estimate-button").disabled=state.snapshot.result?.state!=="completed"||state.tableWorkspace.evaluated?.state!=="completed"; unlock("estimate-stage");}
+  if(state.tableWorkspace.isTable){resetEstimateUi(); try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;} $("#estimate-button").disabled=state.snapshot.result?.state!=="completed"||state.tableWorkspace.evaluated?.state!=="completed"; configureExportActions(); unlock("estimate-stage");}
   else {if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi(); if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }}
 }
 
@@ -618,7 +626,8 @@ async function submitReview(event) {
 function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename.replace(/[^a-z0-9._-]/gi,"_"); document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url); }
 
 async function exportResult(format) {
-  try { const response = await fetch(api.exportUrl(state.runId, format)); if (!response.ok) throw new Error("La exportación no está disponible."); downloadBlob(await response.blob(), `vexplorer_${state.runId}.${format}`); } catch (error) { setMessage(error.message, true); }
+  const requestedFormat=state.tableWorkspace?.isTable?tableExportFormat(format):format;
+  try { const response = await fetch(api.exportUrl(state.runId, requestedFormat)); if (!response.ok) throw new Error("La exportación no está disponible."); downloadBlob(await response.blob(), `vexplorer_${state.runId}.${format}`); } catch (error) { setMessage(error.message, true); }
 }
 
 function toggleTrace(open) { const drawer = $("#trace-drawer"); drawer.classList.toggle("is-open", open); drawer.setAttribute("aria-hidden", String(!open)); $("#trace-toggle").setAttribute("aria-expanded", String(open)); $("#scrim").hidden = !open; if (open) $("#trace-close").focus(); }
@@ -628,13 +637,13 @@ function setupWorkspaceControls() {
   $$('[data-panel]').forEach((button)=>button.addEventListener("click",()=>{ $$('[data-panel]').forEach((item)=>item.classList.toggle("is-active",item===button)); $$('[data-panel-content]').forEach((panel)=>panel.classList.toggle("is-active",panel.dataset.panelContent===button.dataset.panel)); }));
   ["entities","texts","dimensions"].forEach((name)=>$(`#toggle-${name}`).addEventListener("change",applyLayerVisibility));
   $("#fit-view").addEventListener("click",fitDrawing); $("#reset-view").addEventListener("click",fitDrawing);
-  const zoom=(factor)=>{ if(state.activeView==="3d"){sceneViewer?.zoom(factor); return;} if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
+  const zoom=(factor)=>{ if(state.activeArtifact!=="source"){const rect=$("#derived-drawing-canvas").getBoundingClientRect();state.derivedImageViewport=zoomImageViewport(state.derivedImageViewport,1/factor,{x:rect.width/2,y:rect.height/2});applyDerivedImageViewport();return;} if(state.activeView==="3d"){sceneViewer?.zoom(factor); return;} if (!state.viewport) return; state.viewport=zoomViewport(state.viewport,factor,{x:state.viewport.x+state.viewport.width/2,y:state.viewport.y+state.viewport.height/2}); applyViewport(); };
   $("#zoom-in").addEventListener("click",()=>zoom(.8)); $("#zoom-out").addEventListener("click",()=>zoom(1.25));
   const viewport=$("#cad-viewport"); let drag=null;
   new ResizeObserver(()=>applySvgTextScale()).observe(viewport);
-  viewport.addEventListener("wheel",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
-  viewport.addEventListener("pointerdown",(event)=>{ if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
-  viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
+  viewport.addEventListener("wheel",(event)=>{ if(state.activeArtifact!=="source"){event.preventDefault();const rect=$("#derived-drawing-canvas").getBoundingClientRect();state.derivedImageViewport=zoomImageViewport(state.derivedImageViewport,event.deltaY>0?.9:1.12,{x:event.clientX-rect.left,y:event.clientY-rect.top});applyDerivedImageViewport();return;} if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; event.preventDefault(); const rect=viewport.getBoundingClientRect(); const anchor={x:state.viewport.x+(event.clientX-rect.left)/rect.width*state.viewport.width,y:state.viewport.y+(event.clientY-rect.top)/rect.height*state.viewport.height}; state.viewport=zoomViewport(state.viewport,event.deltaY>0?1.12:.89,anchor); applyViewport(); },{passive:false});
+  viewport.addEventListener("pointerdown",(event)=>{ if(state.activeArtifact!=="source"){drag={kind:"derived",x:event.clientX,y:event.clientY,viewport:{...state.derivedImageViewport}};viewport.setPointerCapture(event.pointerId);return;} if (state.activeView==="3d"||state.activeView==="original"||!state.viewport) return; drag={kind:"source",x:event.clientX,y:event.clientY,viewport:{...state.viewport}}; viewport.setPointerCapture(event.pointerId); });
+  viewport.addEventListener("pointermove",(event)=>{ if(!drag)return; if(drag.kind==="derived"){state.derivedImageViewport=panImageViewport(drag.viewport,event.clientX-drag.x,event.clientY-drag.y);applyDerivedImageViewport();return;} const rect=viewport.getBoundingClientRect(); state.viewport=panViewport(drag.viewport,-(event.clientX-drag.x)/rect.width*drag.viewport.width,-(event.clientY-drag.y)/rect.height*drag.viewport.height); applyViewport(); });
   viewport.addEventListener("pointerup",()=>{drag=null;}); viewport.addEventListener("pointercancel",()=>{drag=null;});
   $("#explode-scene").addEventListener("change",(event)=>sceneViewer?.setExploded(event.target.checked));
 }

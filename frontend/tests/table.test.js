@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableRunOptions } from "../core/table.js";
+import { artifactRequestIdentity, buildTableReviewPayload, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableRunOptions } from "../core/table.js";
 
 test("table run options keep catalog baseline and live model generation visibly distinct", () => {
   assert.deepEqual(tableRunOptions("geometry_only", "side_supports_v1"), {
@@ -17,6 +17,11 @@ test("table run options keep catalog baseline and live model generation visibly 
     table_profile: "rectangular_table_v1",
     proposal_mode: "none",
   });
+});
+
+test("table CSV export requests the revision-bound cut list format", () => {
+  assert.equal(tableExportFormat("csv"), "table_cutlist");
+  assert.equal(tableExportFormat("json"), "json");
 });
 
 test("drawing manifest preserves revision, hash, incomplete warnings and selectable formats", () => {

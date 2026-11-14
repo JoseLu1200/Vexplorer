@@ -22,7 +22,9 @@ test("technical viewer exposes source and derived drawing tabs without replacing
   assert.match(html, /data-artifact-view="components"/);
   assert.match(html, /data-artifact-view="cut_sheet"/);
   assert.match(html, /id="derived-drawing-view"/);
+  assert.match(html, /id="derived-drawing-canvas"/);
   assert.match(html, /id="derived-drawing-downloads"/);
+  assert.match(css, /\.derived-drawing-canvas\{[^}]*overflow:hidden/);
 });
 
 test("responsive header never hides the active execution mode", () => {
