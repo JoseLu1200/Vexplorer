@@ -1,0 +1,79 @@
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from backend.app.main import create_app
+
+
+FIXTURE = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "mesa_demo_001.dxf"
+
+
+def _client(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    return TestClient(create_app(data_dir=tmp_path))
+
+
+def _create_baseline(client):
+    with FIXTURE.open("rb") as stream:
+        document_id = client.post("/api/v1/documents", files={"file": ("mesa.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
+    response = client.post("/api/v1/runs", json={
+        "document_id": document_id,
+        "mode": "geometry_only",
+        "input_kind": "mounted_orthographic_views",
+        "table_profile": "rectangular_table_v1",
+        "proposal_mode": "catalog_baseline",
+        "table_template_id": "side_supports_v1",
+    })
+    assert response.status_code == 201, response.text
+    return response.json()["data"]
+
+
+def _accept_all(program):
+    return [
+        {"target_kind": "program", "target_id": program["id"], "action": "accept", "reason": "Selecciona topología"},
+        *({"target_kind": "component", "target_id": item["id"], "action": "accept", "reason": "Acepta componente"} for item in program["components"]),
+        *({"target_kind": "premise", "target_id": item["id"], "action": "accept", "reason": "Acepta premisa"} for item in program["premises"]),
+    ]
+
+
+def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    created = _create_baseline(client)
+    run_id = created["run"]["id"]
+    initial = created["result"]
+    assert initial["input_semantics"] == "mounted_orthographic_views"
+    assert len(initial["table_programs"]) == 1
+    assert initial["table_programs"][0]["table_template_id"] == "side_supports_v1"
+    assert initial["evaluated_table_program"]["state"] == "hypothesis"
+
+    snapshot = client.get(f"/api/v1/runs/{run_id}/table", params={"result_revision": 1})
+    assert snapshot.status_code == 200
+    program = snapshot.json()["data"]["table_programs"][0]
+    reviewed = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Técnica local",
+        "table_program_id": program["id"],
+        "table_decisions": _accept_all(program),
+        "notes": "Acepta montaje y premisas",
+    })
+    assert reviewed.status_code == 201, reviewed.text
+    assert reviewed.json()["data"]["state"] == "completed"
+    assert reviewed.json()["data"]["evaluated_table_program"]["state"] == "completed"
+
+    catalog = client.get("/api/v1/table-cost-catalog")
+    assert catalog.status_code == 200 and catalog.json()["data"]["synthetic"] is True
+    cost = client.post(f"/api/v1/runs/{run_id}/table-costs", json={"result_revision": 2, "scope": {"material_tariff_id": None, "edge_scope": "none", "operation_tariff_ids": []}})
+    assert cost.status_code == 201, cost.text
+    assert cost.json()["data"]["total_state"] == "partial"
+    assert cost.json()["data"]["grand_total_eur"] is None
+    stored = client.get(f"/api/v1/runs/{run_id}/table-costs", params={"result_revision": 2})
+    assert stored.status_code == 200 and stored.json()["data"] == cost.json()["data"]
+
+
+def test_table_run_rejects_implicit_catalog_choice(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    with FIXTURE.open("rb") as stream:
+        document_id = client.post("/api/v1/documents", files={"file": ("mesa.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
+    response = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only", "input_kind": "mounted_orthographic_views", "table_profile": "rectangular_table_v1", "proposal_mode": "catalog_baseline"})
+    assert response.status_code == 422

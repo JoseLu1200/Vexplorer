@@ -15,11 +15,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
-from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
+from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest
+from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest, RunRequest, TableCostScope
 from backend.app.estimacion.service import estimate_result
+from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
+from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs, evaluate_table_program
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.historico.service import find_comparables
 from backend.app.salida.service import export_csv, export_json
@@ -62,6 +64,11 @@ class GroupRequest(RequestModel):
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
 
 
+class TableCostRequest(RequestModel):
+    result_revision: int = Field(gt=0)
+    scope: TableCostScope = Field(default_factory=TableCostScope)
+
+
 def _ok(data, status_code: int = 200):
     return JSONResponse({"schema_version": "0.2.0", "data": data}, status_code=status_code)
 
@@ -91,6 +98,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def config():
         all_tools = tool_schemas() + parts_tool_schemas() + table_tool_schemas()
         return _ok({"provider": "openai_responses", "model": settings.model, "live_available": live_available, "unavailable_reason": None if live_available else settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if live_available else []), "modality": "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+
+    @app.get("/api/v1/table-cost-catalog")
+    def table_cost_catalog():
+        return _ok(get_table_cost_catalog().model_dump(mode="json"))
 
     @app.post("/api/v1/documents")
     async def upload_document(file: UploadFile = File(...)):
@@ -151,10 +162,26 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 part_analysis = extract_separated_parts(extraction)
                 assembly_candidates = derive_assembly_candidates(part_analysis)
                 scenarios = ()
+                table_analysis = None
+                table_programs = ()
+                evaluated_table_program = None
+            elif request.input_kind == "mounted_orthographic_views":
+                part_analysis = None
+                assembly_candidates = ()
+                scenarios = ()
+                table_analysis = analyze_mounted_table(extraction)
+                available_programs = catalog_table_programs(table_analysis) if request.proposal_mode == "catalog_baseline" else ()
+                table_programs = tuple(item for item in available_programs if item.table_template_id == request.table_template_id)
+                if request.proposal_mode == "catalog_baseline" and len(table_programs) != 1:
+                    return _error(422, "table_template_unavailable", "La plantilla de mesa solicitada no está disponible para este ledger.")
+                evaluated_table_program = evaluate_table_program(table_analysis, table_programs[0]) if table_programs else None
             else:
                 part_analysis = None
                 assembly_candidates = ()
                 scenarios = derive_decomposition_scenarios(extraction)
+                table_analysis = None
+                table_programs = ()
+                evaluated_table_program = None
         except Exception as exc:
             return _error(422, "invalid_dxf", f"No se pudo extraer el DXF: {type(exc).__name__}.")
         if request.input_kind == "mounted_views_legacy" and not scenarios:
@@ -162,10 +189,16 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         trace_events: tuple[dict, ...] = ()
         agent_selected_scenario_id = None
         agent_selected_assembly_candidate_id = None
+        agent_selected_table_program_id = None
         if request.mode == "live":
             try:
                 provider = agent_provider or OpenAIResponsesProvider(settings)
-                if request.input_kind == "separated_part_views":
+                if request.input_kind == "mounted_orthographic_views":
+                    outcome = run_table_agent(extraction, table_analysis, provider, AgentLimits())
+                    table_programs = (outcome.program,)
+                    evaluated_table_program = evaluate_table_program(table_analysis, outcome.program)
+                    agent_selected_table_program_id = outcome.program.id
+                elif request.input_kind == "separated_part_views":
                     outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, AgentLimits())
                     assembly_candidates = tuple(sorted(
                         assembly_candidates,
@@ -185,6 +218,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 "summary": action.summary,
                 "selected_scenario_id": action.selected_scenario_id if request.input_kind == "mounted_views_legacy" else None,
                 "selected_assembly_candidate_id": action.selected_scenario_id if request.input_kind == "separated_part_views" else None,
+                "selected_table_program_id": agent_selected_table_program_id if request.input_kind == "mounted_orthographic_views" and action.tool_name == "proponer_descomposicion" else None,
             } for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
         run = repository.create_run(
@@ -198,6 +232,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             part_analysis,
             assembly_candidates,
             agent_selected_assembly_candidate_id,
+            table_analysis,
+            table_programs,
+            agent_selected_table_program_id,
+            evaluated_table_program,
         )
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
@@ -235,6 +273,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "selected_assembly_candidate_id": result.selected_assembly_candidate_id,
         })
 
+    @app.get("/api/v1/runs/{run_id}/table")
+    def get_table(run_id: str, result_revision: int = Query(..., gt=0)):
+        try:
+            result = repository.get_result(run_id, result_revision)
+        except KeyError:
+            return _error(404, "result_not_found", "Revisión inexistente.")
+        if result.input_semantics != "mounted_orthographic_views" or result.table_analysis is None:
+            return _error(409, "table_analysis_unavailable", "La ejecución no contiene vistas ortográficas de mesa.")
+        return _ok({
+            "result_revision": result.result_revision,
+            "state": result.state,
+            "table_analysis": result.table_analysis.model_dump(mode="json"),
+            "table_programs": [item.model_dump(mode="json") for item in result.table_programs],
+            "selected_table_program_id": result.selected_table_program_id,
+            "evaluated_table_program": result.evaluated_table_program.model_dump(mode="json") if result.evaluated_table_program is not None else None,
+        })
+
     @app.get("/api/v1/runs/{run_id}/explanations")
     def get_explanations(run_id: str, result_revision: int = Query(..., gt=0)):
         try:
@@ -270,7 +325,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def review_run(run_id: str, request: ReviewRequest):
         try:
             result = repository.review(run_id, request)
-            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id, "selected_assembly_candidate_id": request.assembly_candidate_id})
+            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id, "selected_assembly_candidate_id": request.assembly_candidate_id, "selected_table_program_id": request.table_program_id})
             return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
@@ -405,6 +460,32 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except ValueError as exc:
             return _error(422, str(exc), "No hay evidencia suficiente para estimar.")
         return _ok(value.model_dump(mode="json"), 201)
+
+    @app.post("/api/v1/runs/{run_id}/table-costs")
+    def calculate_table_costs(run_id: str, request: TableCostRequest):
+        try:
+            result = repository.get_result(run_id, request.result_revision)
+        except KeyError:
+            return _error(404, "result_not_found", "Revisión inexistente.")
+        if result.input_semantics != "mounted_orthographic_views" or result.evaluated_table_program is None:
+            return _error(409, "table_evaluation_unavailable", "La revisión no contiene una mesa evaluada.")
+        if result.state != "completed" or result.evaluated_table_program.state != "completed":
+            return _error(409, "table_revision_not_accepted", "La mesa debe estar revisada antes de calcular costes.")
+        try:
+            value = estimate_table_costs(result.evaluated_table_program, result_revision=result.result_revision, scope=request.scope)
+            repository.save_table_cost_estimate(run_id, value)
+            repository.append_event(run_id, "table_cost_committed", {"result_revision": value.result_revision, "program_hash": value.program_hash, "total_state": value.total_state})
+        except ValueError as exc:
+            return _error(422, str(exc), "No se pudo calcular el coste de mesa.")
+        return _ok(value.model_dump(mode="json"), 201)
+
+    @app.get("/api/v1/runs/{run_id}/table-costs")
+    def get_table_costs(run_id: str, result_revision: int = Query(..., gt=0)):
+        try:
+            value = repository.get_table_cost_estimate(run_id, result_revision)
+        except KeyError:
+            return _error(404, "table_cost_not_found", "No existe coste persistido para esa revisión.")
+        return _ok(value.model_dump(mode="json"))
 
     @app.get("/api/v1/runs/{run_id}/exports")
     def exports(run_id: str, format: Literal["json", "csv"] = Query(...)):

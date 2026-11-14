@@ -20,8 +20,12 @@ from backend.app.contratos.modelos import (
     TableCostEstimate,
     TableDrawingExports,
     TableDrawingManifest,
+    EvaluatedTableProgram,
+    MountedTableAnalysis,
+    TableProgramProposal,
 )
 from backend.app.geometria.parts import recompute_reviewed_assembly_candidate
+from backend.app.geometria.mounted_table import evaluate_table_program
 
 DIMENSION_TOLERANCE_MM = 0.1
 
@@ -87,21 +91,23 @@ class DemoRepository:
                 db.execute("ALTER TABLE runs ADD COLUMN input_kind TEXT NOT NULL DEFAULT 'mounted_views_legacy'")
             if "agent_selected_assembly_candidate_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_assembly_candidate_id TEXT")
+            if "agent_selected_table_program_id" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN agent_selected_table_program_id TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None) -> RunSnapshot:
         created_at = _now()
         input_semantics = extraction.input_kind
-        candidate_revision = part_analysis.candidate_revision if part_analysis is not None else extraction.drawing_id
-        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id, input_semantics=input_semantics, part_analysis=part_analysis, assembly_candidates=assembly_candidates)
+        candidate_revision = part_analysis.candidate_revision if part_analysis is not None else table_analysis.ledger_revision if table_analysis is not None else extraction.drawing_id
+        initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id, input_semantics=input_semantics, part_analysis=part_analysis, assembly_candidates=assembly_candidates, table_analysis=table_analysis, table_programs=table_programs, evaluated_table_program=evaluated_table_program)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?)",
-                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id,agent_selected_table_program_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id, agent_selected_table_program_id),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -120,7 +126,7 @@ class DemoRepository:
             row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if row is None:
             raise KeyError(run_id)
-        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], agent_selected_assembly_candidate_id=row["agent_selected_assembly_candidate_id"], document_id=row["document_id"], input_kind=row["input_kind"])
+        return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], agent_selected_assembly_candidate_id=row["agent_selected_assembly_candidate_id"], agent_selected_table_program_id=row["agent_selected_table_program_id"], document_id=row["document_id"], input_kind=row["input_kind"])
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -149,6 +155,8 @@ class DemoRepository:
         if request.base_result_revision != run.result_revision:
             raise ValueError("stale_result_revision")
         previous = self.get_result(run_id)
+        if previous.input_semantics == "mounted_orthographic_views":
+            return self._review_table(run_id, previous, request)
         if previous.input_semantics == "separated_part_views":
             return self._review_parts(run_id, previous, request)
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
@@ -210,6 +218,41 @@ class DemoRepository:
         timestamp = _now()
         reason = request.notes or "; ".join(item.notes for item in request.decisions)
         result = Result(run_id=run_id, result_revision=revision, state="completed" if complete else "needs_review", scenarios=previous.scenarios, pieces=tuple(pieces), rejected_proposal_ids=tuple(rejected), created_at=timestamp, review=HumanReview(reviewer_name=request.reviewer_name, reason=reason, timestamp=timestamp, selected_scenario_id=selected_scenario_id), agent_selected_scenario_id=previous.agent_selected_scenario_id)
+        with self._connect() as db:
+            reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
+            if reserved.rowcount != 1:
+                raise ValueError("stale_result_revision")
+            db.execute("INSERT INTO results VALUES (?, ?, ?)", (run_id, revision, result.model_dump_json()))
+        return result
+
+    def _review_table(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
+        if request.table_program_id is None or previous.table_analysis is None:
+            raise ValueError("table_program_required")
+        program = next((item for item in previous.table_programs if item.id == request.table_program_id), None)
+        if program is None:
+            raise ValueError("unknown_table_program")
+        if previous.selected_table_program_id == program.id:
+            decisions = {(item.target_kind, item.target_id): item for item in previous.table_review_decisions}
+            confirmed = {item.target_id: item for item in previous.table_confirmed_values}
+        else:
+            decisions, confirmed = {}, {}
+        decisions.update({(item.target_kind, item.target_id): item for item in request.table_decisions})
+        confirmed.update({item.target_id: item for item in request.table_confirmed_values})
+        effective_decisions = tuple(decisions[key] for key in sorted(decisions))
+        effective_confirmed = tuple(confirmed[key] for key in sorted(confirmed))
+        evaluated = evaluate_table_program(previous.table_analysis, program, effective_decisions, effective_confirmed)
+        revision = request.base_result_revision + 1
+        timestamp = _now()
+        result = Result(
+            run_id=run_id, result_revision=revision,
+            state="completed" if evaluated.state == "completed" else "needs_review",
+            scenarios=previous.scenarios, pieces=(), created_at=timestamp,
+            review=HumanReview(reviewer_name=request.reviewer_name, reason=request.notes or "Revisión de programa de mesa", timestamp=timestamp, selected_scenario_id=None, selected_table_program_id=program.id),
+            input_semantics=previous.input_semantics,
+            table_analysis=previous.table_analysis, table_programs=previous.table_programs,
+            selected_table_program_id=program.id, evaluated_table_program=evaluated,
+            table_review_decisions=effective_decisions, table_confirmed_values=effective_confirmed,
+        )
         with self._connect() as db:
             reserved = db.execute("UPDATE runs SET current_result_revision=? WHERE id=? AND current_result_revision=?", (revision, run_id, request.base_result_revision))
             if reserved.rowcount != 1:
