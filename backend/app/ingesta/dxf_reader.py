@@ -15,11 +15,32 @@ from ezdxf import recover
 UNIT_BY_INSUNITS = {1: ("in", 25.4), 4: ("mm", 1.0), 5: ("cm", 10.0), 6: ("m", 1000.0)}
 MAX_ENTITIES = 100_000
 MAX_BLOCK_DEPTH = 8
-MAX_CURVE_POINTS = 4096
+MAX_POINTS_PER_ENTITY = 20_000
+MAX_DRAWING_POINTS = 200_000
 
 
 class _EntityLimitExceeded(ValueError):
     pass
+
+
+@dataclass
+class _PointBudget:
+    limit: int
+    used: int = 0
+
+    @property
+    def remaining(self) -> int:
+        return self.limit - self.used
+
+    def ensure(self, count: int, entity_id: str) -> None:
+        if count > MAX_POINTS_PER_ENTITY:
+            raise ValueError(f"entity point limit exceeded: {entity_id}: {count} > {MAX_POINTS_PER_ENTITY}")
+        if count > self.remaining:
+            raise ValueError(f"drawing point limit exceeded: {self.used + count} > {self.limit}")
+
+    def consume(self, count: int, entity_id: str) -> None:
+        self.ensure(count, entity_id)
+        self.used += count
 
 
 @dataclass(frozen=True)
@@ -100,14 +121,19 @@ def _read_document(path: Path, warnings: list[str]) -> object:
         return document
 
 
-def _approximate_curve(entity: object, entity_id: str, warnings: list[str]) -> tuple[tuple[float, float], ...] | None:
+def _approximate_curve(
+    entity: object,
+    entity_id: str,
+    warnings: list[str],
+    *,
+    point_limit: int,
+) -> tuple[tuple[float, float], ...] | None:
     try:
         path = ezdxf.path.make_path(entity)
         control = []
         for index, point in enumerate(path.control_vertices()):
-            if index >= MAX_CURVE_POINTS:
-                warnings.append(f"curve_point_limit:{entity_id}")
-                return None
+            if index >= point_limit:
+                raise ValueError(f"drawing point limit exceeded while reading {entity_id}")
             control.append(point)
         if not control:
             return None
@@ -116,17 +142,20 @@ def _approximate_curve(entity: object, entity_id: str, warnings: list[str]) -> t
         distance = max(max(max(xs) - min(xs), max(ys) - min(ys)) * 1e-3, 1e-9)
         flattened = []
         for index, point in enumerate(path.flattening(distance, segments=4)):
-            if index >= MAX_CURVE_POINTS:
-                warnings.append(f"curve_point_limit:{entity_id}")
-                return None
+            if index >= point_limit:
+                raise ValueError(f"drawing point limit exceeded while flattening {entity_id}")
             flattened.append(point)
-    except (AttributeError, ValueError, ezdxf.DXFError):
+    except ValueError as exc:
+        if "drawing point limit exceeded" in str(exc):
+            raise
+        return None
+    except (AttributeError, ezdxf.DXFError):
         return None
     points = _planar_xy_points(flattened)
     if points is None:
         warnings.append(f"unsupported_entity_plane:{entity.dxftype()}:{entity_id}")  # type: ignore[attr-defined]
         return None
-    warnings.append(f"approximated_curve:{entity_id}:max_points={MAX_CURVE_POINTS}")
+    warnings.append(f"approximated_curve:{entity_id}:max_points={MAX_POINTS_PER_ENTITY}")
     return points
 
 
@@ -201,8 +230,13 @@ def _expanded_entities(
         yield from walk(entity, _entity_id(entity, ordinal))
 
 
-def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
-    """Read the deliberately small, documented DXF subset used by the demo."""
+def parse_dxf(
+    path: Path,
+    *,
+    max_entities: int = MAX_ENTITIES,
+    max_points: int = MAX_DRAWING_POINTS,
+) -> ParsedDrawing:
+    """Read the honest 2D subset with 100k entities, 20k points/entity and 200k points/drawing."""
     raw = path.read_bytes()
     warnings: list[str] = []
     document = _read_document(path, warnings)
@@ -215,9 +249,11 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
         warnings.append("source_unit_unknown")
 
     parsed: list[ParsedEntity] = []
+    point_budget = _PointBudget(max_points)
     for entity, entity_id, layer, linetype in _expanded_entities(
         document, modelspace, max_entities=max_entities, warnings=warnings,
     ):
+        parsed_before = len(parsed)
         kind = entity.dxftype()
         if kind == "LINE":
             points = _planar_xy_points((entity.dxf.start, entity.dxf.end))
@@ -226,6 +262,7 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
                 continue
             parsed.append(ParsedEntity(entity_id, kind, layer, points, linetype=linetype))
         elif kind == "LWPOLYLINE":
+            point_budget.ensure(len(entity), entity_id)
             vertices = tuple(entity.get_points("xyb"))
             if any(abs(float(vertex[2])) > 1e-12 for vertex in vertices):
                 warnings.append(f"unsupported_bulge:{entity_id}")
@@ -239,6 +276,9 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
             extrusion = entity.dxf.extrusion
             if abs(float(extrusion.x)) > 1e-9 or abs(float(extrusion.y)) > 1e-9 or abs(abs(float(extrusion.z)) - 1.0) > 1e-9:
                 warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            if kind == "ARC" and float(extrusion.z) < 0:
+                warnings.append(f"unsupported_arc_orientation:{entity_id}:negative_z_ocs")
                 continue
             center_wcs = entity.ocs().to_wcs(entity.dxf.center)
             if kind == "CIRCLE":
@@ -263,7 +303,10 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
                 },
             ))
         elif kind in {"ELLIPSE", "SPLINE"}:
-            points = _approximate_curve(entity, entity_id, warnings)
+            points = _approximate_curve(
+                entity, entity_id, warnings,
+                point_limit=min(MAX_POINTS_PER_ENTITY, point_budget.remaining),
+            )
             if points:
                 parsed.append(ParsedEntity(entity_id, kind, layer, points, linetype=linetype))
             else:
@@ -362,6 +405,9 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
             ))
         else:
             warnings.append(f"unsupported_entity:{kind}:{entity_id}")
+
+        for item in parsed[parsed_before:]:
+            point_budget.consume(len(item.points), item.id)
 
     return ParsedDrawing(
         drawing_id=f"drawing-{sha256(raw).hexdigest()[:16]}",
