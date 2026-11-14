@@ -739,3 +739,77 @@ def test_identidad_con_ceros_conserva_los_mas_cercanos(fuente, tmp_path):
         excluidos = [k for k in refs if k not in c["relevancias"] and k != c["consulta_id"]
                      and not refs[k]["variant_of"] and k != refs[c["consulta_id"]]["variant_of"]]
         assert all(distancia(z) <= distancia(e) + 1e-12 for z in ceros for e in excluidos)
+
+
+# ------------------------------------------------------------ comparativa A/B/C/D
+
+
+def test_comparativa_lee_el_corpus_de_extremo_a_extremo(fuente, tmp_path):
+    from evaluation.comparativa import (
+        PlankAssemblyCorpusReader,
+        ReferenceNotFrozen,
+        build_methods,
+        execute_run,
+        score_run,
+    )
+
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True, poor_partitions=("train", "valid", "test"))
+    public_rows = _json(pub / "cases.json")
+    assert all({"family_hash", "group_id", "split"}.isdisjoint(row) for row in public_rows)
+
+    class Espia(PlankAssemblyCorpusReader):
+        lecturas_privadas = 0
+
+        def _read_private(self):
+            Espia.lecturas_privadas += 1
+            return super()._read_private()
+
+    reader = Espia(pub, priv, tmp_path / "staging")
+    metas = reader.case_meta()
+    assert {m.split for m in metas.values()} == {"train", "valid", "test"}
+    assert {m.partition_id for m in metas.values()}.isdisjoint({"train", "valid", "test"})
+    # Misma partición oficial, mismo partition_id; nunca un identificador de grupo privado.
+    por_particion: dict[str, set[str]] = {}
+    for meta in metas.values():
+        por_particion.setdefault(meta.split, set()).add(meta.partition_id)
+    assert all(len(ids) == 1 for ids in por_particion.values()) and len(por_particion) == 3
+    privados = {str(r.get(k)) for r in _json(priv / "references.json") for k in ("group_id", "family_hash", "exact_hash")}
+    assert not privados & {m.partition_id for m in metas.values()}
+
+    with pytest.raises(ReferenceNotFrozen):
+        score_run(reader, tmp_path / "run")
+    run_dir = tmp_path / "run"
+    execute_run(reader, build_methods(("A",)), run_dir)
+    assert Espia.lecturas_privadas == 0  # ejecutar y congelar no abre lo privado
+    report = score_run(reader, run_dir)
+    assert Espia.lecturas_privadas == 1
+    assert report["corpus"]["id"] == "plankassembly-corpus"
+    assert "family_hash" not in json.dumps(report["corpus"])
+    puntuados = [
+        split for family in report["variants"]["A"]["families"].values() for split in family.values()
+    ]
+    assert {c for c in ("train", "valid", "test")} == {
+        name for family in report["variants"]["A"]["families"].values() for name in family
+    }
+    assert sum(split["sample"]["cases"] for split in puntuados) == len(public_rows)
+    # Todas las referencias (también las de variantes pobres, que heredan la de su caso base) se adaptan.
+    referencias = reader._read_private()
+    assert set(referencias) == {row["id"] for row in public_rows}
+    assert all(ref is not None and ref.components for ref in referencias.values())
+    base_de = {r["id"]: r["variant_of"] for r in _json(priv / "references.json") if r["variant_of"]}
+    assert base_de
+    for variante, base in base_de.items():
+        assert referencias[variante].components == referencias[base].components
+
+
+def test_comparativa_cli_con_corpus(fuente, tmp_path):
+    from tools.comparativa_metodos import main as cli_main
+
+    pub, priv, _ = _generar(fuente, tmp_path)
+    run_dir = tmp_path / "run-cli"
+    codigo = cli_main([
+        "run", "--corpus", "plankassembly-corpus", "--public-dir", str(pub), "--private-dir", str(priv),
+        "--run-dir", str(run_dir),
+    ])
+    assert codigo == 0
+    assert (run_dir / "report.json").is_file()

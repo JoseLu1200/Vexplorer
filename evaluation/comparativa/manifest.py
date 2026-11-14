@@ -122,20 +122,24 @@ class PlankAssemblyManifestReader(ManifestReader):
             if case_id in self._meta:
                 raise ComparisonError(f"duplicate case id {case_id!r}")
             case = self._read_bundle(case_id)
-            for key in ("split", "family_hash"):
-                if not isinstance(row.get(key), str) or not row[key]:
-                    raise ComparisonError(f"public case {case_id} lacks {key}")
             if row.get("sha256") != case.sha256:
                 raise ComparisonError(f"public case {case_id}: cases.json hash differs from the bundle")
             cases.append(case)
-            self._meta[case_id] = CaseMeta(
-                case_id=case_id,
-                family=f"plankassembly:{case.view_kind}",
-                split=row["split"],
-                partition_id=row["family_hash"],
-                development=row["split"] != "holdout",
-            )
+            self._meta[case_id] = self._case_meta(row, case)
         self._cases = cases
+
+    def _case_meta(self, row: dict[str, Any], case: PublicCase) -> CaseMeta:
+        """Harness-only grouping of one public row (hook for other public layouts)."""
+        for key in ("split", "family_hash"):
+            if not isinstance(row.get(key), str) or not row[key]:
+                raise ComparisonError(f"public case {case.case_id} lacks {key}")
+        return CaseMeta(
+            case_id=case.case_id,
+            family=f"plankassembly:{case.view_kind}",
+            split=row["split"],
+            partition_id=row["family_hash"],
+            development=row["split"] != "holdout",
+        )
 
     def _read_bundle(self, case_id: str) -> PublicCase:
         bundle = self.public_dir / "agent_cases" / f"{case_id}.zip"
@@ -222,6 +226,87 @@ def _plank_reference(case_id: str, row: dict[str, Any], quantity_identifiable: b
             quantity=RefField(float(count), quantity_identifiable),
         ))
     return ReferenceCase(case_id, tuple(components))
+
+
+class PlankAssemblyCorpusReader(PlankAssemblyManifestReader):
+    """Reads the public/private pair written by ``tools/plankassembly_corpus.py``.
+
+    The public ``cases.json`` carries only the method-visible metadata plus the
+    official ``partition`` (train/valid/test); it deliberately has no family or
+    group identifier, and this reader neither needs nor looks for one.  The
+    harness-side ``partition_id`` is derived from the public ``partition`` alone
+    (coarse and opaque): near-duplicate groups never cross partitions in that
+    corpus, so excluding precedents of the same partition removes every possible
+    relative of a case without opening the private side.
+
+    Private: ``references.json``.  Complete cases carry ``components`` with
+    ``bounds_mm``; poor-view variants carry only ``variant_of`` and are scored
+    against the complete reference of their base case.  The private side is
+    reached only through ``_read_private`` (gated by ``load_references``).
+    """
+
+    corpus_id = "plankassembly-corpus"
+    _PARTITIONS = ("train", "valid", "test")
+
+    def _case_meta(self, row: dict[str, Any], case: PublicCase) -> CaseMeta:
+        partition = row.get("partition")
+        if partition not in self._PARTITIONS:
+            raise ComparisonError(f"public case {case.case_id} lacks a valid partition")
+        digest = sha256_bytes(f"{self.corpus_id}|{partition}".encode())[:12]
+        return CaseMeta(
+            case_id=case.case_id,
+            family=f"{self.corpus_id}:{case.view_kind}",
+            split=partition,
+            partition_id=f"{self.corpus_id}-{digest}",
+            development=partition != "test",
+        )
+
+    def _load_public(self) -> None:
+        if self._cases is not None:
+            return
+        super()._load_public()
+        expected = self._manifest.get("cases_sha256") if isinstance(self._manifest, dict) else None
+        actual = sha256_bytes((self.public_dir / "cases.json").read_bytes())
+        if expected is not None and expected != actual:
+            self._cases = None
+            self._meta = {}
+            raise ComparisonError("public cases.json differs from its manifest hash")
+
+    def corpus_info(self) -> dict[str, Any]:
+        self._load_public()
+        return {
+            "id": self.corpus_id,
+            "kind": "plankassembly_corpus_output",
+            "generator_version": self._manifest.get("generator_version"),
+            "partitions": self._manifest.get("partitions"),
+            "case_count": len(self._meta),
+            "public_cases_sha256": sha256_bytes((self.public_dir / "cases.json").read_bytes()),
+            "quantity_identifiable": self.quantity_identifiable,
+        }
+
+    def _read_private(self) -> dict[str, ReferenceCase | None]:
+        self._load_public()
+        rows = _read_json(self.private_dir / "references.json", "private references.json")
+        if not isinstance(rows, list):
+            raise ComparisonError("private references.json must be an array")
+        by_id: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            case_id = row.get("id") if isinstance(row, dict) else None
+            meta = self._meta.get(case_id)
+            if meta is None:
+                raise ComparisonError(f"reference {case_id!r} has no public case")
+            if case_id in by_id:
+                raise ComparisonError(f"duplicate reference {case_id!r}")
+            if row.get("partition") != meta.split:
+                raise ComparisonError(f"reference {case_id}: partition differs from the public side")
+            by_id[case_id] = row
+        result: dict[str, ReferenceCase | None] = {case_id: None for case_id in self._meta}
+        for case_id, row in by_id.items():
+            source = by_id.get(row["variant_of"]) if row.get("variant_of") else row
+            if source is None or "components" not in source:
+                continue  # no reference available: counted in the sample, never scored
+            result[case_id] = _plank_reference(case_id, source, self.quantity_identifiable)
+        return result
 
 
 # --------------------------------------------------------------------------- #

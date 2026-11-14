@@ -21,6 +21,7 @@ from evaluation.comparativa import (
     ComparisonError,
     DevelopmentManifestReader,
     ManifestReader,
+    PlankAssemblyCorpusReader,
     PlankAssemblyManifestReader,
     PrecedentIndex,
     RunLimits,
@@ -37,7 +38,7 @@ REPO = Path(__file__).resolve().parents[1]
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", choices=("freeze", "score", "run"))
-    parser.add_argument("--corpus", choices=("development", "plankassembly"), default="development")
+    parser.add_argument("--corpus", choices=("development", "plankassembly", "plankassembly-corpus"), default="development")
     parser.add_argument("--demo-dir", type=Path, default=REPO / "data" / "planos_demo")
     parser.add_argument("--reference-dir", type=Path, default=REPO / "evaluation" / "reference")
     parser.add_argument("--public-dir", type=Path)
@@ -60,9 +61,10 @@ def _reader(args: argparse.Namespace) -> ManifestReader:
     if args.corpus == "development":
         return DevelopmentManifestReader(args.demo_dir, args.reference_dir, args.staging_dir or args.run_dir / "inputs")
     if args.public_dir is None or args.private_dir is None:
-        raise ComparisonError("plankassembly corpus needs --public-dir and --private-dir")
+        raise ComparisonError(f"{args.corpus} corpus needs --public-dir and --private-dir")
     staging = args.staging_dir or args.run_dir / "inputs"
-    return PlankAssemblyManifestReader(args.public_dir, args.private_dir, staging)
+    reader_class = PlankAssemblyCorpusReader if args.corpus == "plankassembly-corpus" else PlankAssemblyManifestReader
+    return reader_class(args.public_dir, args.private_dir, staging)
 
 
 def _load_adapter(spec: str) -> Any:
