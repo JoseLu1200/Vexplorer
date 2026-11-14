@@ -38,6 +38,16 @@ No se duplican specs para codificar cantidad. Las topologías excluyentes son ta
 
 El servidor conserva propuesta raw, normaliza símbolos, calcula programa canónico y `program_hash` independiente de IDs arbitrarios/orden, y registra versiones de ledger/perfil/reglas. Los intentos inválidos se auditan sin argumentos crudos ni secretos.
 
+Para la selección humana explícita de baseline, A implementa también:
+
+```text
+catalog_table_programs(
+    analysis: MountedTableAnalysis,
+) -> tuple[TableProgramProposal, ...]
+```
+
+Devuelve las dos alternativas incompatibles side/corner con `proposal_origin=catalog_baseline`; ninguna se selecciona por apariencia. Secciones o espesores ausentes son slots/premisas `unknown`, no mediciones CAD fantasma ni medidas consumidas artificialmente. B no duplica estas reglas en repositorio.
+
 ## Evaluación y revisión
 
 A implementa:
