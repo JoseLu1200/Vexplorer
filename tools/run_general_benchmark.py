@@ -527,7 +527,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--workers", type=int, default=2, choices=(1, 2, 3))
     parser.add_argument("--strict-bundles", action="store_true")
     parser.add_argument("--proposer-model", default="gpt-6.1-sol")
-    parser.add_argument("--reviewer-model", default="gpt-6-astra")
+    parser.add_argument("--reviewer-model", default="gpt-6.1-sol")
     parser.add_argument("--max-output-tokens", type=int, default=16384)
     parser.add_argument("--max-review-calls", type=int, default=5)
     parser.add_argument("--max-validation-repairs", type=int, default=2)

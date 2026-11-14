@@ -8,6 +8,9 @@ from backend.app.contratos.modelos import (
     GeneralValue,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.assembly_semantics import (
+    validate_assembly_source_references,
+)
 
 
 def _unknown() -> GeneralValue:
@@ -31,6 +34,11 @@ def materialize_general_proposal(
     }
     dimensions = {item.id: item for item in extraction.dimensions}
     measures = {item.id: item for item in derive_geometry_measurements(extraction)}
+    validate_assembly_source_references(
+        extraction,
+        proposal,
+        allowed_document_refs=allowed_document_refs,
+    )
     for component in proposal.components:
         checks = (
             (component.source_view_ids, ledger["view"]),
@@ -176,4 +184,6 @@ def materialize_general_proposal(
         ),
         premises=proposal.premises,
         assumptions=proposal.assumptions,
+        assembly_relations=proposal.assembly_relations,
+        assembly_alternatives=proposal.assembly_alternatives,
     )

@@ -8,10 +8,20 @@ from backend.app.agente.config import ProviderSettings
 from backend.app.general_furniture.autonomous import GeneralAutonomousError
 import tools.run_general_benchmark as benchmark
 from tools.run_general_benchmark import (
+    _parser,
     export_prediction_manifests,
     freeze_paired_outcome,
     load_public_sources,
 )
+
+
+def test_cli_defaults_both_benchmark_phases_to_sol() -> None:
+    args = _parser().parse_args(
+        ["--input", "public", "--output", "run", "--dataset-id", "cohort-v2"]
+    )
+
+    assert args.proposer_model == "gpt-6.1-sol"
+    assert args.reviewer_model == "gpt-6.1-sol"
 
 
 def _bundle(path: Path, *, case_id: str = "plank-011", metadata_extra: dict | None = None) -> None:

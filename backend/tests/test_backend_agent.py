@@ -41,6 +41,7 @@ def test_provider_uses_configured_output_budget_without_exposing_secrets() -> No
     provider = OpenAIResponsesProvider(settings, client=httpx.Client(transport=httpx.MockTransport(handler)))
     provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
     assert seen["max_output_tokens"] == 4096
+    assert "reasoning" not in seen
     assert "secret-test-key" not in json.dumps(seen)
     assert ProviderSettings(api_key="key", model="model", max_output_tokens=999999999).available is False
 

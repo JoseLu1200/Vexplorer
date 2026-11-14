@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from backend.app.estimacion.table_costs import get_table_cost_catalog
-from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.agente.provider import ProviderError, ProviderResponse, ToolCall
 from backend.app.main import create_app
 from backend.app.operacion.auth import hash_password
 from backend.app.ingesta import DwgConversionResult
@@ -83,9 +83,22 @@ class _GeneralLiveProvider:
         )
 
 
+class _CountingAssemblyProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_response(self, **kwargs):
+        self.calls += 1
+        raise AssertionError("insufficient reviewed geometry must fail before provider spend")
+
+
 class _FailingGeneralProvider:
     def create_response(self, **kwargs):
-        raise RuntimeError("provider unavailable")
+        raise ProviderError(
+            "provider_response_incomplete", status_code=200,
+            request_id="req-internal", response_id="resp-internal",
+            incomplete_reason="max_output_tokens",
+        )
 
 
 class _SemanticRepairProvider(_GeneralLiveProvider):
@@ -107,19 +120,40 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
                 "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
             }
             visual_ref = context["visual_artifacts"][0]["reference"]
+            repair_fields = ("length", "width", "thickness", "quantity")
             arguments = {
                 "scenario_id": "scenario-repair-1",
-                "checks": [{"id": "semantic-conflict", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{source['id']}.length"], "source_refs": [visual_ref], "summary": "La asignación semántica requiere reparación."}],
-                "field_reviews": [{"target_ref": f"component:{source['id']}.length", "status": "rejected", "check_ids": ["semantic-conflict"]}],
-                "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
+                "checks": [{
+                    "id": f"semantic-conflict-{field}",
+                    "kind": "visual_consistency", "outcome": "fail",
+                    "method": "model_visual",
+                    "target_refs": [f"component:{source['id']}.{field}"],
+                    "source_refs": [visual_ref],
+                    "summary": "La asignación semántica requiere reparación.",
+                } for field in repair_fields],
+                "field_reviews": [{
+                    "target_ref": f"component:{source['id']}.{field}",
+                    "status": "rejected",
+                    "check_ids": [f"semantic-conflict-{field}"],
+                } for field in repair_fields],
+                "unresolved": ["repairable:semantic_assignment"],
+                "status": "conflict",
             }
             return ProviderResponse(id="critic-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-1", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
         output = json.loads(input_items[0]["output"])
+        if output.get("ok") is False:
+            raise AssertionError(output)
         if output["status"] == "repair_requested":
             proposal = self.review_context["proposal"]
             components = [dict(item) for item in proposal["components"]]
-            components[0]["label"] = "Panel reparado semánticamente"
-            arguments = {"bindings": proposal["bindings"], "components": components, "premises": proposal["premises"], "assumptions": [*proposal["assumptions"], "Reparación automática trazable."]}
+            original_binding = proposal["bindings"][0]
+            repaired_binding = {**original_binding, "id": "repaired-length"}
+            components[0]["length_binding_id"] = repaired_binding["id"]
+            arguments = {
+                "bindings": [repaired_binding], "components": components,
+                "premises": proposal["premises"],
+                "assumptions": proposal["assumptions"],
+            }
             return ProviderResponse(id="repair-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="repair-call-1", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
         draft = output["draft"]
         source = draft["components"][0]
@@ -156,25 +190,23 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
             if output.get("status") == "repair_requested":
                 proposal = self.review_context["proposal"]
                 component = dict(proposal["components"][0])
+                quantity_premise = component["premise_ids"][0]
                 component.update({
-                    "id": "scenario-panel", "label": "Panel provisional",
                     "length_binding_id": "scenario-length", "width_binding_id": "scenario-width",
                     "thickness_binding_id": "scenario-thickness",
-                    "quantity": {"value": 2, "state": "hypothesis", "dependency_refs": ["premise:two-items"], "evidence_ids": []},
-                    "premise_ids": ["two-items"],
-                    "source_dimension_ids": ["dimension-entity-9C", "dimension-entity-AC", "dimension-entity-CC"],
-                    "source_evidence_ids": ["evidence-dimension-entity-9C", "evidence-dimension-entity-AC", "evidence-dimension-entity-CC"],
+                    "quantity": {"value": 2, "state": "hypothesis", "dependency_refs": [f"premise:{quantity_premise}"], "evidence_ids": []},
                     "unknown_fields": ["material", "finish"],
                 })
+                observed_operand_refs = proposal["bindings"][0]["operand_refs"]
                 arguments = {
                     "bindings": [
-                        {"id": "scenario-length", "operation": "copy", "operand_refs": ["dimension:dimension-entity-9C"]},
-                        {"id": "scenario-width", "operation": "copy", "operand_refs": ["dimension:dimension-entity-AC"]},
-                        {"id": "scenario-thickness", "operation": "copy", "operand_refs": ["dimension:dimension-entity-CC"]},
+                        {"id": "scenario-length", "operation": "copy", "operand_refs": observed_operand_refs},
+                        {"id": "scenario-width", "operation": "copy", "operand_refs": observed_operand_refs},
+                        {"id": "scenario-thickness", "operation": "copy", "operand_refs": observed_operand_refs},
                     ],
                     "components": [component],
-                    "premises": [{"id": "two-items", "description": "Dos grupos visuales distintos bajo el escenario provisional.", "required": True, "blocking": True}],
-                    "assumptions": ["Escenario provisional auto-revisado."],
+                    "premises": proposal["premises"],
+                    "assumptions": proposal["assumptions"],
                 }
                 return ProviderResponse(id="scenario-repair", model="test-general-reviewer", tool_calls=(ToolCall(call_id="scenario-repair-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
             if output.get("status") == "proposal_repaired":
@@ -187,14 +219,14 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                 }
                 visual_ref = self.review_context["visual_artifacts"][0]["reference"]
                 checks = [
-                    {"id": "quantity-basis", "kind": "quantity_basis", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-panel.quantity"], "source_refs": [visual_ref], "summary": "Dos grupos visuales distintos."},
-                    {"id": "duplicate-scan", "kind": "duplicate_scan", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-panel.quantity"], "source_refs": [visual_ref], "summary": "No se tratan como vistas duplicadas."},
+                    {"id": "quantity-basis", "kind": "quantity_basis", "outcome": "pass", "method": "model_visual", "target_refs": ["component:panel.quantity"], "source_refs": [visual_ref], "summary": "Dos grupos visuales distintos."},
+                    {"id": "duplicate-scan", "kind": "duplicate_scan", "outcome": "pass", "method": "model_visual", "target_refs": ["component:panel.quantity"], "source_refs": [visual_ref], "summary": "No se tratan como vistas duplicadas."},
                 ]
-                field_reviews = [{"target_ref": "component:scenario-panel.quantity", "status": "accepted", "check_ids": ["quantity-basis", "duplicate-scan"]}]
+                field_reviews = [{"target_ref": "component:panel.quantity", "status": "accepted", "check_ids": ["quantity-basis", "duplicate-scan"]}]
                 for name in ("length", "width", "thickness"):
                     check_id = f"visual-{name}"
-                    checks.append({"id": check_id, "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:scenario-panel.{name}"], "source_refs": [visual_ref], "summary": "Asignación dimensional coherente con el escenario."})
-                    field_reviews.append({"target_ref": f"component:scenario-panel.{name}", "status": "accepted", "check_ids": [check_id]})
+                    checks.append({"id": check_id, "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:panel.{name}"], "source_refs": [visual_ref], "summary": "Asignación dimensional coherente con el escenario."})
+                    field_reviews.append({"target_ref": f"component:panel.{name}", "status": "accepted", "check_ids": [check_id]})
                 arguments = {
                     "scenario_id": "scenario-two-items",
                     "checks": checks, "field_reviews": field_reviews,
@@ -422,7 +454,13 @@ def test_general_live_failure_does_not_leave_a_run_ghost(tmp_path: Path, monkeyp
     )
 
     assert response.status_code == 502
-    assert response.json()["error"]["code"] == "general_live_provider_failed"
+    error = response.json()["error"]
+    assert error["code"] == "general_live_provider_failed"
+    assert error["reason_code"] == "provider_response_incomplete"
+    assert error["provider_status_code"] == 200
+    assert error["provider_incomplete_reason"] == "max_output_tokens"
+    assert "req-internal" not in response.text
+    assert "resp-internal" not in response.text
     with sqlite3.connect(data / "vexplorer.sqlite3") as database:
         assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
 
@@ -542,6 +580,70 @@ def test_general_autonomous_semantic_repair_preserves_p1_and_reviews_p2(
     )
     assert direct_retry.status_code == 409
     assert direct_retry.json()["detail"] == "general_auto_review_requires_durable_job"
+
+
+def test_general_assembly_phase_persists_failure_and_retry_uses_durable_job(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    assembly_provider = _CountingAssemblyProvider()
+    app = create_app(
+        data_dir=tmp_path,
+        frontend_dir=tmp_path / "none",
+        agent_provider=_GeneralLiveProvider(),
+        general_assembly_provider=assembly_provider,
+    )
+    client = TestClient(app)
+    uploaded = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]
+    created = client.post(
+        "/api/v1/runs",
+        json={
+            "document_id": uploaded["document_id"],
+            "mode": "live",
+            "input_kind": "general_furniture",
+            "proposal_mode": "model_generated",
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    run_id = created.json()["data"]["run"]["id"]
+    record = client.get(f"/api/v1/runs/{run_id}/general").json()["data"]
+    query = (
+        f"proposal_revision={record['proposal_revision']}"
+        f"&review_revision={record['review_revision']}"
+    )
+    first = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    again = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+
+    assert first.status_code == 200
+    assert first.json()["current"]["report"]["status"] == "incomplete"
+    assert first.json()["current"]["report"]["scene"] is None
+    assert first.json()["current"]["report"]["issues"][0]["code"].startswith("assembly_")
+    assert first.json()["current"]["report"]["issues"][0]["code"] != "assembly_runtime_failed"
+    assert again.json()["assembly_revision"] == 1
+    assert assembly_provider.calls == 0
+
+    submitted = client.post(
+        f"/api/v1/runs/{run_id}/general/assembly/retry",
+        json={
+            "base_proposal_revision": record["proposal_revision"],
+            "base_review_revision": record["review_revision"],
+        },
+    )
+    assert submitted.status_code == 202, submitted.text
+    job_id = submitted.json()["data"]["id"]
+    for _ in range(100):
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["state"] in {"succeeded", "failed", "interrupted"}:
+            break
+        time.sleep(0.01)
+    latest = client.get(f"/api/v1/runs/{run_id}/general/assembly?{query}")
+    assert job["state"] == "failed"
+    assert latest.status_code == 200
+    assert latest.json()["assembly_revision"] == 2
 
 
 def test_failed_c2_job_keeps_run_p1_p2_and_no_successful_review(

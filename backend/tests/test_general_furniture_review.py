@@ -148,3 +148,23 @@ def test_hypothesis_quantity_never_creates_physical_occurrences() -> None:
     reviewed = apply_general_review(run_id="run-1", proposal_id="proposal-1", proposal_revision=1, draft=draft, request=request)
 
     assert reviewed.occurrences == ()
+
+
+@pytest.mark.parametrize("forged", [False, True])
+def test_review_preserves_quantity_binding_evidence_without_component_summary(forged):
+    quantity = GeneralQuantity(value=2, state="derived", evidence_ids=("binding-evidence",), dependency_refs=("binding:quantity",))
+    draft = _draft()
+    draft = draft.model_copy(update={"components": (draft.components[0].model_copy(update={"quantity": quantity}),)})
+    component = _component(quantity=quantity.model_copy(update={"evidence_ids": ("forged",)}) if forged else quantity)
+    request = GeneralFurnitureReviewRequest(
+        base_proposal_revision=1, base_review_revision=0, reviewer_name="test",
+        reason="Preserve trusted compiled quantity provenance.",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=("panel-proposed",), result_component_ids=("panel-reviewed",), reason="Preserve"),),
+        components=(component,),
+    )
+    if forged:
+        with pytest.raises(ValueError):
+            apply_general_review(run_id="run", proposal_id="proposal-1", proposal_revision=1, draft=draft, request=request)
+    else:
+        result = apply_general_review(run_id="run", proposal_id="proposal-1", proposal_revision=1, draft=draft, request=request)
+        assert result.components[0].quantity.evidence_ids == ("binding-evidence",)

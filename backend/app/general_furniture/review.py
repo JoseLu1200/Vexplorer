@@ -96,7 +96,12 @@ def apply_general_review(
             "conflict",
         ) and component.quantity not in [item.quantity for item in sources]:
             raise ValueError("unconfirmed_quantity_must_match_proposal")
-        if not set(component.quantity.evidence_ids) <= allowed_refs["evidence"]:
+        # Compiled quantity bindings can cite evidence absent from the component
+        # summary. Preserve that trusted provenance without accepting new refs.
+        quantity_evidence = allowed_refs["evidence"] | {
+            ref for source in sources for ref in source.quantity.evidence_ids
+        }
+        if not set(component.quantity.evidence_ids) <= quantity_evidence:
             raise ValueError("review_field_reference_outside_proposal")
         for name in ("material", "finish"):
             value = getattr(component, name)

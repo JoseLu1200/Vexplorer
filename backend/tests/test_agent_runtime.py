@@ -8,7 +8,7 @@ import httpx
 import pytest
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.provider import MAX_PROVIDER_RESPONSE_BYTES, OpenAIResponsesProvider, ProviderResponse, ToolCall
+from backend.app.agente.provider import MAX_PROVIDER_RESPONSE_BYTES, OpenAIResponsesProvider, ProviderError, ProviderResponse, ToolCall
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs
@@ -173,6 +173,41 @@ def test_provider_errors_do_not_echo_credentials_or_remote_body() -> None:
     with pytest.raises(RuntimeError) as caught:
         provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=0.25)
     assert str(caught.value) == "provider_request_failed"
+
+
+def test_provider_classifies_incomplete_reason_without_echoing_remote_body() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "response-incomplete",
+                "status": "incomplete",
+                "incomplete_details": {
+                    "reason": "max_output_tokens",
+                    "unsafe_remote_detail": "do-not-propagate",
+                },
+                "usage": {
+                    "input_tokens": 4653,
+                    "output_tokens": 16384,
+                    "output_tokens_details": {"reasoning_tokens": 16384},
+                    "total_tokens": 21037,
+                },
+                "output": [],
+            },
+        )
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(api_key="super-secret", model="gpt-6.1-sol", base_url="https://example.test/v1"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(ProviderError) as caught:
+        provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
+
+    assert str(caught.value) == "provider_response_incomplete"
+    assert caught.value.response_id == "response-incomplete"
+    assert caught.value.incomplete_reason == "max_output_tokens"
+    assert "unsafe" not in repr(caught.value)
 
 
 def test_provider_streams_valid_json_without_content_length() -> None:

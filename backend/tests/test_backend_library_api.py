@@ -16,8 +16,8 @@ def _client(tmp_path: Path, monkeypatch) -> TestClient:
     return TestClient(create_app(data_dir=tmp_path))
 
 
-def _reviewed_run(client: TestClient, label: str) -> str:
-    with FIXTURE.open("rb") as stream:
+def _reviewed_run(client: TestClient, label: str, fixture: Path = FIXTURE) -> str:
+    with fixture.open("rb") as stream:
         document_id = client.post("/api/v1/documents", files={"file": (f"{label}.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
     created = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only"}).json()["data"]
     run_id = created["run"]["id"]
@@ -36,8 +36,13 @@ def test_offline_library_save_list_and_similarity_are_explicit_and_read_only(tmp
         assert response.status_code == 201
         assert response.json()["data"]["embedding"] is None
 
-    listed = client.get("/api/v1/library")
-    assert listed.status_code == 200 and len(listed.json()["data"]) == 2
+    listed = client.get("/api/v1/library", params={"include_summary": "true"})
+    assert listed.status_code == 200
+    library = listed.json()["data"]
+    assert len(library["items"]) == 2
+    assert library["record_count"] == 2
+    assert library["design_count"] == 1
+    assert library["duplicate_record_count"] == 1
     match = client.post(f"/api/v1/runs/{first}/similarity", json={"result_revision": 2, "mode": "geometric", "limit": 5})
     assert match.status_code == 200
     assert len(match.json()["data"]) == 1
@@ -65,12 +70,18 @@ def test_offline_groups_are_reproducible_and_explain_threshold(tmp_path: Path, m
         run_id = _reviewed_run(client, label)
         client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "offline"})
 
-    first = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.9}).json()["data"]
-    second = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.9}).json()["data"]
+    first_payload = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.9, "include_summary": True}).json()["data"]
+    second_payload = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.9, "include_summary": True}).json()["data"]
+    first, second = first_payload["groups"], second_payload["groups"]
     assert first == second
     assert len(first) == 1 and len(first[0]["member_ids"]) == 3
     assert first[0]["threshold"] == 0.9
     assert first[0]["method"] == "geometric"
+    assert first[0]["linkage"] == "complete"
+    assert first[0]["minimum_pair_score"] >= 0.9
+    assert first_payload["record_count"] == 3
+    assert first_payload["design_count"] == 1
+    assert first_payload["duplicate_record_count"] == 2
 
 
 def test_semantic_groups_use_compatible_cached_embeddings_without_fallback(tmp_path: Path, monkeypatch) -> None:
@@ -90,9 +101,9 @@ def test_semantic_groups_use_compatible_cached_embeddings_without_fallback(tmp_p
         saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "openai"})
         assert saved.status_code == 201
 
-    response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.99})
+    response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.99, "include_summary": True})
     assert response.status_code == 200
-    groups = response.json()["data"]
+    groups = response.json()["data"]["groups"]
     assert len(groups) == 1 and len(groups[0]["member_ids"]) == 2
     assert groups[0]["method"] == "semantic"
     assert groups[0]["score_kind"] == "cosine_similarity"
@@ -119,3 +130,94 @@ def test_library_version_filter_keeps_table_space_separate_from_legacy(tmp_path:
     grouped = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.8, "descriptor_version": "furniture-v3"})
     assert grouped.status_code == 200
     assert grouped.json()["data"] == {"groups": [], "descriptor_version": "furniture-v3", "excluded_count": 2}
+
+
+def test_similarity_deduplicates_equivalent_designs_before_limit_and_reports_counts(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    query = _reviewed_run(client, "query")
+    duplicate_a = _reviewed_run(client, "duplicate-a")
+    duplicate_b = _reviewed_run(client, "duplicate-b", ROOT / "data" / "planos_demo" / "mueble_demo_004.dxf")
+    distinct = _reviewed_run(client, "distinct", ROOT / "data" / "planos_demo" / "mueble_demo_002.dxf")
+    for run_id in (query, duplicate_a, duplicate_b, distinct):
+        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "offline"})
+        assert saved.status_code == 201
+
+    response = client.post(f"/api/v1/runs/{query}/similarity", json={"result_revision": 2, "mode": "geometric", "limit": 2, "include_summary": True})
+
+    assert response.status_code == 200
+    payload = response.json()["data"]
+    assert payload["record_count"] == 3
+    assert payload["design_count"] == 2
+    assert payload["duplicate_record_count"] == 1
+    assert len(payload["matches"]) == 2
+    assert distinct in {item["run_id"] for item in payload["matches"]}
+    repeated = next(item for item in payload["matches"] if item["run_id"] != distinct)
+    assert set(repeated["equivalent_record_ids"]) == {f"library-{duplicate_a}", f"library-{duplicate_b}"}
+    assert repeated["duplicate_record_count"] == 1
+    distinct_match = next(item for item in payload["matches"] if item["run_id"] == distinct)
+    assert distinct_match["equivalent_record_ids"] == [f"library-{distinct}"]
+    assert distinct_match["duplicate_record_count"] == 0
+
+
+def test_semantic_similarity_preserves_cosine_and_reranks_by_technical_evidence(tmp_path: Path, monkeypatch) -> None:
+    from backend.app.semantic.embeddings import EmbeddingResult
+
+    class FlatEmbeddingProvider:
+        model = "text-embedding-3-small"
+        dimensions = 2
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(vector=(1.0, 0.0), model=self.model, dimensions=self.dimensions)
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = TestClient(create_app(data_dir=tmp_path, embedding_provider=FlatEmbeddingProvider()))
+    query = _reviewed_run(client, "query-semantic")
+    exact = _reviewed_run(client, "exact-semantic", ROOT / "data" / "planos_demo" / "mueble_demo_004.dxf")
+    changed = _reviewed_run(client, "changed-semantic", ROOT / "data" / "planos_demo" / "mueble_demo_002.dxf")
+    for run_id in (query, exact, changed):
+        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "openai"})
+        assert saved.status_code == 201
+
+    response = client.post(f"/api/v1/runs/{query}/similarity", json={"result_revision": 2, "mode": "semantic", "limit": 2, "include_summary": True})
+
+    assert response.status_code == 200
+    payload = response.json()["data"]
+    assert [item["run_id"] for item in payload["matches"]] == [exact, changed]
+    assert [item["score"] for item in payload["matches"]] == [1.0, 1.0]
+    assert all(item["score_kind"] == "cosine_similarity" for item in payload["matches"])
+    assert payload["matches"][0]["technical_score"] > payload["matches"][1]["technical_score"]
+    assert all(item["technical_score_kind"] == "technical_similarity" for item in payload["matches"])
+    assert all(item["compatibility_warnings"] for item in payload["matches"])
+
+
+def test_similarity_rejects_requested_descriptor_space_different_from_query(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    run_id = _reviewed_run(client, "legacy-query")
+
+    response = client.post(f"/api/v1/runs/{run_id}/similarity", json={"result_revision": 2, "mode": "geometric", "descriptor_version": "furniture-v3", "include_summary": True})
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "descriptor_space_incompatible"
+
+
+def test_semantic_similarity_excludes_candidate_without_embedding_instead_of_failing_query(tmp_path: Path, monkeypatch) -> None:
+    from backend.app.semantic.embeddings import EmbeddingResult
+
+    class FakeEmbeddingProvider:
+        model = "text-embedding-3-small"
+        dimensions = 2
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(vector=(1.0, 0.0), model=self.model, dimensions=self.dimensions)
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = TestClient(create_app(data_dir=tmp_path, embedding_provider=FakeEmbeddingProvider()))
+    query = _reviewed_run(client, "embedded-query")
+    offline = _reviewed_run(client, "offline-candidate")
+    assert client.post(f"/api/v1/runs/{query}/library", json={"result_revision": 2, "label": query, "embedding_mode": "openai"}).status_code == 201
+    assert client.post(f"/api/v1/runs/{offline}/library", json={"result_revision": 2, "label": offline, "embedding_mode": "offline"}).status_code == 201
+
+    response = client.post(f"/api/v1/runs/{query}/similarity", json={"result_revision": 2, "mode": "semantic", "include_summary": True})
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {"matches": [], "descriptor_version": "furniture-v1", "excluded_count": 1, "record_count": 0, "design_count": 0, "duplicate_record_count": 0}
