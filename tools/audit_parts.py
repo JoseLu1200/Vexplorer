@@ -157,7 +157,7 @@ def parts(client: httpx.Client, audit: Audit, run_id: str, revision: int, key: s
     return data
 
 
-def candidate(snapshot: dict[str, Any]) -> dict[str, Any]:
+def candidate(snapshot: dict[str, Any], *, allow_unknown: bool = False) -> dict[str, Any]:
     observation_ids = {item["id"] for item in snapshot["part_analysis"]["observations"]}
     for item in sorted(snapshot["assembly_candidates"], key=lambda value: value["id"]):
         covered = {use["part_observation_id"] for use in item["uses"]} | set(
@@ -166,8 +166,14 @@ def candidate(snapshot: dict[str, Any]) -> dict[str, Any]:
         if (
             covered == observation_ids
             and not item["unassigned_part_observation_ids"]
-            and all(value["status"] == "pass" for value in item["constraints"])
-            and all(value["state"] == "derived" for value in item["derived_dimensions"])
+            and all(
+                value["status"] in ({"pass", "unknown"} if allow_unknown else {"pass"})
+                for value in item["constraints"]
+            )
+            and all(
+                value["state"] in ({"derived", "unknown"} if allow_unknown else {"derived"})
+                for value in item["derived_dimensions"]
+            )
         ):
             return item
     raise AuditStop("compatible_candidate_missing")
@@ -292,19 +298,21 @@ def audit_complete(client: httpx.Client, audit: Audit) -> None:
         item
         for item in sse_events(events_response)
         if item.get("event_type") == "human_review_committed"
-        and item.get("result_revision") == 2
+        and item.get("data", {}).get("result_revision") == 2
     ]
     audit.check(
         "review.sse_records_selected_assembly_candidate",
         events_response.status_code == 200
         and len(committed) == 1
-        and committed[0].get("selected_assembly_candidate_id") == selected["id"],
+        and committed[0].get("data", {}).get("selected_assembly_candidate_id")
+        == selected["id"],
         {"status": 200, "review_events": 1, "selected_candidate_recorded": True},
         {
             "status": events_response.status_code,
             "review_events": len(committed),
             "selected_candidate_recorded": bool(committed)
-            and committed[0].get("selected_assembly_candidate_id") == selected["id"],
+            and committed[0].get("data", {}).get("selected_assembly_candidate_id")
+            == selected["id"],
         },
     )
     observed_use = next(
@@ -575,7 +583,7 @@ def audit_partial(client: httpx.Client, audit: Audit) -> None:
             {"unknown_observations": 1},
             {"unknown_observations": len(unknown)},
         )
-        selected = candidate(initial)
+        selected = candidate(initial, allow_unknown=True)
         reviewed = review(client, audit, run_id, selected["id"], key)
         scene = client.get(f"/api/v1/runs/{run_id}/scene", params={"result_revision": 2})
         scene_data = body(scene).get("data", {})
@@ -782,7 +790,22 @@ def run_audit(base_url: str, timeout: float) -> dict[str, Any]:
             audit_library(client, audit)
             audit_partial(client, audit)
     except AuditStop:
-        pass
+        if not any(item["status"] == "fail" for item in audit.data["checks"]):
+            audit.data["checks"].append(
+                {
+                    "name": "audit_incomplete",
+                    "status": "fail",
+                    "expected": "all required audit steps completed",
+                    "observed": "required_step_unavailable",
+                }
+            )
+            audit.data["findings"].append(
+                {
+                    "severity": "critical",
+                    "check": "audit_incomplete",
+                    "observed": "required_step_unavailable",
+                }
+            )
     except Exception as exc:
         audit.data["checks"].append(
             {"name": "audit_runner", "status": "fail", "expected": "completed", "observed": type(exc).__name__}

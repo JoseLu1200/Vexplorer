@@ -204,6 +204,37 @@
     },
     {
       "expected": {
+        "review_events": 1,
+        "selected_candidate_recorded": true,
+        "status": 200
+      },
+      "name": "review.sse_records_selected_assembly_candidate",
+      "observed": {
+        "review_events": 1,
+        "selected_candidate_recorded": true,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "accepted": false,
+        "status": [
+          400,
+          409,
+          422
+        ]
+      },
+      "name": "review.observed_quantity_override_rejected",
+      "observed": {
+        "accepted": false,
+        "code": "observed_quantity_override",
+        "status": 422
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
         "missing": [
           404,
           "result_not_found"
@@ -528,7 +559,7 @@
       "name": "library.geometric_similarity_and_group",
       "observed": {
         "groups_status": 200,
-        "paired_group_id": "group-geometric-ca1075f0bb1d5485",
+        "paired_group_id": "group-geometric-55b75ce33d9e6970",
         "similarity_status": 200,
         "translated_score": 1.0
       },
@@ -625,15 +656,48 @@
       "name": "partial.qty_unknown.human_input_enables_scene",
       "observed": {
         "code": null,
-        "objects": 4,
+        "objects": 6,
         "result_state": "completed",
         "review_status": 201,
-        "reviewed_solid": false,
+        "reviewed_solid": true,
         "revision": 3,
         "scene_state": "ready",
         "scene_status": 200
       },
-      "status": "fail"
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.qty_unknown_reviewed.r3",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "classification": "confirmed",
+        "confirmed_feature_value": 2,
+        "descriptor": "furniture-v2",
+        "ledger_value": null,
+        "resolved_unknown_removed": true,
+        "status": 200
+      },
+      "name": "partial.qty_unknown.descriptor_uses_resolved_value_ledger_stays_null",
+      "observed": {
+        "classification": "confirmed",
+        "confirmed_features": 1,
+        "descriptor": "furniture-v2",
+        "ledger_value": null,
+        "remaining_matching_unknowns": [],
+        "status": 200
+      },
+      "status": "pass"
     },
     {
       "endpoint": "POST /api/v1/documents",
@@ -683,11 +747,179 @@
         "unknown_observations": 1
       },
       "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs/{run_id}/reviews",
+      "expected": {
+        "candidate_selected": true,
+        "revision": 2,
+        "status": 201
+      },
+      "name": "review.thickness_unknown",
+      "observed": {
+        "code": null,
+        "state": "needs_review",
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "result_state": "needs_review",
+        "scene_state": "incomplete",
+        "unknown_solid": false
+      },
+      "name": "partial.thickness_unknown.no_fabricated_solid",
+      "observed": {
+        "objects": 0,
+        "result_state": "needs_review",
+        "scene_state": "incomplete",
+        "scene_status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 6,
+        "result_state": "completed",
+        "review_status": 201,
+        "reviewed_solid": true,
+        "revision": 3,
+        "scene_state": "ready"
+      },
+      "name": "partial.thickness_unknown.human_input_enables_scene",
+      "observed": {
+        "code": null,
+        "objects": 0,
+        "result_state": "needs_review",
+        "review_status": 201,
+        "reviewed_solid": false,
+        "revision": 3,
+        "scene_state": "incomplete",
+        "scene_status": 200
+      },
+      "status": "fail"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.thickness_unknown_reviewed.r3",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "classification": "confirmed",
+        "confirmed_feature_value": 18.0,
+        "descriptor": "furniture-v2",
+        "ledger_value": null,
+        "resolved_unknown_removed": true,
+        "status": 200
+      },
+      "name": "partial.thickness_unknown.descriptor_uses_resolved_value_ledger_stays_null",
+      "observed": {
+        "classification": "confirmed",
+        "confirmed_features": 1,
+        "descriptor": "furniture-v2",
+        "ledger_value": null,
+        "remaining_matching_unknowns": [],
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/documents",
+      "expected": {
+        "document_id": "present",
+        "status": 201
+      },
+      "name": "upload.unassociated",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "POST /api/v1/runs",
+      "expected": {
+        "input_kind": "separated_part_views",
+        "status": 201
+      },
+      "name": "run.unassociated",
+      "observed": {
+        "code": null,
+        "status": 201
+      },
+      "status": "pass"
+    },
+    {
+      "endpoint": "GET /api/v1/runs/{run_id}/parts",
+      "expected": {
+        "schema_version": "0.4.0",
+        "status": 200
+      },
+      "name": "parts.unassociated.r1",
+      "observed": {
+        "code": null,
+        "status": 200
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "candidates": 0,
+        "keys": null,
+        "observations": 3,
+        "quantities": null,
+        "views_each": 1
+      },
+      "name": "unassociated.not_grouped_and_loose_qty_ignored",
+      "observed": {
+        "candidates": 0,
+        "keys": [
+          null,
+          null,
+          null
+        ],
+        "observations": 3,
+        "quantities": [
+          null,
+          null,
+          null
+        ],
+        "views_each": [
+          1,
+          1,
+          1
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "expected": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "name": "unassociated.no_3d_before_evidence_review",
+      "observed": {
+        "objects": 0,
+        "state": "unavailable",
+        "status": 200
+      },
+      "status": "pass"
     }
   ],
   "findings": [
     {
-      "check": "partial.qty_unknown.human_input_enables_scene",
+      "check": "partial.thickness_unknown.human_input_enables_scene",
       "expected": {
         "objects": 6,
         "result_state": "completed",
@@ -698,18 +930,18 @@
       },
       "observed": {
         "code": null,
-        "objects": 4,
-        "result_state": "completed",
+        "objects": 0,
+        "result_state": "needs_review",
         "review_status": 201,
         "reviewed_solid": false,
         "revision": 3,
-        "scene_state": "ready",
+        "scene_state": "incomplete",
         "scene_status": 200
       },
       "severity": "important"
     }
   ],
-  "generated_at": "2026-11-13T23:53:36.147982+00:00",
+  "generated_at": "2026-11-14T00:07:48.411605+00:00",
   "policy": {
     "embedding_mode": "offline",
     "private_reference_reads": false,
@@ -720,34 +952,36 @@
   },
   "resources": {
     "documents": {
-      "complete": "doc-d5294a071f4046519fd3ba4a7d0f7548",
-      "library_base": "doc-48580a42d2fd4c25918e5b1b1bf9c864",
-      "library_dimensions": "doc-ed9b6ca7a07440c987d01228c5196b32",
-      "library_thickness": "doc-d044da05f525432db6ecedfef5b081b4",
-      "library_translated": "doc-3d2b1f8d87b54024b53304c3ba0d00ad",
-      "qty_unknown": "doc-e5137088330b4ebe806bc88a222d433f",
-      "thickness_unknown": "doc-9b3c5332709a4fe08b90c526329e4484"
+      "complete": "doc-747ea4ffe15140e49c34e029dbbd5ddf",
+      "library_base": "doc-c583ac6a6c864895a8bffd1563d35acb",
+      "library_dimensions": "doc-4231dba84a2d4d1c941bf46eafee5533",
+      "library_thickness": "doc-7259e9ce05f542e3baf100c8d661187c",
+      "library_translated": "doc-439cc773e1e44f469e0e4cf681590c23",
+      "qty_unknown": "doc-456e65486a0c4516bb924fe5c2ae22ef",
+      "thickness_unknown": "doc-4cbf393418f247d7adb3ce5ad4c1feb8",
+      "unassociated": "doc-a1c669a2961d4ca78b86c2ba91398046"
     },
     "library_items": {
-      "library_base": "library-run-9948051be77b4aa6a23616aea9271118",
-      "library_dimensions": "library-run-f1badd0ddc5c41ce912c3c5dbbe5e5e8",
-      "library_thickness": "library-run-48cd602845bd4db0a5b6b5d00039ea91",
-      "library_translated": "library-run-1b47510aaf1d48f88935e260b7349b9c"
+      "library_base": "library-run-af94fbaec8874ff5b19be7f89783e4e0",
+      "library_dimensions": "library-run-97d2d6b1f3354b1697272c7f04295ecd",
+      "library_thickness": "library-run-3d81c6dd46a546c3a6aa8276558b1398",
+      "library_translated": "library-run-d2e87532181e45358770edff28392b90"
     },
     "runs": {
-      "complete": "run-dabe49c8fc064b948441dc56281a28ce",
-      "library_base": "run-9948051be77b4aa6a23616aea9271118",
-      "library_dimensions": "run-f1badd0ddc5c41ce912c3c5dbbe5e5e8",
-      "library_thickness": "run-48cd602845bd4db0a5b6b5d00039ea91",
-      "library_translated": "run-1b47510aaf1d48f88935e260b7349b9c",
-      "qty_unknown": "run-78322e8c8b034ce4a6bb0cce61815555",
-      "thickness_unknown": "run-008346e3c083439cb9f5b8d4455ef322"
+      "complete": "run-c060784fbaed4863981740ca845d422c",
+      "library_base": "run-af94fbaec8874ff5b19be7f89783e4e0",
+      "library_dimensions": "run-97d2d6b1f3354b1697272c7f04295ecd",
+      "library_thickness": "run-3d81c6dd46a546c3a6aa8276558b1398",
+      "library_translated": "run-d2e87532181e45358770edff28392b90",
+      "qty_unknown": "run-d83b8722504044aba2fca8188cfe679b",
+      "thickness_unknown": "run-fcf252f9b290489694646d0a232fe4e2",
+      "unassociated": "run-229298332cfa42e39e143494ce7a182c"
     }
   },
   "summary": {
-    "duration_ms": 741,
+    "duration_ms": 841,
     "failed": 1,
-    "passed": 43,
+    "passed": 57,
     "result": "findings"
   },
   "target": "http://127.0.0.1:8768"
