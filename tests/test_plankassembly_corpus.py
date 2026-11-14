@@ -813,3 +813,71 @@ def test_comparativa_cli_con_corpus(fuente, tmp_path):
     ])
     assert codigo == 0
     assert (run_dir / "report.json").is_file()
+
+
+# ------------------------------------------------------------ biblioteca para los juicios
+
+
+def _descriptores_publicos(pub: Path, ids, version="furniture-v1") -> dict[str, dict]:
+    """Descriptores de prueba derivados solo del id público (un extractor real leería los DXF públicos)."""
+    publicos = {fila["id"] for fila in _json(pub / "cases.json")}
+    assert set(ids) <= publicos
+    salida = {}
+    for case_id in ids:
+        n = int(hashlib.sha256(case_id.encode()).hexdigest()[:6], 16)
+        salida[case_id] = {
+            "descriptor_version": version, "family": "unknown",
+            "dimensions": {"width_mm": 500 + n % 700, "depth_mm": 300 + n % 200, "height_mm": 800 + n % 1100},
+            "roles": [], "structure": "unknown", "unknown_fields": [],
+        }
+    return salida
+
+
+def test_biblioteca_de_juicios_para_cada_archivo_del_corpus(fuente, tmp_path, capsys):
+    from tools import biblioteca_juicios
+
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    bibliotecas = _json(priv / "juicios" / "bibliotecas.json")
+    assert len(bibliotecas) > 1 and any(c["run_id_overrides"] for c in bibliotecas.values())
+    for archivo, contrato in bibliotecas.items():
+        descriptores = tmp_path / f"desc-{archivo}"
+        descriptores.write_text(json.dumps(_descriptores_publicos(pub, contrato["case_ids"])), encoding="utf-8")
+        salida = tmp_path / f"bib-{archivo}"
+        assert biblioteca_juicios.main([
+            "--privado", str(priv), "--publico", str(pub), "--juicios", archivo,
+            "--descriptores", str(descriptores), "--salida", str(salida),
+        ]) == 0
+        items = evaluar_recuperacion.cargar_biblioteca(salida)
+        assert sorted(i.id for i in items) == sorted(contrato["case_ids"])
+        assert all(i.run_id == contrato["run_id_overrides"].get(i.id, i.id) for i in items)
+        assert len({i.descriptor.descriptor_version for i in items}) == 1
+        capsys.readouterr()
+        rc = evaluar_recuperacion.main(["--biblioteca", str(salida), "--juicios", str(priv / "juicios" / archivo), "--k", "3"])
+        informe = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert informe["advertencias"] == []  # biblioteca densa respecto a sus juicios
+
+
+def test_biblioteca_de_juicios_rechaza_entradas_incoherentes(fuente, tmp_path, capsys):
+    from tools import biblioteca_juicios
+
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    contrato = _json(priv / "juicios" / "bibliotecas.json")["juicios_test.json"]
+    ids = contrato["case_ids"]
+    base = ["--privado", str(priv), "--publico", str(pub), "--juicios", "juicios_test.json", "--salida", str(tmp_path / "s.json")]
+
+    def ejecutar(descriptores: dict, donde: Path) -> int:
+        donde.write_text(json.dumps(descriptores), encoding="utf-8")
+        return biblioteca_juicios.main([*base, "--descriptores", str(donde)])
+
+    completos = _descriptores_publicos(pub, ids)
+    assert ejecutar({k: v for k, v in list(completos.items())[1:]}, tmp_path / "falta.json") == 2
+    assert ejecutar({**completos, "pa-inexistente": next(iter(completos.values()))}, tmp_path / "sobra.json") == 2
+    mixtos = dict(completos)
+    mixtos[ids[0]] = {**mixtos[ids[0]], "descriptor_version": "furniture-v2", "thicknesses_mm": [], "classification_status": "hypothesis"}
+    assert ejecutar(mixtos, tmp_path / "mixtos.json") == 2
+    assert ejecutar(completos, priv / "descriptores.json") == 2  # dentro del directorio privado
+    assert ejecutar(completos, tmp_path / "bien.json") == 0
+    assert capsys.readouterr().err.count('"error"') == 4
+    # Un archivo de juicios desconocido falla.
+    assert biblioteca_juicios.main([*base[:2], *base[2:4], "--juicios", "otro.json", "--descriptores", str(tmp_path / "bien.json"), "--salida", base[-1]]) == 2

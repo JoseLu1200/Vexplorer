@@ -114,7 +114,6 @@ def test_lifespan_apaga_la_cola_aunque_falle_el_apagado_del_ejecutor(tmp_path: P
 
     app.state.job_executor.shutdown = falla
     app.state.cola_mantenimiento.apagar = lambda: apagada.append(True)
-    with pytest.raises(RuntimeError, match="fallo al apagar"):
-        with TestClient(app):
-            pass
+    with pytest.raises(RuntimeError, match="fallo al apagar"), TestClient(app):
+        pass
     assert apagada == [True]
