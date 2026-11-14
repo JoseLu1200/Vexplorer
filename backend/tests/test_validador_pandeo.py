@@ -71,7 +71,7 @@ def test_shelf_within_safe_span_has_no_pandeo_warning() -> None:
     assert len(findings) == 1
     finding = findings[0]
     assert finding["check"] == "structural_deflection"
-    assert finding["status"] == "pass"
+    assert finding["status"] == "unknown"
     assert finding["code"] is None
     assert finding["observed"]["max_span_mm"] == 750.0
 
@@ -176,19 +176,20 @@ def test_thicker_board_passes_span_that_fails_on_16mm() -> None:
 
     assert by_id["shelf-16"]["status"] == "warning"
     assert by_id["shelf-16"]["code"] == PANDEO_WARNING_CODE
-    assert by_id["shelf-25"]["status"] == "pass"
+    assert by_id["shelf-25"]["status"] == "unknown"
     assert by_id["shelf-25"]["code"] is None
-    assert by_id["shelf-36"]["status"] == "pass"
+    assert by_id["shelf-36"]["status"] == "unknown"
     assert by_id["shelf-36"]["code"] is None
 
 
-def test_intermediate_vertical_support_reduces_effective_span() -> None:
+def test_explicit_intermediate_vertical_support_reduces_effective_span() -> None:
     shelf = {
         "id": "shelf-1200",
         "label": "Balda con montante",
         "role": "shelf",
         "length_mm": 1200.0,
         "thickness_mm": 16.0,
+        "intermediate_supports": 1,
     }
     divider = {
         "id": "divider-1",
@@ -202,10 +203,28 @@ def test_intermediate_vertical_support_reduces_effective_span() -> None:
     findings = evaluate_deflection_plausibility([shelf, divider])
 
     assert len(findings) == 1
-    assert findings[0]["status"] == "pass"
+    assert findings[0]["status"] == "unknown"
     assert findings[0]["code"] is None
     assert findings[0]["observed"]["intermediate_supports"] == 1
     assert findings[0]["observed"]["effective_span_mm"] == 600.0
+
+
+def test_unassociated_vertical_piece_does_not_shorten_shelf_span() -> None:
+    shelf = {"id": "shelf-1200", "role": "shelf", "length_mm": 1200.0, "thickness_mm": 16.0}
+    unrelated_divider = {"id": "divider-other-module", "role": "divider", "quantity": 1, "length_mm": 300.0, "thickness_mm": 16.0}
+    finding = evaluate_deflection_plausibility([shelf, unrelated_divider])[0]
+    assert finding["code"] == PANDEO_WARNING_CODE
+    assert finding["observed"]["intermediate_supports"] == 0
+    assert finding["observed"]["effective_span_mm"] == 1200.0
+
+
+def test_unconfirmed_catalog_never_emits_structural_pass() -> None:
+    shelf = {"id": "shelf-700", "role": "shelf", "length_mm": 700.0, "thickness_mm": 16.0}
+    finding = evaluate_deflection_plausibility([shelf])[0]
+    assert finding["status"] == "unknown"
+    assert finding["severity"] == "info"
+    assert finding["catalog"]["confirmed_by_workshop"] is False
+    assert "pendientes de confirmación" in finding["catalog"]["source"]
 
 
 def test_material_override_applies_stricter_mdf_limit() -> None:
@@ -231,7 +250,7 @@ def test_material_override_applies_stricter_mdf_limit() -> None:
 
     assert by_id["shelf-mdf"]["code"] == PANDEO_WARNING_CODE
     assert by_id["shelf-mdf"]["observed"]["max_span_mm"] == 650.0
-    assert by_id["shelf-plywood"]["status"] == "pass"
+    assert by_id["shelf-plywood"]["status"] == "unknown"
     assert by_id["shelf-plywood"]["observed"]["max_span_mm"] == 850.0
 
 

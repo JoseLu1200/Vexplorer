@@ -7,6 +7,8 @@
 - Piezas con espesor, material, largo o ancho desconocidos van al grupo
   ``sin_clasificar`` con motivo (largo/ancho se añaden porque sin ellos la
   superficie quedaría infraestimada).
+- Una cantidad desconocida también queda ``sin_clasificar``: no se convierte en
+  una unidad para calcular superficie ni compras.
 - Tableros = ceil(superficie / (área_tablero × aprovechamiento)). Es una
   ESTIMACIÓN por superficie, no un nesting real.
 """
@@ -111,9 +113,12 @@ def _motivo_sin_clasificar(pieza: PiezaRef) -> str | None:
             ("material", normalizar_texto(pieza.material)),
             ("largo", pieza.largo_mm),
             ("ancho", pieza.ancho_mm),
+            ("cantidad", pieza.cantidad),
         )
         if valor is None
     ]
+    if faltan == ["cantidad"]:
+        return "cantidad desconocida"
     return f"{', '.join(faltan)} desconocido" if faltan else None
 
 

@@ -528,17 +528,12 @@ def _count_intermediate_supports(
     piece_has_support = _piece_field(piece, "has_intermediate_support")
     if isinstance(piece_has_support, bool):
         return 1 if piece_has_support else 0
-    inferred = 0
-    for candidate in pieces:
-        if _normalized_role(candidate) in VERTICAL_SUPPORT_ROLES:
-            qty = _piece_field(candidate, "quantity")
-            inferred += qty if isinstance(qty, int) and not isinstance(qty, bool) and qty > 0 else 1
-    return inferred
+    return 0
 
 
 def _deflection_findings(
     pieces: Sequence[Any],
-    limits: _DeflectionLimits,
+    catalog: _Catalog,
     *,
     intermediate_supports: int | None = None,
     has_intermediate_support: bool | None = None,
@@ -560,7 +555,7 @@ def _deflection_findings(
             piece, pieces, intermediate_supports, has_intermediate_support
         )
         effective_span_mm = length_mm / (supports + 1)
-        max_span_mm = _max_span_for_piece(limits, thickness_mm, material)
+        max_span_mm = _max_span_for_piece(catalog.deflection_limits, thickness_mm, material)
         exceeded = effective_span_mm > max_span_mm
         evidence_ids = _piece_field(piece, "evidence_ids") or ()
         entity_ids = _piece_field(piece, "source_entity_ids") or ()
@@ -575,20 +570,37 @@ def _deflection_findings(
                 f"con espesor de {thickness_mm:g} mm ({support_note}) supera el máximo "
                 f"recomendado de {max_span_mm:.0f} mm."
             )
+            if not catalog.confirmed_by_workshop:
+                message = f"Aviso orientativo basado en un catálogo no confirmado por el taller. {message}"
         else:
             message = (
                 f"Luz admisible en '{piece_label}' ({piece_id}): {effective_span_mm:.0f} mm "
                 f"con espesor de {thickness_mm:g} mm dentro del máximo de {max_span_mm:.0f} mm."
             )
+            if not catalog.confirmed_by_workshop:
+                message = (
+                    "Comprobación orientativa sin pase estructural: el catálogo no está confirmado "
+                    f"por el taller. {message}"
+                )
+        status = "warning" if exceeded else ("pass" if catalog.confirmed_by_workshop else "unknown")
         findings.append(
             {
                 "id": f"plausibility-pandeo-{piece_id}",
                 "check": "structural_deflection",
                 "code": PANDEO_WARNING_CODE if exceeded else None,
-                "status": "warning" if exceeded else "pass",
+                "status": status,
                 "severity": "warning" if exceeded else "info",
                 "message": message,
                 "system_id": None,
+                "catalog": {
+                    "source": catalog.source,
+                    "confirmed_by_workshop": catalog.confirmed_by_workshop,
+                    "authority": (
+                        "confirmed_workshop_catalog"
+                        if catalog.confirmed_by_workshop
+                        else "advisory_unconfirmed_catalog"
+                    ),
+                },
                 "observed": {
                     "piece_id": piece_id,
                     "piece_label": piece_label,
@@ -619,7 +631,7 @@ def evaluate_deflection_plausibility(
     return tuple(
         _deflection_findings(
             pieces,
-            catalog.deflection_limits,
+            catalog,
             intermediate_supports=intermediate_supports,
             has_intermediate_support=has_intermediate_support,
         )
@@ -690,5 +702,5 @@ def evaluate_plausibility(
         )
     findings.extend(_dimension_findings(extraction))
     if pieces:
-        findings.extend(_deflection_findings(pieces, catalog.deflection_limits))
+        findings.extend(_deflection_findings(pieces, catalog))
     return tuple(findings)

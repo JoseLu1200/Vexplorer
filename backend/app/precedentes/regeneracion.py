@@ -57,6 +57,8 @@ class RepositorioBiblioteca(Protocol):
 
     def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...]) -> None: ...
 
+    def invalidate_embeddings(self, model: str, dimensions: int) -> int: ...
+
 
 class HechosElemento(ModeloEstricto):
     """Hechos observados de un elemento; entrada de la detección pura."""

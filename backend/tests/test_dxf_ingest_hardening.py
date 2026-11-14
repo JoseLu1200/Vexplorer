@@ -3,6 +3,7 @@ from __future__ import annotations
 import ezdxf
 
 from backend.app.ingesta.dxf_reader import parse_dxf
+from backend.app.geometria.extraction import extract_drawing
 
 
 def _new_mm_doc():
@@ -26,6 +27,24 @@ def test_2d_polyline_is_parsed_cleanly(tmp_path):
     assert entity.closed is True
     assert entity.points == ((0.0, 0.0), (100.0, 0.0), (100.0, 50.0), (0.0, 50.0))
     assert parsed.warnings == ()
+
+
+def test_2d_polylines_feed_mounted_view_inference_contours_and_observations(tmp_path):
+    document = _new_mm_doc()
+    msp = document.modelspace()
+    msp.add_polyline2d([(0, 0), (100, 0), (100, 80), (0, 80)], close=True)
+    msp.add_polyline2d([(0, 120), (100, 120), (100, 160), (0, 160)], close=True)
+    msp.add_polyline2d([(140, 0), (180, 0), (180, 80), (140, 80)], close=True)
+    path = tmp_path / "poly2d-orthographic.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path, input_kind="mounted_orthographic_views")
+
+    assert {view.label for view in extraction.views} == {"FRONT", "TOP", "SIDE"}
+    assert len(extraction.contours) == 3
+    assert all(contour.source_entity_ids for contour in extraction.contours)
+    assert all(observation.contour_ids for observation in extraction.observations)
+    assert "view_labels_inferred_from_alignment" in extraction.warnings
 
 
 def test_2d_polyline_with_bulge_is_rejected(tmp_path):

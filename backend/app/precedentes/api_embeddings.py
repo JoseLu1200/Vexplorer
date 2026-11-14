@@ -21,6 +21,7 @@ from backend.app.precedentes.comun import (
 from backend.app.precedentes.espacio import (
     TOLERANCIA_POR_DEFECTO,
     AlmacenEspacio,
+    ErrorInvalidacionEmbeddings,
     resumir,
     rotar_espacio,
     verificar_espacio,
@@ -123,11 +124,14 @@ def crear_router_embeddings(
     intervalo_minimo_verificacion_s: float = INTERVALO_MINIMO_VERIFICACION_S,
     reloj_monotono: Callable[[], float] = time.monotonic,
 ) -> APIRouter:
-    """Las operaciones de pago (regenerar sin simular, verificar, rotar) se serializan con candados
-    no bloqueantes (409 ``operacion_en_curso``); verificar y rotar comparten además un intervalo
-    mínimo entre llamadas al proveedor (429 ``verificacion_reciente``)."""
+    """Las operaciones de pago se acotan con candados no bloqueantes del proceso.
+
+    Regenerar y rotar comparten exclusión mutua; verificar y rotar comparten además un intervalo
+    mínimo entre llamadas al proveedor. La rotación invalida solo la caché semántica de la
+    biblioteca; los embeddings del histórico viven en otro almacén.
+    """
     router = APIRouter(prefix=PREFIJO_API, tags=["precedentes-embeddings"])
-    candado_regeneracion = _Exclusivo()
+    candado_mantenimiento = _Exclusivo()
     candado_espacio = _Exclusivo()
     ultima_llamada_espacio: list[float] = []
 
@@ -207,7 +211,7 @@ def crear_router_embeddings(
         if proveedor is None:
             return _error(503, "proveedor_no_disponible", "No hay proveedor de embeddings configurado; usa simular=true.")
         try:
-            with candado_regeneracion.ocupar():
+            with candado_mantenimiento.ocupar():
                 informe = regenerar_obsoletos(repositorio, proveedor, False, solicitud.limite, ahora)
         except OperacionEnCurso:
             return _ocupado()
@@ -237,7 +241,24 @@ def crear_router_embeddings(
     @router.post("/embeddings/espacio/rotar")
     def rotar():
         """Rotación explícita: guarda la huella actual como referencia y archiva la anterior con fecha."""
-        return _operacion_espacio(lambda: rotar_espacio(proveedor, almacen_espacio, ahora))
+        try:
+            with candado_mantenimiento.ocupar():
+                return _operacion_espacio(
+                    lambda: rotar_espacio(
+                        proveedor,
+                        almacen_espacio,
+                        ahora,
+                        repositorio.invalidate_embeddings,
+                    )
+                )
+        except OperacionEnCurso:
+            return _ocupado()
+        except ErrorInvalidacionEmbeddings:
+            return _error(
+                500,
+                "invalidacion_embeddings_fallida",
+                "No se pudo invalidar la caché semántica; la referencia no se ha rotado.",
+            )
 
     @router.get("/embeddings/espacio/historico")
     def historico_espacio():

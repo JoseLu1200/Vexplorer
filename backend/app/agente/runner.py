@@ -4,13 +4,18 @@ import json
 import hashlib
 import time
 from base64 import b64encode
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
-from typing import Protocol
+from typing import Any, Protocol
 
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.agente.comparacion import compare_assembly_candidates, compare_legacy_candidates, compare_table_programs
 from backend.app.agente.vision import render_view
-from backend.app.validador.plausibilidad import evaluate_plausibility
+from backend.app.validador.plausibilidad import (
+    PANDEO_WARNING_CODE,
+    evaluate_deflection_plausibility,
+    evaluate_plausibility,
+)
 from backend.app.contratos.modelos import (
     AssemblyCandidate,
     CompareCandidatesArgs,
@@ -70,6 +75,8 @@ class AgentOutcome:
     model_calls: int
     tool_calls: int
     actions: tuple[AgentAction, ...]
+    warnings: tuple[str, ...] = ()
+    plausibility_findings: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -78,6 +85,8 @@ class PartsAgentOutcome:
     model_calls: int
     tool_calls: int
     actions: tuple[AgentAction, ...]
+    warnings: tuple[str, ...] = ()
+    plausibility_findings: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -86,6 +95,8 @@ class TableAgentOutcome:
     model_calls: int
     tool_calls: int
     actions: tuple[AgentAction, ...]
+    warnings: tuple[str, ...] = ()
+    plausibility_findings: tuple[dict[str, Any], ...] = ()
 
 
 def _valid_reference_details(values, limit: int = 50) -> dict:
@@ -121,13 +132,135 @@ def _attach_provider_metadata(actions: list[AgentAction], start: int, response, 
     actions[start:] = [replace(action, **metadata) for action in actions[start:]]
 
 
+def _merge_warnings(base: Sequence[str], extra: Sequence[str]) -> tuple[str, ...]:
+    """Combina advertencias preservando el orden sin duplicados."""
+    return tuple(dict.fromkeys((*base, *extra)))
+
+
+def _pandeo_warnings(findings: Sequence[dict[str, Any]]) -> tuple[str, ...]:
+    """Extrae mensajes de advertencia para hallazgos de pandeo excesivo."""
+    return tuple(
+        f"{PANDEO_WARNING_CODE}: {item['message']}"
+        for item in findings
+        if item.get("code") == PANDEO_WARNING_CODE and item.get("status") == "warning"
+    )
+
+
+def _safe_evaluate_plausibility(extraction: DrawingExtraction) -> tuple[dict[str, Any], ...]:
+    """Evalúa la plausibilidad base de la extracción sin bloquear por catálogo ausente."""
+    try:
+        return evaluate_plausibility(extraction)
+    except (FileNotFoundError, ValueError):
+        return ()
+
+
+def _collect_deflection_findings(piece_groups: Iterable[Sequence[Any]]) -> tuple[dict[str, Any], ...]:
+    """Evalúa el pandeo en grupos de piezas y deduplica los hallazgos resultantes."""
+    collected: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+    for pieces in piece_groups:
+        if not pieces:
+            continue
+        try:
+            findings = evaluate_deflection_plausibility(pieces)
+        except (FileNotFoundError, ValueError):
+            continue
+        for item in findings:
+            key = (item.get("id"), item.get("code"), item.get("status"), item.get("message"))
+            if key not in seen:
+                seen.add(key)
+                collected.append(item)
+    return tuple(collected)
+
+
+def _parts_candidate_pieces(
+    parts: SeparatedPartsExtraction, candidate: AssemblyCandidate
+) -> tuple[dict[str, Any], ...]:
+    """Construye piezas evaluables para un candidato de montaje a partir de sus observaciones."""
+    observations = {item.id: item for item in parts.observations}
+    pieces: list[dict[str, Any]] = []
+    for use in candidate.uses:
+        observation = observations.get(use.part_observation_id)
+        if observation is None:
+            continue
+        length_mm = (
+            observation.dimensions.length.value_mm
+            if observation.dimensions.length.state == "observed"
+            else None
+        )
+        thickness_mm = (
+            observation.dimensions.thickness.value_mm
+            if observation.dimensions.thickness.state == "observed"
+            else None
+        )
+        pieces.append(
+            {
+                "id": use.id,
+                "label": observation.part_key or use.part_observation_id,
+                "role": use.role,
+                "quantity": use.allocated_quantity,
+                "length_mm": length_mm,
+                "thickness_mm": thickness_mm,
+                "evidence_ids": use.evidence_ids,
+                "source_entity_ids": observation.source_entity_ids,
+            }
+        )
+    return tuple(pieces)
+
+
+def _resolve_table_program_pieces(
+    analysis: MountedTableAnalysis, program: TableProgramProposal
+) -> tuple[dict[str, Any], ...]:
+    """Resuelve longitudes y espesores conocidos de los componentes de un programa de mesa."""
+    measures = {item.id: item for item in analysis.measures}
+    resolved_bindings: dict[str, float | None] = {}
+    for binding in program.bindings:
+        operands: list[float] = []
+        valid = True
+        for operand in binding.operand_refs:
+            if operand.ref_type == "measure":
+                measure = measures.get(operand.ref_id)
+                if measure is None or measure.state == "unknown" or measure.value_mm is None:
+                    valid = False
+                    break
+                operands.append(float(measure.value_mm))
+            else:
+                value = resolved_bindings.get(operand.ref_id)
+                if value is None:
+                    valid = False
+                    break
+                operands.append(value)
+        if not valid or not operands:
+            resolved_bindings[binding.id] = None
+        elif binding.operation == "copy":
+            resolved_bindings[binding.id] = operands[0]
+        elif binding.operation == "add":
+            resolved_bindings[binding.id] = sum(operands)
+        else:
+            resolved_bindings[binding.id] = operands[0] - sum(operands[1:])
+    return tuple(
+        {
+            "id": component.id,
+            "label": component.id,
+            "role": component.role,
+            "length_mm": resolved_bindings.get(component.length_binding_id),
+            "thickness_mm": resolved_bindings.get(component.thickness_binding_id),
+            "evidence_ids": component.evidence_ids,
+        }
+        for component in program.components
+    )
+
+
 def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits()) -> AgentOutcome:
     started = time.monotonic()
     model_calls = 0
     tool_calls = 0
     previous_response_id = None
     shown_evidence_ids = [item.id for item in extraction.evidence[:200]]
-    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": shown_evidence_ids, "evidence_counts": {"total": len(extraction.evidence), "shown": len(shown_evidence_ids), "truncated": len(extraction.evidence) > len(shown_evidence_ids)}, "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
+    base_plausibility = _safe_evaluate_plausibility(extraction)
+    all_deflection = _collect_deflection_findings(scenario.components for scenario in scenarios)
+    run_warnings = _merge_warnings(extraction.warnings, _pandeo_warnings(all_deflection))
+    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": run_warnings, "evidence_ids": shown_evidence_ids, "evidence_counts": {"total": len(extraction.evidence), "shown": len(shown_evidence_ids), "truncated": len(extraction.evidence) > len(shown_evidence_ids)}, "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
     evidence = {item.id: item for item in extraction.evidence}
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
@@ -201,7 +334,18 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                         actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana.", selected_scenario_id=args.scenario_id))
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
-                        return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls, actions=tuple(actions))
+                        selected_scenario = next((item for item in scenarios if item.id == args.scenario_id), None)
+                        selected_deflection = _collect_deflection_findings((selected_scenario.components,)) if selected_scenario else ()
+                        selected_findings = (*base_plausibility, *selected_deflection)
+                        selected_warnings = _merge_warnings(extraction.warnings, _pandeo_warnings(selected_findings))
+                        return AgentOutcome(
+                            selected_scenario_id=args.scenario_id,
+                            model_calls=model_calls,
+                            tool_calls=tool_calls,
+                            actions=tuple(actions),
+                            warnings=selected_warnings,
+                            plausibility_findings=selected_findings,
+                        )
                 elif call.name == "comparar_candidatas":
                     args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
                     unknown = [item for item in args.candidate_ids if item not in proposals]
@@ -247,10 +391,13 @@ def run_parts_agent(
     previous_response_id = None
     observations = {item.id: item for item in parts.observations}
     candidate_ids = {item.id for item in candidates}
+    base_plausibility = _safe_evaluate_plausibility(extraction)
+    all_deflection = _collect_deflection_findings(_parts_candidate_pieces(parts, item) for item in candidates)
+    run_warnings = _merge_warnings(parts.warnings, _pandeo_warnings(all_deflection))
     input_items = [{"role": "user", "content": json.dumps({
         "input_kind": "separated_part_views",
         "candidate_revision": parts.candidate_revision,
-        "warnings": parts.warnings,
+        "warnings": run_warnings,
         "part_observations": [{
             "id": item.id,
             "association_basis": item.association_basis,
@@ -330,7 +477,22 @@ def run_parts_agent(
                         ))
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
-                        return PartsAgentOutcome(args.assembly_candidate_id, model_calls, tool_calls, tuple(actions))
+                        selected_candidate = next((item for item in candidates if item.id == args.assembly_candidate_id), None)
+                        selected_deflection = (
+                            _collect_deflection_findings((_parts_candidate_pieces(parts, selected_candidate),))
+                            if selected_candidate
+                            else ()
+                        )
+                        selected_findings = (*base_plausibility, *selected_deflection)
+                        selected_warnings = _merge_warnings(parts.warnings, _pandeo_warnings(selected_findings))
+                        return PartsAgentOutcome(
+                            args.assembly_candidate_id,
+                            model_calls,
+                            tool_calls,
+                            tuple(actions),
+                            warnings=selected_warnings,
+                            plausibility_findings=selected_findings,
+                        )
                 elif call.name == "comparar_candidatas":
                     args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
                     candidates_by_id = {item.id: item for item in candidates}
@@ -383,16 +545,18 @@ def run_table_agent(
     entities = {item.id: item for item in extraction.entities}
     views = {item.id: item for item in extraction.views}
     allowed_evidence_ids = {evidence_id for item in analysis.measures for evidence_id in item.evidence_ids}
-    try:
-        plausibility_findings = evaluate_plausibility(extraction)
-    except (FileNotFoundError, ValueError):
-        plausibility_findings = ()
+    base_plausibility = _safe_evaluate_plausibility(extraction)
+    candidate_deflection = _collect_deflection_findings(
+        _resolve_table_program_pieces(analysis, candidate) for candidate in comparison_candidates
+    )
+    plausibility_findings = (*base_plausibility, *candidate_deflection)
+    initial_warnings = _merge_warnings(analysis.warnings, _pandeo_warnings(plausibility_findings))
     context = {
         "input_kind": analysis.input_kind,
         "profile": analysis.profile,
         "ledger_revision": analysis.ledger_revision,
         "state": analysis.state,
-        "warnings": analysis.warnings,
+        "warnings": initial_warnings,
         "measurements": [{"id": item.id, "semantic": item.semantic, "axis": item.axis, "state": item.state, "slot_origin": item.slot_origin} for item in analysis.measures],
         "plausibility": {
             "findings": plausibility_findings[:20],
@@ -541,7 +705,17 @@ def run_table_agent(
                         actions.append(AgentAction(call.name, True, tuple(sorted(referenced_evidence)), "Programa de descomposición referenciado entregado para validación y revisión."))
                         _remaining_time(started, limits.timeout_s)
                         _attach_provider_metadata(actions, action_start, response, call)
-                        return TableAgentOutcome(program, model_calls, tool_calls, tuple(actions))
+                        program_deflection = _collect_deflection_findings((_resolve_table_program_pieces(analysis, program),))
+                        final_findings = (*base_plausibility, *program_deflection)
+                        final_warnings = _merge_warnings(analysis.warnings, _pandeo_warnings(final_findings))
+                        return TableAgentOutcome(
+                            program,
+                            model_calls,
+                            tool_calls,
+                            tuple(actions),
+                            warnings=final_warnings,
+                            plausibility_findings=final_findings,
+                        )
                 elif call.name == "comparar_candidatas":
                     args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
                     programs_by_id = {item.id: item for item in comparison_candidates}

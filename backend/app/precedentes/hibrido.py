@@ -104,7 +104,7 @@ def normalizar_pesos(peso_geometrico: float, peso_semantico: float) -> PesosHibr
     if any(not math.isfinite(valor) or valor < 0 for valor in valores):
         raise ValueError("pesos_invalidos")
     total = peso_geometrico + peso_semantico
-    if total <= 0:
+    if not math.isfinite(total) or total <= 0:
         raise ValueError("pesos_invalidos")
     geometrico = round(peso_geometrico / total, 6)
     return PesosHibridos(geometrico=geometrico, semantico=round(1 - geometrico, 6))

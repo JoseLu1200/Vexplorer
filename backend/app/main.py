@@ -67,7 +67,7 @@ from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerp
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import canonical_design_key, deduplicate_designs, geometric_groups, geometric_match, rank_semantic_candidates, semantic_groups
 from backend.app.similarity.publication import PublicLibraryEligibilityError, ensure_public_library_eligible
-from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_similarity_threshold
+from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_near_duplicate_threshold, resolve_similarity_threshold
 from backend.app.operacion.auth import PasswordFile, decode_basic_authorization
 from backend.app.operacion.jobs import BoundedJobExecutor
 from backend.app.operacion.public_access import PublicAdmissionStore
@@ -191,6 +191,7 @@ class SimilarityRequest(RequestModel):
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
     min_score: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     include_abstention: bool = False
+    threshold_kind: Literal["similarity", "near_duplicate"] = "similarity"
     include_summary: bool = False
 
 
@@ -2462,28 +2463,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             for item in matches
         ]
         design_count = len(deduplicate_designs(eligible_candidates))
+        abstention = None
         if request.include_abstention:
-            threshold = (
-                request.min_score
-                if request.min_score is not None
-                else resolve_similarity_threshold(request.mode, descriptor_version, model=semantic_model)
-            )
+            resolve_search_threshold = resolve_near_duplicate_threshold if request.threshold_kind == "near_duplicate" else resolve_similarity_threshold
+            threshold = request.min_score if request.min_score is not None else resolve_search_threshold(request.mode, descriptor_version, model=semantic_model)
             abstention = evaluate_similarity_abstention(matches, threshold)
-            payload = [item.model_dump(mode="json") for item in abstention.filtered_matches[:request.limit]]
-            return _ok({
-                "matches": payload,
-                "abstained": abstention.abstained,
-                "abstention_reason": abstention.abstention_reason,
-                "threshold_used": abstention.threshold_used,
-                "descriptor_version": descriptor_version,
-                "excluded_count": excluded_count,
-            })
-        if request.min_score is not None:
+            matches = list(abstention.filtered_matches)
+        elif request.min_score is not None:
             matches = [item for item in matches if item.score >= request.min_score]
         match_payload = [item.model_dump(mode="json") for item in matches[:request.limit]]
-        if not request.include_summary and request.descriptor_version is None:
+        if not request.include_summary and not request.include_abstention and request.descriptor_version is None:
             return _ok(match_payload)
         response = {"matches": match_payload, "descriptor_version": descriptor_version, "excluded_count": excluded_count}
+        if abstention is not None:
+            response.update({"abstained": abstention.abstained, "abstention_reason": abstention.abstention_reason, "threshold_used": abstention.threshold_used})
         if request.include_summary:
             response.update({"record_count": len(eligible_candidates), "design_count": design_count, "duplicate_record_count": len(eligible_candidates) - design_count})
         return _ok(response)

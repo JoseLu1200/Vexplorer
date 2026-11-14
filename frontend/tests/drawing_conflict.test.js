@@ -12,6 +12,47 @@ const baseMetricDrawing = {
   contours: [],
 };
 
+function realDimensionPayload({
+  entityId = "2A",
+  displayText = "1200",
+  metric = true,
+  warnings = [],
+} = {}) {
+  const pointSuffix = metric ? "mm" : "source";
+  const unitScale = metric ? 1 : null;
+  return {
+    ...baseMetricDrawing,
+    source_unit: metric ? "mm" : "unknown",
+    unit_scale_to_mm: unitScale,
+    coordinate_unit: metric ? "mm" : "source",
+    warnings,
+    dimensions: [{
+      id: `dimension-${entityId}`,
+      kind: "annotation",
+      value_mm: null,
+      source_entity_ids: [entityId],
+      evidence_ids: [`evidence-dimension-${entityId}`],
+      origin: "observed",
+      view_id: "view-1",
+      graphic_id: `graphic-${entityId}`,
+    }],
+    dimension_graphics: [{
+      id: `graphic-${entityId}`,
+      dimension_id: `dimension-${entityId}`,
+      source_entity_id: entityId,
+      view_id: "view-1",
+      layer: "0",
+      display_text: displayText,
+      raw_text: "",
+      [`extension_start_a_${pointSuffix}`]: [0, 0],
+      [`extension_start_b_${pointSuffix}`]: [600, 0],
+      [`dimension_start_${pointSuffix}`]: [0, 50],
+      [`dimension_end_${pointSuffix}`]: [600, 50],
+      [`text_position_${pointSuffix}`]: [300, 55],
+    }],
+  };
+}
+
 test("normal non-conflicting dimension preserves exact label and conflict false", () => {
   const model = normaliseDrawing({
     ...baseMetricDrawing,
@@ -34,55 +75,24 @@ test("normal non-conflicting dimension preserves exact label and conflict false"
   assert.equal(model.dimensions[0].geometryValue, null);
 });
 
-test("DIMLFAC != 1 / conflict dimension formats metric geometry value and sets conflict true", () => {
-  const model = normaliseDrawing({
-    ...baseMetricDrawing,
-    dimensions: [{
-      id: "dim-conflict",
-      value_mm: 600,
-      source_value: 600,
-      conflict: true,
-      conflict_reason: "DIMLFAC=2.0 difiere de la geometría",
-    }],
-    dimension_graphics: [{
-      id: "dg-conflict",
-      dimension_id: "dim-conflict",
-      view_id: "view-1",
-      display_text: "1200",
-      dimension_start_mm: [0, 50],
-      dimension_end_mm: [600, 50],
-      text_position_mm: [300, 55],
-    }],
-  });
+test("real extraction payload maps DIMLFAC warning to the source dimension geometry", () => {
+  const model = normaliseDrawing(realDimensionPayload({
+    warnings: ["dimension_scale_conflict:2A:scale=2"],
+  }));
 
   assert.equal(model.dimensions.length, 1);
   assert.equal(model.dimensions[0].label, "1200 [conflicto: geom 600 mm]");
   assert.equal(model.dimensions[0].conflict, true);
   assert.equal(model.dimensions[0].geometryValue, 600);
-  assert.equal(model.dimensions[0].conflictReason, "DIMLFAC=2.0 difiere de la geometría");
+  assert.match(model.dimensions[0].conflictReason, /DIMLFAC.*2/i);
 });
 
-test("unknown-unit conflicting dimension uses source-unit", () => {
-  const model = normaliseDrawing({
-    ...baseMetricDrawing,
-    source_unit: "unknown",
-    unit_scale_to_mm: null,
-    dimensions: [{
-      id: "dim-src",
-      value_mm: null,
-      source_value: 600,
-      state: "conflict",
-    }],
-    dimension_graphics: [{
-      id: "dg-src",
-      dimension_id: "dim-src",
-      view_id: "view-1",
-      display_text: "1200",
-      dimension_start_source: [0, 50],
-      dimension_end_source: [600, 50],
-      text_position_source: [300, 55],
-    }],
-  });
+test("real unknown-unit extraction payload reports conflicting source geometry", () => {
+  const model = normaliseDrawing(realDimensionPayload({
+    entityId: "3B",
+    metric: false,
+    warnings: ["dimension_text_conflict:3B:geometry=600:text=1200"],
+  }));
 
   assert.equal(model.coordinateUnit, "source");
   assert.equal(model.dimensions.length, 1);
@@ -91,24 +101,17 @@ test("unknown-unit conflicting dimension uses source-unit", () => {
   assert.equal(model.dimensions[0].geometryValue, 600);
 });
 
-test("conflicting dimension without finite geometry value falls back to [conflicto]", () => {
-  const model = normaliseDrawing({
-    ...baseMetricDrawing,
-    dimensions: [],
-    dimension_graphics: [{
-      id: "dg-fallback",
-      dimension_id: "dim-missing",
-      view_id: "view-1",
-      raw_text: "1200",
-      conflict: true,
-      dimension_start_mm: [0, 50],
-      dimension_end_mm: [600, 50],
-      text_position_mm: [300, 55],
-    }],
+test("conflict warning without complete dimension geometry falls back to conflict label", () => {
+  const payload = realDimensionPayload({
+    entityId: "4C",
+    warnings: ["dimension_text_override:4C:text=REF"],
+    displayText: "REF",
   });
+  delete payload.dimension_graphics[0].dimension_end_mm;
+  const model = normaliseDrawing(payload);
 
   assert.equal(model.dimensions.length, 1);
-  assert.equal(model.dimensions[0].label, "1200 [conflicto]");
+  assert.equal(model.dimensions[0].label, "REF [conflicto]");
   assert.equal(model.dimensions[0].conflict, true);
   assert.equal(model.dimensions[0].geometryValue, null);
 });
