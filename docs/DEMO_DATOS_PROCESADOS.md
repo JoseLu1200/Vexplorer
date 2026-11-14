@@ -1,5 +1,7 @@
 # Demo con resultados ya procesados en la web app
 
+Para **plank-030 y plank-016**, con propuestas/revisiones reales guardadas, cotas, esquemas y escenas 3D, usar el [paquete de pipeline offline](../data/plank_pipeline_demo/README.md). Tiene su propio backup y enlaces; el paquete descrito a continuación conserva los cuatro fixtures sintéticos originales.
+
 **No hay visor nuevo ni llamadas a un modelo.** Se usa la web app existente, con un backup nativo de sus datos. Solo hace falta la instalación habitual de Vexplorer; no se carga de nuevo el DXF ni se lanza un análisis. El navegador sigue hablando con el backend de la aplicación, pero no con una API de IA.
 
 Descarga [el paquete completo](https://github.com/JoseLu1200/Vexplorer/releases/download/datasets-demo-2026-11-14/vexplorer-demo-procesada.zip) o usa [los archivos del repo](../data/muebles_procesados_demo/). Los archivos JSON exportados son auditables; la forma soportada de cargar todos los resultados en la app es restaurar `demo-runtime.zip`, no subir JSON mediante «Cargar plano».

@@ -1,0 +1,173 @@
+{
+  "schema_version": "0.2.0",
+  "result_revision": 1,
+  "result": {
+    "schema_version": "0.2.0",
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "result_revision": 1,
+    "state": "needs_review",
+    "scenarios": [],
+    "pieces": [],
+    "rejected_proposal_ids": [],
+    "created_at": "2026-11-14T12:09:59.146592+00:00",
+    "review": null,
+    "agent_selected_scenario_id": null,
+    "input_semantics": "general_furniture",
+    "part_analysis": null,
+    "assembly_candidates": [],
+    "selected_assembly_candidate_id": null,
+    "table_analysis": null,
+    "table_programs": [],
+    "selected_table_program_id": null,
+    "evaluated_table_program": null,
+    "table_review_decisions": [],
+    "table_confirmed_values": [],
+    "table_observed_value_corrections": [],
+    "table_source_review_decisions": [],
+    "table_cost_scope": null
+  },
+  "scene": {
+    "schema_version": "0.3.0",
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "result_revision": 1,
+    "state": "unavailable",
+    "selected_scenario_id": null,
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [],
+    "warnings": [
+      "human_review_required"
+    ],
+    "assumptions": [
+      "No 3D solid is created before mounting review."
+    ],
+    "collision_status": "not_evaluated"
+  },
+  "explanations": {
+    "schema_version": "0.3.0",
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "result_revision": 1,
+    "pieces": [],
+    "warnings": [
+      "hypotheses_require_human_review"
+    ]
+  },
+  "descriptor": {
+    "descriptor_version": "furniture-v1",
+    "family": "unknown",
+    "dimensions": {
+      "width_mm": null,
+      "depth_mm": null,
+      "height_mm": null
+    },
+    "roles": [],
+    "structure": "unknown",
+    "material": null,
+    "finish": null,
+    "unknown_fields": [
+      "confirmed_components",
+      "dimensions.depth_mm",
+      "dimensions.height_mm",
+      "dimensions.width_mm",
+      "finish",
+      "material",
+      "structure"
+    ]
+  },
+  "library_item": null,
+  "comparables": [
+    {
+      "id": "hist-syn-1",
+      "name": "Estantería sintética compacta",
+      "family": "estanteria_rectangular",
+      "width_mm": 800.0,
+      "depth_mm": 300.0,
+      "height_mm": 1700.0,
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / melamina sintética"
+      ],
+      "fixed_cost_eur": 40.0,
+      "material_cost_eur": 60.0,
+      "reference_area_mm2": 1200000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-2",
+      "name": "Estantería sintética alta",
+      "family": "estanteria_rectangular",
+      "width_mm": 1000.0,
+      "depth_mm": 350.0,
+      "height_mm": 2100.0,
+      "material": "contrachapado sintético",
+      "finish": "barniz sintético",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / contrachapado sintético",
+        "acabado distinto: desconocido / barniz sintético"
+      ],
+      "fixed_cost_eur": 55.0,
+      "material_cost_eur": 95.0,
+      "reference_area_mm2": 1800000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-3",
+      "name": "Módulo sintético abierto",
+      "family": "estanteria_rectangular",
+      "width_mm": 700.0,
+      "depth_mm": 280.0,
+      "height_mm": 1500.0,
+      "material": "tablero sintético",
+      "finish": "sin acabado",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / sin acabado"
+      ],
+      "fixed_cost_eur": 35.0,
+      "material_cost_eur": 48.0,
+      "reference_area_mm2": 980000.0,
+      "hours": null,
+      "synthetic": true
+    }
+  ],
+  "estimate": null,
+  "table_drawings": null,
+  "events": [
+    {
+      "sequence": 1,
+      "event_type": "run_state_changed",
+      "data": {
+        "timestamp": "2026-11-14T12:09:59.146592+00:00",
+        "state": "needs_review",
+        "mode": "geometry_only"
+      }
+    },
+    {
+      "sequence": 2,
+      "event_type": "result_committed",
+      "data": {
+        "timestamp": "2026-11-14T12:09:59.146592+00:00",
+        "result_revision": 1,
+        "state": "needs_review"
+      }
+    },
+    {
+      "sequence": 3,
+      "event_type": "run_finished",
+      "data": {
+        "timestamp": "2026-11-14T12:09:59.146592+00:00",
+        "state": "needs_review",
+        "result_revision": 1
+      }
+    }
+  ]
+}

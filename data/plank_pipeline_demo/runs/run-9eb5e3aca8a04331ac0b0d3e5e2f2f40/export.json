@@ -1,0 +1,686 @@
+{
+  "schema_version": "0.2.0",
+  "result_revision": 1,
+  "result": {
+    "schema_version": "0.2.0",
+    "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+    "result_revision": 1,
+    "state": "needs_review",
+    "scenarios": [],
+    "pieces": [],
+    "rejected_proposal_ids": [],
+    "created_at": "2026-11-14T12:21:33.383489+00:00",
+    "review": null,
+    "agent_selected_scenario_id": null,
+    "input_semantics": "general_furniture",
+    "part_analysis": null,
+    "assembly_candidates": [],
+    "selected_assembly_candidate_id": null,
+    "table_analysis": null,
+    "table_programs": [],
+    "selected_table_program_id": null,
+    "evaluated_table_program": null,
+    "table_review_decisions": [],
+    "table_confirmed_values": [],
+    "table_observed_value_corrections": [],
+    "table_source_review_decisions": [],
+    "table_cost_scope": null
+  },
+  "scene": {
+    "schema_version": "0.3.0",
+    "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+    "result_revision": 1,
+    "state": "unavailable",
+    "selected_scenario_id": null,
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [],
+    "warnings": [
+      "human_review_required"
+    ],
+    "assumptions": [
+      "No 3D solid is created before mounting review."
+    ],
+    "collision_status": "not_evaluated"
+  },
+  "explanations": {
+    "schema_version": "0.3.0",
+    "run_id": "run-9eb5e3aca8a04331ac0b0d3e5e2f2f40",
+    "result_revision": 1,
+    "pieces": [],
+    "warnings": [
+      "hypotheses_require_human_review"
+    ]
+  },
+  "descriptor": {
+    "descriptor_version": "furniture-v1",
+    "family": "unknown",
+    "dimensions": {
+      "width_mm": null,
+      "depth_mm": null,
+      "height_mm": null
+    },
+    "roles": [],
+    "structure": "unknown",
+    "material": null,
+    "finish": null,
+    "unknown_fields": [
+      "confirmed_components",
+      "dimensions.depth_mm",
+      "dimensions.height_mm",
+      "dimensions.width_mm",
+      "finish",
+      "material",
+      "structure"
+    ]
+  },
+  "library_item": null,
+  "comparables": [
+    {
+      "id": "hist-syn-1",
+      "name": "Estantería sintética compacta",
+      "family": "estanteria_rectangular",
+      "width_mm": 800.0,
+      "depth_mm": 300.0,
+      "height_mm": 1700.0,
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / melamina sintética"
+      ],
+      "fixed_cost_eur": 40.0,
+      "material_cost_eur": 60.0,
+      "reference_area_mm2": 1200000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-2",
+      "name": "Estantería sintética alta",
+      "family": "estanteria_rectangular",
+      "width_mm": 1000.0,
+      "depth_mm": 350.0,
+      "height_mm": 2100.0,
+      "material": "contrachapado sintético",
+      "finish": "barniz sintético",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / contrachapado sintético",
+        "acabado distinto: desconocido / barniz sintético"
+      ],
+      "fixed_cost_eur": 55.0,
+      "material_cost_eur": 95.0,
+      "reference_area_mm2": 1800000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-3",
+      "name": "Módulo sintético abierto",
+      "family": "estanteria_rectangular",
+      "width_mm": 700.0,
+      "depth_mm": 280.0,
+      "height_mm": 1500.0,
+      "material": "tablero sintético",
+      "finish": "sin acabado",
+      "score": 0.3,
+      "differences": [
+        "dimensiones insuficientes para comparar completamente",
+        "material distinto: desconocido / tablero sintético",
+        "acabado distinto: desconocido / sin acabado"
+      ],
+      "fixed_cost_eur": 35.0,
+      "material_cost_eur": 48.0,
+      "reference_area_mm2": 980000.0,
+      "hours": null,
+      "synthetic": true
+    }
+  ],
+  "estimate": null,
+  "table_drawings": null,
+  "events": [
+    {
+      "sequence": 1,
+      "event_type": "run_state_changed",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.383489+00:00",
+        "state": "needs_review",
+        "mode": "live"
+      }
+    },
+    {
+      "sequence": 2,
+      "event_type": "result_committed",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.383489+00:00",
+        "result_revision": 1,
+        "state": "needs_review"
+      }
+    },
+    {
+      "sequence": 3,
+      "event_type": "run_finished",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.383489+00:00",
+        "state": "needs_review",
+        "result_revision": 1
+      }
+    },
+    {
+      "sequence": 4,
+      "event_type": "general_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.409049+00:00",
+        "tool_name": "inspeccionar_evidencia_general",
+        "ok": true,
+        "summary": "Ledger evidence inspected.",
+        "proposal_origin": "native_tool",
+        "provider_response_id": "resp_06fbf38d93c13751006af8520fc51087d2824a1b42f6110a3f",
+        "provider_model": "gpt-6.1-sol",
+        "provider_call_id": "call_tyZxs4K71MqLvvvPLhEuFILb",
+        "provider_duration_ms": 6449,
+        "provider_input_tokens": 46868,
+        "provider_output_tokens": 214,
+        "provider_total_tokens": 47082
+      }
+    },
+    {
+      "sequence": 5,
+      "event_type": "general_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.423459+00:00",
+        "tool_name": "proponer_mueble_general",
+        "ok": true,
+        "summary": "Evidence-grounded component proposal created for review.",
+        "proposal_origin": "native_tool",
+        "provider_response_id": "resp_06fbf38d93c13751006af8521606b087d2b3cd14349c5467f4",
+        "provider_model": "gpt-6.1-sol",
+        "provider_call_id": "call_f0m8PFMigB3TPv7seVjV8e9I",
+        "provider_duration_ms": 55403,
+        "provider_input_tokens": 62431,
+        "provider_output_tokens": 6002,
+        "provider_total_tokens": 68433
+      }
+    },
+    {
+      "sequence": 6,
+      "event_type": "general_proposal_committed",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.431991+00:00",
+        "proposal_id": "general-5f2d41963bd997b5",
+        "proposal_revision": 1,
+        "proposal_origin": "native_tool",
+        "provider_model": "gpt-6.1-sol",
+        "model_calls": 2,
+        "tool_calls": 2
+      }
+    },
+    {
+      "sequence": 7,
+      "event_type": "general_auto_review_started",
+      "data": {
+        "timestamp": "2026-11-14T12:21:33.441014+00:00",
+        "proposal_revision": 1,
+        "reviewer_kind": "machine",
+        "reviewer_model": "gpt-6-astra",
+        "visual_artifacts": [
+          {
+            "reference": "a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:overview",
+            "sha256": "733f3eb1b7074fdd6125e37e9fde67ec44d7a467b1be3f22723a12cc9e877ed5",
+            "source_view_ids": [
+              "view-unknown"
+            ],
+            "source_contour_ids": [
+              "contour-lines-unknown-1",
+              "contour-lines-unknown-10",
+              "contour-lines-unknown-11",
+              "contour-lines-unknown-12",
+              "contour-lines-unknown-13",
+              "contour-lines-unknown-14",
+              "contour-lines-unknown-15",
+              "contour-lines-unknown-16",
+              "contour-lines-unknown-17",
+              "contour-lines-unknown-18",
+              "contour-lines-unknown-19",
+              "contour-lines-unknown-2",
+              "contour-lines-unknown-20",
+              "contour-lines-unknown-21",
+              "contour-lines-unknown-22",
+              "contour-lines-unknown-23",
+              "contour-lines-unknown-24",
+              "contour-lines-unknown-25",
+              "contour-lines-unknown-26",
+              "contour-lines-unknown-27",
+              "contour-lines-unknown-28",
+              "contour-lines-unknown-29",
+              "contour-lines-unknown-3",
+              "contour-lines-unknown-31",
+              "contour-lines-unknown-32",
+              "contour-lines-unknown-33",
+              "contour-lines-unknown-34",
+              "contour-lines-unknown-35",
+              "contour-lines-unknown-36",
+              "contour-lines-unknown-37",
+              "contour-lines-unknown-38",
+              "contour-lines-unknown-39",
+              "contour-lines-unknown-4",
+              "contour-lines-unknown-40",
+              "contour-lines-unknown-41",
+              "contour-lines-unknown-5",
+              "contour-lines-unknown-6",
+              "contour-lines-unknown-7",
+              "contour-lines-unknown-8",
+              "contour-lines-unknown-9"
+            ],
+            "crop_bounds_source": [
+              -300.0,
+              -1200.000006873262,
+              1652.0001068977522,
+              1199.9999944444264
+            ],
+            "marks": []
+          },
+          {
+            "reference": "a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-001",
+            "sha256": "78da1f2fef2d92098f5b117c1c0ef7b621eea50ad16e267f7168b77f5d3adb47",
+            "source_view_ids": [
+              "view-unknown"
+            ],
+            "source_contour_ids": [
+              "contour-lines-unknown-10",
+              "contour-lines-unknown-13",
+              "contour-lines-unknown-16",
+              "contour-lines-unknown-19",
+              "contour-lines-unknown-22",
+              "contour-lines-unknown-25",
+              "contour-lines-unknown-27",
+              "contour-lines-unknown-29",
+              "contour-lines-unknown-3",
+              "contour-lines-unknown-31",
+              "contour-lines-unknown-34",
+              "contour-lines-unknown-36",
+              "contour-lines-unknown-39",
+              "contour-lines-unknown-41",
+              "contour-lines-unknown-5",
+              "contour-lines-unknown-8"
+            ],
+            "crop_bounds_source": [
+              1084.0000941966669,
+              -1200.000006873262,
+              1652.0001068977522,
+              1199.9999944444264
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-10"
+              },
+              {
+                "mark_id": "M002",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-13"
+              },
+              {
+                "mark_id": "M003",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-16"
+              },
+              {
+                "mark_id": "M004",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-19"
+              },
+              {
+                "mark_id": "M005",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-22"
+              },
+              {
+                "mark_id": "M006",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-25"
+              },
+              {
+                "mark_id": "M007",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-27"
+              },
+              {
+                "mark_id": "M008",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-29"
+              },
+              {
+                "mark_id": "M009",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-3"
+              },
+              {
+                "mark_id": "M010",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-31"
+              },
+              {
+                "mark_id": "M011",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-34"
+              },
+              {
+                "mark_id": "M012",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-36"
+              },
+              {
+                "mark_id": "M013",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-39"
+              },
+              {
+                "mark_id": "M014",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-41"
+              },
+              {
+                "mark_id": "M015",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-5"
+              },
+              {
+                "mark_id": "M016",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-8"
+              }
+            ]
+          },
+          {
+            "reference": "a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-002",
+            "sha256": "1f50e48db4cd4f1a3d458323d30ab09a01b484e0880142d618a04c6f0b36ef68",
+            "source_view_ids": [
+              "view-unknown"
+            ],
+            "source_contour_ids": [
+              "contour-lines-unknown-1",
+              "contour-lines-unknown-11",
+              "contour-lines-unknown-14",
+              "contour-lines-unknown-17",
+              "contour-lines-unknown-20",
+              "contour-lines-unknown-23",
+              "contour-lines-unknown-26",
+              "contour-lines-unknown-28",
+              "contour-lines-unknown-32",
+              "contour-lines-unknown-37",
+              "contour-lines-unknown-4",
+              "contour-lines-unknown-40",
+              "contour-lines-unknown-6",
+              "contour-lines-unknown-9"
+            ],
+            "crop_bounds_source": [
+              -300.0,
+              -1200.000006873259,
+              300.00008784612413,
+              1199.9999944444264
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-1"
+              },
+              {
+                "mark_id": "M002",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-11"
+              },
+              {
+                "mark_id": "M003",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-14"
+              },
+              {
+                "mark_id": "M004",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-17"
+              },
+              {
+                "mark_id": "M005",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-20"
+              },
+              {
+                "mark_id": "M006",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-23"
+              },
+              {
+                "mark_id": "M007",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-26"
+              },
+              {
+                "mark_id": "M008",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-28"
+              },
+              {
+                "mark_id": "M009",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-32"
+              },
+              {
+                "mark_id": "M010",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-37"
+              },
+              {
+                "mark_id": "M011",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-4"
+              },
+              {
+                "mark_id": "M012",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-40"
+              },
+              {
+                "mark_id": "M013",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-6"
+              },
+              {
+                "mark_id": "M014",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-9"
+              }
+            ]
+          },
+          {
+            "reference": "a235d1053b6f045161c0ea2544804d348ebf74e1674d7fa08ba6ade1e0717ed2:view:view-unknown:region-003",
+            "sha256": "1d03524f89376271d361f76f83c96a589fb5f4c8508995752ea14a1fdb7bdf60",
+            "source_view_ids": [
+              "view-unknown"
+            ],
+            "source_contour_ids": [
+              "contour-lines-unknown-12",
+              "contour-lines-unknown-15",
+              "contour-lines-unknown-18",
+              "contour-lines-unknown-2",
+              "contour-lines-unknown-21",
+              "contour-lines-unknown-24",
+              "contour-lines-unknown-33",
+              "contour-lines-unknown-35",
+              "contour-lines-unknown-38",
+              "contour-lines-unknown-7"
+            ],
+            "crop_bounds_source": [
+              400.0000878461242,
+              -284.0000063505427,
+              1000.0001756922484,
+              284.0000063505427
+            ],
+            "marks": [
+              {
+                "mark_id": "M001",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-12"
+              },
+              {
+                "mark_id": "M002",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-15"
+              },
+              {
+                "mark_id": "M003",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-18"
+              },
+              {
+                "mark_id": "M004",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-2"
+              },
+              {
+                "mark_id": "M005",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-21"
+              },
+              {
+                "mark_id": "M006",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-24"
+              },
+              {
+                "mark_id": "M007",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-33"
+              },
+              {
+                "mark_id": "M008",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-35"
+              },
+              {
+                "mark_id": "M009",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-38"
+              },
+              {
+                "mark_id": "M010",
+                "source_kind": "contour",
+                "source_id": "contour-lines-unknown-7"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "sequence": 8,
+      "event_type": "general_auto_review_tool_completed",
+      "data": {
+        "timestamp": "2026-11-14T12:22:23.781759+00:00",
+        "tool_name": "entregar_revision_autonoma",
+        "ok": true,
+        "summary": "Revisión multimodal provisional completada.",
+        "reviewer_kind": "machine",
+        "phase": "general_auto_review",
+        "status": "incomplete",
+        "provider_response_id": "resp_09454529c0be3b8c006af8524dc9bc87d29e5c89ce4738e042",
+        "provider_model": "gpt-6-astra",
+        "provider_call_id": "call_e6DBwozqH2Hny81Wy5o7ya0q",
+        "provider_input_tokens": 60540,
+        "provider_output_tokens": 4916,
+        "provider_total_tokens": 65456
+      }
+    },
+    {
+      "sequence": 9,
+      "event_type": "general_auto_review",
+      "data": {
+        "timestamp": "2026-11-14T12:22:23.789482+00:00",
+        "tool_name": "entregar_revision_autonoma",
+        "ok": true,
+        "summary": "Revisión multimodal provisional completada.",
+        "reviewer_kind": "machine",
+        "phase": "general_auto_review",
+        "status": "incomplete",
+        "provider_response_id": "resp_09454529c0be3b8c006af8524dc9bc87d29e5c89ce4738e042",
+        "provider_model": "gpt-6-astra",
+        "provider_call_id": "call_e6DBwozqH2Hny81Wy5o7ya0q",
+        "provider_input_tokens": 60540,
+        "provider_output_tokens": 4916,
+        "provider_total_tokens": 65456
+      }
+    },
+    {
+      "sequence": 10,
+      "event_type": "general_auto_review_completed",
+      "data": {
+        "timestamp": "2026-11-14T12:22:23.797619+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "status": "incomplete",
+        "reviewer_kind": "machine",
+        "provider_model": "gpt-6-astra",
+        "review_relation": "separate_model",
+        "model_calls": 1,
+        "tool_calls": 1,
+        "semantic_repairs": 0,
+        "cost_tracking": "token_usage_only"
+      }
+    },
+    {
+      "sequence": 11,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T12:48:02.402729+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "provider_request_failed"
+      }
+    },
+    {
+      "sequence": 12,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T12:51:51.484854+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_model_call_budget_exhausted"
+      }
+    },
+    {
+      "sequence": 13,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T12:55:11.531289+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_reviewed_dimensions_required",
+        "model_calls": 0,
+        "tool_calls": 0,
+        "provider_status_code": null,
+        "provider_code": null,
+        "provider_incomplete_reason": null
+      }
+    },
+    {
+      "sequence": 14,
+      "event_type": "general_assembly_failed",
+      "data": {
+        "timestamp": "2026-11-14T13:02:20.332580+00:00",
+        "proposal_revision": 1,
+        "review_revision": 1,
+        "code": "assembly_model_call_budget_exhausted",
+        "model_calls": 5,
+        "tool_calls": 5,
+        "provider_status_code": null,
+        "provider_code": null,
+        "provider_incomplete_reason": null
+      }
+    }
+  ]
+}

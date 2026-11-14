@@ -1,0 +1,76 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "run": {
+      "schema_version": "0.2.0",
+      "id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+      "mode": "live",
+      "state": "needs_review",
+      "reason_code": null,
+      "candidate_revision": "drawing-91a1f89c04b31f35",
+      "result_revision": 1,
+      "created_at": "2026-11-14T12:57:05.441852+00:00",
+      "agent_selected_scenario_id": null,
+      "agent_selected_assembly_candidate_id": null,
+      "agent_selected_table_program_id": null,
+      "document_id": "doc-35b135320efd4b049395ef77e981fdfa",
+      "input_kind": "general_furniture",
+      "replay_source": null
+    },
+    "result": {
+      "schema_version": "0.2.0",
+      "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+      "result_revision": 1,
+      "state": "needs_review",
+      "scenarios": [],
+      "pieces": [],
+      "rejected_proposal_ids": [],
+      "created_at": "2026-11-14T12:57:05.441852+00:00",
+      "review": null,
+      "agent_selected_scenario_id": null,
+      "input_semantics": "general_furniture",
+      "part_analysis": null,
+      "assembly_candidates": [],
+      "selected_assembly_candidate_id": null,
+      "table_analysis": null,
+      "table_programs": [],
+      "selected_table_program_id": null,
+      "evaluated_table_program": null,
+      "table_review_decisions": [],
+      "table_confirmed_values": [],
+      "table_observed_value_corrections": [],
+      "table_source_review_decisions": [],
+      "table_cost_scope": null
+    },
+    "estimate": null,
+    "latest_job": {
+      "id": "job-193302256e86467abe3f9dd1043ed4f9",
+      "state": "failed",
+      "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+      "error": {
+        "code": "general_assembly_failed",
+        "message": "El reintento de montaje no terminó con una escena validada.",
+        "retryable": true,
+        "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a"
+      },
+      "checkpoint": {
+        "phase": "autonomous_review",
+        "proposal_saved": true,
+        "proposal_id": "general-8ac869990544d764",
+        "proposal_revision": 1,
+        "review_revision": 1
+      },
+      "recovery": {
+        "safe_action": "retry_from_start",
+        "endpoint": "/api/v1/jobs/job-193302256e86467abe3f9dd1043ed4f9/retry",
+        "attempt_kind": "full_retry",
+        "repeats_proposer": true,
+        "continues_original_provider_call": false,
+        "review_attempt_timeout_s": 300.0,
+        "max_model_calls": 5,
+        "max_validation_repairs": 2,
+        "max_semantic_repairs": 2
+      }
+    }
+  }
+}

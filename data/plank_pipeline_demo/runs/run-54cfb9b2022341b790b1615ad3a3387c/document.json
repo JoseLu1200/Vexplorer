@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "artifacts": {
+      "normalized_dxf": {
+        "media_type": "application/dxf",
+        "sha256": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d",
+        "url": "/api/v1/documents/doc-4056fc89913f4cf4b0d04a467382a39e/normalized.dxf"
+      },
+      "original": {
+        "media_type": "application/dxf",
+        "url": "/api/v1/documents/doc-4056fc89913f4cf4b0d04a467382a39e/original"
+      },
+      "pages": [],
+      "preview": {
+        "media_type": "image/svg+xml",
+        "url": "/api/v1/documents/doc-4056fc89913f4cf4b0d04a467382a39e/preview.svg"
+      }
+    },
+    "audit": {
+      "uploaded_at": "2026-11-14T13:05:12.986126+00:00",
+      "uploaded_by": null
+    },
+    "document_id": "doc-4056fc89913f4cf4b0d04a467382a39e",
+    "ingestion": {
+      "capabilities": {
+        "geometry_analysis": true,
+        "page_geometry_analysis": false,
+        "page_review": false
+      },
+      "errors": [],
+      "state": "ready",
+      "warnings": []
+    },
+    "original_filename": "mueble_demo_unidades_desconocidas.dxf",
+    "sha256": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d",
+    "size_bytes": 53918,
+    "source": {
+      "filename": "mueble_demo_unidades_desconocidas.dxf",
+      "format": "dxf",
+      "media_type": "application/dxf",
+      "sha256": "511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d",
+      "size_bytes": 53918,
+      "unit": "unknown"
+    },
+    "source_kind": "uploaded"
+  }
+}

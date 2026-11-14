@@ -1,0 +1,12 @@
+﻿component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish
+base,Panel inferior continuo candidato,bottom_panel,1,hypothesis,provisional,,provisional:general-8ac869990544d764:base:1,1480.0,550.0,18.0,,
+side_left,Lateral exterior izquierdo candidato,side_panel,1,hypothesis,provisional,,provisional:general-8ac869990544d764:side_left:1,631.9999986823065,230.0,18.000046265625315,,
+side_right,Lateral exterior derecho candidato,side_panel,1,hypothesis,provisional,,provisional:general-8ac869990544d764:side_right:1,632.0000013176901,230.0,17.999953734374458,,
+divider_left,División interior izquierda candidata,divider,1,hypothesis,provisional,,provisional:general-8ac869990544d764:divider_left:1,631.9999986823065,320.0,18.000046265625315,,
+divider_right,División interior derecha candidata,divider,1,hypothesis,provisional,,provisional:general-8ac869990544d764:divider_right:1,632.0000013176901,320.0,17.99995373437457,,
+back,Trasera central delgada candidata,back_panel,1,hypothesis,provisional,,provisional:general-8ac869990544d764:back:1,934.0,587.0000003660239,4.999957028604285,,
+shelf,Estante intermedio continuo candidato,shelf,1,hypothesis,unknown,,,1443.0000008353818,510.0,17.99993303007176,,
+support_a,Apoyo vertical de cara ancha candidato,support,1,hypothesis,provisional,,provisional:general-8ac869990544d764:support_a:1,645.0000013176901,100.0,17.999952782708192,,
+support_b,Apoyo vertical de canto frontal candidato,support,1,hypothesis,provisional,,provisional:general-8ac869990544d764:support_b:1,645.0000013176901,49.99999868231134,17.999956442963366,,
+rail_a,Travesaño longitudinal candidato,stretcher,1,hypothesis,unknown,,,1444.0,60.000001317691726,17.99999560769379,,
+rail_b,Travesaño central posterior candidato,stretcher,1,hypothesis,provisional,,provisional:general-8ac869990544d764:rail_b:1,924.0,70.0000013176917,17.999994875642642,,

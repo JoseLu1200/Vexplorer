@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.2.0",
+  "data": [
+    {
+      "schema_version": "0.2.0",
+      "run_id": "run-dbf758e4fbcd4b19bff8552201a48d4a",
+      "result_revision": 1,
+      "state": "needs_review",
+      "scenarios": [],
+      "pieces": [],
+      "rejected_proposal_ids": [],
+      "created_at": "2026-11-14T12:57:05.441852+00:00",
+      "review": null,
+      "agent_selected_scenario_id": null,
+      "input_semantics": "general_furniture",
+      "part_analysis": null,
+      "assembly_candidates": [],
+      "selected_assembly_candidate_id": null,
+      "table_analysis": null,
+      "table_programs": [],
+      "selected_table_program_id": null,
+      "evaluated_table_program": null,
+      "table_review_decisions": [],
+      "table_confirmed_values": [],
+      "table_observed_value_corrections": [],
+      "table_source_review_decisions": [],
+      "table_cost_scope": null
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "assembly-state-1",
+  "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+  "proposal_revision": 1,
+  "review_revision": 1,
+  "assembly_revision": 3,
+  "status": "incomplete",
+  "current": {
+    "schema_version": "assembly-attempt-1",
+    "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+    "proposal_revision": 1,
+    "review_revision": 1,
+    "assembly_revision": 3,
+    "attempt_index": 3,
+    "candidate": null,
+    "report": {
+      "schema_version": "assembly-report-1",
+      "status": "incomplete",
+      "issues": [
+        {
+          "code": "assembly_metric_scale_required",
+          "severity": "error",
+          "message": "El montaje no pudo completarse de forma acotada.",
+          "occurrence_ids": [],
+          "source_refs": []
+        }
+      ],
+      "placements": [],
+      "scene": null,
+      "global_bounds_mm": null,
+      "max_penetration_mm": 0.0
+    },
+    "model": "gpt-6.1-sol",
+    "policy_version": "general-assembly-v1",
+    "sources": [
+      "run:run-54cfb9b2022341b790b1615ad3a3387c",
+      "drawing:drawing-511adc7948119238"
+    ],
+    "trace": [
+      {
+        "sequence": 1,
+        "kind": "repair",
+        "summary": "{\"code\": \"assembly_metric_scale_required\", \"phase\": \"assembly_terminal\"}"
+      }
+    ]
+  },
+  "accepted_alternatives": [],
+  "ambiguous": false
+}

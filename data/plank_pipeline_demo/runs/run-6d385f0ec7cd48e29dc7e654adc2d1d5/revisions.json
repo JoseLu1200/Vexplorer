@@ -1,0 +1,2215 @@
+{
+  "schema_version": "0.2.0",
+  "data": [
+    {
+      "schema_version": "0.2.0",
+      "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+      "result_revision": 1,
+      "state": "needs_review",
+      "scenarios": [],
+      "pieces": [],
+      "rejected_proposal_ids": [],
+      "created_at": "2026-11-14T12:01:03.941230+00:00",
+      "review": null,
+      "agent_selected_scenario_id": null,
+      "input_semantics": "mounted_orthographic_views",
+      "part_analysis": null,
+      "assembly_candidates": [],
+      "selected_assembly_candidate_id": null,
+      "table_analysis": {
+        "schema_version": "0.5.0",
+        "drawing_id": "drawing-c8aa3006c1098f06",
+        "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+        "input_kind": "mounted_orthographic_views",
+        "profile": "rectangular_table_v1",
+        "measures": [
+          {
+            "id": "table-measure-overall_width",
+            "semantic": "overall_width",
+            "axis": "width",
+            "value_mm": 1200.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-98"
+            ],
+            "view_ids": [
+              "view-front",
+              "view-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-dimension-entity-98"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-92"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-overall_height",
+            "semantic": "overall_height",
+            "axis": "height",
+            "value_mm": 750.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-A8"
+            ],
+            "view_ids": [
+              "view-front",
+              "view-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-A8"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-94"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-overall_depth",
+            "semantic": "overall_depth",
+            "axis": "depth",
+            "value_mm": 700.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-B8"
+            ],
+            "view_ids": [
+              "view-side",
+              "view-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-B8"
+            ],
+            "source_entity_ids": [
+              "entity-92",
+              "entity-94"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-section-1",
+            "semantic": "unknown",
+            "axis": "section",
+            "value_mm": 30.0,
+            "state": "observed",
+            "measurement_ids": [],
+            "view_ids": [
+              "view-front",
+              "view-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-94",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-8E",
+              "entity-94",
+              "entity-95"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "offset_from_max_y"
+          },
+          {
+            "id": "table-measure-section-2",
+            "semantic": "unknown",
+            "axis": "section",
+            "value_mm": 18.0,
+            "state": "observed",
+            "measurement_ids": [],
+            "view_ids": [
+              "view-front"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-8F",
+              "entity-90"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "opposite_offsets"
+          },
+          {
+            "id": "table-measure-slot-tabletop_thickness",
+            "semantic": "tabletop_thickness",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_width",
+            "semantic": "support_width",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_depth",
+            "semantic": "support_depth",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_thickness",
+            "semantic": "support_thickness",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          }
+        ],
+        "admitted_measurement_ids": [
+          "table-measure-overall_width",
+          "table-measure-overall_height",
+          "table-measure-overall_depth",
+          "table-measure-section-1",
+          "table-measure-section-2",
+          "table-measure-slot-tabletop_thickness",
+          "table-measure-slot-support_width",
+          "table-measure-slot-support_depth",
+          "table-measure-slot-support_thickness"
+        ],
+        "state": "needs_review",
+        "warnings": [
+          "profile_measure_unknown:tabletop_thickness",
+          "profile_measure_unknown:support_width",
+          "profile_measure_unknown:support_depth",
+          "profile_measure_unknown:support_thickness"
+        ]
+      },
+      "table_programs": [
+        {
+          "schema_version": "0.5.0",
+          "id": "table-program-cc2d6015d2a3bccf",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "top_length",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "top_width",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "top_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "support_height",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "top_thickness"
+                }
+              ]
+            },
+            {
+              "id": "support_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "top",
+              "role": "tabletop",
+              "length_binding_id": "top_length",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "top_thickness",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            },
+            {
+              "id": "supports",
+              "role": "side_support",
+              "length_binding_id": "support_height",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "support_thickness",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ],
+              "premise_ids": [
+                "side_topology",
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "side_topology",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "section_assignment",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            },
+            {
+              "id": "rectangular",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "flush",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            }
+          ],
+          "assumptions": [
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina.",
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90"
+          ]
+        }
+      ],
+      "selected_table_program_id": null,
+      "evaluated_table_program": {
+        "schema_version": "0.5.0",
+        "raw_program": {
+          "schema_version": "0.5.0",
+          "id": "table-program-cc2d6015d2a3bccf",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "top_length",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "top_width",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "top_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "support_height",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "top_thickness"
+                }
+              ]
+            },
+            {
+              "id": "support_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "top",
+              "role": "tabletop",
+              "length_binding_id": "top_length",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "top_thickness",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            },
+            {
+              "id": "supports",
+              "role": "side_support",
+              "length_binding_id": "support_height",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "support_thickness",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ],
+              "premise_ids": [
+                "side_topology",
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "side_topology",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "section_assignment",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            },
+            {
+              "id": "rectangular",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "flush",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            }
+          ],
+          "assumptions": [
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina.",
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90"
+          ]
+        },
+        "normalized_program": {
+          "schema_version": "0.5.0",
+          "id": "normalized-model_generated-side_support",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "binding-bb51ca28e88f65f1",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "binding-a86abead15e1f40a",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "binding-27c65ba41354ad4d",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "binding-9ce6c2e6183cbb45",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "binding-27c65ba41354ad4d"
+                }
+              ]
+            },
+            {
+              "id": "binding-4bc34cd94758f4fa",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "component-tabletop",
+              "role": "tabletop",
+              "length_binding_id": "binding-bb51ca28e88f65f1",
+              "width_binding_id": "binding-a86abead15e1f40a",
+              "thickness_binding_id": "binding-27c65ba41354ad4d",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "premise-863315f89e3393bf",
+                "premise-8e69237caed56843",
+                "premise-cbfe8c6402f0f573"
+              ]
+            },
+            {
+              "id": "component-side-support",
+              "role": "side_support",
+              "length_binding_id": "binding-9ce6c2e6183cbb45",
+              "width_binding_id": "binding-a86abead15e1f40a",
+              "thickness_binding_id": "binding-4bc34cd94758f4fa",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "premise-5108315b36f953a2",
+                "premise-863315f89e3393bf",
+                "premise-8e69237caed56843",
+                "premise-cbfe8c6402f0f573"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "premise-5108315b36f953a2",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "premise-863315f89e3393bf",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            },
+            {
+              "id": "premise-8e69237caed56843",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "premise-cbfe8c6402f0f573",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            }
+          ],
+          "assumptions": [
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación.",
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-95"
+          ]
+        },
+        "program_hash": "574324dac34ea26e51db38b26d2b4e52db29054eb70e4becd0603a94dbc0b2df",
+        "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+        "registry_versions": {
+          "profile": "rectangular_table_v1",
+          "quantity:top_one": "1",
+          "quantity:two_side_supports": "1",
+          "placement:top_flush": "1",
+          "placement:side_supports_flush": "1"
+        },
+        "bindings": [
+          {
+            "id": "top_length",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_width"
+              }
+            ],
+            "result": {
+              "value_mm": 1200.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_width"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-dimension-entity-98"
+              ]
+            }
+          },
+          {
+            "id": "top_width",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_depth"
+              }
+            ],
+            "result": {
+              "value_mm": 700.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            }
+          },
+          {
+            "id": "top_thickness",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-section-1"
+              }
+            ],
+            "result": {
+              "value_mm": 30.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-section-1"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            }
+          },
+          {
+            "id": "support_height",
+            "operation": "subtract",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_height"
+              },
+              {
+                "ref_type": "binding",
+                "ref_id": "top_thickness"
+              }
+            ],
+            "result": {
+              "value_mm": 720.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_height",
+                "binding:top_thickness"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            }
+          },
+          {
+            "id": "support_thickness",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-section-2"
+              }
+            ],
+            "result": {
+              "value_mm": 18.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-section-2"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ]
+            }
+          }
+        ],
+        "components": [
+          {
+            "id": "top",
+            "role": "tabletop",
+            "length": {
+              "value_mm": 1200.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_width"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-dimension-entity-98"
+              ]
+            },
+            "width": {
+              "value_mm": 700.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            },
+            "thickness": {
+              "value_mm": 30.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-section-1"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            },
+            "quantity": 1,
+            "quantity_rule_id": "top_one",
+            "placement_rule_id": "top_flush",
+            "accepted": false,
+            "premise_ids": [
+              "section_assignment",
+              "rectangular",
+              "flush"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-98",
+              "evidence-dimension-entity-B8",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          {
+            "id": "supports",
+            "role": "side_support",
+            "length": {
+              "value_mm": 720.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_height",
+                "binding:top_thickness"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            },
+            "width": {
+              "value_mm": 700.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "state": "proposed",
+              "dependency_refs": [
+                "measure:table-measure-section-2"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ]
+            },
+            "quantity": 2,
+            "quantity_rule_id": "two_side_supports",
+            "placement_rule_id": "side_supports_flush",
+            "accepted": false,
+            "premise_ids": [
+              "side_topology",
+              "section_assignment",
+              "rectangular",
+              "flush"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-A8",
+              "evidence-dimension-entity-B8",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90",
+              "evidence-geometry-entity-95"
+            ]
+          }
+        ],
+        "occurrences": [
+          {
+            "id": "occurrence-top-1",
+            "component_id": "top",
+            "occurrence_index": 1
+          },
+          {
+            "id": "occurrence-supports-1",
+            "component_id": "supports",
+            "occurrence_index": 1
+          },
+          {
+            "id": "occurrence-supports-2",
+            "component_id": "supports",
+            "occurrence_index": 2
+          }
+        ],
+        "placements": [
+          {
+            "occurrence_id": "occurrence-top-1",
+            "position_mm": {
+              "x": 0.0,
+              "y": 720.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 1200.0,
+              "y": 30.0,
+              "z": 700.0
+            },
+            "rule_id": "top_flush",
+            "rule_version": "1",
+            "state": "proposed",
+            "dependency_refs": [
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_width",
+              "measure:table-measure-section-1"
+            ]
+          },
+          {
+            "occurrence_id": "occurrence-supports-1",
+            "position_mm": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 18.0,
+              "y": 720.0,
+              "z": 700.0
+            },
+            "rule_id": "side_supports_flush",
+            "rule_version": "1",
+            "state": "proposed",
+            "dependency_refs": [
+              "binding:top_thickness",
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_height",
+              "measure:table-measure-section-2"
+            ]
+          },
+          {
+            "occurrence_id": "occurrence-supports-2",
+            "position_mm": {
+              "x": 1182.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 18.0,
+              "y": 720.0,
+              "z": 700.0
+            },
+            "rule_id": "side_supports_flush",
+            "rule_version": "1",
+            "state": "proposed",
+            "dependency_refs": [
+              "binding:top_thickness",
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_height",
+              "measure:table-measure-section-2"
+            ]
+          }
+        ],
+        "overall_dimensions": {
+          "width_mm": 1200.0,
+          "depth_mm": 700.0,
+          "height_mm": 750.0
+        },
+        "consumed_measurement_ids": [
+          "table-measure-overall_depth",
+          "table-measure-overall_height",
+          "table-measure-overall_width",
+          "table-measure-section-1",
+          "table-measure-section-2"
+        ],
+        "measurement_dispositions": [
+          {
+            "measurement_id": "table-measure-slot-tabletop_thickness",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_width",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_depth",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_thickness",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          }
+        ],
+        "accepted_target_ids": [],
+        "rejected_target_ids": [],
+        "issues": [],
+        "state": "hypothesis"
+      },
+      "table_review_decisions": [],
+      "table_confirmed_values": [],
+      "table_observed_value_corrections": [],
+      "table_source_review_decisions": [],
+      "table_cost_scope": null
+    },
+    {
+      "schema_version": "0.2.0",
+      "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+      "result_revision": 2,
+      "state": "completed",
+      "scenarios": [],
+      "pieces": [],
+      "rejected_proposal_ids": [],
+      "created_at": "2026-11-14T12:01:28.662237+00:00",
+      "review": {
+        "reviewer_name": "Demo automatizada",
+        "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial.",
+        "timestamp": "2026-11-14T12:01:28.662237+00:00",
+        "selected_scenario_id": null,
+        "selected_assembly_candidate_id": null,
+        "selected_table_program_id": "table-program-cc2d6015d2a3bccf"
+      },
+      "agent_selected_scenario_id": null,
+      "input_semantics": "mounted_orthographic_views",
+      "part_analysis": null,
+      "assembly_candidates": [],
+      "selected_assembly_candidate_id": null,
+      "table_analysis": {
+        "schema_version": "0.5.0",
+        "drawing_id": "drawing-c8aa3006c1098f06",
+        "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+        "input_kind": "mounted_orthographic_views",
+        "profile": "rectangular_table_v1",
+        "measures": [
+          {
+            "id": "table-measure-overall_width",
+            "semantic": "overall_width",
+            "axis": "width",
+            "value_mm": 1200.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-98"
+            ],
+            "view_ids": [
+              "view-front",
+              "view-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-dimension-entity-98"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-92"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-overall_height",
+            "semantic": "overall_height",
+            "axis": "height",
+            "value_mm": 750.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-A8"
+            ],
+            "view_ids": [
+              "view-front",
+              "view-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-A8"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-94"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-overall_depth",
+            "semantic": "overall_depth",
+            "axis": "depth",
+            "value_mm": 700.0,
+            "state": "observed",
+            "measurement_ids": [
+              "dimension-entity-B8"
+            ],
+            "view_ids": [
+              "view-side",
+              "view-top"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-B8"
+            ],
+            "source_entity_ids": [
+              "entity-92",
+              "entity-94"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "dimension_annotation"
+          },
+          {
+            "id": "table-measure-section-1",
+            "semantic": "unknown",
+            "axis": "section",
+            "value_mm": 30.0,
+            "state": "observed",
+            "measurement_ids": [],
+            "view_ids": [
+              "view-front",
+              "view-side"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-94",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-8E",
+              "entity-94",
+              "entity-95"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "offset_from_max_y"
+          },
+          {
+            "id": "table-measure-section-2",
+            "semantic": "unknown",
+            "axis": "section",
+            "value_mm": 18.0,
+            "state": "observed",
+            "measurement_ids": [],
+            "view_ids": [
+              "view-front"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-8F",
+              "entity-90"
+            ],
+            "slot_origin": "drawing",
+            "geometry_relation": "opposite_offsets"
+          },
+          {
+            "id": "table-measure-slot-tabletop_thickness",
+            "semantic": "tabletop_thickness",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_width",
+            "semantic": "support_width",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_depth",
+            "semantic": "support_depth",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          },
+          {
+            "id": "table-measure-slot-support_thickness",
+            "semantic": "support_thickness",
+            "axis": "section",
+            "value_mm": null,
+            "state": "unknown",
+            "measurement_ids": [],
+            "view_ids": [],
+            "evidence_ids": [],
+            "source_entity_ids": [],
+            "slot_origin": "profile_required_slot",
+            "geometry_relation": "profile_required_slot"
+          }
+        ],
+        "admitted_measurement_ids": [
+          "table-measure-overall_width",
+          "table-measure-overall_height",
+          "table-measure-overall_depth",
+          "table-measure-section-1",
+          "table-measure-section-2",
+          "table-measure-slot-tabletop_thickness",
+          "table-measure-slot-support_width",
+          "table-measure-slot-support_depth",
+          "table-measure-slot-support_thickness"
+        ],
+        "state": "needs_review",
+        "warnings": [
+          "profile_measure_unknown:tabletop_thickness",
+          "profile_measure_unknown:support_width",
+          "profile_measure_unknown:support_depth",
+          "profile_measure_unknown:support_thickness"
+        ]
+      },
+      "table_programs": [
+        {
+          "schema_version": "0.5.0",
+          "id": "table-program-cc2d6015d2a3bccf",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "top_length",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "top_width",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "top_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "support_height",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "top_thickness"
+                }
+              ]
+            },
+            {
+              "id": "support_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "top",
+              "role": "tabletop",
+              "length_binding_id": "top_length",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "top_thickness",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            },
+            {
+              "id": "supports",
+              "role": "side_support",
+              "length_binding_id": "support_height",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "support_thickness",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ],
+              "premise_ids": [
+                "side_topology",
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "side_topology",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "section_assignment",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            },
+            {
+              "id": "rectangular",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "flush",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            }
+          ],
+          "assumptions": [
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina.",
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90"
+          ]
+        }
+      ],
+      "selected_table_program_id": "table-program-cc2d6015d2a3bccf",
+      "evaluated_table_program": {
+        "schema_version": "0.5.0",
+        "raw_program": {
+          "schema_version": "0.5.0",
+          "id": "table-program-cc2d6015d2a3bccf",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "top_length",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "top_width",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "top_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "support_height",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "top_thickness"
+                }
+              ]
+            },
+            {
+              "id": "support_thickness",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "top",
+              "role": "tabletop",
+              "length_binding_id": "top_length",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "top_thickness",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            },
+            {
+              "id": "supports",
+              "role": "side_support",
+              "length_binding_id": "support_height",
+              "width_binding_id": "top_width",
+              "thickness_binding_id": "support_thickness",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ],
+              "premise_ids": [
+                "side_topology",
+                "section_assignment",
+                "rectangular",
+                "flush"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "side_topology",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "section_assignment",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            },
+            {
+              "id": "rectangular",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "flush",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            }
+          ],
+          "assumptions": [
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina.",
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-95",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90"
+          ]
+        },
+        "normalized_program": {
+          "schema_version": "0.5.0",
+          "id": "normalized-model_generated-side_support",
+          "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+          "profile": "rectangular_table_v1",
+          "proposal_origin": "model_generated",
+          "table_template_id": null,
+          "bindings": [
+            {
+              "id": "binding-bb51ca28e88f65f1",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_width"
+                }
+              ]
+            },
+            {
+              "id": "binding-a86abead15e1f40a",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_depth"
+                }
+              ]
+            },
+            {
+              "id": "binding-27c65ba41354ad4d",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-1"
+                }
+              ]
+            },
+            {
+              "id": "binding-9ce6c2e6183cbb45",
+              "operation": "subtract",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-overall_height"
+                },
+                {
+                  "ref_type": "binding",
+                  "ref_id": "binding-27c65ba41354ad4d"
+                }
+              ]
+            },
+            {
+              "id": "binding-4bc34cd94758f4fa",
+              "operation": "copy",
+              "operand_refs": [
+                {
+                  "ref_type": "measure",
+                  "ref_id": "table-measure-section-2"
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "id": "component-tabletop",
+              "role": "tabletop",
+              "length_binding_id": "binding-bb51ca28e88f65f1",
+              "width_binding_id": "binding-a86abead15e1f40a",
+              "thickness_binding_id": "binding-27c65ba41354ad4d",
+              "quantity_rule_id": "top_one",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "top_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-98",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "premise-863315f89e3393bf",
+                "premise-8e69237caed56843",
+                "premise-cbfe8c6402f0f573"
+              ]
+            },
+            {
+              "id": "component-side-support",
+              "role": "side_support",
+              "length_binding_id": "binding-9ce6c2e6183cbb45",
+              "width_binding_id": "binding-a86abead15e1f40a",
+              "thickness_binding_id": "binding-4bc34cd94758f4fa",
+              "quantity_rule_id": "two_side_supports",
+              "quantity_rule_version": "1",
+              "placement_rule_id": "side_supports_flush",
+              "placement_rule_version": "1",
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-dimension-entity-B8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90",
+                "evidence-geometry-entity-95"
+              ],
+              "premise_ids": [
+                "premise-5108315b36f953a2",
+                "premise-863315f89e3393bf",
+                "premise-8e69237caed56843",
+                "premise-cbfe8c6402f0f573"
+              ]
+            }
+          ],
+          "premises": [
+            {
+              "id": "premise-5108315b36f953a2",
+              "kind": "topology",
+              "required": true,
+              "description": "Hipótesis de catálogo de apoyos laterales continuos en profundidad; requiere confirmación técnica y no se selecciona por apariencia."
+            },
+            {
+              "id": "premise-863315f89e3393bf",
+              "kind": "flush_placement",
+              "required": true,
+              "description": "Aplicación hipotética de las reglas de enrase del perfil, con apoyos bajo el tablero y profundidad común; montaje por confirmar."
+            },
+            {
+              "id": "premise-8e69237caed56843",
+              "kind": "rectangular_components",
+              "required": true,
+              "description": "Se suponen componentes rectangulares sin mecanizados; requiere confirmación técnica."
+            },
+            {
+              "id": "premise-cbfe8c6402f0f573",
+              "kind": "section_assignment",
+              "required": true,
+              "description": "Se propone asignar table-measure-section-1 al espesor del tablero y table-measure-section-2 al espesor de los apoyos; sus roles siguen sin confirmar."
+            }
+          ],
+          "assumptions": [
+            "Las secciones observadas no resuelven por sí mismas los campos semánticos desconocidos del perfil.",
+            "No se infieren uniones, material, resistencia ni aptitud de fabricación.",
+            "Propuesta condicional de la alternativa de apoyos laterales, no confirmación de topología frente a apoyos de esquina."
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-92",
+            "evidence-contour-entity-94",
+            "evidence-dimension-entity-98",
+            "evidence-dimension-entity-A8",
+            "evidence-dimension-entity-B8",
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-95"
+          ]
+        },
+        "program_hash": "574324dac34ea26e51db38b26d2b4e52db29054eb70e4becd0603a94dbc0b2df",
+        "ledger_revision": "8840971c6d60e912e8a1ae6ce2e8c1936a4fbf7909ca9cb58b1f3f8b3ea71427",
+        "registry_versions": {
+          "profile": "rectangular_table_v1",
+          "quantity:top_one": "1",
+          "quantity:two_side_supports": "1",
+          "placement:top_flush": "1",
+          "placement:side_supports_flush": "1"
+        },
+        "bindings": [
+          {
+            "id": "top_length",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_width"
+              }
+            ],
+            "result": {
+              "value_mm": 1200.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_width"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-dimension-entity-98"
+              ]
+            }
+          },
+          {
+            "id": "top_width",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_depth"
+              }
+            ],
+            "result": {
+              "value_mm": 700.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            }
+          },
+          {
+            "id": "top_thickness",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-section-1"
+              }
+            ],
+            "result": {
+              "value_mm": 30.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-section-1"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            }
+          },
+          {
+            "id": "support_height",
+            "operation": "subtract",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-overall_height"
+              },
+              {
+                "ref_type": "binding",
+                "ref_id": "top_thickness"
+              }
+            ],
+            "result": {
+              "value_mm": 720.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_height",
+                "binding:top_thickness"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            }
+          },
+          {
+            "id": "support_thickness",
+            "operation": "copy",
+            "operand_refs": [
+              {
+                "ref_type": "measure",
+                "ref_id": "table-measure-section-2"
+              }
+            ],
+            "result": {
+              "value_mm": 18.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-section-2"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ]
+            }
+          }
+        ],
+        "components": [
+          {
+            "id": "top",
+            "role": "tabletop",
+            "length": {
+              "value_mm": 1200.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_width"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-92",
+                "evidence-dimension-entity-98"
+              ]
+            },
+            "width": {
+              "value_mm": 700.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            },
+            "thickness": {
+              "value_mm": 30.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-section-1"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            },
+            "quantity": 1,
+            "quantity_rule_id": "top_one",
+            "placement_rule_id": "top_flush",
+            "accepted": true,
+            "premise_ids": [
+              "section_assignment",
+              "rectangular",
+              "flush"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-98",
+              "evidence-dimension-entity-B8",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          {
+            "id": "supports",
+            "role": "side_support",
+            "length": {
+              "value_mm": 720.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_height",
+                "binding:top_thickness"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-A8",
+                "evidence-geometry-entity-8E",
+                "evidence-geometry-entity-95"
+              ]
+            },
+            "width": {
+              "value_mm": 700.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-overall_depth"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-92",
+                "evidence-contour-entity-94",
+                "evidence-dimension-entity-B8"
+              ]
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "state": "calculated",
+              "dependency_refs": [
+                "measure:table-measure-section-2"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-geometry-entity-8F",
+                "evidence-geometry-entity-90"
+              ]
+            },
+            "quantity": 2,
+            "quantity_rule_id": "two_side_supports",
+            "placement_rule_id": "side_supports_flush",
+            "accepted": true,
+            "premise_ids": [
+              "side_topology",
+              "section_assignment",
+              "rectangular",
+              "flush"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-92",
+              "evidence-contour-entity-94",
+              "evidence-dimension-entity-A8",
+              "evidence-dimension-entity-B8",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-90",
+              "evidence-geometry-entity-95"
+            ]
+          }
+        ],
+        "occurrences": [
+          {
+            "id": "occurrence-top-1",
+            "component_id": "top",
+            "occurrence_index": 1
+          },
+          {
+            "id": "occurrence-supports-1",
+            "component_id": "supports",
+            "occurrence_index": 1
+          },
+          {
+            "id": "occurrence-supports-2",
+            "component_id": "supports",
+            "occurrence_index": 2
+          }
+        ],
+        "placements": [
+          {
+            "occurrence_id": "occurrence-top-1",
+            "position_mm": {
+              "x": 0.0,
+              "y": 720.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 1200.0,
+              "y": 30.0,
+              "z": 700.0
+            },
+            "rule_id": "top_flush",
+            "rule_version": "1",
+            "state": "pass",
+            "dependency_refs": [
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_width",
+              "measure:table-measure-section-1"
+            ]
+          },
+          {
+            "occurrence_id": "occurrence-supports-1",
+            "position_mm": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 18.0,
+              "y": 720.0,
+              "z": 700.0
+            },
+            "rule_id": "side_supports_flush",
+            "rule_version": "1",
+            "state": "pass",
+            "dependency_refs": [
+              "binding:top_thickness",
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_height",
+              "measure:table-measure-section-2"
+            ]
+          },
+          {
+            "occurrence_id": "occurrence-supports-2",
+            "position_mm": {
+              "x": 1182.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "dimensions_mm": {
+              "x": 18.0,
+              "y": 720.0,
+              "z": 700.0
+            },
+            "rule_id": "side_supports_flush",
+            "rule_version": "1",
+            "state": "pass",
+            "dependency_refs": [
+              "binding:top_thickness",
+              "measure:table-measure-overall_depth",
+              "measure:table-measure-overall_height",
+              "measure:table-measure-section-2"
+            ]
+          }
+        ],
+        "overall_dimensions": {
+          "width_mm": 1200.0,
+          "depth_mm": 700.0,
+          "height_mm": 750.0
+        },
+        "consumed_measurement_ids": [
+          "table-measure-overall_depth",
+          "table-measure-overall_height",
+          "table-measure-overall_width",
+          "table-measure-section-1",
+          "table-measure-section-2"
+        ],
+        "measurement_dispositions": [
+          {
+            "measurement_id": "table-measure-slot-tabletop_thickness",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_width",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_depth",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          },
+          {
+            "measurement_id": "table-measure-slot-support_thickness",
+            "reason": "Profile slot is not required by the selected support topology.",
+            "blocking": false
+          }
+        ],
+        "accepted_target_ids": [
+          "flush",
+          "rectangular",
+          "section_assignment",
+          "side_topology",
+          "supports",
+          "table-program-cc2d6015d2a3bccf",
+          "top"
+        ],
+        "rejected_target_ids": [],
+        "issues": [],
+        "state": "completed"
+      },
+      "table_review_decisions": [
+        {
+          "target_kind": "component",
+          "target_id": "supports",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "component",
+          "target_id": "top",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "premise",
+          "target_id": "flush",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "premise",
+          "target_id": "rectangular",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "premise",
+          "target_id": "section_assignment",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "premise",
+          "target_id": "side_topology",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        },
+        {
+          "target_kind": "program",
+          "target_id": "table-program-cc2d6015d2a3bccf",
+          "action": "accept",
+          "reason": "Demo automatizada: aceptacion explicita de propuesta live para mostrar reconstruccion; no validacion industrial."
+        }
+      ],
+      "table_confirmed_values": [],
+      "table_observed_value_corrections": [],
+      "table_source_review_decisions": [],
+      "table_cost_scope": null
+    }
+  ]
+}

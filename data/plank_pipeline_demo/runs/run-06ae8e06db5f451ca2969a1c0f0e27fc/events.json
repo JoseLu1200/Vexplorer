@@ -1,0 +1,92 @@
+[
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.792379+00:00\", \"state\": \"needs_review\", \"mode\": \"live\"}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 2,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.792379+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 3,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.792379+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 4,
+    "event_type": "general_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.825550+00:00\", \"tool_name\": \"inspeccionar_evidencia_general\", \"ok\": true, \"summary\": \"Ledger evidence inspected.\", \"proposal_origin\": \"native_tool\", \"provider_response_id\": \"resp_0413fd06c65d68b6006af84ee76d2c87d2a59b5450bf91ea95\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_LewAxayBL4sRgrg81ZooeCTs\", \"provider_duration_ms\": 3737, \"provider_input_tokens\": 8463, \"provider_output_tokens\": 122, \"provider_total_tokens\": 8585}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 5,
+    "event_type": "general_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.837455+00:00\", \"tool_name\": \"proponer_mueble_general\", \"ok\": true, \"summary\": \"Evidence-grounded component proposal created for review.\", \"proposal_origin\": \"native_tool\", \"provider_response_id\": \"resp_0413fd06c65d68b6006af84eeabcdc87d28de945829882195f\", \"provider_model\": \"gpt-6.1-sol\", \"provider_call_id\": \"call_n4Nz8eMoAKXnoDVwXExiiUKK\", \"provider_duration_ms\": 21120, \"provider_input_tokens\": 12944, \"provider_output_tokens\": 1410, \"provider_total_tokens\": 14354}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 6,
+    "event_type": "general_proposal_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.848772+00:00\", \"proposal_id\": \"general-ffbdfa7010bcca3f\", \"proposal_revision\": 1, \"proposal_origin\": \"native_tool\", \"provider_model\": \"gpt-6.1-sol\", \"model_calls\": 2, \"tool_calls\": 2}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 7,
+    "event_type": "general_auto_review_started",
+    "payload": "{\"timestamp\": \"2026-11-14T12:07:27.864073+00:00\", \"proposal_revision\": 1, \"reviewer_kind\": \"machine\", \"reviewer_model\": \"gpt-6-astra\", \"visual_artifacts\": [{\"reference\": \"c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-front:overview\", \"sha256\": \"cd5b35963c6ca50b79a917956d07cbeda6a106b15750959aa7a3e95b2662f67b\", \"source_view_ids\": [\"view-front\"], \"source_contour_ids\": [\"contour-entity-8D\"], \"crop_bounds_source\": [-110.0, -90.0, 1200.0, 855.0], \"marks\": []}, {\"reference\": \"c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-side:overview\", \"sha256\": \"bbcc77eaefd44275c5ef46acb3f1b03f5e7a3b1edd576342b00fd7809680fa92\", \"source_view_ids\": [\"view-side\"], \"source_contour_ids\": [\"contour-entity-94\"], \"crop_bounds_source\": [1500.0, 0.0, 2200.0, 795.0], \"marks\": []}, {\"reference\": \"c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-top:overview\", \"sha256\": \"490d0679597d95d25a2081c4495adb2a12d5be898bdf402e9ba1e2f555722acf\", \"source_view_ids\": [\"view-top\"], \"source_contour_ids\": [\"contour-entity-92\"], \"crop_bounds_source\": [-120.0, -1000.0, 1200.0, -255.0], \"marks\": []}]}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 8,
+    "event_type": "general_auto_semantic_repair_checkpoint",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:05.413655+00:00\", \"proposal_revision\": 2, \"tool_name\": \"proponer_mueble_general\", \"ok\": true, \"summary\": \"Propuesta sem\\u00e1ntica reparada contra el mismo ledger.\", \"phase\": \"general_auto_semantic_repair\", \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f16f4e087d28df8dfeb0cabd1ab\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_4AU1yeTG4bU0v8O8eXaHXSkl\", \"status\": null, \"actor_kind\": \"machine\"}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 9,
+    "event_type": "general_auto_semantic_repair_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:05.437396+00:00\", \"proposal_id\": \"general-24189eacf1206064\", \"proposal_revision\": 2, \"proposal_origin\": \"native_tool\", \"actor_kind\": \"machine\"}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 10,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.698793+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": true, \"summary\": \"Se aport\\u00f3 evidencia m\\u00e9trica acotada para una abstenci\\u00f3n dimensional reparable.\", \"reviewer_kind\": \"machine\", \"phase\": \"general_auto_evidence_reinspection\", \"status\": \"incomplete\", \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f0021a887d2b7c56e453d16f5b4\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_azuvMNxUACdKuTLiZzGPzTbr\", \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 11,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.708206+00:00\", \"tool_name\": \"proponer_mueble_general\", \"ok\": true, \"summary\": \"Propuesta sem\\u00e1ntica reparada contra el mismo ledger.\", \"reviewer_kind\": \"machine\", \"phase\": \"general_auto_semantic_repair\", \"status\": null, \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f16f4e087d28df8dfeb0cabd1ab\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_4AU1yeTG4bU0v8O8eXaHXSkl\", \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 12,
+    "event_type": "general_auto_semantic_repair",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.717902+00:00\", \"tool_name\": \"proponer_mueble_general\", \"ok\": true, \"summary\": \"Propuesta sem\\u00e1ntica reparada contra el mismo ledger.\", \"reviewer_kind\": \"machine\", \"phase\": \"general_auto_semantic_repair\", \"status\": null, \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f16f4e087d28df8dfeb0cabd1ab\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_4AU1yeTG4bU0v8O8eXaHXSkl\", \"provider_input_tokens\": null, \"provider_output_tokens\": null, \"provider_total_tokens\": null}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 13,
+    "event_type": "general_auto_review_tool_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.727999+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": true, \"summary\": \"Revisi\\u00f3n multimodal provisional completada.\", \"reviewer_kind\": \"machine\", \"phase\": \"general_auto_review\", \"status\": \"incomplete\", \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f25863c87d294fdb6917c9a2c97\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_3ZzVaHMCQ2YjcM9Gl7dudGiY\", \"provider_input_tokens\": 21689, \"provider_output_tokens\": 1937, \"provider_total_tokens\": 23626}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 14,
+    "event_type": "general_auto_review",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.737496+00:00\", \"tool_name\": \"entregar_revision_autonoma\", \"ok\": true, \"summary\": \"Revisi\\u00f3n multimodal provisional completada.\", \"reviewer_kind\": \"machine\", \"phase\": \"general_auto_review\", \"status\": \"incomplete\", \"provider_response_id\": \"resp_0c5d813fa378a95b006af84f25863c87d294fdb6917c9a2c97\", \"provider_model\": \"gpt-6-astra\", \"provider_call_id\": \"call_3ZzVaHMCQ2YjcM9Gl7dudGiY\", \"provider_input_tokens\": 21689, \"provider_output_tokens\": 1937, \"provider_total_tokens\": 23626}"
+  },
+  {
+    "run_id": "run-06ae8e06db5f451ca2969a1c0f0e27fc",
+    "sequence": 15,
+    "event_type": "general_auto_review_completed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:08:23.746277+00:00\", \"proposal_revision\": 2, \"review_revision\": 1, \"status\": \"incomplete\", \"reviewer_kind\": \"machine\", \"provider_model\": \"gpt-6-astra\", \"review_relation\": \"separate_model\", \"model_calls\": 3, \"tool_calls\": 3, \"semantic_repairs\": 1, \"cost_tracking\": \"token_usage_only\"}"
+  }
+]

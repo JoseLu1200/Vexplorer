@@ -1,0 +1,212 @@
+{
+  "status": "schematic_incomplete",
+  "items": [
+    {
+      "id": "scene:side_left",
+      "component_id": "side_left",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-574b79fd7a54e129:side_left:1"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "unavailable"
+    },
+    {
+      "id": "scene:side_right",
+      "component_id": "side_right",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-574b79fd7a54e129:side_right:1"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "unavailable"
+    },
+    {
+      "id": "scene:shelf_upper",
+      "component_id": "shelf_upper",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-574b79fd7a54e129:shelf_upper:1"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "unavailable"
+    },
+    {
+      "id": "scene:shelf_lower",
+      "component_id": "shelf_lower",
+      "occurrence_ids": [],
+      "scenario_occurrence_ids": [
+        "provisional:general-574b79fd7a54e129:shelf_lower:1"
+      ],
+      "occurrence_status": "provisional",
+      "length": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "width": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "thickness": {
+        "value_mm": null,
+        "unit": "mm",
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": [],
+        "dimension_ids": [],
+        "range_mm": null,
+        "method": null,
+        "formula": null,
+        "assumption_refs": []
+      },
+      "position_mm": null,
+      "size_mm": null,
+      "occurrence_id": null,
+      "occurrence_index": null,
+      "orientation": null,
+      "status": "unavailable"
+    }
+  ],
+  "warnings": [
+    "Representación esquemática sin colocaciones de montaje validadas."
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "sequence": 1,
+    "event_type": "run_state_changed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:09:59.146592+00:00\", \"state\": \"needs_review\", \"mode\": \"geometry_only\"}"
+  },
+  {
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "sequence": 2,
+    "event_type": "result_committed",
+    "payload": "{\"timestamp\": \"2026-11-14T12:09:59.146592+00:00\", \"result_revision\": 1, \"state\": \"needs_review\"}"
+  },
+  {
+    "run_id": "run-564b920c178b4603bd98c86c65032557",
+    "sequence": 3,
+    "event_type": "run_finished",
+    "payload": "{\"timestamp\": \"2026-11-14T12:09:59.146592+00:00\", \"state\": \"needs_review\", \"result_revision\": 1}"
+  }
+]

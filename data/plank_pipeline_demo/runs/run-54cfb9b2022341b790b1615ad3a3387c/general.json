@@ -1,0 +1,1959 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+    "status": "reviewed_incomplete",
+    "proposal_revision": 1,
+    "review_revision": 1,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "general-574b79fd7a54e129",
+      "drawing_id": "drawing-511adc7948119238",
+      "ledger_revision": "drawing-511adc7948119238",
+      "proposal_origin": "native_tool",
+      "bindings": [
+        {
+          "id": "height",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-8D:span-y"
+          ]
+        },
+        {
+          "id": "depth",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-93:span-y"
+          ]
+        },
+        {
+          "id": "side_thickness",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "dimension:dimension-entity-CC"
+          ]
+        },
+        {
+          "id": "overall_width",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-8D:span-x"
+          ]
+        },
+        {
+          "id": "clear_width",
+          "operation": "subtract",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "binding:overall_width",
+            "binding:side_thickness",
+            "binding:side_thickness"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "side_left",
+          "label": "Lateral izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "height",
+          "width_binding_id": "depth",
+          "thickness_binding_id": "side_thickness",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-94"
+            ]
+          },
+          "premise_ids": [
+            "sides",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-94",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja izquierda representa un lateral material, no un hueco; su proyección superior corresponde a la misma pieza."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length_binding_id": "height",
+          "width_binding_id": "depth",
+          "thickness_binding_id": "side_thickness",
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "sides",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja derecha es una pieza distinta de la izquierda; aplicar a ella la cota del lateral izquierdo supone simetría no confirmada."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_upper",
+          "label": "Estante interior superior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "clear_width",
+          "width_binding_id": "depth",
+          "thickness_binding_id": null,
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:upper"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-91",
+              "evidence-geometry-entity-99",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "premise_ids": [
+            "upper",
+            "inset",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal superior se interpreta como estante, no como junta o división gráfica; las proyecciones no se cuentan por separado.",
+            "Se propone profundidad completa y longitud libre entre laterales; no son dimensiones de fabricación confirmadas."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_lower",
+          "label": "Estante interior inferior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length_binding_id": "clear_width",
+          "width_binding_id": "depth",
+          "thickness_binding_id": null,
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:lower"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-90",
+              "evidence-geometry-entity-98",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "premise_ids": [
+            "lower",
+            "inset",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal inferior se interpreta como un estante distinto del superior, no como otra vista de él.",
+            "Se propone profundidad completa y longitud libre entre laterales; el espesor no queda resuelto por un trazo único."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "sides",
+          "description": "Las franjas verticales izquierda y derecha, contrastadas en frente y planta, representan dos laterales físicos distintos; cada uno aparece en varias proyecciones y se cuenta una sola vez.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "dimensions",
+          "description": "Los spans se asignan hipotéticamente a altura y profundidad. La cota CC corresponde al espesor del lateral izquierdo; extenderla al derecho requiere simetría. Unidad física desconocida: no interpretar valores como milímetros.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "upper",
+          "description": "La línea horizontal interior superior del frente y su candidata homóloga lateral representan un único estante físico; podría tratarse de un límite gráfico o junta, por lo que la identificación requiere revisión.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "lower",
+          "description": "La línea horizontal interior inferior del frente y su candidata homóloga lateral representan un único estante físico distinto del superior; su interpretación material requiere revisión.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "inset",
+          "description": "Como hipótesis dimensional, ambos estantes ocupan la profundidad exterior y se alojan entre laterales de igual espesor; la longitud se deriva restando ambos espesores al ancho exterior. Los trazos no prueban el detalle constructivo.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "support",
+          "description": "Los encuentros visibles de las horizontales interiores con las franjas laterales permiten proponer apoyo funcional en ambos laterales. No identifican herrajes, uniones ni método de fijación.",
+          "required": true,
+          "blocking": false
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable, no documentación industrial ni lista de corte.",
+        "No se convierte automáticamente el contorno envolvente en panel trasero, tapa o base: esas piezas no quedan individualizadas.",
+        "Las interpretaciones alternativas de los trazos interiores como juntas o límites gráficos permanecen abiertas; no implican nuevas piezas.",
+        "Las unidades físicas, materiales y mecanizados no están determinados."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "shelf_upper",
+          "relation": "supported_by",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "upper",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8E",
+            "evidence:evidence-geometry-entity-91",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_upper",
+          "relation": "supported_by",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "upper",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8F",
+            "evidence:evidence-geometry-entity-91",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_lower",
+          "relation": "supported_by",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "lower",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8E",
+            "evidence:evidence-geometry-entity-90",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_lower",
+          "relation": "supported_by",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "lower",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8F",
+            "evidence:evidence-geometry-entity-90",
+            "contour:contour-entity-8D"
+          ]
+        }
+      ],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "general-574b79fd7a54e129",
+      "drawing_id": "drawing-511adc7948119238",
+      "ledger_revision": "drawing-511adc7948119238",
+      "components": [
+        {
+          "id": "side_left",
+          "label": "Lateral izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-94"
+            ]
+          },
+          "premise_ids": [
+            "sides",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-94",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja izquierda representa un lateral material, no un hueco; su proyección superior corresponde a la misma pieza."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "premise_ids": [
+            "sides",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja derecha es una pieza distinta de la izquierda; aplicar a ella la cota del lateral izquierdo supone simetría no confirmada."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_upper",
+          "label": "Estante interior superior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:upper"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-91",
+              "evidence-geometry-entity-99",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "premise_ids": [
+            "upper",
+            "inset",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal superior se interpreta como estante, no como junta o división gráfica; las proyecciones no se cuentan por separado.",
+            "Se propone profundidad completa y longitud libre entre laterales; no son dimensiones de fabricación confirmadas."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_lower",
+          "label": "Estante interior inferior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:lower"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-90",
+              "evidence-geometry-entity-98",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "premise_ids": [
+            "lower",
+            "inset",
+            "dimensions"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal inferior se interpreta como un estante distinto del superior, no como otra vista de él.",
+            "Se propone profundidad completa y longitud libre entre laterales; el espesor no queda resuelto por un trazo único."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "sides",
+          "description": "Las franjas verticales izquierda y derecha, contrastadas en frente y planta, representan dos laterales físicos distintos; cada uno aparece en varias proyecciones y se cuenta una sola vez.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "dimensions",
+          "description": "Los spans se asignan hipotéticamente a altura y profundidad. La cota CC corresponde al espesor del lateral izquierdo; extenderla al derecho requiere simetría. Unidad física desconocida: no interpretar valores como milímetros.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "upper",
+          "description": "La línea horizontal interior superior del frente y su candidata homóloga lateral representan un único estante físico; podría tratarse de un límite gráfico o junta, por lo que la identificación requiere revisión.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "lower",
+          "description": "La línea horizontal interior inferior del frente y su candidata homóloga lateral representan un único estante físico distinto del superior; su interpretación material requiere revisión.",
+          "required": true,
+          "blocking": false
+        },
+        {
+          "id": "inset",
+          "description": "Como hipótesis dimensional, ambos estantes ocupan la profundidad exterior y se alojan entre laterales de igual espesor; la longitud se deriva restando ambos espesores al ancho exterior. Los trazos no prueban el detalle constructivo.",
+          "required": true,
+          "blocking": true
+        },
+        {
+          "id": "support",
+          "description": "Los encuentros visibles de las horizontales interiores con las franjas laterales permiten proponer apoyo funcional en ambos laterales. No identifican herrajes, uniones ni método de fijación.",
+          "required": true,
+          "blocking": false
+        }
+      ],
+      "assumptions": [
+        "Propuesta revisable, no documentación industrial ni lista de corte.",
+        "No se convierte automáticamente el contorno envolvente en panel trasero, tapa o base: esas piezas no quedan individualizadas.",
+        "Las interpretaciones alternativas de los trazos interiores como juntas o límites gráficos permanecen abiertas; no implican nuevas piezas.",
+        "Las unidades físicas, materiales y mecanizados no están determinados."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [
+        {
+          "subject_component_id": "shelf_upper",
+          "relation": "supported_by",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "upper",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8E",
+            "evidence:evidence-geometry-entity-91",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_upper",
+          "relation": "supported_by",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "upper",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8F",
+            "evidence:evidence-geometry-entity-91",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_lower",
+          "relation": "supported_by",
+          "object_component_id": "side_left",
+          "state": "hypothesis",
+          "premise_ids": [
+            "lower",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8E",
+            "evidence:evidence-geometry-entity-90",
+            "contour:contour-entity-8D"
+          ]
+        },
+        {
+          "subject_component_id": "shelf_lower",
+          "relation": "supported_by",
+          "object_component_id": "side_right",
+          "state": "hypothesis",
+          "premise_ids": [
+            "lower",
+            "sides",
+            "support"
+          ],
+          "source_refs": [
+            "view:view-front",
+            "evidence:evidence-geometry-entity-8F",
+            "evidence:evidence-geometry-entity-90",
+            "contour:contour-entity-8D"
+          ]
+        }
+      ],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": {
+      "schema_version": "0.6.0",
+      "run_id": "run-54cfb9b2022341b790b1615ad3a3387c",
+      "proposal_id": "general-574b79fd7a54e129",
+      "proposal_revision": 1,
+      "review_revision": 1,
+      "reviewer_name": "autonomous-reviewer",
+      "reviewer_kind": "machine",
+      "machine_provenance": {
+        "model": "gpt-6-astra",
+        "policy_version": "general-auto-review-v3",
+        "response_ids": [
+          "resp_01990c04dd2ca5d0006af85cadf18c87d2ad21255173ffb145"
+        ],
+        "review_relation": "separate_model"
+      },
+      "reason": "Revisión multimodal autónoma provisional.",
+      "reviewed_at": "2026-11-14T13:06:17.203237+00:00",
+      "operations": [
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "side_left"
+          ],
+          "result_component_ids": [
+            "side_left"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "side_right"
+          ],
+          "result_component_ids": [
+            "side_right"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "shelf_upper"
+          ],
+          "result_component_ids": [
+            "shelf_upper"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        },
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "shelf_lower"
+          ],
+          "result_component_ids": [
+            "shelf_lower"
+          ],
+          "reason": "Continuidad del snapshot; el crítico no reescribe componentes."
+        }
+      ],
+      "components": [
+        {
+          "id": "side_left",
+          "label": "Lateral izquierdo candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8E",
+              "evidence-geometry-entity-94"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "side_left"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8E",
+            "evidence-geometry-entity-94",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja izquierda representa un lateral material, no un hueco; su proyección superior corresponde a la misma pieza."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "side_right",
+          "label": "Lateral derecho candidato",
+          "kind": "panel",
+          "role": "side_panel",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:sides"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-geometry-entity-8F",
+              "evidence-geometry-entity-95"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "side_right"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-top",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-top",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-93",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-8F",
+            "evidence-geometry-entity-95",
+            "evidence-dimension-entity-CC"
+          ],
+          "source_dimension_ids": [
+            "dimension-entity-CC"
+          ],
+          "source_document_refs": [],
+          "assumptions": [
+            "La franja derecha es una pieza distinta de la izquierda; aplicar a ella la cota del lateral izquierdo supone simetría no confirmada."
+          ],
+          "unknown_fields": [
+            "material",
+            "unidad_fisica",
+            "metodo_fijacion"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_upper",
+          "label": "Estante interior superior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:upper"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-91",
+              "evidence-geometry-entity-99",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "shelf_upper"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal superior se interpreta como estante, no como junta o división gráfica; las proyecciones no se cuentan por separado.",
+            "Se propone profundidad completa y longitud libre entre laterales; no son dimensiones de fabricación confirmadas."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        },
+        {
+          "id": "shelf_lower",
+          "label": "Estante interior inferior candidato",
+          "kind": "panel",
+          "role": "shelf",
+          "length": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 1,
+            "state": "hypothesis",
+            "dependency_refs": [
+              "premise:lower"
+            ],
+            "evidence_ids": [
+              "evidence-geometry-entity-90",
+              "evidence-geometry-entity-98",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-97"
+            ]
+          },
+          "material": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "shelf_lower"
+          ],
+          "source_view_ids": [
+            "view-front",
+            "view-side"
+          ],
+          "source_observation_ids": [
+            "observation-view-front",
+            "observation-view-side"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D",
+            "contour-entity-97"
+          ],
+          "source_evidence_ids": [
+            "evidence-geometry-entity-90",
+            "evidence-geometry-entity-91",
+            "evidence-geometry-entity-98",
+            "evidence-geometry-entity-99"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "El trazo horizontal inferior se interpreta como un estante distinto del superior, no como otra vista de él.",
+            "Se propone profundidad completa y longitud libre entre laterales; el espesor no queda resuelto por un trazo único."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "material",
+            "metodo_fijacion",
+            "posicion_numerica"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "occurrences": [],
+      "scenario_occurrences": [
+        {
+          "id": "provisional:general-574b79fd7a54e129:side_left:1",
+          "component_id": "side_left",
+          "occurrence_index": 1,
+          "scenario_id": "general-574b79fd7a54e129",
+          "quantity_target_ref": "component:side_left.quantity",
+          "check_ids": [
+            "sides_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ],
+          "premise_refs": [
+            "premise:sides"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview",
+            "premise:sides",
+            "premise:upper",
+            "premise:lower",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-574b79fd7a54e129:side_right:1",
+          "component_id": "side_right",
+          "occurrence_index": 1,
+          "scenario_id": "general-574b79fd7a54e129",
+          "quantity_target_ref": "component:side_right.quantity",
+          "check_ids": [
+            "sides_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ],
+          "premise_refs": [
+            "premise:sides"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview",
+            "premise:sides",
+            "premise:upper",
+            "premise:lower",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-574b79fd7a54e129:shelf_upper:1",
+          "component_id": "shelf_upper",
+          "occurrence_index": 1,
+          "scenario_id": "general-574b79fd7a54e129",
+          "quantity_target_ref": "component:shelf_upper.quantity",
+          "check_ids": [
+            "shelves_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ],
+          "premise_refs": [
+            "premise:upper"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "premise:upper",
+            "premise:lower",
+            "premise:sides",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "state": "provisional"
+        },
+        {
+          "id": "provisional:general-574b79fd7a54e129:shelf_lower:1",
+          "component_id": "shelf_lower",
+          "occurrence_index": 1,
+          "scenario_id": "general-574b79fd7a54e129",
+          "quantity_target_ref": "component:shelf_lower.quantity",
+          "check_ids": [
+            "shelves_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ],
+          "premise_refs": [
+            "premise:lower"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "premise:upper",
+            "premise:lower",
+            "premise:sides",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "state": "provisional"
+        }
+      ],
+      "machine_checks": [
+        {
+          "id": "sides_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview",
+            "premise:sides"
+          ],
+          "summary": "Las franjas extremas del frente tienen correspondencias en planta. Es coherente interpretarlas como dos laterales bajo la premisa declarada, sin convertir el interior del contorno en otra pieza."
+        },
+        {
+          "id": "shelves_identity",
+          "kind": "cross_view_identity",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf_upper.quantity",
+            "component:shelf_lower.quantity"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "premise:upper",
+            "premise:lower"
+          ],
+          "summary": "Se distinguen dos niveles interiores en frente y lateral. La correspondencia permite dos estantes como hipótesis coherente; los trazos únicos no excluyen juntas ni límites gráficos y no resuelven espesor."
+        },
+        {
+          "id": "quantity_basis",
+          "kind": "quantity_basis",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity",
+            "component:shelf_upper.quantity",
+            "component:shelf_lower.quantity"
+          ],
+          "source_refs": [
+            "premise:sides",
+            "premise:upper",
+            "premise:lower",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "summary": "Una instancia hipotética por franja lateral y una por nivel horizontal interior. Las cantidades permanecen hypothesis y dependen de las premisas declaradas, no del número de vistas."
+        },
+        {
+          "id": "duplicate_scan",
+          "kind": "duplicate_scan",
+          "outcome": "pass",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity",
+            "component:shelf_upper.quantity",
+            "component:shelf_lower.quantity"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "summary": "No se detecta doble conteo entre proyecciones. Izquierda y derecha ocupan extremos distintos; superior e inferior son niveles distintos, no dos vistas de un mismo nivel."
+        },
+        {
+          "id": "side_dimensions",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.length",
+            "component:side_left.width",
+            "component:side_left.thickness",
+            "component:side_right.length",
+            "component:side_right.width",
+            "component:side_right.thickness"
+          ],
+          "source_refs": [
+            "contour-entity-8D",
+            "contour-entity-93",
+            "contour-entity-97",
+            "premise:dimensions",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "summary": "Altura y profundidad asignadas concuerdan con las proyecciones y spans del ledger. La cota visible corresponde a la franja izquierda; extenderla a la derecha supone simetría. Las unidades físicas son desconocidas y el draft no contiene valores dimensionales evaluables en mm."
+        },
+        {
+          "id": "shelf_dimensions",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:shelf_upper.length",
+            "component:shelf_upper.width",
+            "component:shelf_upper.thickness",
+            "component:shelf_lower.length",
+            "component:shelf_lower.width",
+            "component:shelf_lower.thickness"
+          ],
+          "source_refs": [
+            "premise:inset",
+            "premise:dimensions",
+            "contour-entity-8D",
+            "contour-entity-97",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview"
+          ],
+          "summary": "Los niveles atraviesan las proyecciones, pero no individualizan cantos ni encuentros constructivos. La profundidad completa y el alojamiento entre laterales son hipótesis; no quedan determinados espesor ni dimensiones físicas. No se infieren medidas de píxeles."
+        },
+        {
+          "id": "materials_finishes",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.material",
+            "component:side_left.finish",
+            "component:side_right.material",
+            "component:side_right.finish",
+            "component:shelf_upper.material",
+            "component:shelf_upper.finish",
+            "component:shelf_lower.material",
+            "component:shelf_lower.finish"
+          ],
+          "source_refs": [
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview"
+          ],
+          "summary": "El dibujo lineal y sus anotaciones no especifican material ni acabado de ningún candidato."
+        },
+        {
+          "id": "inventory_graph",
+          "kind": "visual_consistency",
+          "outcome": "unknown",
+          "method": "model_visual",
+          "target_refs": [
+            "component:side_left.quantity",
+            "component:side_right.quantity",
+            "component:shelf_upper.quantity",
+            "component:shelf_lower.quantity"
+          ],
+          "source_refs": [
+            "premise:support",
+            "premise:inset",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-front:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-top:overview",
+            "visual:511adc7948119238825d9ff3aeb8c05c52f73c5fb6e2257aa3fcaac83b5b936d:view:view-side:overview"
+          ],
+          "summary": "Los roles usados son canónicos. El contorno exterior no individualiza tapa, base o trasera; no sustenta añadirlas. Los cuatro apoyos propuestos son plausibles como hipótesis, no demostrados por los encuentros. No se identifica omisión ni corrección del grafo suficientemente sustentada para pedir reparación."
+        }
+      ],
+      "machine_field_reviews": [
+        {
+          "target_ref": "component:side_left.length",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.width",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.thickness",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "sides_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_left.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.length",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.width",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.thickness",
+          "status": "abstained",
+          "check_ids": [
+            "side_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "sides_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:side_right.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.length",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.width",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.thickness",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_upper.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.length",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.width",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.thickness",
+          "status": "abstained",
+          "check_ids": [
+            "shelf_dimensions"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.quantity",
+          "status": "accepted",
+          "check_ids": [
+            "shelves_identity",
+            "quantity_basis",
+            "duplicate_scan"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.material",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        },
+        {
+          "target_ref": "component:shelf_lower.finish",
+          "status": "abstained",
+          "check_ids": [
+            "materials_finishes"
+          ]
+        }
+      ],
+      "evidence_dispositions": [],
+      "auto_review_status": "incomplete",
+      "furniture_quantity": {
+        "value": null,
+        "state": "unknown",
+        "dependency_refs": [],
+        "evidence_ids": []
+      },
+      "currency": null,
+      "required_cost_scope": [],
+      "required_hours_scope": [],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_validation": null,
+      "construction_placements": [],
+      "status": "reviewed_incomplete"
+    }
+  }
+}

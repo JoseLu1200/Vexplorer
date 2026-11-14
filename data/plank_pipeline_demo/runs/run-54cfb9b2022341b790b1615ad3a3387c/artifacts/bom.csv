@@ -1,0 +1,5 @@
+﻿component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish
+side_left,Lateral izquierdo candidato,side_panel,1,hypothesis,provisional,,provisional:general-574b79fd7a54e129:side_left:1,,,,,
+side_right,Lateral derecho candidato,side_panel,1,hypothesis,provisional,,provisional:general-574b79fd7a54e129:side_right:1,,,,,
+shelf_upper,Estante interior superior candidato,shelf,1,hypothesis,provisional,,provisional:general-574b79fd7a54e129:shelf_upper:1,,,,,
+shelf_lower,Estante interior inferior candidato,shelf,1,hypothesis,provisional,,provisional:general-574b79fd7a54e129:shelf_lower:1,,,,,
