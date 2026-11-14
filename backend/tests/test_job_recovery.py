@@ -4,6 +4,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 from fastapi.testclient import TestClient
@@ -145,10 +146,17 @@ def test_failed_review_restores_checkpoint_and_resume_does_not_repeat_proposer(t
     assert failed["recovery"]["repeats_proposer"] is False
     assert failed["recovery"]["continues_original_provider_call"] is False
     assert proposer.proposal_calls == 1
+    restored_run = client.get(f"/api/v1/runs/{failed['run_id']}").json()["data"]
+    assert restored_run["latest_job"]["id"] == source["id"]
+    assert restored_run["latest_job"]["checkpoint"] == failed["checkpoint"]
+    assert restored_run["latest_job"]["recovery"] == failed["recovery"]
 
     resumed_response = client.post(f"/api/v1/jobs/{source['id']}/resume")
     repeated_response = client.post(f"/api/v1/jobs/{source['id']}/resume")
     assert resumed_response.status_code == repeated_response.status_code == 202
+    conflicting_retry = client.post(f"/api/v1/jobs/{source['id']}/retry")
+    assert conflicting_retry.status_code == 409
+    assert conflicting_retry.json()["error"]["code"] == "job_recovery_action_conflict"
     resumed = resumed_response.json()["data"]
     assert repeated_response.json()["data"]["id"] == resumed["id"]
     completed = _wait_job(client, resumed["id"])
@@ -179,3 +187,76 @@ def test_resume_rejects_failed_job_without_saved_proposal(tmp_path: Path, monkey
     rejected = client.post(f"/api/v1/jobs/{job_id}/resume")
     assert rejected.status_code == 409
     assert rejected.json()["error"]["code"] == "job_resume_checkpoint_unavailable"
+
+
+def test_resume_rejects_an_existing_full_retry_for_same_source(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    app = create_app(
+        data_dir=tmp_path / "data", frontend_dir=tmp_path / "none",
+        agent_provider=_CountingProposer(),
+        general_reviewer_provider=_TimeoutOnceReviewer(),
+    )
+    client = TestClient(app)
+    document_id = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]["document_id"]
+    source = client.post("/api/v1/jobs", json={
+        "document_id": document_id, "mode": "live",
+        "input_kind": "general_furniture", "proposal_mode": "model_generated",
+    }).json()["data"]
+    failed = _wait_job(client, source["id"])
+    assert failed["recovery"]["safe_action"] == "resume_review"
+
+    retry_id = "job-" + "a" * 32
+    _, created = app.state.repository.reserve_job_retry(
+        source["id"], retry_id, actor=None,
+    )
+    assert created is True
+    conflict = client.post(f"/api/v1/jobs/{source['id']}/resume")
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "job_recovery_action_conflict"
+
+
+def test_concurrent_retry_and_resume_choose_one_recovery_action(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    app = create_app(
+        data_dir=tmp_path / "data", frontend_dir=tmp_path / "none",
+        agent_provider=_CountingProposer(),
+        general_reviewer_provider=_TimeoutOnceReviewer(),
+    )
+    client = TestClient(app)
+    document_id = client.post(
+        "/api/v1/documents",
+        files={"file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf")},
+    ).json()["data"]["document_id"]
+    source = client.post("/api/v1/jobs", json={
+        "document_id": document_id, "mode": "live",
+        "input_kind": "general_furniture", "proposal_mode": "model_generated",
+    }).json()["data"]
+    assert _wait_job(client, source["id"])["recovery"]["safe_action"] == "resume_review"
+
+    repository = app.state.repository
+    original_get_retry = repository.get_job_retry
+    precheck_barrier = Barrier(2)
+
+    def synchronized_get_retry(*args, **kwargs):
+        result = original_get_retry(*args, **kwargs)
+        precheck_barrier.wait(timeout=5)
+        return result
+
+    monkeypatch.setattr(repository, "get_job_retry", synchronized_get_retry)
+    monkeypatch.setattr(
+        app.state.job_executor, "submit_reserved",
+        lambda _process: app.state.job_executor.release(),
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = (
+            pool.submit(client.post, f"/api/v1/jobs/{source['id']}/retry"),
+            pool.submit(client.post, f"/api/v1/jobs/{source['id']}/resume"),
+        )
+        responses = [future.result(timeout=10) for future in futures]
+
+    assert sorted(response.status_code for response in responses) == [202, 409]
+    conflict = next(response for response in responses if response.status_code == 409)
+    assert conflict.json()["error"]["code"] == "job_recovery_action_conflict"

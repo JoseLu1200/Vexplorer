@@ -343,10 +343,11 @@ def test_partial_machine_coverage_cannot_report_accepted() -> None:
             }
             return ProviderResponse(id="partial-response", model="reviewer-model", tool_calls=(ToolCall(call_id="partial-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
 
-    outcome = run_general_autonomous(_context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()), reviewer_provider=Provider(), proposer_model="proposer-model")
+    with pytest.raises(GeneralAutonomousError) as caught:
+        run_general_autonomous(_context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()), reviewer_provider=Provider(), proposer_model="proposer-model")
 
-    assert outcome.status == "incomplete"
-    assert outcome.review.auto_review_status == "incomplete"
+    assert caught.value.code == "general_auto_review_repair_budget_exhausted"
+    assert caught.value.trace[-1]["details"][0]["msg"] == "machine_required_field_reviews_missing"
 
 
 def test_numeric_component_dimension_omission_is_repaired_by_same_critic() -> None:

@@ -171,5 +171,6 @@ def apply_general_review(
             construction_source, "construction_validation", None
         ),
         construction_placements=construction_source.construction_placements,
+        evidence_dispositions=construction_source.evidence_dispositions,
         status="reviewed_incomplete" if incomplete else "approved",
     )
