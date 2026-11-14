@@ -40,6 +40,18 @@
 - Documentación del incremento en `docs/PRECEDENTES.md`.
 - Fusión en `origin/embeddings` sobre el nivel 1 de Sergio, sin conflictos de texto. Integración semántica: umbrales calibrados de 1.2 en 2.1 (score relativo al techo de la consulta) y 2.3 (umbral combinado y abstención), coseno unificado de 1.4 en 3.3.
 
+## Bloque 2 (2026-11-14): similitud y evaluación — en curso
+
+- Pedido por el usuario: "Lanza lo que no esté hecho ya" de las opciones 3, 4, 6 y 7 tras comprobar que 2.4, 3.1, 2.5/2.6 y 2.7 ya existían. Subagentes Sonnet en worktrees propios + revisor Opus en solo lectura.
+- Rama de integración: `feat/similitud-evaluacion` (desde `embeddings`, con `main` fusionado). Ramas por agente: `feat/sim-nesting`, `feat/sim-mantenimiento`, `feat/sim-corpus`, `feat/sim-comparativa`.
+- Tareas:
+  - **Nesting real (3.1):** colocación por guillotina en `backend/app/precedentes/lotes.py` (+ módulo nuevo en `precedentes/`).
+  - **Mantenimiento automático (2.5/2.6):** regeneración tras guardar revisión, huella del espacio por modelo/dimensiones/descriptor y candado persistente en SQLite; sin tocar `contratos/`.
+  - **Corpus PlankAssembly + juicios reales (2.7/T11):** ampliar `tools/prepare_plankassembly.py`, generar juicios en `evaluation/recuperacion/`. Dataset aún no descargado: fixtures sintéticos.
+  - **Comparativa de métodos (T13, `docs/COMPARATIVA_METODOS.md`):** módulo nuevo en `tools/`/`evaluation/`; el harness solo se invoca, no se modifica; sin llamadas de pago.
+- Alcance ampliado: `tools/prepare_plankassembly.py`, `tools/comparativa_metodos*.py`, `evaluation/comparativa/`, `evaluation/recuperacion/`, sus tests en `tests/` y `backend/tests/`, y el punto de enganche mínimo tras guardar en biblioteca (se anota la ruta exacta al integrar).
+- Fuera de alcance (compañeros): harness CAD (`agente/`, `general_furniture/`), `frontend/`, `contratos/`.
+
 ## Siguiente bloque
 
 - Interfaz de usuario de los endpoints (coordinar con frontend).
