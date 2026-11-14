@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.contratos.modelos import TableConfirmedValue, TableProgramProposal, TableReviewDecision
+from backend.app.contratos.modelos import DrawingExtraction, TableConfirmedValue, TableProgramProposal, TableReviewDecision
 from backend.app.geometria.extraction import extract_drawing
 
 
@@ -307,4 +307,30 @@ def test_human_overlay_resolves_effective_conflict_without_mutating_cad_measure(
     assert resolved.overall_dimensions.width_mm == 1200.0
     assert width.state == "conflict"
     assert width.value_mm is None
+
+
+def test_metric_envelope_remains_observed_when_general_dimensions_are_absent() -> None:
+    extraction = extract_drawing(
+        FIXTURES / "mesa_demo_001.dxf", input_kind="mounted_orthographic_views",
+    )
+    payload = extraction.model_dump()
+    payload["dimensions"] = ()
+    payload["dimension_graphics"] = ()
+    payload["observations"] = tuple(
+        {**item, "dimension_ids": ()} for item in payload["observations"]
+    )
+    without_dimensions = DrawingExtraction.model_validate(payload)
+    from backend.app.geometria.mounted_table import analyze_mounted_table
+
+    analysis = analyze_mounted_table(without_dimensions)
+
+    overall = [item for item in analysis.measures if item.semantic.startswith("overall_")]
+    assert [(item.semantic, item.value_mm) for item in overall] == [
+        ("overall_width", 1200.0),
+        ("overall_height", 750.0),
+        ("overall_depth", 700.0),
+    ]
+    assert all(item.state == "observed" for item in overall)
+    assert all(item.geometry_relation == "envelope_extent" for item in overall)
+    assert all(not item.measurement_ids for item in overall)
 
