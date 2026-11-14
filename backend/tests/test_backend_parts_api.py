@@ -105,6 +105,8 @@ def test_parts_scene_dispatches_to_reviewed_parts_reconstruction(tmp_path: Path,
     assert scene.json()["data"]["state"] == "ready"
     assert len(scene.json()["data"]["objects"]) == 6
     assert all(item["part_observation_id"] for item in scene.json()["data"]["objects"])
+    events = client.get(f"/api/v1/runs/{run_id}/events").text
+    assert f'"selected_assembly_candidate_id": "{candidate_id}"' in events
 
 
 class _SelectingPartsProvider:

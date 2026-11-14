@@ -274,7 +274,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def review_run(run_id: str, request: ReviewRequest):
         try:
             result = repository.review(run_id, request)
-            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id})
+            repository.append_event(run_id, "human_review_committed", {"result_revision": result.result_revision, "reviewer_name": request.reviewer_name, "selected_scenario_id": request.scenario_id, "selected_assembly_candidate_id": request.assembly_candidate_id})
             return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
