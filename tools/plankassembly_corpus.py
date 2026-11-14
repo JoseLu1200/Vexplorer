@@ -429,23 +429,49 @@ def construir_juicios(
     }
 
 
+def _variantes_de(referencias: Sequence[Mapping[str, object]], poor_kind: str) -> list[Mapping[str, object]]:
+    return [r for r in sorted(referencias, key=lambda r: str(r["id"])) if r.get("variant_of") is not None and r.get("poor_kind") == poor_kind]
+
+
+def _comprobar_pares(consultas: int, candidatos: int, max_pares: int, zeros: int | None, que: str) -> None:
+    if zeros is None and consultas * candidatos > max_pares:
+        raise ValueError(
+            f"{que}: {consultas * candidatos} judged pairs exceed max_pairs={max_pares}; "
+            "reduce sizes or pass zeros_per_query"
+        )
+
+
 def juicios_de_variantes(
-    juicios_base: Mapping[str, object], referencias: Sequence[Mapping[str, object]], poor_kind: str
+    juicios_base: Mapping[str, object], referencias: Sequence[Mapping[str, object]], poor_kind: str,
+    *, max_pares: int = 3_000_000, ceros_por_consulta: int | None = None,
 ) -> dict[str, object] | None:
-    """Mismos grados que la consulta completa, con el id de la variante empobrecida."""
+    """Mismos grados que la consulta completa; las variantes candidatas heredan el de su caso base.
+
+    Biblioteca del archivo: casos completos + variantes de ``poor_kind``. La variante usa
+    como ``run_id`` el id de su caso base, de modo que el evaluador excluye al mueble
+    completo propio. Las variantes de otros casos son candidatas y se juzgan con el grado
+    de su base respecto a la base de la consulta (cobertura completa).
+    """
     por_base = {c["consulta_id"]: c for c in juicios_base["consultas"]}  # type: ignore[index, union-attr]
+    variantes = _variantes_de(referencias, poor_kind)
+    variante_de_base = {str(r["variant_of"]): str(r["id"]) for r in variantes}
+    completas = sum(1 for r in referencias if r.get("variant_of") is None)
+    _comprobar_pares(len(variantes), completas + len(variantes) - 1, max_pares, ceros_por_consulta, f"variants {poor_kind}")
     consultas = []
-    for ref in sorted(referencias, key=lambda r: str(r["id"])):
-        if ref.get("variant_of") is None or ref.get("poor_kind") != poor_kind:
-            continue
+    for ref in variantes:
         base = por_base.get(ref["variant_of"])
         if base is None:
             continue
+        relevancias = dict(base["relevancias"])
+        for base_id, variante_id in variante_de_base.items():
+            if variante_id != ref["id"] and base_id in base["relevancias"]:
+                relevancias[variante_id] = base["relevancias"][base_id]
         consultas.append({
             "consulta_id": ref["id"],
-            "relevancias": dict(base["relevancias"]),
-            "nota": f"Variante empobrecida ({poor_kind}) de {ref['variant_of']}; mismos grados que la consulta completa. "
-                    "La completa queda excluida si su run_id en la biblioteca es el del caso base.",
+            "relevancias": dict(sorted(relevancias.items())),
+            "nota": f"Variante empobrecida ({poor_kind}) de {ref['variant_of']}; mismos grados que la consulta completa; "
+                    "las variantes candidatas heredan el grado de su base. Con run_id de la variante = id de su base, "
+                    "la completa propia queda excluida.",
         })
     if not consultas:
         return None
@@ -453,25 +479,31 @@ def juicios_de_variantes(
 
 
 def juicios_identidad(
-    referencias: Sequence[Mapping[str, object]], poor_kind: str, *, version: str
+    referencias: Sequence[Mapping[str, object]], poor_kind: str, *, version: str,
+    max_pares: int = 3_000_000, ceros_por_consulta: int | None = None,
 ) -> dict[str, object] | None:
     """Tarea entre vistas: la consulta es una variante empobrecida y solo su mueble completo es relevante.
 
     Mide si un método reconoce el mismo mueble con menos vistas (el caso difícil que el
     laboratorio semántico midió con Hit@1=0,30). Es una tarea distinta de la similitud
     graduada: aquí el caso completo propio es **el** acierto (grado 2), el resto grado 0.
-    La biblioteca debe dar a la variante un ``run_id`` distinto del de su base.
+    Biblioteca del archivo: casos completos + variantes de ``poor_kind``, cada una con un
+    ``run_id`` distinto del de su base. Las variantes de otros casos se juzgan con 0.
     """
     completas = sorted(str(r["id"]) for r in referencias if r.get("variant_of") is None)
+    variantes = _variantes_de(referencias, poor_kind)
+    _comprobar_pares(len(variantes), len(completas) + len(variantes) - 1, max_pares, ceros_por_consulta, f"identity {poor_kind}")
     consultas = []
-    for ref in sorted(referencias, key=lambda r: str(r["id"])):
-        if ref.get("variant_of") is None or ref.get("poor_kind") != poor_kind:
-            continue
-        relevancias = {cid: 0 for cid in completas}
-        relevancias[str(ref["variant_of"])] = 2
+    for ref in variantes:
+        propio = str(ref["variant_of"])
+        otros = sorted([c for c in completas if c != propio] + [str(v["id"]) for v in variantes if v["id"] != ref["id"]])
+        if ceros_por_consulta is not None:
+            otros = otros[:ceros_por_consulta]
+        relevancias = {cid: 0 for cid in otros}
+        relevancias[propio] = 2
         consultas.append({
-            "consulta_id": ref["id"], "relevancias": relevancias,
-            "nota": f"Identidad entre vistas ({poor_kind}): solo {ref['variant_of']} es el mismo mueble.",
+            "consulta_id": ref["id"], "relevancias": dict(sorted(relevancias.items())),
+            "nota": f"Identidad entre vistas ({poor_kind}): solo {propio} es el mismo mueble.",
         })
     if not consultas:
         return None
@@ -488,6 +520,11 @@ def juicios_identidad(
 
 
 # ---------------------------------------------------------------------- escritura
+
+
+def _id_opaco(semilla: str, partition: str, posicion: int, tipo: str) -> str:
+    """Id público de longitud fija derivado de la semilla (privada) y no reconstruible sin ella."""
+    return f"{PREFIJO_ID}-" + _digest(f"{semilla}|case-id|{partition}|{posicion}|{tipo}".encode())[:12]
 
 
 def _referencia(case_id: str, grupo: str, modelo: ModeloAnalizado) -> dict[str, object]:
@@ -583,7 +620,7 @@ def generar_corpus(
         referencias: list[dict[str, object]] = []
 
         def emitir(case_id: str, fisicas: Sequence[Sequence[float]], partition: str, vistas: tuple[str, ...],
-                   *, base: str | None, poor_kind: str | None) -> None:
+                   *, base: str | None) -> None:
             ruta = public_stage / "dxf" / f"{case_id}.dxf"
             _write_assembled_dxf(ruta, [list(b) for b in fisicas], vistas)
             view_kind = VIEW_KIND_EMPOBRECIDA if base else VIEW_KIND_COMPLETA
@@ -591,26 +628,23 @@ def generar_corpus(
                 "id": case_id, "file": f"dxf/{case_id}.dxf", "format": "dxf", "unit": "mm",
                 "view_kind": view_kind, "instruction": PUBLIC_INSTRUCTION, "sha256": _digest(ruta.read_bytes()),
             }
-            casos.append({
-                **metadata, "partition": partition,
-                "variant": "empobrecida" if base else "completa",
-                "poor_kind": poor_kind, "variant_of": base,
-            })
+            # La relación variante-base, el tipo y la sal de los ids solo viven en references.json.
+            casos.append({**metadata, "partition": partition})
             _archive_case(ruta, {k: metadata[k] for k in ("id", "file", "format", "unit", "view_kind", "instruction", "sha256")},
                           public_stage / "agent_cases" / f"{case_id}.zip")
 
         for partition in PARTICIONES:
             for posicion, modelo in enumerate(muestra[partition], 1):
-                case_id = f"{PREFIJO_ID}-{partition}-{posicion:05d}"
-                emitir(case_id, modelo.fisicas, partition, ("front", "top", "side"), base=None, poor_kind=None)
+                case_id = _id_opaco(semilla, partition, posicion, "completa")
+                emitir(case_id, modelo.fisicas, partition, ("front", "top", "side"), base=None)
                 referencias.append(_referencia(case_id, grupo_de[modelo.filename], modelo))
                 if poor_variants and partition in poor_partitions:
                     for kind, vistas in sorted(VISTAS_EMPOBRECIDAS.items()):
-                        variant_id = f"{case_id}-{kind}"
-                        emitir(variant_id, modelo.fisicas, partition, vistas, base=case_id, poor_kind=kind)
+                        variant_id = _id_opaco(semilla, partition, posicion, kind)
+                        emitir(variant_id, modelo.fisicas, partition, vistas, base=case_id)
                         referencias.append({
                             "id": variant_id, "partition": partition, "variant_of": case_id, "poor_kind": kind,
-                            "group_id": grupo_de[modelo.filename],
+                            "view_kind": VIEW_KIND_EMPOBRECIDA, "group_id": grupo_de[modelo.filename],
                         })
         casos.sort(key=lambda c: str(c["id"]))
         referencias.sort(key=lambda r: str(r["id"]))
@@ -623,18 +657,34 @@ def generar_corpus(
         from backend.app.precedentes.evaluacion import ConjuntoJuicios
         ConjuntoJuicios.model_validate(juicios)
         archivos_juicios = {"juicios_test.json": juicios}
+        ids_completos = sorted(str(r["id"]) for r in referencias if r["variant_of"] is None)
+        bibliotecas: dict[str, object] = {"juicios_test.json": {"case_ids": ids_completos, "run_id_overrides": {}}}
         if poor_variants:
             for kind in sorted(VISTAS_EMPOBRECIDAS):
-                derivados = juicios_de_variantes(juicios, referencias, kind)
+                variantes = _variantes_de(referencias, kind)
+                ids_con_variantes = sorted(ids_completos + [str(v["id"]) for v in variantes])
+                derivados = juicios_de_variantes(
+                    juicios, referencias, kind, max_pares=max_pairs, ceros_por_consulta=zeros_per_query
+                )
                 if derivados is not None:
                     ConjuntoJuicios.model_validate(derivados)
-                    archivos_juicios[f"juicios_test_{kind}.json"] = derivados
-                identidad = juicios_identidad(referencias, kind, version=version_juicios)
+                    nombre = f"juicios_test_{kind}.json"
+                    archivos_juicios[nombre] = derivados
+                    bibliotecas[nombre] = {
+                        "case_ids": ids_con_variantes,
+                        "run_id_overrides": {str(v["id"]): str(v["variant_of"]) for v in variantes},
+                    }
+                identidad = juicios_identidad(
+                    referencias, kind, version=version_juicios, max_pares=max_pairs, ceros_por_consulta=zeros_per_query
+                )
                 if identidad is not None:
                     ConjuntoJuicios.model_validate(identidad)
-                    archivos_juicios[f"juicios_identidad_{kind}.json"] = identidad
+                    nombre = f"juicios_identidad_{kind}.json"
+                    archivos_juicios[nombre] = identidad
+                    bibliotecas[nombre] = {"case_ids": ids_con_variantes, "run_id_overrides": {}}
         for nombre, contenido in archivos_juicios.items():
             _write_json(private_stage / "juicios" / nombre, contenido)
+        _write_json(private_stage / "juicios" / "bibliotecas.json", bibliotecas)
 
         completas = [r for r in referencias if r["variant_of"] is None]
         conteos = {
@@ -647,7 +697,6 @@ def generar_corpus(
         }
         manifiesto_base = {
             "generator_version": GENERATOR_VERSION,
-            "seed": semilla,
             "source_dataset": "manycore-research/PlankAssembly",
             "source_revision": source_revision or "not declared (not verifiable offline)",
             "partitions": conteos,
@@ -662,13 +711,13 @@ def generar_corpus(
         _write_json(public_stage / "manifest.json", {
             **manifiesto_base,
             "cases_sha256": _digest((public_stage / "cases.json").read_bytes()),
-            "poor_variants": sorted(VISTAS_EMPOBRECIDAS) if poor_variants else [],
         })
         _write_json(private_stage / "references.json", referencias)
         _write_json(private_stage / "audit.json", auditoria)
         sin_normal = sum(1 for m in (m for p in PARTICIONES for m in muestra[p]) if not m.has_normal)
         _write_json(private_stage / "manifest.json", {
             **manifiesto_base,
+            "seed": semilla,
             "source_split_sha256": _split_hashes(source),
             "audit_summary": auditoria["partitions"],
             "unlisted_json_excluded": auditoria["unlisted_json_excluded"],
@@ -685,9 +734,10 @@ def generar_corpus(
                 "queries_without_relevant": sum(
                     1 for c in juicios["consultas"] if not any(g >= 1 for g in c["relevancias"].values())  # type: ignore[union-attr]
                 ),
-                "biblioteca_contract": "LibraryItem.id == case id; distinct run_id per case; one descriptor_version; "
-                                       "graded poor-variant files (juicios_test_<kind>): variant run_id == base case id; "
-                                       "identity files (juicios_identidad_<kind>): variant run_id != base case id",
+                "biblioteca_contract": "juicios/bibliotecas.json lists, per judgments file, the case_ids the library must "
+                                       "contain and run_id_overrides (default run_id == id); one descriptor_version; "
+                                       "graded poor-variant files: variant run_id == base case id; "
+                                       "identity files: variant run_id != base case id",
             },
             "public_manifest_sha256": _digest((public_stage / "manifest.json").read_bytes()),
             "public_cases_sha256": _digest((public_stage / "cases.json").read_bytes()),

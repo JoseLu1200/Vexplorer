@@ -151,14 +151,14 @@ def test_determinismo_semilla_y_tamano(fuente, tmp_path):
     # el muestreo depende de la semilla (alguna de las semillas cambia el orden de train o test)
     muestras = [set(fuentes(_generar(fuente, tmp_path, f"s{s}", sizes={"train": 2, "valid": 1, "test": 1}, seed=s)[1])) for s in range(6)]
     assert len({frozenset(m) for m in muestras}) > 1
-    assert otra[2]["seed"] == "8"
+    assert _json(otra[1] / "manifest.json")["seed"] == "8"
 
 
 def test_muestreo_estable_por_prefijo(fuente, tmp_path):
     pequeno = _json(_generar(fuente, tmp_path, "p", sizes={"train": 2, "valid": 1, "test": 1})[1] / "references.json")
     grande = _json(_generar(fuente, tmp_path, "g", sizes={"train": 4, "valid": 1, "test": 3})[1] / "references.json")
     assert {r["source_file"] for r in pequeno} <= {r["source_file"] for r in grande}
-    assert [r["id"] for r in pequeno if r["partition"] == "train"] == ["pa-train-00001", "pa-train-00002"]
+    assert {r["id"] for r in pequeno} <= {r["id"] for r in grande}  # ids estables por posición
 
 
 def test_aislamiento_publico_privado_sin_fugas(fuente, tmp_path):
@@ -186,7 +186,7 @@ def test_aislamiento_publico_privado_sin_fugas(fuente, tmp_path):
     # la referencia, los grupos y los juicios solo existen en la parte privada
     assert (priv / "references.json").exists() and (priv / "juicios" / "juicios_test.json").exists()
     assert set(_json(pub / "manifest.json")) <= {
-        "generator_version", "seed", "source_dataset", "source_revision", "partitions", "complete_cases",
+        "generator_version", "source_dataset", "source_revision", "partitions", "complete_cases",
         "poor_variant_cases", "view_kind", "inference_evaluated", "redistribution_authorized", "license_notice",
         "cases_sha256", "poor_variants",
     }
@@ -264,28 +264,76 @@ def test_juicios_bien_formados_y_sin_duplicado_propio(fuente, tmp_path):
     assert set(mismos_grados) <= {0, 1, 2} and 2 in mismos_grados
 
 
+def _refs_por_id(priv: Path) -> dict[str, dict]:
+    return {r["id"]: r for r in _json(priv / "references.json")}
+
+
 def test_variantes_empobrecidas_marcadas_y_con_juicios_propios(fuente, tmp_path):
     pub, priv, manifiesto = _generar(fuente, tmp_path, poor_variants=True)
     casos = {c["id"]: c for c in _json(pub / "cases.json")}
-    variantes = [c for c in casos.values() if c["variant"] == "empobrecida"]
-    assert variantes and all(c["partition"] == "test" and c["variant_of"] in casos for c in variantes)
-    assert {c["poor_kind"] for c in variantes} == {"solo_frontal", "frontal_y_planta"}
+    refs = _refs_por_id(priv)
+    variantes = [r for r in refs.values() if r["variant_of"]]
+    assert variantes and all(r["partition"] == "test" and r["variant_of"] in casos for r in variantes)
+    assert {r["poor_kind"] for r in variantes} == {"solo_frontal", "frontal_y_planta"}
     assert manifiesto["poor_variant_cases"] == len(variantes)
-    base = next(c for c in variantes if c["poor_kind"] == "solo_frontal")
-    doc = ezdxf.readfile(pub / base["file"])
+    una = next(r for r in variantes if r["poor_kind"] == "solo_frontal")
+    publico = casos[una["id"]]
+    doc = ezdxf.readfile(pub / publico["file"])
     assert {e.dxf.layer for e in doc.modelspace()} == {"ORTHO_FRONT"}
-    completo = ezdxf.readfile(pub / casos[base["variant_of"]]["file"])
+    completo = ezdxf.readfile(pub / casos[una["variant_of"]]["file"])
     assert {e.dxf.layer for e in completo.modelspace()} == {"ORTHO_FRONT", "ORTHO_TOP", "ORTHO_SIDE"}
-    assert base["view_kind"] == "assembled_orthographic_partial" and base["sha256"] != casos[base["variant_of"]]["sha256"]
+    assert publico["view_kind"] == "assembled_orthographic_partial"
+    assert publico["sha256"] != casos[una["variant_of"]]["sha256"]
     principal = ConjuntoJuicios.model_validate_json((priv / "juicios" / "juicios_test.json").read_text(encoding="utf-8"))
-    assert not any(c.consulta_id in {v["id"] for v in variantes} for c in principal.consultas)
+    ids_variantes = {r["id"] for r in variantes}
+    assert not any(c.consulta_id in ids_variantes for c in principal.consultas)
+    assert not any(k in ids_variantes for c in principal.consultas for k in c.relevancias)
     frontal = ConjuntoJuicios.model_validate_json((priv / "juicios" / "juicios_test_solo_frontal.json").read_text(encoding="utf-8"))
     por_base = {c.consulta_id: c for c in principal.consultas}
+    de_base = {r["variant_of"]: r["id"] for r in variantes if r["poor_kind"] == "solo_frontal"}
     for c in frontal.consultas:
-        origen = casos[c.consulta_id]["variant_of"]
-        assert c.relevancias == por_base[origen].relevancias
+        origen = refs[c.consulta_id]["variant_of"]
         assert origen not in c.relevancias  # la completa propia nunca es candidata juzgada
-        assert not any(k in casos and casos[k]["variant"] == "empobrecida" for k in c.relevancias)
+        for candidato, grado in c.relevancias.items():
+            if candidato in ids_variantes:
+                # una variante candidata hereda el grado de su caso base
+                assert refs[candidato]["poor_kind"] == "solo_frontal" and candidato != c.consulta_id
+                assert grado == por_base[origen].relevancias[refs[candidato]["variant_of"]]
+            else:
+                assert grado == por_base[origen].relevancias[candidato]
+        esperados = {de_base[b] for b in de_base if b != origen}
+        assert esperados <= set(c.relevancias)
+
+
+def test_ids_publicos_opacos_y_sin_relacion_variante_base(fuente, tmp_path):
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    ids = [c["id"] for c in _json(pub / "cases.json")]
+    assert len(ids) == len(set(ids)) and len({len(i) for i in ids}) == 1  # longitud fija
+    assert not any(a != b and b.startswith(a) for a in ids for b in ids)  # ningún id es prefijo de otro
+    refs = _refs_por_id(priv)
+    for r in refs.values():
+        if r["variant_of"]:
+            assert r["variant_of"] not in r["id"] and r["id"] not in r["variant_of"]
+    # sin la semilla privada los ids no se reconstruyen: otra semilla da otros ids
+    otros = {c["id"] for c in _json(_generar(fuente, tmp_path, "otra", poor_variants=True, seed=99)[0] / "cases.json")}
+    assert not set(ids) & otros
+    claves_publicas = set()
+    for c in _json(pub / "cases.json"):
+        claves_publicas |= set(c)
+    assert claves_publicas == {"id", "file", "format", "unit", "view_kind", "instruction", "sha256", "partition"}
+    assert "seed" not in _json(pub / "manifest.json") and _json(priv / "manifest.json")["seed"] == "7"
+    base_ids = {r["variant_of"] for r in refs.values() if r["variant_of"]}
+    variantes = {r["id"] for r in refs.values() if r["variant_of"]}
+    for archivo in sorted(pub.rglob("*")):
+        if not archivo.is_file():
+            continue
+        contenidos = [archivo.read_bytes()]
+        if archivo.suffix == ".zip":
+            with zipfile.ZipFile(archivo) as z:
+                contenidos += [z.read(n) for n in z.namelist()]
+        for contenido in contenidos:
+            for prohibido in (b"variant_of", b"poor_kind", b"\"variant\"", b"solo_frontal", b"frontal_y_planta"):
+                assert prohibido not in contenido, (archivo.name, prohibido)
 
 
 def test_tope_de_pares_y_ceros_por_consulta(fuente, tmp_path):
@@ -332,16 +380,16 @@ def test_modelo_invalido_se_audita_sin_abortar(tmp_path):
     assert [i["source_file"] for i in audit["invalid_models"]] == ["tr_b.json"]
 
 
-def _biblioteca_e2e(pub: Path, priv: Path, destino: Path) -> Path:
-    refs = _json(priv / "references.json")
+def _biblioteca_para(priv: Path, nombre_juicios: str, destino: Path) -> Path:
+    """Biblioteca según el contrato machine-readable `juicios/bibliotecas.json` del corpus."""
+    contrato = _json(priv / "juicios" / "bibliotecas.json")[nombre_juicios]
+    refs = _refs_por_id(priv)
     items = []
-    for r in refs:
-        base = next((x for x in refs if x["id"] == r["variant_of"]), r) if r["variant_of"] else r
-        if r["variant_of"]:
-            continue  # la biblioteca solo contiene casos completos; las variantes son consultas
-        f = base["features"]
+    for case_id in contrato["case_ids"]:
+        r = refs[case_id]
+        f = (refs[r["variant_of"]] if r["variant_of"] else r)["features"]
         items.append({
-            "id": r["id"], "run_id": r["id"], "result_revision": 1, "label": r["id"],
+            "id": case_id, "run_id": contrato["run_id_overrides"].get(case_id, case_id), "result_revision": 1, "label": case_id,
             "descriptor": {
                 "descriptor_version": "furniture-v1", "family": "unknown",
                 "dimensions": {"width_mm": f["ancho_mm"], "depth_mm": f["fondo_mm"], "height_mm": f["alto_mm"]},
@@ -350,46 +398,79 @@ def _biblioteca_e2e(pub: Path, priv: Path, destino: Path) -> Path:
             },
             "descriptor_fingerprint": "0" * 64, "created_at": "2026-01-01T00:00:00+00:00",
         })
-    ruta = destino / "biblioteca.json"
+    ruta = destino / f"biblioteca-{nombre_juicios}"
     ruta.write_text(json.dumps({"items": items}), encoding="utf-8")
     return ruta
 
 
-def test_extremo_a_extremo_con_evaluar_recuperacion(fuente, tmp_path, monkeypatch, capsys):
-    pub, priv, _ = _generar(fuente, tmp_path)
-    juicios_path = priv / "juicios" / "juicios_test.json"
-    juicios = _json(juicios_path)
-    por_consulta = {c["consulta_id"]: c["relevancias"] for c in juicios["consultas"]}
-    biblioteca = _biblioteca_e2e(pub, priv, tmp_path)
+def _ejecutar_oraculo(priv, nombre, tmp_path, monkeypatch, capsys):
+    ruta = priv / "juicios" / nombre
+    objetivo = {c["consulta_id"]: c["relevancias"] for c in _json(ruta)["consultas"]}
+    biblioteca = _biblioteca_para(priv, nombre, tmp_path)
+    metodo = "oraculo-" + nombre
+    monkeypatch.setitem(
+        evaluar_recuperacion.METODOS, metodo,
+        lambda q, cs: tuple((c.id, float(objetivo[q.id][c.id])) for c in cs),  # KeyError si falta un juicio
+    )
+    assert evaluar_recuperacion.main(["--biblioteca", str(biblioteca), "--juicios", str(ruta), "--k", "3", "--metodo", metodo]) == 0
+    return json.loads(capsys.readouterr().out)
 
-    # Recuperador "oráculo": puntúa cada candidato con su grado juzgado; prueba el cableado de ids.
-    def oraculo(consulta, candidatos):
-        grados = por_consulta[consulta.id]
-        return tuple((c.id, float(grados[c.id])) for c in candidatos)
 
-    monkeypatch.setitem(evaluar_recuperacion.METODOS, "oraculo", oraculo)
-    assert evaluar_recuperacion.main(["--biblioteca", str(biblioteca), "--juicios", str(juicios_path), "--k", "3", "--metodo", "oraculo"]) == 0
-    informe = json.loads(capsys.readouterr().out)
-    assert informe["origen_juicios"] == "derived_reference" and informe["aviso"]
-    assert informe["advertencias"] == []
-    agregadas = informe["agregadas"]
-    assert agregadas["consultas"] == len(por_consulta)
-    assert agregadas["cobertura_juicios"] == 1.0
-    assert agregadas["ndcg_k"] in (1.0, None)  # None solo si ninguna consulta tiene relevantes
-    assert agregadas["consultas_sin_relevantes"] < agregadas["consultas"]
-    assert all(e["misma_consulta"] == 1 and e["mismo_run"] == 0 for e in informe["exclusiones"])
+def test_extremo_a_extremo_con_todos_los_archivos_de_juicios(fuente, tmp_path, monkeypatch, capsys):
+    _, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    nombres = sorted(p.name for p in (priv / "juicios").glob("juicios_*.json"))
+    assert nombres == ["juicios_identidad_frontal_y_planta.json", "juicios_identidad_solo_frontal.json",
+                       "juicios_test.json", "juicios_test_frontal_y_planta.json", "juicios_test_solo_frontal.json"]
+    for nombre in nombres:
+        informe = _ejecutar_oraculo(priv, nombre, tmp_path, monkeypatch, capsys)
+        assert informe["origen_juicios"] == "derived_reference" and informe["aviso"]
+        assert informe["advertencias"] == [], nombre
+        agregadas = informe["agregadas"]
+        assert agregadas["cobertura_juicios"] == 1.0, nombre  # ningún candidato queda sin juicio
+        assert agregadas["candidatos_sin_juicio"] == 0
+        assert agregadas["consultas"] == len(_json(priv / "juicios" / nombre)["consultas"])
+        assert agregadas["ndcg_k"] in (1.0, None)
+        if nombre.startswith("juicios_identidad"):
+            assert agregadas["precision_k"] == pytest.approx(1 / 3) and agregadas["mrr"] == 1.0
+        else:
+            assert agregadas["consultas_sin_relevantes"] < agregadas["consultas"]
+        assert all(e["misma_consulta"] == 1 for e in informe["exclusiones"])
+    # el contrato excluye al mueble completo propio solo donde corresponde
+    refs = _refs_por_id(priv)
+    graduado = _ejecutar_oraculo(priv, "juicios_test_solo_frontal.json", tmp_path, monkeypatch, capsys)
+    assert all(e["mismo_run"] == 1 for e in graduado["exclusiones"])
+    identidad = _ejecutar_oraculo(priv, "juicios_identidad_solo_frontal.json", tmp_path, monkeypatch, capsys)
+    assert all(e["mismo_run"] == 0 for e in identidad["exclusiones"])
+    assert refs  # los ids usados existen en la referencia
 
-    # Recuperador trivial real (nº de tableros): el informe se produce y es determinista.
+
+def test_recuperador_trivial_es_determinista(fuente, tmp_path, monkeypatch, capsys):
+    _, priv, _ = _generar(fuente, tmp_path)
+    ruta = priv / "juicios" / "juicios_test.json"
+    biblioteca = _biblioteca_para(priv, "juicios_test.json", tmp_path)
+
     def trivial(consulta, candidatos):
         return tuple((c.id, -abs(c.descriptor.roles[0].quantity - consulta.descriptor.roles[0].quantity)) for c in candidatos)
 
     monkeypatch.setitem(evaluar_recuperacion.METODOS, "trivial", trivial)
-    argv = ["--biblioteca", str(biblioteca), "--juicios", str(juicios_path), "--k", "3", "--metodo", "trivial"]
+    argv = ["--biblioteca", str(biblioteca), "--juicios", str(ruta), "--k", "3", "--metodo", "trivial"]
     assert evaluar_recuperacion.main(argv) == 0
     primero = capsys.readouterr().out
     assert evaluar_recuperacion.main(argv) == 0
     assert capsys.readouterr().out == primero
     assert json.loads(primero)["agregadas"]["cobertura_juicios"] == 1.0
+
+
+def test_identidad_respeta_max_pairs(fuente, tmp_path):
+    _, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    refs = list(_refs_por_id(priv).values())
+    with pytest.raises(ValueError, match="max_pairs"):
+        plankassembly_corpus.juicios_identidad(refs, "solo_frontal", version="v", max_pares=5)
+    recortado = plankassembly_corpus.juicios_identidad(refs, "solo_frontal", version="v", max_pares=5, ceros_por_consulta=2)
+    assert all(len(c["relevancias"]) == 3 and 2 in c["relevancias"].values() for c in recortado["consultas"])
+    with pytest.raises(ValueError, match="max_pairs"):
+        _generar(fuente, tmp_path, "id", poor_variants=True, max_pairs=30)
+    assert not (tmp_path / "pub-id").exists()
 
 
 def test_cli_principal(fuente, tmp_path, capsys):
@@ -402,32 +483,3 @@ def test_cli_principal(fuente, tmp_path, capsys):
     manifiesto = json.loads(capsys.readouterr().out)
     assert manifiesto["source_revision"].startswith("d1d4308") and manifiesto["partitions"]["test"]["sampled"] == 2
     assert (priv / "juicios" / "juicios_test.json").exists()
-
-
-def test_juicios_de_identidad_entre_vistas(fuente, tmp_path, monkeypatch, capsys):
-    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
-    casos = {c["id"]: c for c in _json(pub / "cases.json")}
-    for kind in ("solo_frontal", "frontal_y_planta"):
-        ruta = priv / "juicios" / f"juicios_identidad_{kind}.json"
-        juicios = ConjuntoJuicios.model_validate_json(ruta.read_text(encoding="utf-8"))
-        assert juicios.origen == "derived_reference"
-        for c in juicios.consultas:
-            base = casos[c.consulta_id]["variant_of"]
-            assert c.relevancias[base] == 2 and sum(g == 2 for g in c.relevancias.values()) == 1
-            assert all(g == 0 for k, g in c.relevancias.items() if k != base)
-    # extremo a extremo: la biblioteca de variantes + completas con run_id propio; oráculo = acierto 1.0
-    ruta = priv / "juicios" / "juicios_identidad_solo_frontal.json"
-    juicios = _json(ruta)
-    refs = _json(priv / "references.json")
-    items = _json(_biblioteca_e2e(pub, priv, tmp_path))["items"]
-    plantilla = items[0]
-    for r in refs:
-        if r["variant_of"] and r["poor_kind"] == "solo_frontal":
-            items.append({**plantilla, "id": r["id"], "run_id": r["id"], "label": r["id"]})
-    biblioteca = tmp_path / "bib-identidad.json"
-    biblioteca.write_text(json.dumps({"items": items}), encoding="utf-8")
-    objetivo = {c["consulta_id"]: c["relevancias"] for c in juicios["consultas"]}
-    monkeypatch.setitem(evaluar_recuperacion.METODOS, "oraculo2", lambda q, cs: tuple((c.id, float(objetivo[q.id].get(c.id, 0))) for c in cs))
-    assert evaluar_recuperacion.main(["--biblioteca", str(biblioteca), "--juicios", str(ruta), "--k", "1", "--metodo", "oraculo2"]) == 0
-    informe = json.loads(capsys.readouterr().out)
-    assert informe["agregadas"]["precision_k"] == 1.0 and informe["agregadas"]["mrr"] == 1.0
