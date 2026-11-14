@@ -18,9 +18,13 @@ No descarga ni escribe datos en Git: las salidas deben ir fuera del repositorio
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import math
+import secrets
 import shutil
+import sys
 import tempfile
 from collections.abc import Hashable, Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -37,7 +41,7 @@ from tools.prepare_plankassembly import (
     _write_json,
 )
 
-GENERATOR_VERSION = "plankassembly-corpus-1"
+GENERATOR_VERSION = "plankassembly-corpus-2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # Orden de prioridad al resolver grupos que cruzan particiones: se conserva la primera.
 PARTICIONES = ("train", "valid", "test")
@@ -197,13 +201,45 @@ def _escala_cercana(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float
     )
 
 
-def _firmas(fisicas: Sequence[Sequence[float]], tolerancia_mm: float, paso_escala: float) -> tuple[str, tuple[Hashable, ...]]:
-    """Hash exacto (invariante a traslación) y claves de agrupación de duplicados.
+def _cercanos(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
+    return _dimensiones_cercanas(a, b, tolerancia_mm) or _escala_cercana(a, b, tolerancia_mm)
 
-    Claves: exacta (mm, 0.1), mismas dimensiones por tablero a ``tolerancia_mm`` y
-    reescalado isótropo (dimensiones normalizadas por la mayor extensión, ``paso_escala``).
-    Las dos últimas usan dos rejillas desplazadas medio paso: reducen, sin eliminar, los
-    fallos por frontera de celda.
+
+def _agrupar_cliques(modelos: Sequence[ModeloAnalizado], tolerancia_mm: float) -> list[list[ModeloAnalizado]]:
+    """Agrupación voraz determinista (orden de entrada): cada grupo es un clique de modelos cercanos.
+
+    Los candidatos salen de las claves de rejilla; el primer grupo cuyos miembros (por firma de
+    dimensiones distinta) estén todos cercanos acoge al modelo. El primero del grupo es su representante.
+    """
+    grupos: list[list[ModeloAnalizado]] = []
+    firmas: list[list[ModeloAnalizado]] = []
+    vistas: list[set[tuple[object, float]]] = []
+    por_clave: dict[Hashable, dict[int, None]] = {}
+    for modelo in modelos:
+        candidatos = sorted({g for clave in modelo.claves for g in por_clave.get(clave, ())})
+        destino = next((g for g in candidatos if all(_cercanos(x, modelo, tolerancia_mm) for x in firmas[g])), None)
+        if destino is None:
+            destino = len(grupos)
+            grupos.append([])
+            firmas.append([])
+            vistas.append(set())
+        grupos[destino].append(modelo)
+        firma = (modelo.dims, modelo.mayor)
+        if firma not in vistas[destino]:
+            vistas[destino].add(firma)
+            firmas[destino].append(modelo)
+        for clave in modelo.claves:
+            por_clave.setdefault(clave, {})[destino] = None
+    return grupos
+
+
+def _firmas(fisicas: Sequence[Sequence[float]], tolerancia_mm: float, paso_escala: float) -> tuple[str, tuple[Hashable, ...]]:
+    """Hash exacto (invariante a traslación, solo informativo) y claves de rejilla para proponer candidatos.
+
+    Claves: mismas dimensiones por tablero a ``tolerancia_mm`` y reescalado isótropo
+    (dimensiones normalizadas por la mayor extensión, ``paso_escala``), cada una con dos
+    rejillas desplazadas medio paso: reducen, sin eliminar, los fallos por frontera de celda.
+    Solo proponen pares; la unión exige verificación (``_cercanos``).
     """
     xmin = min(b[0] for b in fisicas)
     ymin = min(b[1] for b in fisicas)
@@ -216,7 +252,7 @@ def _firmas(fisicas: Sequence[Sequence[float]], tolerancia_mm: float, paso_escal
     mayor = max(
         max(b[3] for b in fisicas) - xmin, max(b[4] for b in fisicas) - ymin, max(b[5] for b in fisicas) - zmin
     )
-    claves: list[Hashable] = [("exacta", exact_hash)]
+    claves: list[Hashable] = []
     for etiqueta, paso, factor in (("dim", tolerancia_mm, 1.0), ("escala", paso_escala, 1.0 / mayor)):
         for desplazamiento in (0.0, 0.5):
             claves.append((
@@ -224,23 +260,6 @@ def _firmas(fisicas: Sequence[Sequence[float]], tolerancia_mm: float, paso_escal
                 tuple(tuple(_rodear(d * factor / paso + desplazamiento) for d in plank) for plank in dims),
             ))
     return exact_hash, tuple(claves)
-
-
-class _UnionFind:
-    def __init__(self, size: int) -> None:
-        self._parent = list(range(size))
-
-    def find(self, item: int) -> int:
-        while self._parent[item] != item:
-            self._parent[item] = self._parent[self._parent[item]]
-            item = self._parent[item]
-        return item
-
-    def union(self, left: int, right: int) -> None:
-        a, b = self.find(left), self.find(right)
-        if a != b:
-            # La raíz menor mantiene el resultado independiente del orden de las uniones.
-            self._parent[max(a, b)] = min(a, b)
 
 
 @dataclass(frozen=True)
@@ -331,69 +350,54 @@ def auditar_universo(
                 claves=claves, dims=dims, mayor=mayor, features=calcular_features(fisicas), categoria=categoria, model=model,
             ))
 
-    # Las rejillas solo proponen candidatos; cada unión no exacta se verifica por pares frente a los
-    # "líderes" del cubo (sin cadenas dentro de un cubo; cada unión sigue siendo transitiva entre cubos).
-    union = _UnionFind(len(analizados))
-    cubos: dict[Hashable, list[int]] = {}
-    for indice, modelo in enumerate(analizados):
-        for clave in modelo.claves:
-            cubos.setdefault(clave, []).append(indice)
-    for clave, miembros in cubos.items():
-        if len(miembros) < 2:
-            continue
-        if clave[0] == "exacta":
-            for indice in miembros[1:]:
-                union.union(miembros[0], indice)
-            continue
-        cercano = _dimensiones_cercanas if clave[0] == "dim" else _escala_cercana
-        lideres: list[int] = []
-        for indice in miembros:
-            for lider in lideres:
-                if cercano(analizados[lider], analizados[indice], tolerancia_mm):
-                    union.union(lider, indice)
-                    break
-            else:
-                lideres.append(indice)
-    grupos: dict[int, list[int]] = {}
-    for indice in range(len(analizados)):
-        grupos.setdefault(union.find(indice), []).append(indice)
-
+    # Agrupación por cliques: un modelo entra en un grupo solo si está a <= tolerancia de TODOS
+    # los miembros (diámetro acotado, sin cadenas). Las rejillas solo proponen grupos candidatos.
     prioridad = {p: i for i, p in enumerate(PARTICIONES)}
-    supervivientes: list[ModeloAnalizado] = []
     cruce: dict[str, list[str]] = {p: [] for p in PARTICIONES}
     dentro: dict[str, list[str]] = {p: [] for p in PARTICIONES}
     grupo_de: dict[str, str] = {}
-    grupos_cruzados = grupos_con_duplicados = 0
-    for raiz in sorted(grupos):
-        miembros = [analizados[i] for i in grupos[raiz]]
-        particiones = {m.partition for m in miembros}
-        if len(miembros) > 1:
-            grupos_con_duplicados += 1
-        if len(particiones) > 1:
-            grupos_cruzados += 1
-        ganadora = min(particiones, key=prioridad.__getitem__)
-        miembros.sort(key=lambda m: m.filename)
-        representante = next(m for m in miembros if m.partition == ganadora)
-        group_id = "grp-" + _digest(("group|" + representante.filename).encode())[:12]
-        for miembro in miembros:
-            if miembro.partition != ganadora:
-                cruce[miembro.partition].append(miembro.filename)
-            elif miembro is not representante:
-                dentro[miembro.partition].append(miembro.filename)
-        grupo_de[representante.filename] = group_id
-        supervivientes.append(representante)
-    supervivientes.sort(key=lambda m: (prioridad[m.partition], m.filename))
-
+    supervivientes: list[ModeloAnalizado] = []
     tamanos_grupo: dict[str, int] = {}
-    for miembros_idx in grupos.values():
-        clave_tam = str(len(miembros_idx))
-        tamanos_grupo[clave_tam] = tamanos_grupo.get(clave_tam, 0) + 1
-    mayor_grupo = max((len(m) for m in grupos.values()), default=0)
+    clusters_multiples: dict[str, list[str]] = {}
+    total_grupos = grupos_con_duplicados = cruzados = mayor_grupo = 0
+    indice_prioritario: dict[Hashable, list[ModeloAnalizado]] = {}
+    for partition in sorted(PARTICIONES, key=prioridad.__getitem__):
+        modelos = [m for m in analizados if m.partition == partition]
+        clusters = _agrupar_cliques(modelos, tolerancia_mm)
+        finales: list[ModeloAnalizado] = []
+        for miembros in clusters:
+            representante = miembros[0]
+            group_id = "grp-" + _digest(("group|" + representante.filename).encode())[:12]
+            total_grupos += 1
+            mayor_grupo = max(mayor_grupo, len(miembros))
+            tamanos_grupo[str(len(miembros))] = tamanos_grupo.get(str(len(miembros)), 0) + 1
+            if len(miembros) > 1:
+                grupos_con_duplicados += 1
+                clusters_multiples[group_id] = sorted(m.filename for m in miembros)
+            dentro[partition].extend(m.filename for m in miembros[1:])
+            grupo_de[representante.filename] = group_id
+            vecino = any(
+                _cercanos(otro, representante, tolerancia_mm)
+                for clave in representante.claves for otro in indice_prioritario.get(clave, ())
+            )
+            if vecino:
+                cruce[partition].append(representante.filename)
+                cruzados += 1
+            else:
+                finales.append(representante)
+        for modelo in finales:
+            for clave in modelo.claves:
+                indice_prioritario.setdefault(clave, []).append(modelo)
+        supervivientes.extend(finales)
+    supervivientes.sort(key=lambda m: (prioridad[m.partition], m.filename))
+    for lista in (*cruce.values(), *dentro.values()):
+        lista.sort()
+
     avisos: list[str] = []
     if mayor_grupo > max_group_size:
         mensaje = (
             f"largest duplicate group has {mayor_grupo} members (> max_group_size={max_group_size}): "
-            "possible chained parametric variants; review tolerance_mm/scale_step"
+            "many near-identical models; review tolerance_mm/scale_step"
         )
         if strict_groups:
             raise ValueError(mensaje)
@@ -414,18 +418,20 @@ def auditar_universo(
         "invalid_models": invalidos,
         "partitions": resumen,
         "duplicate_groups": {
-            "groups": len(grupos),
+            "groups": total_grupos,
             "groups_with_more_than_one_member": grupos_con_duplicados,
-            "groups_crossing_partitions": grupos_cruzados,
+            "cross_partition_models_dropped": cruzados,
             "size_distribution": dict(sorted(tamanos_grupo.items(), key=lambda par: int(par[0]))),
             "largest_group": mayor_grupo,
             "max_group_size": max_group_size,
             "tolerance_mm": tolerancia_mm,
             "scale_step": paso_escala,
-            "keys": ["exact_translated_mm_0.1", "per_plank_dims_within_tolerance_dual_grid", "isotropic_scale_dual_grid"],
-            "limitation": "Grid keys only propose candidates: pairs differing by >= step/2 per dimension in some axes can be missed, and anisotropic or parametric variants are not detected. Each proposed non-exact pair is verified (per-plank dimension difference <= tolerance_mm, or a single isotropic factor with residual <= tolerance_mm).",
+            "keys": ["per_plank_dims_within_tolerance_dual_grid", "isotropic_scale_dual_grid"],
+            "grouping": "within each partition, greedy clique clustering in filename order: a model joins a group only if it is close (per-plank dimension difference <= tolerance_mm, or a single isotropic factor with residual <= tolerance_mm) to every member, so the pairwise diameter is <= tolerance_mm. Valid/test representatives close to a surviving representative of a higher-priority partition are dropped (train > valid > test).",
+            "limitation": "Grid keys only propose candidates: pairs differing by >= step/2 per dimension in some axes can be missed, and anisotropic or parametric variants are not detected.",
         },
         "warnings": avisos,
+        "duplicate_clusters": clusters_multiples,
         "dropped_cross_split": cruce,
         "dropped_within_split_duplicate": dentro,
         "group_ids": grupo_de,
@@ -557,15 +563,25 @@ def juicios_identidad(
     Biblioteca del archivo: casos completos + variantes de ``poor_kind``, cada una con un
     ``run_id`` distinto del de su base. Las variantes de otros casos se juzgan con 0.
     """
+    por_id = {str(r["id"]): r for r in referencias}
     completas = sorted(str(r["id"]) for r in referencias if r.get("variant_of") is None)
     variantes = _variantes_de(referencias, poor_kind)
     _comprobar_pares(len(variantes), len(completas) + len(variantes) - 1, max_pares, ceros_por_consulta, f"identity {poor_kind}")
+
+    def _caracteristicas(case_id: str) -> Mapping[str, object]:
+        r = por_id[case_id]
+        return por_id[str(r["variant_of"])] if r.get("variant_of") is not None else r
+
     consultas = []
     for ref in variantes:
         propio = str(ref["variant_of"])
         otros = sorted([c for c in completas if c != propio] + [str(v["id"]) for v in variantes if v["id"] != ref["id"]])
         if ceros_por_consulta is not None:
-            otros = otros[:ceros_por_consulta]
+            # Como en construir_juicios: los ceros más cercanos (envolvente, histograma) son los más informativos.
+            def cercania(case_id: str, _base: Mapping[str, object] = por_id[propio]) -> tuple[float, int, str]:
+                par = _metricas_par(_base, _caracteristicas(case_id))
+                return (par[1], par[3], case_id)
+            otros = sorted(otros, key=cercania)[:ceros_por_consulta]
         relevancias = {cid: 0 for cid in otros}
         relevancias[propio] = 2
         consultas.append({
@@ -589,9 +605,19 @@ def juicios_identidad(
 # ---------------------------------------------------------------------- escritura
 
 
-def _id_opaco(semilla: str, partition: str, posicion: int, tipo: str) -> str:
-    """Id público de longitud fija derivado de la semilla (privada) y no reconstruible sin ella."""
-    return f"{PREFIJO_ID}-" + _digest(f"{semilla}|case-id|{partition}|{posicion}|{tipo}".encode())[:12]
+def _hmac(sal: str, mensaje: str) -> bytes:
+    return hmac.new(sal.encode("utf-8"), mensaje.encode("utf-8"), hashlib.sha256).digest()
+
+
+def _id_opaco(sal: str, partition: str, posicion: int, tipo: str) -> str:
+    """Id público de longitud fija: HMAC-SHA256 con una sal secreta, no con la semilla de muestreo."""
+    return f"{PREFIJO_ID}-" + _hmac(sal, f"case-id|{partition}|{posicion}|{tipo}").hex()[:12]
+
+
+def _traslacion(sal: str, case_id: str, vista: str) -> tuple[int, int]:
+    """Traslación privada (mm enteros en [-5000, 5000]) de una vista de una variante."""
+    digest = _hmac(sal, f"view-shift|{case_id}|{vista}")
+    return (int.from_bytes(digest[:4], "big") % 10001 - 5000, int.from_bytes(digest[4:8], "big") % 10001 - 5000)
 
 
 def _referencia(case_id: str, grupo: str, modelo: ModeloAnalizado) -> dict[str, object]:
@@ -680,6 +706,7 @@ def generar_corpus(
     max_group_size: int = 50,
     strict_groups: bool = False,
     source_revision: str | None = None,
+    salt: str | None = None,
     rule: ReglaRelevancia | None = None,
     max_pairs: int = 3_000_000,
     zeros_per_query: int | None = None,
@@ -701,6 +728,8 @@ def generar_corpus(
         raise ValueError(f"unknown partitions for poor variants: {sorted(desconocidas)}")
     regla = rule or ReglaRelevancia()
     semilla = str(seed)
+    # La sal protege los ids y las traslaciones: aleatoria si no se aporta, y solo en el manifiesto privado.
+    sal = salt if salt else secrets.token_hex(16)
 
     supervivientes, auditoria = auditar_universo(
         source, tolerancia_mm=tolerance_mm, paso_escala=scale_step, campo_categoria=category_field,
@@ -721,9 +750,9 @@ def generar_corpus(
         referencias: list[dict[str, object]] = []
 
         def emitir(case_id: str, fisicas: Sequence[Sequence[float]], partition: str, vistas: tuple[str, ...],
-                   *, base: str | None) -> None:
+                   *, base: str | None, traslaciones: Mapping[str, tuple[int, int]] | None = None) -> None:
             ruta = public_stage / "dxf" / f"{case_id}.dxf"
-            _write_assembled_dxf(ruta, [list(b) for b in fisicas], vistas)
+            _write_assembled_dxf(ruta, [list(b) for b in fisicas], vistas, traslaciones)
             view_kind = VIEW_KIND_EMPOBRECIDA if base else VIEW_KIND_COMPLETA
             metadata = {
                 "id": case_id, "file": f"dxf/{case_id}.dxf", "format": "dxf", "unit": "mm",
@@ -736,16 +765,19 @@ def generar_corpus(
 
         for partition in PARTICIONES:
             for posicion, modelo in enumerate(muestra[partition], 1):
-                case_id = _id_opaco(semilla, partition, posicion, "completa")
+                case_id = _id_opaco(sal, partition, posicion, "completa")
                 emitir(case_id, modelo.fisicas, partition, ("front", "top", "side"), base=None)
                 referencias.append(_referencia(case_id, grupo_de[modelo.filename], modelo))
                 if poor_variants and partition in poor_partitions:
                     for kind, vistas in sorted(VISTAS_EMPOBRECIDAS.items()):
-                        variant_id = _id_opaco(semilla, partition, posicion, kind)
-                        emitir(variant_id, modelo.fisicas, partition, vistas, base=case_id)
+                        variant_id = _id_opaco(sal, partition, posicion, kind)
+                        vista_nombre = {"front": "front", "top": "top", "side": "side"}
+                        traslaciones = {v: _traslacion(sal, variant_id, vista_nombre[v]) for v in vistas}
+                        emitir(variant_id, modelo.fisicas, partition, vistas, base=case_id, traslaciones=traslaciones)
                         referencias.append({
                             "id": variant_id, "partition": partition, "variant_of": case_id, "poor_kind": kind,
                             "view_kind": VIEW_KIND_EMPOBRECIDA, "group_id": grupo_de[modelo.filename],
+                            "view_translation_mm": {v: list(t) for v, t in sorted(traslaciones.items())},
                         })
         casos.sort(key=lambda c: str(c["id"]))
         referencias.sort(key=lambda r: str(r["id"]))
@@ -819,6 +851,8 @@ def generar_corpus(
         _write_json(private_stage / "manifest.json", {
             **manifiesto_base,
             "seed": semilla,
+            "salt": sal,
+            "id_scheme": "pa-<12 hex of HMAC-SHA256(salt, case-id|partition|position|kind)>; variant views translated by HMAC(salt, view-shift|id|view)",
             "source_split_sha256": _split_hashes(source),
             "audit_summary": auditoria["partitions"],
             "unlisted_json_excluded": auditoria["unlisted_json_excluded"],
@@ -874,21 +908,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scale-step", type=float, default=0.01)
     parser.add_argument("--max-group-size", type=int, default=50, help="aviso si un grupo de duplicados supera este tamaño")
     parser.add_argument("--strict-groups", action="store_true", help="falla en lugar de avisar ante grupos grandes")
+    parser.add_argument("--salt-file", type=Path, default=None,
+                        help="archivo privado con la sal secreta de los ids; si falta se genera una aleatoria y queda en el manifiesto privado")
     parser.add_argument("--source-revision", default=None, help="revisión HF declarada (no verificable sin conexión)")
     parser.add_argument("--max-pairs", type=int, default=3_000_000)
     parser.add_argument("--zeros-per-query", type=int, default=None)
     args = parser.parse_args(argv)
     try:
+        sal = args.salt_file.read_text(encoding="utf-8").strip() if args.salt_file else None
+        if args.salt_file and not sal:
+            raise ValueError("salt file is empty")
         manifiesto = generar_corpus(
             args.source, args.public_output, args.private_output,
             seed=args.seed, sizes={"train": args.train, "valid": args.valid, "test": args.test},
             poor_variants=args.poor_variants, category_field=args.category_field,
             tolerance_mm=args.tolerance_mm, scale_step=args.scale_step,
             max_group_size=args.max_group_size, strict_groups=args.strict_groups, source_revision=args.source_revision,
+            salt=sal,
             max_pairs=args.max_pairs, zeros_per_query=args.zeros_per_query,
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         parser.exit(1, f"Corpus generation failed: {exc}\n")
+    for aviso in json.loads((args.private_output / "manifest.json").read_text(encoding="utf-8"))["audit_warnings"]:
+        print(f"WARNING: {aviso}", file=sys.stderr)
     print(json.dumps(manifiesto, indent=2, sort_keys=True))
     return 0
 

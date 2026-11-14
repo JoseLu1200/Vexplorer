@@ -89,6 +89,7 @@ def fuente(tmp_path: Path) -> Path:
 def _generar(fuente, tmp_path, nombre="a", **kw):
     kw.setdefault("sizes", {"train": 10, "valid": 10, "test": 10})
     kw.setdefault("seed", 7)
+    kw.setdefault("salt", "sal-fija-de-pruebas")
     pub, priv = tmp_path / f"pub-{nombre}", tmp_path / f"priv-{nombre}"
     manifiesto = generar_corpus(fuente, pub, priv, **kw)
     return pub, priv, manifiesto
@@ -124,7 +125,7 @@ def test_particiones_oficiales_no_listados_y_duplicados(fuente, tmp_path):
     for r in refs.values():
         grupos.setdefault(r["group_id"], set()).add(r["partition"])
     assert all(len(p) == 1 for p in grupos.values()) and len({r["group_id"] for r in refs.values()}) == len(refs)
-    assert audit["duplicate_groups"]["groups_crossing_partitions"] == 2
+    assert audit["duplicate_groups"]["cross_partition_models_dropped"] == 2
     assert manifiesto["partitions"]["test"]["sampled"] == 3  # dup_1, unico_1, unico_2
 
 
@@ -314,8 +315,8 @@ def test_ids_publicos_opacos_y_sin_relacion_variante_base(fuente, tmp_path):
     for r in refs.values():
         if r["variant_of"]:
             assert r["variant_of"] not in r["id"] and r["id"] not in r["variant_of"]
-    # sin la semilla privada los ids no se reconstruyen: otra semilla da otros ids
-    otros = {c["id"] for c in _json(_generar(fuente, tmp_path, "otra", poor_variants=True, seed=99)[0] / "cases.json")}
+    # sin la sal privada los ids no se reconstruyen: otra sal da otros ids
+    otros = {c["id"] for c in _json(_generar(fuente, tmp_path, "otra", poor_variants=True, salt="otra-sal")[0] / "cases.json")}
     assert not set(ids) & otros
     claves_publicas = set()
     for c in _json(pub / "cases.json"):
@@ -504,8 +505,8 @@ def test_familia_parametrica_no_colapsa_ni_se_encadena(tmp_path):
     assert audit["dropped_cross_split"]["valid"] == [] and audit["dropped_within_split_duplicate"]["train"] == []
     assert audit["partitions"]["train"]["available"] == 6 and audit["partitions"]["valid"]["available"] == 2
     assert audit["partitions"]["test"]["available"] == 1
-    assert audit["duplicate_groups"]["size_distribution"] == {"1": 8, "2": 1}
-    assert audit["duplicate_groups"]["largest_group"] == 2
+    assert audit["duplicate_groups"]["size_distribution"] == {"1": 10}  # los grupos son por partición
+    assert audit["duplicate_groups"]["largest_group"] == 1
 
 
 def test_escalado_isotropo_verificado_y_anisotropo_rechazado(tmp_path):
@@ -519,10 +520,9 @@ def test_escalado_isotropo_verificado_y_anisotropo_rechazado(tmp_path):
 
 
 def test_grupos_grandes_avisan_o_fallan(tmp_path):
-    modelos = {f"cad_{ancho}.json": ("train", _mueble(ancho, 300, 1800, 3)) for ancho in range(600, 615)}
-    root = _fuente_con(tmp_path, modelos)
-    modelos_test = {**modelos, "t.json": ("test", _mueble(700, 300, 1800, 3))}
-    root = _fuente_con(tmp_path, modelos_test, "src3")
+    modelos = {f"cad_{i:02d}.json": ("train", _mueble(700, 300, 1800, 3)) for i in range(15)}
+    modelos["t.json"] = ("test", _mueble(1000, 450, 900, 2))
+    root = _fuente_con(tmp_path, modelos, "src3")
     _, priv, _ = _generar(root, tmp_path, "w", sizes={"train": 20, "valid": 1, "test": 1}, max_group_size=5)
     audit = _json(priv / "audit.json")
     assert audit["duplicate_groups"]["largest_group"] == 15
@@ -573,3 +573,169 @@ def test_fallo_al_publicar_privado_limpia_el_publico(fuente, tmp_path, monkeypat
         generar_corpus(fuente, tmp_path / "pub-fallo", tmp_path / "priv-fallo", sizes={"test": 1})
     assert not (tmp_path / "pub-fallo").exists() and not (tmp_path / "priv-fallo").exists()
     assert not list(tmp_path.glob("*.partial-*"))
+
+
+# ------------------------------------------------------------ ronda 2: sal, clustering, traslación
+
+
+def test_sal_secreta_los_ids_no_se_reconstruyen_con_la_semilla(fuente, tmp_path):
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True, salt="sal-privada-aleatoria", seed=20261114)
+    ids = {c["id"] for c in _json(pub / "cases.json")}
+    # Esquema anterior (derivado de la semilla): ningún id coincide, para cualquier partición/posición/tipo.
+    candidatos = set()
+    for semilla in ("20261114", "7"):
+        for particion in ("train", "valid", "test"):
+            for posicion in range(1, 30):
+                for tipo in ("completa", "solo_frontal", "frontal_y_planta"):
+                    candidatos.add("pa-" + hashlib.sha256(f"{semilla}|case-id|{particion}|{posicion}|{tipo}".encode()).hexdigest()[:12])
+    assert not ids & candidatos
+    assert not ids & {plankassembly_corpus._id_opaco("otra-sal", p, n, t) for p in ("train", "valid", "test") for n in range(1, 30) for t in ("completa", "solo_frontal")}
+    assert _json(priv / "manifest.json")["salt"] == "sal-privada-aleatoria"
+    assert "sal-privada-aleatoria" not in "".join(p.read_text(errors="ignore") for p in pub.rglob("*.json"))
+    # misma sal => mismos bytes; otra sal => otros ids y mismo muestreo
+    otra = _generar(fuente, tmp_path, "otra", poor_variants=True, salt="otra-sal", seed=20261114)
+    assert not ids & {c["id"] for c in _json(otra[0] / "cases.json")}
+    fuentes = lambda p: sorted(r["source_file"] for r in _json(p / "references.json") if r["variant_of"] is None)
+    assert fuentes(priv) == fuentes(otra[1])
+    repetida = _generar(fuente, tmp_path, "rep", poor_variants=True, salt="sal-privada-aleatoria", seed=20261114)
+    assert _arbol(repetida[0]) == _arbol(pub) and _arbol(repetida[1]) == _arbol(priv)
+
+
+def test_sin_sal_se_genera_una_aleatoria_privada(fuente, tmp_path):
+    a = _generar(fuente, tmp_path, "a", salt=None)
+    b = _generar(fuente, tmp_path, "b", salt=None)
+    sal_a, sal_b = (_json(x[1] / "manifest.json")["salt"] for x in (a, b))
+    assert len(sal_a) >= 32 and sal_a != sal_b
+    assert not {c["id"] for c in _json(a[0] / "cases.json")} & {c["id"] for c in _json(b[0] / "cases.json")}
+    assert sal_a not in "".join(p.read_text(errors="ignore") for p in a[0].rglob("*.json"))
+
+
+def test_cli_salt_file(fuente, tmp_path, capsys):
+    sal = tmp_path / "sal.txt"
+    sal.write_text("sal-desde-archivo\n", encoding="utf-8")
+    argv = ["--source", str(fuente), "--seed", "3", "--train", "2", "--valid", "1", "--test", "2", "--salt-file", str(sal)]
+    assert plankassembly_corpus.main([*argv, "--public-output", str(tmp_path / "p1"), "--private-output", str(tmp_path / "q1")]) == 0
+    assert plankassembly_corpus.main([*argv, "--public-output", str(tmp_path / "p2"), "--private-output", str(tmp_path / "q2")]) == 0
+    capsys.readouterr()
+    assert _json(tmp_path / "q1" / "manifest.json")["salt"] == "sal-desde-archivo"
+    assert _arbol(tmp_path / "p1") == _arbol(tmp_path / "p2")
+
+
+def _distancia(a: float, b: float) -> float:
+    return abs(a - b)
+
+
+def _diametros(audit, anchos_por_archivo):
+    """Máxima diferencia de ancho (única dimensión que varía en estas familias) dentro de cada clúster."""
+    return [
+        max(anchos_por_archivo[x] for x in miembros) - min(anchos_por_archivo[x] for x in miembros)
+        for miembros in audit["duplicate_clusters"].values()
+    ]
+
+
+def test_paso_de_1_mm_no_colapsa_en_cadena(tmp_path):
+    anchos = list(range(600, 801))
+    modelos = {}
+    anchos_por_archivo = {}
+    for ancho in anchos:
+        particion = "train" if ancho < 700 else ("valid" if ancho < 750 else "test")
+        nombre = f"w_{ancho}.json"
+        modelos[nombre] = (particion, _mueble(ancho, 300, 1800, 3))
+        anchos_por_archivo[nombre] = ancho
+    root = _fuente_con(tmp_path, modelos, "paso1")
+    _, priv, _ = _generar(root, tmp_path, sizes={"train": 500, "valid": 500, "test": 500})
+    audit = _json(priv / "audit.json")
+    tolerancia = audit["duplicate_groups"]["tolerance_mm"]
+    assert max(_diametros(audit, anchos_por_archivo)) <= tolerancia  # clique: sin cadenas
+    disponibles = {p: v["available"] for p, v in audit["partitions"].items()}
+    assert disponibles["valid"] > 5 and disponibles["test"] > 5 and disponibles["train"] > 20
+    assert audit["duplicate_groups"]["largest_group"] <= tolerancia + 1
+    # un superviviente de valid/test nunca está a <= tolerancia de un superviviente de una partición prioritaria
+    refs = [r for r in _json(priv / "references.json")]
+    por_particion = {}
+    for r in refs:
+        por_particion.setdefault(r["partition"], []).append(anchos_por_archivo[r["source_file"]])
+    for menor, mayor in (("valid", "train"), ("test", "train"), ("test", "valid")):
+        assert all(_distancia(a, b) > tolerancia for a in por_particion[menor] for b in por_particion[mayor])
+
+
+def test_trescientos_anchos_aleatorios_no_colapsan(tmp_path):
+    import random
+    rnd = random.Random(2026)
+    modelos = {}
+    anchos_por_archivo = {}
+    for i in range(300):
+        ancho = 600 + rnd.random() * 200  # continuos
+        particion = rnd.choices(("train", "valid", "test"), weights=(6, 2, 2))[0]
+        nombre = f"r_{i:03d}.json"
+        modelos[nombre] = (particion, _mueble(round(ancho, 3), 300, 1800, 3))
+        anchos_por_archivo[nombre] = round(ancho, 3)
+    root = _fuente_con(tmp_path, modelos, "aleatorios")
+    _, priv, _ = _generar(root, tmp_path, sizes={"train": 500, "valid": 500, "test": 500})
+    audit = _json(priv / "audit.json")
+    tolerancia = audit["duplicate_groups"]["tolerance_mm"]
+    assert max(_diametros(audit, anchos_por_archivo), default=0) <= tolerancia
+    assert audit["duplicate_groups"]["largest_group"] <= 10
+    disponibles = {p: v["available"] for p, v in audit["partitions"].items()}
+    assert disponibles["valid"] >= 3 and disponibles["test"] >= 3, disponibles
+
+
+def test_grupos_grandes_son_visibles_en_manifiesto_y_cli(tmp_path, capsys):
+    # Cientos de copias idénticas: no son una cadena, pero el tamaño debe avisarse.
+    modelos = {f"id_{i}.json": ("train", _mueble(700, 300, 1800, 3)) for i in range(8)}
+    modelos["t.json"] = ("test", _mueble(1000, 450, 900, 2))
+    root = _fuente_con(tmp_path, modelos, "ident")
+    argv = ["--source", str(root), "--public-output", str(tmp_path / "pp"), "--private-output", str(tmp_path / "qq"),
+            "--train", "5", "--valid", "1", "--test", "1", "--max-group-size", "3"]
+    assert plankassembly_corpus.main(argv) == 0
+    capturado = capsys.readouterr()
+    assert "largest duplicate group" in capturado.err
+    assert _json(tmp_path / "qq" / "manifest.json")["audit_warnings"]
+
+
+def _puntos(dxf: Path, capa: str):
+    doc = ezdxf.readfile(dxf)
+    puntos = []
+    for e in doc.modelspace().query("LINE"):
+        if e.dxf.layer == capa:
+            puntos += [(round(e.dxf.start.x, 6), round(e.dxf.start.y, 6)), (round(e.dxf.end.x, 6), round(e.dxf.end.y, 6))]
+    return puntos
+
+
+def test_variantes_con_traslacion_privada_que_no_cambia_medidas(fuente, tmp_path):
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    refs = _refs_por_id(priv)
+    casos = {c["id"]: c for c in _json(pub / "cases.json")}
+    variantes = [r for r in refs.values() if r["variant_of"]]
+    desplazamientos = set()
+    for r in variantes:
+        capa = {"solo_frontal": "ORTHO_FRONT", "frontal_y_planta": "ORTHO_FRONT"}[r["poor_kind"]]
+        base = _puntos(pub / casos[r["variant_of"]]["file"], capa)
+        var = _puntos(pub / casos[r["id"]]["file"], capa)
+        assert set(var) != set(base) and not set(var) & set(base)  # ya no hay coincidencia exacta de coordenadas
+        dx, dy = r["view_translation_mm"]["front"]
+        assert sorted((round(x + dx, 6), round(y + dy, 6)) for x, y in base) == sorted(var)  # solo traslación: mismas medidas
+        assert set(r["view_translation_mm"]) == ({"front"} if r["poor_kind"] == "solo_frontal" else {"front", "top"})
+        desplazamientos.add((r["poor_kind"], dx, dy))
+    assert len(desplazamientos) == len(variantes)  # cada variante, su propio desplazamiento
+    # determinista con la misma sal; distinto con otra sal
+    otra = _generar(fuente, tmp_path, "otra-sal", poor_variants=True, salt="otra")
+    otras = [r["view_translation_mm"] for r in _refs_por_id(otra[1]).values() if r["variant_of"]]
+    assert otras != [r["view_translation_mm"] for r in variantes]
+    assert "view_translation_mm" not in "".join(p.read_text(errors="ignore") for p in pub.rglob("*.json"))
+
+
+def test_identidad_con_ceros_conserva_los_mas_cercanos(fuente, tmp_path):
+    _, priv, _ = _generar(fuente, tmp_path, poor_variants=True, zeros_per_query=2)
+    refs = _refs_por_id(priv)
+    for c in _json(priv / "juicios" / "juicios_identidad_solo_frontal.json")["consultas"]:
+        ceros = [k for k, g in c["relevancias"].items() if g == 0]
+        assert len(ceros) == 2
+        consulta = refs[refs[c["consulta_id"]]["variant_of"]]
+        def distancia(cid, consulta=consulta):
+            r = refs[cid]
+            r = refs[r["variant_of"]] if r["variant_of"] else r
+            return plankassembly_corpus._metricas_par(consulta, r)[1]
+        excluidos = [k for k in refs if k not in c["relevancias"] and k != c["consulta_id"]
+                     and not refs[k]["variant_of"] and k != refs[c["consulta_id"]]["variant_of"]]
+        assert all(distancia(z) <= distancia(e) + 1e-12 for z in ceros for e in excluidos)
