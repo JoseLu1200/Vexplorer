@@ -66,3 +66,37 @@ Escoger el método que reduzca trabajo humano manteniendo los errores y la cober
 [PlankAssembly](PLANKASSEMBLY.md) ya está disponible localmente; aún faltan vistas y casos admitidos. Conservar la separación oficial de 24.039/1.329/1.339 como referencia y auditar variantes/duplicados antes de construir una evaluación por familia. Excluir los 985 JSON no listados de comparaciones sobre el split oficial. Marcar como desarrollo los ejemplos inspeccionados.
 
 B/C reciben vistas equivalentes del conjunto, sin programa fuente ni identificación de piezas filtrada por capas. Comparar controles completos y variantes pobres, manteniendo separados sus resultados. La referencia contiene cuboides y asociaciones, no un coste industrial. D puede evaluarse para recuperación geométrica si se prepara un índice independiente y etiquetado; la estimación económica continúa no evaluable sin históricos fiables.
+
+## Implementación
+
+Estado: arnés ejecutable en `evaluation/comparativa/` y `tools/comparativa_metodos.py`; tests en `tests/test_comparativa_metodos.py`. No cambia `contratos/` ni el harness del agente: los componentes de salida son formato propio del arnés. Solo A se ha ejecutado; B/C/D se han probado únicamente con dobles y no se ha realizado ninguna llamada de pago.
+
+### Qué se puede ejecutar ya
+
+```text
+python -m tools.comparativa_metodos run --run-dir <dir>                       # A sobre los casos propios de desarrollo
+python -m tools.comparativa_metodos freeze --run-dir <dir> --variants A       # fase 1: ejecuta y congela
+python -m tools.comparativa_metodos score  --run-dir <dir>                    # fase 2: verifica el sello y abre la referencia
+python -m tools.comparativa_metodos run --corpus plankassembly --public-dir <pub> --private-dir <priv> --run-dir <dir>
+```
+
+El informe se escribe en `<run-dir>/report.json` y `report.md` (determinista para entradas y reloj iguales; sin rutas absolutas). Las salidas de cada método, `freeze.json` e `inputs/` quedan en el mismo directorio.
+
+- **A (reglas):** ruta del `geometry_only` del repo. `separated_part_views` usa `extract_drawing` + `extract_separated_parts`; `assembled_orthographic` usa `extract_drawing(input_kind="general_furniture")` + `derive_rectangular_hypotheses` (lo que el análisis `geometry_only` de mueble general ejecuta: solo extracción). Registra hashes de `extraction.py` y `parts.py`. Una proyección rectangular nunca fija espesor ni cantidad. Sobre los planos de PlankAssembly los contornos de tableros que se tocan se fusionan en una componente no rectangular y A devuelve como mucho una hipótesis por plano: es un resultado, no un fallo del arnés; recuperar los tableros exigiría cambiar `backend/app/geometria/`, fuera de este alcance.
+- **B/C/D:** solo con `--enable-model-variants` y `--adapter modulo:fabrica`; el arnés no incluye proveedor. El adaptador recibe un `AdapterRequest` (caso público, repetición, límites, `tools_enabled`, precedentes saneados para D) y devuelve un `AdapterResponse` (componentes, uso real, versiones de modelo/prompt, hashes de artefactos, hash de traza). Repeticiones: 3 por defecto para los estocásticos (`--repetitions`), todas conservadas. Límites por defecto 15 llamadas de modelo, 30 de herramientas, 120 s: son topes, no mediciones; una salida que excede el tiempo se descarta como `failed:timeout_exceeded`.
+- **D sin índice admitido:** si falta el índice, no está `admitted`, no está `annotated` o queda vacío tras excluir el mismo caso y la misma partición, cada observación es `not_evaluated` con motivo y el adaptador no se invoca. Nunca se puntúa como cero.
+- **Congelación:** cada salida se escribe con creación exclusiva y se hashea; `freeze.json` lista los hashes y su digest. La referencia privada solo se abre a través de `ManifestReader.load_references(token)`, que exige un `FreezeToken` obtenido de `verify_freeze` (que vuelve a hashear todo, detecta modificaciones y ficheros añadidos). Un test comprueba con un espía que el fichero privado no se abre ni sin sello ni con una salida alterada.
+- **Entrada de los métodos:** solo `PublicCase` (las siete claves del zip individual `agent_cases/<id>.zip`, verificadas contra el hash) y el DXF preparado. `split` y `family_hash` quedan en el lado del arnés (`CaseMeta`).
+- **Emparejamiento y métricas:** independientes de la referencia y de las claves. Los valores conocidos de cada componente se asignan a las tres dimensiones de referencia por mejor ajuste, sin depender de las etiquetas (una vista muestra dos de las tres cotas), uno a uno y de forma voraz y determinista; se necesitan dos cotas conocidas y la tolerancia de emparejamiento (5 mm) es distinta de la de acierto (1 mm). Solo después se calculan cobertura dimensional, MAE, tolerancia, falsos positivos, omisiones, precisión/recall por tipos y por cantidades, abstención correcta (campos con `identifiable=false`), afirmaciones no identificables y sobre-abstención, tamaños de muestra, casos y campos sin referencia, y recursos (tiempo, llamadas, tokens, coste solo si el adaptador lo observó). Resultados por variante × familia × partición, sin puntuación global.
+
+### Interfaz del lector de manifiesto
+
+`ManifestReader` (en `evaluation/comparativa/manifest.py`) es la costura para adaptar el corpus: una subclase implementa `public_cases() -> list[PublicCase]`, `case_meta() -> dict[str, CaseMeta]` (familia, partición, `partition_id` para excluir vecinos, desarrollo/reservado), `corpus_info()` y `_read_private() -> dict[case_id, ReferenceCase | None]` (`None` = sin referencia). La compuerta de congelación la hereda de `load_references`. `PlankAssemblyManifestReader` lee hoy la salida de `tools/prepare_plankassembly.py`: `cases.json` + `manifest.json` + `agent_cases/*.zip` (público) y `references.json` con `bounds_mm` (privado); agrupa tableros de igual tamaño en tipos con cantidad. Las cantidades de PlankAssembly se anotan como no identificables desde las vistas (`quantity_identifiable=False`, criterio del proyecto «las vistas no implican cantidad»). `DevelopmentManifestReader` usa `piezas_*` de `data/planos_demo` con `evaluation/reference/piezas_reference.json`: tres con referencia (completo; cantidad y espesor de K3 no identificables, derivados de los controles), dos sin referencia. Quedan fuera `estanteria_*` (alternativas y campos sin anotar), `mesa_*` (contrato de mesa) y los controles de descriptor.
+
+### Qué falta
+
+- Ejecutar B/C/D reales: un adaptador de proveedor (lo lleva quien mantiene `backend/app/agente/` y `general_furniture/`), presupuesto fijado antes de lanzar y un índice histórico anotado y admitido para D.
+- Corpus PlankAssembly mayor y casos reservados no usados para ajustar reglas ni prompts; cuando cambie el formato del manifiesto basta adaptar su lector.
+- Un extractor determinista de tableros para vistas ortográficas con contornos que se tocan (A2); sin él A queda cerca de cero cobertura en ese corpus.
+- Evidencia/trazabilidad de afirmaciones, geometría entre vistas, recuperación, economía y utilidad humana: no se miden aquí. `evaluation/metrics.py` no se invoca todavía (necesita cabecera de dataset, costes y escenarios que este arnés no produce); sus métricas de recuperación y tiempo humano siguen en `tools/evaluate_cases.py`.
+- Repeticiones estocásticas se puntúan agrupadas; falta un resumen de varianza por repetición.
