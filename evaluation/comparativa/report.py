@@ -12,6 +12,8 @@ LIMITATIONS = (
     "Missing or abstained fields reduce coverage and are never imputed as zero error.",
     "Rows with reference=None (no reference) are counted in the sample but never scored.",
     "Cost is reported only when the adapter observed it; it is never estimated from a tariff.",
+    "A2 (rectangle hypotheses of assembled views) is a rule added by this harness; the app's geometry_only run for general furniture does not execute it.",
+    "Time limits are checked after a method returns, not enforced preventively; call limits are checked on the usage the adapter reports.",
     "Development cases were inspected while building rules and prompts: they show mechanics, not generalisation.",
 )
 

@@ -92,6 +92,11 @@ class SpyReader(DevelopmentManifestReader):
         return super()._read_private()
 
 
+def _entry(entry_id: str, partition_id: str, case_id: str | None = None, **extra) -> dict:
+    return {"entry_id": entry_id, "case_id": case_id or f"hist-{entry_id}", "partition_id": partition_id,
+            "summary": "historic cabinet", **extra}
+
+
 def perfect_dev_adapter(request: AdapterRequest) -> AdapterResponse:
     """Double that returns the exact piezas_completo bill of materials."""
     return AdapterResponse(
@@ -223,8 +228,8 @@ def test_model_variants_run_with_doubles_and_record_versions(tmp_path: Path) -> 
     reader = dev_reader()
     index = PrecedentIndex(
         index_id="idx-test", admitted=True, annotated=True, sha256="a" * 64,
-        entries=({"entry_id": "h1", "partition_id": "other", "summary": "armario"},
-                 {"entry_id": "h2", "partition_id": "piezas", "summary": "same family"}),
+        entries=({"entry_id": "h1", "case_id": "hist-1", "partition_id": "other", "summary": "armario"},
+                 {"entry_id": "h2", "case_id": "hist-2", "partition_id": "piezas", "summary": "same family"}),
     )
     seen: list[AdapterRequest] = []
 
@@ -265,9 +270,9 @@ def test_d_without_admitted_index_is_not_evaluated_never_zero(tmp_path: Path) ->
         calls.append(request)
         return perfect_dev_adapter(request)
 
-    for index in (None, PrecedentIndex("i", False, True, "b" * 64, ({"entry_id": "h"},)),
-                  PrecedentIndex("i", True, False, "b" * 64, ({"entry_id": "h"},)),
-                  PrecedentIndex("i", True, True, "b" * 64, ({"entry_id": "h", "partition_id": "piezas"},))):
+    for index in (None, PrecedentIndex("i", False, True, "b" * 64, (_entry("h", "other"),)),
+                  PrecedentIndex("i", True, False, "b" * 64, (_entry("h", "other"),)),
+                  PrecedentIndex("i", True, True, "b" * 64, (_entry("h", "piezas"),))):
         run_dir = tmp_path / f"run-{len(list(tmp_path.iterdir()))}"
         reader = dev_reader()
         execute_run(reader, build_methods(("D",), enable_model_variants=True, adapter=adapter, precedent_index=index),
@@ -398,12 +403,12 @@ def test_methods_only_receive_the_public_whitelist(tmp_path: Path, plank_dirs) -
     for request, dxf in received:
         payload = request.case.payload
         assert set(payload) == {"id", "file", "format", "unit", "view_kind", "instruction", "sha256"}
-        blob = json.dumps(payload) + repr(request)
-        assert SOURCE_NAME not in blob and SOURCE_NAME.encode() not in dxf
-        assert meta[request.case.case_id].partition_id not in blob  # family hash stays harness-side
-        assert "holdout" not in blob and "development" not in blob.replace("development_", "")
-        assert "bounds_mm" not in blob and "source_file" not in blob
-        assert str(plank_dirs[1]) not in blob and request.case.path.is_relative_to(tmp_path / "staging")
+        visible = json.dumps(payload) + json.dumps(list(request.precedents)) + str(request.case.path)
+        assert SOURCE_NAME not in visible and SOURCE_NAME.encode() not in dxf
+        assert meta[request.case.case_id].partition_id not in visible  # family hash stays harness-side
+        assert meta[request.case.case_id].split not in visible
+        assert "bounds_mm" not in visible and "source_file" not in visible
+        assert str(plank_dirs[1]) not in visible and request.case.path.is_relative_to(tmp_path / "staging")
     assert "bounds_mm" in private  # sanity: the private side does hold the reference
 
 
@@ -420,14 +425,11 @@ def test_plank_reader_checks_public_private_consistency(tmp_path: Path, plank_di
 
 def test_precedent_index_excludes_same_case_and_partition() -> None:
     index = PrecedentIndex("i", True, True, "c" * 64, (
-        {"entry_id": "same-case", "case_id": "c1"},
-        {"entry_id": "same-family", "partition_id": "fam"},
-        {"entry_id": "ok", "partition_id": "other", "case_id": "z"},
+        _entry("same-case", "x", case_id="c1"),
+        _entry("same-family", "fam"),
+        _entry("ok", "other", case_id="z"),
     ))
-    from evaluation.comparativa.model import PublicCase
-
-    case = PublicCase("c1", Path("x.dxf"), "0" * 64, "dxf", "mm", "k", "i")
-    kept, excluded = index.usable_for(case, CaseMeta("c1", "f", "s", "fam", True))
+    kept, excluded = index.usable_for("c1", "fam")
     assert [e["entry_id"] for e in kept] == ["ok"] and excluded == 2
 
 
@@ -664,3 +666,136 @@ def test_freeze_record_with_duplicate_output_paths_is_rejected(tmp_path: Path) -
     path.write_bytes(canonical_json(record))
     with pytest.raises(ReferenceNotFrozen, match="duplicate"):
         verify_freeze(tmp_path / "run")
+
+
+# --------------------------- review fixes: D fail-closed, A2 labelling, limits, scrubbing (5, 9, 10, 11)
+
+def test_precedent_index_rejects_entries_without_exclusion_keys() -> None:
+    for bad in ({"entry_id": "h", "partition_id": "p"}, {"entry_id": "h", "case_id": "c"},
+                {"entry_id": "h", "case_id": "c", "partition_id": ""}, {"case_id": "c", "partition_id": "p"}):
+        with pytest.raises(ComparisonError):
+            PrecedentIndex("i", True, True, "d" * 64, (bad,))
+
+
+def test_precedent_index_from_file_validates_entries(tmp_path: Path) -> None:
+    path = tmp_path / "idx.json"
+    path.write_text(json.dumps({"index_id": "i", "admitted": True, "annotated": True,
+                                "entries": [{"entry_id": "h"}]}), encoding="utf-8")
+    with pytest.raises(ComparisonError):
+        PrecedentIndex.from_file(path)
+
+
+def test_d_fails_closed_without_the_partition_of_the_case() -> None:
+    from evaluation.comparativa.methods import ModelMethod
+    from evaluation.comparativa.model import PublicCase
+
+    index = PrecedentIndex("i", True, True, "e" * 64, (_entry("h", "other"),))
+    method = ModelMethod("D", perfect_dev_adapter, enabled=True, precedent_index=index)
+    case = PublicCase("c1", Path("x.dxf"), "0" * 64, "dxf", "mm", "k", "i")
+    for context in ({}, {"partition_id": None}, {"partition_id": ""}):
+        with pytest.raises(ComparisonError):
+            method.run(case, repetition=1, limits=RunLimits(), context=context)
+
+
+def test_methods_receive_only_the_partition_id_in_their_context(tmp_path: Path) -> None:
+    seen: list[dict] = []
+
+    class Recorder:
+        variant = "A"
+        stochastic = False
+
+        def describe(self) -> dict:
+            return {"variant": "A"}
+
+        def run(self, case, *, repetition, limits, context):
+            seen.append(dict(context))
+            from evaluation.comparativa.model import MethodResult
+
+            return MethodResult(components=[])
+
+    execute_run(dev_reader(tmp_path / "s"), [Recorder()], tmp_path / "run", clock=fixed_clock())
+    assert seen and all(set(item) == {"partition_id"} for item in seen)
+
+
+def test_adapter_only_sees_whitelisted_precedent_fields(tmp_path: Path) -> None:
+    index = PrecedentIndex("i", True, True, "f" * 64, (
+        _entry("h1", "other", dimensions_mm=[1, 2, 3], family_hash="leak", path="C:/private/x", cost_eur=10.0),
+    ))
+    seen: list[AdapterRequest] = []
+
+    def adapter(request: AdapterRequest) -> AdapterResponse:
+        seen.append(request)
+        return AdapterResponse(components=[])
+
+    execute_run(dev_reader(tmp_path / "s"), build_methods(("D",), enable_model_variants=True, adapter=adapter,
+                precedent_index=index), tmp_path / "run", clock=fixed_clock(), limits=RunLimits(repetitions_stochastic=1))
+    assert seen
+    for request in seen:
+        (entry,) = request.precedents
+        assert set(entry) == {"entry_id", "summary", "dimensions_mm", "cost_eur"}
+
+
+def test_variant_a_declares_the_a2_rule_in_versions_and_report(tmp_path: Path, plank_dirs) -> None:
+    reader = plank_reader(tmp_path, plank_dirs)
+    execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+    out = json.loads(next((tmp_path / "run" / "outputs" / "A").glob("*.json")).read_text(encoding="utf-8"))
+    assert out["versions"]["run"]["rule_path"] == "A2:rectangle_hypotheses"
+    report = score_run(reader, tmp_path / "run")
+    rules = report["freeze"]["methods"]["A"]["harness_rules"]
+    assert "A2" in rules and "not used by the app" in rules["A2"]
+    assert any("A2" in item for item in report["limitations"])
+    reader2 = dev_reader(tmp_path / "s")
+    execute_run(reader2, build_methods(("A",)), tmp_path / "run2", clock=fixed_clock())
+    out2 = json.loads(next((tmp_path / "run2" / "outputs" / "A").glob("*.json")).read_text(encoding="utf-8"))
+    assert out2["versions"]["run"]["rule_path"] == "A1:separated_parts"
+
+
+def test_call_limits_are_enforced_on_reported_usage(tmp_path: Path) -> None:
+    def greedy(request: AdapterRequest) -> AdapterResponse:
+        response = perfect_dev_adapter(request)
+        response.usage = {"model_calls": 16, "tool_calls": 0}
+        return response
+
+    def tool_greedy(request: AdapterRequest) -> AdapterResponse:
+        response = perfect_dev_adapter(request)
+        response.usage = {"model_calls": 1, "tool_calls": 31}
+        return response
+
+    for adapter in (greedy, tool_greedy):
+        reader = dev_reader(tmp_path / "s")
+        run_dir = tmp_path / f"run-{adapter.__name__}"
+        execute_run(reader, build_methods(("C",), enable_model_variants=True, adapter=adapter), run_dir,
+                    clock=fixed_clock(), limits=RunLimits(repetitions_stochastic=1))
+        c = score_run(reader, run_dir)["variants"]["C"]["families"]["development:separated_part_views"]["development_case"]
+        assert c["sample"]["reason_counts"] == {"failed:limit_exceeded": 5}
+        assert c["sample"]["observations_scored"] == 0 and c["identity"]["recall"] == 0.0
+
+
+def test_adapter_describe_is_whitelisted_before_it_is_written(tmp_path: Path) -> None:
+    class Adapter:
+        def describe(self) -> dict:
+            return {"name": "x", "model": "m1", "api_key": "sk-secret", "endpoint": "https://internal"}
+
+        def __call__(self, request: AdapterRequest) -> AdapterResponse:
+            return AdapterResponse(components=[])
+
+    reader = dev_reader(tmp_path / "s")
+    execute_run(reader, build_methods(("B",), enable_model_variants=True, adapter=Adapter()), tmp_path / "run",
+                clock=fixed_clock(), limits=RunLimits(repetitions_stochastic=1))
+    text = (tmp_path / "run" / "freeze.json").read_text(encoding="utf-8")
+    assert "sk-secret" not in text and "internal" not in text and '"model": "m1"' in text
+    for path in (tmp_path / "run" / "outputs" / "B").glob("*.json"):
+        assert "sk-secret" not in path.read_text(encoding="utf-8")
+
+
+def test_error_messages_do_not_carry_absolute_paths(tmp_path: Path) -> None:
+    def broken(request: AdapterRequest) -> AdapterResponse:
+        raise RuntimeError("cannot open C:\\Users\\bob\\secret\\x.dxf or /home/bob/data/y.dxf or D:/a/b.txt")
+
+    reader = dev_reader(tmp_path / "s")
+    execute_run(reader, build_methods(("B",), enable_model_variants=True, adapter=broken), tmp_path / "run",
+                clock=fixed_clock(), limits=RunLimits(repetitions_stochastic=1))
+    out = json.loads(next((tmp_path / "run" / "outputs" / "B").glob("*.json")).read_text(encoding="utf-8"))
+    message = out["error"]["message"]
+    assert "bob" not in message and "Users" not in message and "home" not in message
+    assert message.count("<path>") == 3

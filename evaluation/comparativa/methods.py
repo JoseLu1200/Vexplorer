@@ -16,7 +16,6 @@ from typing import Any, Protocol
 
 from .model import (
     MODEL_VARIANTS,
-    CaseMeta,
     ComparisonError,
     Component,
     MethodResult,
@@ -26,6 +25,10 @@ from .model import (
 )
 
 REPO = Path(__file__).resolve().parents[2]
+# Only these precedent fields reach an adapter; ids used for exclusion stay harness-side.
+PRECEDENT_PUBLIC_FIELDS = ("entry_id", "summary", "dimensions_mm", "components", "materials", "cost_eur", "hours")
+# Only these adapter.describe() keys are written to freeze.json and outputs.
+DESCRIBE_FIELDS = ("name", "provider", "model", "version", "prompt_sha256", "extractor", "parameters", "seed_supported")
 RULES_VERSION = "geometry-rules-1"
 
 
@@ -48,14 +51,15 @@ def _file_sha(relative: str) -> str:
 
 
 class RulesMethod:
-    """Variant A.
+    """Variant A: deterministic rules, offline.
 
-    * ``separated_part_views``: ``extract_drawing`` + ``extract_separated_parts``
-      (what the app's geometry_only analysis uses for part sheets).
-    * ``assembled_orthographic``: ``extract_drawing(input_kind="general_furniture")``
-      + ``derive_rectangular_hypotheses``.  This is exactly what the app's
-      geometry_only run does for general furniture (it stops at extraction);
-      hypotheses are projections, so quantity and thickness stay unknown.
+    * A1 ``separated_part_views``: ``extract_drawing`` + ``extract_separated_parts``
+      (the geometry the app uses for separated part sheets).
+    * A2 ``assembled_orthographic``: ``extract_drawing(input_kind="general_furniture")``
+      + ``derive_rectangular_hypotheses`` grouped by size.  A2 is an additional
+      rule of this harness: the app's ``geometry_only`` run for general furniture
+      stops at extraction and does not call ``derive_rectangular_hypotheses``.
+      Hypotheses are projections, so quantity and thickness stay unknown.
     """
 
     variant = "A"
@@ -80,6 +84,13 @@ class RulesMethod:
                 "backend/app/geometria/extraction.py": _file_sha("backend/app/geometria/extraction.py"),
                 "backend/app/geometria/parts.py": _file_sha("backend/app/geometria/parts.py"),
             },
+            "harness_rules": {
+                "A1": "separated part sheets: repository extraction, no harness rule added",
+                "A2": (
+                    "assembled views: rectangle hypotheses grouped by size is a harness rule, "
+                    "not used by the app's geometry_only run for general furniture"
+                ),
+            },
             "model": None,
             "prompt": None,
         }
@@ -88,9 +99,13 @@ class RulesMethod:
         if case.format != "dxf":
             return MethodResult(status="not_applicable", reason=f"unsupported_format:{case.format}")
         if case.view_kind == "separated_part_views":
-            return MethodResult(components=self._separated_parts(case))
+            return MethodResult(
+                components=self._separated_parts(case), versions={"rule_path": "A1:separated_parts"}
+            )
         if case.view_kind == "assembled_orthographic":
-            return MethodResult(components=self._rectangle_hypotheses(case))
+            return MethodResult(
+                components=self._rectangle_hypotheses(case), versions={"rule_path": "A2:rectangle_hypotheses"}
+            )
         return MethodResult(status="not_applicable", reason=f"unsupported_view_kind:{case.view_kind}")
 
     @staticmethod
@@ -187,6 +202,14 @@ class PrecedentIndex:
     entries: tuple[dict[str, Any], ...]
     admission_note: str = ""
 
+    def __post_init__(self) -> None:
+        # Fail closed: an entry that cannot be excluded cannot be offered.
+        for position, entry in enumerate(self.entries):
+            for key in ("entry_id", "case_id", "partition_id"):
+                value = entry.get(key) if isinstance(entry, dict) else None
+                if not isinstance(value, str) or not value.strip():
+                    raise ComparisonError(f"precedent entry {position} needs a non-empty {key}")
+
     @classmethod
     def from_file(cls, path: Path) -> PrecedentIndex:
         raw = Path(path).read_bytes()
@@ -213,17 +236,17 @@ class PrecedentIndex:
             return "precedent_index_not_annotated"
         return None
 
-    def usable_for(self, case: PublicCase, meta: CaseMeta | None) -> tuple[tuple[dict[str, Any], ...], int]:
-        """Entries stripped of private grouping keys, excluding same case and same partition."""
+    def usable_for(self, case_id: str, partition_id: str) -> tuple[tuple[dict[str, Any], ...], int]:
+        """Whitelisted fields of the entries outside the case's id and partition."""
 
+        if not isinstance(partition_id, str) or not partition_id:
+            raise ComparisonError("partition_id is required to exclude precedents")
         kept, excluded = [], 0
         for entry in self.entries:
-            same_case = entry.get("case_id") == case.case_id
-            same_partition = meta is not None and entry.get("partition_id") == meta.partition_id
-            if same_case or same_partition:
+            if entry["case_id"] == case_id or entry["partition_id"] == partition_id:
                 excluded += 1
                 continue
-            kept.append({k: v for k, v in entry.items() if k not in {"partition_id", "case_id"}})
+            kept.append({k: entry[k] for k in PRECEDENT_PUBLIC_FIELDS if k in entry})
         return tuple(kept), excluded
 
 
@@ -257,7 +280,11 @@ class ModelMethod:
             "variant": self.variant,
             "kind": {"B": "direct_visual_model", "C": "model_with_tools", "D": "model_with_tools_and_precedents"}[self.variant],
             "tools_enabled": self.variant in {"C", "D"},
-            "adapter": described() if callable(described) else {"name": getattr(self.adapter, "__name__", type(self.adapter).__name__)},
+            "adapter": (
+                {k: v for k, v in described().items() if k in DESCRIBE_FIELDS}
+                if callable(described)
+                else {"name": getattr(self.adapter, "__name__", type(self.adapter).__name__)}
+            ),
         }
         if self.variant == "D":
             index = self.precedent_index
@@ -277,7 +304,7 @@ class ModelMethod:
             reason = index.not_admitted_reason()
             if reason is not None:
                 return MethodResult(status="not_evaluated", reason=reason)
-            precedents, excluded = index.usable_for(case, context.get("meta"))
+            precedents, excluded = index.usable_for(case.case_id, context.get("partition_id"))
             notes.append(f"precedents_excluded_same_case_or_partition={excluded}")
             if not precedents:
                 return MethodResult(status="not_evaluated", reason="precedent_index_empty_after_exclusions", notes=notes)

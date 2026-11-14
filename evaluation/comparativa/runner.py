@@ -8,6 +8,7 @@ place that asks for the reference, and it does so with a verified freeze token.
 from __future__ import annotations
 
 import json
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -36,11 +37,17 @@ class Clock:
     now_iso: Callable[[], str] = field(default=lambda: datetime.now(UTC).isoformat())
 
 
+_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^\s'\"]*|(?<![\w<])/(?:[\w.\-]+/)+[\w.\-]*")
+
+
 def _safe_error(exc: Exception) -> dict[str, str]:
-    return {
-        "failure_type": type(exc).__name__,
-        "message": str(exc).replace("\r", " ").replace("\n", " ")[:300],
-    }
+    message = _PATH_RE.sub("<path>", str(exc)).replace("\r", " ").replace("\n", " ")
+    return {"failure_type": type(exc).__name__, "message": message[:300]}
+
+
+def _count(usage: dict[str, Any], name: str) -> int:
+    value = usage.get(name)
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def execute_run(
@@ -71,15 +78,22 @@ def execute_run(
                 started = clock.perf()
                 error: dict[str, str] | None = None
                 try:
-                    result = method.run(case, repetition=repetition, limits=limits, context={"meta": meta.get(case.case_id)})
+                    result = method.run(case, repetition=repetition, limits=limits, context={"partition_id": meta[case.case_id].partition_id})
                 except Exception as exc:  # noqa: BLE001 - recorded, never imputed as a zero score
                     result = MethodResult(status="failed", reason="method_raised")
                     error = _safe_error(exc)
                 duration = clock.perf() - started
                 status, reason = result.status, result.reason
                 components: list[dict[str, Any]] = []
+                usage = result.usage or {}
                 if status == "ok" and duration > limits.timeout_s:
+                    # The timeout is not preventive: it is checked after the method returned.
                     status, reason = "failed", "timeout_exceeded"
+                elif status == "ok" and (
+                    _count(usage, "model_calls") > limits.max_model_calls
+                    or _count(usage, "tool_calls") > limits.max_tool_calls
+                ):
+                    status, reason = "failed", "limit_exceeded"
                 elif status == "ok":
                     try:
                         components = [parse_component(item, f"{case.case_id}.components[{i}]").to_json()
