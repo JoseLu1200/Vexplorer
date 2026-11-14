@@ -4,6 +4,7 @@ from io import StringIO
 from xml.etree import ElementTree as ET
 
 import ezdxf
+import pytest
 
 from backend.app.contratos.modelos import (
     EvaluatedTableComponent,
@@ -300,12 +301,21 @@ def test_large_general_sheet_scales_fonts_and_keeps_warnings_inside_page():
                 points_mm=(Point2D(x=1300, y=0), Point2D(x=2500, y=700)),
                 state="proposed",
             ),
+            TableDrawingPrimitive(
+                id="width",
+                kind="dimension",
+                points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=0), Point2D(x=0, y=-50)),
+                value_mm=1200,
+                state="observed",
+            ),
         ),
     )
 
     root = ET.fromstring(_artifact(render_table_drawings(_plan(sheet)), sheet.sheet_id, "svg"))
 
     _, _, view_width, view_height = (float(value) for value in root.attrib["viewBox"].split())
+    intrinsic_width = float(root.attrib["width"])
+    intrinsic_height = float(root.attrib["height"])
     text_nodes = [element for element in root.iter() if element.tag.endswith("text")]
     title = next(element for element in text_nodes if element.text == sheet.title)
     legend = [
@@ -316,6 +326,18 @@ def test_large_general_sheet_scales_fonts_and_keeps_warnings_inside_page():
     warnings = [element for element in text_nodes if (element.text or "").startswith("AVISO:")]
     assert float(title.attrib["font-size"]) / view_width * 800 >= 10
     assert min(float(element.attrib["font-size"]) for element in legend) / view_width * 800 >= 7
+    assert intrinsic_width == 1600
+    assert intrinsic_height / intrinsic_width == pytest.approx(view_height / view_width, abs=0.001)
+    assert not any("vector-effect" in element.attrib for element in root.iter())
+    stroke_widths = {
+        float(element.attrib["stroke-width"])
+        for element in root.iter()
+        if "stroke-width" in element.attrib
+    }
+    assert len(stroke_widths) == 1
+    stroke_width = next(iter(stroke_widths))
+    assert stroke_width == pytest.approx(1.5 * (2500 / 900))
+    assert 1.5 <= stroke_width / view_width * intrinsic_width <= 3.5
     assert len(warnings) == 4
     assert max(float(element.attrib["y"]) for element in warnings) < view_height
 
