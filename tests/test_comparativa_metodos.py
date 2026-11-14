@@ -290,7 +290,10 @@ def test_adapter_failure_and_invalid_output_are_recorded_not_scored(tmp_path: Pa
     b = report["variants"]["B"]["families"]["development:separated_part_views"]["development_case"]
     assert b["sample"]["status_counts"] == {"failed": 5}
     assert b["sample"]["reason_counts"] == {"failed:invalid_output": 4, "failed:method_raised": 1}
-    assert b["sample"]["observations_scored"] == 0 and b["identity"]["recall"] is None
+    assert b["sample"]["observations_scored"] == 0
+    # failures stay in the denominator: nothing was found, so recall is 0 (not undefined)
+    assert b["identity"]["recall"] == 0.0 and b["identity"]["precision"] is None
+    assert b["identity"]["recall_conditioned_on_ok"] is None
 
 
 def test_timeout_exceeded_discards_the_output(tmp_path: Path) -> None:
@@ -331,7 +334,8 @@ def test_matching_ignores_keys_and_never_reuses_a_reference() -> None:
     pairs = match_components(predicted, reference, 1.0)
     assert len(pairs) == 2
     assert len({r.key for _, r, _ in pairs}) == 2
-    assert [p.key for p, _, _ in pairs] == ["aaa", "mmm"]  # deterministic tie-break by key
+    # identical content: which rows pair is irrelevant, keys never decide
+    assert {p.key for p, _, _ in pairs} <= {"zzz", "aaa", "mmm"}
 
 
 def test_matching_needs_two_known_dimensions_and_respects_tolerance() -> None:
@@ -443,3 +447,116 @@ def test_cli_freeze_then_score_are_separate_stages(tmp_path: Path) -> None:
     assert not (run_dir / "report.json").exists()
     assert cli_main(["score", "--run-dir", str(run_dir)]) == 0
     assert (run_dir / "report.json").exists()
+
+
+# ------------------------------------------------- review fixes: scoring (1, 2, 3, 8)
+
+def _ref_case(thickness_k3_identifiable: bool = False, quantity_identifiable: bool = True):
+    from evaluation.comparativa.model import ReferenceCase
+
+    def comp(key, length, width, thickness, quantity, thickness_id=True):
+        return RefComponent(
+            key,
+            {"length": RefField(length, True), "width": RefField(width, True), "thickness": RefField(thickness, thickness_id)},
+            RefField(quantity, quantity_identifiable),
+        )
+
+    return ReferenceCase("c1", (
+        comp("K1", 1200, 300, 18, 2),
+        comp("K2", 864, 300, 18, 2),
+        comp("K3", 864, 300, 18, 2, thickness_k3_identifiable),
+    ))
+
+
+def _out(components: list[dict], *, status: str = "ok", repetition: int = 1, variant: str = "B") -> dict:
+    return {
+        "variant": variant, "case_id": "c1", "repetition": repetition, "status": status,
+        "reason": None if status == "ok" else "provider_down", "components": components,
+        "timing": {"duration_s": 1.0}, "usage": {},
+    }
+
+
+def _c(key, length, width, thickness, quantity=2) -> dict:
+    return {"key": key, "dimensions_mm": {"length": length, "width": width, "thickness": thickness}, "quantity": quantity}
+
+
+def _score(outputs: list[dict], reference) -> dict:
+    from evaluation.comparativa.scoring import score_outputs
+
+    metas = {"c1": CaseMeta("c1", "fam", "dev", "p", True)}
+    result = score_outputs(outputs, metas, {"c1": reference}, tolerance_mm=1.0, match_tolerance_mm=5.0)
+    return result["B"]["fam"]["dev"]
+
+
+@pytest.mark.parametrize("keys", [("K2", "K3"), ("b", "a"), ("a", "b"), ("K3", "K2")])
+def test_abstention_score_does_not_depend_on_component_keys(keys: tuple[str, str]) -> None:
+    # K2 and K3 share dimensions; K3's thickness cannot be identified and the answer leaves it unknown.
+    answer = [
+        _c("K1", 1200, 300, 18),
+        _c(keys[0], 864, 300, 18),
+        _c(keys[1], 864, 300, None),
+    ]
+    m = _score([_out(answer)], _ref_case())
+    assert m["abstention"]["unidentifiable_fields"] == 1
+    assert m["abstention"]["correct_abstentions"] == 1
+    assert m["abstention"]["asserted_unidentifiable"] == 0
+    assert m["abstention"]["resolvable_left_unknown"] == 0
+    assert m["identity"]["matched"] == 3
+
+
+def test_invented_value_in_an_unidentifiable_field_still_matches_and_is_reported() -> None:
+    answer = [_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, 40)]
+    m = _score([_out(answer)], _ref_case())
+    assert m["identity"]["matched"] == 3 and m["identity"]["false_positives"] == 0
+    assert m["abstention"]["asserted_unidentifiable"] == 1
+    assert m["abstention"]["asserted_matching_reference_value"] == 0
+    assert m["abstention"]["correct_abstentions"] == 0
+
+
+def test_two_known_dimensions_do_not_outscore_three_with_one_wrong() -> None:
+    wrong_three = _score([_out([_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, 40)])], _ref_case())
+    abstain = _score([_out([_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, None)])], _ref_case())
+    assert abstain["abstention"]["correct_abstention_rate"] == 1.0
+    assert wrong_three["abstention"]["correct_abstention_rate"] == 0.0
+    assert wrong_three["identity"]["matched"] == abstain["identity"]["matched"]
+
+
+def test_wrong_value_in_an_identifiable_field_is_an_error_not_a_lost_component() -> None:
+    answer = [_c("K1", 1200, 300, 40), _c("K2", 864, 300, 18), _c("K3", 864, 300, 18)]
+    m = _score([_out(answer)], _ref_case(thickness_k3_identifiable=True))
+    assert m["identity"]["matched"] == 3
+    assert m["dimensions"]["eligible_fields"] == 9 and m["dimensions"]["predicted_fields"] == 9
+    assert m["dimensions"]["within_tolerance"] == 8
+
+
+def test_failed_observations_stay_in_the_coverage_and_recall_denominators() -> None:
+    good = [_c("K1", 1200, 300, 18), _c("K2", 864, 300, 18), _c("K3", 864, 300, 18)]
+    outputs = [_out(good, repetition=1)] + [_out([], status="failed", repetition=n) for n in range(2, 6)]
+    m = _score(outputs, _ref_case(thickness_k3_identifiable=True))
+    assert m["sample"]["status_counts"] == {"failed": 4, "ok": 1}
+    assert m["identity"]["reference_types"] == 15 and m["identity"]["recall"] == pytest.approx(3 / 15)
+    assert m["dimensions"]["eligible_fields"] == 45 and m["dimensions"]["coverage"] == pytest.approx(9 / 45)
+    # the conditioned view is published separately and labelled
+    assert m["identity"]["recall_conditioned_on_ok"] == 1.0
+    assert m["dimensions"]["coverage_conditioned_on_ok"] == 1.0
+    only_failed = _score([_out([], status="failed")], _ref_case())
+    assert only_failed["identity"]["recall"] == 0.0 and only_failed["dimensions"]["coverage"] == 0.0
+    assert only_failed["identity"]["recall_conditioned_on_ok"] is None
+
+
+def test_not_evaluated_and_not_applicable_stay_out_of_the_denominators() -> None:
+    outputs = [_out([], status="not_evaluated"), _out([], status="not_applicable", repetition=2)]
+    m = _score(outputs, _ref_case())
+    assert m["identity"]["reference_types"] == 0 and m["identity"]["recall"] is None
+    assert m["dimensions"]["coverage"] is None
+
+
+def test_quantity_precision_and_recall_only_cover_identifiable_quantities() -> None:
+    reference = _ref_case(thickness_k3_identifiable=True, quantity_identifiable=False)
+    abstain = _score([_out([_c(k, *d, None) for k, d in (("K1", (1200, 300, 18)), ("K2", (864, 300, 18)), ("K3", (864, 300, 18)))])], reference)
+    invent = _score([_out([_c(k, *d, 2) for k, d in (("K1", (1200, 300, 18)), ("K2", (864, 300, 18)), ("K3", (864, 300, 18)))])], reference)
+    for m in (abstain, invent):
+        q = m["identity"]["quantity"]
+        assert q["reference_total"] == 0 and q["recall"] is None and q["precision"] is None
+    assert abstain["abstention"]["correct_abstentions"] == 3 and abstain["abstention"]["asserted_unidentifiable"] == 0
+    assert invent["abstention"]["asserted_unidentifiable"] == 3 and invent["abstention"]["asserted_matching_reference_value"] == 3
