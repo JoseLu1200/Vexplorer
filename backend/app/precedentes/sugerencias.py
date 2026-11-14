@@ -1,7 +1,8 @@
 """Idea 2.1: sugerencias de valores que faltan a partir de precedentes de la biblioteca.
 
-Los vecinos se eligen filtrando por versión de descriptor, familia y estructura conocidas y
-ordenando por ``geometric_match`` (que sólo puntúa medidas conocidas). Nunca se ordena por el
+Los vecinos se eligen filtrando por versión de descriptor, familia conocida y coincidente
+(si la consulta no tiene familia, abstención global), estructura coincidente cuando ambas se
+conocen y un score geométrico mínimo, ordenando por ``geometric_match`` (que sólo puntúa medidas conocidas). Nunca se ordena por el
 coseno del texto completo, que incluye las propias incógnitas.
 
 Cada sugerencia es una ``hipotesis`` con soporte n/N, rango e ids de los vecinos; si el soporte
@@ -25,17 +26,25 @@ from backend.app.precedentes.campos_descriptor import (
     familia,
     valor_campo,
 )
-from backend.app.precedentes.comun import ModeloEstricto
+from backend.app.precedentes.comun import ModeloEstricto, normalizar_texto
 from backend.app.similarity.service import geometric_match
 
 ValorSugerido = float | str | tuple[float, ...]
+
+# Valor PROVISIONAL hasta la calibración de las ideas 1.1/1.2: por debajo de 0,5 el vecino
+# coincide en menos de la mitad de lo ponderado por ``geometric_match`` (las medidas desconocidas
+# de la consulta puntúan 0, así que una consulta muy incompleta tenderá a abstenerse).
+SCORE_MINIMO_PROVISIONAL = 0.5
+
+# Campos categóricos de texto libre que se comparan tras ``normalizar_texto``.
+CAMPOS_TEXTO_NORMALIZADO = frozenset({"material", "finish"})
 
 
 class ParametrosSugerencia(ModeloEstricto):
     k: int = Field(default=8, ge=1, le=50)
     soporte_minimo: float = Field(default=0.6, gt=0, le=1, allow_inf_nan=False)
     vecinos_minimos: int = Field(default=3, ge=1, le=50)
-    score_minimo: float = Field(default=0.0, ge=0, le=1, allow_inf_nan=False)
+    score_minimo: float = Field(default=SCORE_MINIMO_PROVISIONAL, ge=0, le=1, allow_inf_nan=False)
     tolerancia_relativa: float = Field(default=0.05, ge=0, le=1, allow_inf_nan=False)
 
 
@@ -55,7 +64,8 @@ class Exclusiones(ModeloEstricto):
     mismo_run: int = 0
     otra_version: int = 0
     revision_obsoleta: int = 0
-    familia_o_estructura: int = 0
+    familia_distinta_o_desconocida: int = 0
+    estructura_distinta: int = 0
     score_insuficiente: int = 0
     fuera_de_k: int = 0
 
@@ -90,6 +100,7 @@ class ResultadoSugerencias(ModeloEstricto):
     parametros: ParametrosSugerencia
     vecinos: tuple[VecinoUsado, ...]
     exclusiones: Exclusiones
+    motivo_abstencion_global: str | None = None
     sugerencias: tuple[SugerenciaCampo, ...]
     aviso: str = (
         "Sugerencias derivadas de precedentes: son hipótesis, no medidas observadas. "
@@ -121,10 +132,11 @@ def seleccionar_vecinos(
             contadores["revision_obsoleta"] += 1
             continue
         familia_item, estructura_item = familia(item.descriptor), estructura(item.descriptor)
-        if (familia_consulta and familia_item and familia_consulta != familia_item) or (
-            estructura_consulta and estructura_item and estructura_consulta != estructura_item
-        ):
-            contadores["familia_o_estructura"] += 1
+        if familia_consulta is None or familia_item != familia_consulta:
+            contadores["familia_distinta_o_desconocida"] += 1
+            continue
+        if estructura_consulta and estructura_item and estructura_consulta != estructura_item:
+            contadores["estructura_distinta"] += 1
             continue
         score = geometric_match(consulta, item).score
         if score < score_minimo:
@@ -156,6 +168,8 @@ def sugerir_campo(
         if campo_desconocido(item.descriptor, campo):
             continue
         valor = valor_campo(item.descriptor, campo)
+        if campo in CAMPOS_TEXTO_NORMALIZADO and isinstance(valor, str):
+            valor = normalizar_texto(valor)
         if valor is not None:
             conocidos.append((item.id, valor))
     ids = tuple(sorted(item_id for item_id, _ in conocidos))
@@ -208,6 +222,22 @@ def sugerir_valores(
     parametros: ParametrosSugerencia,
 ) -> ResultadoSugerencias:
     """Sugerencias para cada campo desconocido del descriptor de consulta. Función pura y determinista."""
+    desconocidos = tuple((campo, tipo) for campo, tipo in campos_sugeribles(consulta) if campo_desconocido(consulta, campo))
+    if familia(consulta) is None:
+        motivo = "familia_desconocida: sin familia no hay precedentes comparables"
+        return ResultadoSugerencias(
+            run_id=run_id,
+            result_revision=result_revision,
+            descriptor_version=consulta.descriptor_version,
+            parametros=parametros,
+            vecinos=(),
+            exclusiones=Exclusiones(),
+            motivo_abstencion_global=motivo,
+            sugerencias=tuple(
+                SugerenciaCampo(campo=campo, tipo=tipo, estado="abstencion", soporte=0, total=0, proporcion=0.0, vecinos_ids=(), vecinos_a_favor_ids=(), motivo=motivo)
+                for campo, tipo in desconocidos
+            ),
+        )
     vecinos, exclusiones = seleccionar_vecinos(
         consulta,
         elementos,
@@ -216,11 +246,7 @@ def sugerir_valores(
         k=parametros.k,
         score_minimo=parametros.score_minimo,
     )
-    sugerencias = tuple(
-        sugerir_campo(campo, tipo, vecinos, parametros)
-        for campo, tipo in campos_sugeribles(consulta)
-        if campo_desconocido(consulta, campo)
-    )
+    sugerencias = tuple(sugerir_campo(campo, tipo, vecinos, parametros) for campo, tipo in desconocidos)
     return ResultadoSugerencias(
         run_id=run_id,
         result_revision=result_revision,

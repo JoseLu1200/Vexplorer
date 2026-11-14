@@ -21,6 +21,9 @@ from pydantic import Field
 from backend.app.precedentes.comun import ModeloEstricto
 
 ValorComponente = Annotated[float, Field(allow_inf_nan=False)]
+ClaveComponente = Annotated[str, Field(min_length=1, max_length=64)]
+MAX_ID = 200
+MAX_COMPONENTES = 32
 
 COMPONENTES_POR_METODO: dict[str, tuple[str, ...]] = {
     "geometric": ("dimensions", "roles", "thickness"),
@@ -29,13 +32,13 @@ COMPONENTES_POR_METODO: dict[str, tuple[str, ...]] = {
 
 
 class DecisionEntrada(ModeloEstricto):
-    consulta_id: str = Field(min_length=1)
-    candidato_id: str = Field(min_length=1)
-    metodo: str = Field(min_length=1)
-    score_components: dict[str, ValorComponente]
+    consulta_id: str = Field(min_length=1, max_length=MAX_ID)
+    candidato_id: str = Field(min_length=1, max_length=MAX_ID)
+    metodo: str = Field(min_length=1, max_length=64)
+    score_components: dict[ClaveComponente, ValorComponente] = Field(max_length=MAX_COMPONENTES)
     aceptado: bool
     motivo: str | None = Field(default=None, max_length=2000)
-    actor: str | None = Field(default=None, min_length=1)
+    actor: str | None = Field(default=None, min_length=1, max_length=MAX_ID)
 
 
 class Decision(ModeloEstricto):

@@ -14,7 +14,7 @@
   - 3.1 Lotes de corte · 3.2 Búsqueda en lenguaje natural · 3.3 Embeddings de imagen (mecanismo) · 3.4 Aprendizaje de decisiones (mecanismo) · 3.5 Herrajes y mecanizados (mecanismo, datos sintéticos)
 - Las ideas 1.1–1.7 quedan para el compañero (corrección del usuario: "nosotros hacemos del 2.1 para adelante").
 - Referencia del plan: `docs/BRAINSTORMING_EMBEDDINGS.md`, secciones 2.2, 2.4, 3.1, 3.2, 3.5
-- Estado: en curso
+- Estado: terminado (backend, API y tests); interfaz pendiente
 - Rama: `feat/precedentes-persona2`
 
 ## Alcance y reservas
@@ -34,10 +34,16 @@
 
 - Brainstorming ampliado y publicado en `main` (`c66f93b`).
 - Creado este archivo y la rama `feat/precedentes-persona2`.
+- Seis implementadores en paralelo con archivos disjuntos; paquete `backend/app/precedentes/` con las 12 ideas (commit `1fa4aad`).
+- Routers registrados en `main.py` (`_incluir_routers_precedentes`) y prefijo `/api/v1/precedentes` añadido a la lista de funciones privadas del middleware: 403 en acceso público.
+- Revisión independiente en solo lectura: 2 hallazgos altos (coste cúbico en 2.4, suplantación de actor en 3.4), 6 medios y 7 bajos. Todos corregidos por su implementador y verificados (segundo commit).
+- Documentación del incremento en `docs/PRECEDENTES.md`.
 
 ## Siguiente bloque
 
-- Implementación paralela por subagentes, revisión independiente, integración en `main.py` y verificación completa.
+- Interfaz de usuario de los endpoints (coordinar con frontend).
+- Afinar umbrales provisionales cuando el compañero entregue 1.1/1.2.
+- Promover a `contratos/` los modelos que se consoliden (acuerdo A/B).
 
 ## Decisiones
 
@@ -59,6 +65,10 @@
 | Caso | Comando ejecutado | Resultado observado | Limitación |
 |---|---|---|---|
 | Línea base antes de cambios | `pytest -q -p no:cacheprovider --continue-on-collection-errors backend/tests tests` | 825 pasan, 1 skip, 2 fallan, 6 errores de colección | Fallos previos: `test_explorer_models.py::test_training_numeric_artifact_uses_only_train_and_preserves_sklearn_prediction[knn|logreg]`. Errores de colección (dependencias opcionales del laboratorio): `tests/test_reconstruction3d_evaluation.py`, `tests/test_semantic_lab_{classifier_comparison,components,evaluate,jev_comparison,probe_datasets}.py` |
+
+| Tras implementación y correcciones | mismo comando | 984 pasan, 1 skip, los mismos 2 fallos y 6 errores de colección de la línea base | Sin regresiones; 159 tests nuevos |
+| Lint del código nuevo | `ruff check backend/app/precedentes backend/tests/test_precedentes_*.py tools/evaluar_recuperacion.py` | limpio | `main.py` conserva sus 20 avisos previos; no se añade ninguno |
+| Bloqueo en acceso público | `pytest backend/tests/test_precedentes_integracion.py` | 3 pasan | Comprueba 403 en las 18 rutas |
 
 ## Bloqueos y cierre
 

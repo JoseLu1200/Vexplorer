@@ -51,7 +51,15 @@ class SolicitudPresupuestoAnalogia(ModeloEstricto):
     limite: int = Field(default=3, ge=1, le=20)
     metodo_recuperacion: Literal["attribute", "semantic"] = "attribute"
     incluir_sinteticos: bool = False
-    minimo_comparables: int = Field(default=2, ge=1, le=20)
+    minimo_comparables: int = Field(default=3, ge=3, le=20)
+
+    @model_validator(mode="after")
+    def minimo_alcanzable(self) -> SolicitudPresupuestoAnalogia:
+        if self.minimo_comparables > self.limite:
+            raise ValueError(
+                "minimo_comparables no puede superar limite: la abstención sería segura"
+            )
+        return self
 
 
 class ComparablePresupuesto(ModeloEstricto):
@@ -100,6 +108,7 @@ class ResultadoPresupuestoAnalogia(ModeloEstricto):
     excluidos: tuple[ComparableExcluido, ...]
     estadisticos: EstadisticosVecindario | None
     alerta: AlertaDesviacion | None
+    motivo_sin_alerta: Literal["precedentes_insuficientes", "dispersion_nula"] | None
     origenes: dict[str, int]
     formula: str
     configuracion: ConfiguracionAnalogia
@@ -125,7 +134,9 @@ def describir_formula(config: ConfiguracionAnalogia) -> str:
         "k = |coste_calculado - mediana| / dispersion; "
         f"nivel = dentro_de_rango si k <= {config.multiplo_aviso}, "
         f"aviso si k <= {config.multiplo_alerta}, alerta en otro caso; "
-        "desviacion_relativa = (coste_calculado - mediana) / mediana (nula si mediana = 0)"
+        "desviacion_relativa = (coste_calculado - mediana) / mediana (nula si mediana = 0); "
+        "si MAD = 0 (costes idénticos) no se alerta (motivo dispersion_nula): "
+        "un umbral basado solo en el suelo relativo equivaldría a un porcentaje fijo"
     )
 
 
@@ -318,7 +329,9 @@ def presupuestar_por_analogia(
 
     estadisticos: EstadisticosVecindario | None = None
     alerta: AlertaDesviacion | None = None
+    motivo_sin_alerta: Literal["precedentes_insuficientes", "dispersion_nula"] | None = None
     if len(validos_t) < solicitud.minimo_comparables:
+        motivo_sin_alerta = "precedentes_insuficientes"
         estado: Literal["con_precedentes", "sin_precedentes_suficientes"] = (
             "sin_precedentes_suficientes"
         )
@@ -331,7 +344,16 @@ def presupuestar_por_analogia(
         estadisticos = calcular_estadisticos(
             tuple(item.coste_escalado for item in validos_t), config
         )
-        alerta = clasificar_desviacion(solicitud.coste_calculado, estadisticos, config)
+        if estadisticos.mad == 0:
+            motivo_sin_alerta = "dispersion_nula"
+            avisos.append(
+                "Los costes del vecindario no presentan dispersión (MAD = 0): "
+                "no se emite alerta para no usar un porcentaje fijo."
+            )
+        else:
+            alerta = clasificar_desviacion(
+                solicitud.coste_calculado, estadisticos, config
+            )
 
     return ResultadoPresupuestoAnalogia(
         estado=estado,
@@ -344,6 +366,7 @@ def presupuestar_por_analogia(
         excluidos=tuple(excluidos),
         estadisticos=estadisticos,
         alerta=alerta,
+        motivo_sin_alerta=motivo_sin_alerta,
         origenes=dict(sorted(origenes.items())),
         formula=describir_formula(config),
         configuracion=config,

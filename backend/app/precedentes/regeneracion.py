@@ -32,8 +32,8 @@ from backend.app.semantic.embeddings import (
     embedding_cache_key,
 )
 
-MotivoObsolescencia = Literal["revision_obsoleta", "embedding_ausente", "embedding_corrupto"]
-EstadoVector = Literal["ok", "ausente", "corrupto"]
+MotivoObsolescencia = Literal["revision_obsoleta", "embedding_ausente", "embedding_corrupto", "espacio_distinto"]
+EstadoVector = Literal["ok", "ausente", "corrupto", "espacio_distinto"]
 EstadoRegeneracion = Literal["pendiente", "regenerado", "de_cache", "error", "omitido"]
 
 
@@ -97,10 +97,13 @@ class InformeRegeneracion(ModeloEstricto):
     elementos: tuple[ResultadoElemento, ...]
 
 
-def estado_vector(repositorio: RepositorioBiblioteca, elemento: LibraryItem) -> EstadoVector:
+def estado_vector(repositorio: RepositorioBiblioteca, elemento: LibraryItem, espacio_vigente: tuple[str, int] | None = None) -> EstadoVector:
+    """``espacio_vigente`` = (modelo, dimensiones) del proveedor; sin proveedor no se juzga el espacio."""
     metadatos = elemento.embedding
     if metadatos is None:
         return "ausente"
+    if espacio_vigente is not None and (metadatos.model, metadatos.dimensions) != espacio_vigente:
+        return "espacio_distinto"
     try:
         repositorio.get_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version)
     except KeyError:
@@ -110,7 +113,7 @@ def estado_vector(repositorio: RepositorioBiblioteca, elemento: LibraryItem) -> 
     return "ok"
 
 
-def recopilar_hechos(repositorio: RepositorioBiblioteca) -> tuple[HechosElemento, ...]:
+def recopilar_hechos(repositorio: RepositorioBiblioteca, espacio_vigente: tuple[str, int] | None = None) -> tuple[HechosElemento, ...]:
     hechos: list[HechosElemento] = []
     for elemento in sorted(repositorio.get_library_items(), key=lambda item: item.id):
         try:
@@ -118,7 +121,7 @@ def recopilar_hechos(repositorio: RepositorioBiblioteca) -> tuple[HechosElemento
             existe = True
         except KeyError:
             vigente, existe = None, False
-        hechos.append(HechosElemento(elemento=elemento, revision_vigente=vigente, run_existe=existe, estado_vector=estado_vector(repositorio, elemento)))
+        hechos.append(HechosElemento(elemento=elemento, revision_vigente=vigente, run_existe=existe, estado_vector=estado_vector(repositorio, elemento, espacio_vigente)))
     return tuple(hechos)
 
 
@@ -133,6 +136,8 @@ def detectar_obsoletos(hechos: tuple[HechosElemento, ...]) -> tuple[ElementoObso
             motivos.append("embedding_ausente")
         elif hecho.estado_vector == "corrupto":
             motivos.append("embedding_corrupto")
+        elif hecho.estado_vector == "espacio_distinto":
+            motivos.append("espacio_distinto")
         if motivos:
             obsoletos.append(ElementoObsoleto(
                 library_item_id=hecho.elemento.id,
@@ -222,7 +227,8 @@ def regenerar_obsoletos(
     """Detecta y (si ``simular`` es False) regenera. Requiere proveedor cuando no se simula."""
     if not simular and proveedor is None:
         raise LookupError("proveedor_no_disponible")
-    hechos = recopilar_hechos(repositorio)
+    espacio = (proveedor.model, proveedor.dimensions) if proveedor is not None else None
+    hechos = recopilar_hechos(repositorio, espacio)
     obsoletos = detectar_obsoletos(hechos)
     por_id = {hecho.elemento.id: hecho.elemento for hecho in hechos}
     seleccion = obsoletos[:limite]

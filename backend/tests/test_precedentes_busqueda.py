@@ -178,3 +178,41 @@ def test_sin_proveedor_y_solo_consulta():
 @pytest.mark.parametrize("cuerpo", [{}, {"consulta": "x" * 501}, {"filtros": {"alto": {}}}, {"filtros": {"alto": {"minimo_mm": 10, "maximo_mm": 5}}}])
 def test_peticiones_invalidas(cuerpo):
     assert _cliente(None).post(RUTA, json=cuerpo).status_code == 422
+
+
+def test_rol_inventado_por_el_llm_pasa_a_termino_no_interpretado():
+    argumentos = {"familia": "rectangular_shelving", "estructura": None, "ancho": None, "fondo": None, "alto": None, "roles": [{"rol": "zocalo_cerrado", "cantidad_minima": 1}, {"rol": "shelf", "cantidad_minima": 4}], "espesor": None, "material": None, "acabado": None, "terminos_no_interpretados": []}
+    proveedor = ProveedorFalso([_respuesta(argumentos)])
+    respuesta = _cliente(proveedor).post(RUTA, json={"consulta": "estanterías con zócalo cerrado y 4 baldas"})
+    assert respuesta.status_code == 200
+    datos = respuesta.json()["data"]
+    assert datos["terminos_no_interpretados"] == ["zocalo cerrado"]
+    assert [item["rol"] for item in datos["filtros_aplicados"]["roles"]] == ["shelf"]
+    assert any("zocalo_cerrado" in aviso for aviso in datos["avisos"])
+    assert [item["run_id"] for item in datos["resultados"]] == ["run-alta", "run-baja", "run-centrada", "run-v1"]
+
+
+def test_rol_desconocido_enviado_por_el_cliente_tambien_se_reubica():
+    respuesta = _cliente(None).post(RUTA, json={"filtros": {"roles": [{"rol": "zocalo", "cantidad_minima": 1}], "terminos_no_interpretados": ["tiradores"]}})
+    assert respuesta.status_code == 200
+    datos = respuesta.json()["data"]
+    assert datos["terminos_no_interpretados"] == ["tiradores", "zocalo"]
+    assert datos["filtros_aplicados"]["roles"] == []
+    assert datos["excluidos_por_filtros"] == 0
+
+
+def test_rol_presente_en_la_biblioteca_se_mantiene():
+    respuesta = _cliente(None).post(RUTA, json={"filtros": {"roles": [{"rol": "tabletop", "cantidad_minima": 1}]}})
+    datos = respuesta.json()["data"]
+    assert datos["avisos"] == []
+    assert [item["run_id"] for item in datos["resultados"]] == ["run-mesa"]
+
+
+def test_esquema_restringe_roles_al_vocabulario_del_contrato():
+    rol = esquema_herramienta()["parameters"]["$defs"]["RolMinimo"]["properties"]["rol"]
+    assert "shelf" in rol["enum"] and "tabletop" in rol["enum"] and "unknown" not in rol["enum"]
+
+
+@pytest.mark.parametrize("terminos", [[f"t{indice}" for indice in range(11)], ["x" * 101]])
+def test_terminos_no_interpretados_acotados(terminos):
+    assert _cliente(None).post(RUTA, json={"filtros": {"terminos_no_interpretados": terminos}}).status_code == 422

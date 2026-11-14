@@ -128,3 +128,16 @@ def test_espacio_incompatible_no_se_oculta(tmp_path: Path, monkeypatch) -> None:
     assert componente_semantico(consulta, candidato) == (None, "embedding_space_incompatible")
     mismo = CandidatoHibrido(elemento=elemento, vector=VectorEtiquetado(metadatos=meta_a, vector=(0.0, 1.0)))
     assert componente_semantico(consulta, mismo) == (0.0, None)
+
+
+def test_excluye_candidatos_con_revision_obsoleta(tmp_path: Path, monkeypatch) -> None:
+    principal, cliente = _entorno(tmp_path, monkeypatch)
+    consulta = _run_revisado(principal, "a")
+    vigente, obsoleto = _run_revisado(principal, "b"), _run_revisado(principal, "c")
+    for run_id, revision in ((consulta, 2), (vigente, 2), (obsoleto, 1)):
+        principal.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": revision, "label": run_id, "embedding_mode": "offline"})
+
+    datos = cliente.post(URL, json={"run_id": consulta, "result_revision": 2}).json()["data"]
+    assert [item["run_id"] for item in datos["coincidencias"]] == [vigente]
+    assert datos["excluidos_por_revision_obsoleta"] == 1
+    assert datos["excluidos_por_descriptor"] == 0

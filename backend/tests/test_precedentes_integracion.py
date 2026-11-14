@@ -17,6 +17,8 @@ RUTAS_PRECEDENTES = [
     ("POST", "/api/v1/precedentes/embeddings/regenerar"),
     ("POST", "/api/v1/precedentes/embeddings/espacio/verificar"),
     ("GET", "/api/v1/precedentes/embeddings/espacio"),
+    ("POST", "/api/v1/precedentes/embeddings/espacio/rotar"),
+    ("GET", "/api/v1/precedentes/embeddings/espacio/historico"),
     ("POST", "/api/v1/precedentes/piezas/gemelas"),
     ("POST", "/api/v1/precedentes/piezas/lotes"),
     ("POST", "/api/v1/precedentes/busqueda"),

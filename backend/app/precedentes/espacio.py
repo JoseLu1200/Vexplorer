@@ -81,6 +81,21 @@ class ResultadoVerificacion(ModeloEstricto):
     referencia_creada_en: str
     coseno_minimo: float | None = None
     detalle: tuple[ComparacionFrase, ...] = ()
+    accion_sugerida: Literal["rotar_referencia"] | None = None
+    mensaje: str | None = None
+
+
+class HuellaRetirada(ModeloEstricto):
+    huella: ResumenHuella
+    retirada_en: str
+
+
+class ResultadoRotacion(ModeloEstricto):
+    modelo: str
+    dimensiones: int
+    version_frases: str
+    referencia_nueva: ResumenHuella
+    referencia_anterior: HuellaRetirada | None = None
 
 
 def calcular_huella_id(modelo: str, dimensiones: int, version_frases: str, vectores: tuple[tuple[float, ...], ...]) -> str:
@@ -123,6 +138,11 @@ def comparar_huellas(referencia: HuellaEspacio, actual: HuellaEspacio, toleranci
         detalle.append(ComparacionFrase(indice=indice, frase=frase, coseno=coseno, estable=coseno >= tolerancia))
     estable = all(item.estable for item in detalle)
     return ResultadoVerificacion(
+        accion_sugerida=None if estable else "rotar_referencia",
+        mensaje=None if estable else (
+            "El espacio ha derivado: los vectores nuevos no son comparables con los antiguos. "
+            "Rota la referencia (POST .../embeddings/espacio/rotar) y vuelve a embeber la biblioteca."
+        ),
         estado="estable" if estable else "deriva_detectada",
         modelo=actual.modelo,
         dimensiones=actual.dimensiones,
@@ -160,6 +180,11 @@ class AlmacenEspacio:
                 "modelo TEXT NOT NULL, dimensiones INTEGER NOT NULL, version_frases TEXT NOT NULL, "
                 "carga TEXT NOT NULL, PRIMARY KEY (modelo, dimensiones, version_frases))"
             )
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS referencias_espacio_historico ("
+                "modelo TEXT NOT NULL, dimensiones INTEGER NOT NULL, version_frases TEXT NOT NULL, "
+                "carga TEXT NOT NULL, retirada_en TEXT NOT NULL)"
+            )
 
     @contextmanager
     def _conectar(self) -> Iterator[sqlite3.Connection]:
@@ -189,6 +214,35 @@ class AlmacenEspacio:
         assert guardada is not None
         return guardada
 
+    def rotar(self, huella: HuellaEspacio, retirada_en: str) -> HuellaRetirada | None:
+        """Guarda ``huella`` como referencia vigente y archiva la anterior (si la había) con fecha."""
+        with self._conectar() as db:
+            db.execute("BEGIN IMMEDIATE")
+            fila = db.execute(
+                "SELECT carga FROM referencias_espacio WHERE modelo=? AND dimensiones=? AND version_frases=?",
+                (huella.modelo, huella.dimensiones, huella.version_frases),
+            ).fetchone()
+            if fila is not None:
+                db.execute(
+                    "INSERT INTO referencias_espacio_historico VALUES (?, ?, ?, ?, ?)",
+                    (huella.modelo, huella.dimensiones, huella.version_frases, fila[0], retirada_en),
+                )
+            db.execute(
+                "INSERT OR REPLACE INTO referencias_espacio VALUES (?, ?, ?, ?)",
+                (huella.modelo, huella.dimensiones, huella.version_frases, huella.model_dump_json()),
+            )
+        if fila is None:
+            return None
+        return HuellaRetirada(huella=resumir(HuellaEspacio.model_validate_json(fila[0])), retirada_en=retirada_en)
+
+    def listar_historico(self) -> tuple[HuellaRetirada, ...]:
+        with self._conectar() as db:
+            filas = db.execute(
+                "SELECT carga, retirada_en FROM referencias_espacio_historico "
+                "ORDER BY modelo, dimensiones, version_frases, retirada_en, rowid"
+            ).fetchall()
+        return tuple(HuellaRetirada(huella=resumir(HuellaEspacio.model_validate_json(carga)), retirada_en=fecha) for carga, fecha in filas)
+
     def listar(self) -> tuple[HuellaEspacio, ...]:
         with self._conectar() as db:
             filas = db.execute("SELECT carga FROM referencias_espacio ORDER BY modelo, dimensiones, version_frases").fetchall()
@@ -213,3 +267,16 @@ def verificar_espacio(proveedor: ProveedorEmbeddings, almacen: AlmacenEspacio, t
             )
         referencia = guardada
     return comparar_huellas(referencia, actual, tolerancia)
+
+
+def rotar_espacio(proveedor: ProveedorEmbeddings, almacen: AlmacenEspacio, ahora: Callable[[], str] = ahora_utc) -> ResultadoRotacion:
+    """Rotación explícita: la huella actual pasa a ser la referencia; la anterior queda archivada."""
+    actual = calcular_huella(proveedor, ahora)
+    anterior = almacen.rotar(actual, ahora())
+    return ResultadoRotacion(
+        modelo=actual.modelo,
+        dimensiones=actual.dimensiones,
+        version_frases=actual.version_frases,
+        referencia_nueva=resumir(actual),
+        referencia_anterior=anterior,
+    )

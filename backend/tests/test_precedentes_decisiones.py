@@ -176,3 +176,42 @@ def test_api_errores_resumen(tmp_path: Path) -> None:
     cliente = _cliente(tmp_path)
     assert cliente.get(RUTA + "/resumen").json()["error"]["code"] == "metodo_requerido"
     assert cliente.get(RUTA + "/resumen", params={"metodo": "geometric", "minimo": "0"}).json()["error"]["code"] == "minimo_invalido"
+
+
+def test_api_sin_autenticacion_ignora_actor_del_cuerpo(tmp_path: Path) -> None:
+    cliente = _cliente(tmp_path)
+    primera = cliente.post(RUTA, json={**CUERPO, "actor": "jefe"}).json()["data"]
+    assert primera["decision"]["actor"] is None
+    # Variar el actor no crea decisiones nuevas: no se puede inflar la recomendación.
+    segunda = cliente.post(RUTA, json={**CUERPO, "actor": "otro"})
+    assert segunda.status_code == 200 and segunda.json()["data"]["estado"] == "sin_cambios"
+    datos = cliente.get(RUTA + "/resumen", params={"metodo": "geometric"}).json()["data"]
+    assert datos["total"] == 1
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"consulta_id": "x" * 201},
+        {"candidato_id": "x" * 201},
+        {"metodo": "m" * 65},
+        {"score_components": {f"c{indice}": 0.5 for indice in range(33)}},
+        {"score_components": {"k" * 65: 0.5}},
+    ],
+)
+def test_api_rechaza_campos_excesivos(tmp_path: Path, cambio: dict) -> None:
+    respuesta = _cliente(tmp_path).post(RUTA, json={**CUERPO, **cambio})
+    assert respuesta.status_code == 422
+    assert respuesta.json()["error"]["code"] == "decision_invalida"
+
+
+def test_api_rechaza_cuerpo_grande(tmp_path: Path) -> None:
+    cliente = _cliente(tmp_path)
+    respuesta = cliente.post(RUTA, json={**CUERPO, "motivo": "x" * (70 * 1024)})
+    assert respuesta.status_code == 413
+    assert respuesta.json()["error"]["code"] == "cuerpo_demasiado_grande"
+    # Sin Content-Length (envío por trozos) también se corta.
+    trozos = (bytes([b]) * 1024 for b in [32] * 70)
+    sin_longitud = cliente.post(RUTA, content=trozos, headers={"Content-Type": "application/json"})
+    assert sin_longitud.status_code == 413
+    assert cliente.get(RUTA + "/resumen", params={"metodo": "geometric"}).json()["data"]["total"] == 0

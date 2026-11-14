@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from backend.app.precedentes.comun import (
     PREFIJO_API,
@@ -12,7 +12,11 @@ from backend.app.precedentes.comun import (
     respuesta_error,
     respuesta_ok,
 )
-from backend.app.precedentes.gemelas import ConfiguracionGemelas, detectar_gemelas
+from backend.app.precedentes.gemelas import (
+    TOLERANCIA_MAXIMA_MM,
+    ConfiguracionGemelas,
+    detectar_gemelas,
+)
 from backend.app.precedentes.lotes import ConfiguracionLotes, preparar_lotes
 from backend.app.precedentes.piezas import (
     LIMITE_PIEZAS,
@@ -29,9 +33,16 @@ from backend.app.precedentes.piezas import (
 class PeticionGemelas(ModeloEstricto):
     piezas: tuple[PiezaPeticion, ...] = Field(default=(), max_length=LIMITE_PIEZAS)
     incluir_biblioteca: bool = False
-    tolerancia_largo_mm: float = Field(default=3.0, ge=0, le=1000, allow_inf_nan=False)
-    tolerancia_ancho_mm: float = Field(default=3.0, ge=0, le=1000, allow_inf_nan=False)
+    tolerancia_largo_mm: float = Field(
+        default=3.0, ge=0, le=TOLERANCIA_MAXIMA_MM, allow_inf_nan=False
+    )
+    tolerancia_ancho_mm: float = Field(
+        default=3.0, ge=0, le=TOLERANCIA_MAXIMA_MM, allow_inf_nan=False
+    )
     permitir_giro: bool = False
+
+
+MAXIMO_PEDIDOS = 200
 
 
 class PedidoEntrada(ModeloEstricto):
@@ -40,8 +51,27 @@ class PedidoEntrada(ModeloEstricto):
 
 
 class PeticionLotes(ModeloEstricto):
-    pedidos: tuple[PedidoEntrada, ...] = Field(default=(), max_length=500)
-    run_ids: tuple[str, ...] = Field(default=(), max_length=500)
+    pedidos: tuple[PedidoEntrada, ...] = Field(default=(), max_length=MAXIMO_PEDIDOS)
+    run_ids: tuple[str, ...] = Field(default=(), max_length=MAXIMO_PEDIDOS)
+
+    @model_validator(mode="before")
+    @classmethod
+    def limitar_total_antes_de_validar(cls, datos: object) -> object:
+        """Corta peticiones enormes antes de validar cada pieza."""
+        if isinstance(datos, dict):
+            pedidos = datos.get("pedidos")
+            if isinstance(pedidos, list | tuple):
+                total = sum(
+                    len(p.get("piezas") or ())
+                    for p in pedidos
+                    if isinstance(p, dict) and isinstance(p.get("piezas"), list | tuple)
+                )
+                if total > LIMITE_PIEZAS:
+                    raise ValueError(
+                        f"Máximo {LIMITE_PIEZAS} piezas entre todos los pedidos."
+                    )
+        return datos
+
     incluir_biblioteca: bool = False
     tablero_largo_mm: float = Field(
         default=2440.0, gt=0, le=10_000, allow_inf_nan=False

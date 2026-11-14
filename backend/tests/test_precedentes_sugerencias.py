@@ -14,7 +14,11 @@ from backend.app.contratos.modelos import (
 )
 from backend.app.precedentes.api_sugerencias import crear_router_sugerencias
 from backend.app.precedentes.comun import PREFIJO_API
-from backend.app.precedentes.sugerencias import ParametrosSugerencia, sugerir_valores
+from backend.app.precedentes.sugerencias import (
+    SCORE_MINIMO_PROVISIONAL,
+    ParametrosSugerencia,
+    sugerir_valores,
+)
 from backend.app.semantic.descriptor import descriptor_fingerprint
 
 
@@ -69,7 +73,7 @@ def test_sugiere_espesor_y_se_abstiene_en_material_empatado():
     assert [vecino.run_id for vecino in resultado.vecinos] == ["run-a", "run-b", "run-c", "run-d"]
     assert resultado.exclusiones.mismo_run == 1
     assert resultado.exclusiones.revision_obsoleta == 1
-    assert resultado.exclusiones.familia_o_estructura == 1
+    assert resultado.exclusiones.estructura_distinta == 1
     assert resultado.exclusiones.otra_version == 1
     por_campo = {item.campo: item for item in resultado.sugerencias}
     assert set(por_campo) == {"thicknesses_mm", "material"}
@@ -95,10 +99,13 @@ def test_abstencion_por_vecinos_insuficientes():
     assert all(item.estado == "abstencion" and item.motivo.startswith("vecinos_insuficientes") for item in resultado.sugerencias)
 
 
+ROLES = (RoleQuantity(role="shelf", quantity=4),)
+
+
 def test_k_limita_vecinos_y_mediana_numerica():
-    consulta = FurnitureDescriptor(family="rectangular_shelving", dimensions=DescriptorDimensions(width_mm=800.0, height_mm=1800.0), roles=(), structure="unknown", material="roble", finish="natural", unknown_fields=("dimensions.depth_mm",))
+    consulta = FurnitureDescriptor(family="rectangular_shelving", dimensions=DescriptorDimensions(width_mm=800.0, height_mm=1800.0), roles=ROLES, structure="unknown", material="roble", finish="natural", unknown_fields=("dimensions.depth_mm",))
     elementos = tuple(
-        _item(f"run-{indice}", FurnitureDescriptor(family="rectangular_shelving", dimensions=DescriptorDimensions(width_mm=800.0, depth_mm=fondo, height_mm=1800.0), roles=(), structure="top_base_between_sides", material="roble", finish="natural", unknown_fields=()))
+        _item(f"run-{indice}", FurnitureDescriptor(family="rectangular_shelving", dimensions=DescriptorDimensions(width_mm=800.0, depth_mm=fondo, height_mm=1800.0), roles=ROLES, structure="top_base_between_sides", material="roble", finish="natural", unknown_fields=()))
         for indice, fondo in enumerate((300.0, 310.0, 320.0, 600.0))
     )
     resultado = sugerir_valores(consulta, elementos, run_id="run-x", result_revision=1, revisiones_vigentes={item.run_id: 1 for item in elementos}, parametros=ParametrosSugerencia(k=3, vecinos_minimos=3, soporte_minimo=0.6))
@@ -109,6 +116,48 @@ def test_k_limita_vecinos_y_mediana_numerica():
     assert fondo.estado == "hipotesis"
     assert fondo.valor == 310.0
     assert (fondo.soporte, fondo.total) == (3, 3)
+
+
+def test_parametros_por_defecto_exigen_score_minimo_provisional():
+    assert ParametrosSugerencia().score_minimo == SCORE_MINIMO_PROVISIONAL > 0
+
+
+def test_muebles_muy_distintos_no_producen_hipotesis():
+    distintos = tuple(
+        _item(f"run-dist-{indice}", _v2(width=ancho, depth=ancho / 4, height=ancho / 2, thicknesses=(18.0,), material="roble"))
+        for indice, ancho in enumerate((150.0, 160.0, 170.0, 5000.0))
+    )
+    vigentes = {item.run_id: 1 for item in distintos}
+    resultado = sugerir_valores(CONSULTA, distintos, run_id="run-q", result_revision=1, revisiones_vigentes=vigentes, parametros=ParametrosSugerencia())
+    assert resultado.vecinos == ()
+    assert resultado.exclusiones.score_insuficiente == 4
+    assert all(item.estado == "abstencion" for item in resultado.sugerencias)
+
+
+def test_consulta_sin_familia_abstencion_global():
+    consulta = CONSULTA.model_copy(update={"family": "unknown"})
+    resultado = sugerir_valores(consulta, BIBLIOTECA, run_id="run-q", result_revision=1, revisiones_vigentes=VIGENTES, parametros=ParametrosSugerencia())
+    assert resultado.motivo_abstencion_global.startswith("familia_desconocida")
+    assert resultado.vecinos == ()
+    assert {item.campo for item in resultado.sugerencias} == {"thicknesses_mm", "material"}
+    assert all(item.estado == "abstencion" for item in resultado.sugerencias)
+
+
+def test_vecino_sin_familia_se_excluye():
+    sin_familia = _item("run-sin-familia", _v2().model_copy(update={"family": "unknown"}))
+    resultado = sugerir_valores(CONSULTA, (*BIBLIOTECA, sin_familia), run_id="run-q", result_revision=1, revisiones_vigentes=VIGENTES | {"run-sin-familia": 1}, parametros=ParametrosSugerencia())
+    assert resultado.exclusiones.familia_distinta_o_desconocida == 1
+    assert "run-sin-familia" not in {vecino.run_id for vecino in resultado.vecinos}
+
+
+def test_material_se_normaliza_antes_de_contar():
+    elementos = tuple(
+        _item(f"run-m{indice}", _v2(thicknesses=(18.0,), material=material))
+        for indice, material in enumerate(("Melamina", "melamina ", "MELAMINA", "pino"))
+    )
+    resultado = sugerir_valores(CONSULTA, elementos, run_id="run-q", result_revision=1, revisiones_vigentes={item.run_id: 1 for item in elementos}, parametros=ParametrosSugerencia())
+    material = next(item for item in resultado.sugerencias if item.campo == "material")
+    assert (material.estado, material.valor, material.soporte, material.total) == ("hipotesis", "melamina", 3, 4)
 
 
 class RepositorioFalso:

@@ -13,18 +13,41 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Literal, Protocol
+from typing import Annotated, Any, Literal, Protocol, get_args
 
-from pydantic import Field, ValidationError, field_validator, model_validator
+from pydantic import (
+    Field,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from backend.app.agente.provider import ProviderError, ProviderResponse
 from backend.app.agente.tools import _schema
-from backend.app.contratos.modelos import LibraryItem
+from backend.app.contratos.modelos import (
+    AssemblyPartUse,
+    LibraryItem,
+    TableDescriptorComponentFeature,
+)
 from backend.app.precedentes import campos_descriptor as campos
 from backend.app.precedentes.comun import ModeloEstricto, normalizar_texto
 
 NOMBRE_HERRAMIENTA = "aplicar_filtros_busqueda"
 MAX_CONSULTA = 500
+MAX_TERMINOS = 10
+MAX_LONGITUD_TERMINO = 100
+MAX_ROLES = 10
+
+# Vocabulario de roles del contrato (``Literal`` en ``contratos/modelos.py``), sin "unknown".
+ROLES_CONOCIDOS: tuple[str, ...] = tuple(
+    sorted(
+        (set(get_args(AssemblyPartUse.model_fields["role"].annotation)) | set(get_args(TableDescriptorComponentFeature.model_fields["role"].annotation)))
+        - {"unknown"}
+    )
+)
+
+Termino = Annotated[str, StringConstraints(max_length=MAX_LONGITUD_TERMINO)]
 
 Familia = Literal["rectangular_shelving", "rectangular_table"]
 Estructura = Literal["top_base_between_sides", "top_base_cap_sides", "side_support_table", "corner_support_table"]
@@ -57,7 +80,15 @@ class RangoMm(ModeloEstricto):
 
 
 class RolMinimo(ModeloEstricto):
-    rol: str = Field(min_length=1, max_length=64, description="Rol de pieza: side_panel, shelf, top_panel, base_panel, back_panel, door, divider, tabletop, side_support, corner_support.")
+    # El esquema de la herramienta restringe ``rol`` al vocabulario del contrato; la validación
+    # acepta texto libre para que un rol desconocido se reubique como término no interpretado
+    # (``reubicar_roles_desconocidos``) en lugar de rechazar toda la traducción.
+    rol: str = Field(
+        min_length=1,
+        max_length=64,
+        description="Rol de pieza del vocabulario del contrato.",
+        json_schema_extra={"enum": list(ROLES_CONOCIDOS)},
+    )
     cantidad_minima: int = Field(ge=1, le=1000, description="Cantidad mínima inclusiva de piezas con ese rol.")
 
 
@@ -67,12 +98,13 @@ class FiltrosBusqueda(ModeloEstricto):
     ancho: RangoMm | None = Field(default=None, description="Rango de ancho total en mm, o null.")
     fondo: RangoMm | None = Field(default=None, description="Rango de fondo total en mm, o null.")
     alto: RangoMm | None = Field(default=None, description="Rango de alto total en mm, o null.")
-    roles: tuple[RolMinimo, ...] = Field(default=(), description="Roles con cantidad mínima.")
+    roles: tuple[RolMinimo, ...] = Field(default=(), max_length=MAX_ROLES, description="Roles con cantidad mínima.")
     espesor: RangoMm | None = Field(default=None, description="Espesor de tablero en mm; exacto con minimo_mm = maximo_mm.")
     material: str | None = Field(default=None, max_length=120, description="Material en texto, o null.")
     acabado: str | None = Field(default=None, max_length=120, description="Acabado en texto, o null.")
-    terminos_no_interpretados: tuple[str, ...] = Field(
+    terminos_no_interpretados: tuple[Termino, ...] = Field(
         default=(),
+        max_length=MAX_TERMINOS,
         description="Conceptos de la consulta que ningún otro campo puede expresar (p. ej. 'zócalo cerrado').",
     )
 
@@ -133,6 +165,7 @@ class ResultadoBusqueda(ModeloEstricto):
     usado_llm: bool
     filtros_aplicados: FiltrosBusqueda
     terminos_no_interpretados: tuple[str, ...]
+    avisos: tuple[str, ...] = ()
     total_candidatos: int
     excluidos_revision_obsoleta: int
     excluidos_por_filtros: int
@@ -142,6 +175,37 @@ class ResultadoBusqueda(ModeloEstricto):
 # ---------------------------------------------------------------------------
 # Filtrado determinista
 # ---------------------------------------------------------------------------
+
+
+def reubicar_roles_desconocidos(
+    filtros: FiltrosBusqueda,
+    elementos_vigentes: tuple[LibraryItem, ...],
+) -> tuple[FiltrosBusqueda, tuple[str, ...]]:
+    """Mueve a ``terminos_no_interpretados`` los roles que no están en el vocabulario del contrato
+    ni en ningún descriptor vigente, en vez de filtrar por ellos (lo que excluiría todo y perdería
+    el concepto). Devuelve los filtros corregidos y los avisos. Función pura."""
+    validos = set(ROLES_CONOCIDOS)
+    for item in elementos_vigentes:
+        validos.update(campos.roles(item.descriptor))
+    desconocidos = [item for item in filtros.roles if item.rol not in validos]
+    if not desconocidos:
+        return filtros, ()
+    avisos = [
+        f"El rol '{item.rol}' no existe en el vocabulario ni en la biblioteca; se trata como término no interpretado."
+        for item in desconocidos
+    ]
+    terminos = list(filtros.terminos_no_interpretados)
+    for item in desconocidos:
+        termino = " ".join(item.rol.replace("_", " ").split())[:MAX_LONGITUD_TERMINO]
+        if termino not in terminos:
+            terminos.append(termino)
+    if len(terminos) > MAX_TERMINOS:
+        avisos.append(f"Términos no interpretados por encima del máximo ({MAX_TERMINOS}): {'; '.join(terminos[MAX_TERMINOS:])}")
+        terminos = terminos[:MAX_TERMINOS]
+    datos = filtros.model_dump()
+    datos["roles"] = [item.model_dump() for item in filtros.roles if item.rol in validos]
+    datos["terminos_no_interpretados"] = terminos
+    return FiltrosBusqueda.model_validate(datos), tuple(avisos)
 
 
 def _criterio(nombre: str, existe: bool, valor: Any, cumple: Any) -> EvaluacionCriterio:
@@ -237,6 +301,7 @@ Reglas:
   "al menos 4 baldas" -> {"rol": "shelf", "cantidad_minima": 4}.
 - espesor exacto: minimo_mm = maximo_mm.
 - material/acabado: copia el término tal cual (p. ej. "roble", "lacado blanco").
+- roles: usa SOLO los valores del enum; si un elemento no es uno de esos roles, no lo pongas en roles.
 - Todo concepto que no encaje en ningún campo (zócalo, simetría, tiradores, estilo, color si no es
   acabado, precio, herrajes...) va LITERALMENTE en terminos_no_interpretados. Nunca lo omitas ni lo
   conviertas en otro filtro.

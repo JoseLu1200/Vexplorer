@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import time
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from backend.app.contratos.modelos import (
     DescriptorDimensions,
@@ -21,7 +25,9 @@ from backend.app.precedentes.gemelas import (
     detectar_gemelas,
 )
 from backend.app.precedentes.piezas import (
+    LIMITE_PIEZAS,
     PiezaRef,
+    piezas_desde_biblioteca,
     piezas_desde_item_biblioteca,
     piezas_desde_registro_historico,
 )
@@ -263,7 +269,7 @@ def test_extraccion_desde_fuentes() -> None:
         2,
     )
     v3 = piezas_desde_item_biblioteca(item_v3("r3"))
-    assert v3[0].material == "TAR-ROBLE" and v3[0].espesor_mm == 25
+    assert v3[0].material == "tarifa:TAR-ROBLE" and v3[0].espesor_mm == 25
     registro = HistoricalRecord.model_validate(
         {
             "record_id": "rec1",
@@ -334,3 +340,89 @@ def test_endpoint_errores() -> None:
         c.post(RUTA, json={"piezas": [{**dup, "fuente": "biblioteca"}]}).status_code
         == 422
     )
+
+
+def test_material_tarifa_v3_no_se_mezcla_con_nombre_v2() -> None:
+    # Un nombre de material V2 igual al id de tarifa V3 no debe compartir clave.
+    v2 = item_v2("r2", [(1201, 800, 25, 1)])
+    v2 = v2.model_copy(
+        update={
+            "descriptor": v2.descriptor.model_copy(update={"material": "TAR-ROBLE"})
+        }
+    )
+    piezas = piezas_desde_biblioteca([v2, item_v3("r3")])
+    assert {p.material for p in piezas} == {"TAR-ROBLE", "tarifa:TAR-ROBLE"}
+    assert detectar_gemelas(piezas, ConfiguracionGemelas()).grupos == ()
+
+
+def test_tolerancia_maxima_validada() -> None:
+    with pytest.raises(ValidationError):
+        ConfiguracionGemelas(tolerancia_largo_mm=51)
+    r = cliente().post(
+        RUTA,
+        json={
+            "piezas": [
+                {"origen_id": "o", "pieza_id": "p", "largo_mm": 1, "ancho_mm": 1}
+            ],
+            "tolerancia_largo_mm": 1000,
+        },
+    )
+    assert r.status_code == 422
+
+
+def _peor_caso_separado(n: int) -> list[PiezaRef]:
+    # Pares de dos orígenes, anchos separados más que la tolerancia, largos
+    # dentro de la tolerancia máxima y cantidad creciente con el largo.
+    return [
+        pieza(
+            f"O{i % 2}",
+            f"p{i:04d}",
+            1000 + (i // 2) * 0.02 + (i % 2) * 0.01,
+            200 + (i // 2) * 100,
+            cantidad=1 + i // 2,
+        )
+        for i in range(n)
+    ]
+
+
+def _peor_caso_encadenado(n: int) -> list[PiezaRef]:
+    # Anchos encadenados (paso < tolerancia): la partición por huecos no ayuda.
+    return [
+        pieza(
+            f"O{i % 2}",
+            f"p{i:04d}",
+            1000 + (i // 2) * 0.02 + (i % 2) * 0.01,
+            200 + (i // 2) * 30,
+            cantidad=1 + i // 2,
+        )
+        for i in range(n)
+    ]
+
+
+@pytest.mark.parametrize("generador", [_peor_caso_separado, _peor_caso_encadenado])
+def test_rendimiento_peor_caso_acotado(generador) -> None:
+    piezas = generador(LIMITE_PIEZAS)
+    config = ConfiguracionGemelas(tolerancia_largo_mm=50, tolerancia_ancho_mm=50)
+    inicio = time.perf_counter()
+    resultado = detectar_gemelas(piezas, config)
+    assert time.perf_counter() - inicio < 10
+    evaluadas = {m.pieza.pieza_id for g in resultado.grupos for m in g.miembros}
+    no_evaluadas = {p.pieza_id for p in resultado.piezas_no_evaluadas}
+    assert not evaluadas & no_evaluadas
+    assert resultado.parcial == bool(no_evaluadas)
+    for grupo in resultado.grupos:
+        largos = [m.largo_orientado_mm for m in grupo.miembros]
+        anchos = [m.ancho_orientado_mm for m in grupo.miembros]
+        assert max(largos) - min(largos) <= 50 and max(anchos) - min(anchos) <= 50
+
+
+def test_presupuesto_agotado_marca_parcial() -> None:
+    piezas = _peor_caso_encadenado(60)
+    config = ConfiguracionGemelas(tolerancia_largo_mm=50, tolerancia_ancho_mm=50)
+    completo = detectar_gemelas(piezas, config)
+    assert completo.parcial is False and completo.piezas_no_evaluadas == ()
+    parcial = detectar_gemelas(piezas, config, presupuesto_trabajo=100)
+    assert parcial.parcial is True and parcial.piezas_no_evaluadas
+    assert {p.motivo for p in parcial.piezas_no_evaluadas} == {
+        "presupuesto de cálculo agotado"
+    }

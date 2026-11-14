@@ -118,12 +118,14 @@ class Precedente(ModeloEstricto):
 class ResultadoSimilares(ModeloEstricto):
     run_id: str
     espacio_id: str
+    dimensiones: int
     estado: Literal["ok", "sin_precedentes_suficientes"]
     metrica: Literal["coseno"] = "coseno"
     es_probabilidad: Literal[False] = False
     agregacion: str = CRITERIO_AGREGACION
     umbral_minimo: float
     candidatos_evaluados: int
+    candidatos_otra_dimension: int = 0
     precedentes: tuple[Precedente, ...]
     nota: str = NOTA_SCORE
 
@@ -256,7 +258,7 @@ class AlmacenImagen:
                     dimensiones INTEGER NOT NULL,
                     vector_json TEXT NOT NULL,
                     creado_en TEXT NOT NULL,
-                    PRIMARY KEY (png_sha256, espacio_id)
+                    PRIMARY KEY (png_sha256, espacio_id, dimensiones)
                 );
                 CREATE TABLE IF NOT EXISTS vistas_imagen (
                     run_id TEXT NOT NULL,
@@ -264,23 +266,29 @@ class AlmacenImagen:
                     vista_id TEXT NOT NULL,
                     png_sha256 TEXT NOT NULL,
                     espacio_id TEXT NOT NULL,
+                    dimensiones INTEGER,
                     PRIMARY KEY (run_id, espacio_id, vista_id)
                 );
                 CREATE INDEX IF NOT EXISTS vistas_imagen_espacio
                     ON vistas_imagen (espacio_id, run_id);
                 """
             )
+            _migrar_dimensiones(db)
 
     @contextmanager
     def _conexion(self) -> Iterator[sqlite3.Connection]:
         with closing(sqlite3.connect(self.ruta)) as db, db:
             yield db
 
-    def obtener_vector(self, png_sha256: str, espacio_id: str) -> tuple[float, ...] | None:
+    def obtener_vector(
+        self, png_sha256: str, espacio_id: str, dimensiones: int
+    ) -> tuple[float, ...] | None:
+        """Solo devuelve vectores de la dimensión pedida; otra dimensión es un fallo de caché."""
         with self._conexion() as db:
             fila = db.execute(
-                "SELECT vector_json FROM vectores_imagen WHERE png_sha256=? AND espacio_id=?",
-                (png_sha256, espacio_id),
+                "SELECT vector_json FROM vectores_imagen"
+                " WHERE png_sha256=? AND espacio_id=? AND dimensiones=?",
+                (png_sha256, espacio_id, dimensiones),
             ).fetchone()
         return None if fila is None else tuple(json.loads(fila[0]))
 
@@ -306,6 +314,7 @@ class AlmacenImagen:
         run_id: str,
         result_revision: int | None,
         espacio_id: str,
+        dimensiones: int,
         vistas: tuple[tuple[str, str], ...],
     ) -> None:
         """Reemplaza atómicamente las vistas del run en el espacio por ``(vista_id, sha256)``."""
@@ -315,8 +324,13 @@ class AlmacenImagen:
                 "DELETE FROM vistas_imagen WHERE run_id=? AND espacio_id=?", (run_id, espacio_id)
             )
             db.executemany(
-                "INSERT INTO vistas_imagen VALUES (?,?,?,?,?)",
-                [(run_id, revision, vista_id, sha, espacio_id) for vista_id, sha in vistas],
+                "INSERT INTO vistas_imagen"
+                " (run_id, result_revision, vista_id, png_sha256, espacio_id, dimensiones)"
+                " VALUES (?,?,?,?,?,?)",
+                [
+                    (run_id, revision, vista_id, sha, espacio_id, dimensiones)
+                    for vista_id, sha in vistas
+                ],
             )
 
     def espacios_de_run(self, run_id: str) -> tuple[str, ...]:
@@ -327,18 +341,40 @@ class AlmacenImagen:
             ).fetchall()
         return tuple(fila[0] for fila in filas)
 
-    def vectores_del_espacio(self, espacio_id: str) -> dict[str, tuple[VectorVista, ...]]:
+    def dimensiones_de_run(self, run_id: str, espacio_id: str) -> tuple[int, ...]:
+        with self._conexion() as db:
+            filas = db.execute(
+                "SELECT DISTINCT dimensiones FROM vistas_imagen WHERE run_id=? AND espacio_id=?"
+                " AND dimensiones IS NOT NULL ORDER BY dimensiones",
+                (run_id, espacio_id),
+            ).fetchall()
+        return tuple(fila[0] for fila in filas)
+
+    def runs_del_espacio(self, espacio_id: str) -> tuple[str, ...]:
+        with self._conexion() as db:
+            filas = db.execute(
+                "SELECT DISTINCT run_id FROM vistas_imagen WHERE espacio_id=? ORDER BY run_id",
+                (espacio_id,),
+            ).fetchall()
+        return tuple(fila[0] for fila in filas)
+
+    def vectores_del_espacio(
+        self, espacio_id: str, dimensiones: int
+    ) -> dict[str, tuple[VectorVista, ...]]:
+        """Vectores de un espacio con una única dimensión (nunca mezcla dimensiones)."""
         with self._conexion() as db:
             filas = db.execute(
                 """
                 SELECT v.run_id, v.result_revision, v.vista_id, v.png_sha256, e.vector_json
                 FROM vistas_imagen v
                 JOIN vectores_imagen e
-                  ON e.png_sha256 = v.png_sha256 AND e.espacio_id = v.espacio_id
-                WHERE v.espacio_id = ?
+                  ON e.png_sha256 = v.png_sha256
+                 AND e.espacio_id = v.espacio_id
+                 AND e.dimensiones = v.dimensiones
+                WHERE v.espacio_id = ? AND v.dimensiones = ?
                 ORDER BY v.run_id, v.vista_id
                 """,
-                (espacio_id,),
+                (espacio_id, dimensiones),
             ).fetchall()
         agrupado: dict[str, list[VectorVista]] = {}
         for run_id, revision, vista_id, sha, vector_json in filas:
@@ -352,6 +388,39 @@ class AlmacenImagen:
                 )
             )
         return {run_id: tuple(vistas) for run_id, vistas in agrupado.items()}
+
+
+def _migrar_dimensiones(db: sqlite3.Connection) -> None:
+    """Adapta almacenes creados antes de que la dimensión formase parte de las claves."""
+    pk = {fila[1] for fila in db.execute("PRAGMA table_info(vectores_imagen)") if fila[5]}
+    if "dimensiones" not in pk:
+        db.execute(
+            """
+            CREATE TABLE vectores_imagen_nueva (
+                png_sha256 TEXT NOT NULL,
+                espacio_id TEXT NOT NULL,
+                dimensiones INTEGER NOT NULL,
+                vector_json TEXT NOT NULL,
+                creado_en TEXT NOT NULL,
+                PRIMARY KEY (png_sha256, espacio_id, dimensiones)
+            )
+            """
+        )
+        db.execute("INSERT INTO vectores_imagen_nueva SELECT * FROM vectores_imagen")
+        db.execute("DROP TABLE vectores_imagen")
+        db.execute("ALTER TABLE vectores_imagen_nueva RENAME TO vectores_imagen")
+    columnas = {fila[1] for fila in db.execute("PRAGMA table_info(vistas_imagen)")}
+    if "dimensiones" not in columnas:
+        db.execute("ALTER TABLE vistas_imagen ADD COLUMN dimensiones INTEGER")
+        db.execute(
+            """
+            UPDATE vistas_imagen SET dimensiones = (
+                SELECT MIN(e.dimensiones) FROM vectores_imagen e
+                WHERE e.png_sha256 = vistas_imagen.png_sha256
+                  AND e.espacio_id = vistas_imagen.espacio_id
+            )
+            """
+        )
 
 
 # --- Casos de uso ----------------------------------------------------------------------
@@ -373,7 +442,10 @@ def indexar_vistas(
         raise ErrorImagen("sin_vistas_renderizables", "Ninguna vista del plano se pudo renderizar.")
     indexadas: list[VistaIndexada] = []
     for vista in sorted(vistas.vistas, key=lambda v: v.vista_id):
-        en_cache = almacen.obtener_vector(vista.sha256, proveedor.espacio_id) is not None
+        en_cache = (
+            almacen.obtener_vector(vista.sha256, proveedor.espacio_id, proveedor.dimensiones)
+            is not None
+        )
         if not en_cache:
             try:
                 vector = proveedor.embeber(vista.png)
@@ -387,6 +459,7 @@ def indexar_vistas(
         vistas.run_id,
         vistas.result_revision,
         proveedor.espacio_id,
+        proveedor.dimensiones,
         tuple((v.vista_id, v.sha256) for v in indexadas),
     )
     return ResultadoIndexado(
@@ -407,11 +480,26 @@ def buscar_similares(
     limite: int,
     umbral_minimo: float,
 ) -> ResultadoSimilares:
-    """Busca sobre vectores ya guardados; no necesita proveedor."""
-    por_run = almacen.vectores_del_espacio(espacio_id)
+    """Busca sobre vectores ya guardados; no necesita proveedor.
+
+    Solo compara candidatos con la misma dimensión que el run consultado; los de otra
+    dimensión (proveedor reconfigurado) se cuentan en ``candidatos_otra_dimension``.
+    """
+    dimensiones_run = almacen.dimensiones_de_run(run_id, espacio_id)
+    if not dimensiones_run:
+        raise ErrorImagen("run_no_indexado", "El run no tiene vectores en este espacio.")
+    if len(dimensiones_run) > 1:
+        raise ErrorImagen(
+            "dimension_incompatible", "El run tiene vectores de varias dimensiones en este espacio."
+        )
+    dimensiones = dimensiones_run[0]
+    por_run = almacen.vectores_del_espacio(espacio_id, dimensiones)
     propias = por_run.get(run_id)
     if not propias:
         raise ErrorImagen("run_no_indexado", "El run no tiene vectores en este espacio.")
+    otra_dimension = sum(
+        1 for otro in almacen.runs_del_espacio(espacio_id) if otro != run_id and otro not in por_run
+    )
     consulta = {v.vista_id: v.vector for v in propias}
     agregados = agregar_por_run(consulta, por_run, excluir_run_id=run_id)
     estado, precedentes = seleccionar_precedentes(
@@ -420,8 +508,10 @@ def buscar_similares(
     return ResultadoSimilares(
         run_id=run_id,
         espacio_id=espacio_id,
+        dimensiones=dimensiones,
         estado=estado,
         umbral_minimo=umbral_minimo,
         candidatos_evaluados=len(agregados),
+        candidatos_otra_dimension=otra_dimension,
         precedentes=precedentes,
     )

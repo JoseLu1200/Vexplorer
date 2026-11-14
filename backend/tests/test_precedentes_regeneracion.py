@@ -149,3 +149,68 @@ def test_limite_y_deteccion_pura(tmp_path: Path, monkeypatch) -> None:
     )
     [obsoleto] = detectar_obsoletos(hechos)
     assert obsoleto.library_item_id == "library-z" and obsoleto.motivos == ("revision_obsoleta",)
+
+
+class ProveedorOtroModelo(ProveedorFalso):
+    model = "otro-modelo"
+
+    def embed(self, text: str) -> EmbeddingResult:
+        resultado = super().embed(text)
+        return EmbeddingResult(vector=resultado.vector, model=self.model, dimensions=4)
+
+
+def _router(principal: TestClient, tmp_path: Path, proveedor) -> TestClient:
+    app = FastAPI()
+    app.include_router(crear_router_embeddings(principal.app.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ))
+    return TestClient(app)
+
+
+def test_embedding_de_otro_espacio_es_obsoleto(tmp_path: Path, monkeypatch) -> None:
+    principal, cliente = _entorno(tmp_path, monkeypatch, ProveedorFalso())
+    run_id = _run_revisado(principal, "a")
+    _guardar(principal, run_id, 2)
+    cliente.post(URL, json={"simular": False})
+    assert cliente.post(URL, json={}).json()["data"]["total_obsoletos"] == 0
+
+    otro = _router(principal, tmp_path, ProveedorOtroModelo())
+    [elemento] = otro.post(URL, json={}).json()["data"]["elementos"]
+    assert elemento["motivos"] == ["espacio_distinto"]
+    # Sin proveedor no se puede juzgar el espacio: no se marca.
+    assert _router(principal, tmp_path, None).post(URL, json={}).json()["data"]["total_obsoletos"] == 0
+
+    [regenerado] = otro.post(URL, json={"simular": False}).json()["data"]["elementos"]
+    assert regenerado["estado"] == "regenerado"
+    assert principal.app.state.repository.get_library_item(run_id).embedding.model == "otro-modelo"
+    assert otro.post(URL, json={}).json()["data"]["total_obsoletos"] == 0
+
+
+def test_limite_maximo_de_regeneracion(tmp_path: Path, monkeypatch) -> None:
+    _, cliente = _entorno(tmp_path, monkeypatch, ProveedorFalso())
+    assert cliente.post(URL, json={"limite": 100}).status_code == 200
+    assert cliente.post(URL, json={"limite": 101}).status_code == 422
+
+
+def test_regeneraciones_concurrentes_dan_409(tmp_path: Path, monkeypatch) -> None:
+    import threading
+
+    dentro, soltar = threading.Event(), threading.Event()
+
+    class ProveedorLento(ProveedorFalso):
+        def embed(self, text: str) -> EmbeddingResult:
+            dentro.set()
+            soltar.wait(5)
+            return super().embed(text)
+
+    principal, cliente = _entorno(tmp_path, monkeypatch, ProveedorLento())
+    _guardar(principal, _run_revisado(principal, "a"), 2)
+    respuestas = []
+    hilo = threading.Thread(target=lambda: respuestas.append(cliente.post(URL, json={"simular": False})))
+    hilo.start()
+    assert dentro.wait(5)
+    segunda = cliente.post(URL, json={"simular": False})
+    simulada = cliente.post(URL, json={})
+    soltar.set()
+    hilo.join(5)
+    assert segunda.status_code == 409 and segunda.json()["error"]["code"] == "operacion_en_curso"
+    assert simulada.status_code == 200
+    assert respuestas[0].status_code == 200

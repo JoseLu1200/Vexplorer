@@ -16,21 +16,40 @@ from backend.app.precedentes.decisiones import (
     resumir,
 )
 
+MAX_BYTES_CUERPO = 64 * 1024
+
+
+async def _leer_cuerpo_limitado(request: Request, limite: int) -> bytes | None:
+    """Lee el cuerpo sin superar ``limite`` bytes; ``None`` si lo supera."""
+    declarado = request.headers.get("content-length")
+    if declarado is not None and declarado.isdigit() and int(declarado) > limite:
+        return None
+    partes: list[bytes] = []
+    total = 0
+    async for trozo in request.stream():
+        total += len(trozo)
+        if total > limite:
+            return None
+        partes.append(trozo)
+    return b"".join(partes)
+
 
 def crear_router_decisiones(almacen: AlmacenDecisiones, minimo_decisiones: int = 30) -> APIRouter:
     router = APIRouter(prefix=PREFIJO_API + "/decisiones")
 
     @router.post("")
     async def registrar_decision(request: Request) -> JSONResponse:
+        crudo = await _leer_cuerpo_limitado(request, MAX_BYTES_CUERPO)
+        if crudo is None:
+            return JSONResponse(status_code=413, content=respuesta_error("cuerpo_demasiado_grande", f"El cuerpo supera {MAX_BYTES_CUERPO} bytes."))
         try:
-            cuerpo = json.loads(await request.body())
+            cuerpo = json.loads(crudo)
         except (ValueError, UnicodeDecodeError):
             return JSONResponse(status_code=422, content=respuesta_error("decision_invalida", "El cuerpo no es JSON válido."))
         if not isinstance(cuerpo, dict):
             return JSONResponse(status_code=422, content=respuesta_error("decision_invalida", "Se esperaba un objeto JSON."))
-        actor = getattr(request.state, "actor", None)
-        if actor is not None:
-            cuerpo = {**cuerpo, "actor": actor}
+        # El actor sale SIEMPRE de la autenticación (None sin ella); el del cuerpo se ignora.
+        cuerpo = {**cuerpo, "actor": getattr(request.state, "actor", None)}
         try:
             entrada = DecisionEntrada.model_validate(cuerpo)
         except ValidationError as error:

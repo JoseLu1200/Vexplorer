@@ -256,3 +256,12 @@ def test_endpoint_incluir_biblioteca_une_con_run_ids() -> None:
         RUTA, json={"pedidos": [{"pedido_id": "run-2"}], "incluir_biblioteca": True}
     )
     assert r.status_code == 422 and r.json()["error"]["code"] == "pedido_duplicado"
+
+
+def test_total_de_piezas_limitado_antes_de_validar() -> None:
+    pieza_cruda = {"pieza_id": "x"}
+    pedidos = [{"pedido_id": f"P{i}", "piezas": [pieza_cruda] * 1500} for i in range(2)]
+    r = cliente().post(RUTA, json={"pedidos": pedidos})
+    assert r.status_code == 422
+    demasiados = [{"pedido_id": f"P{i}"} for i in range(201)]
+    assert cliente().post(RUTA, json={"pedidos": demasiados}).status_code == 422

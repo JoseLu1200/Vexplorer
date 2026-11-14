@@ -20,6 +20,7 @@ from backend.app.semantic.embeddings import EmbeddingResult
 
 VERIFICAR = f"{PREFIJO_API}/embeddings/espacio/verificar"
 REFERENCIA = f"{PREFIJO_API}/embeddings/espacio"
+ROTAR = f"{PREFIJO_API}/embeddings/espacio/rotar"
 
 
 class ProveedorFalso:
@@ -101,3 +102,81 @@ def test_comparar_huellas_es_pura(tmp_path: Path) -> None:
     otro = referencia.model_copy(update={"modelo": "otro"})
     with pytest.raises(ValueError, match="embedding_space_incompatible"):
         comparar_huellas(referencia, otro, 0.999)
+
+
+class RelojFalso:
+    def __init__(self) -> None:
+        self.t = 1000.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def _cliente_con_reloj(tmp_path: Path, proveedor, reloj: RelojFalso) -> TestClient:
+    app = FastAPI()
+    app.include_router(crear_router_embeddings(RepositorioVacio(), proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: f"t{reloj.t:.0f}", intervalo_minimo_verificacion_s=60, reloj_monotono=reloj))
+    return TestClient(app)
+
+
+def test_intervalo_minimo_entre_verificaciones(tmp_path: Path) -> None:
+    reloj = RelojFalso()
+    cliente = _cliente_con_reloj(tmp_path, ProveedorFalso(), reloj)
+    assert cliente.post(VERIFICAR).status_code == 200
+    reloj.t += 10
+    reciente = cliente.post(VERIFICAR)
+    assert reciente.status_code == 429 and reciente.json()["error"]["code"] == "verificacion_reciente"
+    # Rotar comparte el intervalo porque también llama al proveedor.
+    assert cliente.post(ROTAR).status_code == 429
+    reloj.t += 51
+    assert cliente.post(VERIFICAR).json()["data"]["estado"] == "estable"
+
+
+def test_deriva_sugiere_rotar_y_la_rotacion_archiva_la_anterior(tmp_path: Path) -> None:
+    reloj = RelojFalso()
+    _cliente_con_reloj(tmp_path, ProveedorFalso(), reloj).post(VERIFICAR)
+    original = _cliente(tmp_path, None).get(REFERENCIA).json()["data"][0]["huella_id"]
+    derivado = _cliente_con_reloj(tmp_path, ProveedorFalso(deriva=0.5), reloj)
+    deriva = derivado.post(VERIFICAR).json()["data"]
+    assert deriva["estado"] == "deriva_detectada" and deriva["accion_sugerida"] == "rotar_referencia"
+    assert "rotar" in deriva["mensaje"]
+
+    reloj.t += 61
+    rotado = derivado.post(ROTAR)
+    assert rotado.status_code == 200
+    datos = rotado.json()["data"]
+    assert datos["referencia_anterior"]["huella"]["huella_id"] == original
+    assert datos["referencia_anterior"]["retirada_en"] == "t1061"
+    assert datos["referencia_nueva"]["huella_id"] == deriva["huella_actual"]
+
+    reloj.t += 61
+    despues = derivado.post(VERIFICAR).json()["data"]
+    assert despues["estado"] == "estable" and despues["accion_sugerida"] is None
+    historico = _cliente(tmp_path, None).get(f"{REFERENCIA}/historico").json()["data"]
+    assert [item["huella"]["huella_id"] for item in historico] == [original]
+
+
+def test_rotar_sin_proveedor_es_503(tmp_path: Path) -> None:
+    assert _cliente(tmp_path, None).post(ROTAR).status_code == 503
+
+
+def test_verificaciones_concurrentes_dan_409(tmp_path: Path) -> None:
+    import threading
+
+    dentro, soltar = threading.Event(), threading.Event()
+
+    class ProveedorLento(ProveedorFalso):
+        def embed(self, text: str) -> EmbeddingResult:
+            dentro.set()
+            soltar.wait(5)
+            return super().embed(text)
+
+    cliente = _cliente(tmp_path, ProveedorLento())
+    respuestas = []
+    hilo = threading.Thread(target=lambda: respuestas.append(cliente.post(VERIFICAR)))
+    hilo.start()
+    assert dentro.wait(5)
+    segunda = cliente.post(VERIFICAR)
+    soltar.set()
+    hilo.join(5)
+    assert segunda.status_code == 409 and segunda.json()["error"]["code"] == "operacion_en_curso"
+    assert respuestas[0].status_code == 200

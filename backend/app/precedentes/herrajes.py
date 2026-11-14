@@ -39,7 +39,7 @@ class HerrajeMecanizado(ModeloEstricto):
     tipo: str = Field(min_length=1, max_length=200)
     cantidad: int | None = Field(default=None, gt=0, le=100_000)
     por_unidad_de: str | None = Field(default=None, min_length=1, max_length=100)
-    notas: str | None = Field(default=None, min_length=1, max_length=2000)
+    notas: str | None = Field(default=None, min_length=1, max_length=500)
 
     @field_validator("tipo", mode="after")
     @classmethod
@@ -59,7 +59,7 @@ class RegistroHerrajes(ModeloEstricto):
     record_id: str = Field(min_length=1, max_length=200)
     origen: Origen
     procedencia: ProcedenciaHerrajes
-    herrajes: tuple[HerrajeMecanizado, ...] = Field(min_length=1, max_length=500)
+    herrajes: tuple[HerrajeMecanizado, ...] = Field(min_length=1, max_length=50)
 
     @model_validator(mode="after")
     def _canonico(self) -> RegistroHerrajes:
@@ -81,7 +81,7 @@ class RegistroHerrajes(ModeloEstricto):
 
 
 class ImportacionHerrajes(ModeloEstricto):
-    registros: tuple[RegistroHerrajes, ...] = Field(min_length=1, max_length=10_000)
+    registros: tuple[RegistroHerrajes, ...] = Field(min_length=1, max_length=1000)
 
     @model_validator(mode="after")
     def _ids_unicos(self) -> ImportacionHerrajes:
@@ -190,6 +190,15 @@ class SolicitudSugerenciasHerrajes(ModeloEstricto):
     limite: int = Field(default=10, ge=1, le=50)
     incluir_sinteticos: bool = False
     minimo_soporte: int = Field(default=2, ge=1, le=50)
+    proporcion_minima: float = Field(default=0.5, gt=0, le=1, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def minimo_alcanzable(self) -> SolicitudSugerenciasHerrajes:
+        if self.minimo_soporte > self.limite:
+            raise ValueError(
+                "minimo_soporte no puede superar limite: la abstención sería segura"
+            )
+        return self
 
 
 class EstadisticaCantidad(ModeloEstricto):
@@ -219,6 +228,7 @@ class ResultadoSugerenciasHerrajes(ModeloEstricto):
     comparables_con_datos: int
     record_ids_sin_datos: tuple[str, ...]
     minimo_soporte: int
+    proporcion_minima: float
     sugerencias: tuple[SugerenciaHerraje, ...]
     avisos: tuple[str, ...]
 
@@ -235,6 +245,7 @@ def agregar_sugerencias(
     *,
     minimo_soporte: int,
     incluir_sinteticos: bool,
+    proporcion_minima: float = 0.5,
 ) -> ResultadoSugerenciasHerrajes:
     """Cruza comparables con herrajes y calcula soporte y cantidades. Función pura."""
     con_datos: list[tuple[str, str, RegistroHerrajes]] = []
@@ -275,7 +286,14 @@ def agregar_sugerencias(
                     herraje.cantidad
                 )
         soporte = len(ids)
-        abstiene = soporte < minimo_soporte
+        motivos: list[str] = []
+        if soporte < minimo_soporte:
+            motivos.append(f"Soporte {soporte} inferior al mínimo {minimo_soporte}.")
+        if total and soporte / total < proporcion_minima:
+            motivos.append(
+                f"Proporción {soporte}/{total} inferior a la mínima {proporcion_minima}."
+            )
+        abstiene = bool(motivos)
         cantidades = (
             ()
             if abstiene
@@ -301,11 +319,7 @@ def agregar_sugerencias(
                 record_ids=ids,
                 origenes=dict(sorted(origenes.items())),
                 solo_sintetico=set(origenes) == {"synthetic"},
-                motivo_abstencion=(
-                    f"Soporte {soporte} inferior al mínimo {minimo_soporte}."
-                    if abstiene
-                    else None
-                ),
+                motivo_abstencion=" ".join(motivos) if abstiene else None,
             )
         )
     sugerencias.sort(key=lambda item: (-item.soporte, item.tipo))
@@ -334,6 +348,7 @@ def agregar_sugerencias(
         comparables_con_datos=total,
         record_ids_sin_datos=tuple(sin_datos),
         minimo_soporte=minimo_soporte,
+        proporcion_minima=proporcion_minima,
         sugerencias=tuple(sugerencias),
         avisos=tuple(avisos),
     )
@@ -358,4 +373,5 @@ def sugerir_herrajes(
         registros,
         minimo_soporte=solicitud.minimo_soporte,
         incluir_sinteticos=solicitud.incluir_sinteticos,
+        proporcion_minima=solicitud.proporcion_minima,
     )

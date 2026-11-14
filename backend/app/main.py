@@ -208,7 +208,10 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca.
     """
     from backend.app.precedentes.api_analogia import crear_router_analogia
-    from backend.app.precedentes.api_busqueda import crear_proveedor_traductor, crear_router_busqueda
+    from backend.app.precedentes.api_busqueda import (
+        crear_proveedor_traductor,
+        crear_router_busqueda,
+    )
     from backend.app.precedentes.api_decisiones import crear_router_decisiones
     from backend.app.precedentes.api_embeddings import crear_router_embeddings
     from backend.app.precedentes.api_herrajes import crear_router_herrajes

@@ -142,6 +142,61 @@ def test_tipos_duplicados_y_cantidad_invalida_se_rechazan(tmp_path) -> None:
     assert cliente.post(RUTA + "/registros", json={"registros": [duplicado]}).status_code == 422
     invalido = _herrajes("s-1", [{"tipo": "tirador", "cantidad": 0}])
     assert cliente.post(RUTA + "/registros", json={"registros": [invalido]}).status_code == 422
+    demasiados = _herrajes("s-1", [{"tipo": f"herraje {i}"} for i in range(51)])
+    assert cliente.post(RUTA + "/registros", json={"registros": [demasiados]}).status_code == 422
+    notas_largas = _herrajes("s-1", [{"tipo": "tirador", "notas": "x" * 501}])
+    assert cliente.post(RUTA + "/registros", json={"registros": [notas_largas]}).status_code == 422
+    muchos = {"registros": [_herrajes(f"s-{i}", [{"tipo": "tirador"}]) for i in range(1001)]}
+    assert cliente.post(RUTA + "/registros", json=muchos).status_code == 422
+
+
+def test_minimo_soporte_no_puede_superar_limite(tmp_path) -> None:
+    cliente, _ = _montar(tmp_path)
+    respuesta = cliente.post(
+        RUTA + "/sugerencias",
+        json={"objetivo": OBJETIVO, "limite": 2, "minimo_soporte": 3},
+    )
+    assert respuesta.status_code == 422
+    assert "minimo_soporte no puede superar limite" in respuesta.text
+
+
+def test_proporcion_minima_exige_ademas_soporte_relativo() -> None:
+    comparables = tuple(
+        HistoricalComparable(
+            record=HistoricalRecord.model_validate(_registro_historico(f"s-{i}")),
+            score=0.9,
+            score_components={},
+            differences=(),
+            missing_fields=(),
+        )
+        for i in range(5)
+    )
+    registros = {
+        f"s-{i}": RegistroHerrajes.model_validate(
+            _herrajes(
+                f"s-{i}",
+                [{"tipo": "bisagra"}] + ([{"tipo": "tirador"}] if i < 2 else []),
+            )
+        )
+        for i in range(5)
+    }
+    resultado = agregar_sugerencias(
+        comparables, registros, minimo_soporte=2, incluir_sinteticos=True
+    )
+    por_tipo = {s.tipo: s for s in resultado.sugerencias}
+    assert resultado.proporcion_minima == 0.5
+    assert por_tipo["bisagra"].estado == "hipotesis"
+    assert por_tipo["tirador"].soporte_texto == "2/5"
+    assert por_tipo["tirador"].estado == "abstencion"
+    assert "Proporción 2/5" in por_tipo["tirador"].motivo_abstencion
+    laxo = agregar_sugerencias(
+        comparables,
+        registros,
+        minimo_soporte=2,
+        incluir_sinteticos=True,
+        proporcion_minima=0.4,
+    )
+    assert {s.tipo: s.estado for s in laxo.sugerencias}["tirador"] == "hipotesis"
 
 
 def test_sugerencias_con_soporte_cantidades_y_abstencion(tmp_path) -> None:

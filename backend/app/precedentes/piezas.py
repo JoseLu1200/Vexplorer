@@ -85,6 +85,14 @@ class OrigenDatos(ModeloEstricto):
     historico: int = 0
 
 
+PREFIJO_TARIFA = "tarifa:"
+
+
+def _material_tarifa(tarifa_id: str | None) -> str | None:
+    """V3 guarda un id de tarifa, no un nombre: se prefija para no mezclar claves."""
+    return f"{PREFIJO_TARIFA}{tarifa_id}" if tarifa_id else None
+
+
 def piezas_desde_item_biblioteca(item: LibraryItem) -> tuple[PiezaRef, ...]:
     """Extrae piezas de un ``LibraryItem``. ``origen_id`` = ``run_id``."""
     descriptor = item.descriptor
@@ -112,7 +120,9 @@ def piezas_desde_item_biblioteca(item: LibraryItem) -> tuple[PiezaRef, ...]:
                 ancho_mm=componente.width_mm,
                 espesor_mm=componente.thickness_mm,
                 cantidad=componente.quantity,
-                material=componente.material_tariff_id or descriptor.material_tariff_id,
+                material=_material_tarifa(
+                    componente.material_tariff_id or descriptor.material_tariff_id
+                ),
                 acabado=None,
                 fuente="biblioteca",
             )

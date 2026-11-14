@@ -17,6 +17,7 @@ from backend.app.precedentes.busqueda import (
     ProveedorTraduccion,
     ResultadoBusqueda,
     filtrar_biblioteca,
+    reubicar_roles_desconocidos,
     traducir_consulta,
 )
 from backend.app.precedentes.comun import PREFIJO_API, respuesta_error, respuesta_ok
@@ -60,12 +61,17 @@ def crear_router_busqueda(
                 return JSONResponse(status_code=502, content=respuesta_error(exc.codigo, exc.mensaje))
             usado_llm = True
         elementos = repositorio.get_library_items()
-        resultados, obsoletos, descartados = filtrar_biblioteca(filtros, elementos, revisiones_vigentes(repositorio, elementos), peticion.limite)
+        vigentes = revisiones_vigentes(repositorio, elementos)
+        filtros, avisos = reubicar_roles_desconocidos(
+            filtros, tuple(item for item in elementos if vigentes.get(item.run_id) == item.result_revision)
+        )
+        resultados, obsoletos, descartados = filtrar_biblioteca(filtros, elementos, vigentes, peticion.limite)
         valor = ResultadoBusqueda(
             consulta=peticion.consulta,
             usado_llm=usado_llm,
             filtros_aplicados=filtros.model_copy(update={"terminos_no_interpretados": ()}),
             terminos_no_interpretados=filtros.terminos_no_interpretados,
+            avisos=avisos,
             total_candidatos=len(elementos),
             excluidos_revision_obsoleta=obsoletos,
             excluidos_por_filtros=descartados,

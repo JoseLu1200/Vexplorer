@@ -77,6 +77,7 @@ class RespuestaSimilaresHibrido(ModeloEstricto):
     consulta_semantica_disponible: bool
     motivo_consulta_sin_semantica: MotivoSemantico | None = None
     excluidos_por_descriptor: int = Field(ge=0)
+    excluidos_por_revision_obsoleta: int = Field(ge=0)
     coincidencias: tuple[CoincidenciaHibrida, ...]
 
 

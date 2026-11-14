@@ -29,6 +29,7 @@ from backend.app.precedentes.imagen import (
 _ESTADOS_ERROR = {
     "run_no_encontrado": 404,
     "run_no_indexado": 409,
+    "dimension_incompatible": 409,
     "espacio_ambiguo": 422,
     "sin_vistas_renderizables": 422,
     "proveedor_imagen_no_disponible": 503,
@@ -116,7 +117,14 @@ def crear_router_imagen(
                         "El run no está indexado y no hay proveedor para embeberlo.",
                     )
                 espacio_id = espacios[0]
-            if espacio_id not in almacen.espacios_de_run(peticion.run_id):
+            dimensiones_run = almacen.dimensiones_de_run(peticion.run_id, espacio_id)
+            # Proveedor del mismo espacio pero con otra dimensión: se reembebe el run.
+            proveedor_reconfigurado = (
+                proveedor is not None
+                and proveedor.espacio_id == espacio_id
+                and dimensiones_run != (proveedor.dimensiones,)
+            )
+            if not dimensiones_run or proveedor_reconfigurado:
                 if proveedor is None:
                     raise ErrorImagen(
                         "proveedor_imagen_no_disponible",

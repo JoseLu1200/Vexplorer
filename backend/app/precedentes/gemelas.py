@@ -16,6 +16,12 @@ Algoritmo (determinista, sin encadenamiento):
    sus piezas y se repite.
    Como el rango de cada eje dentro del grupo es <= tolerancia, cada miembro
    está dentro de tolerancia de cualquier otro y de la medida estándar.
+   Antes del voraz, las piezas se parten por huecos mayores que la tolerancia
+   (alternando largo y ancho): ninguna ventana válida cruza un hueco, así que
+   el resultado es idéntico y cada parte se resuelve por separado.
+   Coste acotado: un presupuesto determinista de trabajo (piezas visitadas)
+   limita el cálculo; si se agota, el resultado se marca ``parcial=True`` y se
+   indican las piezas no evaluadas. Los grupos devueltos siguen siendo válidos.
 4. Medida estándar: la medida de miembro más frecuente ponderada por cantidad;
    en empate, la mayor (por área largo×ancho, luego largo, luego ancho).
 
@@ -27,6 +33,7 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from collections.abc import Sequence
+from itertools import pairwise
 
 from pydantic import Field
 
@@ -39,6 +46,8 @@ from backend.app.precedentes.piezas import (
 )
 
 EPSILON_MM = 1e-9
+TOLERANCIA_MAXIMA_MM = 50.0
+PRESUPUESTO_TRABAJO = 500_000
 AVISO_GEMELAS = (
     "Propuesta de unificación revisable: agrupa por tolerancia numérica por eje; "
     "no comprueba veta visual, cantos ni mecanizados."
@@ -46,8 +55,12 @@ AVISO_GEMELAS = (
 
 
 class ConfiguracionGemelas(ModeloEstricto):
-    tolerancia_largo_mm: float = Field(default=3.0, ge=0, le=1000, allow_inf_nan=False)
-    tolerancia_ancho_mm: float = Field(default=3.0, ge=0, le=1000, allow_inf_nan=False)
+    tolerancia_largo_mm: float = Field(
+        default=3.0, ge=0, le=TOLERANCIA_MAXIMA_MM, allow_inf_nan=False
+    )
+    tolerancia_ancho_mm: float = Field(
+        default=3.0, ge=0, le=TOLERANCIA_MAXIMA_MM, allow_inf_nan=False
+    )
     permitir_giro: bool = False
 
 
@@ -91,6 +104,8 @@ class ResultadoGemelas(ModeloEstricto):
     piezas_descartadas: tuple[PiezaDescartada, ...]
     ahorro_referencias_total: int
     origen_datos: OrigenDatos
+    parcial: bool = False
+    piezas_no_evaluadas: tuple[PiezaDescartada, ...] = ()
     criterio_estandar: str = (
         "Medida de miembro más frecuente ponderada por cantidad (None = 1); "
         "en empate, la mayor por área, luego largo, luego ancho."
@@ -143,6 +158,52 @@ def _medida_estandar(miembros: Sequence[_Orientada]) -> tuple[float, float]:
 _Puntuacion = tuple[int, int, float, float]
 
 
+class _Presupuesto:
+    """Contador determinista de trabajo (piezas visitadas), no de tiempo."""
+
+    def __init__(self, limite: int) -> None:
+        self.restante = limite
+
+    def consumir(self, unidades_trabajo: int) -> bool:
+        self.restante -= unidades_trabajo
+        return self.restante >= 0
+
+
+def _cortar_por_huecos(
+    piezas: list[_Orientada], eje: str, tolerancia: float
+) -> list[list[_Orientada]]:
+    ordenadas = sorted(piezas, key=lambda p: (getattr(p, eje), _clave_pieza(p)))
+    partes: list[list[_Orientada]] = [[ordenadas[0]]]
+    for anterior, actual in pairwise(ordenadas):
+        if getattr(actual, eje) - getattr(anterior, eje) > tolerancia:
+            partes.append([])
+        partes[-1].append(actual)
+    return partes
+
+
+def _particionar(
+    piezas: list[_Orientada], tol_l: float, tol_w: float
+) -> list[list[_Orientada]]:
+    """Parte por huecos > tolerancia alternando ejes hasta que no se pueda más."""
+    pendientes = [piezas] if piezas else []
+    finales: list[list[_Orientada]] = []
+    while pendientes:
+        parte = pendientes.pop()
+        por_largo = _cortar_por_huecos(parte, "largo", tol_l)
+        if len(por_largo) > 1:
+            pendientes.extend(por_largo)
+            continue
+        por_ancho = _cortar_por_huecos(parte, "ancho", tol_w)
+        if len(por_ancho) > 1:
+            pendientes.extend(por_ancho)
+            continue
+        finales.append(parte)
+    return sorted(
+        finales,
+        key=lambda parte: min((p.largo, p.ancho, _clave_pieza(p)) for p in parte),
+    )
+
+
 def _mejor_en_franja(
     franja: list[_Orientada], l0: float, tol_w: float
 ) -> tuple[_Puntuacion, float] | None:
@@ -185,16 +246,15 @@ def _mejor_en_franja(
     return mejor
 
 
-def _agrupar_clave(
-    piezas: list[_Orientada], configuracion: ConfiguracionGemelas
-) -> list[list[_Orientada]]:
-    """Voraz por ventanas; cachea el mejor resultado de cada ancla de largo.
+def _agrupar_parte(
+    piezas: list[_Orientada], tol_l: float, tol_w: float, presupuesto: _Presupuesto
+) -> tuple[list[list[_Orientada]], list[_Orientada]]:
+    """Voraz por ventanas dentro de una parte; cachea el mejor de cada ancla de largo.
 
     Al retirar un grupo solo cambian las anclas cuya franja contenía alguna
     pieza retirada (l0 en [min_retirado - tol, max_retirado]); el resto se reutiliza.
+    Devuelve (grupos, piezas no evaluadas si se agota el presupuesto).
     """
-    tol_l = configuracion.tolerancia_largo_mm + EPSILON_MM
-    tol_w = configuracion.tolerancia_ancho_mm + EPSILON_MM
     restantes = sorted(piezas, key=lambda p: (p.largo, _clave_pieza(p)))
     cache: dict[float, tuple[_Puntuacion, float] | None] = {}
     grupos: list[list[_Orientada]] = []
@@ -205,6 +265,8 @@ def _agrupar_clave(
             if l0 not in cache:
                 inicio = bisect_left(largos, l0)
                 fin = bisect_right(largos, l0 + tol_l)
+                if not presupuesto.consumir(fin - inicio + 1):
+                    return grupos, restantes
                 cache[l0] = (
                     _mejor_en_franja(restantes[inicio:fin], l0, tol_w)
                     if fin - inicio >= 2
@@ -228,7 +290,28 @@ def _agrupar_clave(
         maximo = max(p.largo for p in elegidas)
         for ancla in [a for a in cache if minimo <= a <= maximo]:
             del cache[ancla]
-    return grupos
+    return grupos, []
+
+
+def _agrupar_clave(
+    piezas: list[_Orientada],
+    configuracion: ConfiguracionGemelas,
+    presupuesto: _Presupuesto,
+) -> tuple[list[list[_Orientada]], list[_Orientada]]:
+    tol_l = configuracion.tolerancia_largo_mm + EPSILON_MM
+    tol_w = configuracion.tolerancia_ancho_mm + EPSILON_MM
+    grupos: list[list[_Orientada]] = []
+    no_evaluadas: list[_Orientada] = []
+    for parte in _particionar(piezas, tol_l, tol_w):
+        if no_evaluadas:
+            no_evaluadas.extend(parte)
+            continue
+        if len({p.pieza.origen_id for p in parte}) < 2:
+            continue
+        grupos_parte, pendientes = _agrupar_parte(parte, tol_l, tol_w, presupuesto)
+        grupos.extend(grupos_parte)
+        no_evaluadas.extend(pendientes)
+    return grupos, no_evaluadas
 
 
 def _construir_grupo(
@@ -262,9 +345,13 @@ def _construir_grupo(
 
 
 def detectar_gemelas(
-    piezas: Sequence[PiezaRef], configuracion: ConfiguracionGemelas
+    piezas: Sequence[PiezaRef],
+    configuracion: ConfiguracionGemelas,
+    presupuesto_trabajo: int = PRESUPUESTO_TRABAJO,
 ) -> ResultadoGemelas:
     """Función pura: agrupa piezas casi idénticas y propone una medida estándar."""
+    presupuesto = _Presupuesto(presupuesto_trabajo)
+    no_evaluadas: list[_Orientada] = []
     descartadas: list[PiezaDescartada] = []
     por_clave: dict[tuple[float, str], list[_Orientada]] = defaultdict(list)
     for pieza in piezas:
@@ -284,7 +371,14 @@ def detectar_gemelas(
 
     grupos: list[GrupoGemelas] = []
     for espesor, material in sorted(por_clave):
-        for miembros in _agrupar_clave(por_clave[(espesor, material)], configuracion):
+        if no_evaluadas:
+            no_evaluadas.extend(por_clave[(espesor, material)])
+            continue
+        grupos_clave, pendientes = _agrupar_clave(
+            por_clave[(espesor, material)], configuracion, presupuesto
+        )
+        no_evaluadas.extend(pendientes)
+        for miembros in grupos_clave:
             grupos.append(_construir_grupo(miembros, espesor, material))
 
     grupos.sort(
@@ -312,4 +406,18 @@ def detectar_gemelas(
         ),
         ahorro_referencias_total=sum(g.ahorro_referencias for g in numerados),
         origen_datos=contar_origen(piezas),
+        parcial=bool(no_evaluadas),
+        piezas_no_evaluadas=tuple(
+            sorted(
+                (
+                    PiezaDescartada(
+                        origen_id=p.pieza.origen_id,
+                        pieza_id=p.pieza.pieza_id,
+                        motivo="presupuesto de cálculo agotado",
+                    )
+                    for p in no_evaluadas
+                ),
+                key=lambda d: (d.origen_id, d.pieza_id),
+            )
+        ),
     )

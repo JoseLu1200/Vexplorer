@@ -120,24 +120,30 @@ def test_niveles_aviso_y_alerta_por_multiplos_de_dispersion(tmp_path) -> None:
     assert baja["nivel"] == "alerta" and baja["desviacion_absoluta"] == -50
 
 
-def test_suelo_relativo_cuando_la_dispersion_es_nula(tmp_path) -> None:
+def test_dispersion_nula_no_alerta_con_porcentaje_fijo(tmp_path) -> None:
     cliente = _cliente(
         tmp_path,
         [_registro_sintetico(f"s-{i}", 100) for i in range(3)],
     )
-    datos = _pedir(cliente, 108).json()["data"]
-    assert datos["estadisticos"]["mad"] == 0
-    assert datos["estadisticos"]["dispersion"] == 5
-    assert datos["alerta"]["nivel"] == "dentro_de_rango"
-    assert _pedir(cliente, 112).json()["data"]["alerta"]["nivel"] == "aviso"
-    assert _pedir(cliente, 120).json()["data"]["alerta"]["nivel"] == "alerta"
+    for coste in (111, 116, 500):
+        datos = _pedir(cliente, coste).json()["data"]
+        assert datos["estado"] == "con_precedentes"
+        assert datos["alerta"] is None
+        assert datos["motivo_sin_alerta"] == "dispersion_nula"
+        assert datos["estadisticos"]["mad"] == 0
+        assert datos["estadisticos"]["mediana"] == 100
+        assert any("MAD = 0" in a for a in datos["avisos"])
 
 
 def test_configuracion_inyectada_cambia_umbrales(tmp_path) -> None:
     config = ConfiguracionAnalogia(multiplo_aviso=0.5, multiplo_alerta=1.0)
     cliente = _cliente(
         tmp_path,
-        [_registro_sintetico("s-1", 100), _registro_sintetico("s-2", 120)],
+        [
+            _registro_sintetico("s-1", 100),
+            _registro_sintetico("s-2", 110),
+            _registro_sintetico("s-3", 120),
+        ],
         configuracion=config,
     )
     datos = _pedir(cliente, 125).json()["data"]
@@ -151,16 +157,17 @@ def test_moneda_incompatible_se_excluye_y_se_explica(tmp_path) -> None:
         [
             _registro_sintetico("s-1", 100),
             _registro_sintetico("s-2", 110),
+            _registro_sintetico("s-3", 120),
             _registro_sintetico("s-usd", 500, moneda="USD"),
         ],
     )
-    datos = _pedir(cliente, 105).json()["data"]
-    assert [c["record_id"] for c in datos["comparables"]] == ["s-1", "s-2"]
+    datos = _pedir(cliente, 105, limite=4).json()["data"]
+    assert [c["record_id"] for c in datos["comparables"]] == ["s-1", "s-2", "s-3"]
     assert datos["excluidos"] == [
         {"record_id": "s-usd", "origen": "synthetic", "motivos": ["moneda_incompatible"]}
     ]
     assert any("moneda distinta de EUR" in a for a in datos["avisos"])
-    assert datos["estadisticos"]["maximo"] == 110
+    assert datos["estadisticos"]["maximo"] == 120
 
 
 def test_sin_precedentes_suficientes_no_emite_alerta(tmp_path) -> None:
@@ -168,6 +175,7 @@ def test_sin_precedentes_suficientes_no_emite_alerta(tmp_path) -> None:
     datos = _pedir(cliente, 1000).json()["data"]
     assert datos["estado"] == "sin_precedentes_suficientes"
     assert datos["alerta"] is None and datos["estadisticos"] is None
+    assert datos["motivo_sin_alerta"] == "precedentes_insuficientes"
     assert len(datos["comparables"]) == 1
 
 
@@ -184,6 +192,7 @@ def test_presupuesto_quote_genera_aviso(tmp_path) -> None:
         [
             _registro_sintetico("s-1", 100, cost_basis="quote"),
             _registro_sintetico("s-2", 110),
+            _registro_sintetico("s-3", 120),
         ],
     )
     avisos = _pedir(cliente, 105).json()["data"]["avisos"]
@@ -203,6 +212,11 @@ def test_errores_de_peticion(tmp_path) -> None:
     assert semantico.status_code == 503
     assert semantico.json()["error"]["code"] == "semantic_provider_unavailable"
     assert _pedir(cliente, 0).status_code == 422
+    # Mínimo de comparables: al menos 3 y nunca mayor que el límite.
+    assert _pedir(cliente, 100, minimo_comparables=1).status_code == 422
+    excesivo = _pedir(cliente, 100, limite=3, minimo_comparables=4)
+    assert excesivo.status_code == 422
+    assert "minimo_comparables no puede superar limite" in excesivo.text
 
 
 def test_moneda_de_la_peticion_completa_el_objetivo(tmp_path) -> None:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import math
+import sqlite3
 from hashlib import sha256
 from types import SimpleNamespace
 
@@ -23,6 +25,7 @@ from backend.app.precedentes.api_imagen import crear_router_imagen
 from backend.app.precedentes.imagen import (
     AlmacenImagen,
     ErrorImagen,
+    VectorVista,
     VistaPng,
     VistasDeRun,
     agregar_por_run,
@@ -119,7 +122,7 @@ def test_reindexar_con_revision_nula_no_duplica(tmp_path) -> None:
     for _ in range(3):
         cliente.post(URL_INDEXAR, json={"run_id": "run_b"})
     almacen = AlmacenImagen(tmp_path / "precedentes_imagen.sqlite3")
-    vistas = almacen.vectores_del_espacio("falso-v1")["run_b"]
+    vistas = almacen.vectores_del_espacio("falso-v1", 3)["run_b"]
     assert [v.vista_id for v in vistas] == ["v1", "v2"]
     assert all(v.result_revision is None for v in vistas)
 
@@ -223,7 +226,7 @@ def test_vector_invalido_se_rechaza_y_no_persiste(tmp_path, vector) -> None:
     assert respuesta.status_code == 502
     assert respuesta.json()["error"]["code"] == "vector_invalido"
     almacen = AlmacenImagen(tmp_path / "precedentes_imagen.sqlite3")
-    assert almacen.vectores_del_espacio("falso-v1") == {}
+    assert almacen.vectores_del_espacio("falso-v1", 3) == {}
 
 
 def test_fallo_del_proveedor_502(tmp_path) -> None:
@@ -342,3 +345,79 @@ def test_indexar_desde_repositorio_renderiza_vistas(tmp_path) -> None:
     assert datos["precedentes"][0]["run_id"] == "r2"
     assert datos["precedentes"][0]["score_coseno"] == pytest.approx(1.0)
     assert datos["precedentes"][0]["result_revision"] == 1
+
+
+# --- Dimensiones distintas en un mismo espacio (proveedor reconfigurado) ----------------
+
+
+def test_cache_no_reutiliza_vectores_de_otra_dimension(tmp_path) -> None:
+    _indexar_todo(_cliente(tmp_path, ProveedorFalso(VECTORES), CATALOGO))
+    nuevo = ProveedorFalso({b"a": (1.0, 0.0), b"q": (1.0, 0.0)}, dimensiones=2)
+    cliente = _cliente(tmp_path, nuevo, CATALOGO)
+    datos = cliente.post(URL_INDEXAR, json={"run_id": "run_a"}).json()["data"]
+    assert datos["dimensiones"] == 2
+    assert datos["vistas"][0]["desde_cache"] is False
+    assert nuevo.llamadas == [b"a"]
+    almacen = AlmacenImagen(tmp_path / "precedentes_imagen.sqlite3")
+    assert almacen.obtener_vector(sha256(b"a").hexdigest(), "falso-v1", 2) == pytest.approx((1.0, 0.0))
+    assert len(almacen.obtener_vector(sha256(b"a").hexdigest(), "falso-v1", 3)) == 3
+    # La búsqueda reembebe q en la nueva dimensión y solo compara contra 2D; sin 500.
+    respuesta = cliente.post(URL_SIMILARES, json={"run_id": "q", "umbral_minimo": -1})
+    assert respuesta.status_code == 200
+    datos = respuesta.json()["data"]
+    assert datos["dimensiones"] == 2
+    assert [p["run_id"] for p in datos["precedentes"]] == ["run_a"]
+    assert datos["candidatos_otra_dimension"] == 4  # run_a2, run_b, run_c, run_d siguen en 3D
+    assert nuevo.llamadas == [b"a", b"q"]
+
+
+def test_run_con_dimensiones_mezcladas_devuelve_409(tmp_path) -> None:
+    ruta = tmp_path / "precedentes_imagen.sqlite3"
+    _indexar_todo(_cliente(tmp_path, ProveedorFalso(VECTORES), CATALOGO))
+    sha_c = sha256(b"c").hexdigest()
+    with sqlite3.connect(ruta) as db:
+        db.execute(
+            "INSERT INTO vectores_imagen VALUES (?,?,?,?,?)",
+            (sha_c, "falso-v1", 2, json.dumps([0.0, 1.0]), "2026-01-01"),
+        )
+        db.execute("UPDATE vistas_imagen SET dimensiones=2 WHERE run_id='run_b' AND vista_id='v2'")
+    db.close()
+    respuesta = _cliente(tmp_path, None, CATALOGO).post(
+        URL_SIMILARES, json={"run_id": "run_b", "umbral_minimo": 0}
+    )
+    assert respuesta.status_code == 409
+    assert respuesta.json()["error"]["code"] == "dimension_incompatible"
+
+
+def test_coseno_dimension_incompatible_es_error_de_dominio() -> None:
+    with pytest.raises(ErrorImagen) as error:
+        agregar_por_run(
+            {"v": (1.0, 0.0)},
+            {"r": (VectorVista(run_id="r", result_revision=None, vista_id="v", sha256="0" * 64, vector=(1.0, 0.0, 0.0)),)},
+            excluir_run_id="x",
+        )
+    assert error.value.codigo == "dimension_incompatible"
+
+
+def test_migra_almacen_sin_dimension_en_claves(tmp_path) -> None:
+    ruta = tmp_path / "antiguo.sqlite3"
+    sha_a = sha256(b"a").hexdigest()
+    with sqlite3.connect(ruta) as db:
+        db.executescript(
+            """
+            CREATE TABLE vectores_imagen (png_sha256 TEXT NOT NULL, espacio_id TEXT NOT NULL,
+                dimensiones INTEGER NOT NULL, vector_json TEXT NOT NULL, creado_en TEXT NOT NULL,
+                PRIMARY KEY (png_sha256, espacio_id));
+            CREATE TABLE vistas_imagen (run_id TEXT NOT NULL, result_revision INTEGER NOT NULL,
+                vista_id TEXT NOT NULL, png_sha256 TEXT NOT NULL, espacio_id TEXT NOT NULL,
+                PRIMARY KEY (run_id, espacio_id, vista_id));
+            """
+        )
+        db.execute("INSERT INTO vectores_imagen VALUES (?,?,?,?,?)", (sha_a, "e", 2, "[1.0, 0.0]", "x"))
+        db.execute("INSERT INTO vistas_imagen VALUES ('r', 0, 'v', ?, 'e')", (sha_a,))
+    db.close()
+    almacen = AlmacenImagen(ruta)
+    assert almacen.dimensiones_de_run("r", "e") == (2,)
+    assert almacen.vectores_del_espacio("e", 2)["r"][0].vector == (1.0, 0.0)
+    almacen.guardar_vector(sha_a, "e", 3, (0.0, 0.0, 1.0))
+    assert almacen.obtener_vector(sha_a, "e", 3) == (0.0, 0.0, 1.0)
