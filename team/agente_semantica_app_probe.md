@@ -55,6 +55,7 @@
 | Histórico v2 | dry-run, import y list reales | 200/200/200; 4 aceptados y listados | Presupuestos académicos, no actuals cerrados ni validación de precio |
 | Regresión completa | `python -m pytest -q` | 483 passed en 57,17 s | Estado concurrente visible de la rama semántica |
 | Estática | Ruff, `compileall`, `git diff --check` y auditoría de rutas personales | correcto | Archivos propios |
+| Portabilidad CI | Run `43560549248` RED: 508 passed, 1 failed por separadores `/`; después `python -m pytest tests/test_semantic_lab_probe_app.py -q`, Ruff y `git diff --check` | 8 passed; Ruff limpio; diff-check sin errores | Corrige solo expectativa de test; runtime sin cambios |
 
 ## Bloqueos y cierre
 

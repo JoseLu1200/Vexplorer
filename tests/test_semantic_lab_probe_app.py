@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+
+import pytest
 
 from tools.semantic_lab.probe_app import (
     build_worker_command,
@@ -79,19 +81,46 @@ def test_classify_response_preserves_transport_or_ingestion_failure() -> None:
     assert classification["piece_count"] == 0
 
 
-def test_worker_command_uses_explicit_app_interpreter() -> None:
+@pytest.mark.parametrize(
+    ("python_executable", "script", "request_path", "expected"),
+    [
+        (
+            PureWindowsPath("D:/app-venv/python.exe"),
+            PureWindowsPath("C:/probe_app.py"),
+            PureWindowsPath("D:/run/request.json"),
+            [
+                "D:\\app-venv\\python.exe",
+                "C:\\probe_app.py",
+                "_worker",
+                "D:\\run\\request.json",
+            ],
+        ),
+        (
+            PurePosixPath("/opt/app-venv/python"),
+            PurePosixPath("/workspace/probe_app.py"),
+            PurePosixPath("/run/request.json"),
+            [
+                "/opt/app-venv/python",
+                "/workspace/probe_app.py",
+                "_worker",
+                "/run/request.json",
+            ],
+        ),
+    ],
+)
+def test_worker_command_uses_explicit_app_interpreter(
+    python_executable: PureWindowsPath | PurePosixPath,
+    script: PureWindowsPath | PurePosixPath,
+    request_path: PureWindowsPath | PurePosixPath,
+    expected: list[str],
+) -> None:
     command = build_worker_command(
-        Path("D:/app-venv/python.exe"),
-        Path("C:/probe_app.py"),
-        Path("D:/run/request.json"),
+        python_executable,
+        script,
+        request_path,
     )
 
-    assert command == [
-        "D:\\app-venv\\python.exe",
-        "C:\\probe_app.py",
-        "_worker",
-        "D:\\run\\request.json",
-    ]
+    assert command == expected
 
 
 def test_worker_environment_routes_import_time_data_outside_snapshot(
