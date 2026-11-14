@@ -32,6 +32,8 @@ Jev se ejecutó realmente mediante API: 320 respuestas válidas, con el modelo f
 
 ## Orden de lectura
 
+Para la siguiente fase, empezar por la [decisión de arquitectura para producción](DECISION_ARQUITECTURA_PRODUCCION.md) y su [diseño técnico](DISENO_ARQUITECTURA_PRODUCCION.md). La dirección está aceptada; los criterios de activación y la integración del runtime siguen pendientes. Los documentos siguientes conservan la evidencia experimental que la sustenta.
+
 | Documento | Qué contiene |
 |---|---|
 | [Auditoría y datos](AUDITORIA_Y_DATOS.md) | Qué hacía la aplicación en la base auditada; límites del harness, biblioteca y precios; fuentes locales y sus condiciones. |

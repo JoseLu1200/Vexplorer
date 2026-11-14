@@ -48,3 +48,15 @@
 - Verificación final root: 509 passed en 90,64 s, Ruff sin hallazgos, compileall correcto; documentación y JSON comprobados. Dictamen Astra ampliado: válido como spike aislado y exploratorio, no industrial/económico.
 - Documentación organizada en `docs/semantic-lab/README.md` y resúmenes bajo `docs/experiments/`. Sin datos/pesos/credenciales ni cambios ajenos de la app dentro de la entrega.
 - Trabajo completo y autorizado para commit/push a `experiment/semantic-furniture`. El commit de entrega y la confirmación del remoto identifican la publicación; no se autoriza merge ni despliegue por esta operación.
+
+## Decisión de arquitectura e integración posterior
+
+- El laboratorio se publicó en `14a6514ddd82e8914aa128ff5787d029517a3f3f`; se verificaron HEAD remoto y árbol limpio. Ese cierre no incluía autorización de merge.
+- Petición explícita posterior del usuario: registrar decisión final y diseño en dos Markdown, hacer push y merge a `main`. Esta autorización sustituye el límite de integración anterior; no pide activar el nuevo runtime en un servidor.
+- Dirección aceptada: EG2 mixto 768 sin PCA para búsqueda, logística EG2/geometría como candidato de clasificación amplia, Jev visual opcional para revisión y validación independiente de comparables económicos.
+- Root mantiene `DECISION_ARQUITECTURA_PRODUCCION.md` e índice. Agente GPT-6.1 Sol mantiene sólo `DISENO_ARQUITECTURA_PRODUCCION.md`; revisión final GPT-6 Astra. Sin cambios de contratos ni del runtime.
+- Preflight de integración: `origin/main` sigue en `4209510`, ancestro del laboratorio; rama principal del workspace contiene trabajo ajeno y no se toca. La integración se verificará en un worktree aislado.
+- Se detectó fallo real en CI de `14a6514` (run `43559606234`): el workflow instala sólo `requirements-demo.txt` y faltan joblib/SciPy/scikit-learn al recoger tests. Corrección acotada delegada a Sol sobre `.github/workflows/ci.yml`, usando el extra de tests ya declarado y conservando restricciones del entorno. Se exige CI verde antes del merge.
+- Verificación local del incremento documental y CI: `python -m pytest -q` terminó con **509 passed en 71,65 s**; los enlaces de los 13 Markdown del directorio semántico resolvieron. El ajuste de CI instala `.[test]` bajo constraints del entorno demo; no modifica el contenedor productivo ni descarga pesos.
+- Diseño revisado por root: categorías predichas no eliminan vecinos, etiquetas siguen propuestas hasta calibración, ACL se comprueban antes de recuperar y al responder, y ningún rollback puede reactivar datos retirados o permisos revocados.
+- Astra aprobó el delta sin bloqueantes, incluida la corrección mínima de dependencias de tests. Pendientes al escribir esta anotación: nuevo CI remoto e integración comprobada; no se fusionará hasta observar el run verde. El historial remoto y la respuesta de entrega identificarán el commit integrado y la ejecución comprobada.
