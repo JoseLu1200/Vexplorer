@@ -20,6 +20,7 @@ RUN python -m pip install --no-cache-dir --disable-pip-version-check -r /tmp/req
 COPY --chown=vexplorer:vexplorer backend/app ./backend/app
 COPY --chown=vexplorer:vexplorer tools/__init__.py tools/backup.py ./tools/
 COPY --chown=vexplorer:vexplorer frontend/index.html frontend/app.js frontend/styles.css ./frontend/
+COPY --chown=vexplorer:vexplorer frontend/explorer.html frontend/explorer.js frontend/explorer.css ./frontend/
 COPY --chown=vexplorer:vexplorer frontend/api ./frontend/api
 COPY --chown=vexplorer:vexplorer frontend/components ./frontend/components
 COPY --chown=vexplorer:vexplorer frontend/core ./frontend/core

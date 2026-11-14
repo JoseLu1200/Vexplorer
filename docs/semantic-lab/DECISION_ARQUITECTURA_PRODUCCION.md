@@ -4,6 +4,8 @@ Fecha: **2026-11-14**. Estado: **dirección de arquitectura aceptada por el usua
 
 El usuario aprobó documentar esta decisión y su [diseño técnico](DISENO_ARQUITECTURA_PRODUCCION.md), publicarlos en GitHub e integrar la rama del laboratorio en `main`. La integración incorpora investigación, herramientas, pruebas y diseño; no activa por sí misma un servicio de Gemma o Jev en la aplicación desplegada.
 
+**Ampliación solicitada el 2026-11-14:** integrar investigación, requisitos de la transcripción, búsqueda y visualización, e implementar los modelos ensayados que aporten más al menor coste. La sección 8 registra la decisión de este incremento; [INTEGRACION_EXPLORADOR](INTEGRACION_EXPLORADOR.md) concreta requisitos y [OPERACION_EXPLORADOR](OPERACION_EXPLORADOR.md) su operación. Las secciones anteriores conservan la evidencia histórica de `dbd1bb6` y no acreditan por sí solas esta implementación.
+
 ## 1. Decisión
 
 Adoptar una arquitectura con responsabilidades separadas:
@@ -91,3 +93,35 @@ La decisión fija el rumbo técnico; el [diseño](DISENO_ARQUITECTURA_PRODUCCION
 El código del laboratorio permanece reproducible y separado del runtime. Integrarlo en `main` permite trabajar sobre evidencia compartida; no convierte los NPZ y clasificadores del experimento en modelos productivos ni despliega nuevos endpoints. El siguiente incremento implementable es la ingesta semántica versionada y la búsqueda en sombra, seguido por clasificación y revisión medidas sobre el corpus propio.
 
 Esta decisión se revisará si el nuevo holdout, la relevancia humana, los requisitos de privacidad o las mediciones operativas favorecen otra representación. Cambiar de decisión requerirá conservar el benchmark anterior y explicar el resultado nuevo, no reinterpretar retroactivamente estos ensayos.
+
+## 8. Integración de producto y visualizador
+
+La transcripción exige acelerar la lectura de planos pobres y reutilizar el histórico para despiece, costes y horas. Por ello la búsqueda debe conservar tres preguntas distintas: parecido visual/semántico, similitud constructiva respaldada y elegibilidad económica. El mapa sirve para descubrir y contrastar precedentes; no transforma ninguna de esas preguntas en otra.
+
+La investigación integra los **112 Markdown de `83df72d`**, con [inventario y hashes](INVENTARIO_DOCUMENTAL.md), los commits y ramas del laboratorio y las ampliaciones del producto. `83df72d` une `dbd1bb6` con `a61f97a`; el checkout raíz mantiene trabajo UX/evaluación concurrente. El incremento se construye en una rama aislada sobre ese commit, no sobre una copia incompleta del laboratorio.
+
+### Selección con coste acotado
+
+| Capacidad | Decisión de implementación | Razón |
+|---|---|---|
+| Búsqueda principal | EG2 mixto 768 L2, coseno exacto; preparación local y releases persistidos. | Reutiliza la evidencia y los artefactos existentes. No paga inferencia por clic. |
+| Controles de representación | EG2 texto/imagen, 256/768d; DINOv3 imagen y MiniLM texto, en espacios separados. | Permiten comparar vecinos sin ejecutar todos los encoders por petición. |
+| Clasificación | kNN5 para el ganador core y logística EG2+27 features para el corpus amplio, inferidos al publicar. | Exportación numérica desde artefactos propios; sin pickle en el servidor web, sin reentrenar sobre test. |
+| Segunda opinión | Jev visual explícito, opcional, con caché y presupuesto durable de intentos. | Usarlo solo donde un dictamen adicional pueda aportar; errores separados de abstenciones. |
+| Mapa | PCA 2D persistida por snapshot, nunca usada como índice. | Sin dependencia adicional de UMAP ni promesa de separabilidad; búsqueda mantiene dimensión original. |
+| Construcción | Diferencias y cobertura de campos conocidos de la biblioteca. | Explicación verificable sin asumir medidas/materiales. El comparador experimental avanzado sigue separado. |
+| Costes y horas | Abrir el flujo económico existente con revisión y procedencia. | Evitar otra calculadora y el uso del coseno como factor monetario. |
+
+HDBSCAN, KMeans, boosting con PCA y modelos solo investigados permanecen como evidencia/alternativas. No aportan una mejora operativa demostrada que justifique activarlos en cada consulta. Las comparaciones visuales entre modelos reportan vecinos compartidos del mismo contenido, no un nuevo benchmark de calidad.
+
+### Requisitos necesarios
+
+El usuario puede seleccionar catálogo/modelo, filtrar metadatos, navegar un mapa con alternativa de lista y teclado, recuperar vecinos en el espacio original, inspeccionar el render y diferencias, consultar propuestas de clasificación, contrastar otra representación del mismo contenido y exportar la comparación. El filtro textual se identifica como léxico; no simula búsqueda semántica de texto libre.
+
+Los planos nuevos se preparan con el renderer y encoder del laboratorio. Un release puede extender el catálogo activo solo si coincide la identidad del espacio. Se conservan release anterior, hashes, revisión, procedencia y retiradas. No se mezclan vectores OpenAI/Gemma ni modelos/revisiones/modos incompatibles. La biblioteca omite revisiones obsoletas y vectores inválidos de forma explícita.
+
+### Reconciliación con el producto actual
+
+El flujo general posterior al laboratorio ya incluye propuesta y crítica multimodal, revisión humana opcional, histórico importable y escenarios condicionales. Esto actualiza las frases históricas que describían únicamente comparables sintéticos o cero propuestas offline. Las hipótesis auto-revisadas siguen siendo hipótesis; los escenarios condicionales no se presentan como hechos confirmados ni presupuestos aprobados.
+
+El piloto conserva el catálogo compartido de la instancia autenticada. No afirma ACL por proyecto ni multitenancy. La arquitectura objetivo mantiene esas capacidades como condición antes de compartir datos entre organizaciones. La activación del piloto, la validación industrial de relevancia y el despliegue del servicio son decisiones distintas.

@@ -1,6 +1,6 @@
 # Diseño de arquitectura de producción para búsqueda semántica
 
-Fecha: **2026-11-14**. Estado: **diseño objetivo; no implementado ni desplegado**. La decisión que gobierna este diseño se documenta en [Decisión de arquitectura de producción](DECISION_ARQUITECTURA_PRODUCCION.md).
+Fecha: **2026-11-14**. Estado: **arquitectura objetivo con un incremento de exploración implementado en rama aislada; no desplegado**. Las secciones 1–11 describen el diseño de `dbd1bb6`; la sección 12 distingue el incremento concreto y sus límites. La decisión que gobierna este diseño se documenta en [Decisión de arquitectura de producción](DECISION_ARQUITECTURA_PRODUCCION.md).
 
 Este documento concreta cómo incorporar la evidencia del laboratorio al producto sin convertir resultados exploratorios en garantías industriales. Mantiene las reglas vigentes: la geometría y la estimación son deterministas, las medidas proceden del ledger y de revisión humana, las vistas no son cantidades, y Pydantic sigue siendo la única fuente de verdad de los contratos.
 
@@ -280,3 +280,69 @@ Hasta esa aprobación, el adaptador, índice y shadow pueden construirse y medir
 - [Repositorio actual](../../backend/app/servicios/repository.py)
 - [Histórico sintético actual](../../backend/app/historico/service.py)
 - [Estimación determinista actual](../../backend/app/estimacion/service.py)
+
+## 12. Explorador integrado, modelos y visualización
+
+La ampliación parte de `83df72d`, que integra laboratorio y aplicación autónoma. La [síntesis de investigación](INTEGRACION_EXPLORADOR.md) traza EX-01–EX-12 hasta la transcripción, contratos, auditorías y ramas. El [inventario](INVENTARIO_DOCUMENTAL.md) identifica los 112 Markdown revisados. Los informes del laboratorio describen sus snapshots históricos; [MUEBLE_GENERAL](../MUEBLE_GENERAL.md) e [HISTORICO_REAL](../HISTORICO_REAL.md) describen las capacidades posteriores que esta integración conserva.
+
+### 12.1 Componentes concretos
+
+| Componente | Implementación | Frontera |
+|---|---|---|
+| Modelos y validación | `backend/app/semantic_explorer/models.py` | Pydantic aditivo; no cambia contratos compartidos de inferencia. |
+| Proyección y vecinos | `core.py` | L2/coseno en dimensión original; PCA centrada solo visual. |
+| Persistencia | `store.py`, `semantic_explorer.sqlite3` | Releases inmutables por hash, activación transaccional, retiradas, imágenes, proyecciones y presupuesto. |
+| Biblioteca y API | `service.py`, `router.py` | Revisión actual, separación de espacios, snapshot exigido, autenticación global. |
+| Clasificación numérica | `classification.py` y publicador | kNN/logística durante publicación; parámetros numéricos, resultados no calibrados. |
+| Segunda opinión | `review.py` | Jev opcional por acción explícita; sin escritura en ledger ni histórico. |
+| Preparación | `tools/prepare_semantic_explorer.py` | DXF nuevo → render 384 + seis observaciones/27 features → encoder local existente. |
+| Portabilidad y entrenamiento | `tools/stage_semantic_explorer.py`, `tools/train_semantic_classifier.py` | Copia acotada de corpus legado y receta fija sobre train; JSON numérico ligado al espacio/features. |
+| Publicación | `tools/publish_semantic_explorer.py` | Verifica artefactos, clasifica opcionalmente, publica/activa/extiende/retira. |
+| Interfaz | `frontend/explorer.html`, `explorer.js`, `explorer.css` | Mapa, lista, inspección, ranking, comparación entre modelos y exportación. |
+| Copias | `tools/backup.py` | Añade SQLite semántica a las bases opcionales y su restauración. |
+
+```mermaid
+flowchart LR
+    D[DXF autorizado] --> P[Render y observaciones canónicos]
+    P --> E[Un encoder local seleccionado]
+    E --> V[Validación de hash y espacio]
+    V --> C[Clasificador local opcional]
+    C --> R[Release SQLite inmutable]
+    B[Biblioteca vigente OpenAI] --> S[Snapshot autorizado]
+    R --> S
+    S --> M[Mapa PCA persistido]
+    S --> N[Vecinos por coseno original]
+    N --> F[Plano, diferencias y comparación]
+    F -. acción explícita .-> J[Jev con presupuesto]
+    F --> H[Flujo económico existente]
+```
+
+### 12.2 Versionado y estabilidad
+
+`Space` identifica proveedor, modelo, revisión, modalidad, dimensión, precisión, normalización y preprocesado. El importador deriva la identidad de renderer/encoder/configuración; los espacios heredados OpenAI declaran su revisión como gestionada por proveedor y conservan la versión del descriptor. Esa limitación heredada no se oculta con un hash ficticio de pesos.
+
+Cada `Entry` tiene ID local al catálogo, contenido, revisión si existe, atributos conocidos, procedencia de categoría y propuesta de clasificación opcional. `content_hash` permite contrastar el mismo contenido entre representaciones sin asumir identidad porque coincida un nombre. No establece identidad física de muebles ni relación con costes.
+
+El `snapshot_id` incluye fuente/release, espacio, miembros y proyección. La proyección se persiste para estabilizar autovalores degenerados entre plataformas. Los filtros de UI no recalculan las coordenadas; publicar otro snapshot sí puede mover puntos. Casos vacíos, unitarios e idénticos no reciben ruido artificial. La varianza explicada no es un porcentaje de precisión semántica.
+
+### 12.3 Contratos y revisión
+
+Las rutas bajo `/api/v1/semantic-explorer` son `GET spaces`, `GET snapshot`, `POST search`, `GET image` y `POST review`. Búsqueda, imagen y dictamen exigen espacio, miembro y snapshot. Una revisión/retirada incompatible provoca conflicto o ausencia explícita. La respuesta vuelve a comprobar el snapshot vigente. La UI ignora respuestas tardías de selecciones anteriores.
+
+Los vectores permanecen en servidor. Las imágenes son PNG admitidos, con límite de tamaño, hash, `nosniff` y sin caché del navegador. El navegador no puede suministrar rutas de archivos ni un catálogo externo a la instancia. Labels y datos del plano se insertan como texto, no como HTML.
+
+Clasificar al publicar reutiliza el coste de inferencia para todas las consultas. `needs_review` significa propuesta no calibrada, no bloqueo obligatorio de la aplicación general. El CLI reproduce la receta seleccionada únicamente sobre train y exporta JSON v2 con encoder, features y hashes de entrenamiento; publicar exige su hash y coincidencia exacta del contrato. Los Joblib antiguos sin identidad de entrenamiento se rechazan, sin deserializarlos. Jev tiene una política nueva de dictamen abierto con imagen: las métricas del protocolo experimental de tres preguntas no se trasladan a esta política sin nueva evaluación.
+
+### 12.4 Coste, publicación y rollback
+
+Consulta normal: lectura de SQLite + producto escalar; no carga Gemma ni llama a OpenAI/Jev. Generación: un encoder local seleccionado, caché del runner existente, pesos locales y proceso acotado. DINOv3/MiniLM/variantes EG2 son controles opcionales. La preparación y clasificación se ejecutan fuera de los workers HTTP; no se instala PyTorch en el contenedor web.
+
+El piloto admite hasta 2.000 miembros por espacio, 4.096 dimensiones y 2 MiB por imagen. SQLite usa transacciones para publicar/activar/retirar; extender el activo comprueba su versión al activar para evitar sobrescribir una activación concurrente. Las retiradas viven fuera del release y siguen aplicándose en rollback. La caché de proyección es acotada y reconstruible: verifica checksum, identidad y miembros antes de servirla. Un corpus inválido se excluye de los espacios disponibles con error explícito.
+
+`VEXPLORER_EXPLORER_ENABLED` está desactivado por defecto. El rollout se realiza por instancia privada, tras el piloto y la verificación de permisos de los corpus; no se inventa un canary porcentual sin enrutador. Rollback: desactivar el flag o activar un release anterior validado. Copia/restauración incluye puntero, retiradas y presupuesto. Instrucciones exactas en [OPERACION_EXPLORADOR](OPERACION_EXPLORADOR.md).
+
+### 12.5 Implementado frente a pendiente
+
+El incremento entrega búsqueda por ejemplo, comparación de representaciones, visualización, preparación/indexación offline de planos nuevos, clasificación cacheada kNN/logística, revisión Jev opcional, persistencia y rollback. No acredita consulta libre multimodal desde navegador, encoder caliente en HTTP, entrenamiento industrial, calibración/OOD, clustering inductivo, ACL por proyecto, ANN ni enlace automático entre IDs del laboratorio y registros económicos.
+
+La verificación debe cubrir cosenos independientes, corrupción/mezcla, degeneración, hashes, revisiones obsoletas, retirada/rollback, presupuesto externo, backup y UI. Los datos de rendimiento y aceptación del nuevo árbol se registran aparte de las 510 pruebas/CI/revisión histórica de `dbd1bb6`.

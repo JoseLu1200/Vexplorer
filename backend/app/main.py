@@ -1752,6 +1752,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         body = "".join(f"id: {item['sequence']}\nevent: {item['event_type']}\ndata: {json.dumps({'schema_version': '0.2.0', 'run_id': run_id, **item}, ensure_ascii=False)}\n\n" for item in records)
         return PlainTextResponse(body, media_type="text/event-stream")
 
+    from backend.app.semantic_explorer.router import install_explorer
+    install_explorer(app, repository, root)
+
     static_root = frontend_dir or Path(__file__).resolve().parents[2] / "frontend"
     if (static_root / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_root, html=True), name="frontend")

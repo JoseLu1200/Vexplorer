@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex"><meta name="description" content="Explora planos similares, compara modelos y consulta la evidencia de cada vecino en Vexplorer.">
+  <title>Explorador semántico · Vexplorer</title>
+  <link rel="stylesheet" href="./explorer.css">
+</head>
+<body>
+<a class="skip" href="#workspace">Saltar al explorador</a>
+<header class="topbar"><a class="brand" href="./"><span class="brand-mark">V</span> Vexplorer <span class="brand-section">/ Explorador</span></a><nav aria-label="Principal"><a href="./">Volver al plano</a><button id="reload" type="button">Actualizar datos</button></nav></header>
+<div class="page-heading"><div><p class="eyebrow">Biblioteca de representaciones</p><h1>Encuentra el siguiente parecido.</h1><p>Explora un plano, recupera sus vecinos y contrasta qué tienen en común.</p></div><div class="status-chip"><span aria-hidden="true"></span> Consulta local · sin inferencia al navegar</div></div>
+<p id="status" class="status" role="status" aria-live="polite">Cargando espacios disponibles…</p>
+<main id="workspace" class="workspace">
+  <aside class="catalog-panel" aria-label="Catálogo y filtros">
+    <div class="panel-heading"><span class="section-number">01</span><h2>Catálogo</h2></div>
+    <label for="space">Representación</label><select id="space" disabled><option>Sin espacios cargados</option></select>
+    <p id="space-info" class="caption">Cada modelo conserva su propio espacio.</p>
+    <label for="filter">Filtrar nombres o categorías</label><input id="filter" type="search" placeholder="Buscar en este catálogo" autocomplete="off">
+    <label for="category">Categoría de origen</label><select id="category"><option value="">Todas las categorías</option></select>
+    <p class="caption">El filtro usa metadatos. Selecciona un plano para buscar por similitud vectorial.</p>
+    <div class="list-heading"><h3>Planos</h3><span id="count">0</span></div>
+    <div id="point-list" class="point-list" aria-label="Lista alternativa al mapa"><p class="empty">Aún no hay vectores publicados.</p></div>
+  </aside>
+  <section class="map-panel" aria-labelledby="map-title">
+    <div class="panel-heading"><span class="section-number">02</span><h2 id="map-title">Mapa del espacio semántico</h2><span class="map-badge">PCA · 2D</span></div>
+    <div class="map-toolbar"><p id="projection-info">Proyección pendiente</p><div><button id="zoom-out" aria-label="Alejar mapa">−</button><button id="zoom-in" aria-label="Acercar mapa">+</button><button id="fit">Encuadrar</button></div></div>
+    <div class="map-frame"><svg id="map" viewBox="0 0 800 520" aria-labelledby="map-svg-title map-svg-desc"><title id="map-svg-title">Mapa de embeddings</title><desc id="map-svg-desc">Selecciona un punto o utiliza la lista de planos. Los vecinos se calculan en el espacio original.</desc><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width=".4"/></pattern></defs><rect width="800" height="520" fill="url(#grid)" class="grid"/><path d="M40 260H760M400 40V480" class="axes"/><g id="plot"></g><text x="744" y="504" class="axis-label">PC 1</text><text x="24" y="32" class="axis-label">PC 2</text></svg><div id="map-empty" class="map-empty"><strong>Un mapa empieza con tus planos.</strong><p>Guarda revisiones con embeddings en Biblioteca o publica un corpus local desde el laboratorio.</p></div></div>
+    <div id="legend" class="legend" aria-label="Categorías"></div>
+    <p class="map-note">La proyección puede acercar o separar puntos artificialmente. El ranking usa el coseno en las dimensiones originales, no la distancia de este mapa.</p>
+    <section class="comparison" aria-labelledby="compare-title"><div class="panel-heading"><span class="section-number">04</span><h2 id="compare-title">Contrastar otra representación</h2></div><p class="caption">Compara vecinos del mismo contenido. Cada modelo calcula su propio ranking.</p><div class="compare-controls"><label for="compare-space" class="sr-only">Modelo de comparación</label><select id="compare-space"><option value="">Elige otro espacio</option></select><button id="compare-button" disabled>Comparar vecinos</button></div><div id="comparison-result" aria-live="polite"><p class="empty">Selecciona un plano y una segunda representación.</p></div></section>
+  </section>
+  <aside class="detail-panel" aria-labelledby="detail-title"><div class="panel-heading"><span class="section-number">03</span><h2 id="detail-title">Plano y vecinos</h2></div><div id="detail"><p class="empty">Selecciona un punto para ver su plano, procedencia y clasificación propuesta.</p></div><div class="neighbor-controls"><label for="limit">Vecinos<select id="limit"><option>5</option><option selected>10</option><option>20</option></select></label><label class="check"><input type="checkbox" id="exclude-group">Excluir variantes del mismo grupo</label></div><div id="neighbors" aria-live="polite"><p class="empty">Los resultados aparecerán aquí.</p></div><button id="export" disabled>Exportar comparación JSON</button></aside>
+</main>
+<footer><span>Vexplorer / Piloto privado</span><span>Un parecido no confirma medidas, construcción ni coste.</span><span id="snapshot-label">Sin snapshot</span></footer>
+<script type="module" src="./explorer.js"></script>
+</body>
+</html>
