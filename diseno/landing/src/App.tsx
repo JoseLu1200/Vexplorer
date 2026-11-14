@@ -8,6 +8,7 @@ import { PIEZAS, RESUMEN } from './lib/caso'
 import { useTheme, useTrackProgress, useMode, prefersReduced, smooth } from './lib/scroll'
 // Veta de tablero de Wikimedia Commons, de Kurt Kaiser, CC0. Créditos en src/assets/CREDITOS.md.
 import tallerImg from './assets/workshop-machines.webp'
+import qrPortal from './assets/qr-portal.svg'
 import vetaImg from './assets/wood-texture-light.webp'
 
 /** Símbolo de Vexplorer: dos tableros que forman una V; el derecho está desplazado, como en un despiece. */
@@ -65,7 +66,7 @@ function Logo({ size = 30, stroke = 5 }: { size?: number; stroke?: number }) {
 
 /** Sin cabecera: logo pequeño arriba a la izquierda y menú de tres líneas a la derecha, en modo diferencia para no chocar con lo que pase por debajo. */
 // Puente a la demo: el portal de Vexplorer. En local, el servidor del portal; publicado, su artifact.
-const PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5175' : 'https://claude.ai/artifact/UbXS3VSx3AprEcwXzjU1KP'
+const PORTAL_URL = 'https://vexplorer-portal.vercel.app'
 
 function Nav() {
   const [open, setOpen] = useState(false)
@@ -312,6 +313,10 @@ function PlanoTrack() {
 
         <figure className="veta" style={{ transform: `translateY(${(t * 105).toFixed(1)}%)` }} aria-hidden={t > 0.98}>
           <img src={vetaImg} alt="Veta de un tablero de madera con una fila de nudos" />
+          <a className="qr-veta" href={PORTAL_URL} target="_blank" rel="noopener" style={{ opacity: heroO }}>
+            <img src={qrPortal} alt="Código QR para probar Vexplorer" />
+            <span>Pruébalo</span>
+          </a>
           <p className="lede lede-veta" style={{ opacity: heroO }}>Sacamos de cada plano DXF el despiece y el coste de material, listos para que tu oficina técnica los revise.</p>
         </figure>
 

@@ -80,6 +80,8 @@ export interface EntradaEspacio {
   archivo: string;
 }
 
+/** Despliegue público: sin el espacio geométrico de PlankAssembly (CC BY-NC-ND). */
+export const PUBLICO = import.meta.env.VITE_PUBLICO === "1";
 export const GEOMETRIA: EntradaEspacio = { clave: "geometria", nombre: "Geometría · PlankAssembly (26.707)", n: 26707, principal: true, archivo: "mapa.json" };
 const PIE_GEO = "PlankAssembly, manycore-research, CC BY-NC-ND 4.0 · vector geométrico, sin modelo";
 

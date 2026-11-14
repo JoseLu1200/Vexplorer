@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { type DatosEmb, type DatosGeo, type DatosMapa, type EntradaEspacio, GEOMETRIA, type Proyeccion, SPLITS, categoriaEs, medidas, vecinosDe } from "./datos";
+import { type DatosEmb, type DatosGeo, type DatosMapa, type EntradaEspacio, GEOMETRIA, PUBLICO, type Proyeccion, SPLITS, categoriaEs, medidas, vecinosDe } from "./datos";
 import { composicion, etiquetas } from "./etiquetas";
 import { Miniatura } from "./Silueta";
 
@@ -192,7 +192,7 @@ export function Leyenda({ d, colores, familia, onFamilia, raro, movil }: { d: Da
 }
 
 export function SelectorEspacio({ espacios, actual, onCambio }: { espacios: EntradaEspacio[]; actual: string; onCambio: (clave: string) => void }) {
-  const principales = [GEOMETRIA, ...espacios.filter((e) => e.principal)];
+  const principales = [...(PUBLICO ? [] : [GEOMETRIA]), ...espacios.filter((e) => e.principal)];
   const otros = espacios.filter((e) => !e.principal);
   return (
     <select

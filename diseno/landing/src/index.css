@@ -1289,3 +1289,26 @@ html[data-hero="1"] .logo-word {
   pointer-events: auto;
 }
 .paso-portal:hover, .paso-portal:focus-visible { background: var(--ink); color: var(--bg); }
+
+/* QR al portal sobre la veta */
+.qr-veta {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: calc(var(--gutter-r) + 200px);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 10px 14px 10px 10px;
+  background: #f1ece2;
+  color: #1c2541;
+  text-decoration: none;
+  font-family: var(--f-text);
+  font-weight: 600;
+  font-size: 16px;
+}
+.qr-veta img { display: block; width: clamp(72px, 9vh, 104px); height: auto; }
+@media (max-width: 760px) {
+  .qr-veta { display: none; }
+}

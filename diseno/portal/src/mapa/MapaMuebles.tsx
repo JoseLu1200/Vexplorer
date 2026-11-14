@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type DatosMapa, type EntradaEspacio, GEOMETRIA, type Proyeccion, cargarEmbedding, cargarEspacios, cargarMapa, cargarProyecciones, precargar, rutaPorDefecto, vecinosDe } from "./datos";
+import { type DatosMapa, type EntradaEspacio, GEOMETRIA, PUBLICO, type Proyeccion, cargarEmbedding, cargarEspacios, cargarMapa, cargarProyecciones, precargar, rutaPorDefecto, vecinosDe } from "./datos";
 import { Escena } from "./escena";
 import { type Tema, colorGrupo, leerTema } from "./paleta";
 import { Buscador, CanalHover, Leyenda, PanelFijado, SelectorEspacio, SelectorProyeccion, TarjetaHover } from "./Paneles";
@@ -35,7 +35,7 @@ function cargar(ruta: string, e: EntradaEspacio): Promise<DatosMapa> {
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
-export function MapaMuebles({ focoId = null, espacio = GEOMETRIA.clave, proyeccion = "tsne2", rutaDatos, alFijar, className = "", depuracion = false }: MapaMueblesProps) {
+export function MapaMuebles({ focoId = null, espacio = PUBLICO ? "eg2-mixed-768" : GEOMETRIA.clave, proyeccion = "tsne2", rutaDatos, alFijar, className = "", depuracion = false }: MapaMueblesProps) {
   const ruta = rutaDatos ?? rutaPorDefecto();
   const [espacios, setEspacios] = useState<EntradaEspacio[]>([]);
   const [clave, setClave] = useState(espacio);
