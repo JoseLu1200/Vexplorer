@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -881,3 +882,221 @@ def test_biblioteca_de_juicios_rechaza_entradas_incoherentes(fuente, tmp_path, c
     assert capsys.readouterr().err.count('"error"') == 4
     # Un archivo de juicios desconocido falla.
     assert biblioteca_juicios.main([*base[:2], *base[2:4], "--juicios", "otro.json", "--descriptores", str(tmp_path / "bien.json"), "--salida", base[-1]]) == 2
+
+
+def test_escala_cercana_es_simetrica():
+    from tools.plankassembly_corpus import ModeloAnalizado, _cercanos, _escala_cercana
+
+    def make_model(name: str, dims: tuple[tuple[float, ...], ...], mayor: float) -> ModeloAnalizado:
+        return ModeloAnalizado(
+            filename=name,
+            partition="train",
+            sha256="abc",
+            fisicas=(),
+            has_normal=False,
+            exact_hash="ex",
+            family_hash="fam",
+            claves=(),
+            dims=dims,
+            mayor=mayor,
+            features={},
+            categoria=None,
+            model={},
+        )
+
+    # a has mayor 1000 and plank dim 100.
+    # b has mayor 2000 and plank dim 203.
+    # Forward check: factor = 2000 / 1000 = 2.0. 100 * 2.0 = 200. abs(200 - 203) = 3.0.
+    # Backward check: factor = 1000 / 2000 = 0.5. 203 * 0.5 = 101.5. abs(101.5 - 100) = 1.5.
+    # With tolerance_mm = 2.0: forward residual is 3.0 > 2.0 (False), backward residual is 1.5 <= 2.0 (True).
+    # Symmetric check requires both, so both must evaluate to False.
+    a = make_model("a.json", ((100.0, 500.0, 1000.0),), 1000.0)
+    b = make_model("b.json", ((203.0, 1000.0, 2000.0),), 2000.0)
+
+    assert _escala_cercana(a, b, 2.0) == _escala_cercana(b, a, 2.0)
+    assert _escala_cercana(a, b, 2.0) is False
+    assert _cercanos(a, b, 2.0) == _cercanos(b, a, 2.0)
+    assert _cercanos(a, b, 2.0) is False
+
+    c = make_model("c.json", ((200.0, 1000.0, 2000.0),), 2000.0)
+    assert _escala_cercana(a, c, 2.0) is True
+    assert _escala_cercana(c, a, 2.0) is True
+    assert _cercanos(a, c, 2.0) is True
+    assert _cercanos(c, a, 2.0) is True
+
+
+def test_auditar_universo_deduplica_en_misma_particion(tmp_path: Path):
+    root = tmp_path / "src_same_part"
+    model_dir = root / "extracted" / "data" / "model"
+    split_dir = root / "extracted" / "data" / "splits"
+    model_dir.mkdir(parents=True)
+    split_dir.mkdir(parents=True)
+
+    def write_model(nombre: str, thickness: float):
+        planks = [
+            [0, 0, 0, 1000, 500, 700],  # envelope
+            [0, 0, 0, thickness, 500, 700],
+            [980, 0, 0, 1000, 500, 700],
+        ]
+        attach = [[-1] * 6, [0, 1, 2, -1, 4, 5], [-1, -1, 2, -1, 4, 5]]
+        (model_dir / nombre).write_text(json.dumps({"planks": planks, "attach": attach}), encoding="utf-8")
+
+    # A: 10.0, X: 11.8 (|A-X|=1.8<=2.0), B: 8.2 (|B-A|=1.8<=2.0, |B-X|=3.6>2.0).
+    # Clique clustering groups [A, X] in cluster 0 (rep A).
+    # B cannot join [A, X] so it forms cluster 1 (rep B).
+    # Same-partition audit checks B against accepted finales (A), finds it close, and drops B into dentro["train"].
+    write_model("m_a.json", 10.0)
+    write_model("m_x.json", 11.8)
+    write_model("m_b.json", 8.2)
+
+    (split_dir / "train.txt").write_text("m_a.json\nm_x.json\nm_b.json\n", encoding="utf-8")
+    (split_dir / "valid.txt").write_text("", encoding="utf-8")
+    (split_dir / "test.txt").write_text("", encoding="utf-8")
+
+    supervivientes, audit = plankassembly_corpus.auditar_universo(root, tolerancia_mm=2.0)
+    assert [m.filename for m in supervivientes] == ["m_a.json"]
+    assert "m_b.json" in audit["dropped_within_split_duplicate"]["train"]
+    assert "m_x.json" in audit["dropped_within_split_duplicate"]["train"]
+
+
+def test_leer_particiones_rechaza_symlink(tmp_path: Path, monkeypatch):
+    root = tmp_path / "src_symlink"
+    model_dir = root / "extracted" / "data" / "model"
+    split_dir = root / "extracted" / "data" / "splits"
+    model_dir.mkdir(parents=True)
+    split_dir.mkdir(parents=True)
+
+    target = model_dir / "real.json"
+    target.write_text(json.dumps({"planks": [[0, 0, 0, 10, 10, 10], [0, 0, 0, 1, 1, 1]], "attach": [[-1]*6, [-1]*6]}), encoding="utf-8")
+    link = model_dir / "symlink.json"
+    try:
+        link.symlink_to(target)
+        (split_dir / "train.txt").write_text("symlink.json\n", encoding="utf-8")
+        (split_dir / "valid.txt").write_text("", encoding="utf-8")
+        (split_dir / "test.txt").write_text("", encoding="utf-8")
+        with pytest.raises(ValueError, match="symlink rejected"):
+            plankassembly_corpus._leer_particiones(root)
+    except OSError:
+        pass
+
+    (split_dir / "train.txt").write_text("real.json\n", encoding="utf-8")
+    (split_dir / "valid.txt").write_text("", encoding="utf-8")
+    (split_dir / "test.txt").write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(Path, "is_symlink", lambda self: True)
+    with pytest.raises(ValueError, match="symlink rejected"):
+        plankassembly_corpus._leer_particiones(root)
+
+
+def test_biblioteca_juicios_validaciones_adicionales(fuente, tmp_path, capsys):
+    from tools import biblioteca_juicios
+
+    pub, priv, _ = _generar(fuente, tmp_path, poor_variants=True)
+    contrato = _json(priv / "juicios" / "bibliotecas.json")["juicios_test.json"]
+    ids = contrato["case_ids"]
+    descriptores = _descriptores_publicos(pub, ids)
+
+    # 1. privado.resolve() == publico.resolve()
+    with pytest.raises(ValueError, match="distintos"):
+        biblioteca_juicios.construir_biblioteca(pub, pub, "juicios_test.json", descriptores)
+
+    # 2. bool(case_ids) == False
+    priv_vacio = tmp_path / "priv_vacio"
+    shutil.copytree(priv, priv_vacio)
+    bj = _json(priv_vacio / "juicios" / "bibliotecas.json")
+    bj["juicios_test.json"]["case_ids"] = []
+    (priv_vacio / "juicios" / "bibliotecas.json").write_text(json.dumps(bj), encoding="utf-8")
+    with pytest.raises(ValueError, match="vacío"):
+        biblioteca_juicios.construir_biblioteca(priv_vacio, pub, "juicios_test.json", descriptores)
+
+    # 3. isinstance(overrides, dict)
+    priv_bad_overrides = tmp_path / "priv_bad_ov"
+    shutil.copytree(priv, priv_bad_overrides)
+    bj_bad = _json(priv_bad_overrides / "juicios" / "bibliotecas.json")
+    bj_bad["juicios_test.json"]["run_id_overrides"] = "not-a-dict"
+    (priv_bad_overrides / "juicios" / "bibliotecas.json").write_text(json.dumps(bj_bad), encoding="utf-8")
+    with pytest.raises(TypeError, match="diccionario"):
+        biblioteca_juicios.construir_biblioteca(priv_bad_overrides, pub, "juicios_test.json", descriptores)
+
+    # 4. set(overrides.values()) <= set(case_ids)
+    priv_bad_values = tmp_path / "priv_bad_vals"
+    shutil.copytree(priv, priv_bad_values)
+    bj_vals = _json(priv_bad_values / "juicios" / "bibliotecas.json")
+    bj_vals["juicios_test.json"]["run_id_overrides"] = {ids[0]: "id-fantasma-fuera-de-case-ids"}
+    (priv_bad_values / "juicios" / "bibliotecas.json").write_text(json.dumps(bj_vals), encoding="utf-8")
+    with pytest.raises(ValueError, match="valores de run_id_overrides"):
+        biblioteca_juicios.construir_biblioteca(priv_bad_values, pub, "juicios_test.json", descriptores)
+
+    # 5. unit == "mm" en cases.json
+    pub_bad_unit = tmp_path / "pub_bad_unit"
+    shutil.copytree(pub, pub_bad_unit)
+    cases = _json(pub_bad_unit / "cases.json")
+    cases[0]["unit"] = "meters"
+    (pub_bad_unit / "cases.json").write_text(json.dumps(cases), encoding="utf-8")
+    with pytest.raises(ValueError, match="unit == 'mm'"):
+        biblioteca_juicios.construir_biblioteca(priv, pub_bad_unit, "juicios_test.json", descriptores)
+
+    # 6. main() validación de --salida (dentro de publico, dentro de privado, o en repo git)
+    desc_path = tmp_path / "desc.json"
+    desc_path.write_text(json.dumps(descriptores), encoding="utf-8")
+
+    # Salida dentro de publico
+    rc = biblioteca_juicios.main([
+        "--privado", str(priv), "--publico", str(pub), "--juicios", "juicios_test.json",
+        "--descriptores", str(desc_path), "--salida", str(pub / "out.json")
+    ])
+    assert rc == 2
+    # Salida dentro de privado
+    rc = biblioteca_juicios.main([
+        "--privado", str(priv), "--publico", str(pub), "--juicios", "juicios_test.json",
+        "--descriptores", str(desc_path), "--salida", str(priv / "out.json")
+    ])
+    assert rc == 2
+    # Salida en repositorio Git
+    rc = biblioteca_juicios.main([
+        "--privado", str(priv), "--publico", str(pub), "--juicios", "juicios_test.json",
+        "--descriptores", str(desc_path), "--salida", str(plankassembly_corpus.REPO_ROOT / "out.json")
+    ])
+    assert rc == 2
+
+
+def test_evaluar_recuperacion_validaciones(fuente, tmp_path):
+    from tools import evaluar_recuperacion
+    from backend.app.precedentes.evaluacion import ConjuntoJuicios
+
+    pub, priv, _ = _generar(fuente, tmp_path)
+    juicios = ConjuntoJuicios.model_validate_json((priv / "juicios" / "juicios_test.json").read_text(encoding="utf-8"))
+
+    # 1. _validar_k
+    with pytest.raises(ValueError, match="k debe ser un entero >= 1"):
+        evaluar_recuperacion.evaluar((), juicios, 0, "geometrico")
+    with pytest.raises(ValueError, match="k debe ser un entero >= 1"):
+        evaluar_recuperacion.evaluar((), juicios, -5, "geometrico")
+
+    # 2. metodo in METODOS
+    with pytest.raises(ValueError, match="método desconocido"):
+        evaluar_recuperacion.evaluar((), juicios, 5, "metodo_fantasma")
+
+    # 3. not metricas (biblioteca vacía: ninguna consulta encontrada)
+    with pytest.raises(ValueError, match="no se ha evaluado ninguna consulta"):
+        evaluar_recuperacion.evaluar((), juicios, 5, "geometrico")
+
+    # 4. ranking_consulta con score no finito
+    from backend.app.contratos.modelos import LibraryItem
+    from backend.tests.test_precedentes_evaluacion import _item
+
+    consulta = LibraryItem.model_validate(_item("q", "r0", 800, 1800, 4))
+    candidatos = (LibraryItem.model_validate(_item("c1", "r1", 800, 1800, 4)),)
+
+    def ranqueador_nan(c, cands):
+        return ((cands[0].id, float("nan")),)
+
+    with pytest.raises(ValueError, match="score no finito"):
+        evaluar_recuperacion.ranking_consulta(consulta, candidatos, ranqueador_nan)
+
+    def ranqueador_inf(c, cands):
+        return ((cands[0].id, float("inf")),)
+
+    with pytest.raises(ValueError, match="score no finito"):
+        evaluar_recuperacion.ranking_consulta(consulta, candidatos, ranqueador_inf)
+

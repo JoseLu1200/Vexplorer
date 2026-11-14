@@ -191,14 +191,18 @@ def _dimensiones_cercanas(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm:
     )
 
 
-def _escala_cercana(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
-    """Un único factor isótropo (cociente de las mayores extensiones) con residuo <= ``tolerancia_mm``."""
+def _escala_dir(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
     if len(a.dims) != len(b.dims) or a.mayor <= 0:
         return False
     factor = b.mayor / a.mayor
     return all(
         abs(x * factor - y) <= tolerancia_mm for pa, pb in zip(a.dims, b.dims) for x, y in zip(pa, pb)
     )
+
+
+def _escala_cercana(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
+    """Un único factor isótropo (cociente de las mayores extensiones) con residuo <= ``tolerancia_mm`` en ambas direcciones."""
+    return _escala_dir(a, b, tolerancia_mm) and _escala_dir(b, a, tolerancia_mm)
 
 
 def _cercanos(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> bool:
@@ -291,6 +295,10 @@ def _leer_particiones(source: Path) -> dict[str, list[str]]:
     vistos: dict[str, str] = {}
     for partition, nombres in listas.items():
         for nombre in nombres:
+            if Path(nombre).name != nombre or not nombre.endswith(".json"):
+                raise ValueError(f"unsafe model filename: {nombre!r}")
+            if (base / "model" / nombre).is_symlink():
+                raise ValueError(f"symlink rejected: {nombre!r}")
             if nombre in vistos:
                 raise ValueError(f"model {nombre!r} listed in both {vistos[nombre]} and {partition}")
             vistos[nombre] = partition
@@ -365,6 +373,7 @@ def auditar_universo(
         modelos = [m for m in analizados if m.partition == partition]
         clusters = _agrupar_cliques(modelos, tolerancia_mm)
         finales: list[ModeloAnalizado] = []
+        indice_local: dict[Hashable, list[ModeloAnalizado]] = {}
         for miembros in clusters:
             representante = miembros[0]
             group_id = "grp-" + _digest(("group|" + representante.filename).encode())[:12]
@@ -383,8 +392,17 @@ def auditar_universo(
             if vecino:
                 cruce[partition].append(representante.filename)
                 cruzados += 1
-            else:
-                finales.append(representante)
+                continue
+            vecino_mismo = any(
+                _cercanos(otro, representante, tolerancia_mm)
+                for clave in representante.claves for otro in indice_local.get(clave, ())
+            )
+            if vecino_mismo:
+                dentro[partition].append(representante.filename)
+                continue
+            finales.append(representante)
+            for clave in representante.claves:
+                indice_local.setdefault(clave, []).append(representante)
         for modelo in finales:
             for clave in modelo.claves:
                 indice_prioritario.setdefault(clave, []).append(modelo)
@@ -516,7 +534,7 @@ def _comprobar_pares(consultas: int, candidatos: int, max_pares: int, zeros: int
 
 def juicios_de_variantes(
     juicios_base: Mapping[str, object], referencias: Sequence[Mapping[str, object]], poor_kind: str,
-    *, max_pares: int = 3_000_000, ceros_por_consulta: int | None = None,
+    *, particion_consultas: str = "test", max_pares: int = 3_000_000, ceros_por_consulta: int | None = None,
 ) -> dict[str, object] | None:
     """Mismos grados que la consulta completa; las variantes candidatas heredan el de su caso base.
 
@@ -525,20 +543,35 @@ def juicios_de_variantes(
     completo propio. Las variantes de otros casos son candidatas y se juzgan con el grado
     de su base respecto a la base de la consulta (cobertura completa).
     """
+    por_id = {str(r["id"]): r for r in referencias}
     por_base = {c["consulta_id"]: c for c in juicios_base["consultas"]}  # type: ignore[index, union-attr]
-    variantes = _variantes_de(referencias, poor_kind)
-    variante_de_base = {str(r["variant_of"]): str(r["id"]) for r in variantes}
+    todas_variantes = _variantes_de(referencias, poor_kind)
+    variantes = [r for r in todas_variantes if r.get("partition") == particion_consultas and r.get("variant_of") in por_base]
+    variante_de_base = {str(r["variant_of"]): str(r["id"]) for r in todas_variantes}
     completas = sum(1 for r in referencias if r.get("variant_of") is None)
-    _comprobar_pares(len(variantes), completas + len(variantes) - 1, max_pares, ceros_por_consulta, f"variants {poor_kind}")
+    _comprobar_pares(len(variantes), completas + len(todas_variantes) - 1, max_pares, ceros_por_consulta, f"variants {poor_kind}")
     consultas = []
     for ref in variantes:
         base = por_base.get(ref["variant_of"])
         if base is None:
             continue
+        base_ref = por_id[str(ref["variant_of"])]
         relevancias = dict(base["relevancias"])
         for base_id, variante_id in variante_de_base.items():
             if variante_id != ref["id"] and base_id in base["relevancias"]:
                 relevancias[variante_id] = base["relevancias"][base_id]
+        if ceros_por_consulta is not None:
+            positivos = {cid: g for cid, g in relevancias.items() if g >= 1}
+            ceros = [cid for cid, g in relevancias.items() if g == 0]
+
+            def cercania(cid: str) -> tuple[float, int, str]:
+                cand = por_id[cid]
+                cand_base = por_id[str(cand["variant_of"])] if cand.get("variant_of") is not None else cand
+                par = _metricas_par(base_ref, cand_base)
+                return (par[1], par[3], cid)
+
+            ceros_ordenados = sorted(ceros, key=cercania)[:ceros_por_consulta]
+            relevancias = {**positivos, **{cid: 0 for cid in ceros_ordenados}}
         consultas.append({
             "consulta_id": ref["id"],
             "relevancias": dict(sorted(relevancias.items())),
@@ -548,6 +581,12 @@ def juicios_de_variantes(
         })
     if not consultas:
         return None
+    total_pares = sum(len(c["relevancias"]) for c in consultas)
+    if total_pares > max_pares:
+        raise ValueError(
+            f"variants {poor_kind}: {total_pares} judged pairs exceed max_pares={max_pares}; "
+            "reduce sizes or pass zeros_per_query"
+        )
     return {**juicios_base, "version": f"{juicios_base['version']}+{poor_kind}", "consultas": consultas}
 
 
@@ -728,6 +767,8 @@ def generar_corpus(
         raise ValueError(f"unknown partitions for poor variants: {sorted(desconocidas)}")
     regla = rule or ReglaRelevancia()
     semilla = str(seed)
+    if salt is not None and (not isinstance(salt, str) or not salt.strip()):
+        raise ValueError("salt must be non-empty")
     # La sal protege los ids y las traslaciones: aleatoria si no se aporta, y solo en el manifiesto privado.
     sal = salt if salt else secrets.token_hex(16)
 
@@ -746,11 +787,15 @@ def generar_corpus(
         (public_stage / "dxf").mkdir()
         (public_stage / "agent_cases").mkdir()
         (private_stage / "juicios").mkdir()
+        vistos_ids: set[str] = set()
         casos: list[dict[str, object]] = []
         referencias: list[dict[str, object]] = []
 
         def emitir(case_id: str, fisicas: Sequence[Sequence[float]], partition: str, vistas: tuple[str, ...],
                    *, base: str | None, traslaciones: Mapping[str, tuple[int, int]] | None = None) -> None:
+            if case_id in vistos_ids:
+                raise ValueError(f"id collision detected: {case_id}")
+            vistos_ids.add(case_id)
             ruta = public_stage / "dxf" / f"{case_id}.dxf"
             _write_assembled_dxf(ruta, [list(b) for b in fisicas], vistas, traslaciones)
             view_kind = VIEW_KIND_EMPOBRECIDA if base else VIEW_KIND_COMPLETA
@@ -771,8 +816,12 @@ def generar_corpus(
                 if poor_variants and partition in poor_partitions:
                     for kind, vistas in sorted(VISTAS_EMPOBRECIDAS.items()):
                         variant_id = _id_opaco(sal, partition, posicion, kind)
-                        vista_nombre = {"front": "front", "top": "top", "side": "side"}
-                        traslaciones = {v: _traslacion(sal, variant_id, vista_nombre[v]) for v in vistas}
+                        if kind == "frontal_y_planta":
+                            comun = _traslacion(sal, variant_id, "views")
+                            traslaciones = {v: comun for v in vistas}
+                        else:
+                            vista_nombre = {"front": "front", "top": "top", "side": "side"}
+                            traslaciones = {v: _traslacion(sal, variant_id, vista_nombre[v]) for v in vistas}
                         emitir(variant_id, modelo.fisicas, partition, vistas, base=case_id, traslaciones=traslaciones)
                         referencias.append({
                             "id": variant_id, "partition": partition, "variant_of": case_id, "poor_kind": kind,

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -73,6 +74,11 @@ def cargar_biblioteca(ruta: Path) -> tuple[LibraryItem, ...]:
     return tuple(sorted(items, key=lambda item: item.id))
 
 
+def _validar_k(k: int) -> None:
+    if not isinstance(k, int) or isinstance(k, bool) or k < 1:
+        raise ValueError("k debe ser un entero >= 1")
+
+
 def ranking_consulta(consulta: LibraryItem, biblioteca: tuple[LibraryItem, ...], ranqueador: Ranqueador) -> tuple[tuple[str, ...], ExclusionesConsulta]:
     """Excluye la propia consulta, el mismo run y otras versiones de descriptor; ordena por (-score, id)."""
     misma = mismo_run = version = 0
@@ -86,12 +92,19 @@ def ranking_consulta(consulta: LibraryItem, biblioteca: tuple[LibraryItem, ...],
             version += 1
         else:
             candidatos.append(item)
-    puntuados = sorted(ranqueador(consulta, tuple(candidatos)), key=lambda par: (-par[1], par[0]))
+    scores = ranqueador(consulta, tuple(candidatos))
+    for item_id, score in scores:
+        if not (isinstance(score, (int, float)) and math.isfinite(score)):
+            raise ValueError(f"score no finito ({score!r}) para item '{item_id}' en consulta '{consulta.id}'")
+    puntuados = sorted(scores, key=lambda par: (-par[1], par[0]))
     exclusiones = ExclusionesConsulta(consulta_id=consulta.id, misma_consulta=misma, mismo_run=mismo_run, version_descriptor_distinta=version)
     return tuple(item_id for item_id, _ in puntuados), exclusiones
 
 
 def evaluar(biblioteca: tuple[LibraryItem, ...], juicios: ConjuntoJuicios, k: int, metodo: str) -> InformeRecuperacion:
+    _validar_k(k)
+    if metodo not in METODOS:
+        raise ValueError(f"método desconocido '{metodo}' (válidos: {sorted(METODOS)})")
     ranqueador = METODOS[metodo]
     por_id = {item.id: item for item in biblioteca}
     metricas: list[MetricasConsulta] = []
@@ -111,6 +124,8 @@ def evaluar(biblioteca: tuple[LibraryItem, ...], juicios: ConjuntoJuicios, k: in
             advertencias.append(f"consulta '{consulta.consulta_id}': candidatos juzgados excluidos (mismo run o versión de descriptor distinta) {filtrados}; limitan el recall")
         metricas.append(evaluar_consulta(consulta.consulta_id, ranking, dict(consulta.relevancias), k))
         exclusiones.append(excluidos)
+    if not metricas:
+        raise ValueError("no se ha evaluado ninguna consulta")
     avisos = {
         "synthetic": "Juicios sintéticos: las métricas solo prueban el mecanismo, no son evidencia de calidad.",
         "derived_reference": "Juicios derivados por regla de la referencia privada, no revisados por personas: miden acuerdo con esa regla, no preferencia del técnico.",
@@ -134,10 +149,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         biblioteca = cargar_biblioteca(args.biblioteca)
         juicios = ConjuntoJuicios.model_validate_json(args.juicios.read_text(encoding="utf-8"))
+        informe = evaluar(biblioteca, juicios, args.k, args.metodo)
     except (OSError, TypeError, ValueError) as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    informe = evaluar(biblioteca, juicios, args.k, args.metodo)
     print(json.dumps(informe.model_dump(mode="json"), ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 

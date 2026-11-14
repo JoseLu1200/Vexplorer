@@ -29,6 +29,7 @@ from pathlib import Path
 
 from backend.app.contratos.modelos import LibraryItem
 from backend.app.semantic.descriptor import descriptor_fingerprint
+from tools.plankassembly_corpus import REPO_ROOT, _raices_de_repositorio
 
 CREATED_AT = "1970-01-01T00:00:00+00:00"  # fijo: la salida es determinista
 
@@ -52,6 +53,8 @@ def construir_biblioteca(
     descriptores: Mapping[str, object],
 ) -> tuple[LibraryItem, ...]:
     """Valida y construye la biblioteca de un archivo de juicios (ver el módulo)."""
+    if privado.resolve() == publico.resolve():
+        raise ValueError("los directorios privado y público deben ser distintos")
     bibliotecas = _json(privado / "juicios" / "bibliotecas.json", "juicios/bibliotecas.json")
     if not isinstance(bibliotecas, dict) or archivo_juicios not in bibliotecas:
         conocidos = sorted(bibliotecas) if isinstance(bibliotecas, dict) else []
@@ -60,14 +63,27 @@ def construir_biblioteca(
     if not isinstance(contrato, dict) or not isinstance(contrato.get("case_ids"), list):
         raise TypeError("entrada de bibliotecas.json malformada")
     case_ids: list[str] = contrato["case_ids"]
-    overrides = contrato.get("run_id_overrides") or {}
+    if not case_ids:
+        raise ValueError("case_ids no puede estar vacío")
+    overrides = contrato.get("run_id_overrides")
+    if overrides is None:
+        overrides = {}
+    if not isinstance(overrides, dict):
+        raise TypeError("run_id_overrides debe ser un diccionario")
     if len(case_ids) != len(set(case_ids)):
         raise ValueError("case_ids duplicados en bibliotecas.json")
     if not set(overrides) <= set(case_ids):
         raise ValueError("run_id_overrides referencia ids que no están en case_ids")
+    if not set(overrides.values()) <= set(case_ids):
+        raise ValueError("los valores de run_id_overrides deben pertenecer a case_ids")
 
     filas = _json(publico / "cases.json", "cases.json público")
-    publicos = {fila.get("id") for fila in filas if isinstance(fila, dict)} if isinstance(filas, list) else set()
+    if not isinstance(filas, list):
+        raise TypeError("cases.json público debe ser una lista de casos")
+    for fila in filas:
+        if not isinstance(fila, dict) or fila.get("unit") != "mm":
+            raise ValueError(f"caso en cases.json debe declarar unit == 'mm': {fila!r}")
+    publicos = {fila.get("id") for fila in filas if isinstance(fila, dict)}
     ausentes_publico = sorted(set(case_ids) - publicos)
     if ausentes_publico:
         raise ValueError(f"ids de la biblioteca ausentes del corpus público: {ausentes_publico[:5]}")
@@ -99,20 +115,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--salida", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
+        if _dentro_de(args.salida, args.publico) or _dentro_de(args.salida, args.privado):
+            raise ValueError("--salida no puede estar dentro del directorio público ni privado")
+        prohibidas = _raices_de_repositorio(REPO_ROOT) | {REPO_ROOT.resolve()}
+        if _raices_de_repositorio(args.salida) or any(args.salida.resolve().is_relative_to(raiz) for raiz in prohibidas):
+            raise ValueError(
+                f"--salida {args.salida} is inside a Git repository; dataset derivatives must stay outside Git"
+            )
         if _dentro_de(args.descriptores, args.privado):
             raise ValueError("el archivo de descriptores no puede estar dentro del directorio privado")
         descriptores = _json(args.descriptores, "descriptores")
         if not isinstance(descriptores, dict):
             raise TypeError("--descriptores debe ser un objeto {id: descriptor}")
         biblioteca = construir_biblioteca(args.privado, args.publico, args.juicios, descriptores)
-    except (ValueError, TypeError) as error:  # incluye ValidationError de Pydantic
+        args.salida.parent.mkdir(parents=True, exist_ok=True)
+        args.salida.write_text(
+            json.dumps([item.model_dump(mode="json") for item in biblioteca], ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except (OSError, ValueError, TypeError) as error:  # incluye ValidationError de Pydantic
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    args.salida.parent.mkdir(parents=True, exist_ok=True)
-    args.salida.write_text(
-        json.dumps([item.model_dump(mode="json") for item in biblioteca], ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
     return 0
 
 
