@@ -5,6 +5,7 @@ import argparse
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import hashlib
+import json
 from pathlib import Path
 import shutil
 import sqlite3
@@ -98,7 +99,8 @@ def create_scheduled_backup(
 
 
 def active_job_count(data_dir: Path) -> int:
-    database_path = data_dir.resolve() / "vexplorer.sqlite3"
+    resolved_data_dir = data_dir.resolve()
+    database_path = resolved_data_dir / "vexplorer.sqlite3"
     if not database_path.is_file():
         raise RuntimeError("backup_database_not_found")
     try:
@@ -108,13 +110,31 @@ def active_job_count(data_dir: Path) -> int:
             table = database.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='jobs'"
             ).fetchone()
-            if table is None:
-                return 0
-            return int(database.execute(
+            durable_jobs = 0 if table is None else int(database.execute(
                 "SELECT COUNT(*) FROM jobs WHERE state IN ('queued','running')"
             ).fetchone()[0])
     except sqlite3.Error as exc:
         raise RuntimeError("backup_job_check_failed") from exc
+    reconstruction = resolved_data_dir / "reconstruction"
+    if reconstruction.is_symlink():
+        raise RuntimeError("backup_reconstruction_job_check_failed")
+    if not reconstruction.exists():
+        return durable_jobs
+    if not reconstruction.is_dir():
+        raise RuntimeError("backup_reconstruction_job_check_failed")
+    reconstruction_jobs = 0
+    for status_path in reconstruction.glob("*/status.json"):
+        if status_path.is_symlink() or status_path.parent.is_symlink():
+            raise RuntimeError("backup_reconstruction_job_check_failed")
+        try:
+            state = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError) as exc:
+            raise RuntimeError("backup_reconstruction_job_check_failed") from exc
+        if not isinstance(state, dict) or not isinstance(state.get("status"), str):
+            raise RuntimeError("backup_reconstruction_job_check_failed")
+        if state["status"] in {"queued", "running"}:
+            reconstruction_jobs += 1
+    return durable_jobs + reconstruction_jobs
 
 
 def main() -> int:

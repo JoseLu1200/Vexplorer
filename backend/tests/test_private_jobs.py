@@ -6,6 +6,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from fastapi import APIRouter, Request
 from fastapi.testclient import TestClient
 
 from backend.app.main import create_app
@@ -352,6 +353,59 @@ def test_public_live_api_quota_survives_restart_and_replay_is_free(
         )
         assert exhausted.status_code == 429
         assert exhausted.json()["error"]["code"] == "public_live_quota_exhausted"
+
+
+def test_public_reconstruction_uses_shared_job_and_paid_daily_admission(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import backend.app.reconstruction3d.router as reconstruction_router
+
+    catalog = tmp_path / "public-catalog.json"
+    catalog.write_text(
+        get_table_cost_catalog().model_dump_json(), encoding="utf-8"
+    )
+    monkeypatch.setenv("VEXPLORER_ENV", "production")
+    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
+    monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
+    monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(catalog))
+    monkeypatch.setenv("VEXPLORER_PUBLIC_LIVE_DAILY_LIMIT", "1")
+    monkeypatch.setenv("VEXPLORER_PUBLIC_LIVE_CLIENT_DAILY_LIMIT", "1")
+    sequence = iter(("reconstruction-one", "reconstruction-two"))
+
+    def fake_router(**kwargs):
+        admission = kwargs["admission_callback"]
+        assert admission is not None
+        router = APIRouter()
+
+        @router.post("/api/v1/test-reconstruction-admission")
+        def submit(http_request: Request):
+            job_id = next(sequence)
+            admission(http_request, "submit", job_id)
+            return {"job_id": job_id}
+
+        return router
+
+    monkeypatch.setattr(
+        reconstruction_router, "create_reconstruction_router", fake_router
+    )
+    data_dir = tmp_path / "public-data"
+    with TestClient(
+        create_app(data_dir=data_dir, frontend_dir=tmp_path / "none")
+    ) as client:
+        first = client.post("/api/v1/test-reconstruction-admission")
+        exhausted = client.post("/api/v1/test-reconstruction-admission")
+
+    assert first.status_code == 200
+    assert exhausted.status_code == 429
+    assert exhausted.json()["detail"] == "public_live_quota_exhausted"
+    assert int(exhausted.headers["Retry-After"]) > 0
+    with sqlite3.connect(data_dir / "vexplorer.sqlite3") as database:
+        assert database.execute(
+            "SELECT job_id,kind FROM job_admission"
+        ).fetchall() == [("reconstruction-one", "reconstruction_submit")]
+        assert database.execute(
+            "SELECT COUNT(*) FROM public_admission_events WHERE action='job'"
+        ).fetchone() == (1,)
 
 
 def test_job_retry_api_rejects_nonretryable_and_foreign_jobs(

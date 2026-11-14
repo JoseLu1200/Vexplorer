@@ -48,13 +48,17 @@ def _safe_archive_path(value: str) -> bool:
     )
 
 
-def _document_files(documents_dir: Path) -> Iterable[Path]:
-    if not documents_dir.exists():
+def _tree_files(root: Path, *, symlink_error: str) -> Iterable[Path]:
+    if root.is_symlink():
+        raise BackupError(symlink_error)
+    if not root.exists():
         return ()
+    if not root.is_dir():
+        raise BackupError(symlink_error)
     files: list[Path] = []
-    for candidate in sorted(documents_dir.rglob("*")):
+    for candidate in sorted(root.rglob("*")):
         if candidate.is_symlink():
-            raise BackupError("document_symlink_not_allowed")
+            raise BackupError(symlink_error)
         if candidate.is_file():
             files.append(candidate)
     return files
@@ -153,9 +157,18 @@ def create_backup(
                 )
                 payloads.append((snapshot, f"database/{alias}.sqlite3"))
             documents_dir = data_dir / "documents"
-            for document in _document_files(documents_dir):
+            for document in _tree_files(
+                documents_dir, symlink_error="document_symlink_not_allowed"
+            ):
                 relative = document.relative_to(documents_dir).as_posix()
                 payloads.append((document, f"documents/{relative}"))
+            reconstruction_dir = data_dir / "reconstruction"
+            for artifact in _tree_files(
+                reconstruction_dir,
+                symlink_error="reconstruction_symlink_not_allowed",
+            ):
+                relative = artifact.relative_to(reconstruction_dir).as_posix()
+                payloads.append((artifact, f"reconstruction/{relative}"))
 
             manifest = {
                 "format": "vexplorer-backup-v2",
@@ -244,7 +257,7 @@ def _load_and_validate_archive(
             parts = PurePosixPath(name).parts
             if name.startswith("database/"):
                 continue
-            if len(parts) < 2 or parts[0] != "documents":
+            if len(parts) < 2 or parts[0] not in {"documents", "reconstruction"}:
                 raise BackupError("invalid_archive_members")
         return manifest, backup
     except Exception:

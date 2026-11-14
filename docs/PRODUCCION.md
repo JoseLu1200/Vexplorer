@@ -232,3 +232,8 @@ En el host privado se preparó, sin activar el servicio, LibreDWG 0.14 bajo `/ho
 - Revise espacio del volumen, cola (`VEXPLORER_JOB_MAX_PENDING`, por defecto 8), expiración TLS y fecha/procedencia del catálogo.
 - Ejecute copias manuales con retención externa y un ensayo periódico de restauración en una ruta nueva; compruebe runs, documentos, jobs y artefactos.
 - No interprete health como validación industrial de resultados CAD o costes.
+
+
+## Acceso público opcional (2026-11-14)
+
+Por petición del propietario, el VPS actual usa `VEXPLORER_AUTH_ENABLED=false`. Esto permite acceder a la interfaz y API sin usuario ni contraseña. `VEXPLORER_ENV=production` conserva las comprobaciones de origen HTTPS, límites y ejecución por jobs. La autenticación sigue activada por defecto en nuevos despliegues; un valor distinto de `true` o `false` impide arrancar. En modo público no se carga el archivo de usuarios y la revisión usa identidad manual. Localhost sigue sin autenticación y escucha solamente en loopback.

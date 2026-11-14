@@ -47,6 +47,7 @@
 | 2026-11-14 | Una deducción transitivamente dependiente de estimación sigue `estimated` | Cerrar una ecuación no eleva la autoridad de sus entradas | Freeze root/Astra |
 | 2026-11-14 | Toda cota numérica de componente requiere decisión explícita del crítico; aceptar un parámetro no acepta su asignación al campo | Evita que una omisión editorial vacíe BOM y planos, sin promover parámetros automáticamente | Reproducción pública F02 + acuerdo root/Astra/evaluación |
 | 2026-11-14 | Un herraje tipado requiere decisión visual explícita sobre `kind` o `geometry` | Permite separar piezas comerciales de piezas fabricadas sin heurísticas por nombre ni cotas inventadas | Acuerdo root/Astra/evaluación |
+| 2026-11-14 | Aceptar `kind=hardware` clasifica provisionalmente un elemento comprado/no fabricado; no certifica existencia observada, modelo comercial, dimensiones, carga ni fijación | Los herrajes necesarios pueden estar ocultos y estimarse como función constructiva sin inventar una ficha de producto | Reproducción pública F02b6 + dictamen root/Astra |
 
 ## Dependencias / avisos
 
@@ -65,6 +66,7 @@
 | Sintaxis/compilación | `git diff --check`; `python -m compileall -q ...` | exit 0 | Worktree compartido contiene cambios de otros agentes |
 | Autonomo, visual y derivados | `python -m pytest backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_derivations.py backend/tests/test_general_furniture_visual_evidence.py backend/tests/test_general_furniture_drawing_renderer.py -q` | 22 passed | Smoke real publico delegado a root |
 | Cobertura crítica F02 y clasificación hardware | `python -m pytest -q backend/tests/test_general_furniture_autonomous.py backend/tests/test_general_furniture_derivations.py backend/tests/test_general_furniture_construction_planner.py backend/tests/test_integral_api_integration.py`; `ruff check backend/app/general_furniture/autonomous.py backend/tests/test_general_furniture_autonomous.py backend/tests/test_integral_api_integration.py` | 59 passed; Ruff limpio. Astra revalidó 31/31 focales | Inferencia real final delegada a root sobre candidato empaquetado |
+| Semántica provisional de herrajes F02b6 | Mismo comando focal acoplado y Ruff tras la regresión `kind accepted + geometry abstained` | 60 passed; Ruff limpio | Fresh F02 candidato final delegado a root; no se repitió proveedor local |
 
 ## Bloqueos y cierre
 

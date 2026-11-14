@@ -126,6 +126,81 @@ def test_backup_snapshots_all_live_sqlite_stores_and_document_derivatives(
     )
 
 
+def test_backup_restores_reconstruction_job_and_artifacts_byte_exact(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    primary = _create_live_data_dir(source)
+    primary.close()
+    job = source / "reconstruction" / ("a" * 32)
+    artifacts = job / "artifacts"
+    artifacts.mkdir(parents=True)
+    status = {
+        "job_id": "a" * 32,
+        "run_id": "run-3d",
+        "status": "complete",
+        "artifacts": ["assembly.glb", "revision.json"],
+    }
+    (job / "status.json").write_text(
+        json.dumps(status, ensure_ascii=False), encoding="utf-8"
+    )
+    (job / "source.png").write_bytes(b"\x89PNG\r\n\x1a\nsource")
+    (artifacts / "assembly.glb").write_bytes(b"glTF\x02\x00\x00\x00binary-assembly")
+    (artifacts / "revision.json").write_text(
+        '{"authority":"generated_design_hypothesis","revision":2}',
+        encoding="utf-8",
+    )
+    expected = {
+        path.relative_to(source / "reconstruction").as_posix(): path.read_bytes()
+        for path in (source / "reconstruction").rglob("*")
+        if path.is_file()
+    }
+
+    archive = tmp_path / "backup.zip"
+    create_backup(source, archive)
+    restored = tmp_path / "restored"
+    restore_backup(archive, restored)
+
+    actual = {
+        path.relative_to(restored / "reconstruction").as_posix(): path.read_bytes()
+        for path in (restored / "reconstruction").rglob("*")
+        if path.is_file()
+    }
+    assert actual == expected
+    assert json.loads(
+        (restored / "reconstruction" / ("a" * 32) / "status.json").read_text(
+            encoding="utf-8"
+        )
+    ) == status
+    with zipfile.ZipFile(archive) as backup:
+        manifest = json.loads(backup.read("manifest.json"))
+    names = {item["path"] for item in manifest["files"]}
+    assert f"reconstruction/{'a' * 32}/artifacts/assembly.glb" in names
+    assert f"reconstruction/{'a' * 32}/status.json" in names
+
+
+def test_backup_rejects_reconstruction_symlink_without_publishing_archive(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    primary = _create_live_data_dir(source)
+    primary.close()
+    artifacts = source / "reconstruction" / ("b" * 32) / "artifacts"
+    artifacts.mkdir(parents=True)
+    external = tmp_path / "external.glb"
+    external.write_bytes(b"not-owned-by-reconstruction")
+    try:
+        (artifacts / "assembly.glb").symlink_to(external)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this platform")
+    archive = tmp_path / "backup.zip"
+
+    with pytest.raises(BackupError, match="reconstruction_symlink_not_allowed"):
+        create_backup(source, archive)
+
+    assert not archive.exists()
+
+
 def test_backup_accepts_explicit_external_store_and_restores_by_safe_alias(
     tmp_path: Path,
 ) -> None:

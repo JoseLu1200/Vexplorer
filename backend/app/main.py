@@ -15,7 +15,7 @@ from threading import Lock
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Header, Query, Request, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -743,6 +743,76 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
+    ))
+    from backend.app.reconstruction3d.router import create_reconstruction_router
+    from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
+    from dataclasses import replace
+    reconstruction_provider = agent_provider
+    if reconstruction_provider is None and settings.available:
+        reconstruction_provider = OpenAIResponsesProvider(
+            replace(settings, max_output_tokens=8192, vision_enabled=True), instructions=RECONSTRUCTION_PROMPT,
+        )
+
+    def admit_public_reconstruction(
+        http_request: Request, mode: Literal["submit", "refine"], job_id: str,
+    ) -> None:
+        if not public_production:
+            return
+        client_host = (
+            http_request.client.host
+            if http_request.client is not None
+            else "unknown"
+        )
+        client_hash = hashlib.sha256(
+            f"vexplorer-public-live:{client_host}".encode("utf-8")
+        ).hexdigest()
+        timestamp = datetime.now(UTC).isoformat()
+        try:
+            with repository._connect() as database:
+                database.execute("BEGIN IMMEDIATE")
+                decision = public_admission.admit_mutation(
+                    client_host, "job", database=database,
+                )
+                if not decision.allowed:
+                    headers = (
+                        {"Retry-After": str(decision.retry_after_seconds)}
+                        if decision.retry_after_seconds is not None
+                        else None
+                    )
+                    raise HTTPException(
+                        decision.status_code or 429,
+                        decision.code or "public_job_admission_denied",
+                        headers=headers,
+                    )
+                repository._consume_public_live_admission(
+                    database,
+                    job_id=job_id,
+                    client_hash=client_hash,
+                    timestamp=timestamp,
+                    kind=f"reconstruction_{mode}",
+                    global_daily_limit=public_live_daily_limit,
+                    client_daily_limit=public_live_client_daily_limit,
+                )
+        except ValueError as exc:
+            if str(exc) != "public_live_quota_exhausted":
+                raise
+            now_timestamp = int(datetime.now(UTC).timestamp())
+            reset_timestamp = ((now_timestamp // 86400) + 1) * 86400
+            raise HTTPException(
+                429,
+                "public_live_quota_exhausted",
+                headers={
+                    "Retry-After": str(max(1, reset_timestamp - now_timestamp)),
+                    "X-RateLimit-Reset": str(reset_timestamp),
+                },
+            ) from None
+
+    app.include_router(create_reconstruction_router(
+        root=root, context_loader=general_furniture_context,
+        provider=reconstruction_provider, executor=job_executor,
+        admission_callback=(
+            admit_public_reconstruction if public_production else None
+        ),
     ))
     app.include_router(create_general_furniture_router(
         repository=general_furniture_repository,

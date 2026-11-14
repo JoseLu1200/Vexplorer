@@ -16,12 +16,24 @@ import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGe
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
 import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, presentLibraryDifferences, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
+import { generalSceneSelection, sceneLoadPlan } from "./core/scene.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
 const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
+let reconstructionPanel;
+const reconstructionButton=document.createElement('button');
+reconstructionButton.type='button';reconstructionButton.className='button';reconstructionButton.textContent='Construcción 3D';
+reconstructionButton.disabled=true;
+reconstructionButton.title='Disponible al abrir un plano como Mueble general';
+reconstructionButton.addEventListener('click',async()=>{
+  if(!state.runId||!state.generalWorkspace){setMessage('Abre primero un plano como Mueble general.',true);return;}
+  if(!reconstructionPanel){const {createReconstructionPanel}=await import('./components/ReconstructionPanel.js');reconstructionPanel=createReconstructionPanel();}
+  reconstructionPanel.open(state.runId,reconstructionButton);
+});
+document.querySelector('.navigator__head')?.append(reconstructionButton);
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
 
@@ -44,6 +56,7 @@ function resetEstimateUi() {
 function configureExportActions(){const table=state.tableWorkspace?.isTable===true; text($("#csv-export"),table?"Lista de corte CSV":"Ficha CSV"); if(table){const ready=state.snapshot?.result?.state==="completed"; $$('[data-export]').forEach((button)=>button.disabled=!ready);}}
 
 function resetRunUi() {
+  reconstructionButton.disabled=true;
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
   state.jobAbort?.abort();
   Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
@@ -359,20 +372,22 @@ function renderEvidence(component, contourId) {
 
 async function loadScene() {
   const warning = $("#scene-warning"); warning.hidden = true;
-  if (!state.runId || !Number.isInteger(state.snapshot?.result_revision)) { warning.hidden = false; text(warning, "3D no disponible: registra una revisión con medidas completas."); return; }
-  const identity=`${state.runId}:${state.snapshot.result_revision}`, token=sceneFence.issue(identity);
+  if (!state.runId) { warning.hidden = false; text(warning, "3D no disponible: todavía no hay una ejecución cargada."); return; }
+  const plan=sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived});
+  if(plan.kind==="legacy"&&!Number.isInteger(state.snapshot?.result_revision)){warning.hidden=false;text(warning,"3D no disponible: la ejecución actual no tiene una revisión geométrica consultable.");return;}
+  const identity=plan.identity,token=sceneFence.issue(identity),currentIdentity=()=>sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived}).identity;
   try {
-    const raw = await api.getScene(state.runId, state.snapshot.result_revision);
-    if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
+    const raw = plan.fetchLegacy ? await api.getScene(state.runId, state.snapshot.result_revision) : plan.scene;
+    if (!sceneFence.isCurrent(token,currentIdentity())) return;
     state.scene = raw;
-    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token,currentIdentity())) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=generalSceneSelection(state.generalWorkspace,item);if(generalComponent){state.selected={type:"general",id:generalComponent.id};renderEvidence(generalComponent);return;} const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
     const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
-    text($("#scene-context"),sceneContextLabel(state.snapshot,raw));
+    text($("#scene-context"),plan.kind==="general"?"3D de catálogo · piezas separadas · no es un montaje físico":sceneContextLabel(state.snapshot,raw));
     const premises=$("#scene-premises-list"); premises.replaceChildren(); assumptions.forEach((value)=>{const line=document.createElement("p"); line.textContent=value; premises.append(line);}); toggleHidden($("#scene-premises"),!assumptions.length);
-    const messages = [...model.warnings, ...(model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
+    const messages = [...model.warnings, ...(plan.kind!=="general"&&model.collisionStatus === "not_evaluated" ? ["Colisiones no evaluadas."] : [])];
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
-  } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
+  } catch (error) { if(!sceneFence.isCurrent(token,currentIdentity()))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para el snapshot actual: ${error.message}`); }
 }
 
 const partStateLabel=(value)=>({observed:"Observado",unknown:"Desconocido",conflict:"Conflicto",ambiguous:"Ambigua",complete:"Completa",partial:"Parcial",hypothesis:"Hipótesis",human_confirmed:"Confirmado"})[value]??value;
@@ -501,8 +516,9 @@ function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-rev
 async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent;if(button){button.disabled=true;button.textContent="Iniciando nueva ejecución…";}try{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
 
 function renderGeneralFurniture() {
+  reconstructionButton.disabled=!state.runId;
   const workspace=state.generalWorkspace,derived=state.generalDerived,components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:piece.role,role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:row.role??"pieza",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
-  text($("#review-stage > .eyebrow"),"Revisión automática"); text($("#input-kind-label"),"Entrada: mueble general · revisión visual automática"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${components.length} ${components.length===1?"pieza":"piezas"} · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
+  text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${components.length} ${components.length===1?"pieza":"piezas"} · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
   const constructionSummary=$("#general-construction-summary"),estimated=components.flatMap((item)=>Object.values(item.dimensions??{})).filter((item)=>item?.state==="estimated"&&item?.value!=null).length;constructionSummary.hidden=!components.length;constructionSummary.replaceChildren();if(components.length){const line=document.createElement("p");line.textContent=`${derived?.construction?.summary.label??"Propuesta provisional"}: ${components.length} tipos de pieza · ${estimated} cotas estimadas aceptadas. Las cifras con ≈ incluyen rango y fundamento en el inspector.`;constructionSummary.append(line);}
   const impact=$("#general-impact-decisions"),impactList=$("#general-impact-decisions > div"),decisions=derived?.construction?.topDecisions.length?derived.construction.topDecisions:[...workspace.constructionDecisions].sort((a,b)=>({high:0,medium:1,low:2}[a.impact]??3)-({high:0,medium:1,low:2}[b.impact]??3)).slice(0,3);impact.hidden=!decisions.length;impactList.replaceChildren();decisions.forEach((decision)=>{const card=document.createElement("article");card.className="impact-decision";const title=document.createElement("b"),copy=document.createElement("p");title.textContent=`${({high:"Impacto alto",medium:"Impacto medio",low:"Impacto bajo"})[decision.impact]??"Decisión"} · ${decision.summary}`;copy.textContent=decision.rationale;card.append(title,copy);if(decision.alternatives.length){const alternatives=document.createElement("small");alternatives.textContent=`Alternativas consideradas: ${decision.alternatives.join(" · ")}`;card.append(alternatives);}impactList.append(card);});
   $("#parts-head").innerHTML="<tr><th>Componente</th><th>Tipo</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th><th>Desconocidos</th></tr>";

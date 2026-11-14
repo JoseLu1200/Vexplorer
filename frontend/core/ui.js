@@ -70,7 +70,6 @@ export function publicFeatureAvailability(config = {}) {
     sessionLabel: publicCad ? "Acceso público · CAD disponible" : null,
   };
 }
-
 export function tableDiagnosticLabel(value) {
   const raw = String(value ?? "");
   const missing = raw.match(/^profile_measure_unknown:([a-z_]+)$/);

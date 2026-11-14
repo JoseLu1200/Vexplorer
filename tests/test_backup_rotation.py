@@ -93,6 +93,28 @@ def test_scheduled_backup_requires_quiescence_and_no_active_jobs(
         raise AssertionError("expected missing quiescence to fail closed")
 
 
+def test_scheduled_backup_defers_while_reconstruction_job_is_running(
+    tmp_path: Path,
+) -> None:
+    data_dir = _data_dir(tmp_path / "data")
+    reconstruction = data_dir / "reconstruction" / ("c" * 32)
+    reconstruction.mkdir(parents=True)
+    (reconstruction / "status.json").write_text(
+        '{"job_id":"cccccccccccccccccccccccccccccccc","status":"running"}',
+        encoding="utf-8",
+    )
+
+    assert active_job_count(data_dir) == 1
+    try:
+        create_scheduled_backup(
+            data_dir, tmp_path / "backups", quiescent=True,
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "backup_active_jobs"
+    else:
+        raise AssertionError("expected running reconstruction to defer backup")
+
+
 def test_scheduled_backup_refuses_when_free_space_guard_is_not_met(
     tmp_path: Path, monkeypatch
 ) -> None:

@@ -47,3 +47,24 @@ Límites observados: el primer intento de nueva inferencia EG2 falló por error 
 El usuario autorizó expresamente la fusión el 2026-11-14. Se verificó `main` local/remoto en `dbd1bb6`, sin cambios pendientes en su worktree, y se aplicó `git merge --ff-only feat/semantic-explorer` hasta `6ea3b64`. Incluye la base autónoma `83df72d`; no incorpora automáticamente los avances posteriores de otras ramas.
 
 Verificación ejecutada desde `.worktrees/semantic-main`: 721 pruebas Python aprobadas en 61,40 s y 151 JavaScript aprobadas. Se actualizó únicamente documentación después de esas pruebas. El worktree del explorador se conserva porque contiene el servidor local y artefactos de QA fuera de Git. No se despliega el servicio.
+
+## Reconciliación completa autorizada
+
+El usuario amplía explícitamente el alcance el 2026-11-14 a todas las ramas pendientes y al trabajo UX sin commit. Integración en `integration/reconcile-all` desde `4504adb`. Se permite resolver solapes de los cambios existentes, incluidos sus contratos ya desarrollados, sin diseñar contratos nuevos. Las reservas anteriores describen la fase del explorador; esta fase incluye CAD, reconstrucción, estimaciones, UX y pruebas. Se preservan los worktrees originales y sus índices. Las ramas activas se vuelven a comprobar antes de publicar.
+
+
+### Cierre de reconciliación
+
+Integrados transcript, CAD, reconstrucción, histórico y overhaul UX original. Snapshots preservan índices de origen. Ramas antiguas reconciliadas por equivalencia: se conservaron implementaciones actuales tras comprobar las variantes, evitando reintroducir versiones superadas. CAD final `8e5f584`, reconstrucción snapshots `07a48c6` y `9e74cfb`. Resueltos solapes de tablas, leyendas, identidad de escenas y navegación semántica. Docker incluye fuentes locales, página 3D y reconstruction-state.js.
+
+Verificación local final: `python -m pytest -q`: 837 passed en 74,52 s; `npm test --prefix frontend`: 187 aprobadas; pip check y compileall sin errores. Chromium: navegación biblioteca→explorador, 117 puntos/10 vecinos, página reconstrucción y móvil sin desbordamiento ni errores JS/HTTP. Prueba de regresión del enlace semántico observada fallar y pasar. Se mantiene evidencia en .runtime/reconciliation. No se repite inferencia pagada ni se modifica el overhaul visual original. Publicación/CI y revisión final se verifican antes de dar la entrega por cerrada.
+
+Revisión final independiente Astra: sin hallazgos críticos ni importantes tras actualizar la procedencia de CAD. Pruebas del revisor: 22 de reconstrucción y 187 JS aprobadas. Minor diferido: la sincronización del tema del panel 3D abierto ocurre al reabrirlo, no mediante un listener durante su apertura. Docker local no se ejecuta por falta de daemon; CI construye la imagen y es la puerta de publicación verificada.
+
+## Integración final de reconstrucción y operación
+
+Transferencia autorizada el 2026-11-14 para resolver exclusivamente `backend/app/main.py`, la admisión pública compartida y el backup de los artefactos de reconstrucción durante la reconciliación con `0d9dee7`. Se preservó el modo público confirmado (`VEXPLORER_AUTH_ENABLED=false`) y no se tocaron los conflictos de frontend ni la implementación concurrente del router.
+
+`main.py` monta el router de reconstrucción con un callback que, tras las validaciones e idempotencia del router y antes de encolar al proveedor, consume en una sola transacción SQLite la admisión pública de jobs y las cuotas pagadas global/por cliente compartidas con el análisis general. La denegación conserva `Retry-After` y no crea una admisión durable falsa. El backup v2 incluye `reconstruction/**`, restaura bytes y estados exactos y rechaza enlaces simbólicos; con ello los jobs 3D ya no quedan fuera de recuperación.
+
+Verificación focal fresca: 37 pruebas de router reconstruction, jobs privados/públicos e integración API; 41 pruebas de backup, rotación y tooling de release. `py_compile` de `main.py` y `tools/backup.py` y `git diff --check` aprobaron. El entorno virtual no incluye Ruff, por lo que no se atribuye una pasada local de ese linter; la suite completa y CI quedan a cargo del integrador raíz. No hubo commit ni despliegue.

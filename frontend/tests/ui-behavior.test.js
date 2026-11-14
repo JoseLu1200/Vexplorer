@@ -76,7 +76,6 @@ test("public CAD capability hides private history, library and semantic actions 
   assert.match(app, /if\(state\.features\.library\).*api\.getLibrary/s);
   assert.match(app, /if\(!state\.features\.library\)return/);
 });
-
 test("known table diagnostics are readable Spanish while unknown evidence remains available", () => {
   assert.equal(typeof ui.tableDiagnosticLabel, "function");
   assert.equal(ui.tableDiagnosticLabel("profile_measure_unknown:tabletop_thickness"), "Falta la medida requerida: grosor de la tapa.");

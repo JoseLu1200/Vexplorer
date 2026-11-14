@@ -55,6 +55,19 @@ def test_critic_and_repair_reject_cross_geometry_observed_dimension_transfer() -
     assert "detalle estimated explícito" in repair
 
 
+def test_hardware_review_is_provisional_construction_classification_not_commercial_certification() -> None:
+    critic = next(
+        item["description"]
+        for item in _tool_schemas()
+        if item["name"] == "entregar_revision_autonoma"
+    )
+
+    assert "clasificación constructiva provisional" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no identifica ni certifica un modelo comercial" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no exijas una ficha comercial" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "clasificación constructiva provisional" in critic
+
+
 def test_provisional_occurrence_is_not_a_confirmed_physical_occurrence() -> None:
     occurrence = GeneralScenarioOccurrence(id="provisional:c1:1", component_id="c1", occurrence_index=1, scenario_id="scenario-auto-1", quantity_target_ref="component:c1.quantity", check_ids=("quantity-basis", "duplicate-scan"), premise_refs=("premise:four",), source_refs=("visual:page-1",))
     assert occurrence.state == "provisional"
@@ -454,11 +467,16 @@ def test_typed_hardware_requires_explicit_visual_classification_decision() -> No
     source = draft.components[0]
     calls = 0
     feedback = None
+    initial_instruction = None
 
     class Provider:
         def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
-            nonlocal calls, feedback
+            nonlocal calls, feedback, initial_instruction
             calls += 1
+            if calls == 1:
+                initial_instruction = json.loads(
+                    input_items[0]["content"][0]["text"]
+                )["instruction"]
             checks = [_visual_check("visual-length", source.id, "length")]
             field_reviews = [{
                 "target_ref": f"component:{source.id}.length",
@@ -467,9 +485,16 @@ def test_typed_hardware_requires_explicit_visual_classification_decision() -> No
             if calls == 2:
                 feedback = json.loads(input_items[0]["output"])
                 checks.append(_visual_check("visual-kind", source.id, "kind"))
+                checks[-1]["target_refs"].append(
+                    f"component:{source.id}.geometry"
+                )
                 field_reviews.append({
                     "target_ref": f"component:{source.id}.kind",
                     "status": "accepted", "check_ids": ["visual-kind"],
+                })
+                field_reviews.append({
+                    "target_ref": f"component:{source.id}.geometry",
+                    "status": "abstained", "check_ids": ["visual-kind"],
                 })
             arguments = {
                 "scenario_id": "scenario-hardware",
@@ -494,6 +519,9 @@ def test_typed_hardware_requires_explicit_visual_classification_decision() -> No
 
     assert calls == 2
     assert feedback is not None
+    assert initial_instruction is not None
+    assert "clasificación constructiva provisional" in initial_instruction
+    assert "no una certificación comercial" in initial_instruction
     assert feedback["details"][0]["msg"] == (
         "machine_hardware_classification_field_review_required"
     )
@@ -506,6 +534,11 @@ def test_typed_hardware_requires_explicit_visual_classification_decision() -> No
         if item.status == "accepted"
     }
     assert f"component:{source.id}.kind" in accepted
+    abstained = {
+        item.target_ref for item in outcome.review.machine_field_reviews
+        if item.status == "abstained"
+    }
+    assert f"component:{source.id}.geometry" in abstained
 
 
 def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_review_it() -> None:
