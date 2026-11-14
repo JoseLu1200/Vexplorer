@@ -181,6 +181,7 @@ def test_side_support_program_stays_proposed_until_each_target_is_accepted() -> 
     completed = _evaluate(analysis, program, decisions=decisions)
 
     assert completed.state == "completed"
+    assert not any(item.code == "declared_evidence_ignored" for item in completed.issues)
     assert completed.overall_dimensions.model_dump() == {
         "width_mm": 1200.0,
         "depth_mm": 700.0,
