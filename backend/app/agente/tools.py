@@ -9,6 +9,7 @@ from backend.app.contratos.modelos import (
     ProposeTableProgramArgs,
     SelectAssemblyCandidateArgs,
     SelectScenarioArgs,
+    VisualizeTableViewArgs,
 )
 
 
@@ -53,8 +54,8 @@ def parts_tool_schemas() -> list[dict]:
     ]
 
 
-def table_tool_schemas() -> list[dict]:
-    return [
+def table_tool_schemas(*, include_vision: bool = False) -> list[dict]:
+    schemas = [
         _schema(
             "inspeccionar_medidas_mesa",
             "Consulta por ID medidas y evidencias del ledger de vistas montadas actual; no modifica valores.",
@@ -66,3 +67,10 @@ def table_tool_schemas() -> list[dict]:
             ProposeTableProgramArgs,
         ),
     ]
+    if include_vision:
+        schemas.insert(1, _schema(
+            "visualizar_vista",
+            "Renderiza por ID una vista PNG Set-of-Mark acotada del ledger; sirve sólo como contexto visual y no autoriza medidas.",
+            VisualizeTableViewArgs,
+        ))
+    return schemas

@@ -52,6 +52,22 @@ def test_provider_vision_is_explicit_opt_in(monkeypatch) -> None:
     assert ProviderSettings.from_env().vision_enabled is True
 
 
+def test_provider_uses_vision_prompt_only_when_explicitly_enabled() -> None:
+    seen = {}
+
+    def handler(request: httpx.Request):
+        seen.update(json.loads(request.content))
+        return httpx.Response(200, json={"id": "response", "status": "completed", "output": []})
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(api_key="secret", model="gpt-test", vision_enabled=True),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
+    assert "visualizar_vista" in seen["instructions"]
+    assert "nunca leas o inventes cifras desde píxeles" in seen["instructions"]
+
+
 def test_inspect_evidence_rejects_unbounded_id_batches() -> None:
     with pytest.raises(ValueError):
         InspectEvidenceArgs(evidence_ids=tuple(f"evidence-{index}" for index in range(51)))
@@ -95,7 +111,7 @@ def test_agent_enforces_call_budget_and_tool_schemas_have_no_filesystem_access()
 
 
 def test_all_native_tool_schemas_satisfy_recursive_strict_mode() -> None:
-    schemas = tool_schemas() + parts_tool_schemas() + table_tool_schemas()
+    schemas = tool_schemas() + parts_tool_schemas() + table_tool_schemas(include_vision=True)
 
     def assert_strict(value) -> None:
         if isinstance(value, dict):

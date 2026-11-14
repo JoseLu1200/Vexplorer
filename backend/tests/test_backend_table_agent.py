@@ -116,24 +116,27 @@ def test_table_agent_unknown_measure_returns_bounded_valid_ids_for_repair():
 
 def test_table_agent_vision_is_explicit_bounded_context_not_measurement_source():
     provider = FakeProvider([
-        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="vision", name="visualizar_vista", arguments={"view_id": "front"}),)),
+        ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
     ])
     outcome = run_table_agent(
         _extraction(),
         _analysis(),
         provider,
-        AgentLimits(max_model_calls=1, max_tool_calls=1, timeout_s=5),
+        AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5),
         vision_enabled=True,
     )
-    content = provider.inputs[0][0]["content"]
-    assert content[0]["type"] == "input_text"
-    context = json.loads(content[0]["text"])
+    context = json.loads(provider.inputs[0][0]["content"])
     assert context["vision"]["authority"] == "context_only_not_measurement_source"
-    assert len(context["vision"]["views"]) == 1
-    assert content[1]["type"] == "input_image"
-    assert content[1]["image_url"].startswith("data:image/png;base64,")
-    assert content[1]["detail"] == "high"
+    assert context["vision"]["available_views"] == [{"view_id": "front", "label": "FRONT"}]
+    visual_turn = provider.inputs[1]
+    image = next(item for item in visual_turn if item.get("role") == "user")["content"][1]
+    assert image["type"] == "input_image"
+    assert image["image_url"].startswith("data:image/png;base64,")
+    assert image["detail"] == "high"
     vision_action = outcome.actions[0]
-    assert vision_action.tool_name == "renderizar_contexto_visual"
-    assert vision_action.artifact_sha256 == context["vision"]["views"][0]["sha256"]
-    assert vision_action.mark_count == len(context["vision"]["views"][0]["marks"])
+    assert vision_action.tool_name == "visualizar_vista"
+    tool_output = json.loads(visual_turn[0]["output"])
+    assert vision_action.artifact_sha256 == tool_output["sha256"]
+    assert vision_action.mark_count == len(tool_output["marks"])
+    assert {item["name"] for item in table_tool_schemas(include_vision=True)} == {"inspeccionar_medidas_mesa", "visualizar_vista", "proponer_descomposicion"}
