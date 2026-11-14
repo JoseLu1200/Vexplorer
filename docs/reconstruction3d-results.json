@@ -1,0 +1,833 @@
+{
+  "cases": 6,
+  "B_outputs": 6,
+  "idol_outputs": 18,
+  "generated_idol_outputs": 18,
+  "scope": "diagnostic, 3 synthetic plausible fixtures + 3 ambiguous controls; no blind industrial claim",
+  "retrieval": {
+    "source": {
+      "coverage": 6,
+      "hit_at_1": 0.3333333333333333,
+      "mrr": 0.5694444444444444
+    },
+    "B": {
+      "coverage": 6,
+      "hit_at_1": 1.0,
+      "mrr": 1.0
+    },
+    "A": {
+      "coverage": 6,
+      "hit_at_1": 0.16666666666666666,
+      "mrr": 0.5277777777777778
+    },
+    "C": {
+      "coverage": 6,
+      "hit_at_1": 0.8333333333333334,
+      "mrr": 0.9166666666666666
+    },
+    "D": {
+      "coverage": 6,
+      "hit_at_1": 1.0,
+      "mrr": 1.0
+    }
+  },
+  "single_view_control": {
+    "B": {
+      "ranks": [
+        1,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "hit_at_1": 0.8333333333333334,
+      "mrr": 0.9166666666666666
+    },
+    "A": {
+      "ranks": [
+        6,
+        1,
+        2,
+        2,
+        1,
+        2
+      ],
+      "hit_at_1": 0.3333333333333333,
+      "mrr": 0.6111111111111112
+    },
+    "C": {
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        2
+      ],
+      "hit_at_1": 0.6666666666666666,
+      "mrr": 0.8333333333333334
+    },
+    "D": {
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      "hit_at_1": 0.8333333333333334,
+      "mrr": 0.9166666666666666
+    }
+  },
+  "B_metrics": [
+    {
+      "case_id": "case-01",
+      "metrics": {
+        "reference_component_count": 9,
+        "predicted_component_count": 9,
+        "absolute_count_difference": 0,
+        "bounds_mm_predicted": [
+          1200.0,
+          700.0,
+          750.0
+        ],
+        "bounds_mm_reference": [
+          1200.0,
+          700.0,
+          750.0
+        ],
+        "bounds_absolute_error_mm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "matched_dimensions_mae_mm": 1.4814814814814816,
+        "unmatched_occurrences": 0,
+        "material_volume_iou_translation_only": 0.827502597852442,
+        "normalized_silhouette_iou_per_view": [
+          0.9827773257390833,
+          0.9829020118013289,
+          0.9827773257390833,
+          0.9829020118013289,
+          1.0,
+          1.0
+        ],
+        "input_view_silhouette_iou": 1.0,
+        "reserved_view_silhouette_iou": 0.9828396687702061,
+        "normalized_boundary_error_per_view": [
+          0.0006737388085179728,
+          0.0006948660329415395,
+          0.0006737388085179728,
+          0.0006948660329415395,
+          0.0,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.0006843024207297562,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    },
+    {
+      "case_id": "case-02",
+      "metrics": {
+        "reference_component_count": 7,
+        "predicted_component_count": 7,
+        "absolute_count_difference": 0,
+        "bounds_mm_predicted": [
+          900.0,
+          350.0,
+          1800.0
+        ],
+        "bounds_mm_reference": [
+          900.0,
+          350.0,
+          1800.0
+        ],
+        "bounds_absolute_error_mm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "matched_dimensions_mae_mm": 2.857142857142857,
+        "unmatched_occurrences": 0,
+        "material_volume_iou_translation_only": 0.7561949848361565,
+        "normalized_silhouette_iou_per_view": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "input_view_silhouette_iou": 1.0,
+        "reserved_view_silhouette_iou": 1.0,
+        "normalized_boundary_error_per_view": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.0,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    },
+    {
+      "case_id": "case-03",
+      "metrics": {
+        "reference_component_count": 6,
+        "predicted_component_count": 6,
+        "absolute_count_difference": 0,
+        "bounds_mm_predicted": [
+          1000.0,
+          400.0,
+          480.0
+        ],
+        "bounds_mm_reference": [
+          1000.0,
+          400.0,
+          480.0
+        ],
+        "bounds_absolute_error_mm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "matched_dimensions_mae_mm": 1.777777777777778,
+        "unmatched_occurrences": 0,
+        "material_volume_iou_translation_only": 0.8496196814304068,
+        "normalized_silhouette_iou_per_view": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "input_view_silhouette_iou": 1.0,
+        "reserved_view_silhouette_iou": 1.0,
+        "normalized_boundary_error_per_view": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.0,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    },
+    {
+      "case_id": "case-04",
+      "metrics": {
+        "reference_component_count": 11,
+        "predicted_component_count": 12,
+        "absolute_count_difference": 1,
+        "bounds_mm_predicted": [
+          1350.0,
+          600.0,
+          765.0
+        ],
+        "bounds_mm_reference": [
+          1350.0000546842123,
+          600.0000573050811,
+          765.0000006588458
+        ],
+        "bounds_absolute_error_mm": [
+          5.468421227305953e-05,
+          5.730508109991206e-05,
+          6.58845806356112e-07
+        ],
+        "matched_dimensions_mae_mm": 5.818192712432596,
+        "unmatched_occurrences": 1,
+        "material_volume_iou_translation_only": null,
+        "normalized_silhouette_iou_per_view": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.8420479302832244,
+          1.0
+        ],
+        "input_view_silhouette_iou": 0.9210239651416122,
+        "reserved_view_silhouette_iou": 1.0,
+        "normalized_boundary_error_per_view": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.004996391555370061,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.0,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    },
+    {
+      "case_id": "case-05",
+      "metrics": {
+        "reference_component_count": 3,
+        "predicted_component_count": 3,
+        "absolute_count_difference": 0,
+        "bounds_mm_predicted": [
+          1200.0,
+          600.0,
+          2060.0
+        ],
+        "bounds_mm_reference": [
+          1200.000150802513,
+          600.0,
+          2059.999999341151
+        ],
+        "bounds_absolute_error_mm": [
+          0.00015080251296240021,
+          0.0,
+          6.588488759007305e-07
+        ],
+        "matched_dimensions_mae_mm": 8.00003321884785,
+        "unmatched_occurrences": 0,
+        "material_volume_iou_translation_only": null,
+        "normalized_silhouette_iou_per_view": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "input_view_silhouette_iou": 1.0,
+        "reserved_view_silhouette_iou": 1.0,
+        "normalized_boundary_error_per_view": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.0,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    },
+    {
+      "case_id": "case-06",
+      "metrics": {
+        "reference_component_count": 4,
+        "predicted_component_count": 12,
+        "absolute_count_difference": 8,
+        "bounds_mm_predicted": [
+          900.0,
+          900.0,
+          600.0
+        ],
+        "bounds_mm_reference": [
+          900.0000079512419,
+          900.0000554443744,
+          599.9999986823066
+        ],
+        "bounds_absolute_error_mm": [
+          7.951241855153057e-06,
+          5.544437442495109e-05,
+          1.3176934317016276e-06
+        ],
+        "matched_dimensions_mae_mm": 5.583339025030166,
+        "unmatched_occurrences": 8,
+        "material_volume_iou_translation_only": null,
+        "normalized_silhouette_iou_per_view": [
+          0.8158039380516667,
+          0.8468680107483628,
+          0.816091210479502,
+          0.8466252734525801,
+          1.0,
+          1.0
+        ],
+        "input_view_silhouette_iou": 1.0,
+        "reserved_view_silhouette_iou": 0.8313471081830279,
+        "normalized_boundary_error_per_view": [
+          0.026074518655197786,
+          0.028387876997851415,
+          0.026054443682453934,
+          0.028448549494859202,
+          0.0,
+          0.0
+        ],
+        "reserved_view_boundary_error": 0.027241347207590583,
+        "scale_alignment": "each_shape_bbox_normalized_for_silhouettes_only; no metric scaling fit",
+        "part_matching": "minimum dimension error, orientation invariant, no semantic or joint scoring"
+      }
+    }
+  ],
+  "idol_metrics": [
+    {
+      "variant": "A",
+      "case_id": "case-01",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.10195331306452751,
+        "source_view_iou_after_alignment": 0.08872580200386065,
+        "reserved_view_iou_after_alignment": 0.11769460393212383,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.05261707206876878,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 133.4481356000033,
+      "peak_allocated_bytes": 5343388672
+    },
+    {
+      "variant": "C",
+      "case_id": "case-01",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.3822651577668586,
+        "source_view_iou_after_alignment": 0.8390628475354298,
+        "reserved_view_iou_after_alignment": 0.9252994869997601,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.003371964880745464,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 174.72439039999995,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-01",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.37629786898278406,
+        "source_view_iou_after_alignment": 0.7751381757334587,
+        "reserved_view_iou_after_alignment": 0.9185805709500835,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.0036050152812031754,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 199.211235,
+      "peak_allocated_bytes": 5343388672
+    },
+    {
+      "variant": "A",
+      "case_id": "case-02",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.2028159204496796,
+        "source_view_iou_after_alignment": 0.05402078774617068,
+        "reserved_view_iou_after_alignment": 0.2028159204496796,
+        "alignment_degrees": 0,
+        "reserved_view_boundary_error": 0.07441514401619125,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 167.40916049999987,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "C",
+      "case_id": "case-02",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.7231672531706385,
+        "source_view_iou_after_alignment": 0.7772454050842152,
+        "reserved_view_iou_after_alignment": 0.7854530947756109,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.021545300419554398,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 173.38245990000019,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-02",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.7080757111140807,
+        "source_view_iou_after_alignment": 0.7771323461848354,
+        "reserved_view_iou_after_alignment": 0.7661856677683123,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.023458248649760656,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 220.668721,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "A",
+      "case_id": "case-03",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.13379767134693316,
+        "source_view_iou_after_alignment": 0.1175907820073476,
+        "reserved_view_iou_after_alignment": 0.15905826882398114,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.0809508194931719,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 164.58651280000004,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "C",
+      "case_id": "case-03",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.529120173060718,
+        "source_view_iou_after_alignment": 0.8546427921669809,
+        "reserved_view_iou_after_alignment": 0.8809339634593161,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.012298941242731868,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 172.15646689999994,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-03",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.5259576857192668,
+        "source_view_iou_after_alignment": 0.8691544703305456,
+        "reserved_view_iou_after_alignment": 0.8892274481260712,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.011422491819124487,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 210.36791529999994,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "A",
+      "case_id": "case-04",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.17981810875378826,
+        "source_view_iou_after_alignment": 0.12320396450524249,
+        "reserved_view_iou_after_alignment": 0.20036908790256516,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.0799478257251637,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 166.05807540000023,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "C",
+      "case_id": "case-04",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.4802946835640975,
+        "source_view_iou_after_alignment": 0.833412811093803,
+        "reserved_view_iou_after_alignment": 0.8379766029781086,
+        "alignment_degrees": 270,
+        "reserved_view_boundary_error": 0.015435305729012293,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 172.97875569999997,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-04",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.4705114123764761,
+        "source_view_iou_after_alignment": 0.7807580559957739,
+        "reserved_view_iou_after_alignment": 0.805357660970954,
+        "alignment_degrees": 270,
+        "reserved_view_boundary_error": 0.018835049706041662,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 235.82113700000014,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "A",
+      "case_id": "case-05",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.14085702525005245,
+        "source_view_iou_after_alignment": 0.02888199211621726,
+        "reserved_view_iou_after_alignment": 0.11869822630841735,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.04894385299150801,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 165.81492819999994,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "C",
+      "case_id": "case-05",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.4638316754684051,
+        "source_view_iou_after_alignment": 0.46285404406242514,
+        "reserved_view_iou_after_alignment": 0.805809551137271,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.010613829559021246,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 171.0886088000002,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-05",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.4638316754684051,
+        "source_view_iou_after_alignment": 0.46285404406242514,
+        "reserved_view_iou_after_alignment": 0.805809551137271,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.010613829559021246,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 194.22545160000004,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "A",
+      "case_id": "case-06",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.20961087194761135,
+        "source_view_iou_after_alignment": 0.25735406162464985,
+        "reserved_view_iou_after_alignment": 0.207448144552135,
+        "alignment_degrees": 90,
+        "reserved_view_boundary_error": 0.13021404438114237,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 164.96414079999977,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "C",
+      "case_id": "case-06",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.5841141925070787,
+        "source_view_iou_after_alignment": 0.5889312190552656,
+        "reserved_view_iou_after_alignment": 0.5841141925070787,
+        "alignment_degrees": 0,
+        "reserved_view_boundary_error": 0.06757480896933862,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 170.80056830000012,
+      "peak_allocated_bytes": 5343389696
+    },
+    {
+      "variant": "D",
+      "case_id": "case-06",
+      "metrics": {
+        "unaligned_reserved_view_iou": 0.5532332012460579,
+        "source_view_iou_after_alignment": 0.717104918470997,
+        "reserved_view_iou_after_alignment": 0.5532332012460579,
+        "alignment_degrees": 0,
+        "reserved_view_boundary_error": 0.06928012207967374,
+        "alignment_uses": "only two source-view reference silhouettes; 4 z rotations; evaluator-only",
+        "scale": "independent robust bbox normalization; not physical scale",
+        "alpha_threshold": 0.5,
+        "limitations": "silhouette proxy and diagnostic renderer; does not evaluate surface accuracy, dimensions or engineering topology"
+      },
+      "duration_s": 175.89726240000005,
+      "peak_allocated_bytes": 5343389696
+    }
+  ],
+  "jev": [
+    {
+      "variant": "A",
+      "case_id": "case-01",
+      "open_category": "frame"
+    },
+    {
+      "variant": "A",
+      "case_id": "case-02",
+      "open_category": "shelving"
+    },
+    {
+      "variant": "A",
+      "case_id": "case-03",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "A",
+      "case_id": "case-04",
+      "open_category": "UNKNOWN"
+    },
+    {
+      "variant": "A",
+      "case_id": "case-05",
+      "open_category": "frame"
+    },
+    {
+      "variant": "A",
+      "case_id": "case-06",
+      "open_category": "UNKNOWN"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-01",
+      "open_category": "table"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-02",
+      "open_category": "shelving"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-03",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-04",
+      "open_category": "table"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-05",
+      "open_category": "frame"
+    },
+    {
+      "variant": "B",
+      "case_id": "case-06",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-01",
+      "open_category": "table"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-02",
+      "open_category": "shelving"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-03",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-04",
+      "open_category": "table"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-05",
+      "open_category": "frame"
+    },
+    {
+      "variant": "C",
+      "case_id": "case-06",
+      "open_category": "frame"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-01",
+      "open_category": "table"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-02",
+      "open_category": "shelving"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-03",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-04",
+      "open_category": "table"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-05",
+      "open_category": "frame"
+    },
+    {
+      "variant": "D",
+      "case_id": "case-06",
+      "open_category": "frame"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-01",
+      "open_category": "table"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-02",
+      "open_category": "shelving"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-03",
+      "open_category": "low_cabinet"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-04",
+      "open_category": "table"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-05",
+      "open_category": "frame"
+    },
+    {
+      "variant": "source",
+      "case_id": "case-06",
+      "open_category": "low_cabinet"
+    }
+  ],
+  "reference_integrity": {
+    "capture_stage": "post_execution_review",
+    "verified_files": 149,
+    "inventory_sha256": "e4b0592a13acb5575b93e08d8ea7332af01f57d90ade8a2ee0ee63606573c48e"
+  }
+}

@@ -1,0 +1,14 @@
+# Separate experimental environment; not application dependencies.
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.10.0+cu128
+torchvision==0.25.0+cu128
+transformers==5.23.0
+diffusers==0.43.0
+accelerate==1.15.0
+safetensors==0.8.0
+numpy==2.5.4
+Pillow==13.0.0
+huggingface-hub==2.4.0
+tensordict==0.15.6
+plyfile==1.1.5
+# Install SDK separately with --no-deps at the commit recorded in README.
