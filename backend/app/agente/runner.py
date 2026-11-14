@@ -13,6 +13,7 @@ from backend.app.contratos.modelos import (
     DrawingExtraction,
     ExplainPieceArgs,
     InspectEvidenceArgs,
+    ListEvidenceArgs,
     InspectSeparatedPartArgs,
     InspectTableMeasuresArgs,
     MountedTableAnalysis,
@@ -81,7 +82,8 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
     model_calls = 0
     tool_calls = 0
     previous_response_id = None
-    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": [item.id for item in extraction.evidence], "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
+    shown_evidence_ids = [item.id for item in extraction.evidence[:200]]
+    input_items = [{"role": "user", "content": json.dumps({"drawing_id": extraction.drawing_id, "status": extraction.status, "warnings": extraction.warnings, "evidence_ids": shown_evidence_ids, "evidence_counts": {"total": len(extraction.evidence), "shown": len(shown_evidence_ids), "truncated": len(extraction.evidence) > len(shown_evidence_ids)}, "result_revision": 1, "scenarios": [{"id": item.id, "title": item.title, "assumptions": item.assumptions, "components": [{"id": component.id, "role": component.role, "label": component.label} for component in item.components]} for item in scenarios]}, ensure_ascii=False)}]
     evidence = {item.id: item for item in extraction.evidence}
     entities = {item.id: item for item in extraction.entities}
     scenario_ids = {item.id for item in scenarios}
@@ -107,7 +109,14 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                 arguments = json.loads(call.arguments_json) if call.arguments_json is not None else call.arguments
                 if not isinstance(arguments, dict):
                     raise TypeError("tool arguments must be an object")
-                if call.name == "inspeccionar_evidencia":
+                if call.name == "listar_evidencias":
+                    args = ListEvidenceArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    filtered = sorted((item for item in evidence.values() if args.kind is None or item.kind == args.kind), key=lambda item: item.id)
+                    page = filtered[args.cursor:args.cursor + args.limit]
+                    next_cursor = args.cursor + len(page) if args.cursor + len(page) < len(filtered) else None
+                    data = {"ok": True, "items": [{"id": item.id, "kind": item.kind, "description": item.description[:200]} for item in page], "cursor": args.cursor, "next_cursor": next_cursor, "total": len(filtered)}
+                    actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=tuple(item.id for item in page), summary="Página de evidencias del ledger listada."))
+                elif call.name == "inspeccionar_evidencia":
                     args = InspectEvidenceArgs.model_validate_json(json.dumps(arguments), strict=True)
                     unknown = [item for item in args.evidence_ids if item not in evidence]
                     source_ids = {source_id for item in args.evidence_ids if item in evidence for source_id in evidence[item].source_entity_ids}
