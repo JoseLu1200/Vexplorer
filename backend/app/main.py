@@ -15,7 +15,7 @@ from threading import Lock
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -61,7 +61,7 @@ from backend.app.servicios.table_explanations import explain_table_result
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
-from backend.app.precedentes.mantenimiento import ColaMantenimiento, tras_guardar_biblioteca
+from backend.app.precedentes.mantenimiento import NOMBRE_BD_ESPACIO, ColaMantenimiento, tras_guardar_biblioteca
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
@@ -206,10 +206,37 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
 
 
-def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings) -> None:
+def _rutas_candidatas(path: str, prefixes: tuple[str, ...]) -> list[str]:
+    """La ruta tal cual y con cualquier ``root_path`` quitado (repetidamente) del inicio.
+
+    Starlette enruta quitando ``root_path`` al ``path`` del scope, así que ``/vx/api/v1/history``
+    llega al mismo handler que ``/api/v1/history``; el control de acceso debe ver ambas formas.
+    """
+    candidates = [path]
+    for prefix in {item.rstrip("/") for item in prefixes if item and item.rstrip("/")}:
+        current = path
+        while current == prefix or current.startswith(prefix + "/"):
+            current = current[len(prefix):]
+            candidates.append(current.rstrip("/"))
+    return candidates
+
+
+def _es_ruta_compartida(path: str) -> bool:
+    """Operaciones del catálogo privado que el acceso público no puede usar."""
+    return (
+        path == "/api/v1/history" or path.startswith("/api/v1/history/")
+        or path == "/api/v1/library" or path.startswith("/api/v1/library/")
+        or path == "/api/v1/semantic-explorer/review"
+        or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
+        or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
+    )
+
+
+def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings, public_production: bool = False) -> None:
     """Registra las funcionalidades de ``backend/app/precedentes`` (ideas 2.1-3.5 del brainstorming de embeddings).
 
-    En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca.
+    En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca, y además
+    cada router lleva una dependencia que responde 403 (defensa en profundidad si el middleware no las ve).
     """
     from backend.app.precedentes.api_analogia import crear_router_analogia
     from backend.app.precedentes.api_busqueda import (
@@ -226,14 +253,19 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     from backend.app.precedentes.espacio import AlmacenEspacio
     from backend.app.precedentes.herrajes import AlmacenHerrajes
 
-    app.include_router(crear_router_sugerencias(repository))
-    app.include_router(crear_router_analogia(historical_store))
-    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / "precedentes_espacio.sqlite3")))
-    app.include_router(crear_router_piezas(repository))
-    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")))
-    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0))
-    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None))
-    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
+    def bloquear_en_acceso_publico() -> None:
+        if public_production:
+            raise HTTPException(403, "private_feature_unavailable")
+
+    guard = [Depends(bloquear_en_acceso_publico)]
+    app.include_router(crear_router_sugerencias(repository), dependencies=guard)
+    app.include_router(crear_router_analogia(historical_store), dependencies=guard)
+    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / NOMBRE_BD_ESPACIO)), dependencies=guard)
+    app.include_router(crear_router_piezas(repository), dependencies=guard)
+    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")), dependencies=guard)
+    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0), dependencies=guard)
+    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None), dependencies=guard)
+    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")), dependencies=guard)
 
 
 def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
@@ -330,9 +362,13 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        yield
-        job_executor.shutdown()
-        cola_mantenimiento.apagar()
+        try:
+            yield
+        finally:
+            try:
+                job_executor.shutdown()
+            finally:
+                cola_mantenimiento.apagar()
 
     app = FastAPI(title="Vexplorer", version="0.2.0", lifespan=lifespan)
     app.root_path = root_path
@@ -679,12 +715,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 return _error(403, "origin_not_allowed", "Origen no autorizado.")
         if public_production:
             path = request.url.path.rstrip("/")
-            shared_feature = (
-                path == "/api/v1/history" or path.startswith("/api/v1/history/")
-                or path == "/api/v1/library" or path.startswith("/api/v1/library/")
-                or path == "/api/v1/semantic-explorer/review"
-                or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
-                or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
+            shared_feature = any(
+                _es_ruta_compartida(candidate)
+                for candidate in _rutas_candidatas(path, (root_path, request.scope.get("root_path", "")))
             )
             if shared_feature:
                 return _error(403, "private_feature_unavailable", "Esta operación del catálogo privado no está disponible en el acceso público.")
@@ -783,7 +816,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
     ))
-    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings)
+    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings, public_production=public_production)
     from backend.app.reconstruction3d.router import create_reconstruction_router
     from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
     from dataclasses import replace
