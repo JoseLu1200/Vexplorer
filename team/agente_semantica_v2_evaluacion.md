@@ -17,8 +17,9 @@
 ## Estado
 
 - Métricas y comparador v2 implementados por TDD y congelados funcionalmente.
-- Pendiente puntuar los freezes original/corregido del holdout nuevo cuando
-  raíz confirme ambas ejecuciones; no se ha abierto la referencia privada.
+- Benchmark reservado puntuado y cerrado con referencia principal rev4 erratum
+  y sensibilidad rev3. Ocho informes, doce comparaciones, resumen público y
+  manifiesto de derivación viven bajo `.runtime/semantic-v2-results/`.
 
 ## Cambios realizados
 
@@ -30,6 +31,24 @@
 - Comparación v2 liga el lote exacto mediante hash de escenario/entrada/split y
   no copia casos ni referencias.
 - El reviewer por defecto del runner es `gpt-6.1-sol`.
+- Un fallo de adaptación post-freeze quedó reproducido: varias aristas por
+  ocurrencia física colapsaban a la misma tripleta de rol. Se deduplican
+  tripletas exactas tras proyectar IDs a roles, también en alternativas. Los
+  outputs nativos no se mutaron; se regeneraron ambos manifiestos semánticos
+  con la misma revisión y se registró la cronología.
+
+## Resultado reservado principal
+
+- Cohorte: 30 planos, seis topologías holdout por cinco perfiles; no son 30
+  diseños independientes. Ambos runs Sol/Sol completaron 30/30 sin fallos.
+- Original reviewed: roles F1 0,2184; ocurrencias F1 0,1972; relaciones F1 0;
+  0/30 casos completos.
+- Corrected reviewed: roles F1 0,2543; ocurrencias F1 0,2529; relaciones F1 0
+  con 90 falsos positivos; 0/30 casos completos.
+- Rev3→rev4 no cambia roles/ocurrencias ni el F1 de relaciones, pero aumenta
+  FN de relaciones 35→50 (original) y 20→50 (corrected). Rev4 es principal.
+- Diagnóstico: mezcla de desalineación ontológica y subrecuperación real; no
+  se añadieron aliases ni se retocó la referencia después de ver scores.
 
 ## Dependencias / avisos
 
@@ -48,4 +67,8 @@
   Ruff 0.15.20: `python -m ruff check <rutas propias>` → `All checks passed!`.
 - `git diff --check` sin errores; solo avisos de conversión LF/CRLF en dos
   archivos existentes.
-- Suite global y benchmark live coordinados por raíz para no duplicar procesos.
+- Verificación final propia: `26 passed`; Ruff `All checks passed!`;
+  `compileall` y `git diff --check` exit 0.
+- Verificación global de raíz: `793 passed`; combo corpus/evaluación `51 passed`.
+- Manifiesto recalculado: 8/8 hashes de informe, referencia fuente y sello
+  coinciden; `Issues=0`.
