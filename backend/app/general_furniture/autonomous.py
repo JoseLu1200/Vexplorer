@@ -51,7 +51,10 @@ AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v2"
 GENERAL_AUTO_REVIEW_PROMPT = """Actúas como crítico multimodal separado del proponente. Contrasta cada propuesta con imágenes reales, geometría y referencias del ledger.
 Primero llama entregar_revision_autonoma. Si el servidor responde repair_requested, llama una sola vez proponer_mueble_general con una propuesta completa corregida; después vuelve a llamar entregar_revision_autonoma sobre esa propuesta.
 No midas píxeles ni inventes valores. Las dimensiones observadas solo proceden del ledger. Las dimensiones deduced/estimated pueden proceder de parámetros constructivos declarados, con nominal, rango, método, dependencias y supuestos explícitos; no las rechaces solo por no ser observadas. Una cantidad provisional hypothesis/deduced/estimated requiere premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
+Una cota observed solo puede sostener la dimensión de la misma geometría visible. Si se copió a una pieza oculta o a otro componente por mera semejanza constructiva, rechaza esa transferencia y solicita un parámetro estimated separado con rango y premisa; sus dependientes permanecen estimated.
 Aceptar significa que una hipótesis es coherente, no que sea un hecho observado. Contrasta cada candidato en sus regiones: un contorno cerrado puede ser cara material, hueco, rebaje o límite interior. Busca duplicados entre proyecciones, incoherencias dimensionales y bases de cantidad antes de aceptar.
+Contrasta también la estabilidad global: vuelco, descuadre y arriostramiento. Cuando el escenario lo requiera, exige un detalle estimated explícito de estabilización o anclaje con premisa, ubicación y referencias; una simple nota pendiente no resuelve el escenario.
+Cada check model_visual debe citar en source_refs al menos una referencia visual exacta del contexto, también los checks de cantidad y duplicados de detalles estimados. Las premisas por sí solas no constituyen evidencia visual; no inventes referencias para completar un check.
 Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
 
 
@@ -142,7 +145,9 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
             "Repara una propuesta rechazada. Solo lo observed usa el ledger; "
             "estimated declara nominal, rango, método, source_refs y premise refs, "
             "y toda dimensión dependiente conserva estado estimated. Las cantidades "
-            "provisionales requieren premisas cerradas."
+            "provisionales requieren premisas cerradas. No transfieras una cota observed "
+            "a piezas ocultas u otros componentes: crea allí un parámetro estimated separado. "
+            "Resuelve estabilidad necesaria con un detalle estimated explícito, no una nota pendiente."
         )
     )
     return [
@@ -613,7 +618,7 @@ def run_general_autonomous(
                     "ok": True,
                     "status": "repair_requested",
                     "unresolved": args.unresolved,
-                    "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general; no inventes cifras.",
+                    "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
                 }
                 if construction_validation.status == "invalid":
                     repair_output["construction_validation"] = (
@@ -622,7 +627,10 @@ def run_general_autonomous(
                     repair_output["instruction"] = (
                         "Corrige todas las restricciones deterministas fallidas mediante "
                         "una propuesta completa; conserva observaciones y no inventes cifras. "
-                        "Las estimaciones válidas declaran nominal, rango, método y supuestos."
+                        "Las estimaciones válidas declaran nominal, rango, método y supuestos. "
+                        "No transfieras cotas observed entre geometrías: piezas ocultas u otros "
+                        "componentes requieren parámetro estimated separado. Resuelve estabilidad "
+                        "necesaria con detalle estimated explícito."
                     )
                 if raster_without_metric_ledger:
                     repair_output.update({
