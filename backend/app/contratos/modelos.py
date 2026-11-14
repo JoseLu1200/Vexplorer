@@ -625,6 +625,9 @@ class TableProgramProposal(StrictModel):
         premise_ids = [item.id for item in self.premises]
         if len(premise_ids) != len(set(premise_ids)):
             raise ValueError("duplicate table premise ids")
+        all_program_ids = [self.id, *binding_ids, *component_ids, *premise_ids]
+        if len(all_program_ids) != len(set(all_program_ids)):
+            raise ValueError("table program ids must be globally unique")
         if any(not set(item.premise_ids) <= set(premise_ids) for item in self.components):
             raise ValueError("component references an unknown premise")
         support_role = next(role for role in roles if role != "tabletop")

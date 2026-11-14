@@ -83,6 +83,26 @@ def test_table_program_rejects_future_binding_references_and_wrong_topology():
         TableProgramProposal.model_validate(program.model_copy(update={"components": (program.components[0], program.components[0].model_copy(update={"id": "top-2"}))}).model_dump())
 
 
+def test_table_program_ids_are_disjoint_across_all_target_kinds():
+    program = _program()
+    colliding = program.model_copy(update={"id": program.components[0].id})
+    with pytest.raises(ValidationError, match="globally unique"):
+        TableProgramProposal.model_validate(colliding.model_dump())
+
+    colliding_premise = program.model_copy(update={
+        "premises": (
+            program.premises[0].model_copy(update={"id": program.bindings[0].id}),
+            program.premises[1],
+        ),
+        "components": (
+            program.components[0].model_copy(update={"premise_ids": (program.bindings[0].id,)}),
+            program.components[1],
+        ),
+    })
+    with pytest.raises(ValidationError, match="globally unique"):
+        TableProgramProposal.model_validate(colliding_premise.model_dump())
+
+
 def test_table_program_has_no_free_numeric_operands_and_catalog_requires_template():
     with pytest.raises(ValidationError):
         TableOperandRef.model_validate({"ref_type": "constant", "ref_id": "18"})
