@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import hashlib
 import io
 import json
-import math
 from pathlib import Path
 import sqlite3
 from typing import Protocol
@@ -14,6 +13,7 @@ from typing import Protocol
 from pydantic import ValidationError
 
 from backend.app.semantic.embeddings import EmbeddingProviderError, validate_embedding
+from backend.app.similarity.math_utils import cosine_similarity
 from backend.app.historico.models import (
     ComparableResponse,
     EmbeddingSpace,
@@ -65,17 +65,6 @@ def _canonical(record: HistoricalRecord) -> str:
 
 def _round(value: float | None, digits: int = 6) -> float | None:
     return None if value is None else round(value, digits)
-
-
-def _cosine(left: tuple[float, ...], right: tuple[float, ...]) -> float:
-    if len(left) != len(right) or not left:
-        raise ValueError("embedding_space_incompatible")
-    denominator = math.sqrt(sum(x * x for x in left)) * math.sqrt(
-        sum(x * x for x in right)
-    )
-    if denominator == 0:
-        raise ValueError("invalid_embedding")
-    return sum(a * b for a, b in zip(left, right, strict=True)) / denominator
 
 
 def _semantic_text(value: HistoricalRecord | HistoricalTarget) -> str:
@@ -480,7 +469,7 @@ class HistoricalStore:
                 ):
                     raise ValueError("embedding_space_incompatible")
                 _, _, differences, missing = _attribute_score(target, record)
-                score = round(_cosine(target_embedding.vector, record_embedding.vector), 6)
+                score = round(cosine_similarity(target_embedding.vector, record_embedding.vector), 6)
                 values.append(
                     HistoricalComparable(
                         record=record,

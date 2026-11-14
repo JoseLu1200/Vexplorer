@@ -15,8 +15,10 @@ import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, 
 import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived } from "./core/general.js";
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
-import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, presentLibraryDifferences, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
+import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
 import { generalSceneSelection, sceneLoadPlan } from "./core/scene.js";
+import { explainSimilarityMatch } from "./core/similarity_explain.js";
+import { evaluateDuplicatePrecedent, formatDuplicatePrecedentBanner } from "./core/duplicate_alert.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -34,7 +36,7 @@ reconstructionButton.addEventListener('click',async()=>{
   reconstructionPanel.open(state.runId,reconstructionButton);
 });
 document.querySelector('.navigator__head')?.append(reconstructionButton);
-const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
+const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence(), duplicateFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
 
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
@@ -647,6 +649,7 @@ async function refreshRun() {
   if(tableReady){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
   await loadRevisionContext();
   if(!runFence.isCurrent(token,state.runId))return;
+  void checkDuplicatePrecedent(requestedRun, state.snapshot?.result_revision);
   if (state.activeView === "3d") await loadScene();
   const scenarioReady=Boolean(state.generalWorkspace?.isGeneral&&state.generalWorkspace.reviewerKind==="machine"&&Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0),confirmedDetails=$("#historical-confirmed-details"),confirmedSummary=$("#historical-confirmed-details > summary");toggleHidden($("#historical-scenarios"),!scenarioReady);$("#historical-scenarios-button").disabled=!scenarioReady;confirmedDetails.open=!scenarioReady;confirmedSummary.hidden=!scenarioReady;
   toggleHidden($("#table-cost-scope"),!state.tableWorkspace.isTable); text($("#estimate-button"),state.tableWorkspace.isTable?"Calcular costes de mesa":"Calcular estimación");
@@ -673,6 +676,55 @@ async function loadRevisionContext() {
   state.scene = null;
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren(); text($("#scene-context"),"2D fuente · sin reconstrucción cargada");
   sceneViewer?.setScene({ state: "unavailable", objects: [], warnings: ["Esperando reconstrucción de la revisión actual."] });
+}
+
+function hideDuplicatePrecedentBanner() {
+  const banner = $("#duplicate-precedent-banner");
+  if (!banner) return;
+  toggleHidden(banner, true);
+  text($("#duplicate-precedent-message"), "");
+  const link = $("#duplicate-precedent-link");
+  if (link) {
+    link.removeAttribute("href");
+    text(link, "");
+  }
+}
+
+async function checkDuplicatePrecedent(runId, revision) {
+  hideDuplicatePrecedentBanner();
+  if (!state.features.library || !runId || !Number.isInteger(revision)) {
+    duplicateFence.invalidate();
+    return;
+  }
+  const identity = `${runId}:${revision}`;
+  const token = duplicateFence.issue(identity);
+  try {
+    const result = await api.findSimilar(runId, {
+      result_revision: revision,
+      mode: "geometric",
+      limit: 3,
+    });
+    if (!duplicateFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
+    const matches = result?.matches ?? result?.items ?? result ?? [];
+    const evaluation = evaluateDuplicatePrecedent(matches);
+    if (!evaluation.found) {
+      hideDuplicatePrecedentBanner();
+      return;
+    }
+    const formatted = formatDuplicatePrecedentBanner(evaluation);
+    const banner = $("#duplicate-precedent-banner");
+    const message = $("#duplicate-precedent-message");
+    const link = $("#duplicate-precedent-link");
+    if (!banner || !message || !link) return;
+    text(message, formatted.message);
+    link.href = formatted.linkUrl;
+    text(link, formatted.linkText);
+    toggleHidden(banner, false);
+  } catch {
+    if (duplicateFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) {
+      hideDuplicatePrecedentBanner();
+    }
+  }
 }
 
 async function loadComparables(requestedRun=state.runId, requestedRevision=state.snapshot?.result_revision) {
@@ -923,11 +975,146 @@ function updateTableRunControls() {
   if(!state.runId)text($("#input-kind-label"),inputKindLabel(inputKind));
 }
 
+function createExplanationList(labelText, items, listClassName, itemClassName = "") {
+  const section = document.createElement("div");
+  section.className = "similarity-explain-section";
+  const label = document.createElement("span");
+  label.className = "similarity-explain-label";
+  label.textContent = labelText;
+  const list = document.createElement("ul");
+  list.className = `similarity-explain-list ${listClassName}`;
+  items.forEach((entry) => {
+    const li = document.createElement("li");
+    if (itemClassName) li.className = itemClassName;
+    li.textContent = entry;
+    list.append(li);
+  });
+  section.append(label, list);
+  return section;
+}
+
 function renderLibraryResults(raw, mode) {
-  const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[];
-  items.forEach((item)=>{ const candidate=state.libraryItems.get(item.library_item_id); const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=candidate?.label??item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca"); const detail=document.createElement("span"); const score=Number.isFinite(item.score)?` · puntuación ${item.score.toFixed(3)}`:""; const members=item.member_ids?.length?` · ${item.member_ids.length} miembros`:""; const threshold=Number.isFinite(item.threshold)?` · umbral ${item.threshold.toFixed(2)}`:""; detail.textContent=`${mode === "semantic" ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}` : `Geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? candidate?.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${members}${threshold}`; const presented=presentLibraryDifferences(item.differences??[]),differences=document.createElement("span"); differences.textContent=presented.summary.join(" · ")||(item.explanation?"Comparación disponible":"Sin diferencias documentadas"); card.append(title,detail,differences); const technical=[...presented.technical,...(item.explanation?[String(item.explanation)]:[])]; if(technical.length){const disclosure=document.createElement("details"),disclosureTitle=document.createElement("summary"),content=document.createElement("div");disclosure.className="library-comparison-details";disclosureTitle.textContent="Datos de comparación";technical.forEach((value)=>{const line=document.createElement("code");line.textContent=value;content.append(line);});disclosure.append(disclosureTitle,content);card.append(disclosure);} const linked=item.member_ids?.map((id)=>state.libraryItems.get(id)).filter(Boolean)??(candidate?[candidate]:[]); if(linked.length){ const links=document.createElement("div"); links.className="library-members"; linked.forEach((entry)=>links.append(libraryRunLink(entry))); card.append(links); } root.append(card); });
-  if(!items.length)root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
-  if(Number.isInteger(raw.excluded_count)&&raw.excluded_count>0)root.append(emptyParagraph(`${raw.excluded_count} elementos de otra versión de descriptor se excluyeron de la comparación.`));
+  const root = $("#library-list");
+  root.replaceChildren();
+  const items = raw.matches ?? raw.items ?? raw.groups ?? raw ?? [];
+  const queryEntry = [...state.libraryItems.values()].find(
+    (entry) => entry.run_id === state.runId && entry.result_revision === state.snapshot?.result_revision,
+  );
+  items.forEach((item) => {
+    const candidate = state.libraryItems.get(item.library_item_id);
+    const card = document.createElement("div");
+    card.className = "detail-item similarity-match-card";
+    const title = document.createElement("b");
+    title.textContent =
+      candidate?.label ??
+      item.label ??
+      item.name ??
+      item.run_id ??
+      item.library_item_id ??
+      (item.id ? `Grupo ${item.id}` : "Elemento de biblioteca");
+    const detail = document.createElement("span");
+    const score = Number.isFinite(item.score) ? ` · puntuación ${item.score.toFixed(3)}` : "";
+    const members = item.member_ids?.length ? ` · ${item.member_ids.length} miembros` : "";
+    const threshold = Number.isFinite(item.threshold) ? ` · umbral ${item.threshold.toFixed(2)}` : "";
+    detail.textContent = `${
+      mode === "semantic"
+        ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}`
+        : `Geométrico offline · ${
+            item.descriptor_version ??
+            item.descriptor?.descriptor_version ??
+            candidate?.descriptor?.descriptor_version ??
+            "furniture-v1"
+          }`
+    }${score}${members}${threshold}`;
+    card.append(title, detail);
+
+    const isGroup = Array.isArray(item.member_ids) && !Array.isArray(item.differences) && !item.score_components;
+    if (isGroup) {
+      const groupSummary = document.createElement("span");
+      groupSummary.textContent = item.explanation ? "Comparación disponible" : "Sin diferencias documentadas";
+      card.append(groupSummary);
+      if (item.explanation) {
+        const disclosure = document.createElement("details");
+        const disclosureTitle = document.createElement("summary");
+        const content = document.createElement("div");
+        disclosure.className = "library-comparison-details";
+        disclosureTitle.textContent = "Datos de comparación";
+        const line = document.createElement("code");
+        line.textContent = String(item.explanation);
+        content.append(line);
+        disclosure.append(disclosureTitle, content);
+        card.append(disclosure);
+      }
+    } else {
+      const explained = explainSimilarityMatch(item, {
+        queryDescriptor: queryEntry?.descriptor ?? null,
+        candidateDescriptor: candidate?.descriptor ?? null,
+      });
+      if (explained.coincidences.length) {
+        card.append(
+          createExplanationList(
+            "Coincidencias",
+            explained.coincidences,
+            "similarity-explain-list--coincidences",
+            "similarity-badge similarity-badge--match",
+          ),
+        );
+      }
+      if (explained.differences.length) {
+        card.append(
+          createExplanationList(
+            "Diferencias",
+            explained.differences,
+            "similarity-explain-list--differences",
+          ),
+        );
+      }
+      if (!explained.coincidences.length && !explained.differences.length && !item.explanation) {
+        const emptyNote = document.createElement("span");
+        emptyNote.className = "similarity-explain-empty";
+        emptyNote.textContent = "Sin diferencias documentadas";
+        card.append(emptyNote);
+      }
+      if (explained.scoreBreakdown.length) {
+        const breakdown = document.createElement("div");
+        breakdown.className = "similarity-score-breakdown";
+        explained.scoreBreakdown.forEach((component) => {
+          const chip = document.createElement("span");
+          chip.className = "similarity-score-chip";
+          chip.textContent = component.text;
+          breakdown.append(chip);
+        });
+        card.append(breakdown);
+      }
+      const technical = [...explained.technical, ...(item.explanation ? [String(item.explanation)] : [])];
+      if (technical.length) {
+        const disclosure = document.createElement("details");
+        const disclosureTitle = document.createElement("summary");
+        const content = document.createElement("div");
+        disclosure.className = "library-comparison-details";
+        disclosureTitle.textContent = "Datos de comparación";
+        technical.forEach((value) => {
+          const line = document.createElement("code");
+          line.textContent = value;
+          content.append(line);
+        });
+        disclosure.append(disclosureTitle, content);
+        card.append(disclosure);
+      }
+    }
+
+    const linked = item.member_ids?.map((id) => state.libraryItems.get(id)).filter(Boolean) ?? (candidate ? [candidate] : []);
+    if (linked.length) {
+      const links = document.createElement("div");
+      links.className = "library-members";
+      linked.forEach((entry) => links.append(libraryRunLink(entry)));
+      card.append(links);
+    }
+    root.append(card);
+  });
+  if (!items.length) root.append(emptyParagraph("No hay elementos compatibles en la biblioteca."));
+  if (Number.isInteger(raw.excluded_count) && raw.excluded_count > 0)
+    root.append(emptyParagraph(`${raw.excluded_count} elementos de otra versión de descriptor se excluyeron de la comparación.`));
 }
 
 function renderLibraryEntries(raw) {
@@ -1022,6 +1209,7 @@ async function boot() {
   $("#save-library").addEventListener("click",saveCurrentToLibrary);
   $("#find-similar").addEventListener("click",findSimilarCurrent);
   $("#group-library").addEventListener("click",groupCurrentLibrary);
+  $("#duplicate-precedent-dismiss")?.addEventListener("click", hideDuplicatePrecedentBanner);
   $("#restore-run-retry").addEventListener("click",()=>{if(state.runId)restoreRunReference(state.runId);});
   $("#job-retry").addEventListener("click",retryCurrentJob);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }

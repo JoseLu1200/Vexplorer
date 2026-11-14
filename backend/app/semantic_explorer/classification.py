@@ -7,6 +7,8 @@ from typing import Literal
 import numpy as np
 from pydantic import Field
 
+from backend.app.similarity.math_utils import cosine_matrix, normalize_vector
+
 from .models import Classification, Space, StrictModel, digest
 
 
@@ -48,11 +50,10 @@ def classify(
 ) -> Classification:
     if model.vector_space_id != space.id or len(vector) != space.dimensions:
         raise ValueError("classifier_space_incompatible")
-    x = np.asarray(vector, dtype=float)
-    norm = np.linalg.norm(x)
-    if not np.isfinite(x).all() or not np.isfinite(norm) or norm == 0:
-        raise ValueError("classifier_invalid_vector")
-    x /= norm
+    try:
+        x = normalize_vector(vector)
+    except ValueError as exc:
+        raise ValueError("classifier_invalid_vector") from exc
     if model.kind == "logreg":
         if any(name not in features for name in model.feature_names):
             raise ValueError("classifier_features_missing")
@@ -90,10 +91,13 @@ def classify(
             or np.any(labels >= len(model.labels))
         ):
             raise ValueError("classifier_shape_invalid")
-        norms = np.linalg.norm(train, axis=1)
-        if not np.isfinite(train).all() or np.any(norms == 0):
-            raise ValueError("classifier_nonfinite")
-        distances = np.maximum(0, 1 - (train / norms[:, None]) @ x)
+        try:
+            scores = cosine_matrix(x, train)
+        except ValueError as exc:
+            if str(exc) == "invalid_embedding":
+                raise ValueError("classifier_nonfinite") from exc
+            raise ValueError("classifier_shape_invalid") from exc
+        distances = np.maximum(0, 1 - scores)
         positions = np.argsort(distances, kind="stable")[: model.neighbors]
         selected = distances[positions]
         exact = selected <= 1e-15

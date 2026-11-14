@@ -5,6 +5,7 @@ rellena medidas ni asigna roles: solo produce hallazgos internos trazables.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib import resources
 import json
@@ -17,6 +18,41 @@ from backend.app.contratos.modelos import DrawingExtraction
 
 DIMENSION_ATTACH_TOLERANCE_MM = 0.5
 MAX_DIMENSIONS_CHECKED = 200
+PANDEO_WARNING_CODE = "pandeo_luz_excesiva"
+HORIZONTAL_LOAD_BEARING_ROLES = frozenset(
+    {"shelf", "top_panel", "tabletop", "balda", "tapa", "estante", "encimera", "sobre"}
+)
+VERTICAL_SUPPORT_ROLES = frozenset(
+    {
+        "divider",
+        "montante",
+        "vertical_divider",
+        "intermediate_support",
+        "central_support",
+        "vertical_support",
+    }
+)
+DEFAULT_DEFLECTION_THRESHOLDS: tuple[tuple[float, float], ...] = (
+    (30.0, 1400.0),
+    (25.0, 1200.0),
+    (19.0, 950.0),
+    (18.0, 900.0),
+    (16.0, 750.0),
+)
+DEFAULT_SPAN_TO_THICKNESS_RATIO = 45.0
+
+
+@dataclass(frozen=True)
+class _SpanThreshold:
+    min_thickness_mm: float
+    max_span_mm: float
+
+
+@dataclass(frozen=True)
+class _DeflectionLimits:
+    default_thresholds: tuple[_SpanThreshold, ...]
+    material_overrides: dict[str, tuple[_SpanThreshold, ...]]
+    fallback_span_to_thickness_ratio: float
 
 
 @dataclass(frozen=True)
@@ -34,6 +70,7 @@ class _Catalog:
     confirmed_by_workshop: bool
     tolerance_mm: float
     drilling_systems: tuple[_DrillingSystem, ...]
+    deflection_limits: _DeflectionLimits
 
 
 def _positive_number(value: object, field: str, *, optional: bool = False) -> float | None:
@@ -45,6 +82,69 @@ def _positive_number(value: object, field: str, *, optional: bool = False) -> fl
     if not isfinite(result) or result <= 0:
         raise ValueError(f"workshop_catalog_invalid:{field}")
     return result
+
+
+def _default_deflection_limits() -> _DeflectionLimits:
+    return _DeflectionLimits(
+        default_thresholds=tuple(
+            _SpanThreshold(min_thickness_mm=thickness, max_span_mm=span)
+            for thickness, span in DEFAULT_DEFLECTION_THRESHOLDS
+        ),
+        material_overrides={},
+        fallback_span_to_thickness_ratio=DEFAULT_SPAN_TO_THICKNESS_RATIO,
+    )
+
+
+def _parse_threshold_table(raw: object, field: str) -> tuple[_SpanThreshold, ...]:
+    if not isinstance(raw, list) or not raw:
+        raise ValueError(f"workshop_catalog_invalid:{field}")
+    thresholds: list[_SpanThreshold] = []
+    for index, entry in enumerate(raw):
+        if not isinstance(entry, dict):
+            raise ValueError(f"workshop_catalog_invalid:{field}[{index}]")
+        min_thickness = _positive_number(
+            entry.get("min_thickness_mm"), f"{field}[{index}].min_thickness_mm"
+        )
+        max_span = _positive_number(entry.get("max_span_mm"), f"{field}[{index}].max_span_mm")
+        assert min_thickness is not None and max_span is not None
+        thresholds.append(
+            _SpanThreshold(min_thickness_mm=min_thickness, max_span_mm=max_span)
+        )
+    thresholds.sort(key=lambda item: item.min_thickness_mm, reverse=True)
+    return tuple(thresholds)
+
+
+def _parse_deflection_limits(raw: object) -> _DeflectionLimits:
+    if raw is None:
+        return _default_deflection_limits()
+    if not isinstance(raw, dict):
+        raise ValueError("workshop_catalog_invalid:deflection_limits")
+    default_raw = raw.get("default_max_span_by_thickness_mm")
+    default_thresholds = (
+        _parse_threshold_table(default_raw, "deflection_limits.default_max_span_by_thickness_mm")
+        if default_raw is not None
+        else _default_deflection_limits().default_thresholds
+    )
+    overrides_raw = raw.get("material_overrides", {})
+    if not isinstance(overrides_raw, dict):
+        raise ValueError("workshop_catalog_invalid:deflection_limits.material_overrides")
+    overrides: dict[str, tuple[_SpanThreshold, ...]] = {}
+    for material_key, table in overrides_raw.items():
+        if not isinstance(material_key, str) or not material_key.strip():
+            raise ValueError("workshop_catalog_invalid:deflection_limits.material_overrides.key")
+        overrides[material_key.strip().lower()] = _parse_threshold_table(
+            table, f"deflection_limits.material_overrides.{material_key}"
+        )
+    ratio = _positive_number(
+        raw.get("fallback_span_to_thickness_ratio", DEFAULT_SPAN_TO_THICKNESS_RATIO),
+        "deflection_limits.fallback_span_to_thickness_ratio",
+    )
+    assert ratio is not None
+    return _DeflectionLimits(
+        default_thresholds=default_thresholds,
+        material_overrides=overrides,
+        fallback_span_to_thickness_ratio=ratio,
+    )
 
 
 def _parse_catalog(payload: object) -> _Catalog:
@@ -85,6 +185,7 @@ def _parse_catalog(payload: object) -> _Catalog:
         confirmed_by_workshop=confirmed,
         tolerance_mm=_positive_number(payload.get("tolerance_mm", 0.1), "tolerance_mm"),
         drilling_systems=tuple(parsed),
+        deflection_limits=_parse_deflection_limits(payload.get("deflection_limits")),
     )
 
 
@@ -367,8 +468,169 @@ def _dimension_findings(extraction: DrawingExtraction) -> list[dict[str, Any]]:
     return result
 
 
+def _piece_field(piece: Any, name: str, default: Any = None) -> Any:
+    if isinstance(piece, Mapping):
+        return piece.get(name, default)
+    return getattr(piece, name, default)
+
+
+def _known_positive_mm(piece: Any, field_name: str) -> float | None:
+    field_states = _piece_field(piece, "field_states")
+    if isinstance(field_states, Mapping) and field_states.get(field_name) == "unknown":
+        return None
+    raw = _piece_field(piece, field_name)
+    if raw is None or isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return None
+    value = float(raw)
+    if not isfinite(value) or value <= 0:
+        return None
+    return value
+
+
+def _normalized_role(piece: Any) -> str:
+    role = _piece_field(piece, "role")
+    if not isinstance(role, str) or not role.strip():
+        role = _piece_field(piece, "kind", "")
+    return role.strip().lower() if isinstance(role, str) else ""
+
+
+def _max_span_for_piece(
+    limits: _DeflectionLimits, thickness_mm: float, material: str | None
+) -> float:
+    thresholds = limits.default_thresholds
+    if isinstance(material, str) and material.strip():
+        normalized = material.strip().lower()
+        for key in sorted(limits.material_overrides, key=len, reverse=True):
+            if key in normalized:
+                thresholds = limits.material_overrides[key]
+                break
+    for threshold in thresholds:
+        if thickness_mm >= threshold.min_thickness_mm:
+            return threshold.max_span_mm
+    return thickness_mm * limits.fallback_span_to_thickness_ratio
+
+
+def _count_intermediate_supports(
+    piece: Any,
+    pieces: Sequence[Any],
+    explicit_supports: int | None,
+    has_explicit_support: bool | None,
+) -> int:
+    if explicit_supports is not None:
+        return max(0, explicit_supports)
+    if has_explicit_support is not None:
+        return 1 if has_explicit_support else 0
+    piece_supports = _piece_field(piece, "intermediate_supports")
+    if piece_supports is None:
+        piece_supports = _piece_field(piece, "support_count")
+    if isinstance(piece_supports, int) and not isinstance(piece_supports, bool):
+        return max(0, piece_supports)
+    piece_has_support = _piece_field(piece, "has_intermediate_support")
+    if isinstance(piece_has_support, bool):
+        return 1 if piece_has_support else 0
+    inferred = 0
+    for candidate in pieces:
+        if _normalized_role(candidate) in VERTICAL_SUPPORT_ROLES:
+            qty = _piece_field(candidate, "quantity")
+            inferred += qty if isinstance(qty, int) and not isinstance(qty, bool) and qty > 0 else 1
+    return inferred
+
+
+def _deflection_findings(
+    pieces: Sequence[Any],
+    limits: _DeflectionLimits,
+    *,
+    intermediate_supports: int | None = None,
+    has_intermediate_support: bool | None = None,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for index, piece in enumerate(pieces):
+        role = _normalized_role(piece)
+        if role not in HORIZONTAL_LOAD_BEARING_ROLES:
+            continue
+        length_mm = _known_positive_mm(piece, "length_mm")
+        thickness_mm = _known_positive_mm(piece, "thickness_mm")
+        if length_mm is None or thickness_mm is None:
+            continue
+        piece_id = str(_piece_field(piece, "id") or f"piece-{index}")
+        piece_label = str(_piece_field(piece, "label") or piece_id)
+        material_raw = _piece_field(piece, "material")
+        material = material_raw.strip() if isinstance(material_raw, str) and material_raw.strip() else None
+        supports = _count_intermediate_supports(
+            piece, pieces, intermediate_supports, has_intermediate_support
+        )
+        effective_span_mm = length_mm / (supports + 1)
+        max_span_mm = _max_span_for_piece(limits, thickness_mm, material)
+        exceeded = effective_span_mm > max_span_mm
+        evidence_ids = _piece_field(piece, "evidence_ids") or ()
+        entity_ids = _piece_field(piece, "source_entity_ids") or ()
+        if exceeded:
+            support_note = (
+                "sin apoyo intermedio"
+                if supports == 0
+                else f"con {supports} apoyo(s) intermedio(s) (luz por vano {effective_span_mm:.0f} mm)"
+            )
+            message = (
+                f"Posible pandeo en '{piece_label}' ({piece_id}): luz de {length_mm:.0f} mm "
+                f"con espesor de {thickness_mm:g} mm ({support_note}) supera el máximo "
+                f"recomendado de {max_span_mm:.0f} mm."
+            )
+        else:
+            message = (
+                f"Luz admisible en '{piece_label}' ({piece_id}): {effective_span_mm:.0f} mm "
+                f"con espesor de {thickness_mm:g} mm dentro del máximo de {max_span_mm:.0f} mm."
+            )
+        findings.append(
+            {
+                "id": f"plausibility-pandeo-{piece_id}",
+                "check": "structural_deflection",
+                "code": PANDEO_WARNING_CODE if exceeded else None,
+                "status": "warning" if exceeded else "pass",
+                "severity": "warning" if exceeded else "info",
+                "message": message,
+                "system_id": None,
+                "observed": {
+                    "piece_id": piece_id,
+                    "piece_label": piece_label,
+                    "role": role,
+                    "length_mm": length_mm,
+                    "effective_span_mm": effective_span_mm,
+                    "thickness_mm": thickness_mm,
+                    "max_span_mm": max_span_mm,
+                    "intermediate_supports": supports,
+                    "material": material,
+                },
+                "evidence_ids": list(evidence_ids),
+                "entity_ids": list(entity_ids),
+            }
+        )
+    return findings
+
+
+def evaluate_deflection_plausibility(
+    pieces: Sequence[Any],
+    *,
+    intermediate_supports: int | None = None,
+    has_intermediate_support: bool | None = None,
+    catalog_path: Path | None = None,
+) -> tuple[dict[str, Any], ...]:
+    """Evalúa pandeo por luz excesiva en piezas horizontales portantes sin inventar cotas."""
+    catalog = _load_catalog(catalog_path)
+    return tuple(
+        _deflection_findings(
+            pieces,
+            catalog.deflection_limits,
+            intermediate_supports=intermediate_supports,
+            has_intermediate_support=has_intermediate_support,
+        )
+    )
+
+
 def evaluate_plausibility(
-    extraction: DrawingExtraction, catalog_path: Path | None = None
+    extraction: DrawingExtraction,
+    catalog_path: Path | None = None,
+    *,
+    pieces: Sequence[Any] | None = None,
 ) -> tuple[dict, ...]:
     """Devuelve hallazgos internos sin modificar ni completar la extracción."""
     catalog = _load_catalog(catalog_path)
@@ -427,4 +689,6 @@ def evaluate_plausibility(
             }
         )
     findings.extend(_dimension_findings(extraction))
+    if pieces:
+        findings.extend(_deflection_findings(pieces, catalog.deflection_limits))
     return tuple(findings)

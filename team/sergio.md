@@ -5,18 +5,18 @@
 - Nombre declarado por el usuario: Sergio Sande Cendán
 - Rol: Coordinador / Evaluación e Integración (D / General)
 - Archivo creado o designado explícitamente: Solicitado por el usuario ("crea mi archivo y ve metiendo toda la documentacion"), 2026-11-14 00:54 CET
-- Última actualización: 2026-11-14 00:56 CET
+- Última actualización: 2026-11-14 13:40 CET
 
 ## Tarea de la sesión
 
-- Objetivo concreto: Descarga de cambios desde `main`, ejecución de suite de aceptación integrada (cantidades, incógnitas, reconstrucción, invariancia del descriptor y aislamiento de referencia), ejecución de tests de JavaScript de frontend y verificación de recorrido visual en navegador.
-- Referencia del plan: T11–T13 / P0 / Aceptación integrada 0.3.0
+- Objetivo concreto: Implementación del Nivel 1 completo (puntos 1.1 a 1.7) de `docs/BRAINSTORMING_EMBEDDINGS.md` repartido en 7 subagentes especializados, sin modificar `backend/app/contratos/`.
+- Referencia del plan: `docs/BRAINSTORMING_EMBEDDINGS.md` (Nivel 1: 1.1–1.7)
 - Estado: terminado
 
 ## Alcance y reservas
 
-- Archivos o carpetas que puedo editar: `team/sergio.md` (y documentación personal autorizada)
-- Dependencias que solo leeré: `team/*.md`, `backend/`, `frontend/`, `tests/`, `data/planos_demo/`, `evaluation/`
+- Archivos o carpetas que puedo editar: `team/sergio.md`, `tools/` (1.1), `backend/app/similarity/` (1.2, 1.3, 1.4), `backend/app/historico/real_service.py` y `backend/app/semantic_explorer/` (1.4), `backend/app/validador/` (1.6), `backend/app/main.py` (1.2, 1.3, 1.5), `frontend/` (1.5, 1.7), `backend/tests/` y `tests/`
+- Dependencias que solo leeré: `backend/app/contratos/modelos.py` (sin cambios de contrato), `team/*.md`, `data/`, `evaluation/`
 - Archivos compartidos que requieren coordinación: `CLAUDE.md`, `team/README.md`
 - Solapes detectados y acuerdo para resolverlos: ninguno comprobado.
 
@@ -63,8 +63,10 @@
 | Caso | Comando ejecutado | Resultado observado | Limitación |
 |---|---|---|---|
 | Suite de evaluación integrada (D) | `.venv\Scripts\python.exe -m pytest tests/test_demo_workbench.py tests/test_demo_fixture.py tests/test_demo_isolation.py tests/test_demo_e2e.py -v` | 28 passed, 1 warning (StarletteDeprecation) | Sin fallos |
-| Suite completa Python | `.venv\Scripts\python.exe -m pytest -q` | 119 passed, 1 warning | Sin fallos |
-| Pruebas unitarias de Frontend | `npm test --prefix frontend` | 46 passed | 0 errores |
+| Suite completa Python (previa) | `.venv\Scripts\python.exe -m pytest -q` | 119 passed, 1 warning | Sin fallos |
+| Pruebas unitarias de Frontend (previa) | `npm test --prefix frontend` | 46 passed | 0 errores |
+| Nivel 1 integrado Python (1.1–1.4, 1.6 + regresión) | `.venv\Scripts\python.exe -m pytest tests/test_calibrate_similarity.py backend/tests/test_similarity_unified.py backend/tests/test_similarity_clustering.py backend/tests/test_similarity_abstention.py backend/tests/test_validador_pandeo.py backend/tests/test_backend_semantic.py backend/tests/test_backend_library_api.py tests/test_demo_workbench.py -q` | 72 passed, 1 warning | Sin fallos |
+| Nivel 1 Frontend (1.5 y 1.7) | `node --test frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 12 passed, 0 failed | Nuevos módulos 100% verdes (en `npm test` global persiste 1 fallo preexistente en `scene.test.js`) |
 | Verificación navegador interactivo | Navegación a `http://127.0.0.1:8765` en subagente de navegador | UI 100% funcional, 0 errores en consola, 13/13 peticiones HTTP 200 | Host-observed facts confirmados |
 
 ## Bloqueos y cierre
