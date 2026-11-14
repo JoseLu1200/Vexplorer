@@ -876,6 +876,11 @@ class TableDrawingPrimitive(StrictModel):
 
     @model_validator(mode="after")
     def numeric_dimension_is_honest(self) -> "TableDrawingPrimitive":
+        if self.kind == "line" and len(self.points_mm) < 2:
+            raise ValueError("line requires at least 2 points")
+        expected_points = {"rect": 2, "dimension": 3, "text": 1}.get(self.kind)
+        if expected_points is not None and len(self.points_mm) != expected_points:
+            raise ValueError(f"{self.kind} requires exactly {expected_points} points")
         if self.kind == "dimension" and self.state in ("unknown", "conflict") and self.value_mm is not None:
             raise ValueError("unknown drawing dimension cannot contain a numeric value")
         return self

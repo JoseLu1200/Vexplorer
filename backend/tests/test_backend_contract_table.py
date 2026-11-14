@@ -94,9 +94,11 @@ def test_technical_drawing_can_preserve_observed_state():
     primitive = TableDrawingPrimitive(
         id="dimension-width",
         kind="dimension",
-        points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=0)),
+        points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=0), Point2D(x=0, y=100)),
         value_mm=1200,
         state="observed",
         dependency_refs=("measure:width",),
     )
     assert primitive.state == "observed"
+    with pytest.raises(ValidationError, match="exactly 3 points"):
+        TableDrawingPrimitive(id="bad", kind="dimension", points_mm=(Point2D(x=0, y=0), Point2D(x=1, y=0)), state="unknown")
