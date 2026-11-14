@@ -59,3 +59,12 @@ Vertical slice backend completo y verificado; pendiente únicamente integrar los
 - Acuerdo explícito A/B 0.4 previo a código: `extract_separated_parts(extraction) -> SeparatedPartsExtraction`, cantidades nullable, agrupación solo por key pública explícita, ejes locales fijos sin ordenar, candidatos de ensamblaje hipotéticos separados y reconstrucción posterior a revisión.
 - B mantiene contratos, API/repositorio/revisión/harness/semántica. A mantiene ingesta, geometría parts-only y reconstrucción; `decomposition.py` legacy no participa.
 - C y D avisados del shape antes de implementar. Contrato escrito en `docs/CONTRATO_PARTS_ONLY_0_4.md`.
+
+## Mesa desde vistas montadas y planos derivados — 2026-11-14
+
+- Rama `feat/table-backend` desde `main` `164356b`.
+- B es único escritor de `backend/app/contratos/modelos.py`, y propietario de API/main, repositorio, harness y la integración semántica/similitud de este hito.
+- A conserva geometría montada, evaluación del programa y reconstrucción de mesa. B no editará esos módulos.
+- Agente de apoyo IA `/root/research_viewer`: propiedad exclusiva de `backend/app/salida/technical_drawings.py` y sus pruebas; B acuerda la firma y consume su salida, sin editar esos archivos.
+- Agente de apoyo IA `/root/research_harness`: propiedad exclusiva de `backend/app/estimacion/table_costs.py` y sus pruebas; B acuerda la firma y consume su salida, sin editar esos archivos. Sus avances se registran aquí por B.
+- Bloqueo contractual activo: acuerdo explícito A/B 0.5 y `docs/CONTRATO_MESA_0_5.md` deben preceder cualquier cambio de modelos o producto. C, D y ambos apoyos recibirán el contrato congelado.
