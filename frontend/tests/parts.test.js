@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2 } from "../core/parts.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse } from "../core/parts.js";
 import { buildAssemblyReviewPayload } from "../core/review.js";
 
 const snapshot = {
@@ -78,6 +78,29 @@ test("parts live recommendation selects its candidate while human review stays a
   live.result.selected_assembly_candidate_id = "assembly-between";
   workspace = normalisePartsWorkspace(live);
   assert.equal(preferredCandidateId(workspace), "assembly-between");
+});
+
+test("reviewed values remain separate from unknown source observations", () => {
+  const reviewed = structuredClone(snapshot);
+  reviewed.result_revision = 3;
+  reviewed.result.result_revision = 3;
+  reviewed.result.selected_assembly_candidate_id = "assembly-between";
+  reviewed.result.pieces = [{
+    id: "piece-reviewed", proposal_id: "use-shelves", label: "Baldas", role: "shelf", quantity: 2,
+    length_mm: 900, width_mm: 300, thickness_mm: 18, material: null, finish: null,
+    source_part_observation_ids: ["part-obs-A"], human_confirmation: "Cantidad comprobada",
+    field_states: { quantity: "confirmed", length_mm: "observed", width_mm: "observed", thickness_mm: "confirmed" },
+  }];
+  const workspace = normalisePartsWorkspace(reviewed);
+  const use = workspace.candidates[0].uses[0];
+  assert.equal(workspace.revisionNumber, 3);
+  assert.deepEqual(use.sourceQuantity, { value: null, state: "unknown", evidenceIds: ["ev-a"] });
+  assert.deepEqual(presentReviewedUse(use), {
+    quantity: "2 · Confirmado por persona",
+    length: "900 mm · Observado",
+    width: "300 mm · Observado",
+    thickness: "18 mm · Confirmado por persona",
+  });
 });
 
 test("assembly review decisions address use ids and preserve only human supplied values", () => {
