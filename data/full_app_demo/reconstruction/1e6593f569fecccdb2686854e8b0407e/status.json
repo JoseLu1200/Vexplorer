@@ -1,0 +1,760 @@
+{
+  "job_id": "1e6593f569fecccdb2686854e8b0407e",
+  "run_id": "study:case-04",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-04/drawing.png"
+  ],
+  "source_sha256": "a90e715e21b448cff318682a82c520949711384640c2954bc760bf56fdad838d",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Hipótesis de uso: escritorio con armario izquierdo, dos nichos superiores abiertos y espacio de trabajo a la derecha.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Tapa continua",
+          "size_mm": [
+            1350.0,
+            600.0,
+            18.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            747.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se conserva la anchura acotada de 1350 mm. Profundidad de 600 mm, altura total de 765 mm y espesor de 18 mm son hipótesis proporcionales y constructivas.",
+            "El saliente de la vista lateral se interpreta como un vuelo delantero de 50 mm sobre los costados."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado exterior portante del armario",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            0.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El borde izquierdo del alzado se interpreta como un costado continuo apoyado en el suelo y en contacto con la tapa.",
+            "Espesor y profundidad son decisiones propuestas, no cotas explícitas."
+          ]
+        },
+        {
+          "id": "division_armario",
+          "label": "Costado portante entre armario y hueco de piernas",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            432.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La división próxima al primer tercio del frente se interpreta como un costado completo, no como una línea decorativa.",
+            "Se estima una anchura exterior de armario de 450 mm; espesor propuesto de 18 mm."
+          ]
+        },
+        {
+          "id": "costado_derecho",
+          "label": "Costado derecho portante",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            1332.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La franja estrecha derecha del frente y el contorno lateral se interpretan como vistas de una misma pieza de profundidad completa.",
+            "Dimensiones no acotadas propuestas; apoya en el suelo y alcanza la cara inferior de la tapa."
+          ]
+        },
+        {
+          "id": "fondo_armario_inferior",
+          "label": "Base elevada del armario",
+          "size_mm": [
+            414.0,
+            550.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            82.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone una base entre costados, con cara superior a 100 mm del suelo, próxima al borde inferior del rectángulo interior izquierdo.",
+            "Su construcción y espesor son decisiones de diseño; el espacio superior se mantiene hueco."
+          ]
+        },
+        {
+          "id": "zocalo_delantero",
+          "label": "Apoyo delantero bajo la base",
+          "size_mm": [
+            414.0,
+            18.0,
+            82.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El tramo inferior del módulo izquierdo se resuelve con un apoyo frontal bajo la base.",
+            "Sección y posición en profundidad propuestas, no medidas en el plano."
+          ]
+        },
+        {
+          "id": "zocalo_trasero",
+          "label": "Apoyo trasero bajo la base",
+          "size_mm": [
+            414.0,
+            18.0,
+            82.0
+          ],
+          "origin_mm": [
+            18.0,
+            582.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se añade como decisión constructiva para sostener el borde posterior de la base.",
+            "No se atribuye evidencia directa de esta pieza al alzado; sus dimensiones son hipotéticas."
+          ]
+        },
+        {
+          "id": "trasera_armario",
+          "label": "Trasera de arriostramiento del armario",
+          "size_mm": [
+            414.0,
+            18.0,
+            647.0
+          ],
+          "origin_mm": [
+            18.0,
+            582.0,
+            100.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se incorpora una trasera entre base y tapa para proponer una estructura resistente al descuadre.",
+            "Existencia, espesor y posición son decisiones de diseño pendientes de verificar mediante materiales y uniones."
+          ]
+        },
+        {
+          "id": "puerta_armario",
+          "label": "Hoja del armario izquierdo",
+          "size_mm": [
+            412.0,
+            18.0,
+            645.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            100.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El rectángulo alto izquierdo se interpreta como una puerta; no representa un bloque que rellene el armario.",
+            "Dimensiones propuestas con 2 mm de separación arriba y a la derecha. Los contactos con el costado izquierdo y la base son una idealización del cierre, no un detalle de bisagras ni de holguras fabricables.",
+            "La hoja deberá quedar suspendida del costado mediante herrajes pendientes de diseño; no se considera que la base permita por sí sola su funcionamiento."
+          ]
+        },
+        {
+          "id": "repisa_superior",
+          "label": "Repisa común bajo los dos nichos",
+          "size_mm": [
+            882.0,
+            550.0,
+            18.0
+          ],
+          "origin_mm": [
+            450.0,
+            50.0,
+            597.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Las líneas horizontales próximas bajo los dos rectángulos superiores se interpretan como el espesor de una repisa continua.",
+            "Se estiman sus caras inferior y superior a 597 y 615 mm; conecta el costado del armario con el derecho."
+          ]
+        },
+        {
+          "id": "separador_nichos",
+          "label": "División vertical de los nichos abiertos",
+          "size_mm": [
+            18.0,
+            550.0,
+            132.0
+          ],
+          "origin_mm": [
+            890.0,
+            50.0,
+            615.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La pareja de líneas verticales del sector superior se interpreta como un único separador físico.",
+            "Posición, espesor y profundidad son hipótesis. Apoya en la repisa y alcanza la tapa; no se añaden frentes de cajón sin evidencia suficiente."
+          ]
+        },
+        {
+          "id": "faldon_trasero",
+          "label": "Faldón posterior entre los costados del hueco de trabajo",
+          "size_mm": [
+            882.0,
+            18.0,
+            247.0
+          ],
+          "origin_mm": [
+            450.0,
+            582.0,
+            350.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El rectángulo ancho bajo los nichos se interpreta como un panel posterior, no como una obstrucción frontal del hueco de piernas.",
+            "Los niveles de 350 y 597 mm se estiman por proporción del alzado. La ubicación posterior y el espesor de 18 mm son decisiones funcionales de diseño.",
+            "Se propone unido a ambos costados y a la repisa para contribuir al arriostramiento."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Revisión contrastada con el plano original: se conserva la estructura general porque mantiene la división izquierda, los dos huecos superiores, el panel horizontalmente alargado y el contorno lateral con saliente de tapa.",
+        "El render de la propuesta no se utiliza como evidencia dimensional ni constructiva del original.",
+        "Solo la anchura total de 1350 mm está explícitamente acotada. La envolvente de 1350 × 600 × 765 mm y las restantes dimensiones siguen siendo hipótesis.",
+        "Ejes: x anchura de izquierda a derecha; y profundidad desde el frente hacia atrás; z altura desde el suelo. La esquina mínima de la envolvente es [0,0,0].",
+        "Se mantiene una única ocurrencia por pieza, sin duplicaciones por vistas. Todos los componentes representados son cuboides ortogonales.",
+        "El espesor general de 18 mm es una elección constructiva provisional, no una medición del dibujo.",
+        "Los contactos geométricos representan encuentros nominales. No sustituyen un diseño de uniones ni definen tolerancias de fabricación."
+      ],
+      "missing_information": [
+        "Confirmar la interpretación de los dos rectángulos superiores como nichos, del rectángulo izquierdo como puerta y del panel alargado como faldón posterior.",
+        "Confirmar altura, profundidad, espesores y posición real en profundidad del faldón.",
+        "Definir materiales, cargas previstas, uniones y comprobaciones de resistencia, flecha y estabilidad.",
+        "Resolver bisagras, apertura, tirador y holguras de la puerta; los contactos nominales actuales con base y costado deben detallarse antes de fabricar.",
+        "Validar la altura libre para las piernas según las personas usuarias y determinar si es necesario modificar las proporciones no acotadas."
+      ],
+      "functional_notes": [
+        "Los diagnósticos aportados no indican solapes, piezas flotantes ni elementos bajo el suelo; por ello no se desplazan piezas arbitrariamente en esta revisión.",
+        "Los tres costados principales llegan al suelo y sostienen la tapa. La base del armario cuenta con apoyos delantero y trasero.",
+        "El hueco delantero derecho queda abierto, con 882 mm de anchura y 597 mm de altura hasta la repisa. Esta altura puede resultar restrictiva para uso como escritorio y requiere validación ergonómica.",
+        "El faldón queda en la parte trasera, entre y=582 y y=600 mm; no se convierte el hueco frontal en un tablero macizo.",
+        "Los nichos permanecen vacíos, con 132 mm de altura libre y anchuras de 440 y 424 mm.",
+        "La puerta ocupa únicamente una hoja de 18 mm de profundidad; requiere espacio libre delante para abrir y herrajes que la sujeten al costado.",
+        "La trasera del armario y el faldón constituyen una estrategia propuesta de arriostramiento, condicionada a sus uniones.",
+        "La ausencia de incidencias geométricas no acredita capacidad de carga, funcionamiento de herrajes ni seguridad. No se certifican fabricación ni precios."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Hipótesis: escritorio con armario lateral izquierdo, dos nichos superiores abiertos y espacio para las piernas bajo el sector derecho.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Tablero superior continuo",
+          "size_mm": [
+            1350.0,
+            600.0,
+            18.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            747.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La anchura de 1350 mm procede de la cota frontal; profundidad, altura y espesor son hipótesis proporcionales al dibujo.",
+            "Se propone un vuelo delantero de 50 mm respecto a los costados, coherente con el pequeño saliente de la vista lateral."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado exterior del armario, apoyado en suelo",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            0.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta el borde izquierdo del frente como un costado portante completo.",
+            "Espesor de 18 mm y profundidad de 550 mm propuestos; llega hasta la cara inferior de la tapa."
+          ]
+        },
+        {
+          "id": "division_armario",
+          "label": "Costado interior portante entre armario y espacio de trabajo",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            432.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La división situada aproximadamente a un tercio de la anchura se interpreta como tablero vertical hasta el suelo.",
+            "La anchura exterior del módulo izquierdo se estima en 450 mm; el espesor es una decisión de diseño."
+          ]
+        },
+        {
+          "id": "costado_derecho",
+          "label": "Costado derecho portante, apoyado en suelo",
+          "size_mm": [
+            18.0,
+            550.0,
+            747.0
+          ],
+          "origin_mm": [
+            1332.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El estrecho elemento vertical derecho del alzado se interpreta como el canto de un costado de profundidad completa.",
+            "Su profundidad reproduce el contorno de la vista lateral, sin añadir una segunda pieza por esa vista."
+          ]
+        },
+        {
+          "id": "fondo_armario_inferior",
+          "label": "Base elevada del armario",
+          "size_mm": [
+            414.0,
+            550.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            82.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se añade una base funcional cuya cara superior queda a 100 mm del suelo, aproximadamente al nivel inferior del rectángulo interior izquierdo.",
+            "Encaja entre los dos costados del armario; espesor y construcción no están acotados."
+          ]
+        },
+        {
+          "id": "zocalo_delantero",
+          "label": "Apoyo frontal de la base del armario",
+          "size_mm": [
+            414.0,
+            18.0,
+            82.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El tramo inferior del módulo izquierdo se resuelve mediante un zócalo de apoyo.",
+            "Altura de 82 mm y espesor de 18 mm elegidos para sostener la base elevada; no son medidas explícitas."
+          ]
+        },
+        {
+          "id": "zocalo_trasero",
+          "label": "Apoyo trasero de la base del armario",
+          "size_mm": [
+            414.0,
+            18.0,
+            82.0
+          ],
+          "origin_mm": [
+            18.0,
+            582.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Apoyo añadido como decisión constructiva para que la base no quede suspendida.",
+            "Se coloca bajo el borde trasero de la base, sin atribuirle evidencia directa en el alzado."
+          ]
+        },
+        {
+          "id": "trasera_armario",
+          "label": "Trasera de arriostramiento del armario",
+          "size_mm": [
+            414.0,
+            18.0,
+            647.0
+          ],
+          "origin_mm": [
+            18.0,
+            582.0,
+            100.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone una trasera estructural entre base y tapa para limitar el descuadre del módulo.",
+            "Posición, espesor y función de arriostramiento son decisiones de diseño, no detalles medidos."
+          ]
+        },
+        {
+          "id": "puerta_armario",
+          "label": "Hoja de puerta del armario izquierdo",
+          "size_mm": [
+            412.0,
+            18.0,
+            645.0
+          ],
+          "origin_mm": [
+            18.0,
+            50.0,
+            100.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El gran rectángulo izquierdo se interpreta como una puerta, no como un relleno macizo de todo el volumen.",
+            "Se proponen holguras de 2 mm arriba y en el lateral derecho; bisagras y apertura hacia el exterior quedan pendientes."
+          ]
+        },
+        {
+          "id": "repisa_superior",
+          "label": "Repisa continua bajo los dos nichos superiores",
+          "size_mm": [
+            882.0,
+            550.0,
+            18.0
+          ],
+          "origin_mm": [
+            450.0,
+            50.0,
+            597.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Las dos líneas horizontales próximas bajo los rectángulos superiores se interpretan como el espesor de una repisa.",
+            "La cara superior se estima a 615 mm; la repisa se conecta al costado interior y al costado derecho."
+          ]
+        },
+        {
+          "id": "separador_nichos",
+          "label": "Separador vertical de los dos nichos superiores",
+          "size_mm": [
+            18.0,
+            550.0,
+            132.0
+          ],
+          "origin_mm": [
+            890.0,
+            50.0,
+            615.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La doble línea vertical central del sector superior se interpreta como un separador, aproximadamente centrado en ese sector.",
+            "Los dos rectángulos se proponen como huecos abiertos, sin frentes ni cajas de cajón al no existir evidencia inequívoca de estos."
+          ]
+        },
+        {
+          "id": "faldon_trasero",
+          "label": "Panel trasero de arriostramiento del espacio de trabajo",
+          "size_mm": [
+            882.0,
+            18.0,
+            247.0
+          ],
+          "origin_mm": [
+            450.0,
+            582.0,
+            350.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El rectángulo ancho situado bajo los nichos se interpreta como un faldón retrasado, no como un cierre frontal del hueco de piernas.",
+            "Sus bordes se estiman a 350 y 597 mm del suelo; conecta ambos costados y toca la cara inferior de la repisa.",
+            "Su situación trasera es una hipótesis funcional, ya que el alzado no determina su profundidad."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Solo la anchura total de 1350 mm está acotada explícitamente. Las demás dimensiones son hipótesis redondeadas derivadas de las proporciones del dibujo y de decisiones constructivas.",
+        "Se estima una envolvente de 1350 × 600 × 765 mm. No se presenta como un conjunto de cotas medidas.",
+        "Ejes: x de izquierda a derecha, y del frente hacia atrás y z desde el suelo; el frente de la tapa está en y=0.",
+        "Se infiere el uso como escritorio. La lectura de puerta izquierda, nichos abiertos y faldón trasero es una solución plausible entre otras.",
+        "Los tableros se proponen con 18 mm de espesor. Las superficies de contacto requieren uniones que no están representadas como componentes.",
+        "Cada componente representa una única pieza física; la vista lateral se usa para interpretar profundidad y vuelo, no para duplicar el mueble."
+      ],
+      "missing_information": [
+        "Confirmar si los dos rectángulos superiores son nichos abiertos o frentes de cajones, y si el rectángulo izquierdo corresponde a una puerta.",
+        "Confirmar altura, profundidad, espesores y posición en profundidad del panel horizontalmente alargado bajo los nichos.",
+        "Definir materiales, cargas de uso y uniones de tapa, repisa, faldón y trasera; comprobar flechas y resistencia.",
+        "Definir bisagras, tirador o cierre de presión, holguras reales de apertura y requisitos de estabilidad o anclaje."
+      ],
+      "functional_notes": [
+        "El espacio delantero bajo la repisa permanece abierto: anchura aproximada de 882 mm y altura libre de 597 mm. Esta altura puede ser insuficiente para algunas personas; debe validarse la ergonomía antes de fabricar.",
+        "El faldón se retrasa a y=582 mm para no cerrar frontalmente el espacio de piernas.",
+        "Los dos nichos tienen 132 mm de altura libre, con anchuras de 440 y 424 mm; no se rellenan con bloques macizos.",
+        "La tapa descarga sobre tres costados apoyados en el suelo. La base del armario descansa sobre apoyos delantero y trasero.",
+        "La trasera del armario y el faldón aportan una estrategia de arriostramiento, condicionada al diseño y verificación de sus uniones.",
+        "La puerta necesita espacio libre delante del mueble. No se certifican seguridad, aptitud de fabricación ni capacidad de carga."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "tapa",
+          "costado_izquierdo"
+        ],
+        [
+          "tapa",
+          "division_armario"
+        ],
+        [
+          "tapa",
+          "costado_derecho"
+        ],
+        [
+          "tapa",
+          "trasera_armario"
+        ],
+        [
+          "tapa",
+          "separador_nichos"
+        ],
+        [
+          "costado_izquierdo",
+          "fondo_armario_inferior"
+        ],
+        [
+          "costado_izquierdo",
+          "zocalo_delantero"
+        ],
+        [
+          "costado_izquierdo",
+          "zocalo_trasero"
+        ],
+        [
+          "costado_izquierdo",
+          "trasera_armario"
+        ],
+        [
+          "costado_izquierdo",
+          "puerta_armario"
+        ],
+        [
+          "division_armario",
+          "fondo_armario_inferior"
+        ],
+        [
+          "division_armario",
+          "zocalo_delantero"
+        ],
+        [
+          "division_armario",
+          "zocalo_trasero"
+        ],
+        [
+          "division_armario",
+          "trasera_armario"
+        ],
+        [
+          "division_armario",
+          "repisa_superior"
+        ],
+        [
+          "division_armario",
+          "faldon_trasero"
+        ],
+        [
+          "costado_derecho",
+          "repisa_superior"
+        ],
+        [
+          "costado_derecho",
+          "faldon_trasero"
+        ],
+        [
+          "fondo_armario_inferior",
+          "zocalo_delantero"
+        ],
+        [
+          "fondo_armario_inferior",
+          "zocalo_trasero"
+        ],
+        [
+          "fondo_armario_inferior",
+          "trasera_armario"
+        ],
+        [
+          "fondo_armario_inferior",
+          "puerta_armario"
+        ],
+        [
+          "repisa_superior",
+          "separador_nichos"
+        ],
+        [
+          "repisa_superior",
+          "faldon_trasero"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "costado_derecho",
+        "costado_izquierdo",
+        "division_armario",
+        "zocalo_delantero",
+        "zocalo_trasero"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "a90e715e21b448cff318682a82c520949711384640c2954bc760bf56fdad838d",
+    "trace": [
+      {
+        "response_id": "resp_0804b5ddde0402b5006af7fec43cbc87d2943677db837c3cb2",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 2606,
+        "duration_ms": 51336
+      },
+      {
+        "response_id": "resp_0128f4539c5fcec3006af7fef7949487d2986a78b963fbcff3",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 4485,
+        "output_tokens": 2158,
+        "duration_ms": 38304
+      }
+    ],
+    "duration_s": 89.6655494000006,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/costado_derecho.dxf",
+    "parts/costado_derecho.svg",
+    "parts/costado_izquierdo.dxf",
+    "parts/costado_izquierdo.svg",
+    "parts/division_armario.dxf",
+    "parts/division_armario.svg",
+    "parts/faldon_trasero.dxf",
+    "parts/faldon_trasero.svg",
+    "parts/fondo_armario_inferior.dxf",
+    "parts/fondo_armario_inferior.svg",
+    "parts/puerta_armario.dxf",
+    "parts/puerta_armario.svg",
+    "parts/repisa_superior.dxf",
+    "parts/repisa_superior.svg",
+    "parts/separador_nichos.dxf",
+    "parts/separador_nichos.svg",
+    "parts/tapa.dxf",
+    "parts/tapa.svg",
+    "parts/trasera_armario.dxf",
+    "parts/trasera_armario.svg",
+    "parts/zocalo_delantero.dxf",
+    "parts/zocalo_delantero.svg",
+    "parts/zocalo_trasero.dxf",
+    "parts/zocalo_trasero.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

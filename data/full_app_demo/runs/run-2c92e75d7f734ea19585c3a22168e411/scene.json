@@ -1,0 +1,293 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-2c92e75d7f734ea19585c3a22168e411",
+    "result_revision": 2,
+    "state": "ready",
+    "selected_scenario_id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3",
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [
+      {
+        "id": "scene-piece-use-part-observation-k1-side_panel-1",
+        "piece_id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "label": "K1:side_panel",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1300.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 18.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed side placement",
+        "part_observation_id": "part-observation-k1",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k1-side_panel-2",
+        "piece_id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "label": "K1:side_panel",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 982.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1300.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 982.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 1000.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed side placement",
+        "part_observation_id": "part-observation-k1",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k2-top_panel-1",
+        "piece_id": "piece-use-part-observation-k2-top_panel",
+        "proposal_id": "use-part-observation-k2-top_panel",
+        "role": "top_panel",
+        "label": "K2:top_panel",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 1282.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 1282.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed top placement",
+        "part_observation_id": "part-observation-k2",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k2-base_panel-2",
+        "piece_id": "piece-use-part-observation-k2-base_panel",
+        "proposal_id": "use-part-observation-k2-base_panel",
+        "role": "base_panel",
+        "label": "K2:base_panel",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 18.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 18.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed base placement",
+        "part_observation_id": "part-observation-k2",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k3-shelf-1",
+        "piece_id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "label": "K3:shelf",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 427.3333333333333,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 427.3333333333333,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 445.3333333333333,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: schematic evenly spaced shelf placement; height not observed",
+        "part_observation_id": "part-observation-k3",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k3-shelf-2",
+        "piece_id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "label": "K3:shelf",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 18.0,
+          "y": 854.6666666666666,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 854.6666666666666,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 872.6666666666666,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: schematic evenly spaced shelf placement; height not observed",
+        "part_observation_id": "part-observation-k3",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      }
+    ],
+    "warnings": [],
+    "assumptions": [
+      "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+      "Assembly layout is not observed and requires human review.",
+      "No back, hardware, material, or manufacturing detail is inferred.",
+      "Boxes are schematic reviewed panel occurrences, not manufacturing solids.",
+      "Shelf heights are schematic evenly spaced hypotheses because separate part views do not observe assembly levels.",
+      "Collision checking is not certified and remains not_evaluated."
+    ],
+    "collision_status": "not_evaluated"
+  }
+}

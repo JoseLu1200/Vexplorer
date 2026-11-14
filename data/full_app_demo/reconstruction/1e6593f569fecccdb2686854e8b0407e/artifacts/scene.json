@@ -1,0 +1,234 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Revisión contrastada con el plano original: se conserva la estructura general porque mantiene la división izquierda, los dos huecos superiores, el panel horizontalmente alargado y el contorno lateral con saliente de tapa.",
+    "El render de la propuesta no se utiliza como evidencia dimensional ni constructiva del original.",
+    "Solo la anchura total de 1350 mm está explícitamente acotada. La envolvente de 1350 × 600 × 765 mm y las restantes dimensiones siguen siendo hipótesis.",
+    "Ejes: x anchura de izquierda a derecha; y profundidad desde el frente hacia atrás; z altura desde el suelo. La esquina mínima de la envolvente es [0,0,0].",
+    "Se mantiene una única ocurrencia por pieza, sin duplicaciones por vistas. Todos los componentes representados son cuboides ortogonales.",
+    "El espesor general de 18 mm es una elección constructiva provisional, no una medición del dibujo.",
+    "Los contactos geométricos representan encuentros nominales. No sustituyen un diseño de uniones ni definen tolerancias de fabricación."
+  ],
+  "objects": [
+    {
+      "piece_id": "tapa",
+      "label": "Tapa continua",
+      "position_mm": [
+        0.0,
+        747.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        1350.0,
+        18.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_izquierdo",
+      "label": "Costado exterior portante del armario",
+      "position_mm": [
+        0.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        747.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "division_armario",
+      "label": "Costado portante entre armario y hueco de piernas",
+      "position_mm": [
+        432.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        747.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_derecho",
+      "label": "Costado derecho portante",
+      "position_mm": [
+        1332.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        747.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "fondo_armario_inferior",
+      "label": "Base elevada del armario",
+      "position_mm": [
+        18.0,
+        82.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        18.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "zocalo_delantero",
+      "label": "Apoyo delantero bajo la base",
+      "position_mm": [
+        18.0,
+        0.0,
+        -68.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        82.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "zocalo_trasero",
+      "label": "Apoyo trasero bajo la base",
+      "position_mm": [
+        18.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        82.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "trasera_armario",
+      "label": "Trasera de arriostramiento del armario",
+      "position_mm": [
+        18.0,
+        100.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        647.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "puerta_armario",
+      "label": "Hoja del armario izquierdo",
+      "position_mm": [
+        18.0,
+        100.0,
+        -68.0
+      ],
+      "dimensions_mm": [
+        412.0,
+        645.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "repisa_superior",
+      "label": "Repisa común bajo los dos nichos",
+      "position_mm": [
+        450.0,
+        597.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        882.0,
+        18.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "separador_nichos",
+      "label": "División vertical de los nichos abiertos",
+      "position_mm": [
+        890.0,
+        615.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        132.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "faldon_trasero",
+      "label": "Faldón posterior entre los costados del hueco de trabajo",
+      "position_mm": [
+        450.0,
+        350.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        882.0,
+        247.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

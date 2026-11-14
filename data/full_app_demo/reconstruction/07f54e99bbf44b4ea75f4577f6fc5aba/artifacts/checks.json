@@ -1,0 +1,10 @@
+{
+  "contacts": [],
+  "overlaps": [],
+  "grounded_ids": [],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

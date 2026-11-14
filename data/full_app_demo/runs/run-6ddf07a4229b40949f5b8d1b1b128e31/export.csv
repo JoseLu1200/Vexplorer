@@ -1,0 +1,5 @@
+id,result_revision,state,role,quantity,length_mm,width_mm,thickness_mm,material,finish,evidence_ids
+piece-use-part-observation-k1-side_panel,2,completed,side_panel,2,1200.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-8D|evidence-contour-entity-AF|evidence-contour-entity-D1|evidence-text-entity-F3
+piece-use-part-observation-k2-top_panel,2,completed,top_panel,1,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-116|evidence-contour-entity-138|evidence-contour-entity-F4|evidence-text-entity-15A
+piece-use-part-observation-k2-base_panel,2,completed,base_panel,1,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-116|evidence-contour-entity-138|evidence-contour-entity-F4|evidence-text-entity-15A
+piece-use-part-observation-k3-shelf,2,completed,shelf,2,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-15B|evidence-contour-entity-17D|evidence-contour-entity-19F|evidence-text-entity-1C1

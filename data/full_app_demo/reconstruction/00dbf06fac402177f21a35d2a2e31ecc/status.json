@@ -1,0 +1,601 @@
+{
+  "job_id": "00dbf06fac402177f21a35d2a2e31ecc",
+  "run_id": "study:case-01",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-01/drawing.png"
+  ],
+  "source_sha256": "7cfa538c40532eaab4adef2126fac979c4b12282cca6560eba62635733a36c42",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Mesa de uso general, inferida del plano, con encimera, cuatro patas y bastidor perimetral; uso sentado sujeto a verificar espacio para piernas.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "encimera",
+          "label": "Encimera rectangular",
+          "size_mm": [
+            1200.0,
+            700.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            720.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la cota de 1200 mm como anchura exterior, incluida la encimera.",
+            "Profundidad de 700 mm, altura total de 750 mm y espesor de 30 mm inferidos aproximadamente de las proporciones del plano original, suponiendo igual escala en ambas vistas.",
+            "Se propone una superficie continua y enrasada con las caras exteriores de las patas."
+          ]
+        },
+        {
+          "id": "pata_frontal_izquierda",
+          "label": "Pata frontal izquierda",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La franja vertical izquierda del frontal se interpreta como apoyo estrecho, no como panel lateral macizo.",
+            "Sección cuadrada de 60 mm inferida aproximadamente de ambas vistas; altura hasta la cara inferior de la encimera propuesta en 720 mm.",
+            "Se asigna esta ocurrencia a la esquina frontal izquierda."
+          ]
+        },
+        {
+          "id": "pata_frontal_derecha",
+          "label": "Pata frontal derecha",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            1140.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La franja derecha del frontal se interpreta como una pata con otra posterior superpuesta en proyección.",
+            "Se propone sección de 60 × 60 mm, altura de 720 mm y posición enrasada con el frente y el extremo derecho."
+          ]
+        },
+        {
+          "id": "pata_posterior_izquierda",
+          "label": "Pata posterior izquierda",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            640.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Los apoyos separados en el perfil permiten inferir una fila posterior; esta pata coincide en proyección frontal con la delantera izquierda.",
+            "Sección de 60 × 60 mm y altura de 720 mm hipotéticas; posición posterior derivada de la profundidad inferida de 700 mm."
+          ]
+        },
+        {
+          "id": "pata_posterior_derecha",
+          "label": "Pata posterior derecha",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            1140.0,
+            640.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se infiere una cuarta pata por correspondencia entre las vistas frontal y lateral, sin duplicar piezas por vista.",
+            "Se proponen sección de 60 × 60 mm y altura de 720 mm, en posición simétrica a las otras patas."
+          ]
+        },
+        {
+          "id": "faldon_frontal",
+          "label": "Faldón frontal entre patas",
+          "size_mm": [
+            1080.0,
+            30.0,
+            80.0
+          ],
+          "origin_mm": [
+            60.0,
+            0.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda horizontal del frontal bajo el tablero se interpreta como faldón.",
+            "Altura de 80 mm inferida aproximadamente de la banda; espesor de 30 mm elegido como decisión de diseño.",
+            "Longitud calculada entre las patas propuestas; cara superior en contacto con la encimera y extremos a testa con las patas."
+          ]
+        },
+        {
+          "id": "faldon_posterior",
+          "label": "Faldón posterior entre patas",
+          "size_mm": [
+            1080.0,
+            30.0,
+            80.0
+          ],
+          "origin_mm": [
+            60.0,
+            670.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone un faldón posterior simétrico para completar el bastidor; no está distinguido individualmente en el alzado.",
+            "Altura de 80 mm por correspondencia con la banda frontal y espesor de 30 mm como decisión de diseño.",
+            "Se coloca entre patas posteriores y bajo la encimera, sin interpenetraciones."
+          ]
+        },
+        {
+          "id": "faldon_izquierdo",
+          "label": "Faldón lateral izquierdo",
+          "size_mm": [
+            30.0,
+            580.0,
+            80.0
+          ],
+          "origin_mm": [
+            0.0,
+            60.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda bajo el tablero del perfil se interpreta como faldón lateral entre apoyos.",
+            "Altura de 80 mm inferida proporcionalmente; espesor de 30 mm elegido.",
+            "Longitud de 580 mm derivada de la profundidad hipotética de 700 mm y dos patas de 60 mm."
+          ]
+        },
+        {
+          "id": "faldon_derecho",
+          "label": "Faldón lateral derecho",
+          "size_mm": [
+            30.0,
+            580.0,
+            80.0
+          ],
+          "origin_mm": [
+            1170.0,
+            60.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone un segundo faldón lateral por simetría estructural; ambos laterales coincidirían en el perfil.",
+            "Dimensiones de 30 × 580 × 80 mm derivadas de las mismas hipótesis y decisiones que el lateral izquierdo.",
+            "Se coloca entre las patas derechas, con contacto superior con la encimera."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Revisión contra el plano original: se mantiene la geometría propuesta porque reproduce la anchura acotada, los apoyos estrechos y la banda superior de ambas vistas sin cerrar los huecos inferiores.",
+        "La única cota numérica visible es 1200 mm. Profundidad, altura y secciones siguen siendo hipótesis, no medidas confirmadas.",
+        "Se supone igual escala en FRONT y SIDE para inferir aproximadamente 700 mm de profundidad y 750 mm de altura total.",
+        "Ejes: x anchura, y profundidad y z altura; frente en y=0 y suelo en z=0.",
+        "El render de la propuesta sirve solo para revisar esa hipótesis; no es evidencia del mueble original.",
+        "Los contactos a testa representan interfaces nominales, no un diseño resuelto de uniones."
+      ],
+      "missing_information": [
+        "Confirmar profundidad, altura total y secciones no acotadas.",
+        "Definir materiales y cargas de servicio.",
+        "Resolver uniones rígidas entre patas y faldones, y fijación de la encimera; determinar si hacen falta refuerzos de esquina.",
+        "Comprobar estabilidad lateral, resistencia y compatibilidad con las sillas y usuarios previstos."
+      ],
+      "functional_notes": [
+        "Los diagnósticos aportados indican contactos de la encimera con las cuatro patas y los cuatro faldones, así como de cada faldón con sus patas; no detectan solapes, piezas flotantes ni elementos bajo el suelo.",
+        "Se conserva el camino de apoyo encimera-bastidor/patas-suelo, sin cambios estructurales injustificados por el render.",
+        "El hueco inferior permanece abierto: separación entre patas de 1080 mm en anchura y 580 mm en profundidad; altura libre bajo faldones de 640 mm.",
+        "Los faldones pueden limitar el descuadre únicamente con uniones de rigidez suficiente; el contacto geométrico no acredita arriostramiento efectivo.",
+        "No se incorporan paneles macizos, estantes ni travesaños bajos que obstaculicen el espacio mostrado.",
+        "La capacidad de carga y el diseño de uniones no han sido evaluados; esta revisión no certifica seguridad ni aptitud para fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Mesa de uso general, inferida de las vistas frontal y lateral, con encimera, cuatro patas y bastidor perimetral bajo el tablero.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "encimera",
+          "label": "Encimera rectangular",
+          "size_mm": [
+            1200.0,
+            700.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            720.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La cota frontal de 1200 mm se interpreta como anchura total de la mesa y de la encimera.",
+            "Profundidad de 700 mm, altura total de 750 mm y espesor de 30 mm inferidos aproximadamente por proporción gráfica, suponiendo igual escala en ambas vistas.",
+            "Se propone una encimera continua, enrasada con el exterior de las patas; su superficie horizontal no se ve directamente."
+          ]
+        },
+        {
+          "id": "pata_frontal_izquierda",
+          "label": "Pata frontal izquierda",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la franja vertical izquierda del alzado como una pata, no como un costado macizo.",
+            "Sección cuadrada de 60 mm inferida del ancho gráfico de los apoyos en ambas vistas.",
+            "Se propone que termine bajo la encimera, a z=720 mm."
+          ]
+        },
+        {
+          "id": "pata_frontal_derecha",
+          "label": "Pata frontal derecha",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            1140.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la franja vertical derecha del alzado como pata frontal, con otra pata posterior oculta en proyección.",
+            "Sección de 60 × 60 mm y altura de 720 mm inferidas, no acotadas.",
+            "Su posición se propone enrasada con el borde derecho y el frente de la encimera."
+          ]
+        },
+        {
+          "id": "pata_posterior_izquierda",
+          "label": "Pata posterior izquierda",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            640.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se infiere una segunda fila de patas a partir de los dos apoyos del perfil; coincide en proyección frontal con la fila delantera.",
+            "Sección de 60 × 60 mm y altura de 720 mm propuestas por coherencia con las demás patas.",
+            "Se adopta profundidad total de 700 mm por proporción gráfica del perfil."
+          ]
+        },
+        {
+          "id": "pata_posterior_derecha",
+          "label": "Pata posterior derecha",
+          "size_mm": [
+            60.0,
+            60.0,
+            720.0
+          ],
+          "origin_mm": [
+            1140.0,
+            640.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La cuarta pata completa una disposición simétrica de apoyos compatible con ambas vistas; no constituye una pieza adicional por cada vista.",
+            "Dimensiones de 60 × 60 × 720 mm inferidas y posición posterior a partir de la profundidad propuesta de 700 mm."
+          ]
+        },
+        {
+          "id": "faldon_frontal",
+          "label": "Faldón frontal entre patas",
+          "size_mm": [
+            1080.0,
+            30.0,
+            80.0
+          ],
+          "origin_mm": [
+            60.0,
+            0.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda horizontal bajo la encimera en el alzado se interpreta como faldón del bastidor, no como relleno del hueco inferior.",
+            "Altura aproximada de 80 mm inferida gráficamente; espesor de 30 mm elegido como decisión de diseño.",
+            "Se coloca entre patas, con su cara superior en contacto con la encimera."
+          ]
+        },
+        {
+          "id": "faldon_posterior",
+          "label": "Faldón posterior entre patas",
+          "size_mm": [
+            1080.0,
+            30.0,
+            80.0
+          ],
+          "origin_mm": [
+            60.0,
+            670.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone un faldón posterior simétrico al frontal para cerrar el bastidor; queda superpuesto a él en el alzado.",
+            "Espesor de 30 mm elegido y altura de 80 mm inferida de la banda horizontal.",
+            "La pieza une las patas posteriores y sostiene el borde posterior de la encimera."
+          ]
+        },
+        {
+          "id": "faldon_izquierdo",
+          "label": "Faldón lateral izquierdo",
+          "size_mm": [
+            30.0,
+            580.0,
+            80.0
+          ],
+          "origin_mm": [
+            0.0,
+            60.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda horizontal del perfil se interpreta como faldón lateral entre patas.",
+            "Espesor de 30 mm elegido como diseño; altura de 80 mm inferida gráficamente.",
+            "Longitud de 580 mm derivada de la profundidad propuesta de 700 mm menos dos patas de 60 mm; no invade las patas ni los otros faldones."
+          ]
+        },
+        {
+          "id": "faldon_derecho",
+          "label": "Faldón lateral derecho",
+          "size_mm": [
+            30.0,
+            580.0,
+            80.0
+          ],
+          "origin_mm": [
+            1170.0,
+            60.0,
+            640.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone un segundo faldón lateral, simétrico al visible en perfil, para completar el bastidor perimetral.",
+            "Dimensiones derivadas de la misma hipótesis de profundidad y secciones, con espesor de 30 mm elegido.",
+            "Se sitúa entre las patas derechas y bajo la encimera, sin interpenetraciones."
+          ]
+        }
+      ],
+      "assumptions": [
+        "La única dimensión numérica explícita es la anchura de 1200 mm; el resto de las dimensiones constituye una hipótesis proporcional o una decisión de diseño.",
+        "Se supone que FRONT y SIDE son proyecciones ortogonales a una misma escala: las proporciones sugieren aproximadamente 700 mm de profundidad y 750 mm de altura.",
+        "Se define y=0 como frente y y=700 mm como trasera; el suelo es z=0.",
+        "Se interpreta una mesa de cuatro patas con faldones, no dos pórticos independientes ni paneles laterales completos.",
+        "Las piezas se modelan como cuboides con contactos a testa; los detalles reales de unión no se representan."
+      ],
+      "missing_information": [
+        "Confirmar profundidad, altura total y espesores, que no están acotados numéricamente.",
+        "Definir material, calidad y secciones finales según cargas y uso previstos.",
+        "Resolver uniones rígidas pata-faldón y fijación de encimera, incluida la necesidad de herrajes o refuerzos de esquina.",
+        "Confirmar cargas de servicio y requisitos de estabilidad y resistencia lateral."
+      ],
+      "functional_notes": [
+        "La encimera apoya sobre las cuatro patas y el bastidor perimetral; no hay piezas flotantes.",
+        "El hueco inferior permanece abierto: entre patas hay aproximadamente 1080 mm de anchura y 580 mm de profundidad, con 640 mm de altura libre bajo faldones.",
+        "La altura libre bajo los faldones debe comprobarse frente al uso sentado y las sillas elegidas.",
+        "Los cuatro faldones forman un bastidor destinado a limitar el descuadre; su eficacia depende de uniones rígidas todavía pendientes de diseño.",
+        "No se añaden estantes, fondos ni travesaños bajos que obstruyan el hueco mostrado.",
+        "Esta propuesta es una interpretación geométrica funcional; no certifica seguridad ni aptitud para fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "encimera",
+          "pata_frontal_izquierda"
+        ],
+        [
+          "encimera",
+          "pata_frontal_derecha"
+        ],
+        [
+          "encimera",
+          "pata_posterior_izquierda"
+        ],
+        [
+          "encimera",
+          "pata_posterior_derecha"
+        ],
+        [
+          "encimera",
+          "faldon_frontal"
+        ],
+        [
+          "encimera",
+          "faldon_posterior"
+        ],
+        [
+          "encimera",
+          "faldon_izquierdo"
+        ],
+        [
+          "encimera",
+          "faldon_derecho"
+        ],
+        [
+          "pata_frontal_izquierda",
+          "faldon_frontal"
+        ],
+        [
+          "pata_frontal_izquierda",
+          "faldon_izquierdo"
+        ],
+        [
+          "pata_frontal_derecha",
+          "faldon_frontal"
+        ],
+        [
+          "pata_frontal_derecha",
+          "faldon_derecho"
+        ],
+        [
+          "pata_posterior_izquierda",
+          "faldon_posterior"
+        ],
+        [
+          "pata_posterior_izquierda",
+          "faldon_izquierdo"
+        ],
+        [
+          "pata_posterior_derecha",
+          "faldon_posterior"
+        ],
+        [
+          "pata_posterior_derecha",
+          "faldon_derecho"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "pata_frontal_derecha",
+        "pata_frontal_izquierda",
+        "pata_posterior_derecha",
+        "pata_posterior_izquierda"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "7cfa538c40532eaab4adef2126fac979c4b12282cca6560eba62635733a36c42",
+    "trace": [
+      {
+        "response_id": "resp_0f0e74ffd400e085006af7fe27c07887d284d897db3da43b58",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 1700,
+        "duration_ms": 29602
+      },
+      {
+        "response_id": "resp_06d63d7ea69805fa006af7fe446e0887d2bfbdfb2c50d73256",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 4111,
+        "output_tokens": 1531,
+        "duration_ms": 22194
+      }
+    ],
+    "duration_s": 51.81720149999455,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/encimera.dxf",
+    "parts/encimera.svg",
+    "parts/faldon_derecho.dxf",
+    "parts/faldon_derecho.svg",
+    "parts/faldon_frontal.dxf",
+    "parts/faldon_frontal.svg",
+    "parts/faldon_izquierdo.dxf",
+    "parts/faldon_izquierdo.svg",
+    "parts/faldon_posterior.dxf",
+    "parts/faldon_posterior.svg",
+    "parts/pata_frontal_derecha.dxf",
+    "parts/pata_frontal_derecha.svg",
+    "parts/pata_frontal_izquierda.dxf",
+    "parts/pata_frontal_izquierda.svg",
+    "parts/pata_posterior_derecha.dxf",
+    "parts/pata_posterior_derecha.svg",
+    "parts/pata_posterior_izquierda.dxf",
+    "parts/pata_posterior_izquierda.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

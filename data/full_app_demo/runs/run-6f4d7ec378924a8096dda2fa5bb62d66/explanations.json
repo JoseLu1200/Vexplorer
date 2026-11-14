@@ -1,0 +1,405 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-6f4d7ec378924a8096dda2fa5bb62d66",
+    "result_revision": 1,
+    "pieces": [
+      {
+        "piece_id": "use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-AF",
+          "entity-D1"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "dimension_ids": [
+          "dimension-entity-8E",
+          "dimension-entity-9E",
+          "dimension-entity-B0",
+          "dimension-entity-C0",
+          "dimension-entity-D2",
+          "dimension-entity-E2"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 1200.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k2-base_panel",
+        "proposal_id": "use-part-observation-k2-base_panel",
+        "role": "base_panel",
+        "source_entity_ids": [
+          "entity-116",
+          "entity-138",
+          "entity-F4"
+        ],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "dimension_ids": [
+          "dimension-entity-105",
+          "dimension-entity-117",
+          "dimension-entity-127",
+          "dimension-entity-139",
+          "dimension-entity-149",
+          "dimension-entity-F5"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k2-shelf",
+        "proposal_id": "use-part-observation-k2-shelf",
+        "role": "shelf",
+        "source_entity_ids": [
+          "entity-116",
+          "entity-138",
+          "entity-F4"
+        ],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "dimension_ids": [
+          "dimension-entity-105",
+          "dimension-entity-117",
+          "dimension-entity-127",
+          "dimension-entity-139",
+          "dimension-entity-149",
+          "dimension-entity-F5"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k2-top_panel",
+        "proposal_id": "use-part-observation-k2-top_panel",
+        "role": "top_panel",
+        "source_entity_ids": [
+          "entity-116",
+          "entity-138",
+          "entity-F4"
+        ],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "dimension_ids": [
+          "dimension-entity-105",
+          "dimension-entity-117",
+          "dimension-entity-127",
+          "dimension-entity-139",
+          "dimension-entity-149",
+          "dimension-entity-F5"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k3-base_panel",
+        "proposal_id": "use-part-observation-k3-base_panel",
+        "role": "base_panel",
+        "source_entity_ids": [
+          "entity-15B",
+          "entity-17D",
+          "entity-19F"
+        ],
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "dimension_ids": [
+          "dimension-entity-15C",
+          "dimension-entity-16C",
+          "dimension-entity-17E",
+          "dimension-entity-18E",
+          "dimension-entity-1A0",
+          "dimension-entity-1B0"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "source_entity_ids": [
+          "entity-15B",
+          "entity-17D",
+          "entity-19F"
+        ],
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "dimension_ids": [
+          "dimension-entity-15C",
+          "dimension-entity-16C",
+          "dimension-entity-17E",
+          "dimension-entity-18E",
+          "dimension-entity-1A0",
+          "dimension-entity-1B0"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      },
+      {
+        "piece_id": "use-part-observation-k3-top_panel",
+        "proposal_id": "use-part-observation-k3-top_panel",
+        "role": "top_panel",
+        "source_entity_ids": [
+          "entity-15B",
+          "entity-17D",
+          "entity-19F"
+        ],
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "dimension_ids": [
+          "dimension-entity-15C",
+          "dimension-entity-16C",
+          "dimension-entity-17E",
+          "dimension-entity-18E",
+          "dimension-entity-1A0",
+          "dimension-entity-1B0"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "role_assignment_is_hypothesis",
+          "assembly_layout_is_hypothesis"
+        ],
+        "unknown_fields": [
+          "finish",
+          "material"
+        ],
+        "field_states": {
+          "role": "hypothesis",
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "unknown",
+          "finish": "unknown"
+        }
+      }
+    ],
+    "warnings": [
+      "assembly_hypotheses_require_human_review"
+    ]
+  }
+}

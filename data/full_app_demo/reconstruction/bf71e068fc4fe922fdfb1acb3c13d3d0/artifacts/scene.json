@@ -1,0 +1,125 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Revisado contra las vistas FRONT y SIDE del plano original: se mantiene la construcción porque sus proporciones y disposición son compatibles con ellas; el render propuesto no se utiliza como evidencia del original.",
+    "La única dimensión explícita es la anchura de 1000 mm; el resto son estimaciones proporcionales o decisiones de diseño.",
+    "Se supone igual escala gráfica en ambas vistas para inferir aproximadamente 480 mm de altura y 400 mm de profundidad.",
+    "El uso de almacenaje abierto y la interpretación de los dos rectángulos frontales como huecos, no puertas, son hipótesis.",
+    "Ejes: x anchura, y profundidad desde el frente y z altura desde el suelo; origen en la esquina mínima.",
+    "Cada pieza representa una ocurrencia física única, aunque participe en ambas vistas."
+  ],
+  "objects": [
+    {
+      "piece_id": "tapa",
+      "label": "Tapa superior continua",
+      "position_mm": [
+        0.0,
+        450.0,
+        -400.0
+      ],
+      "dimensions_mm": [
+        1000.0,
+        30.0,
+        400.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_izquierdo",
+      "label": "Costado izquierdo portante",
+      "position_mm": [
+        0.0,
+        0.0,
+        -400.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        450.0,
+        400.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_derecho",
+      "label": "Costado derecho portante",
+      "position_mm": [
+        982.0,
+        0.0,
+        -400.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        450.0,
+        400.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "base_elevada",
+      "label": "Base común elevada de los dos compartimentos",
+      "position_mm": [
+        18.0,
+        70.0,
+        -400.0
+      ],
+      "dimensions_mm": [
+        964.0,
+        16.0,
+        400.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "divisor_central",
+      "label": "Divisor vertical central",
+      "position_mm": [
+        492.0,
+        86.0,
+        -394.0
+      ],
+      "dimensions_mm": [
+        16.0,
+        364.0,
+        394.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "trasera",
+      "label": "Panel posterior propuesto para arriostramiento",
+      "position_mm": [
+        18.0,
+        86.0,
+        -400.0
+      ],
+      "dimensions_mm": [
+        964.0,
+        364.0,
+        6.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

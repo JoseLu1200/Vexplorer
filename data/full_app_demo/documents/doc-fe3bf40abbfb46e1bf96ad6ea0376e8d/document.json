@@ -1,0 +1,70 @@
+{
+  "artifacts": {
+    "normalized_dxf": null,
+    "original": {
+      "media_type": "application/pdf",
+      "url": "/api/v1/documents/doc-fe3bf40abbfb46e1bf96ad6ea0376e8d/original"
+    },
+    "pages": [
+      {
+        "content_kind": "raster",
+        "height_mm": null,
+        "height_points": 100.0,
+        "image_count": 1,
+        "normalized_dxf": null,
+        "page_number": 1,
+        "preview": {
+          "media_type": "image/png",
+          "url": "/api/v1/documents/doc-8187ee90ad464a7a9c8a4e5dd174eab2/pages/1/preview.png"
+        },
+        "rotation": 0,
+        "text_block_count": 0,
+        "vector_path_count": 0,
+        "warnings": [
+          "raster_page_requires_manual_review:1"
+        ],
+        "width_mm": null,
+        "width_points": 120.0
+      }
+    ],
+    "preview": {
+      "media_type": "image/png",
+      "url": "/api/v1/documents/doc-8187ee90ad464a7a9c8a4e5dd174eab2/pages/1/preview.png"
+    }
+  },
+  "audit": {
+    "selected_at": "2026-11-14T04:06:01.800495+00:00",
+    "selected_by": "qa-local-user",
+    "selection_reason": "QA raster manual visual review",
+    "uploaded_by": null
+  },
+  "document_id": "doc-fe3bf40abbfb46e1bf96ad6ea0376e8d",
+  "ingestion": {
+    "capabilities": {
+      "geometry_analysis": false,
+      "page_review": true,
+      "visual_general_review": true
+    },
+    "errors": [],
+    "scale_provenance": null,
+    "selected_page": 1,
+    "state": "needs_review",
+    "warnings": [
+      "raster_page_requires_manual_review:1"
+    ]
+  },
+  "original_filename": "qa-integral-20261114T040600Z-e540ae8f-raster.pdf",
+  "sha256": "15acf1a409403ab1783bac9e378f9601f66cb8cf0e0dc8be3184d27a83b86405",
+  "size_bytes": 3566,
+  "source": {
+    "filename": "qa-integral-20261114T040600Z-e540ae8f-raster.pdf",
+    "format": "pdf",
+    "media_type": "application/pdf",
+    "page_number": 1,
+    "parent_document_id": "doc-8187ee90ad464a7a9c8a4e5dd174eab2",
+    "sha256": "15acf1a409403ab1783bac9e378f9601f66cb8cf0e0dc8be3184d27a83b86405",
+    "size_bytes": 3566,
+    "unit": "unknown"
+  },
+  "source_kind": "pdf_page_derivative"
+}

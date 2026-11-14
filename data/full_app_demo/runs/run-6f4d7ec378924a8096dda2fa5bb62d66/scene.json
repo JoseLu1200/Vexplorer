@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.2.0",
+  "data": {
+    "schema_version": "0.3.0",
+    "run_id": "run-6f4d7ec378924a8096dda2fa5bb62d66",
+    "result_revision": 1,
+    "state": "unavailable",
+    "selected_scenario_id": null,
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [],
+    "warnings": [
+      "assembly_review_required"
+    ],
+    "assumptions": [
+      "No part solid is created before explicit assembly-candidate review."
+    ],
+    "collision_status": "not_evaluated"
+  }
+}

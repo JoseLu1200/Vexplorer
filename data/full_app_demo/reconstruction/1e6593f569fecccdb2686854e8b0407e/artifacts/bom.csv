@@ -1,0 +1,13 @@
+component_id,label,x,y,z,quantity,unit,status
+tapa,Tapa continua,1350.0,600.0,18.0,1,mm,design_hypothesis
+costado_izquierdo,Costado exterior portante del armario,18.0,550.0,747.0,1,mm,design_hypothesis
+division_armario,Costado portante entre armario y hueco de piernas,18.0,550.0,747.0,1,mm,design_hypothesis
+costado_derecho,Costado derecho portante,18.0,550.0,747.0,1,mm,design_hypothesis
+fondo_armario_inferior,Base elevada del armario,414.0,550.0,18.0,1,mm,design_hypothesis
+zocalo_delantero,Apoyo delantero bajo la base,414.0,18.0,82.0,1,mm,design_hypothesis
+zocalo_trasero,Apoyo trasero bajo la base,414.0,18.0,82.0,1,mm,design_hypothesis
+trasera_armario,Trasera de arriostramiento del armario,414.0,18.0,647.0,1,mm,design_hypothesis
+puerta_armario,Hoja del armario izquierdo,412.0,18.0,645.0,1,mm,design_hypothesis
+repisa_superior,Repisa común bajo los dos nichos,882.0,550.0,18.0,1,mm,design_hypothesis
+separador_nichos,División vertical de los nichos abiertos,18.0,550.0,132.0,1,mm,design_hypothesis
+faldon_trasero,Faldón posterior entre los costados del hueco de trabajo,882.0,18.0,247.0,1,mm,design_hypothesis

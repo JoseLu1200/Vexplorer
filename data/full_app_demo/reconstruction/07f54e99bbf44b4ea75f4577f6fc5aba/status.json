@@ -1,0 +1,111 @@
+{
+  "run_id": "smoke-unscaled-table",
+  "ledger_revision": "smoke-public-v1",
+  "status": "insufficient_evidence",
+  "source_sha256": "ff7d3f39fa2d03747d39259c2fe5c87910acfaaa8de6802ce03dc1c493e1d4b8",
+  "source_refs": [
+    "public-unscaled-table"
+  ],
+  "original_image_sha256": [
+    "3d28edfa12ec6eb2a7c31921d1a4e5da05f1b0dbaf9a136569761d7bc6475087"
+  ],
+  "unit": "relative",
+  "intended_use_from_user": "",
+  "certified_for_manufacturing": false,
+  "parent_job_id": null,
+  "revision": 1,
+  "clarifications": [],
+  "envelope_mm": {},
+  "job_id": "07f54e99bbf44b4ea75f4577f6fc5aba",
+  "refinement_supported": true,
+  "context_sha256": "3b9ab48293d71db2af6c94a9629febc39b8b79c2fb7e1d4aa33ed7ef499884f1",
+  "outcome": {
+    "proposal": {
+      "status": "insufficient_evidence",
+      "intended_use": "No determinado: el alzado permite identificar un marco abierto inferiormente, pero no su función.",
+      "unit": "relative",
+      "components": [],
+      "assumptions": [
+        "La referencia input muestra únicamente un alzado frontal sin cotas ni escala absoluta.",
+        "Los contornos son compatibles con dos montantes y elementos horizontales superiores, pero no determinan la profundidad ni la construcción.",
+        "No se presupone que el hueco central sea un panel ni que el objeto se instale en una pared."
+      ],
+      "missing_information": [
+        "¿Qué uso tendrá el objeto?",
+        "¿Debe ser autoportante, apoyarse en otro mueble o fijarse a una estructura? ¿Qué restricciones de montaje y profundidad debe respetar?"
+      ],
+      "functional_notes": [
+        "El uso y el montaje determinan los apoyos, la profundidad útil y el arriostramiento necesarios; no se proponen piezas sin resolver esas dudas.",
+        "Materiales, uniones y cargas quedan pendientes; esta lectura no certifica seguridad ni fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "insufficient_evidence",
+      "intended_use": "No determinado: el alzado permite identificar un marco abierto inferiormente, pero no su función.",
+      "unit": "relative",
+      "components": [],
+      "assumptions": [
+        "La referencia input muestra únicamente un alzado frontal sin cotas ni escala absoluta.",
+        "Los contornos son compatibles con dos montantes y elementos horizontales superiores, pero no determinan la profundidad ni la construcción.",
+        "No se presupone que el hueco central sea un panel ni que el objeto se instale en una pared."
+      ],
+      "missing_information": [
+        "¿Qué uso tendrá el objeto?",
+        "¿Debe ser autoportante, apoyarse en otro mueble o fijarse a una estructura? ¿Qué restricciones de montaje y profundidad debe respetar?"
+      ],
+      "functional_notes": [
+        "El uso y el montaje determinan los apoyos, la profundidad útil y el arriostramiento necesarios; no se proponen piezas sin resolver esas dudas.",
+        "Materiales, uniones y cargas quedan pendientes; esta lectura no certifica seguridad ni fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [],
+      "overlaps": [],
+      "grounded_ids": [],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "ff7d3f39fa2d03747d39259c2fe5c87910acfaaa8de6802ce03dc1c493e1d4b8",
+    "trace": [
+      {
+        "response_id": "resp_05f41fbfc80c0958006af81db8c15087d287a7d1d5935a6cff",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2867,
+        "output_tokens": 223,
+        "duration_ms": 7765
+      }
+    ],
+    "duration_s": 7.768368600000031,
+    "status": "insufficient_evidence",
+    "certified_for_manufacturing": false,
+    "user_declarations": {
+      "answers": [],
+      "envelope_mm": {},
+      "is_observed_in_drawing": false
+    },
+    "harness_prompt_sha256": "09352747ffbfba7643630ab7a00123bb368175a589a4422a5b26db708fbc18a2"
+  },
+  "artifacts": [
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

@@ -1,0 +1,448 @@
+{
+  "job_id": "bf71e068fc4fe922fdfb1acb3c13d3d0",
+  "run_id": "study:case-03",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-03/drawing.png"
+  ],
+  "source_sha256": "21a079d86c3a9e03e3b0e61e8ed60376eb410f73ce0a1148fad76b7c59e65fee",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Hipótesis: mueble bajo de almacenaje abierto con dos compartimentos y una base elevada entre costados apoyados en el suelo.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Tapa superior continua",
+          "size_mm": [
+            1000.0,
+            400.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            450.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se adopta la cota frontal de 1000 mm como anchura exterior.",
+            "Altura total de 480 mm y profundidad de 400 mm estimadas proporcionalmente del plano original, suponiendo vistas a igual escala.",
+            "Espesor de 30 mm aproximado a partir de la franja superior del frente; se propone apoyada sobre laterales y divisor."
+          ]
+        },
+        {
+          "id": "lateral_izquierdo",
+          "label": "Costado izquierdo portante",
+          "size_mm": [
+            18.0,
+            400.0,
+            450.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Espesor de 18 mm estimado por proporción de la franja lateral frontal.",
+            "Profundidad de 400 mm inferida de la vista lateral; se propone costado continuo hasta el suelo.",
+            "Termina bajo la tapa como decisión de ensamblaje, no como unión documentada."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Costado derecho portante",
+          "size_mm": [
+            18.0,
+            400.0,
+            450.0
+          ],
+          "origin_mm": [
+            982.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone simétrico al costado izquierdo, con espesor de 18 mm y profundidad de 400 mm inferidos.",
+            "Cara exterior en x=1000 mm para conservar la anchura acotada.",
+            "Apoya en el suelo y recibe la tapa; fijaciones pendientes de diseño."
+          ]
+        },
+        {
+          "id": "base_elevada",
+          "label": "Base común elevada de los dos compartimentos",
+          "size_mm": [
+            964.0,
+            400.0,
+            16.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            70.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Las líneas inferiores del frente se interpretan como los cantos de una base de aproximadamente 16 mm.",
+            "La separación inferior de 70 mm se estima proporcionalmente del plano original y queda vacía.",
+            "La base encaja entre costados y requiere uniones portantes a ambos; no se supone sostenida solo por contacto."
+          ]
+        },
+        {
+          "id": "divisor_central",
+          "label": "Divisor vertical central",
+          "size_mm": [
+            16.0,
+            394.0,
+            364.0
+          ],
+          "origin_mm": [
+            492.0,
+            0.0,
+            86.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La estrecha franja central se interpreta como un único divisor de 16 mm, centrado entre dos huecos iguales.",
+            "Apoya sobre la base y alcanza la cara inferior de la tapa.",
+            "Profundidad de 394 mm propuesta para dejar alojamiento posterior a una trasera de 6 mm."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Panel posterior propuesto para arriostramiento",
+          "size_mm": [
+            964.0,
+            6.0,
+            364.0
+          ],
+          "origin_mm": [
+            18.0,
+            394.0,
+            86.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Elemento añadido por decisión constructiva; su existencia no se identifica inequívocamente en el plano original.",
+            "Espesor de 6 mm elegido provisionalmente, no medido.",
+            "Se sitúa entre costados, base y tapa, detrás del divisor, sin solapamientos volumétricos.",
+            "Su función de arriostramiento depende del material y de fijaciones perimetrales pendientes de dimensionar."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Revisado contra las vistas FRONT y SIDE del plano original: se mantiene la construcción porque sus proporciones y disposición son compatibles con ellas; el render propuesto no se utiliza como evidencia del original.",
+        "La única dimensión explícita es la anchura de 1000 mm; el resto son estimaciones proporcionales o decisiones de diseño.",
+        "Se supone igual escala gráfica en ambas vistas para inferir aproximadamente 480 mm de altura y 400 mm de profundidad.",
+        "El uso de almacenaje abierto y la interpretación de los dos rectángulos frontales como huecos, no puertas, son hipótesis.",
+        "Ejes: x anchura, y profundidad desde el frente y z altura desde el suelo; origen en la esquina mínima.",
+        "Cada pieza representa una ocurrencia física única, aunque participe en ambas vistas."
+      ],
+      "missing_information": [
+        "Confirmar altura, profundidad, espesores y tolerancias.",
+        "Confirmar si los dos recuadros frontales representan huecos abiertos o cierres.",
+        "Definir materiales, cargas y uniones portantes entre base y costados, así como fijaciones de tapa, divisor y trasera.",
+        "Evaluar estabilidad frente al vuelco y necesidad de anclaje según instalación y uso."
+      ],
+      "functional_notes": [
+        "Los diagnósticos aportados indican contactos entre las piezas previstas, sin solapamientos, piezas flotantes ni geometría bajo el suelo; ambos costados alcanzan el suelo. No se requiere una corrección geométrica por esos diagnósticos.",
+        "Cada compartimento ofrece aproximadamente 474 mm de anchura, 394 mm de profundidad y 364 mm de altura útil, accesibles por el frente.",
+        "El espacio bajo la base permanece abierto, con 70 mm de altura libre entre costados.",
+        "La base recibe las cargas almacenadas y las transmite mediante uniones a ambos costados; el divisor transmite parte de la carga de la tapa a esa base.",
+        "Los contactos geométricos no verifican resistencia: las uniones y la base deben dimensionarse para las cargas previstas.",
+        "La trasera propuesta permite arriostrar el conjunto si se especifican adecuadamente su material y sus fijaciones.",
+        "No se certifican capacidad de carga, seguridad ni aptitud para fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Hipótesis: mueble bajo de almacenaje abierto, con dos compartimentos contiguos y espacio inferior libre entre los laterales.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Tapa superior continua",
+          "size_mm": [
+            1000.0,
+            400.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            450.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Anchura de 1000 mm adoptada de la cota frontal como dimensión exterior del mueble.",
+            "Profundidad de 400 mm y altura total de 480 mm inferidas de las proporciones de las vistas, suponiendo igual escala gráfica.",
+            "Espesor de 30 mm inferido aproximadamente de la franja superior frontal; tapa apoyada sobre ambos laterales y el divisor."
+          ]
+        },
+        {
+          "id": "lateral_izquierdo",
+          "label": "Lateral izquierdo portante hasta el suelo",
+          "size_mm": [
+            18.0,
+            400.0,
+            450.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Espesor de 18 mm aproximado a partir de la estrecha franja lateral frontal.",
+            "Se interpreta el rectángulo de la vista lateral como un costado continuo de profundidad 400 mm.",
+            "El lateral llega al suelo y termina bajo la tapa; esta solución de apoyo es una hipótesis constructiva."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Lateral derecho portante hasta el suelo",
+          "size_mm": [
+            18.0,
+            400.0,
+            450.0
+          ],
+          "origin_mm": [
+            982.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone simétrico al lateral izquierdo, con espesor de 18 mm y profundidad inferida de 400 mm.",
+            "Su cara exterior queda en x=1000 mm para conservar la anchura acotada.",
+            "El lateral llega al suelo y soporta la tapa; la unión no está especificada en el plano."
+          ]
+        },
+        {
+          "id": "base_elevada",
+          "label": "Base horizontal común de los dos compartimentos",
+          "size_mm": [
+            964.0,
+            400.0,
+            16.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            70.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Las dos líneas horizontales inferiores del frente se interpretan como una base de 16 mm, no como un cierre macizo hasta el suelo.",
+            "Se infiere una altura libre inferior de aproximadamente 70 mm por proporción gráfica.",
+            "La base se instala entre laterales, que deben sostenerla mediante uniones pendientes de definir."
+          ]
+        },
+        {
+          "id": "divisor_central",
+          "label": "Divisor vertical central portante",
+          "size_mm": [
+            16.0,
+            394.0,
+            364.0
+          ],
+          "origin_mm": [
+            492.0,
+            0.0,
+            86.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La franja vertical central se interpreta como un solo divisor de 16 mm y no como dos piezas duplicadas.",
+            "Posición centrada propuesta, dejando dos huecos de igual anchura de 474 mm.",
+            "Apoya sobre la base y alcanza la cara inferior de la tapa.",
+            "La profundidad se reduce a 394 mm para alojar una trasera propuesta de 6 mm sin interpenetración."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Panel trasero de arriostramiento",
+          "size_mm": [
+            964.0,
+            6.0,
+            364.0
+          ],
+          "origin_mm": [
+            18.0,
+            394.0,
+            86.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Panel añadido como decisión de diseño para resistir el descuadre; no es una pieza identificable de forma inequívoca en el plano.",
+            "Espesor de 6 mm elegido provisionalmente, no medido.",
+            "Se aloja entre laterales, base y tapa, en contacto con el canto posterior del divisor; requiere fijación estructural perimetral por definir."
+          ]
+        }
+      ],
+      "assumptions": [
+        "El uso como almacenaje abierto es una inferencia; el usuario no indicó función.",
+        "Se interpreta la cota de 1000 mm como anchura exterior frontal. Las restantes dimensiones son hipótesis proporcionales o decisiones constructivas, no cotas explícitas.",
+        "Se supone que las vistas frontal y lateral comparten escala: la silueta sugiere aproximadamente 480 mm de altura y 400 mm de profundidad.",
+        "El frente se sitúa en y=0, la trasera en y=400 y el suelo en z=0.",
+        "Los dos rectángulos interiores se interpretan como huecos abiertos. No se añaden puertas, al no haber indicaciones inequívocas de herrajes o apertura.",
+        "Las piezas que aparecen en ambas vistas se representan una sola vez."
+      ],
+      "missing_information": [
+        "Confirmar altura, profundidad, espesores y tolerancias reales.",
+        "Confirmar si los dos paños frontales son huecos abiertos o cierres practicables.",
+        "Definir materiales, cargas previstas, uniones de la base y fijación de la trasera.",
+        "Determinar condiciones de apoyo, estabilidad frente al vuelco y necesidad de anclaje según el uso."
+      ],
+      "functional_notes": [
+        "Dos compartimentos accesibles desde el frente, cada uno con espacio útil propuesto de 474 mm de anchura, 394 mm de profundidad y 364 mm de altura.",
+        "El espacio inferior de 70 mm permanece vacío entre los laterales; no se modela como tablero macizo.",
+        "La base transmite las cargas a ambos costados mediante las uniones por definir; el divisor transmite parte de la carga de la tapa a la base.",
+        "La trasera propuesta proporciona arriostramiento únicamente si su material y sus fijaciones se dimensionan adecuadamente.",
+        "La propuesta no certifica capacidad de carga, seguridad ni aptitud para fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "tapa",
+          "lateral_izquierdo"
+        ],
+        [
+          "tapa",
+          "lateral_derecho"
+        ],
+        [
+          "tapa",
+          "divisor_central"
+        ],
+        [
+          "tapa",
+          "trasera"
+        ],
+        [
+          "lateral_izquierdo",
+          "base_elevada"
+        ],
+        [
+          "lateral_izquierdo",
+          "trasera"
+        ],
+        [
+          "lateral_derecho",
+          "base_elevada"
+        ],
+        [
+          "lateral_derecho",
+          "trasera"
+        ],
+        [
+          "base_elevada",
+          "divisor_central"
+        ],
+        [
+          "base_elevada",
+          "trasera"
+        ],
+        [
+          "divisor_central",
+          "trasera"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "lateral_derecho",
+        "lateral_izquierdo"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "21a079d86c3a9e03e3b0e61e8ed60376eb410f73ce0a1148fad76b7c59e65fee",
+    "trace": [
+      {
+        "response_id": "resp_09196c42051f0177006af7fe91465087d280101cfd144f111f",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 1565,
+        "duration_ms": 33604
+      },
+      {
+        "response_id": "resp_0b2521a580e95fb0006af7feb2d67887d2bb8577c7ea2c31eb",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 3582,
+        "output_tokens": 1181,
+        "duration_ms": 17141
+      }
+    ],
+    "duration_s": 50.759493100005784,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/base_elevada.dxf",
+    "parts/base_elevada.svg",
+    "parts/divisor_central.dxf",
+    "parts/divisor_central.svg",
+    "parts/lateral_derecho.dxf",
+    "parts/lateral_derecho.svg",
+    "parts/lateral_izquierdo.dxf",
+    "parts/lateral_izquierdo.svg",
+    "parts/tapa.dxf",
+    "parts/tapa.svg",
+    "parts/trasera.dxf",
+    "parts/trasera.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

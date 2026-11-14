@@ -1,0 +1,80 @@
+{
+  "contacts": [
+    [
+      "encimera",
+      "pata_frontal_izquierda"
+    ],
+    [
+      "encimera",
+      "pata_frontal_derecha"
+    ],
+    [
+      "encimera",
+      "pata_posterior_izquierda"
+    ],
+    [
+      "encimera",
+      "pata_posterior_derecha"
+    ],
+    [
+      "encimera",
+      "faldon_frontal"
+    ],
+    [
+      "encimera",
+      "faldon_posterior"
+    ],
+    [
+      "encimera",
+      "faldon_izquierdo"
+    ],
+    [
+      "encimera",
+      "faldon_derecho"
+    ],
+    [
+      "pata_frontal_izquierda",
+      "faldon_frontal"
+    ],
+    [
+      "pata_frontal_izquierda",
+      "faldon_izquierdo"
+    ],
+    [
+      "pata_frontal_derecha",
+      "faldon_frontal"
+    ],
+    [
+      "pata_frontal_derecha",
+      "faldon_derecho"
+    ],
+    [
+      "pata_posterior_izquierda",
+      "faldon_posterior"
+    ],
+    [
+      "pata_posterior_izquierda",
+      "faldon_izquierdo"
+    ],
+    [
+      "pata_posterior_derecha",
+      "faldon_posterior"
+    ],
+    [
+      "pata_posterior_derecha",
+      "faldon_derecho"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "pata_frontal_derecha",
+    "pata_frontal_izquierda",
+    "pata_posterior_derecha",
+    "pata_posterior_izquierda"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

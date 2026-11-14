@@ -1,0 +1,4 @@
+component_id,label,x,y,z,quantity,unit,status
+lateral_izquierdo,Lateral izquierdo con apoyo continuo en suelo,18.0,600.0,2042.0,1,mm,design_hypothesis
+lateral_derecho,Lateral derecho con apoyo continuo en suelo,18.0,600.0,2042.0,1,mm,design_hypothesis
+tapa_superior,"Tapa apoyada sobre los dos laterales, sin vuelos",1200.0,600.0,18.0,1,mm,design_hypothesis

@@ -1,7 +1,7 @@
 # Vexplorer — planos, piezas y reconstrucción revisable
 
 
-**Demo sin API de IA:** [demo completa con embeddings Gemma/DINOv3/MiniLM y pipeline Plank ya procesados](data/semantic_pipeline_demo/README.md) · [paquete Plank independiente](data/plank_pipeline_demo/README.md) · [muebles sintéticos ya procesados](docs/DEMO_DATOS_PROCESADOS.md) · [datasets: descargas directas](docs/DATASETS_DESCARGA_DIRECTA.md).
+**Demo sin API de IA:** [paquete completo: Plank, embeddings, Construcción 3D, piezas y PDF/DWG](data/full_app_demo/README.md) · [embeddings y pipeline Plank](data/semantic_pipeline_demo/README.md) · [muebles sintéticos ya procesados](docs/DEMO_DATOS_PROCESADOS.md) · [datasets: descargas directas](docs/DATASETS_DESCARGA_DIRECTA.md).
 Vexplorer convierte planos DXF, DWG y PDF en propuestas de piezas y medidas revisables. El recorrido **Mueble general** permite proponer paneles, elementos lineales, herrajes y componentes pendientes de identificar, sin limitar la entrada a mesa o estantería. Conserva también los recorridos especializados de mesa rectangular y piezas separadas. La geometría mide; un proponente multimodal interpreta el plano y un segundo pase visual contrasta y corrige la propuesta. La edición humana es opcional.
 
 Recorrido general: **plano → propuesta visual → crítica y corrección automáticas → BOM, SVG/DXF y esquema 3D → comparables → estimación de costes y horas**. El histórico admite JSON/CSV con procedencia, fecha, moneda, materiales, acabado y alcance económico; recupera por atributos o embeddings reales y estima por conceptos compatibles. Distingue registros empresariales, fuentes publicadas y datos sintéticos. La evaluación técnica no acredita precisión industrial ni ahorro medido con técnicos.

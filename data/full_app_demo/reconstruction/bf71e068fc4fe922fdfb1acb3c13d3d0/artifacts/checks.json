@@ -1,0 +1,58 @@
+{
+  "contacts": [
+    [
+      "tapa",
+      "lateral_izquierdo"
+    ],
+    [
+      "tapa",
+      "lateral_derecho"
+    ],
+    [
+      "tapa",
+      "divisor_central"
+    ],
+    [
+      "tapa",
+      "trasera"
+    ],
+    [
+      "lateral_izquierdo",
+      "base_elevada"
+    ],
+    [
+      "lateral_izquierdo",
+      "trasera"
+    ],
+    [
+      "lateral_derecho",
+      "base_elevada"
+    ],
+    [
+      "lateral_derecho",
+      "trasera"
+    ],
+    [
+      "base_elevada",
+      "divisor_central"
+    ],
+    [
+      "base_elevada",
+      "trasera"
+    ],
+    [
+      "divisor_central",
+      "trasera"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "lateral_derecho",
+    "lateral_izquierdo"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

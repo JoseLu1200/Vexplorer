@@ -1,0 +1,84 @@
+{
+  "artifacts": {
+    "normalized_dxf": {
+      "media_type": "application/dxf",
+      "sha256": "b10d2ae38396420b29ca4d5d9bb21f02dd576a0e1cb7ad6caa5f0a259a700e76",
+      "source_page": 1,
+      "unit": "mm",
+      "url": "/api/v1/documents/doc-9d5160b61b14433d866a69ea2cc81a29/normalized.dxf"
+    },
+    "original": {
+      "media_type": "application/pdf",
+      "url": "/api/v1/documents/doc-9d5160b61b14433d866a69ea2cc81a29/original"
+    },
+    "pages": [
+      {
+        "content_kind": "vector",
+        "height_mm": 70.0,
+        "height_points": 140.0,
+        "image_count": 0,
+        "normalized_dxf": {
+          "media_type": "application/dxf",
+          "unit": "mm",
+          "url": "/api/v1/documents/doc-9d5160b61b14433d866a69ea2cc81a29/normalized.dxf"
+        },
+        "page_number": 1,
+        "preview": {
+          "media_type": "image/png",
+          "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/pages/1/preview.png"
+        },
+        "rotation": 0,
+        "text_block_count": 1,
+        "vector_path_count": 1,
+        "warnings": [
+          "scale_conflicts_with_document_note:page=1:do_not_scale"
+        ],
+        "width_mm": 150.0,
+        "width_points": 300.0
+      }
+    ],
+    "preview": {
+      "media_type": "image/png",
+      "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/pages/1/preview.png"
+    }
+  },
+  "audit": {
+    "selected_at": "2026-11-14T04:06:01.765553+00:00",
+    "selected_by": "qa-local-user",
+    "selection_reason": "QA explicit scale confirmation; source says DO NOT SCALE",
+    "uploaded_by": null
+  },
+  "document_id": "doc-9d5160b61b14433d866a69ea2cc81a29",
+  "ingestion": {
+    "capabilities": {
+      "geometry_analysis": true,
+      "page_review": true,
+      "visual_general_review": true
+    },
+    "errors": [],
+    "scale_provenance": {
+      "confirmed_at": "2026-11-14T04:06:01.730744+00:00",
+      "confirmed_by": "qa-local-user",
+      "mm_per_pdf_point": 0.5
+    },
+    "selected_page": 1,
+    "state": "ready",
+    "warnings": [
+      "scale_conflicts_with_document_note:page=1:do_not_scale"
+    ]
+  },
+  "original_filename": "qa-integral-20261114T040600Z-e540ae8f-vector.pdf",
+  "sha256": "5bccf8971939611cdb2119926e15744ef479ee81d882c03670e0d07b7fa351e8",
+  "size_bytes": 948,
+  "source": {
+    "filename": "qa-integral-20261114T040600Z-e540ae8f-vector.pdf",
+    "format": "pdf",
+    "media_type": "application/pdf",
+    "page_number": 1,
+    "parent_document_id": "doc-8a08872bd1904c67afa95430696b60fe",
+    "sha256": "5bccf8971939611cdb2119926e15744ef479ee81d882c03670e0d07b7fa351e8",
+    "size_bytes": 948,
+    "unit": "mm"
+  },
+  "source_kind": "pdf_page_derivative"
+}

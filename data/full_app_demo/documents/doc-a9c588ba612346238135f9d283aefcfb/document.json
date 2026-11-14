@@ -1,0 +1,49 @@
+{
+  "artifacts": {
+    "normalized_dxf": {
+      "media_type": "application/dxf",
+      "sha256": "f409ceb82717cf6ed858ae8717af26c3496de4e3788d6a20bae35b7cf7712cdb",
+      "url": "/api/v1/documents/doc-a9c588ba612346238135f9d283aefcfb/normalized.dxf"
+    },
+    "original": {
+      "media_type": "application/acad",
+      "url": "/api/v1/documents/doc-a9c588ba612346238135f9d283aefcfb/original"
+    },
+    "pages": [],
+    "preview": {
+      "media_type": "image/svg+xml",
+      "url": "/api/v1/documents/doc-a9c588ba612346238135f9d283aefcfb/preview.svg"
+    }
+  },
+  "audit": {
+    "uploaded_at": "2026-11-14T04:06:02.603817+00:00",
+    "uploaded_by": null
+  },
+  "document_id": "doc-a9c588ba612346238135f9d283aefcfb",
+  "ingestion": {
+    "capabilities": {
+      "geometry_analysis": true,
+      "page_geometry_analysis": false,
+      "page_review": false
+    },
+    "errors": [],
+    "state": "ready",
+    "warnings": [
+      "dwg_converted_with_libredwg",
+      "libredwg_conversion_requires_review",
+      "original_source_preserved"
+    ]
+  },
+  "original_filename": "36-inch-bathroom-vanity-undermount-basin-single-lever-faucet-front-elevation-metric.dwg",
+  "sha256": "ee2c7474be369c25ee5088fb72457e30c99572839be227585a8ce86aacda25e7",
+  "size_bytes": 37243,
+  "source": {
+    "filename": "36-inch-bathroom-vanity-undermount-basin-single-lever-faucet-front-elevation-metric.dwg",
+    "format": "dwg",
+    "media_type": "application/acad",
+    "sha256": "ee2c7474be369c25ee5088fb72457e30c99572839be227585a8ce86aacda25e7",
+    "size_bytes": 37243,
+    "unit": "unknown"
+  },
+  "source_kind": "uploaded"
+}

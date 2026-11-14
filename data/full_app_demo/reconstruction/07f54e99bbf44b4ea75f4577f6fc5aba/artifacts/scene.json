@@ -1,0 +1,13 @@
+{
+  "state": "unavailable",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "La referencia input muestra únicamente un alzado frontal sin cotas ni escala absoluta.",
+    "Los contornos son compatibles con dos montantes y elementos horizontales superiores, pero no determinan la profundidad ni la construcción.",
+    "No se presupone que el hueco central sea un panel ni que el objeto se instale en una pared."
+  ],
+  "objects": []
+}

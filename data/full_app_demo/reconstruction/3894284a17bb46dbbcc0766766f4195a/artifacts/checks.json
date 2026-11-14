@@ -1,0 +1,34 @@
+{
+  "contacts": [
+    [
+      "sobre",
+      "lateral_izquierdo"
+    ],
+    [
+      "sobre",
+      "lateral_derecho"
+    ],
+    [
+      "sobre",
+      "faldon_posterior"
+    ],
+    [
+      "lateral_izquierdo",
+      "faldon_posterior"
+    ],
+    [
+      "lateral_derecho",
+      "faldon_posterior"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "lateral_derecho",
+    "lateral_izquierdo"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

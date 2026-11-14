@@ -1,0 +1,78 @@
+{
+  "dimensions": [
+    {
+      "id": "dimension-entity-98",
+      "kind": "annotation",
+      "value_mm": 1200.0,
+      "source_entity_ids": [
+        "entity-98"
+      ],
+      "evidence_ids": [
+        "evidence-dimension-entity-98"
+      ],
+      "origin": "observed",
+      "view_id": "view-front",
+      "graphic_id": "graphic-entity-98"
+    },
+    {
+      "id": "dimension-entity-A8",
+      "kind": "annotation",
+      "value_mm": 750.0,
+      "source_entity_ids": [
+        "entity-A8"
+      ],
+      "evidence_ids": [
+        "evidence-dimension-entity-A8"
+      ],
+      "origin": "observed",
+      "view_id": "view-front",
+      "graphic_id": "graphic-entity-A8"
+    },
+    {
+      "id": "dimension-entity-B8",
+      "kind": "annotation",
+      "value_mm": 700.0,
+      "source_entity_ids": [
+        "entity-B8"
+      ],
+      "evidence_ids": [
+        "evidence-dimension-entity-B8"
+      ],
+      "origin": "observed",
+      "view_id": "view-top",
+      "graphic_id": "graphic-entity-B8"
+    }
+  ],
+  "allowed_component_source_refs": [
+    "input"
+  ],
+  "composite_views": [
+    {
+      "label": "SOURCE VIEW 1/3 - same object, not extra parts",
+      "image_bounds_px": [
+        0,
+        40,
+        960,
+        745
+      ]
+    },
+    {
+      "label": "SOURCE VIEW 2/3 - same object, not extra parts",
+      "image_bounds_px": [
+        960,
+        40,
+        1810,
+        1000
+      ]
+    },
+    {
+      "label": "SOURCE VIEW 3/3 - same object, not extra parts",
+      "image_bounds_px": [
+        0,
+        1040,
+        960,
+        1602
+      ]
+    }
+  ]
+}

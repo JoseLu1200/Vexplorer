@@ -1,0 +1,10 @@
+component_id,label,x,y,z,quantity,unit,status
+encimera,Encimera rectangular,1200.0,700.0,30.0,1,mm,design_hypothesis
+pata_frontal_izquierda,Pata frontal izquierda,60.0,60.0,720.0,1,mm,design_hypothesis
+pata_frontal_derecha,Pata frontal derecha,60.0,60.0,720.0,1,mm,design_hypothesis
+pata_posterior_izquierda,Pata posterior izquierda,60.0,60.0,720.0,1,mm,design_hypothesis
+pata_posterior_derecha,Pata posterior derecha,60.0,60.0,720.0,1,mm,design_hypothesis
+faldon_frontal,Faldón frontal entre patas,1080.0,30.0,80.0,1,mm,design_hypothesis
+faldon_posterior,Faldón posterior entre patas,1080.0,30.0,80.0,1,mm,design_hypothesis
+faldon_izquierdo,Faldón lateral izquierdo,30.0,580.0,80.0,1,mm,design_hypothesis
+faldon_derecho,Faldón lateral derecho,30.0,580.0,80.0,1,mm,design_hypothesis

@@ -1,0 +1,89 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Coordenadas: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina mínima de la envolvente y suelo z=0.",
+    "Envolvente total de 1200 × 700 × 750 mm: las cotas del plano original coinciden con envelope_mm aportado por el usuario; esa declaración humana no es observación del dibujo.",
+    "Se mantienen cuatro ocurrencias físicas para las tres vistas del mismo objeto.",
+    "La revisión compara los contornos originales con la propuesta y los diagnósticos. El render de propuesta no se utiliza como evidencia del plano.",
+    "No se requiere cambio geométrico a partir de los diagnósticos recibidos; se conserva el faldón como decisión explícita de diseño, no como evidencia del original.",
+    "No se supone instalación a pared."
+  ],
+  "objects": [
+    {
+      "piece_id": "tapa",
+      "label": "Tapa rectangular de trabajo",
+      "position_mm": [
+        0.0,
+        720.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        1200.0,
+        30.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_izquierdo",
+      "label": "Costado portante izquierdo",
+      "position_mm": [
+        0.0,
+        0.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        720.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_derecho",
+      "label": "Costado portante derecho",
+      "position_mm": [
+        1182.0,
+        0.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        720.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "arriostramiento_trasero",
+      "label": "Faldón posterior entre costados",
+      "position_mm": [
+        18.0,
+        520.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        1164.0,
+        200.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "contacts": [
+    [
+      "tablero_superior",
+      "lateral_izquierdo"
+    ],
+    [
+      "tablero_superior",
+      "lateral_derecho"
+    ],
+    [
+      "tablero_superior",
+      "faldon_frontal"
+    ],
+    [
+      "tablero_superior",
+      "faldon_trasero"
+    ],
+    [
+      "lateral_izquierdo",
+      "faldon_frontal"
+    ],
+    [
+      "lateral_izquierdo",
+      "faldon_trasero"
+    ],
+    [
+      "lateral_derecho",
+      "faldon_frontal"
+    ],
+    [
+      "lateral_derecho",
+      "faldon_trasero"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "lateral_derecho",
+    "lateral_izquierdo"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

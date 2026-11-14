@@ -1,0 +1,13 @@
+component_id,label,x,y,z,quantity,unit,status
+puerta_izquierda,Puerta izquierda con holguras de funcionamiento propuestas,546.0,16.0,594.0,1,mm,design_hypothesis
+montante_frontal_derecho,Listón frontal del costado derecho,18.0,18.0,600.0,1,mm,design_hypothesis
+costado_derecho_delantero,Panel delantero del costado derecho,18.0,332.0,600.0,1,mm,design_hypothesis
+costado_derecho_trasero,Panel trasero del costado derecho,18.0,550.0,600.0,1,mm,design_hypothesis
+costado_izquierdo,Costado izquierdo portante,18.0,882.0,600.0,1,mm,design_hypothesis
+base,Base elevada de ambos compartimentos,864.0,882.0,18.0,1,mm,design_hypothesis
+tapa,Tapa rebajada entre costados,864.0,882.0,18.0,1,mm,design_hypothesis
+division,División interior entre puerta y nicho,18.0,864.0,529.0,1,mm,design_hypothesis
+trasera,Trasera de cierre y arriostramiento,864.0,18.0,529.0,1,mm,design_hypothesis
+refuerzo_junta_derecha,Listón interior para unión de los tramos del costado,18.0,72.0,529.0,1,mm,design_hypothesis
+herraje_puerta_inferior,Envolvente cuboide idealizada del herraje inferior,16.0,2.0,40.0,1,mm,design_hypothesis
+herraje_puerta_superior,Envolvente cuboide idealizada del herraje superior,16.0,2.0,40.0,1,mm,design_hypothesis
