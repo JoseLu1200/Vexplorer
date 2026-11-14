@@ -3,7 +3,7 @@ import json
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.runner import AgentLimits, run_table_agent
 from backend.app.agente.tools import table_tool_schemas
-from backend.app.contratos.modelos import MountedTableAnalysis, TableMeasure
+from backend.app.contratos.modelos import Bounds2D, DrawingEntity, DrawingExtraction, DrawingView, Evidence, MountedTableAnalysis, Point2D, TableMeasure
 
 
 class FakeProvider:
@@ -38,6 +38,21 @@ def _analysis():
     return MountedTableAnalysis(drawing_id="drawing", ledger_revision="ledger-1", measures=measures, admitted_measurement_ids=("w", "h", "d"), state="ready")
 
 
+def _extraction():
+    entities = tuple(
+        DrawingEntity(id=f"entity-{name}", kind="LINE", layer="VIEW_GEOMETRY", source_points=(Point2D(x=0, y=index), Point2D(x=value, y=index)), points_mm=(Point2D(x=0, y=index), Point2D(x=value, y=index)))
+        for index, (name, value) in enumerate((("w", 1200), ("h", 750), ("d", 700)))
+    )
+    return DrawingExtraction(
+        drawing_id="drawing", input_kind="mounted_orthographic_views", status="ready", source_unit="mm", unit_scale_to_mm=1, coordinate_unit="mm",
+        entities=entities,
+        views=(DrawingView(id="front", label="FRONT", entity_ids=tuple(item.id for item in entities), bounds_source=Bounds2D(min_x=0, min_y=0, max_x=1200, max_y=750), bounds_mm=Bounds2D(min_x=0, min_y=0, max_x=1200, max_y=750)),),
+        contours=(), dimensions=(),
+        evidence=tuple(Evidence(id=f"ev-{name}", kind="geometry", source_entity_ids=(f"entity-{name}",), description=f"Medida {name}") for name in ("w", "h", "d")),
+        observations=(),
+    )
+
+
 def _proposal_arguments():
     bindings = []
     for binding_id, measure_id in (("top-l", "w"), ("top-w", "d"), ("top-t", "h"), ("side-l", "h"), ("side-w", "d"), ("side-t", "w")):
@@ -64,7 +79,7 @@ def test_table_agent_inspects_source_values_then_proposes_reference_only_program
         ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
     ])
 
-    outcome = run_table_agent(analysis, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
+    outcome = run_table_agent(_extraction(), analysis, provider, AgentLimits(max_model_calls=2, max_tool_calls=2, timeout_s=5))
 
     context = json.loads(provider.inputs[0][0]["content"])
     assert context["input_kind"] == "mounted_orthographic_views"
@@ -72,6 +87,8 @@ def test_table_agent_inspects_source_values_then_proposes_reference_only_program
     inspected = json.loads(provider.inputs[1][0]["output"])
     assert inspected["ok"] is True
     assert {item["value_mm"] for item in inspected["measures"]} == {1200, 750, 700}
+    assert {item["id"] for item in inspected["source_entities"]} == {"entity-w", "entity-h", "entity-d"}
+    assert inspected["source_entities"][0]["points_mm"]
     assert outcome.program.ledger_revision == analysis.ledger_revision
     assert outcome.program.proposal_origin == "model_generated"
     assert outcome.program.table_template_id is None
