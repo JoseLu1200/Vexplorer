@@ -1,0 +1,92 @@
+{
+  "cluster": {
+    "metrics": {
+      "ari_all_including_noise": 0.9197355996222851,
+      "cluster_count_excluding_noise": 5,
+      "cluster_sizes": {
+        "0": 9,
+        "1": 2,
+        "2": 2,
+        "3": 3,
+        "4": 2
+      },
+      "coverage": 1.0,
+      "nmi_all_including_noise": 0.8896255975987838,
+      "noise_count": 0,
+      "purity_assigned": 0.9444444444444444,
+      "singleton_clusters": 0
+    },
+    "name": "kmeans",
+    "parameter": 5
+  },
+  "frozen_config": {
+    "classifier": "knn",
+    "cluster": {
+      "name": "kmeans",
+      "parameter": 5
+    },
+    "embedding_name": "eg2-mixed768",
+    "embedding_sha256": "e7b31ec8580972999525f367934a0a85550bd7c503df65dfc7c363edae8ba4a5",
+    "manifest_sha256": "15f2448895806c85c0647da72413bfc8de39f5a6fe71d535121303f1d03f00fe",
+    "modalities": [
+      "embeddings"
+    ],
+    "neighbors": 5,
+    "pca_components": null,
+    "retrieval_k": 5,
+    "schema_version": 1,
+    "seed": 0,
+    "selection_phase": "validation_only"
+  },
+  "limitations": [
+    "Labels are directory/category proxies, not technical relevance judgments.",
+    "Precision@k and hit@k define relevance as the same proxy label.",
+    "Noise, singleton clusters, and retrieval coverage are reported explicitly."
+  ],
+  "manifest_sha256": "15f2448895806c85c0647da72413bfc8de39f5a6fe71d535121303f1d03f00fe",
+  "phase": "final_test",
+  "result": {
+    "classification": {
+      "balanced_accuracy": 0.8333333333333334,
+      "class_count": 4,
+      "macro_f1": 0.8261278195488722,
+      "sample_count": 18
+    },
+    "classifier": "knn",
+    "modalities": [
+      "embeddings"
+    ],
+    "pca_components": null,
+    "representation": "embeddings",
+    "retrieval": {
+      "coverage": 1.0,
+      "evaluated_queries": 18,
+      "hit_at_k": 0.9444444444444444,
+      "k": 5,
+      "precision_at_k": 0.8888888888888888,
+      "relevance": "same_proxy_label",
+      "total_queries": 18
+    }
+  },
+  "schema_version": 1,
+  "split_summary": {
+    "test": {
+      "count": 18,
+      "distribution": {
+        "beds": 3,
+        "buffets": 3,
+        "simple-tables": 3,
+        "sofas": 9
+      }
+    },
+    "train": {
+      "count": 82,
+      "distribution": {
+        "beds": 15,
+        "buffets": 15,
+        "simple-tables": 24,
+        "sofas": 28
+      }
+    }
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "synthetic-control",
+  "description": "Development fixtures only; no reserved references or real accuracy evaluation.",
+  "claims": {
+    "real_accuracy": false,
+    "cost_equivalence": false
+  },
+  "cases": [
+    {
+      "id": "exact_reordered",
+      "comparison": {
+        "score": 1.0,
+        "coverage": 1.0,
+        "score_kind": "constructive_similarity_not_probability",
+        "components": {
+          "length_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "width_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "thickness_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.25,
+            "weighted_contribution": 0.25,
+            "status": "observed"
+          },
+          "material": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "role": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.15,
+            "weighted_contribution": 0.15,
+            "status": "observed"
+          },
+          "quantity": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "matching": {
+            "method": "aggregated_optimal_transport",
+            "matched_quantity": 3,
+            "unmatched_left_quantity": 0,
+            "unmatched_right_quantity": 0,
+            "matched_quantity_kind": "physical_component_quantity",
+            "unknown_quantity_observations": {
+              "left": 0,
+              "right": 0
+            },
+            "expanded_occurrences": 0,
+            "orientation_canonicalized_roles": [
+              "tabletop",
+              "unassigned"
+            ]
+          }
+        },
+        "differences": []
+      }
+    },
+    {
+      "id": "support_width_changed",
+      "comparison": {
+        "score": 0.884298,
+        "coverage": 1.0,
+        "score_kind": "constructive_similarity_not_probability",
+        "components": {
+          "length_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "width_mm": {
+            "score": 0.421488,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.084298,
+            "status": "observed"
+          },
+          "thickness_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.25,
+            "weighted_contribution": 0.25,
+            "status": "observed"
+          },
+          "material": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "role": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.15,
+            "weighted_contribution": 0.15,
+            "status": "observed"
+          },
+          "quantity": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "matching": {
+            "method": "aggregated_optimal_transport",
+            "matched_quantity": 3,
+            "unmatched_left_quantity": 0,
+            "unmatched_right_quantity": 0,
+            "matched_quantity_kind": "physical_component_quantity",
+            "unknown_quantity_observations": {
+              "left": 0,
+              "right": 0
+            },
+            "expanded_occurrences": 0,
+            "orientation_canonicalized_roles": [
+              "tabletop",
+              "unassigned"
+            ]
+          }
+        },
+        "differences": [
+          {
+            "kind": "value_difference",
+            "role": "side_support",
+            "field": "width_mm",
+            "left": 550.0,
+            "right": 200.0,
+            "quantity": 2,
+            "log_ratio": 1.011601
+          }
+        ]
+      }
+    },
+    {
+      "id": "thickness_doubled",
+      "comparison": {
+        "score": 0.8125,
+        "coverage": 1.0,
+        "score_kind": "constructive_similarity_not_probability",
+        "components": {
+          "length_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "width_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "thickness_mm": {
+            "score": 0.25,
+            "coverage": 1.0,
+            "weight": 0.25,
+            "weighted_contribution": 0.0625,
+            "status": "observed"
+          },
+          "material": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "role": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.15,
+            "weighted_contribution": 0.15,
+            "status": "observed"
+          },
+          "quantity": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "matching": {
+            "method": "aggregated_optimal_transport",
+            "matched_quantity": 3,
+            "unmatched_left_quantity": 0,
+            "unmatched_right_quantity": 0,
+            "matched_quantity_kind": "physical_component_quantity",
+            "unknown_quantity_observations": {
+              "left": 0,
+              "right": 0
+            },
+            "expanded_occurrences": 0,
+            "orientation_canonicalized_roles": [
+              "tabletop",
+              "unassigned"
+            ]
+          }
+        },
+        "differences": [
+          {
+            "kind": "value_difference",
+            "role": "side_support",
+            "field": "thickness_mm",
+            "left": 18.0,
+            "right": 36.0,
+            "quantity": 2,
+            "log_ratio": 0.693147
+          },
+          {
+            "kind": "value_difference",
+            "role": "tabletop",
+            "field": "thickness_mm",
+            "left": 18.0,
+            "right": 36.0,
+            "quantity": 1,
+            "log_ratio": 0.693147
+          }
+        ]
+      }
+    },
+    {
+      "id": "material_changed",
+      "comparison": {
+        "score": 0.9,
+        "coverage": 1.0,
+        "score_kind": "constructive_similarity_not_probability",
+        "components": {
+          "length_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "width_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.2,
+            "weighted_contribution": 0.2,
+            "status": "observed"
+          },
+          "thickness_mm": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.25,
+            "weighted_contribution": 0.25,
+            "status": "observed"
+          },
+          "material": {
+            "score": 0.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.0,
+            "status": "observed"
+          },
+          "role": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.15,
+            "weighted_contribution": 0.15,
+            "status": "observed"
+          },
+          "quantity": {
+            "score": 1.0,
+            "coverage": 1.0,
+            "weight": 0.1,
+            "weighted_contribution": 0.1,
+            "status": "observed"
+          },
+          "matching": {
+            "method": "aggregated_optimal_transport",
+            "matched_quantity": 3,
+            "unmatched_left_quantity": 0,
+            "unmatched_right_quantity": 0,
+            "matched_quantity_kind": "physical_component_quantity",
+            "unknown_quantity_observations": {
+              "left": 0,
+              "right": 0
+            },
+            "expanded_occurrences": 0,
+            "orientation_canonicalized_roles": [
+              "tabletop",
+              "unassigned"
+            ]
+          }
+        },
+        "differences": [
+          {
+            "kind": "value_difference",
+            "role": "side_support",
+            "field": "material",
+            "left": "board-a",
+            "right": "board-b",
+            "quantity": 2
+          },
+          {
+            "kind": "value_difference",
+            "role": "tabletop",
+            "field": "material",
+            "left": "board-a",
+            "right": "board-b",
+            "quantity": 1
+          }
+        ]
+      }
+    }
+  ]
+}

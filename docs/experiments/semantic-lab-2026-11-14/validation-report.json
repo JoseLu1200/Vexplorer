@@ -1,0 +1,5802 @@
+{
+  "best_cluster": {
+    "clusterer": "kmeans",
+    "metrics": {
+      "ari_all_including_noise": 0.8206396307286515,
+      "cluster_count_excluding_noise": 5,
+      "cluster_sizes": {
+        "0": 5,
+        "1": 2,
+        "2": 5,
+        "3": 3,
+        "4": 2
+      },
+      "coverage": 1.0,
+      "nmi_all_including_noise": 0.8770075944051362,
+      "noise_count": 0,
+      "purity_assigned": 0.9411764705882353,
+      "singleton_clusters": 0
+    },
+    "parameter": 5
+  },
+  "candidates": [
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": null,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": null,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": null,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5416666666666666,
+        "class_count": 4,
+        "macro_f1": 0.5428571428571428,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 2,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6000000000000001,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6666666666666666,
+        "class_count": 4,
+        "macro_f1": 0.6611111111111112,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 2,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6000000000000001,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7083333333333333,
+        "class_count": 4,
+        "macro_f1": 0.6845238095238094,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 2,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6000000000000001,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8392857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 4,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7499999999999999,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 4,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7499999999999999,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 4,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 8,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 8,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.875,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry"
+      ],
+      "pca_components": 8,
+      "representation": "geometry",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.39999999999999997,
+        "class_count": 4,
+        "macro_f1": 0.41964285714285715,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.44166666666666665,
+        "class_count": 4,
+        "macro_f1": 0.4220588235294118,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5083333333333333,
+        "class_count": 4,
+        "macro_f1": 0.48809523809523814,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.21666666666666667,
+        "class_count": 4,
+        "macro_f1": 0.20101010101010103,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.18333333333333335,
+        "class_count": 4,
+        "macro_f1": 0.17142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.35,
+        "class_count": 4,
+        "macro_f1": 0.29914529914529914,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.3416666666666667,
+        "class_count": 4,
+        "macro_f1": 0.31845238095238093,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.29411764705882354,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.25,
+        "class_count": 4,
+        "macro_f1": 0.1534090909090909,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.29411764705882354,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.25,
+        "class_count": 4,
+        "macro_f1": 0.1534090909090909,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.29411764705882354,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.30833333333333335,
+        "class_count": 4,
+        "macro_f1": 0.35149572649572647,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.4333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.4375,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.47500000000000003,
+        "class_count": 4,
+        "macro_f1": 0.42900432900432894,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": null,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5833333333333334,
+        "class_count": 4,
+        "macro_f1": 0.5583333333333333,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529413,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7416666666666667,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529413,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7568181818181818,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529413,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6666666666666666,
+        "class_count": 4,
+        "macro_f1": 0.6871794871794872,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7568181818181818,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6666666666666666,
+        "class_count": 4,
+        "macro_f1": 0.6880952380952381,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.6941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7568181818181818,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529412,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7568181818181818,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529412,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.8011904761904762,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": null,
+      "modalities": [
+        "geometry",
+        "text"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+text",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.5647058823529412,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8647727272727272,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9083333333333333,
+        "class_count": 4,
+        "macro_f1": 0.878066378066378,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6583333333333333,
+        "class_count": 4,
+        "macro_f1": 0.685958485958486,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.6588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.625,
+        "class_count": 4,
+        "macro_f1": 0.6089743589743589,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.6588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7083333333333334,
+        "class_count": 4,
+        "macro_f1": 0.6298076923076923,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.6588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8235294117647058,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117648,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5833333333333333,
+        "class_count": 4,
+        "macro_f1": 0.4601648351648352,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.38823529411764707,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5416666666666666,
+        "class_count": 4,
+        "macro_f1": 0.47619047619047616,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.38823529411764707,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6249999999999999,
+        "class_count": 4,
+        "macro_f1": 0.5297619047619048,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.38823529411764707,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.18333333333333335,
+        "class_count": 4,
+        "macro_f1": 0.18803418803418803,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7058823529411765,
+        "k": 5,
+        "precision_at_k": 0.24705882352941178,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.14166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.15000000000000002,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7058823529411765,
+        "k": 5,
+        "precision_at_k": 0.24705882352941178,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.14166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.12698412698412698,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7058823529411765,
+        "k": 5,
+        "precision_at_k": 0.24705882352941178,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5166666666666667,
+        "class_count": 4,
+        "macro_f1": 0.47483766233766234,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.4,
+        "class_count": 4,
+        "macro_f1": 0.2863636363636364,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.45,
+        "class_count": 4,
+        "macro_f1": 0.34134615384615385,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6083333333333333,
+        "class_count": 4,
+        "macro_f1": 0.6113636363636363,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.4352941176470589,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5666666666666667,
+        "class_count": 4,
+        "macro_f1": 0.5141414141414141,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.4352941176470589,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.75,
+        "class_count": 4,
+        "macro_f1": 0.6982600732600732,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.4352941176470589,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5666666666666667,
+        "class_count": 4,
+        "macro_f1": 0.5705128205128205,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.44705882352941173,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.4333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.3474747474747475,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.44705882352941173,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.65,
+        "class_count": 4,
+        "macro_f1": 0.5916666666666667,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.44705882352941173,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.275,
+        "class_count": 4,
+        "macro_f1": 0.28055555555555556,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.48333333333333334,
+        "class_count": 4,
+        "macro_f1": 0.4987179487179487,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.35833333333333334,
+        "class_count": 4,
+        "macro_f1": 0.35714285714285715,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8235294117647058,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.4333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.42619047619047623,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5583333333333332,
+        "class_count": 4,
+        "macro_f1": 0.47445887445887436,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.37896825396825395,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.34117647058823536,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.5095238095238095,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4117647058823529,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6166666666666667,
+        "class_count": 4,
+        "macro_f1": 0.47467532467532464,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4117647058823529,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6666666666666666,
+        "class_count": 4,
+        "macro_f1": 0.5303030303030303,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4117647058823529,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8115079365079365,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8036616161616161,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8036616161616161,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 1.0,
+        "class_count": 4,
+        "macro_f1": 1.0,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8036616161616161,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8647727272727272,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8647727272727272,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8115079365079365,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8823529411764706,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8823529411764706,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8823529411764706,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 1.0,
+        "class_count": 4,
+        "macro_f1": 1.0,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9529411764705882,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9529411764705882,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9529411764705882,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8250000000000001,
+        "class_count": 4,
+        "macro_f1": 0.8036616161616161,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8352941176470587,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8647727272727272,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.3833333333333333,
+        "class_count": 4,
+        "macro_f1": 0.3767857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.47058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.4333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.3474747474747475,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.47058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5166666666666667,
+        "class_count": 4,
+        "macro_f1": 0.4558080808080808,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.47058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.23333333333333334,
+        "class_count": 4,
+        "macro_f1": 0.19886363636363635,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.26666666666666666,
+        "class_count": 4,
+        "macro_f1": 0.26515151515151514,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.325,
+        "class_count": 4,
+        "macro_f1": 0.275,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.25882352941176473,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.35,
+        "class_count": 4,
+        "macro_f1": 0.3277777777777777,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.3058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5083333333333333,
+        "class_count": 4,
+        "macro_f1": 0.3928571428571428,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.3058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.35,
+        "class_count": 4,
+        "macro_f1": 0.23214285714285715,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.7647058823529411,
+        "k": 5,
+        "precision_at_k": 0.3058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.575,
+        "class_count": 4,
+        "macro_f1": 0.5734848484848485,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5583333333333332,
+        "class_count": 4,
+        "macro_f1": 0.4642857142857143,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5666666666666667,
+        "class_count": 4,
+        "macro_f1": 0.5113636363636364,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.4235294117647059,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8705882352941177,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7083333333333334,
+        "class_count": 4,
+        "macro_f1": 0.7202380952380952,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7176470588235295,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7083333333333334,
+        "class_count": 4,
+        "macro_f1": 0.7089743589743589,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7176470588235295,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7083333333333334,
+        "class_count": 4,
+        "macro_f1": 0.7089743589743589,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7176470588235295,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.8875,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8470588235294116,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8470588235294116,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "dino-image",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8470588235294116,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.5436507936507936,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5294117647058822,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.41666666666666663,
+        "class_count": 4,
+        "macro_f1": 0.3625,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5294117647058822,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5,
+        "class_count": 4,
+        "macro_f1": 0.41666666666666663,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5294117647058822,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8712121212121212,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.7571428571428571,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7499999999999999,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7764705882352941,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8184523809523809,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7764705882352941,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.875,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "minilm-text",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7764705882352941,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.5502747252747253,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5882352941176471,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.75,
+        "class_count": 4,
+        "macro_f1": 0.6826298701298701,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5882352941176471,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7000000000000001,
+        "class_count": 4,
+        "macro_f1": 0.6428571428571428,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.5882352941176471,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.875,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.7923076923076923,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.7176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8071428571428572,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.875,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7647058823529411,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7416666666666667,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8470588235294118,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.9058823529411764,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.7867965367965368,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9176470588235294,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed768",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7499999999999999,
+        "class_count": 4,
+        "macro_f1": 0.7416666666666667,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9583333333333334,
+        "class_count": 4,
+        "macro_f1": 0.9415584415584416,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.9058823529411765,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-image256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.7867965367965368,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-mixed256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.8941176470588235,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.9166666666666666,
+        "class_count": 4,
+        "macro_f1": 0.9142857142857143,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": null,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.8588235294117647,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5750000000000001,
+        "class_count": 4,
+        "macro_f1": 0.5784722222222223,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.48235294117647054,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.5833333333333333,
+        "class_count": 4,
+        "macro_f1": 0.4861111111111111,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.48235294117647054,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.6583333333333333,
+        "class_count": 4,
+        "macro_f1": 0.5873015873015873,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 2,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.8823529411764706,
+        "k": 5,
+        "precision_at_k": 0.48235294117647054,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.820054945054945,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.6941176470588236,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8246753246753247,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.6941176470588236,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.7916666666666666,
+        "class_count": 4,
+        "macro_f1": 0.7923076923076923,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 4,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 1.0,
+        "k": 5,
+        "precision_at_k": 0.6941176470588236,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.8582251082251082,
+        "sample_count": 17
+      },
+      "classifier": "knn",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.8333333333333333,
+        "class_count": 4,
+        "macro_f1": 0.8071428571428572,
+        "sample_count": 17
+      },
+      "classifier": "centroid",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    },
+    {
+      "classification": {
+        "balanced_accuracy": 0.875,
+        "class_count": 4,
+        "macro_f1": 0.875,
+        "sample_count": 17
+      },
+      "classifier": "logreg",
+      "embedding_name": "eg2-text256",
+      "modalities": [
+        "geometry",
+        "embeddings"
+      ],
+      "pca_components": 8,
+      "representation": "geometry+embeddings",
+      "retrieval": {
+        "coverage": 1.0,
+        "evaluated_queries": 17,
+        "hit_at_k": 0.9411764705882353,
+        "k": 5,
+        "precision_at_k": 0.7411764705882353,
+        "relevance": "same_proxy_label",
+        "total_queries": 17
+      }
+    }
+  ],
+  "cluster_candidates": [
+    {
+      "clusterer": "kmeans",
+      "metrics": {
+        "ari_all_including_noise": 0.43789097408400357,
+        "cluster_count_excluding_noise": 2,
+        "cluster_sizes": {
+          "0": 8,
+          "1": 9
+        },
+        "coverage": 1.0,
+        "nmi_all_including_noise": 0.5702134998363136,
+        "noise_count": 0,
+        "purity_assigned": 0.6470588235294118,
+        "singleton_clusters": 0
+      },
+      "parameter": 2
+    },
+    {
+      "clusterer": "kmeans",
+      "metrics": {
+        "ari_all_including_noise": 0.5497931034482758,
+        "cluster_count_excluding_noise": 3,
+        "cluster_sizes": {
+          "0": 7,
+          "1": 5,
+          "2": 5
+        },
+        "coverage": 1.0,
+        "nmi_all_including_noise": 0.6712564974201125,
+        "noise_count": 0,
+        "purity_assigned": 0.7647058823529411,
+        "singleton_clusters": 0
+      },
+      "parameter": 3
+    },
+    {
+      "clusterer": "kmeans",
+      "metrics": {
+        "ari_all_including_noise": 0.7075268817204301,
+        "cluster_count_excluding_noise": 4,
+        "cluster_sizes": {
+          "0": 5,
+          "1": 6,
+          "2": 3,
+          "3": 3
+        },
+        "coverage": 1.0,
+        "nmi_all_including_noise": 0.797459148851523,
+        "noise_count": 0,
+        "purity_assigned": 0.8823529411764706,
+        "singleton_clusters": 0
+      },
+      "parameter": 4
+    },
+    {
+      "clusterer": "kmeans",
+      "metrics": {
+        "ari_all_including_noise": 0.8206396307286515,
+        "cluster_count_excluding_noise": 5,
+        "cluster_sizes": {
+          "0": 5,
+          "1": 2,
+          "2": 5,
+          "3": 3,
+          "4": 2
+        },
+        "coverage": 1.0,
+        "nmi_all_including_noise": 0.8770075944051362,
+        "noise_count": 0,
+        "purity_assigned": 0.9411764705882353,
+        "singleton_clusters": 0
+      },
+      "parameter": 5
+    },
+    {
+      "clusterer": "hdbscan",
+      "metrics": {
+        "ari_all_including_noise": 0.6613304873710424,
+        "cluster_count_excluding_noise": 5,
+        "cluster_sizes": {
+          "0": 3,
+          "1": 2,
+          "2": 3,
+          "3": 2,
+          "4": 5
+        },
+        "coverage": 0.8823529411764706,
+        "nmi_all_including_noise": 0.8204087531750291,
+        "noise_count": 2,
+        "purity_assigned": 1.0,
+        "singleton_clusters": 0
+      },
+      "parameter": 2
+    },
+    {
+      "clusterer": "hdbscan",
+      "metrics": {
+        "ari_all_including_noise": 0.7140282367077201,
+        "cluster_count_excluding_noise": 3,
+        "cluster_sizes": {
+          "0": 3,
+          "1": 7,
+          "2": 4
+        },
+        "coverage": 0.8235294117647058,
+        "nmi_all_including_noise": 0.7965563627088894,
+        "noise_count": 3,
+        "purity_assigned": 0.9285714285714286,
+        "singleton_clusters": 0
+      },
+      "parameter": 3
+    },
+    {
+      "clusterer": "hdbscan",
+      "metrics": {
+        "ari_all_including_noise": 0.3872200983069361,
+        "cluster_count_excluding_noise": 2,
+        "cluster_sizes": {
+          "0": 6,
+          "1": 4
+        },
+        "coverage": 0.5882352941176471,
+        "nmi_all_including_noise": 0.5427527682981087,
+        "noise_count": 7,
+        "purity_assigned": 0.9,
+        "singleton_clusters": 0
+      },
+      "parameter": 4
+    },
+    {
+      "clusterer": "hdbscan",
+      "metrics": {
+        "ari_all_including_noise": 0.0,
+        "cluster_count_excluding_noise": 0,
+        "cluster_sizes": {},
+        "coverage": 0.0,
+        "nmi_all_including_noise": 0.0,
+        "noise_count": 17,
+        "purity_assigned": 0.0,
+        "singleton_clusters": 0
+      },
+      "parameter": 5
+    }
+  ],
+  "manifest_sha256": "15f2448895806c85c0647da72413bfc8de39f5a6fe71d535121303f1d03f00fe",
+  "phase": "validation_selection",
+  "schema_version": 1,
+  "split_summary": {
+    "train": {
+      "count": 82,
+      "distribution": {
+        "beds": 15,
+        "buffets": 15,
+        "simple-tables": 24,
+        "sofas": 28
+      }
+    },
+    "validation": {
+      "count": 17,
+      "distribution": {
+        "beds": 3,
+        "buffets": 3,
+        "simple-tables": 5,
+        "sofas": 6
+      }
+    }
+  },
+  "success_targets": {
+    "balanced_accuracy": 0.75,
+    "macro_f1": 0.7
+  },
+  "success_targets_met": true,
+  "test_evaluated": false,
+  "winner": {
+    "classification": {
+      "balanced_accuracy": 1.0,
+      "class_count": 4,
+      "macro_f1": 1.0,
+      "sample_count": 17
+    },
+    "classifier": "knn",
+    "embedding_name": "eg2-mixed768",
+    "modalities": [
+      "embeddings"
+    ],
+    "pca_components": null,
+    "representation": "embeddings",
+    "retrieval": {
+      "coverage": 1.0,
+      "evaluated_queries": 17,
+      "hit_at_k": 1.0,
+      "k": 5,
+      "precision_at_k": 0.9647058823529411,
+      "relevance": "same_proxy_label",
+      "total_queries": 17
+    }
+  }
+}

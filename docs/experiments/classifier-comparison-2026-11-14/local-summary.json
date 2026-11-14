@@ -1,0 +1,118 @@
+{
+  "cad_extra": {
+    "counts": {
+      "test": 55,
+      "train": 262,
+      "validation": 56
+    },
+    "test_macro_f1_posthoc": 0.844470806970807,
+    "test_balanced_accuracy_posthoc": 0.8604166666666666,
+    "test_confusion_labels": [
+      "bathroom-set", "bathtubs", "dining-sets", "doors-elevation", "doors-plan",
+      "kitchen-appliances", "kitchen-sinks", "living-room", "palm-trees", "ranges",
+      "restaurant-layouts", "sanitary-ware", "toilets", "trees-3d", "trees-elevation", "trees-plan"
+    ],
+    "test_confusion_matrix": [
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 4, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+    ],
+    "validation_balanced_accuracy": 0.8955555555555555,
+    "validation_macro_f1": 0.8838280238280237,
+    "winner": "logreg_combined_c0.1"
+  },
+  "core": {
+    "counts": {
+      "test": 18,
+      "train": 82,
+      "validation": 17
+    },
+    "test_macro_f1_posthoc": 0.8261278195488722,
+    "test_balanced_accuracy_posthoc": 0.8333333333333334,
+    "test_confusion_labels": ["beds", "buffets", "simple-tables", "sofas"],
+    "test_confusion_matrix": [[3, 0, 0, 0], [0, 3, 0, 0], [0, 1, 1, 1], [0, 0, 0, 9]],
+    "validation_balanced_accuracy": 1.0,
+    "validation_macro_f1": 1.0,
+    "winner": "knn_eg2_k5"
+  },
+  "engineering_forced_count": 14,
+  "engineering_forced_distribution": {
+    "buffets": 11,
+    "simple-tables": 1,
+    "sofas": 2
+  },
+  "hashes": {
+    "cad_embeddings": "4c34c4d94724eb9d13744faf7b1a4207fe7ad8ceece0e7960a2b81a0bd33f02c",
+    "cad_manifest": "bac26796ab89d3f170cc2f5667a957ff86e527b8791873ba99df209b37d17bf4",
+    "core_embeddings": "e7b31ec8580972999525f367934a0a85550bd7c503df65dfc7c363edae8ba4a5",
+    "core_manifest": "15f2448895806c85c0647da72413bfc8de39f5a6fe71d535121303f1d03f00fe",
+    "engineering_embeddings": "209ca716175007c8cd500103be02601b74667c1654b34384d91972fd02cb22a0",
+    "engineering_manifest": "7372147f3968899befca71be89cf140fc3340f73451e71061a7794d5be5a09af"
+  },
+  "limitations": [
+    "Core and CAD-extra test metrics are retrospective post-hoc comparisons.",
+    "Engineering assignments are forced closed-set outputs, not OOD accuracy.",
+    "Closed-set scores are not calibrated review thresholds.",
+    "Jev 1.14 is an external API reference, not a local checkpoint."
+  ],
+  "model_arguments": [
+    {
+      "family": "knn_embedding",
+      "name": "knn_eg2_k5",
+      "parameters": {
+        "n_neighbors": 5
+      }
+    },
+    {
+      "family": "logreg_combined",
+      "name": "logreg_combined_c0.1",
+      "parameters": {
+        "C": 0.1
+      }
+    },
+    {
+      "family": "logreg_combined",
+      "name": "logreg_combined_c1",
+      "parameters": {
+        "C": 1.0
+      }
+    },
+    {
+      "family": "logreg_combined",
+      "name": "logreg_combined_c10",
+      "parameters": {
+        "C": 10.0
+      }
+    },
+    {
+      "family": "histgb_pca_geometry",
+      "name": "histgb_pca32_geometry",
+      "parameters": {
+        "pca_components": 32
+      }
+    },
+    {
+      "family": "histgb_pca_geometry",
+      "name": "histgb_pca64_geometry",
+      "parameters": {
+        "pca_components": 64
+      }
+    }
+  ],
+  "protocol": "classifier-comparison-2026-11-14-v2",
+  "retrospective_posthoc": true,
+  "schema_version": 1
+}
