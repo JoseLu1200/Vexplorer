@@ -3,9 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 
-from backend.app.contratos.modelos import AssemblyCandidate, DescriptorDimensions, DescriptorPartFeature, FurnitureDescriptor, FurnitureDescriptorV2, Result, RoleQuantity
+from backend.app.contratos.modelos import AssemblyCandidate, DescriptorDimensions, DescriptorPartFeature, FurnitureDescriptor, FurnitureDescriptorV2, FurnitureDescriptorV3, Result, RoleQuantity, TableDescriptorComponentFeature
 
-Descriptor = FurnitureDescriptor | FurnitureDescriptorV2
+Descriptor = FurnitureDescriptor | FurnitureDescriptorV2 | FurnitureDescriptorV3
 
 
 def _structure(result: Result) -> str:
@@ -152,7 +152,42 @@ def _build_parts_descriptor(result: Result) -> FurnitureDescriptorV2:
     return FurnitureDescriptorV2(family=family, dimensions=dimensions, roles=roles, structure=structure, material=material, finish=finish, thicknesses_mm=tuple(thicknesses), classification_status=classification_status, part_features=tuple(features), unknown_fields=tuple(sorted(unknowns)))
 
 
+def _build_table_descriptor(result: Result) -> FurnitureDescriptorV3:
+    evaluated = result.evaluated_table_program
+    if result.state != "completed" or evaluated is None or evaluated.state != "completed" or result.selected_table_program_id is None:
+        raise ValueError("table_revision_not_accepted")
+    features = []
+    for component in evaluated.components:
+        if not component.accepted or component.quantity is None:
+            raise ValueError("table_revision_not_accepted")
+        values = (component.length, component.width, component.thickness)
+        if any(item.value_mm is None or item.state not in ("calculated", "confirmed") for item in values):
+            raise ValueError("table_revision_not_accepted")
+        features.append(TableDescriptorComponentFeature(
+            role=component.role,
+            quantity=component.quantity,
+            length_mm=component.length.value_mm,
+            width_mm=component.width.value_mm,
+            thickness_mm=component.thickness.value_mm,
+            field_states={
+                "quantity": "calculated",
+                "length_mm": component.length.state,
+                "width_mm": component.width.state,
+                "thickness_mm": component.thickness.state,
+            },
+        ))
+    features.sort(key=lambda item: (item.role, item.length_mm, item.width_mm, item.thickness_mm, item.quantity))
+    dimensions = DescriptorDimensions(**evaluated.overall_dimensions.model_dump())
+    if any(value is None for value in dimensions.model_dump().values()):
+        raise ValueError("table_revision_not_accepted")
+    roles = {item.role for item in features}
+    structure = "side_support_table" if "side_support" in roles else "corner_support_table"
+    return FurnitureDescriptorV3(dimensions=dimensions, structure=structure, components=tuple(features))
+
+
 def build_descriptor(result: Result) -> Descriptor:
+    if result.input_semantics == "mounted_orthographic_views":
+        return _build_table_descriptor(result)
     if result.input_semantics == "separated_part_views":
         return _build_parts_descriptor(result)
     dimensions = _dimensions(result)
@@ -189,7 +224,7 @@ def descriptor_fingerprint(descriptor: Descriptor) -> str:
 
 
 def semantic_text(descriptor: Descriptor) -> str:
-    roles = ", ".join(f"{item.role}:{item.quantity if item.quantity is not None else 'unknown'}" for item in descriptor.roles)
+    roles = ", ".join(f"{item.role}:{item.quantity if item.quantity is not None else 'unknown'}" for item in descriptor.roles) if not isinstance(descriptor, FurnitureDescriptorV3) else ", ".join(f"{item.role}:{item.quantity}" for item in descriptor.components)
     dimensions = descriptor.dimensions
     parts_suffix = ""
     if isinstance(descriptor, FurnitureDescriptorV2):
@@ -201,9 +236,14 @@ def semantic_text(descriptor: Descriptor) -> str:
             for item in descriptor.part_features
         )
         parts_suffix = f"; thicknesses_mm:{','.join(f'{item:g}' for item in descriptor.thicknesses_mm) or 'unknown'}; classification_status={descriptor.classification_status}; part_features={feature_text or 'none'}"
+    elif isinstance(descriptor, FurnitureDescriptorV3):
+        parts_suffix = "; components=" + "|".join(
+            f"role:{item.role},q:{item.quantity},l:{item.length_mm:g},w:{item.width_mm:g},t:{item.thickness_mm:g}"
+            for item in descriptor.components
+        )
     return (
         f"descriptor={descriptor.descriptor_version}; family={descriptor.family}; structure={descriptor.structure}; "
         f"dimensions_mm=width:{dimensions.width_mm},depth:{dimensions.depth_mm},height:{dimensions.height_mm}; "
-        f"roles={roles}; material={descriptor.material or 'unknown'}; finish={descriptor.finish or 'unknown'}; "
+        f"roles={roles}; material={getattr(descriptor, 'material', None) or 'unknown'}; finish={getattr(descriptor, 'finish', None) or 'unknown'}; "
         f"unknowns={','.join(descriptor.unknown_fields) or 'none'}{parts_suffix}"
     )

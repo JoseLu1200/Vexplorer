@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import math
 
-from backend.app.contratos.modelos import FurnitureDescriptor, FurnitureDescriptorV2, LibraryItem, SimilarityDifference, SimilarityGroup, SimilarityMatch
+from backend.app.contratos.modelos import FurnitureDescriptor, FurnitureDescriptorV2, FurnitureDescriptorV3, LibraryItem, SimilarityDifference, SimilarityGroup, SimilarityMatch
+
+Descriptor = FurnitureDescriptor | FurnitureDescriptorV2 | FurnitureDescriptorV3
 
 
 def _ratio(left: float | None, right: float | None) -> float:
@@ -12,9 +14,15 @@ def _ratio(left: float | None, right: float | None) -> float:
     return min(left, right) / max(left, right)
 
 
-def _role_score(left: FurnitureDescriptor, right: FurnitureDescriptor) -> float:
-    a = {item.role: item.quantity for item in left.roles}
-    b = {item.role: item.quantity for item in right.roles}
+def _roles(descriptor: Descriptor) -> dict[str, int | None]:
+    if isinstance(descriptor, FurnitureDescriptorV3):
+        return {item.role: item.quantity for item in descriptor.components}
+    return {item.role: item.quantity for item in descriptor.roles}
+
+
+def _role_score(left: Descriptor, right: Descriptor) -> float:
+    a = _roles(left)
+    b = _roles(right)
     roles = set(a) | set(b)
     if not roles:
         return 0.0
@@ -25,27 +33,31 @@ def _role_score(left: FurnitureDescriptor, right: FurnitureDescriptor) -> float:
     return sum(values) / len(values)
 
 
-def descriptor_differences(left: FurnitureDescriptor, right: FurnitureDescriptor) -> tuple[SimilarityDifference, ...]:
+def descriptor_differences(left: Descriptor, right: Descriptor) -> tuple[SimilarityDifference, ...]:
     values: list[SimilarityDifference] = []
     for field in ("width_mm", "depth_mm", "height_mm"):
         a, b = getattr(left.dimensions, field), getattr(right.dimensions, field)
         if a != b:
             values.append(SimilarityDifference(field=f"dimensions.{field}", query_value=str(a), candidate_value=str(b)))
     for field in ("structure", "material", "finish"):
-        a, b = getattr(left, field), getattr(right, field)
+        a, b = getattr(left, field, None), getattr(right, field, None)
         if a != b:
             values.append(SimilarityDifference(field=field, query_value=str(a), candidate_value=str(b)))
     if isinstance(left, FurnitureDescriptorV2) and isinstance(right, FurnitureDescriptorV2) and left.thicknesses_mm != right.thicknesses_mm:
         values.append(SimilarityDifference(field="thicknesses_mm", query_value=str(left.thicknesses_mm), candidate_value=str(right.thicknesses_mm)))
-    a_roles = {item.role: item.quantity for item in left.roles}
-    b_roles = {item.role: item.quantity for item in right.roles}
+    if isinstance(left, FurnitureDescriptorV3) and isinstance(right, FurnitureDescriptorV3) and left.components != right.components:
+        values.append(SimilarityDifference(field="components", query_value=str(left.components), candidate_value=str(right.components)))
+    a_roles = _roles(left)
+    b_roles = _roles(right)
     for role in sorted(set(a_roles) | set(b_roles)):
         if a_roles.get(role) != b_roles.get(role):
             values.append(SimilarityDifference(field=f"roles.{role}", query_value=str(a_roles.get(role)), candidate_value=str(b_roles.get(role))))
     return tuple(values)
 
 
-def geometric_match(query: FurnitureDescriptor, candidate: LibraryItem) -> SimilarityMatch:
+def geometric_match(query: Descriptor, candidate: LibraryItem) -> SimilarityMatch:
+    if query.descriptor_version != candidate.descriptor.descriptor_version:
+        raise ValueError("descriptor_space_incompatible")
     dimensions = tuple(_ratio(getattr(query.dimensions, field), getattr(candidate.descriptor.dimensions, field)) for field in ("width_mm", "depth_mm", "height_mm"))
     dimension_score = sum(dimensions) / len(dimensions)
     role_score = _role_score(query, candidate.descriptor)
@@ -53,6 +65,12 @@ def geometric_match(query: FurnitureDescriptor, candidate: LibraryItem) -> Simil
         left_thickness = sum(query.thicknesses_mm) / len(query.thicknesses_mm) if query.thicknesses_mm else None
         right_thickness = sum(candidate.descriptor.thicknesses_mm) / len(candidate.descriptor.thicknesses_mm) if candidate.descriptor.thicknesses_mm else None
         thickness_score = _ratio(left_thickness, right_thickness)
+        score = round(0.6 * dimension_score + 0.25 * role_score + 0.15 * thickness_score, 6)
+        components = {"dimensions": round(dimension_score, 6), "roles": round(role_score, 6), "thickness": round(thickness_score, 6), "dimensions_weight": 0.6, "roles_weight": 0.25, "thickness_weight": 0.15}
+    elif isinstance(query, FurnitureDescriptorV3) and isinstance(candidate.descriptor, FurnitureDescriptorV3):
+        query_thickness = sum(item.thickness_mm * item.quantity for item in query.components) / sum(item.quantity for item in query.components)
+        candidate_thickness = sum(item.thickness_mm * item.quantity for item in candidate.descriptor.components) / sum(item.quantity for item in candidate.descriptor.components)
+        thickness_score = _ratio(query_thickness, candidate_thickness)
         score = round(0.6 * dimension_score + 0.25 * role_score + 0.15 * thickness_score, 6)
         components = {"dimensions": round(dimension_score, 6), "roles": round(role_score, 6), "thickness": round(thickness_score, 6), "dimensions_weight": 0.6, "roles_weight": 0.25, "thickness_weight": 0.15}
     else:
