@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import time
 from dataclasses import dataclass
 from typing import Protocol
 
-from backend.app.agente.tools import parts_tool_schemas, tool_schemas
+from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import (
     AssemblyCandidate,
     DecompositionScenario,
@@ -13,9 +14,13 @@ from backend.app.contratos.modelos import (
     ExplainPieceArgs,
     InspectEvidenceArgs,
     InspectSeparatedPartArgs,
+    InspectTableMeasuresArgs,
+    MountedTableAnalysis,
+    ProposeTableProgramArgs,
     SelectAssemblyCandidateArgs,
     SelectScenarioArgs,
     SeparatedPartsExtraction,
+    TableProgramProposal,
 )
 from backend.app.servicios.explanations import explain_proposal
 from pydantic import ValidationError
@@ -53,6 +58,14 @@ class AgentOutcome:
 @dataclass(frozen=True)
 class PartsAgentOutcome:
     selected_assembly_candidate_id: str
+    model_calls: int
+    tool_calls: int
+    actions: tuple[AgentAction, ...]
+
+
+@dataclass(frozen=True)
+class TableAgentOutcome:
+    program: TableProgramProposal
     model_calls: int
     tool_calls: int
     actions: tuple[AgentAction, ...]
@@ -232,6 +245,84 @@ def run_parts_agent(
                     data = {"ok": False, "error": "unknown_tool"}
                     actions.append(AgentAction(call.name, False, (), "Herramienta no autorizada rechazada."))
             except (ValidationError, json.JSONDecodeError, TypeError) as exc:
+                repairs += 1
+                details = exc.errors(include_url=False, include_input=False) if isinstance(exc, ValidationError) else []
+                data = {"ok": False, "error": "invalid_arguments", "details": details}
+                actions.append(AgentAction(call.name, False, (), "Argumentos de herramienta inválidos rechazados."))
+                if repairs > limits.max_validation_repairs:
+                    raise RuntimeError("validation_repair_budget_exhausted") from exc
+            outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
+        input_items = outputs
+    raise RuntimeError("model_call_budget_exhausted")
+
+
+def run_table_agent(
+    analysis: MountedTableAnalysis,
+    provider: Provider,
+    limits: AgentLimits = AgentLimits(),
+) -> TableAgentOutcome:
+    started = time.monotonic()
+    model_calls = 0
+    tool_calls = 0
+    repairs = 0
+    previous_response_id = None
+    measures = {item.id: item for item in analysis.measures}
+    allowed_evidence_ids = {evidence_id for item in analysis.measures for evidence_id in item.evidence_ids}
+    input_items = [{"role": "user", "content": json.dumps({
+        "input_kind": analysis.input_kind,
+        "profile": analysis.profile,
+        "ledger_revision": analysis.ledger_revision,
+        "state": analysis.state,
+        "warnings": analysis.warnings,
+        "measurements": [{"id": item.id, "semantic": item.semantic, "axis": item.axis, "state": item.state, "slot_origin": item.slot_origin} for item in analysis.measures],
+    }, ensure_ascii=False)}]
+    actions: list[AgentAction] = []
+    while model_calls < limits.max_model_calls:
+        remaining = limits.timeout_s - (time.monotonic() - started)
+        if remaining <= 0:
+            raise TimeoutError("agent_deadline_exceeded")
+        model_calls += 1
+        response = provider.create_response(input_items=input_items, tools=table_tool_schemas(), previous_response_id=previous_response_id, timeout_s=remaining)
+        previous_response_id = response.id
+        if not response.tool_calls:
+            input_items = [{"role": "user", "content": "Debes inspeccionar IDs o proponer un programa mediante una herramienta permitida."}]
+            continue
+        if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
+            raise RuntimeError("tool_call_budget_exhausted")
+        outputs = []
+        for call in response.tool_calls:
+            tool_calls += 1
+            try:
+                arguments = json.loads(call.arguments_json) if call.arguments_json is not None else call.arguments
+                if not isinstance(arguments, dict):
+                    raise TypeError("tool arguments must be an object")
+                if call.name == "inspeccionar_medidas_mesa":
+                    args = InspectTableMeasuresArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    unknown = [item for item in args.measurement_ids if item not in measures]
+                    selected = [measures[item] for item in args.measurement_ids if item in measures]
+                    data = {"ok": not unknown, "error": "unknown_reference" if unknown else None, "measures": [item.model_dump(mode="json") for item in selected]}
+                    actions.append(AgentAction(call.name, not unknown, tuple(evidence_id for item in selected for evidence_id in item.evidence_ids), "Medidas y fuentes del ledger inspeccionadas." if not unknown else "Referencia de medida desconocida rechazada."))
+                elif call.name == "proponer_descomposicion":
+                    args = ProposeTableProgramArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    referenced_measures = {operand.ref_id for binding in args.bindings for operand in binding.operand_refs if operand.ref_type == "measure"}
+                    referenced_evidence = set(args.evidence_ids) | {evidence_id for component in args.components for evidence_id in component.evidence_ids}
+                    if not referenced_measures <= set(measures) or not referenced_evidence <= allowed_evidence_ids:
+                        data = {"ok": False, "error": "unknown_reference"}
+                        actions.append(AgentAction(call.name, False, (), "Programa con referencias ajenas al ledger rechazado."))
+                    else:
+                        canonical_args = json.dumps(args.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+                        program = TableProgramProposal(
+                            id=f"table-program-{hashlib.sha256(canonical_args.encode('utf-8')).hexdigest()[:16]}",
+                            ledger_revision=analysis.ledger_revision,
+                            proposal_origin="model_generated",
+                            **args.model_dump(),
+                        )
+                        actions.append(AgentAction(call.name, True, tuple(sorted(referenced_evidence)), "Programa de descomposición referenciado entregado para validación y revisión."))
+                        return TableAgentOutcome(program, model_calls, tool_calls, tuple(actions))
+                else:
+                    data = {"ok": False, "error": "unknown_tool"}
+                    actions.append(AgentAction(call.name, False, (), "Herramienta no autorizada rechazada."))
+            except (ValidationError, json.JSONDecodeError, TypeError, ValueError) as exc:
                 repairs += 1
                 details = exc.errors(include_url=False, include_input=False) if isinstance(exc, ValidationError) else []
                 data = {"ok": False, "error": "invalid_arguments", "details": details}
