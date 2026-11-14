@@ -1,0 +1,34 @@
+{
+  "dataset_id": "nuriyev-2026-published-furniture-production-time",
+  "retrieved_at": "2026-11-14",
+  "record_count": 15,
+  "source": {
+    "title": "Sustainable Production Planning Under Uncertainty: A Z-Number-Based Multi-Objective Optimization Approach for Furniture Manufacturing",
+    "authors": ["Aziz Nuriyev", "Latafat Gardashova", "Gunel Aghajanova", "Rolan Yusufov", "Nazrin Sardarli"],
+    "publisher": "MDPI Sustainability",
+    "publication_date": "2026-09-20",
+    "doi": "10.3390/su18189636",
+    "landing_page": "https://www.mdpi.com/2071-1050/18/18/9636",
+    "pdf_url": "https://mdpi-res.com/d_attachment/sustainability/sustainability-18-09636/article_deploy/sustainability-18-09636.pdf",
+    "xml_url": "https://mdpi-res.com/d_attachment/sustainability/sustainability-18-09636/article_deploy/sustainability-18-09636.xml",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "data_availability": "Additional/raw data available on request from corresponding authors; not requested. Only rows published in the article are normalized."
+  },
+  "classification": {
+    "contract_origin": "published",
+    "actual_cost": null,
+    "cost_basis": null,
+    "hours_scope": ["production_time"],
+    "per_unit_coefficient": true,
+    "closed_work_order_actual": false,
+    "labor_hour_breakdown": false
+  },
+  "files": [
+    {"path": "source_sustainability-18-09636.pdf", "sha256": "514d88d2c20f775e3638a641b138868cb1c686125a2a6d697bbd9cad570afa31", "role": "unmodified source"},
+    {"path": "source_sustainability-18-09636.xml", "sha256": "c4106e4f5c835593b9e6d9a78af3ced6d48afe6e4b9c62a94671a144ac1a71c6", "role": "unmodified machine-readable source"},
+    {"path": "published_hours.csv", "sha256": "98741a807c436cd92adc49dbd74cfbe95b59ecfd0bb6aa6d34942ac4f3a67b37", "role": "published per-unit time coefficients and Z-number metadata"},
+    {"path": "historical_import.json", "sha256": "5f38a560e11b5c475f12eed3ea64800b58a5aad457f43cb9d4c4cecb4ec194b8", "role": "hours-only Vexplorer HistoricalImport payload"},
+    {"path": "README.md", "sha256": "a9b76ee8ca496543cf2d373d13046a8fe41c42864396201cfb30c9a4d675bc83", "role": "scope and limitations"}
+  ]
+}

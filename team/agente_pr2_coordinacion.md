@@ -60,3 +60,11 @@ La unión incluye `main` hasta `fdb94dc` y ambas mejoras concurrentes de PR2. Se
 - Suite completa de reconciliación: 1387 passed/6 failed, corregidos y probados; segunda pasada: 1394 passed/1 failed por política anterior ya cargada en memoria. Nueva suite con código congelado iniciada antes de publicar. No se presentan esas dos pasadas como verdes.
 - Revisión independiente final: frontend y runner sin blockers altos/medios. Wheel, pip check y compileall correctos.
 - Resultado de suite congelada y CI sobre la cabecera publicada se registrará en la PR antes del merge.
+
+## Continuación: datos procesados de demo
+El usuario solicita subir muebles procesados de prueba y documentar su uso en producción. Se amplía el registro propio autorizado a tools/build_processed_demo.py, tests/test_processed_demo.py, data/muebles_procesados_demo y documentación enlazada. Trabajo aislado en feat/demo-processed-data; no hay solape con generación PlankAssembly activa. Se usan fixtures propios, no datos operativos ni corpus ajenos. No se modifica el servicio desplegado ni contratos.
+
+
+El usuario acota datasets a muebles y PlankAssembly y exige usar la web app actual sin visor HTML ni API de IA. Se entrega snapshot nativo v2 con 4 runs, 3 revisiones completas, costes sintéticos, biblioteca geométrica y 19 registros publicados; originales PlankAssembly y fuentes académicas como assets de Release. Se amplía alcance a data/datasets y docs/DATASETS_DESCARGA_DIRECTA.md. Verificación focal: 3 pruebas de generación/restauración/aislamiento aprobadas; ruff limpio. Publicación/QA en curso.
+
+Cierre demo: 34 pruebas focales aprobadas (incluyen restauración del snapshot que se publicará), ruff limpio. QA en la web app restaurada: revisión 2, piezas y escena 3D esquemática visibles, 19 históricos, proveedor live no disponible y cero errores de consola. Los cuatro ZIP de Release pasan CRC; PlankAssembly conserva SHA original y los datasets académicos conservan fuentes/atribución CC BY. No se incluye visor nuevo ni se toca producción.

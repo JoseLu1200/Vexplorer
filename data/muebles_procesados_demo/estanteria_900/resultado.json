@@ -1,0 +1,1248 @@
+{
+  "schema_version": "0.2.0",
+  "result_revision": 2,
+  "result": {
+    "schema_version": "0.2.0",
+    "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+    "result_revision": 2,
+    "state": "completed",
+    "scenarios": [
+      {
+        "id": "scenario-between-sides",
+        "title": "Tapa y base entre laterales",
+        "components": [
+          {
+            "id": "proposal-between-sides-side_panel",
+            "label": "Laterales",
+            "role": "side_panel",
+            "quantity": 2,
+            "length_mm": 1200.0,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "direct_observation",
+            "length_basis_mm": 1200.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-between-sides-top_panel",
+            "label": "Tapa",
+            "role": "top_panel",
+            "quantity": 1,
+            "length_mm": null,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "overall_width_minus_two_thickness",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-between-sides-base_panel",
+            "label": "Base",
+            "role": "base_panel",
+            "quantity": 1,
+            "length_mm": null,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "overall_width_minus_two_thickness",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-between-sides-shelf",
+            "label": "Baldas interiores",
+            "role": "shelf",
+            "quantity": 2,
+            "length_mm": null,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "overall_width_minus_two_thickness",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8E",
+              "entity-98",
+              "entity-8F",
+              "entity-99"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          }
+        ],
+        "assumptions": [
+          "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje."
+        ],
+        "incompatible_with": [
+          "scenario-cap-sides"
+        ],
+        "state": "hypothesis"
+      },
+      {
+        "id": "scenario-cap-sides",
+        "title": "Tapa y base cubren laterales",
+        "components": [
+          {
+            "id": "proposal-cap-sides-side_panel",
+            "label": "Laterales",
+            "role": "side_panel",
+            "quantity": 2,
+            "length_mm": null,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "overall_height_minus_two_thickness",
+            "length_basis_mm": 1200.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-cap-sides-top_panel",
+            "label": "Tapa",
+            "role": "top_panel",
+            "quantity": 1,
+            "length_mm": 900.0,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "direct_observation",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-cap-sides-base_panel",
+            "label": "Base",
+            "role": "base_panel",
+            "quantity": 1,
+            "length_mm": 900.0,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "direct_observation",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8D",
+              "entity-93",
+              "entity-97"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          },
+          {
+            "id": "proposal-cap-sides-shelf",
+            "label": "Baldas interiores",
+            "role": "shelf",
+            "quantity": 2,
+            "length_mm": null,
+            "width_mm": 300.0,
+            "thickness_mm": null,
+            "length_derivation": "overall_width_minus_two_thickness",
+            "length_basis_mm": 900.0,
+            "source_observation_ids": [
+              "observation-view-front",
+              "observation-view-side",
+              "observation-view-top"
+            ],
+            "source_contour_ids": [
+              "contour-entity-8D",
+              "contour-entity-93",
+              "contour-entity-97"
+            ],
+            "source_entity_ids": [
+              "entity-8E",
+              "entity-98",
+              "entity-8F",
+              "entity-99"
+            ],
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-93",
+              "evidence-contour-entity-97"
+            ],
+            "source_part_observation_ids": [],
+            "assumptions": [
+              "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+            ],
+            "information_class": "hypothesis"
+          }
+        ],
+        "assumptions": [
+          "Tapa y base cubren los extremos de los laterales; confirmar espesor y montaje."
+        ],
+        "incompatible_with": [
+          "scenario-between-sides"
+        ],
+        "state": "hypothesis"
+      }
+    ],
+    "pieces": [
+      {
+        "id": "piece-proposal-between-sides-side_panel",
+        "proposal_id": "proposal-between-sides-side_panel",
+        "label": "Laterales",
+        "role": "side_panel",
+        "quantity": 2,
+        "length_mm": 1200.0,
+        "width_mm": 300.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [
+          "observation-view-front",
+          "observation-view-side",
+          "observation-view-top"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "source_part_observation_ids": [],
+        "human_confirmation": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real.",
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-proposal-between-sides-top_panel",
+        "proposal_id": "proposal-between-sides-top_panel",
+        "label": "Tapa",
+        "role": "top_panel",
+        "quantity": 1,
+        "length_mm": 864.0,
+        "width_mm": 300.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [
+          "observation-view-front",
+          "observation-view-side",
+          "observation-view-top"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "source_part_observation_ids": [],
+        "human_confirmation": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real.",
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-proposal-between-sides-base_panel",
+        "proposal_id": "proposal-between-sides-base_panel",
+        "label": "Base",
+        "role": "base_panel",
+        "quantity": 1,
+        "length_mm": 864.0,
+        "width_mm": 300.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [
+          "observation-view-front",
+          "observation-view-side",
+          "observation-view-top"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "source_part_observation_ids": [],
+        "human_confirmation": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real.",
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-proposal-between-sides-shelf",
+        "proposal_id": "proposal-between-sides-shelf",
+        "label": "Baldas interiores",
+        "role": "shelf",
+        "quantity": 2,
+        "length_mm": 864.0,
+        "width_mm": 300.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [
+          "observation-view-front",
+          "observation-view-side",
+          "observation-view-top"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "source_part_observation_ids": [],
+        "human_confirmation": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real.",
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      }
+    ],
+    "rejected_proposal_ids": [
+      "proposal-cap-sides-side_panel",
+      "proposal-cap-sides-top_panel",
+      "proposal-cap-sides-base_panel",
+      "proposal-cap-sides-shelf"
+    ],
+    "created_at": "2026-11-14T14:26:29.914123+00:00",
+    "review": {
+      "reviewer_name": "Ensayo sintético Vexplorer",
+      "reason": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real.",
+      "timestamp": "2026-11-14T14:26:29.914123+00:00",
+      "selected_scenario_id": "scenario-between-sides",
+      "selected_assembly_candidate_id": null,
+      "selected_table_program_id": null
+    },
+    "agent_selected_scenario_id": null,
+    "input_semantics": "mounted_views_legacy",
+    "part_analysis": null,
+    "assembly_candidates": [],
+    "selected_assembly_candidate_id": null,
+    "table_analysis": null,
+    "table_programs": [],
+    "selected_table_program_id": null,
+    "evaluated_table_program": null,
+    "table_review_decisions": [],
+    "table_confirmed_values": [],
+    "table_observed_value_corrections": [],
+    "table_source_review_decisions": [],
+    "table_cost_scope": null
+  },
+  "scene": {
+    "schema_version": "0.3.0",
+    "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+    "result_revision": 2,
+    "state": "ready",
+    "selected_scenario_id": "scenario-between-sides",
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [
+      {
+        "id": "scene-piece-proposal-between-sides-side_panel-1",
+        "piece_id": "piece-proposal-between-sides-side_panel",
+        "proposal_id": "proposal-between-sides-side_panel",
+        "role": "side_panel",
+        "label": "Laterales",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1200.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 18.0,
+            "y": 1200.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: reviewed side placement",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-proposal-between-sides-side_panel-2",
+        "piece_id": "piece-proposal-between-sides-side_panel",
+        "proposal_id": "proposal-between-sides-side_panel",
+        "role": "side_panel",
+        "label": "Laterales",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 882.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1200.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 882.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 900.0,
+            "y": 1200.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: reviewed side placement",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-proposal-between-sides-top_panel-1",
+        "piece_id": "piece-proposal-between-sides-top_panel",
+        "proposal_id": "proposal-between-sides-top_panel",
+        "role": "top_panel",
+        "label": "Tapa",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 1182.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 864.0,
+          "y": 18.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 1182.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 882.0,
+            "y": 1200.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: reviewed top placement",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-proposal-between-sides-base_panel-1",
+        "piece_id": "piece-proposal-between-sides-base_panel",
+        "proposal_id": "proposal-between-sides-base_panel",
+        "role": "base_panel",
+        "label": "Base",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 864.0,
+          "y": 18.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 882.0,
+            "y": 18.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: reviewed base placement",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-proposal-between-sides-shelf-1",
+        "piece_id": "piece-proposal-between-sides-shelf",
+        "proposal_id": "proposal-between-sides-shelf",
+        "role": "shelf",
+        "label": "Baldas interiores",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 400.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 864.0,
+          "y": 18.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 400.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 882.0,
+            "y": 418.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: observed FRONT/SIDE level anchors the shelf lower face; entities entity-8E,entity-98,entity-8F,entity-99",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-proposal-between-sides-shelf-2",
+        "piece_id": "piece-proposal-between-sides-shelf",
+        "proposal_id": "proposal-between-sides-shelf",
+        "role": "shelf",
+        "label": "Baldas interiores",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 18.0,
+          "y": 800.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 864.0,
+          "y": 18.0,
+          "z": 300.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 800.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 882.0,
+            "y": 818.0,
+            "z": 300.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "placement_basis": "scenario-between-sides: observed FRONT/SIDE level anchors the shelf lower face; entities entity-8E,entity-98,entity-8F,entity-99",
+        "part_observation_id": null,
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      }
+    ],
+    "warnings": [],
+    "assumptions": [
+      "Tapa, base y baldas se montan entre dos laterales; confirmar espesor y montaje.",
+      "Boxes are schematic reviewed panel occurrences, not manufacturing solids.",
+      "Each observed shelf level is interpreted as the lower face of its reviewed shelf box.",
+      "Collision checking is not certified and remains not_evaluated."
+    ],
+    "collision_status": "not_evaluated"
+  },
+  "explanations": {
+    "schema_version": "0.3.0",
+    "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+    "result_revision": 2,
+    "pieces": [
+      {
+        "piece_id": "piece-proposal-between-sides-side_panel",
+        "proposal_id": "proposal-between-sides-side_panel",
+        "role": "side_panel",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-93",
+          "entity-97"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "dimension_ids": [
+          "dimension-entity-9C",
+          "dimension-entity-AC",
+          "dimension-entity-BC",
+          "dimension-entity-CC"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 1200.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "human_mounting_confirmation",
+          "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-proposal-between-sides-top_panel",
+        "proposal_id": "proposal-between-sides-top_panel",
+        "role": "top_panel",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-93",
+          "entity-97"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "dimension_ids": [
+          "dimension-entity-9C",
+          "dimension-entity-AC",
+          "dimension-entity-BC",
+          "dimension-entity-CC"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [
+          {
+            "field": "length_mm",
+            "expression": "overall_width_mm - 2 * confirmed_thickness_mm",
+            "operands_mm": {
+              "overall_width_mm": 900.0,
+              "confirmed_thickness_mm": 18.0
+            },
+            "result_mm": 864.0
+          }
+        ],
+        "premises": [
+          "human_mounting_confirmation",
+          "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-proposal-between-sides-base_panel",
+        "proposal_id": "proposal-between-sides-base_panel",
+        "role": "base_panel",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-93",
+          "entity-97"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "dimension_ids": [
+          "dimension-entity-9C",
+          "dimension-entity-AC",
+          "dimension-entity-BC",
+          "dimension-entity-CC"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [
+          {
+            "field": "length_mm",
+            "expression": "overall_width_mm - 2 * confirmed_thickness_mm",
+            "operands_mm": {
+              "overall_width_mm": 900.0,
+              "confirmed_thickness_mm": 18.0
+            },
+            "result_mm": 864.0
+          }
+        ],
+        "premises": [
+          "human_mounting_confirmation",
+          "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-proposal-between-sides-shelf",
+        "proposal_id": "proposal-between-sides-shelf",
+        "role": "shelf",
+        "source_entity_ids": [
+          "entity-8E",
+          "entity-98",
+          "entity-8F",
+          "entity-99"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-93",
+          "contour-entity-97"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-93",
+          "evidence-contour-entity-97"
+        ],
+        "dimension_ids": [
+          "dimension-entity-9C",
+          "dimension-entity-AC",
+          "dimension-entity-BC",
+          "dimension-entity-CC"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 864.0,
+          "width_mm": 300.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [
+          {
+            "field": "length_mm",
+            "expression": "overall_width_mm - 2 * confirmed_thickness_mm",
+            "operands_mm": {
+              "overall_width_mm": 900.0,
+              "confirmed_thickness_mm": 18.0
+            },
+            "result_mm": 864.0
+          }
+        ],
+        "premises": [
+          "human_mounting_confirmation",
+          "Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "confirmed",
+          "length_mm": "calculated",
+          "width_mm": "observed",
+          "thickness_mm": "confirmed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      }
+    ],
+    "warnings": []
+  },
+  "descriptor": {
+    "descriptor_version": "furniture-v1",
+    "family": "rectangular_shelving",
+    "dimensions": {
+      "width_mm": 900.0,
+      "depth_mm": 300.0,
+      "height_mm": 1200.0
+    },
+    "roles": [
+      {
+        "role": "base_panel",
+        "quantity": 1
+      },
+      {
+        "role": "shelf",
+        "quantity": 2
+      },
+      {
+        "role": "side_panel",
+        "quantity": 2
+      },
+      {
+        "role": "top_panel",
+        "quantity": 1
+      }
+    ],
+    "structure": "top_base_between_sides",
+    "material": "tablero sintético",
+    "finish": "melamina sintética",
+    "unknown_fields": []
+  },
+  "library_item": {
+    "schema_version": "0.3.0",
+    "id": "library-run-37671509ad734b64ba80e0f5ae3b5d73",
+    "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+    "result_revision": 2,
+    "label": "DEMO SINTÉTICA · Estantería de 900 mm",
+    "descriptor": {
+      "descriptor_version": "furniture-v1",
+      "family": "rectangular_shelving",
+      "dimensions": {
+        "width_mm": 900.0,
+        "depth_mm": 300.0,
+        "height_mm": 1200.0
+      },
+      "roles": [
+        {
+          "role": "base_panel",
+          "quantity": 1
+        },
+        {
+          "role": "shelf",
+          "quantity": 2
+        },
+        {
+          "role": "side_panel",
+          "quantity": 2
+        },
+        {
+          "role": "top_panel",
+          "quantity": 1
+        }
+      ],
+      "structure": "top_base_between_sides",
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "unknown_fields": []
+    },
+    "descriptor_fingerprint": "4d7c24649b217ca7221937237e1f9dc7e2d2ee065a8bc44945a34b4315283272",
+    "created_at": "2026-11-14T14:26:29.943169+00:00",
+    "embedding": null,
+    "publication": null
+  },
+  "comparables": [
+    {
+      "id": "hist-syn-1",
+      "name": "Estantería sintética compacta",
+      "family": "estanteria_rectangular",
+      "width_mm": 800.0,
+      "depth_mm": 300.0,
+      "height_mm": 1700.0,
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "score": 0.925,
+      "differences": [
+        "dimensiones: 900×300 mm frente a 800×300 mm",
+        "material coincide",
+        "acabado coincide"
+      ],
+      "fixed_cost_eur": 40.0,
+      "material_cost_eur": 60.0,
+      "reference_area_mm2": 1200000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-3",
+      "name": "Módulo sintético abierto",
+      "family": "estanteria_rectangular",
+      "width_mm": 700.0,
+      "depth_mm": 280.0,
+      "height_mm": 1500.0,
+      "material": "tablero sintético",
+      "finish": "sin acabado",
+      "score": 0.5857,
+      "differences": [
+        "dimensiones: 900×300 mm frente a 700×280 mm",
+        "material coincide",
+        "acabado distinto: melamina sintética / sin acabado"
+      ],
+      "fixed_cost_eur": 35.0,
+      "material_cost_eur": 48.0,
+      "reference_area_mm2": 980000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-2",
+      "name": "Estantería sintética alta",
+      "family": "estanteria_rectangular",
+      "width_mm": 1000.0,
+      "depth_mm": 350.0,
+      "height_mm": 2100.0,
+      "material": "contrachapado sintético",
+      "finish": "barniz sintético",
+      "score": 0.4543,
+      "differences": [
+        "dimensiones: 900×300 mm frente a 1000×350 mm",
+        "material distinto: tablero sintético / contrachapado sintético",
+        "acabado distinto: melamina sintética / barniz sintético"
+      ],
+      "fixed_cost_eur": 55.0,
+      "material_cost_eur": 95.0,
+      "reference_area_mm2": 1800000.0,
+      "hours": null,
+      "synthetic": true
+    }
+  ],
+  "estimate": {
+    "schema_version": "0.2.0",
+    "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+    "result_revision": 2,
+    "currency": "EUR",
+    "concepts": [
+      {
+        "id": "setup",
+        "label": "Preparación fija",
+        "cost_type": "fixed",
+        "base_amount": 40.0,
+        "factor": 1.0,
+        "amount": 40.0,
+        "explanation": "El coste fijo no escala con dimensiones ni cantidad.",
+        "comparable_id": "hist-syn-1"
+      },
+      {
+        "id": "material",
+        "label": "Consumo de tablero",
+        "cost_type": "material",
+        "base_amount": 60.0,
+        "factor": 1.464,
+        "amount": 87.84,
+        "explanation": "Tarifa sintética 50.00 EUR/m² aplicada al área total confirmada de todas las piezas; no incluye el fijo.",
+        "comparable_id": "hist-syn-1"
+      }
+    ],
+    "total": 127.84,
+    "hours": null,
+    "assumptions": [
+      "Histórico y tarifas sintéticos; estimación no apta para compra.",
+      "Sin referencia de horas compatible: horas desconocidas."
+    ],
+    "comparable_ids": [
+      "hist-syn-1"
+    ],
+    "synthetic": true
+  },
+  "table_drawings": null,
+  "events": [
+    {
+      "sequence": 1,
+      "event_type": "run_state_changed",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.893268+00:00",
+        "state": "needs_review",
+        "mode": "geometry_only"
+      }
+    },
+    {
+      "sequence": 2,
+      "event_type": "result_committed",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.893268+00:00",
+        "result_revision": 1,
+        "state": "needs_review"
+      }
+    },
+    {
+      "sequence": 3,
+      "event_type": "run_finished",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.893268+00:00",
+        "state": "needs_review",
+        "result_revision": 1
+      }
+    },
+    {
+      "sequence": 4,
+      "event_type": "human_review_committed",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.915233+00:00",
+        "result_revision": 2,
+        "reviewer_name": "Ensayo sintético Vexplorer",
+        "selected_scenario_id": "scenario-between-sides",
+        "selected_assembly_candidate_id": null,
+        "selected_table_program_id": null
+      }
+    },
+    {
+      "sequence": 5,
+      "event_type": "estimate_committed",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.931153+00:00",
+        "result_revision": 2,
+        "total": 127.84,
+        "currency": "EUR"
+      }
+    },
+    {
+      "sequence": 6,
+      "event_type": "library_item_saved",
+      "data": {
+        "timestamp": "2026-11-14T14:26:29.945571+00:00",
+        "result_revision": 2
+      }
+    }
+  ]
+}

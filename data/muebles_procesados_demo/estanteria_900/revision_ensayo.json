@@ -1,0 +1,9 @@
+{
+  "base_result_revision": 1,
+  "reviewer_name": "Ensayo sintético Vexplorer",
+  "scenario_id": "scenario-between-sides",
+  "confirmed_thickness_mm": 18,
+  "material": "tablero sintético",
+  "finish": "melamina sintética",
+  "notes": "Fixture propio sintético: decisión de ensayo, no certificación de un mueble real."
+}

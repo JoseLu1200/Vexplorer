@@ -1,5 +1,7 @@
 # Vexplorer — planos, piezas y reconstrucción revisable
 
+
+**Demo sin API de IA:** [resultados ya procesados para la web app](docs/DEMO_DATOS_PROCESADOS.md) · [datasets de muebles y PlankAssembly: descargas directas](docs/DATASETS_DESCARGA_DIRECTA.md).
 Vexplorer convierte planos DXF, DWG y PDF en propuestas de piezas y medidas revisables. El recorrido **Mueble general** permite proponer paneles, elementos lineales, herrajes y componentes pendientes de identificar, sin limitar la entrada a mesa o estantería. Conserva también los recorridos especializados de mesa rectangular y piezas separadas. La geometría mide; un proponente multimodal interpreta el plano y un segundo pase visual contrasta y corrige la propuesta. La edición humana es opcional.
 
 Recorrido general: **plano → propuesta visual → crítica y corrección automáticas → BOM, SVG/DXF y esquema 3D → comparables → estimación de costes y horas**. El histórico admite JSON/CSV con procedencia, fecha, moneda, materiales, acabado y alcance económico; recupera por atributos o embeddings reales y estima por conceptos compatibles. Distingue registros empresariales, fuentes publicadas y datos sintéticos. La evaluación técnica no acredita precisión industrial ni ahorro medido con técnicos.

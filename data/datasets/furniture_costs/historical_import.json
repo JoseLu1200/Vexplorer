@@ -1,0 +1,142 @@
+{
+  "records": [
+    {
+      "record_id": "grotowska-2026-square-table",
+      "project_id": "grotowska-2026-square-table",
+      "revision": "published-2026-07-30",
+      "family": "table",
+      "area_mm2": 1640000,
+      "quantity": 1,
+      "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+      "finish": "natural oil, Cradle to Cradle Certified Silver",
+      "currency": "PLN",
+      "actual_cost": 250.90,
+      "cost_basis": "budget",
+      "manufacturing_hours": 3.5,
+      "origin": "published",
+      "provenance": {
+        "source": "https://doi.org/10.3390/su18157720; Tables 2, 6 and 7",
+        "source_date": "2026-07-30",
+        "notes": "Published academic case-study budget, not a closed ERP actual. Overall dimensions are not reported and remain null. Wood-use area is 1.64 m2."
+      },
+      "concepts": [
+        {"concept_id": "material", "kind": "material", "driver": "area", "cost": 50.00, "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue"},
+        {"concept_id": "labor", "kind": "labor", "driver": "item", "cost": 143.00, "hours": 3.5},
+        {"concept_id": "indirect", "kind": "indirect", "driver": "fixed", "cost": 57.90}
+      ],
+      "components": [
+        {"component_id": "oak-block-70", "kind": "solid-wood block", "quantity": 336, "length_mm": 70, "width_mm": 70, "thickness_mm": 20, "material": "post-production solid oak residue", "finish": "natural oil"},
+        {"component_id": "particleboard-base", "kind": "panel", "quantity": 1, "length_mm": 650, "width_mm": 650, "thickness_mm": 18, "material": "wood particleboard"}
+      ],
+      "included_scope": ["material", "labor", "indirect"],
+      "cost_scope": ["material", "labor", "indirect"],
+      "hours_scope": ["labor"]
+    },
+    {
+      "record_id": "grotowska-2026-childrens-chair",
+      "project_id": "grotowska-2026-childrens-chair",
+      "revision": "published-2026-07-30",
+      "family": "chair",
+      "width_mm": 300,
+      "depth_mm": 350,
+      "height_mm": 580,
+      "area_mm2": 360000,
+      "quantity": 1,
+      "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+      "finish": "natural oil, Cradle to Cradle Certified Silver",
+      "currency": "PLN",
+      "actual_cost": 107.90,
+      "cost_basis": "budget",
+      "manufacturing_hours": 2.5,
+      "origin": "published",
+      "provenance": {
+        "source": "https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3",
+        "source_date": "2026-07-30",
+        "notes": "Published academic case-study budget, not a closed ERP actual. The reported 30 x 35 x 58 cm sequence is mapped to width, depth and height. Wood-use area is 0.36 m2."
+      },
+      "concepts": [
+        {"concept_id": "material", "kind": "material", "driver": "area", "cost": 20.00, "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue"},
+        {"concept_id": "labor", "kind": "labor", "driver": "item", "cost": 63.00, "hours": 2.5},
+        {"concept_id": "indirect", "kind": "indirect", "driver": "fixed", "cost": 24.90}
+      ],
+      "components": [
+        {"component_id": "oak-block-50", "kind": "solid-wood block", "quantity": 146, "length_mm": 50, "width_mm": 50, "thickness_mm": 20, "material": "post-production solid oak residue", "finish": "natural oil"},
+        {"component_id": "oak-rail-300", "kind": "solid-wood rail", "quantity": 2, "length_mm": 300, "width_mm": 50, "thickness_mm": 20, "material": "post-production solid oak residue", "finish": "natural oil"},
+        {"component_id": "particleboard-seat", "kind": "panel", "quantity": 1, "length_mm": 300, "width_mm": 250, "thickness_mm": 18, "material": "wood particleboard"}
+      ],
+      "included_scope": ["material", "labor", "indirect"],
+      "cost_scope": ["material", "labor", "indirect"],
+      "hours_scope": ["labor"]
+    },
+    {
+      "record_id": "grotowska-2026-childrens-table",
+      "project_id": "grotowska-2026-childrens-table",
+      "revision": "published-2026-07-30",
+      "family": "table",
+      "width_mm": 500,
+      "depth_mm": 500,
+      "height_mm": 580,
+      "area_mm2": 780000,
+      "quantity": 1,
+      "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+      "finish": "natural oil, Cradle to Cradle Certified Silver",
+      "currency": "PLN",
+      "actual_cost": 111.80,
+      "cost_basis": "budget",
+      "manufacturing_hours": 3.0,
+      "origin": "published",
+      "provenance": {
+        "source": "https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3",
+        "source_date": "2026-07-30",
+        "notes": "Published academic case-study budget, not a closed ERP actual. The reported 50 x 50 x 58 cm sequence is mapped to width, depth and height. Wood-use area is 0.78 m2."
+      },
+      "concepts": [
+        {"concept_id": "material", "kind": "material", "driver": "area", "cost": 11.00, "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue"},
+        {"concept_id": "labor", "kind": "labor", "driver": "item", "cost": 75.00, "hours": 3.0},
+        {"concept_id": "indirect", "kind": "indirect", "driver": "fixed", "cost": 25.80}
+      ],
+      "components": [
+        {"component_id": "oak-block-50", "kind": "solid-wood block", "quantity": 312, "length_mm": 50, "width_mm": 50, "thickness_mm": 20, "material": "post-production solid oak residue", "finish": "natural oil"},
+        {"component_id": "particleboard-base", "kind": "panel", "quantity": 1, "length_mm": 450, "width_mm": 450, "thickness_mm": 18, "material": "wood particleboard"}
+      ],
+      "included_scope": ["material", "labor", "indirect"],
+      "cost_scope": ["material", "labor", "indirect"],
+      "hours_scope": ["labor"]
+    },
+    {
+      "record_id": "grotowska-2026-pouf",
+      "project_id": "grotowska-2026-pouf",
+      "revision": "published-2026-07-30",
+      "family": "seating",
+      "width_mm": 420,
+      "depth_mm": 420,
+      "height_mm": 420,
+      "area_mm2": 1100000,
+      "quantity": 1,
+      "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue",
+      "finish": "natural oil, Cradle to Cradle Certified Silver",
+      "currency": "PLN",
+      "actual_cost": 162.50,
+      "cost_basis": "budget",
+      "manufacturing_hours": 2.5,
+      "origin": "published",
+      "provenance": {
+        "source": "https://doi.org/10.3390/su18157720; Tables 2, 6 and 7; section 3.3",
+        "source_date": "2026-07-30",
+        "notes": "Published academic case-study budget, not a closed ERP actual. Table 2 reports six 440 x 440 x 18 mm boards; section 3.3 reports a 380 x 380 x 18 mm board. Components preserve Table 2 while this conflict remains unresolved. Wood-use area is 1.10 m2."
+      },
+      "concepts": [
+        {"concept_id": "material", "kind": "material", "driver": "area", "cost": 50.00, "material": "post-production solid oak residues with wood particleboard and PVAc D3 glue"},
+        {"concept_id": "labor", "kind": "labor", "driver": "item", "cost": 75.00, "hours": 2.5},
+        {"concept_id": "indirect", "kind": "indirect", "driver": "fixed", "cost": 37.50}
+      ],
+      "components": [
+        {"component_id": "oak-block-70", "kind": "solid-wood block", "quantity": 216, "length_mm": 70, "width_mm": 70, "thickness_mm": 20, "material": "post-production solid oak residue", "finish": "natural oil"},
+        {"component_id": "particleboard-panels", "kind": "panel", "quantity": 6, "length_mm": 440, "width_mm": 440, "thickness_mm": 18, "material": "wood particleboard"}
+      ],
+      "included_scope": ["material", "labor", "indirect"],
+      "cost_scope": ["material", "labor", "indirect"],
+      "hours_scope": ["labor"]
+    }
+  ]
+}
