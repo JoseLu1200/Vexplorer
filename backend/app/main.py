@@ -61,6 +61,7 @@ from backend.app.servicios.table_explanations import explain_table_result
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
+from backend.app.precedentes.mantenimiento import tras_guardar_biblioteca
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
 from backend.app.similarity.service import geometric_groups, geometric_match, semantic_groups, semantic_match
@@ -1871,6 +1872,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             embedding = EmbeddingMetadata(model=model, dimensions=dimensions, descriptor_version=descriptor.descriptor_version, cache_key=cache_key, status=status)
         item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding)
         repository.save_library_item(item)
+        tras_guardar_biblioteca(root, repository, semantic_provider, item)
         return _ok(item.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/library")

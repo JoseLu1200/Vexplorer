@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import threading
 import time
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
@@ -34,6 +32,17 @@ from backend.app.precedentes.hibrido import (
     normalizar_pesos,
     puntuar_hibrido,
 )
+from backend.app.precedentes.mantenimiento import (
+    NOMBRE_CANDADO_ESPACIO,
+    NOMBRE_CANDADO_REGENERACION,
+    TTL_ESPACIO_S,
+    TTL_REGENERACION_S,
+    CandadoPersistente,
+    IntervaloNoCumplido,
+    OperacionEnCurso,
+    RegistroEspacio,
+    regeneracion_auto_activada,
+)
 from backend.app.precedentes.regeneracion import (
     ProveedorEmbeddings,
     RepositorioBiblioteca,
@@ -49,26 +58,6 @@ from backend.app.similarity.thresholds import (
 
 LIMITE_MAXIMO_REGENERACION = 100
 INTERVALO_MINIMO_VERIFICACION_S = 60.0
-
-
-class OperacionEnCurso(RuntimeError):
-    pass
-
-
-class _Exclusivo:
-    """Candado no bloqueante: una sola ejecución concurrente por operación."""
-
-    def __init__(self) -> None:
-        self._candado = threading.Lock()
-
-    @contextmanager
-    def ocupar(self) -> Iterator[None]:
-        if not self._candado.acquire(blocking=False):
-            raise OperacionEnCurso
-        try:
-            yield
-        finally:
-            self._candado.release()
 
 
 def _es_vigente(repositorio: RepositorioBiblioteca, elemento: LibraryItem) -> bool:
@@ -90,6 +79,7 @@ class SolicitudSimilaresHibrido(ModeloEstricto):
 class SolicitudRegeneracion(ModeloEstricto):
     simular: bool = True
     limite: int = Field(default=50, ge=1, le=LIMITE_MAXIMO_REGENERACION)
+    incluir_sin_huella: bool = False  # marca también los embeddings sin sello de huella
 
 
 class SolicitudVerificacionEspacio(ModeloEstricto):
@@ -121,26 +111,22 @@ def crear_router_embeddings(
     almacen_espacio: AlmacenEspacio,
     ahora: Callable[[], str] = ahora_utc,
     intervalo_minimo_verificacion_s: float = INTERVALO_MINIMO_VERIFICACION_S,
-    reloj_monotono: Callable[[], float] = time.monotonic,
+    reloj_monotono: Callable[[], float] = time.time,
+    registro: RegistroEspacio | None = None,
 ) -> APIRouter:
-    """Las operaciones de pago (regenerar sin simular, verificar, rotar) se serializan con candados
-    no bloqueantes (409 ``operacion_en_curso``); verificar y rotar comparten además un intervalo
-    mínimo entre llamadas al proveedor (429 ``verificacion_reciente``)."""
+    """Las operaciones de pago (regenerar sin simular, verificar, rotar) se serializan con un candado
+    persistente con lease en el SQLite de precedentes (409 ``operacion_en_curso``), válido entre
+    hilos, workers y procesos; verificar y rotar comparten además un intervalo mínimo entre llamadas
+    al proveedor (429 ``verificacion_reciente``), también persistente.
+
+    ``reloj_monotono`` conserva su nombre por compatibilidad, pero debe ser un reloj de pared
+    (``time.time``) porque se compara entre procesos."""
     router = APIRouter(prefix=PREFIJO_API, tags=["precedentes-embeddings"])
-    candado_regeneracion = _Exclusivo()
-    candado_espacio = _Exclusivo()
-    ultima_llamada_espacio: list[float] = []
+    candado = CandadoPersistente(almacen_espacio.ruta, reloj_monotono)
+    registro = registro or RegistroEspacio(almacen_espacio, ahora)
 
     def _ocupado() -> JSONResponse:
         return _error(409, "operacion_en_curso", "Ya hay una ejecución de esta operación en curso.")
-
-    def _espera_restante() -> float:
-        if not ultima_llamada_espacio:
-            return 0.0
-        return max(0.0, intervalo_minimo_verificacion_s - (reloj_monotono() - ultima_llamada_espacio[0]))
-
-    def _registrar_llamada_espacio() -> None:
-        ultima_llamada_espacio[:] = [reloj_monotono()]
 
     def _fallo_proveedor(exc: EmbeddingProviderError) -> JSONResponse:
         codigo = str(exc) or "semantic_provider_failed"
@@ -203,12 +189,12 @@ def crear_router_embeddings(
     @router.post("/embeddings/regenerar")
     def regenerar(solicitud: SolicitudRegeneracion):
         if solicitud.simular:
-            return respuesta_ok(regenerar_obsoletos(repositorio, proveedor, True, solicitud.limite, ahora))
+            return respuesta_ok(regenerar_obsoletos(repositorio, proveedor, True, solicitud.limite, ahora, registro, solicitud.incluir_sin_huella))
         if proveedor is None:
             return _error(503, "proveedor_no_disponible", "No hay proveedor de embeddings configurado; usa simular=true.")
         try:
-            with candado_regeneracion.ocupar():
-                informe = regenerar_obsoletos(repositorio, proveedor, False, solicitud.limite, ahora)
+            with candado.ocupar(NOMBRE_CANDADO_REGENERACION, TTL_REGENERACION_S) as lease:
+                informe = regenerar_obsoletos(repositorio, proveedor, False, solicitud.limite, ahora, registro, solicitud.incluir_sin_huella, lease.renovar)
         except OperacionEnCurso:
             return _ocupado()
         return respuesta_ok(informe)
@@ -217,17 +203,15 @@ def crear_router_embeddings(
         if proveedor is None:
             return _error(503, "proveedor_no_disponible", "No hay proveedor de embeddings configurado.")
         try:
-            with candado_espacio.ocupar():
-                espera = _espera_restante()
-                if espera > 0:
-                    return _error(429, "verificacion_reciente", f"Espera {espera:.0f} s antes de volver a consultar el proveedor.")
-                _registrar_llamada_espacio()
+            with candado.ocupar(NOMBRE_CANDADO_ESPACIO, TTL_ESPACIO_S, intervalo_minimo_verificacion_s):
                 try:
                     return respuesta_ok(operacion())
                 except EmbeddingProviderError as exc:
                     return _fallo_proveedor(exc)
         except OperacionEnCurso:
             return _ocupado()
+        except IntervaloNoCumplido as exc:
+            return _error(429, "verificacion_reciente", f"Espera {exc.espera_s:.0f} s antes de volver a consultar el proveedor.")
 
     @router.post("/embeddings/espacio/verificar")
     def verificar(solicitud: SolicitudVerificacionEspacio | None = None):
@@ -238,6 +222,15 @@ def crear_router_embeddings(
     def rotar():
         """Rotación explícita: guarda la huella actual como referencia y archiva la anterior con fecha."""
         return _operacion_espacio(lambda: rotar_espacio(proveedor, almacen_espacio, ahora))
+
+    @router.get("/embeddings/mantenimiento")
+    def mantenimiento():
+        """Estado del mantenimiento: candados, regeneración automática tras guardar y embeddings reemplazados."""
+        return respuesta_ok({
+            "regeneracion_automatica": regeneracion_auto_activada(),
+            "candados": {nombre: candado.estado(nombre).model_dump(mode="json") for nombre in (NOMBRE_CANDADO_REGENERACION, NOMBRE_CANDADO_ESPACIO)},
+            "reemplazados": [item.model_dump(mode="json") for item in registro.listar_reemplazados()],
+        })
 
     @router.get("/embeddings/espacio/historico")
     def historico_espacio():

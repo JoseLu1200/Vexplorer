@@ -5,8 +5,8 @@ referencia por (modelo, dimensiones, versión de frases) en un SQLite propio; ca
 compara el coseno por frase con una tolerancia. Si el proveedor cambia su modelo interno sin cambiar
 el nombre, la deriva aparece aquí aunque el nombre del modelo sea el mismo.
 
-La integración con ``EmbeddingMetadata`` (identificador de espacio en la biblioteca) queda pendiente
-porque cambia el contrato (requiere acuerdo A/B).
+La huella no se guarda en ``EmbeddingMetadata`` (cambiaría el contrato y requiere acuerdo A/B): se
+vincula a cada embedding mediante sellos por ``cache_key`` en el mismo SQLite (ver ``mantenimiento``).
 """
 
 from __future__ import annotations
@@ -185,6 +185,10 @@ class AlmacenEspacio:
                 "modelo TEXT NOT NULL, dimensiones INTEGER NOT NULL, version_frases TEXT NOT NULL, "
                 "carga TEXT NOT NULL, retirada_en TEXT NOT NULL)"
             )
+
+    @property
+    def ruta(self) -> Path:
+        return self._ruta
 
     @contextmanager
     def _conectar(self) -> Iterator[sqlite3.Connection]:
