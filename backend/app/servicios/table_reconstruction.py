@@ -63,6 +63,11 @@ def _general_sheet(
     width = evaluated.overall_dimensions.width_mm
     height = evaluated.overall_dimensions.height_mm
     depth = evaluated.overall_dimensions.depth_mm
+    measure_refs = {
+        item.semantic: f"measure:{item.id}"
+        for item in analysis.measures
+        if item.semantic in {"overall_width", "overall_height", "overall_depth"}
+    }
     primitives: list[TableDrawingPrimitive] = []
     warnings: list[str] = []
     if width is not None and height is not None:
@@ -70,19 +75,19 @@ def _general_sheet(
             id="general-front-envelope", kind="rect",
             points_mm=(Point2D(x=0.0, y=0.0), Point2D(x=width, y=height)),
             state="calculated" if evaluated.state == "completed" else "proposed",
-            dependency_refs=("measure:overall_width", "measure:overall_height"),
+            dependency_refs=(measure_refs["overall_width"], measure_refs["overall_height"]),
         ))
         primitives.extend((
             _dimension(
                 "general-width", (0.0, 0.0), (width, 0.0), (0.0, -DIMENSION_OFFSET_MM),
                 width, _overall_state(analysis, evaluated, "overall_width"),
-                ("measure:overall_width",),
+                (measure_refs["overall_width"],),
             ),
             _dimension(
                 "general-height", (width, 0.0), (width, height),
                 (width + DIMENSION_OFFSET_MM, 0.0), height,
                 _overall_state(analysis, evaluated, "overall_height"),
-                ("measure:overall_height",),
+                (measure_refs["overall_height"],),
             ),
         ))
     else:
@@ -93,13 +98,13 @@ def _general_sheet(
             id="general-top-envelope", kind="rect",
             points_mm=(Point2D(x=0.0, y=top_y), Point2D(x=width, y=top_y + depth)),
             state="calculated" if evaluated.state == "completed" else "proposed",
-            dependency_refs=("measure:overall_width", "measure:overall_depth"),
+            dependency_refs=(measure_refs["overall_width"], measure_refs["overall_depth"]),
         ))
         primitives.append(_dimension(
             "general-depth", (0.0, top_y), (0.0, top_y + depth),
             (-DIMENSION_OFFSET_MM, top_y), depth,
             _overall_state(analysis, evaluated, "overall_depth"),
-            ("measure:overall_depth",),
+            (measure_refs["overall_depth"],),
         ))
     else:
         warnings.append("overall_top_dimensions_unknown")

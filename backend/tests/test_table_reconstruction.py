@@ -91,6 +91,16 @@ def test_reviewed_table_produces_traceable_sheets_and_three_physical_solids() ->
     assert sum(item.kind == "rect" for item in cut_sheet.primitives) == 3
     assert sum(item.kind == "dimension" for item in cut_sheet.primitives) == 6
     assert sum(item.kind == "text" and "T=" in (item.text or "") for item in cut_sheet.primitives) == 3
+    actual_measure_refs = {f"measure:{item.id}" for item in analysis.measures}
+    general_measure_refs = {
+        ref for primitive in general.primitives for ref in primitive.dependency_refs
+        if ref.startswith("measure:")
+    }
+    assert general_measure_refs <= actual_measure_refs
+    assert {
+        f"measure:{next(item.id for item in analysis.measures if item.semantic == semantic)}"
+        for semantic in ("overall_width", "overall_height", "overall_depth")
+    } <= general_measure_refs
     assert scene.state == "ready"
     assert len(scene.objects) == 3
     assert [item.role for item in scene.objects] == ["tabletop", "side_support", "side_support"]

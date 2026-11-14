@@ -198,6 +198,71 @@ def test_side_support_program_stays_proposed_until_each_target_is_accepted() -> 
     assert all(item.dimensions_mm.model_dump() == {"x": 18.0, "y": 720.0, "z": 700.0} for item in sides)
 
 
+def test_swapped_tabletop_axes_cannot_be_approved_into_a_completed_program() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    original = _catalog(analysis)[0]
+    bindings = {item.id: item for item in original.bindings}
+    swapped = original.model_copy(update={
+        "bindings": tuple(
+            item.model_copy(update={
+                "operand_refs": bindings[
+                    "binding-top-width" if item.id == "binding-top-length" else "binding-top-length"
+                ].operand_refs,
+            }) if item.id in {"binding-top-length", "binding-top-width"} else item
+            for item in original.bindings
+        ),
+    })
+
+    evaluated = _evaluate(analysis, swapped, decisions=_accept_all(swapped))
+
+    assert evaluated.state == "needs_review"
+    assert any(item.code == "registry_semantic_mismatch" for item in evaluated.issues)
+    assert any(item.state == "conflict" for item in evaluated.placements)
+
+
+def test_component_evidence_is_derived_from_binding_operands_not_tool_claims() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    original = _catalog(analysis)[0]
+    ungrounded = original.model_copy(update={
+        "evidence_ids": (),
+        "components": tuple(item.model_copy(update={"evidence_ids": ()}) for item in original.components),
+    })
+
+    evaluated = _evaluate(analysis, ungrounded, decisions=_accept_all(ungrounded))
+
+    assert evaluated.state == "completed"
+    assert all(item.evidence_ids for item in evaluated.components)
+    binding_evidence = {
+        item.id: set(item.result.evidence_ids) for item in evaluated.bindings
+    }
+    for component in evaluated.components:
+        spec = next(item for item in ungrounded.components if item.id == component.id)
+        expected = set().union(*(
+            binding_evidence[spec.length_binding_id],
+            binding_evidence[spec.width_binding_id],
+            binding_evidence[spec.thickness_binding_id],
+        ))
+        assert set(component.evidence_ids) == expected
+
+
+def test_review_cannot_confirm_a_support_section_outside_the_table_envelope() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    program = _catalog(analysis)[1]
+    support_depth = next(item for item in analysis.measures if item.semantic == "support_depth")
+
+    evaluated = _evaluate(
+        analysis, program, decisions=_accept_all(program),
+        confirmed_values=(TableConfirmedValue(
+            target_id=support_depth.id, value_mm=900.0,
+            reason="Valor humano deliberadamente incompatible con la profundidad global.",
+        ),),
+    )
+
+    assert evaluated.state == "needs_review"
+    assert any(item.code == "placement_outside_envelope" for item in evaluated.issues)
+    assert any(item.state == "conflict" for item in evaluated.placements)
+
+
 def test_corner_support_program_needs_one_explicit_section_before_five_placements() -> None:
     _, analysis = _analyze("mesa_demo_001.dxf")
     program = _catalog(analysis)[1]

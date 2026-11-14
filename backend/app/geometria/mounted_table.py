@@ -452,6 +452,9 @@ def evaluate_table_program(
         (accepted if decision.action == "accept" else rejected).add(target)
 
     measures = {item.id: item for item in analysis.measures}
+    measure_by_semantic = {
+        item.semantic: item for item in analysis.measures if item.semantic != "unknown"
+    }
     confirmed = {item.target_id: item for item in confirmed_values}
     if len(confirmed) != len(confirmed_values):
         issues.append(TableProgramIssue(
@@ -485,6 +488,71 @@ def evaluate_table_program(
             ))
 
     program_accepted = ("program", program.id) in accepted
+    binding_specs = {item.id: item for item in program.bindings}
+    component_specs = {item.role: item for item in program.components}
+    semantic_invalid_components: set[str] = set()
+
+    def is_copy(binding_id: str, allowed_measure_ids: set[str]) -> bool:
+        binding = binding_specs[binding_id]
+        return (
+            binding.operation == "copy"
+            and len(binding.operand_refs) == 1
+            and binding.operand_refs[0].ref_type == "measure"
+            and binding.operand_refs[0].ref_id in allowed_measure_ids
+        )
+
+    expected_rules = {
+        "side_supports_v1": ("side_support", "two_side_supports", "side_supports_flush"),
+        "corner_supports_v1": ("corner_support", "four_corner_supports", "corner_supports_flush"),
+    }
+    top = component_specs.get("tabletop")
+    expected = expected_rules.get(program.table_template_id)
+    support = component_specs.get(expected[0]) if expected is not None else None
+    semantic_valid = top is not None and support is not None and expected is not None
+    if semantic_valid:
+        assert top is not None and support is not None and expected is not None
+        top_thickness_ids = {
+            item.id for item in analysis.measures
+            if item.semantic == "tabletop_thickness" or item.geometry_relation == "offset_from_max_y"
+        }
+        support_thickness_ids = {
+            item.id for item in analysis.measures
+            if item.semantic in ({"support_thickness"} if support.role == "side_support" else {"support_width"})
+            or item.geometry_relation == "opposite_offsets"
+        }
+        top_valid = (
+            top.quantity_rule_id == "top_one" and top.placement_rule_id == "top_flush"
+            and is_copy(top.length_binding_id, {measure_by_semantic["overall_width"].id})
+            and is_copy(top.width_binding_id, {measure_by_semantic["overall_depth"].id})
+            and is_copy(top.thickness_binding_id, top_thickness_ids)
+        )
+        support_length = binding_specs[support.length_binding_id]
+        support_width_ids = (
+            {measure_by_semantic["overall_depth"].id}
+            if support.role == "side_support"
+            else {measure_by_semantic["support_depth"].id}
+        )
+        support_valid = (
+            support.quantity_rule_id == expected[1] and support.placement_rule_id == expected[2]
+            and is_copy(support.width_binding_id, support_width_ids)
+            and is_copy(support.thickness_binding_id, support_thickness_ids)
+            and support_length.operation == "subtract"
+            and tuple((item.ref_type, item.ref_id) for item in support_length.operand_refs) == (
+                ("measure", measure_by_semantic["overall_height"].id),
+                ("binding", top.thickness_binding_id),
+            )
+        )
+        if not top_valid:
+            semantic_invalid_components.add(top.id)
+        if not support_valid:
+            semantic_invalid_components.add(support.id)
+        semantic_valid = top_valid and support_valid
+    if not semantic_valid:
+        issues.append(TableProgramIssue(
+            code="registry_semantic_mismatch", severity="error",
+            message="Component bindings or rules contradict the selected table registry template.",
+            target_ids=tuple(sorted(semantic_invalid_components or {program.id})),
+        ))
     evaluated_bindings: list[EvaluatedTableBinding] = []
     binding_fields: dict[str, TableFieldValue] = {}
     for binding in program.bindings:
@@ -543,6 +611,17 @@ def evaluate_table_program(
             })
 
         quantity = {"top_one": 1, "two_side_supports": 2, "four_corner_supports": 4}[component.quantity_rule_id]
+        derived_evidence = tuple(sorted({
+            evidence_id
+            for binding_id in (component.length_binding_id, component.width_binding_id, component.thickness_binding_id)
+            for evidence_id in binding_fields[binding_id].evidence_ids
+        }))
+        if component.evidence_ids and not set(component.evidence_ids).issubset(derived_evidence):
+            issues.append(TableProgramIssue(
+                code="declared_evidence_ignored", severity="warning",
+                message="Component evidence is derived from binding operands; unrelated declared evidence was ignored.",
+                target_ids=(component.id,),
+            ))
         evaluated_components.append(EvaluatedTableComponent(
             id=component.id, role=component.role,
             length=component_field(component.length_binding_id),
@@ -550,7 +629,7 @@ def evaluate_table_program(
             thickness=component_field(component.thickness_binding_id),
             quantity=quantity, quantity_rule_id=component.quantity_rule_id,
             placement_rule_id=component.placement_rule_id, accepted=component_accepted,
-            premise_ids=component.premise_ids, evidence_ids=component.evidence_ids,
+            premise_ids=component.premise_ids, evidence_ids=derived_evidence,
         ))
 
     component_by_id = {item.id: item for item in evaluated_components}
@@ -605,8 +684,23 @@ def evaluate_table_program(
                 position = Point3D(x=x, y=0.0, z=z)
                 dimensions = Size3D(x=component.thickness.value_mm, y=component.length.value_mm, z=component.width.value_mm)
             premises_accepted = all(("premise", item) in accepted for item in component.premise_ids)
-            if program_accepted and component.accepted and premises_accepted:
+            outside_envelope = (
+                position.x < -1e-6 or position.y < -1e-6 or position.z < -1e-6
+                or position.x + dimensions.x > width + 1e-6
+                or position.y + dimensions.y > height + 1e-6
+                or position.z + dimensions.z > depth + 1e-6
+            )
+            if outside_envelope:
+                placement_state = "conflict"
+                issues.append(TableProgramIssue(
+                    code="placement_outside_envelope", severity="error",
+                    message="A proposed physical occurrence exceeds the observed table envelope.",
+                    target_ids=(occurrence.id,),
+                ))
+            elif program_accepted and component.accepted and premises_accepted:
                 placement_state = "pass"
+            if component.id in semantic_invalid_components:
+                placement_state = "conflict"
         rule_spec = next(item for item in program.components if item.id == component.id)
         placements.append(TablePlacement(
             occurrence_id=occurrence.id, position_mm=position, dimensions_mm=dimensions,
@@ -666,6 +760,16 @@ def evaluate_table_program(
         **{f"quantity:{item.quantity_rule_id}": item.quantity_rule_version for item in program.components},
         **{f"placement:{item.placement_rule_id}": item.placement_rule_version for item in program.components},
     }
+    evidence_by_role = {item.role: item.evidence_ids for item in evaluated_components}
+    normalized = normalized.model_copy(update={
+        "components": tuple(
+            item.model_copy(update={"evidence_ids": evidence_by_role[item.role]})
+            for item in normalized.components
+        ),
+        "evidence_ids": tuple(sorted({
+            evidence_id for values in evidence_by_role.values() for evidence_id in values
+        })),
+    })
     return EvaluatedTableProgram(
         raw_program=program, normalized_program=normalized,
         program_hash=_program_hash(normalized), ledger_revision=analysis.ledger_revision,
