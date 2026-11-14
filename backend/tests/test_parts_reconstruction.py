@@ -159,6 +159,17 @@ def test_human_confirmed_quantity_creates_occurrences_missing_from_original_cand
     assert len(scene.objects) == 6
     confirmed_piece = next(piece for piece in revision_three.pieces if piece.proposal_id == unknown_use.id)
     assert confirmed_piece.field_states["quantity"] == "confirmed"
+    effective_candidate = recompute_reviewed_assembly_candidate(
+        candidate, parts, revision_three.pieces, result_revision=3,
+    )
+    quantity_unknown_field = f"uses.{unknown_use.id}.quantity"
+    assert quantity_unknown_field in candidate.unknown_fields
+    assert quantity_unknown_field not in effective_candidate.unknown_fields
+    assert unknown_use.source_quantity is None
+    observation = next(
+        item for item in parts.observations if item.id == unknown_use.part_observation_id
+    )
+    assert observation.quantity.value is None
     occurrences = [item for item in scene.objects if item.piece_id == confirmed_piece.id]
     assert [item.occurrence_index for item in occurrences] == [1, 2]
     assert all(item.evidence_ids == confirmed_piece.evidence_ids for item in occurrences)
