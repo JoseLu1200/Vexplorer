@@ -105,3 +105,17 @@ def test_semantic_groups_reject_missing_embeddings_explicitly(tmp_path: Path, mo
     response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.8})
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "semantic_embedding_missing"
+
+
+def test_library_version_filter_keeps_table_space_separate_from_legacy(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    for label in ("legacy-a", "legacy-b"):
+        run_id = _reviewed_run(client, label)
+        client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "offline"})
+
+    listed = client.get("/api/v1/library", params={"descriptor_version": "furniture-v3"})
+    assert listed.status_code == 200
+    assert listed.json()["data"] == {"items": [], "descriptor_version": "furniture-v3", "excluded_count": 2}
+    grouped = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.8, "descriptor_version": "furniture-v3"})
+    assert grouped.status_code == 200
+    assert grouped.json()["data"] == {"groups": [], "descriptor_version": "furniture-v3", "excluded_count": 2}
