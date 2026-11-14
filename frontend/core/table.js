@@ -14,6 +14,10 @@ export function artifactRequestIdentity({ runId, revision, programHash, sheetId,
   return [runId, revision, programHash, sheetId, format].join(":");
 }
 
+export function tableExportFormat(format) {
+  return format === "csv" ? "table_cutlist" : format;
+}
+
 const ROLE_QUANTITY = Object.freeze({ tabletop: 1, side_support: 2, corner_support: 4 });
 const MEASURE_SOURCE_LABELS = Object.freeze({
   dimension_annotation: "Cota escrita",
