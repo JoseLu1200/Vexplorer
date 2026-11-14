@@ -11,6 +11,7 @@ from backend.app.contratos.modelos import (
     Size3D,
     SeparatedPartsExtraction,
 )
+from backend.app.geometria.parts import recompute_reviewed_assembly_candidate
 
 
 SUPPORTED_ROLES = {"side_panel", "top_panel", "base_panel", "shelf"}
@@ -242,6 +243,9 @@ def reconstruct_parts_scene(
             run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
             selected_scenario_id=candidate_id, warnings=("selected_assembly_candidate_missing",),
         )
+    candidate = recompute_reviewed_assembly_candidate(
+        candidate, parts, result.pieces, result_revision=result.result_revision,
+    )
     pieces = {item.proposal_id: item for item in result.pieces}
     warnings = []
     occurrence_indices_by_use: dict[str, tuple[int, ...]] = {}
