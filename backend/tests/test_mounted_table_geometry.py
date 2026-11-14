@@ -203,6 +203,9 @@ def test_swapped_tabletop_axes_cannot_be_approved_into_a_completed_program() -> 
     original = _catalog(analysis)[0]
     bindings = {item.id: item for item in original.bindings}
     swapped = original.model_copy(update={
+        "id": "model-generated-swapped-axes",
+        "proposal_origin": "model_generated",
+        "table_template_id": None,
         "bindings": tuple(
             item.model_copy(update={
                 "operand_refs": bindings[
@@ -218,6 +221,21 @@ def test_swapped_tabletop_axes_cannot_be_approved_into_a_completed_program() -> 
     assert evaluated.state == "needs_review"
     assert any(item.code == "registry_semantic_mismatch" for item in evaluated.issues)
     assert any(item.state == "conflict" for item in evaluated.placements)
+
+
+def test_model_generated_program_infers_registry_from_roles_and_rules() -> None:
+    _, analysis = _analyze("mesa_demo_001.dxf")
+    catalog = _catalog(analysis)[0]
+    generated = catalog.model_copy(update={
+        "id": "model-generated-table",
+        "proposal_origin": "model_generated",
+        "table_template_id": None,
+    })
+
+    evaluated = _evaluate(analysis, generated, decisions=_accept_all(generated))
+
+    assert evaluated.state == "completed"
+    assert not any(item.code == "registry_semantic_mismatch" for item in evaluated.issues)
 
 
 def test_component_evidence_is_derived_from_binding_operands_not_tool_claims() -> None:
