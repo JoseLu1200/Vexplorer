@@ -1240,6 +1240,33 @@ class RunSnapshot(StrictModel):
     input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
 
 
+class RunRequest(StrictModel):
+    document_id: str = Field(pattern=r"^doc-[0-9a-f]{32}$")
+    mode: Literal["live", "geometry_only", "recorded_replay"]
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
+    table_profile: Literal["rectangular_table_v1"] | None = None
+    proposal_mode: Literal["none", "catalog_baseline", "model_generated"] = "none"
+    table_template_id: Literal["side_supports_v1", "corner_supports_v1"] | None = None
+
+    @model_validator(mode="after")
+    def table_options_match_mode(self) -> "RunRequest":
+        if self.input_kind != "mounted_orthographic_views":
+            if self.table_profile is not None or self.proposal_mode != "none" or self.table_template_id is not None:
+                raise ValueError("table options require mounted orthographic views")
+            return self
+        if self.table_profile != "rectangular_table_v1":
+            raise ValueError("mounted table input requires an explicit table profile")
+        if self.mode == "live":
+            if self.proposal_mode != "model_generated" or self.table_template_id is not None:
+                raise ValueError("live table mode requires model_generated without catalog template")
+        elif self.mode == "geometry_only":
+            if self.proposal_mode == "model_generated":
+                raise ValueError("geometry_only cannot generate a model program")
+            if (self.proposal_mode == "catalog_baseline") != (self.table_template_id is not None):
+                raise ValueError("catalog baseline requires exactly one explicit table template")
+        return self
+
+
 class Comparable(StrictModel):
     id: str
     name: str

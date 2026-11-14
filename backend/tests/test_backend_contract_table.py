@@ -15,6 +15,7 @@ from backend.app.contratos.modelos import (
     TableReviewDecision,
     TableDrawingPrimitive,
     Point2D,
+    RunRequest,
 )
 
 
@@ -128,3 +129,15 @@ def test_table_cost_catalog_has_unique_discoverable_tariffs():
     assert catalog.synthetic is True
     with pytest.raises(ValidationError, match="duplicate"):
         TableCostCatalog(catalog_version="table-costs-v1", tariffs=(tariff, tariff))
+
+
+def test_table_run_requires_explicit_profile_and_catalog_template():
+    document_id = "doc-" + "a" * 32
+    baseline = RunRequest(document_id=document_id, mode="geometry_only", input_kind="mounted_orthographic_views", table_profile="rectangular_table_v1", proposal_mode="catalog_baseline", table_template_id="side_supports_v1")
+    assert baseline.table_template_id == "side_supports_v1"
+    live = RunRequest(document_id=document_id, mode="live", input_kind="mounted_orthographic_views", table_profile="rectangular_table_v1", proposal_mode="model_generated")
+    assert live.table_template_id is None
+    with pytest.raises(ValidationError, match="template"):
+        RunRequest(document_id=document_id, mode="geometry_only", input_kind="mounted_orthographic_views", table_profile="rectangular_table_v1", proposal_mode="catalog_baseline")
+    with pytest.raises(ValidationError, match="model_generated"):
+        RunRequest(document_id=document_id, mode="live", input_kind="mounted_orthographic_views", table_profile="rectangular_table_v1")
