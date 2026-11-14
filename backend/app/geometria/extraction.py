@@ -342,14 +342,15 @@ def extraction_payload(
             evidence_id = f"evidence-dimension-{entity.id}"
             dimension_id = f"dimension-{entity.id}"
             graphic_id = f"graphic-{entity.id}"
+            has_graphic = bool(entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None)
             value_mm = entity.measurement * drawing.unit_scale_to_mm if not entity.dimension_conflict and drawing.unit_scale_to_mm is not None else None
             evidence.append({"id": evidence_id, "kind": "annotation", "source_entity_ids": [entity.id], "description": "Linear dimension annotation observed in drawing"})
             dimensions.append({
                 "id": dimension_id, "kind": "annotation", "value_mm": value_mm,
                 "source_entity_ids": [entity.id], "evidence_ids": [evidence_id], "origin": "observed",
-                "view_id": _view_id(view_label), "graphic_id": graphic_id,
+                "view_id": _view_id(view_label), "graphic_id": graphic_id if has_graphic else None,
             })
-            if entity.extension_starts and entity.dimension_line and entity.text_position and entity.display_text is not None:
+            if has_graphic:
                 start_a_source, start_a_mm = _point_payload(entity.extension_starts[0], drawing.unit_scale_to_mm)
                 start_b_source, start_b_mm = _point_payload(entity.extension_starts[1], drawing.unit_scale_to_mm)
                 dimension_start_source, dimension_start_mm = _point_payload(entity.dimension_line[0], drawing.unit_scale_to_mm)
