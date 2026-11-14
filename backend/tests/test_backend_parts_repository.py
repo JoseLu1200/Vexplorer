@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from backend.app.contratos.modelos import AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, DerivedAssemblyDimension, DrawingExtraction, ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference, Point2D, ReviewRequest, SeparatedPartObservation, SeparatedPartsExtraction
+import pytest
+
+from backend.app.contratos.modelos import AssemblyCandidate, AssemblyConstraint, AssemblyPartUse, DerivedAssemblyDimension, DrawingExtraction, ObservedPartDimension, ObservedQuantity, PartDimensions, PartViewReference, Point2D, ReviewDecision, ReviewRequest, SeparatedPartObservation, SeparatedPartsExtraction
+from backend.app.geometria import extract_drawing
+from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.historico.service import _assembly_dimensions
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.explanations import explain_result
@@ -73,3 +77,49 @@ def test_parts_explanations_use_part_observation_provenance(tmp_path: Path) -> N
     assert initial.pieces[0].source_entity_ids == parts.observations[0].source_entity_ids
     assert initial.pieces[0].field_states["quantity"] == "unknown"
     assert after.pieces[0].source_contour_ids == tuple(contour for view in parts.observations[0].views for contour in view.contour_ids)
+
+
+def test_parts_review_rejects_quantity_override_of_observed_allocation(tmp_path: Path) -> None:
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "piezas_completo.dxf"
+    extraction = extract_drawing(fixture, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+    candidates = derive_assembly_candidates(parts)
+    candidate = candidates[0]
+    observed_use = next(item for item in candidate.uses if item.allocated_quantity == 2)
+    repository = DemoRepository(tmp_path / "observed-quantity.sqlite3")
+    repository.create_run(
+        "run-observed", "geometry_only", extraction, (),
+        part_analysis=parts, assembly_candidates=candidates,
+    )
+
+    with pytest.raises(ValueError, match="observed_quantity_override"):
+        repository.review("run-observed", ReviewRequest(
+            base_result_revision=1,
+            reviewer_name="Operadora local",
+            assembly_candidate_id=candidate.id,
+            decisions=(ReviewDecision(
+                proposal_id=observed_use.id,
+                action="confirm",
+                role=observed_use.role,
+                quantity=1,
+                notes="Intento de cambiar una cantidad ya observada.",
+            ),),
+            notes="Selecciona candidato.",
+        ))
+
+    reviewed = repository.review("run-observed", ReviewRequest(
+        base_result_revision=1,
+        reviewer_name="Operadora local",
+        assembly_candidate_id=candidate.id,
+        decisions=(ReviewDecision(
+            proposal_id=observed_use.id,
+            action="confirm",
+            role=observed_use.role,
+            quantity=observed_use.allocated_quantity,
+            notes="Repite sin alterar la allocation observada.",
+        ),),
+        notes="Selecciona candidato.",
+    ))
+    repeated = next(item for item in reviewed.pieces if item.proposal_id == observed_use.id)
+    assert repeated.quantity == observed_use.allocated_quantity
+    assert repeated.field_states["quantity"] == "observed"

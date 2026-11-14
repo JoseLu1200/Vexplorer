@@ -223,15 +223,25 @@ class DemoRepository:
             if decision is not None and decision.action == "reject":
                 rejected.append(use.id)
                 continue
+            if (
+                use.quantity_source == "observed_annotation"
+                and decision is not None
+                and decision.quantity is not None
+                and decision.quantity != use.allocated_quantity
+            ):
+                raise ValueError("observed_quantity_override")
             dimensions = observation.dimensions
-            quantity = decision.quantity if decision and decision.quantity is not None else use.allocated_quantity
+            quantity_confirmed = bool(
+                decision and decision.quantity is not None and use.quantity_source == "unknown"
+            )
+            quantity = decision.quantity if quantity_confirmed else use.allocated_quantity
             length = decision.length_mm if decision and decision.length_mm is not None else dimensions.length.value_mm
             width = decision.width_mm if decision and decision.width_mm is not None else dimensions.width.value_mm
             thickness = decision.thickness_mm if decision and decision.thickness_mm is not None else dimensions.thickness.value_mm
             material = decision.material if decision and decision.material is not None else request.material
             finish = decision.finish if decision and decision.finish is not None else request.finish
             notes = decision.notes if decision else request.notes or ""
-            pieces.append(ResolvedPiece(id=f"piece-{use.id}", proposal_id=use.id, label=f"{observation.part_key or observation.id}:{use.role}", role=decision.role if decision and decision.role != "unknown" else use.role, quantity=quantity, length_mm=length, width_mm=width, thickness_mm=thickness, material=material, finish=finish, source_observation_ids=(), source_contour_ids=tuple(contour_id for view in observation.views for contour_id in view.contour_ids), evidence_ids=observation.evidence_ids, source_part_observation_ids=(observation.id,), human_confirmation=notes, field_states={"quantity": "confirmed" if decision and decision.quantity is not None else ("observed" if quantity is not None else "unknown"), "length_mm": "confirmed" if decision and decision.length_mm is not None else dimensions.length.state if dimensions.length.state != "conflict" else "unknown", "width_mm": "confirmed" if decision and decision.width_mm is not None else dimensions.width.state if dimensions.width.state != "conflict" else "unknown", "thickness_mm": "confirmed" if decision and decision.thickness_mm is not None else dimensions.thickness.state if dimensions.thickness.state != "conflict" else "unknown", "material": "confirmed" if material else "unknown", "finish": "confirmed" if finish else "unknown"}))
+            pieces.append(ResolvedPiece(id=f"piece-{use.id}", proposal_id=use.id, label=f"{observation.part_key or observation.id}:{use.role}", role=decision.role if decision and decision.role != "unknown" else use.role, quantity=quantity, length_mm=length, width_mm=width, thickness_mm=thickness, material=material, finish=finish, source_observation_ids=(), source_contour_ids=tuple(contour_id for view in observation.views for contour_id in view.contour_ids), evidence_ids=observation.evidence_ids, source_part_observation_ids=(observation.id,), human_confirmation=notes, field_states={"quantity": "confirmed" if quantity_confirmed else ("observed" if quantity is not None else "unknown"), "length_mm": "confirmed" if decision and decision.length_mm is not None else dimensions.length.state if dimensions.length.state != "conflict" else "unknown", "width_mm": "confirmed" if decision and decision.width_mm is not None else dimensions.width.state if dimensions.width.state != "conflict" else "unknown", "thickness_mm": "confirmed" if decision and decision.thickness_mm is not None else dimensions.thickness.state if dimensions.thickness.state != "conflict" else "unknown", "material": "confirmed" if material else "unknown", "finish": "confirmed" if finish else "unknown"}))
         dimensions_complete = all(item.quantity is not None and item.length_mm is not None and item.width_mm is not None and item.thickness_mm is not None for item in pieces)
         assembly_complete = candidate.family != "unknown" and candidate.layout != "unknown" and not candidate.unassigned_part_observation_ids and not rejected and len(pieces) == len(candidate.uses) and all(item.status == "pass" for item in candidate.constraints) and {item.axis for item in candidate.derived_dimensions} == {"width", "height", "depth"} and all(item.state == "derived" for item in candidate.derived_dimensions)
         revision = request.base_result_revision + 1
