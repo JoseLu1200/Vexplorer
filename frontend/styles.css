@@ -203,7 +203,9 @@ h3{margin:18px 0 8px;font-size:13px;font-weight:500;letter-spacing:-0.015em}
 .drawing-path.is-dimmed{opacity:.16}
 .drawing-text{fill:var(--stroke-text);font:10px var(--font-mono);paint-order:stroke;stroke:var(--paper);stroke-width:3;stroke-linejoin:round}
 .dimension-line{fill:none;stroke:var(--dim-stroke);stroke-width:1;vector-effect:non-scaling-stroke}
+.dimension-line.dimension-conflict{stroke:var(--escalar);stroke-dasharray:4 3;stroke-width:1.4}
 .dimension-text{fill:var(--dim-text);font:10px var(--font-mono);paint-order:stroke;stroke:var(--paper);stroke-width:3}
+.dimension-text.dimension-conflict{fill:var(--escalar);font-weight:600}
 .is-layer-hidden,.is-view-hidden{display:none}
 .empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;color:var(--muted);text-align:center;pointer-events:none}
 .empty-state strong{color:var(--ink);font-size:22px;font-weight:500;letter-spacing:-0.035em}
