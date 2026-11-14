@@ -108,6 +108,12 @@ test("restored interrupted runs expose checkpoint phase and only the server safe
   assert.match(app,/api\.resumeJob\(sourceJobId\)/);
 });
 
+test("general review panel reuses resume review instead of proposing a new provider run",()=>{
+  assert.match(app,/state\.jobRecovery\?\.safeAction==="resume_review"/);
+  assert.match(app,/Reanudar revisión guardada/);
+  assert.match(app,/retryCurrentJob\(\)/);
+});
+
 test("dynamic review controls receive stable form names", () => {
   assert.equal(typeof ui.formControlName, "function");
   assert.equal(ui.formControlName("table", "component", "component:top"), "table-component-component-top");

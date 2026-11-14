@@ -1764,8 +1764,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
         if not created:
             job_executor.release()
-            if repository.get_job_resume_checkpoint(job["id"]) is not None:
-                return _error(409, "job_recovery_action_conflict", "Ya existe una reanudación de revisión para este trabajo.")
             return _ok(job, 202)
 
         enqueue_reserved_job(job_id, request, http_request.state.actor)
@@ -1816,6 +1814,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "El trabajo no admite reintento.")
         if not created:
             job_executor.release()
+            if repository.get_job_resume_checkpoint(job["id"]) is not None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe una reanudación de revisión para este trabajo.")
             return _ok(job, 202)
         enqueue_reserved_job(retry_job_id, request, actor)
         return _ok(job, 202)

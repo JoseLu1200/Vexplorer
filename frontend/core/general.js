@@ -12,9 +12,14 @@ export function generalMachineStatusPresentation(workspace){
     :{label:"Auto-revisión completada",message:"La revisión automática de coherencia terminó. Puedes consultar resultados, descargas y escenarios sin una aprobación humana obligatoria."};
 }
 
+export function generalReviewMessage(workspace={},recovery=null){
+  if(!(workspace.reviewRevision>0))return recovery?.proposalSaved?"Borrador guardado recuperado; la revisión automática sigue pendiente. Puedes reanudarla sin repetir la propuesta.":"La propuesta está disponible, pero la revisión automática sigue pendiente.";
+  return workspace.status==="reviewed_incomplete"?"El modelo se abstuvo en los campos sin respaldo suficiente. BOM, esquema y descargas conservan esas incógnitas; la corrección humana es opcional.":"La revisión automática publicó el resultado de coherencia actual. La corrección humana sigue disponible como opción avanzada.";
+}
+
 export function presentJobRecovery(job={}){
   const checkpoint=job.checkpoint??{},recovery=job.recovery??{},proposalSaved=checkpoint.proposal_saved===true,proposalRevision=checkpoint.proposal_revision,code=job.cause??job.error?.code,timeoutCodes=new Set(["provider_timeout","provider_request_timeout","agent_deadline_exceeded","general_auto_review_timeout"]),causeLabel=timeoutCodes.has(code)?"El análisis agotó el tiempo disponible durante la revisión automática":job.error?.message??"La ejecución se interrumpió antes de completar la revisión",phaseLabel=proposalSaved?`Propuesta ${Number.isInteger(proposalRevision)?proposalRevision:"guardada"} recuperada; revisión automática pendiente`:`No hay propuesta recuperable; repetir iniciará el análisis desde cero`,actionLabel=recovery.safe_action==="resume_review"?"Reanudar revisión sin repetir la propuesta":recovery.safe_action==="retry_from_start"?"Repetir desde el inicio":"Sin reanudación segura publicada";
-  return{phaseLabel,message:`${causeLabel}. ${phaseLabel}. Este checkpoint es provisional y no equivale a una revisión aprobada.`,actionLabel,safeAction:recovery.safe_action??null,endpoint:recovery.endpoint??null,proposalSaved,proposalId:checkpoint.proposal_id??null,proposalRevision:proposalRevision??null,reviewRevision:checkpoint.review_revision??0};
+  return{phaseLabel,message:`${causeLabel}. ${phaseLabel}. Este borrador guardado es provisional y no equivale a una revisión aprobada.`,actionLabel,safeAction:recovery.safe_action??null,endpoint:recovery.endpoint??null,proposalSaved,proposalId:checkpoint.proposal_id??null,proposalRevision:proposalRevision??null,reviewRevision:checkpoint.review_revision??0};
 }
 
 function field(value) {

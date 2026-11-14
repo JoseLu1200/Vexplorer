@@ -1,6 +1,6 @@
 # Auditoría independiente de despiece complejo
 
-Estado al 2026-11-14: protocolo ciego, scorer y casos preparados; no se ha llamado al proveedor para esta ronda.
+Estado al 2026-11-14: protocolo ciego y scorer preparados. Se ejecutó una sola línea base V4/600 s en los dos casos de desarrollo; no se abrió el holdout.
 
 ## Entregado
 
@@ -11,6 +11,8 @@ Estado al 2026-11-14: protocolo ciego, scorer y casos preparados; no se ha llama
 - Cohorte desarrollo fija: `plank-030`, `plank-016`.
 - Holdout reservado: `plank-066`, 17 ocurrencias, seleccionado de forma determinística sin resultado del modelo; no ejecutar antes de freeze y gate de desarrollo.
 - Baseline local 300 s: 0/2 entregas terminales; no extrapolar a producción 600 s.
+- Baseline V4/600 s: 2/2 jobs terminales `succeeded`, 0/2 casos pasan el protocolo. `plank-030` empareja 16/16 pero queda bloqueado por revisión/validación incompleta y 12 hardware sin autoridad aceptada; `plank-016` empareja 8/14 y deja una fila con cantidad desconocida. Micro: recall 0,80, precision 0,667.
+- Bundle V4 congelado SHA-256 `5278c2e5b9b8cc5de378a96b41fd9459a6be1ef8e8784d37a8a24b18019c6aec`; runtime antes/después `7de677abe2f2a637267dc5b7b414b8d7cfcfab77a998af6ebab420838444b3ea`.
 
 ## Archivos
 

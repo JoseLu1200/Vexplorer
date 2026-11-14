@@ -298,10 +298,7 @@ def _required_hardware_classification_target_groups(
     components,
 ) -> tuple[tuple[str, ...], ...]:
     return tuple(
-        (
-            f"component:{component.id}.kind",
-            f"component:{component.id}.geometry",
-        )
+        (f"component:{component.id}.kind",)
         for component in components
         if component.kind == "hardware"
         or (
@@ -323,11 +320,12 @@ def _required_cut_piece_review_targets(components) -> tuple[str, ...]:
     ))
 
 
-def _required_hardware_quantity_targets(components) -> tuple[str, ...]:
+def _required_hardware_review_targets(components) -> tuple[str, ...]:
     return tuple(sorted(
-        f"component:{component.id}.quantity"
+        f"component:{component.id}.{field}"
         for component in components
         if component.kind == "hardware"
+        for field in ("kind", "quantity")
     ))
 
 
@@ -521,7 +519,12 @@ def _effective_auto_status(
     if not set(required_review_targets) <= accepted:
         return "incomplete"
     for component in args.components:
-        for field in ("length", "width", "thickness", "quantity"):
+        fields = (
+            ("quantity",)
+            if component.kind == "hardware"
+            else ("length", "width", "thickness", "quantity")
+        )
+        for field in fields:
             if getattr(component, field).state in {"unknown", "conflict"} or f"component:{component.id}.{field}" not in accepted:
                 return "incomplete"
     return "accepted" if args.status == "accepted" and not args.unresolved else "incomplete"
@@ -669,8 +672,8 @@ def _review_payload(
     required_cut_piece_field_review_targets = list(
         _required_cut_piece_review_targets(outcome.draft.components)
     )
-    required_hardware_quantity_field_review_targets = list(
-        _required_hardware_quantity_targets(outcome.draft.components)
+    required_hardware_field_review_targets = list(
+        _required_hardware_review_targets(outcome.draft.components)
     )
     visible_source_refs = set()
     for page in context.visual_pages:
@@ -711,8 +714,8 @@ def _review_payload(
         "required_cut_piece_field_review_targets": (
             required_cut_piece_field_review_targets
         ),
-        "required_hardware_quantity_field_review_targets": (
-            required_hardware_quantity_field_review_targets
+        "required_hardware_field_review_targets": (
+            required_hardware_field_review_targets
         ),
         "evidence_accounting": accounting.to_payload(),
         "region_visual_links": [
@@ -904,7 +907,7 @@ def run_general_autonomous(
             _validate_numeric_dimension_review_coverage(args)
             required_component_targets = tuple(sorted({
                 *_required_cut_piece_review_targets(effective.draft.components),
-                *_required_hardware_quantity_targets(effective.draft.components),
+                *_required_hardware_review_targets(effective.draft.components),
             }))
             if decision.status == "accepted":
                 _validate_required_review_coverage(

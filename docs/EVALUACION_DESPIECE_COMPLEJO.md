@@ -55,3 +55,10 @@ La ejecución objetivo debe probar desde `/api/v1/config` un presupuesto de 600 
 ## Baseline histórico
 
 El baseline local anterior usó 300 s, no 600 s. Ambos trabajos terminaron `provider_request_timeout`; por tanto entrega final = 0/2 y cobertura efectiva = 0, aunque los dos borradores puedan restaurarse. Vive en `.runtime/complex-cutlist-eval/baseline-v0`. Es diagnóstico y no demuestra el comportamiento de la configuración publicada de 600 s.
+
+La línea base V4 congelada con 600 s terminó 2/2 jobs, pero 0/2 casos superaron el gate:
+
+- `plank-030`: 16/16 piezas de referencia emparejadas y cobertura de cotas 1,00. La revisión quedó `incomplete`, la validación constructiva `incomplete` y 12 ocurrencias declaradas como hardware no obtuvieron autoridad aceptada de tipo/existencia. Bajo el protocolo anti-relabel quedan como candidatos no respaldados: precision 16/28 = 0,571.
+- `plank-016`: 8/14 piezas emparejadas, recall y cobertura de cotas 0,571. Ocho cotas tripletas predichas son correctas; una novena fila (`rail`) conserva cantidad desconocida. La revisión también quedó `incomplete`.
+
+Resumen micro informativo: 24/30 referencias emparejadas, recall 0,80 y precision 24/36 = 0,667. Predicciones congeladas: SHA-256 `5278c2e5b9b8cc5de378a96b41fd9459a6be1ef8e8784d37a8a24b18019c6aec`. No se abrió el holdout porque desarrollo no aprobó.
