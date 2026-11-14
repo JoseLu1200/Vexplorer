@@ -13,6 +13,29 @@ function resolvedPoint(record, name, metric) {
 }
 
 function cleanNumber(value) { return Math.abs(value) < 1e-10 ? 0 : Number(value.toFixed(10)); }
+function segmentLength(start, end) {
+  if (!start || !end) return null;
+  const value = Math.hypot(end[0] - start[0], end[1] - start[1]);
+  return Number.isFinite(value) ? cleanNumber(value) : null;
+}
+
+function dimensionConflictsByEntity(warnings = []) {
+  const conflicts = new Map();
+  warnings.forEach((warning) => {
+    const match = /^(dimension_(?:scale_conflict|text_conflict|text_override)):([^:]+):(.*)$/.exec(String(warning));
+    if (!match) return;
+    const [, kind, entityId, detail] = match;
+    const reason = kind === "dimension_scale_conflict"
+      ? `Cota en conflicto: DIMLFAC ${detail.replace(/^scale=/, "")} difiere de la geometría.`
+      : kind === "dimension_text_conflict"
+        ? `Cota en conflicto: el texto (${detail}) difiere de la geometría.`
+        : `Cota en conflicto: texto forzado (${detail.replace(/^text=/, "")}).`;
+    const current = conflicts.get(entityId) ?? [];
+    current.push(reason);
+    conflicts.set(entityId, current);
+  });
+  return conflicts;
+}
 function circlePoint(center, radius, angleDeg) { const radians=angleDeg*Math.PI/180; return [cleanNumber(center[0]+radius*Math.cos(radians)),cleanNumber(center[1]+radius*Math.sin(radians))]; }
 function positiveSweep(start,end){const delta=((end-start)%360+360)%360;return delta||360;}
 
@@ -145,6 +168,7 @@ export function normaliseDrawing(extraction) {
       .filter((dim) => dim?.id != null)
       .map((dim) => [dim.id, dim]),
   );
+  const warningConflicts = dimensionConflictsByEntity(extraction?.warnings);
   const dimensions = (extraction?.dimension_graphics ?? []).flatMap((item) => {
     const a = resolvedPoint(item, "extension_start_a", metric);
     const b = resolvedPoint(item, "extension_start_b", metric);
@@ -154,15 +178,20 @@ export function normaliseDrawing(extraction) {
     const segments = [[a, start], [b, end], [start, end]].filter((segment) => segment.every(Boolean));
     if (!segments.length && !position) return [];
     const dim = dimMap.get(item.dimension_id);
-    const conflict = Boolean(dim?.conflict || dim?.state === "conflict" || item?.conflict);
+    const warningReasons = warningConflicts.get(item.source_entity_id) ?? [];
+    const conflict = Boolean(warningReasons.length || dim?.conflict || dim?.state === "conflict" || item?.conflict);
     const baseLabel = safeText(item.display_text ?? item.raw_text);
-    const geomVal = metric ? dim?.value_mm : dim?.source_value;
+    const declaredGeometry = metric ? dim?.value_mm : dim?.source_value;
+    const measuredGeometry = segmentLength(start, end);
+    const geomVal = Number.isFinite(declaredGeometry) ? declaredGeometry : measuredGeometry;
     const hasGeomVal = Number.isFinite(geomVal);
     const unitText = metric ? "mm" : "source-unit";
     const label = conflict
       ? (hasGeomVal ? `${baseLabel} [conflicto: geom ${cleanNumber(geomVal)} ${unitText}]` : `${baseLabel} [conflicto]`)
       : baseLabel;
-    const conflictReason = conflict ? (dim?.conflict_reason ?? item?.conflict_reason ?? dim?.reason ?? item?.reason ?? null) : null;
+    const conflictReason = conflict
+      ? (dim?.conflict_reason ?? item?.conflict_reason ?? dim?.reason ?? item?.reason ?? (warningReasons.join(" ") || null))
+      : null;
     return [{
       id: item.id,
       dimensionId: item.dimension_id,

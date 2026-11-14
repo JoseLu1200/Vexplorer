@@ -15,3 +15,11 @@ test("source classes remain distinct in Spanish", () => {
   assert.equal(sourceLabel("hypothesis"), "Hipótesis");
   assert.equal(sourceLabel("human_confirmed"), "Confirmado por persona");
 });
+
+test("measurement display removes floating noise without mutating the source value", () => {
+  const length=1443.000000835382,thickness=17.999933;
+  assert.equal(formatMeasurement(length,"mm"),"1443 mm");
+  assert.equal(formatMeasurement(thickness,"mm"),"18 mm");
+  assert.equal(length,1443.000000835382);
+  assert.equal(formatMeasurement(12.3456,"mm",{tolerance:0.001}),"12,346 mm");
+});

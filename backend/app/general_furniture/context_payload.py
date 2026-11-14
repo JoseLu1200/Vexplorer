@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Literal, Protocol
 
-from backend.app.contratos.modelos import DrawingExtraction
+from backend.app.contratos.modelos import (
+    DrawingExtraction,
+    GeneralFurnitureDraft,
+    GeneralFurnitureProposal,
+)
 from backend.app.general_furniture.measurements import GeometryMeasurement
 from backend.app.general_furniture.projection_hypotheses import (
     ProjectionHypothesis,
@@ -145,6 +149,267 @@ class CompactMeasurementPage:
             "next_offset": self.next_offset,
             "truncated": self.truncated,
         }
+
+
+class CandidateRegionLike(Protocol):
+    id: str
+    contour_ids: tuple[str, ...]
+    bounds_source: tuple[float, float, float, float]
+
+
+class VisualPageLike(Protocol):
+    reference: str
+    source_contour_ids: tuple[str, ...]
+    crop_bounds_source: tuple[float, float, float, float] | None
+
+
+@dataclass(frozen=True)
+class CompactContourTopology:
+    contour_id: str
+    bounds_source: tuple[float, float, float, float]
+    closed: bool
+    axis_aligned: bool
+    containment_depth: int
+    container_contour_ids: tuple[str, ...]
+    contained_contour_ids: tuple[str, ...]
+    coincident_contour_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CompactRegionVisualLink:
+    region_id: str
+    source_view_ids: tuple[str, ...]
+    bounds_source: tuple[float, float, float, float]
+    contour_ids: tuple[str, ...]
+    visual_reference: str | None
+    match_kind: Literal[
+        "exact_contours_and_bounds", "containing_crop", "unavailable"
+    ]
+    topology: tuple[CompactContourTopology, ...]
+    authority: Literal[
+        "candidate_region_visual_link_not_semantic_view_or_physical_identity_or_quantity"
+    ] = (
+        "candidate_region_visual_link_not_semantic_view_or_physical_identity_or_quantity"
+    )
+
+    def to_payload(self) -> dict[str, object]:
+        return asdict(self)
+
+
+def _bounds_close(
+    left: tuple[float, float, float, float],
+    right: tuple[float, float, float, float],
+    *,
+    tolerance: float = 1e-6,
+) -> bool:
+    return all(abs(a - b) <= tolerance for a, b in zip(left, right))
+
+
+def _contains_bounds(
+    outer: tuple[float, float, float, float],
+    inner: tuple[float, float, float, float],
+    *,
+    tolerance: float = 1e-6,
+) -> bool:
+    return (
+        outer[0] <= inner[0] + tolerance
+        and outer[1] <= inner[1] + tolerance
+        and outer[2] >= inner[2] - tolerance
+        and outer[3] >= inner[3] - tolerance
+    )
+
+
+def _strictly_contains_bounds(
+    outer: tuple[float, float, float, float],
+    inner: tuple[float, float, float, float],
+) -> bool:
+    return _contains_bounds(outer, inner) and not _bounds_close(outer, inner)
+
+
+def _contour_bounds(contour) -> tuple[float, float, float, float]:
+    xs = tuple(float(point.x) for point in contour.points_source)
+    ys = tuple(float(point.y) for point in contour.points_source)
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _axis_aligned(contour) -> bool:
+    points = tuple(contour.points_source)
+    pairs = list(zip(points, points[1:]))
+    if contour.closed and len(points) > 1:
+        pairs.append((points[-1], points[0]))
+    return bool(pairs) and all(
+        abs(float(end.x) - float(start.x)) <= 1e-9
+        or abs(float(end.y) - float(start.y)) <= 1e-9
+        for start, end in pairs
+    )
+
+
+def build_region_visual_links(
+    extraction: DrawingExtraction,
+    regions: tuple[CandidateRegionLike, ...],
+    visual_pages: tuple[VisualPageLike, ...],
+) -> tuple[CompactRegionVisualLink, ...]:
+    """Bind candidate geometry to the smallest containing crop without asserting identity."""
+    contour_by_id = {item.id: item for item in extraction.contours}
+    bounds_by_id = {
+        item.id: _contour_bounds(item) for item in extraction.contours
+    }
+    region_ids = [item.id for item in regions]
+    if len(region_ids) != len(set(region_ids)):
+        raise ValueError("compact_region_visual_duplicate_region_id")
+    result = []
+    for region in regions:
+        if not region.contour_ids or not set(region.contour_ids) <= set(contour_by_id):
+            raise ValueError("compact_region_visual_unknown_contour")
+        region_bounds = tuple(float(value) for value in region.bounds_source)
+        region_contours = set(region.contour_ids)
+        candidates = []
+        for page in visual_pages:
+            if page.crop_bounds_source is None:
+                continue
+            page_bounds = tuple(float(value) for value in page.crop_bounds_source)
+            page_contours = set(page.source_contour_ids)
+            if (
+                region_contours <= page_contours
+                and _contains_bounds(page_bounds, region_bounds)
+            ):
+                area = max(0.0, page_bounds[2] - page_bounds[0]) * max(
+                    0.0, page_bounds[3] - page_bounds[1]
+                )
+                exact = (
+                    region_contours == page_contours
+                    and _bounds_close(region_bounds, page_bounds)
+                )
+                candidates.append(
+                    (not exact, area, len(page_contours), page.reference, page)
+                )
+        selected = min(candidates, default=None, key=lambda item: item[:4])
+        topology = []
+        for contour_id in region.contour_ids:
+            bounds = bounds_by_id[contour_id]
+            containers = tuple(
+                sorted(
+                    other_id
+                    for other_id, other_bounds in bounds_by_id.items()
+                    if other_id != contour_id
+                    and _strictly_contains_bounds(other_bounds, bounds)
+                )
+            )
+            contained = tuple(
+                sorted(
+                    other_id
+                    for other_id, other_bounds in bounds_by_id.items()
+                    if other_id != contour_id
+                    and _strictly_contains_bounds(bounds, other_bounds)
+                )
+            )
+            coincident = tuple(
+                sorted(
+                    other_id
+                    for other_id, other_bounds in bounds_by_id.items()
+                    if other_id != contour_id
+                    and _bounds_close(bounds, other_bounds)
+                )
+            )
+            contour = contour_by_id[contour_id]
+            topology.append(
+                CompactContourTopology(
+                    contour_id=contour_id,
+                    bounds_source=bounds,
+                    closed=contour.closed,
+                    axis_aligned=_axis_aligned(contour),
+                    containment_depth=len(containers),
+                    container_contour_ids=containers,
+                    contained_contour_ids=contained,
+                    coincident_contour_ids=coincident,
+                )
+            )
+        source_view_ids = tuple(getattr(region, "source_view_ids", ()))
+        if not source_view_ids:
+            view_id = getattr(region, "view_id", None)
+            source_view_ids = (view_id,) if isinstance(view_id, str) else ()
+        result.append(
+            CompactRegionVisualLink(
+                region_id=region.id,
+                source_view_ids=source_view_ids,
+                bounds_source=region_bounds,
+                contour_ids=region.contour_ids,
+                visual_reference=selected[3] if selected is not None else None,
+                match_kind=(
+                    "unavailable"
+                    if selected is None
+                    else "containing_crop"
+                    if selected[0]
+                    else "exact_contours_and_bounds"
+                ),
+                topology=tuple(topology),
+            )
+        )
+    return tuple(result)
+
+
+def build_compact_review_context(
+    proposal: GeneralFurnitureProposal,
+    draft: GeneralFurnitureDraft,
+    *,
+    allowed_target_refs: tuple[str, ...],
+    required_dimension_field_review_targets: tuple[str, ...],
+    required_hardware_classification_field_review_targets: tuple[object, ...],
+    required_existence_field_review_targets: tuple[str, ...],
+    required_evidence_disposition_review_targets: tuple[str, ...],
+    allowed_source_refs: tuple[str, ...],
+) -> dict[str, object]:
+    """Project proposal and resolved draft once for critic review."""
+    if (
+        proposal.id != draft.proposal_id
+        or proposal.drawing_id != draft.drawing_id
+        or proposal.ledger_revision != draft.ledger_revision
+        or proposal.construction_scenario_id != draft.construction_scenario_id
+    ):
+        raise ValueError("compact_review_context_mismatch")
+    return {
+        "schema_version": "compact-general-review-context-1",
+        "proposal_id": proposal.id,
+        "drawing_id": proposal.drawing_id,
+        "ledger_revision": proposal.ledger_revision,
+        "construction_scenario_id": draft.construction_scenario_id,
+        "bindings": tuple(item.model_dump(mode="python") for item in proposal.bindings),
+        "components": tuple(item.model_dump(mode="python") for item in draft.components),
+        "premises": tuple(item.model_dump(mode="python") for item in draft.premises),
+        "assumptions": draft.assumptions,
+        "construction_parameters": tuple(
+            item.model_dump(mode="python") for item in draft.construction_parameters
+        ),
+        "construction_constraints": tuple(
+            item.model_dump(mode="python") for item in draft.construction_constraints
+        ),
+        "construction_details": tuple(
+            item.model_dump(mode="python") for item in draft.construction_details
+        ),
+        "construction_decisions": tuple(
+            item.model_dump(mode="python") for item in draft.construction_decisions
+        ),
+        "construction_placements": tuple(
+            item.model_dump(mode="python") for item in draft.construction_placements
+        ),
+        "evidence_dispositions": tuple(
+            item.model_dump(mode="python") for item in draft.evidence_dispositions
+        ),
+        "allowed_target_refs": allowed_target_refs,
+        "required_dimension_field_review_targets": (
+            required_dimension_field_review_targets
+        ),
+        "required_hardware_classification_field_review_targets": (
+            required_hardware_classification_field_review_targets
+        ),
+        "required_existence_field_review_targets": (
+            required_existence_field_review_targets
+        ),
+        "required_evidence_disposition_review_targets": (
+            required_evidence_disposition_review_targets
+        ),
+        "allowed_source_refs": allowed_source_refs,
+    }
 
 
 def _compact_measurement(item: GeometryMeasurement) -> CompactMeasurement:
@@ -337,11 +602,15 @@ def query_compact_measurements(
 
 
 __all__ = [
+    "CompactContourTopology",
     "CompactGeometryContext",
     "CompactMeasurement",
     "CompactMeasurementPage",
     "CompactProjectionHypothesis",
     "CompactRegion",
+    "CompactRegionVisualLink",
     "build_compact_geometry_context",
+    "build_compact_review_context",
+    "build_region_visual_links",
     "query_compact_measurements",
 ]

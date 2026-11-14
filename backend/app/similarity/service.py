@@ -15,7 +15,6 @@ from backend.app.contratos.modelos import (
     SimilarityGroup,
     SimilarityMatch,
 )
-from backend.app.similarity.clustering import complete_linkage_groups
 from backend.app.similarity.math_utils import cosine_similarity as _cosine_similarity
 
 Descriptor = FurnitureDescriptor | FurnitureDescriptorV2 | FurnitureDescriptorV3
@@ -643,7 +642,7 @@ def _complete_link_clusters(
             for right_index in range(left_index + 1, len(clusters)):
                 right = clusters[right_index]
                 scores = [cached_pair(a, b) for a in left for b in right]
-                if scores and all(
+                if len({by_id[item].run_id for item in left + right}) > 1 and scores and all(
                     score is not None and score >= threshold for score in scores
                 ):
                     candidates.append(
@@ -681,18 +680,29 @@ def _complete_link_clusters(
 def geometric_groups(
     items: tuple[LibraryItem, ...], threshold: float
 ) -> tuple[SimilarityGroup, ...]:
+    def pair(left, right):
+        if (
+            left.descriptor.descriptor_version != right.descriptor.descriptor_version
+        ):
+            return None
+        return geometric_match(left.descriptor, right).score
+
     groups = []
-    versions = sorted({item.descriptor.descriptor_version for item in items})
-    for version in versions:
-        groups.extend(complete_linkage_groups(
-        items=tuple(item for item in items if item.descriptor.descriptor_version == version),
-        threshold=threshold,
-        score_fn=lambda left, right: geometric_match(left.descriptor, right).score,
-        method="geometric",
-        score_kind="geometric_similarity",
-        explanation="Grupo compacto reproducible (enlace completo, sin encadenamiento): todos los pares alcanzan el umbral geométrico; no demuestra identidad ni intercambiabilidad.",
-        ))
-    return tuple(sorted(groups, key=lambda group: group.member_ids))
+    for members, minimum in _complete_link_clusters(items, threshold, pair):
+        digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
+        groups.append(
+            SimilarityGroup(
+                id=f"group-geometric-{digest}",
+                member_ids=members,
+                method="geometric",
+                score_kind="geometric_similarity",
+                threshold=threshold,
+                linkage="complete",
+                minimum_pair_score=round(minimum, 6),
+                explanation="Grupo reproducible de enlace completo, sin encadenamiento: todos los pares alcanzan el umbral técnico; no demuestra identidad, fabricación ni intercambiabilidad.",
+            )
+        )
+    return tuple(groups)
 
 
 def semantic_groups(
@@ -714,11 +724,23 @@ def semantic_groups(
     }
     if len(spaces) > 1:
         raise ValueError("embedding_space_incompatible")
-    return complete_linkage_groups(
-        items=ordered,
-        threshold=threshold,
-        score_fn=lambda left, right: cosine_similarity(vectors[left.id], vectors[right.id]),
-        method="semantic",
-        score_kind="cosine_similarity",
-        explanation="Grupo compacto reproducible (enlace completo, sin encadenamiento): todos los pares alcanzan el umbral por coseno en un mismo espacio de embedding; el score no es probabilidad ni demuestra identidad.",
-    )
+
+    def pair(left, right):
+        return cosine_similarity(vectors[left.id], vectors[right.id])
+
+    groups = []
+    for members, minimum in _complete_link_clusters(ordered, threshold, pair):
+        digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
+        groups.append(
+            SimilarityGroup(
+                id=f"group-semantic-{digest}",
+                member_ids=members,
+                method="semantic",
+                score_kind="cosine_similarity",
+                threshold=threshold,
+                linkage="complete",
+                minimum_pair_score=round(minimum, 6),
+                explanation="Grupo reproducible de enlace completo, sin encadenamiento: todos los pares alcanzan el umbral de coseno; no es probabilidad ni similitud técnica certificada.",
+            )
+        )
+    return tuple(groups)

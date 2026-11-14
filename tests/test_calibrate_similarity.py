@@ -8,6 +8,7 @@ import sys
 
 import numpy as np
 import pytest
+import tools.calibrate_similarity as calibrator
 
 from backend.app.contratos.modelos import (
     DescriptorDimensions,
@@ -18,7 +19,7 @@ from backend.app.contratos.modelos import (
     RoleQuantity,
     TableDescriptorComponentFeature,
 )
-import tools.calibrate_similarity as calibrator
+from backend.app.similarity.thresholds import resolve_group_threshold, resolve_near_duplicate_threshold, resolve_similarity_threshold
 from tools.calibrate_similarity import (
     calibrate_database,
     compute_distribution_stats,
@@ -26,11 +27,6 @@ from tools.calibrate_similarity import (
     main,
     pairwise_cosine_scores,
     suggest_thresholds,
-)
-from backend.app.similarity.thresholds import (
-    resolve_group_threshold,
-    resolve_near_duplicate_threshold,
-    resolve_similarity_threshold,
 )
 
 
@@ -258,11 +254,7 @@ def test_pairwise_cosine_scores_splits_known_and_unknown_families() -> None:
 
 
 def test_pairwise_cosine_scores_is_stable_for_large_finite_vectors() -> None:
-    all_scores, same_scores, diff_scores = pairwise_cosine_scores(
-        [[1e200, 1e200], [1e200, 1e200]],
-        ["shelving", "shelving"],
-    )
-
+    all_scores, same_scores, diff_scores = pairwise_cosine_scores([[1e200, 1e200], [1e200, 1e200]], ["shelving", "shelving"])
     assert all_scores == pytest.approx([1.0])
     assert same_scores == pytest.approx([1.0])
     assert diff_scores.size == 0
@@ -342,15 +334,9 @@ def test_runtime_threshold_export_round_trips_through_resolver(tmp_path: Path) -
     config_path.write_text(json.dumps(config), encoding="utf-8")
 
     semantic = next(iter(config["similarity"].values()))
-    assert resolve_similarity_threshold(
-        "semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path
-    ) == semantic
-    assert resolve_group_threshold(
-        "semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path
-    ) == next(iter(config["group"].values()))
-    assert resolve_near_duplicate_threshold(
-        "semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path
-    ) == next(iter(config["near_duplicate"].values()))
+    assert resolve_similarity_threshold("semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path) == semantic
+    assert resolve_group_threshold("semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path) == next(iter(config["group"].values()))
+    assert resolve_near_duplicate_threshold("semantic", "furniture-v2", "text-embedding-3-small", config_path=config_path) == next(iter(config["near_duplicate"].values()))
 
 
 def test_cli_json_and_human_output_and_missing_db(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

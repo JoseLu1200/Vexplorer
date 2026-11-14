@@ -55,3 +55,9 @@ export function refinementQuestions(state, proposal) {
   const questions = new Set([...(proposal?.missing_information ?? []), ...previous.keys()]);
   return [...questions].map(question => ({question, answer:previous.get(question) ?? ''}));
 }
+
+export function parentRevisionUrl(params, parentId) {
+  const previous = new URLSearchParams(params);
+  previous.set('job', parentId);
+  return '?' + previous.toString();
+}

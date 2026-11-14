@@ -30,9 +30,13 @@ El usuario solicitó revisar, mejorar e integrar la PR2 con agentes GPT-6.1 Sol 
 La revisión se dividió entre similitud, precedentes, seguridad e interfaz; la reconciliación añadió revisión de backend y pruebas. Tras agotar la cuota de varios agentes, coordinación completó sus cambios guardados y las verificaciones. Los registros `team/agente_pr2_*.md` conservan sus resultados parciales; el registro de coordinación contiene el cierre consolidado.
 
 - Baseline PR: 1101 pruebas Python aprobadas; un fallo de guard de disco y un error de importación sklearn por falta de paginación local. La prueba de retención de backups se aisló de la capacidad física del disco; la política de espacio libre conserva su prueba específica.
-- Frontend integrado: 233 pruebas aprobadas, cero fallos.
+- Frontend integrado final: 260 pruebas aprobadas, cero fallos.
 - Navegador real, fixtures offline: carga de revisión, aviso con nombre del precedente, búsqueda con comparación técnica, desglose y miniaturas; cero errores de consola observados.
 - `pip check` sin dependencias rotas; compilación Python y construcción de wheel realizadas.
 - Regresiones comprobadas en rojo y verde: umbral de duplicado del servidor, rotación/invalidation, cantidades desconocidas, pesos inválidos, calibración y procedencia de coincidencias. Control negativo de pandeo: retirar su integración en memoria hace fallar la prueba del endpoint real.
 
 El resultado final de la suite completa y de la CI se anota en `team/agente_pr2_coordinacion.md` y en la PR; estas pruebas funcionales no acreditan exactitud industrial.
+
+## Incrementos concurrentes
+
+Se incorporó el main posterior con montaje por instancia, contabilidad de evidencia y recuperación durable. Sus cambios de publicación pública y comparación técnica se conservan. Se recuperaron fixes y pruebas PR2 que una reconciliación paralela había descartado. La ingesta incorpora rechazo explícito de DXF 3D y alias ODA; POLYLINE 2D llega a vistas/contornos, y el visor usa warnings reales para DIMLFAC. La revisión final independiente no detectó blockers en frontend ni runner.

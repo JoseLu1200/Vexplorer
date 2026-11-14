@@ -138,10 +138,15 @@ def test_report_is_reproducible_and_cli_writes_json(tmp_path) -> None:
     second = evaluate_similarity_regression()
     assert first == second
 
-    output = tmp_path / "similarity-report.json"
+    output = tmp_path / "nested" / "reports" / "similarity-report.json"
     assert main(["--output", str(output)]) == 0
     written = json.loads(output.read_text(encoding="utf-8"))
     assert written == first
     assert written["limitations"]["uses_hidden_benchmark_answers"] is False
     assert written["limitations"]["uses_actual_embeddings"] is False
     assert written["limitations"]["business_relevance_validated"] is False
+
+
+
+
+

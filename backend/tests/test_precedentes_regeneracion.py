@@ -230,36 +230,19 @@ def test_rotar_invalida_cache_y_habilita_regeneracion_normal(tmp_path: Path, mon
     cliente.post(URL, json={"simular": False})
     repositorio = principal.app.state.repository
     item = repositorio.get_library_item(run_id)
-    vector_anterior = repositorio.get_embedding(
-        item.embedding.cache_key,
-        item.embedding.model,
-        item.embedding.dimensions,
-        item.embedding.descriptor_version,
-    )
+    vector_anterior = repositorio.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
     assert cliente.post(f"{REFERENCIA}/verificar").status_code == 200
     derivado = _router(principal, tmp_path, ProveedorFalso(deriva=0.5))
-
     rotado = derivado.post(ROTAR)
-
     assert rotado.status_code == 200
     assert rotado.json()["data"]["embeddings_invalidados"] == 1
     with pytest.raises(KeyError):
-        repositorio.get_embedding(
-            item.embedding.cache_key,
-            item.embedding.model,
-            item.embedding.dimensions,
-            item.embedding.descriptor_version,
-        )
+        repositorio.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
     simulado = derivado.post(URL, json={}).json()["data"]
     assert simulado["total_obsoletos"] == 1
     assert simulado["elementos"][0]["motivos"] == ["embedding_ausente"]
     derivado.post(URL, json={"simular": False})
-    vector_nuevo = repositorio.get_embedding(
-        item.embedding.cache_key,
-        item.embedding.model,
-        item.embedding.dimensions,
-        item.embedding.descriptor_version,
-    )
+    vector_nuevo = repositorio.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
     assert vector_nuevo != vector_anterior
 
 
@@ -271,14 +254,8 @@ def test_fallo_al_invalidar_no_rota_referencia_ni_expone_detalle(tmp_path: Path,
     def falla_invalidacion(modelo: str, dimensiones: int) -> int:
         raise RuntimeError("ruta-secreta-de-la-base")
 
-    monkeypatch.setattr(
-        principal.app.state.repository,
-        "invalidate_embeddings",
-        falla_invalidacion,
-        raising=False,
-    )
+    monkeypatch.setattr(principal.app.state.repository, "invalidate_embeddings", falla_invalidacion, raising=False)
     fallido = _router(principal, tmp_path, ProveedorFalso()).post(ROTAR)
-
     assert fallido.status_code == 500
     assert fallido.json()["error"]["code"] == "invalidacion_embeddings_fallida"
     assert "ruta-secreta" not in fallido.text
@@ -301,15 +278,12 @@ def test_rotacion_y_regeneracion_comparten_exclusion_mutua(tmp_path: Path, monke
     principal, cliente = _entorno(tmp_path, monkeypatch, proveedor)
     _guardar(principal, _run_revisado(principal, "a"), 2)
     respuestas = []
-    hilo = threading.Thread(
-        target=lambda: respuestas.append(cliente.post(URL, json={"simular": False}))
-    )
+    hilo = threading.Thread(target=lambda: respuestas.append(cliente.post(URL, json={"simular": False})))
     hilo.start()
     assert dentro.wait(5)
     rotacion = cliente.post(ROTAR)
     soltar.set()
     hilo.join(5)
-
     assert rotacion.status_code == 409
     assert rotacion.json()["error"]["code"] == "operacion_en_curso"
     assert respuestas[0].status_code == 200

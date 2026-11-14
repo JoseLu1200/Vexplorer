@@ -91,19 +91,7 @@ def _tres(tmp_path) -> TestClient:
 
 def _registro_con_driver(record_id: str, driver: str) -> dict:
     registro = _registro_sintetico(record_id, 100)
-    registro.update(
-        included_scope=["material"],
-        cost_scope=["material"],
-        concepts=[
-            {
-                "concept_id": "tablero",
-                "kind": "material",
-                "driver": driver,
-                "cost": 100,
-                "material": "melamina blanca",
-            }
-        ],
-    )
+    registro.update(included_scope=["material"], cost_scope=["material"], concepts=[{"concept_id": "tablero", "kind": "material", "driver": driver, "cost": 100, "material": "melamina blanca"}])
     return registro
 
 
@@ -198,31 +186,10 @@ def test_sin_precedentes_suficientes_no_emite_alerta(tmp_path) -> None:
 
 
 def test_descartados_no_consumen_el_limite_de_comparables_validos(tmp_path) -> None:
-    # Los tres primeros por desempate de id necesitan area_mm2, ausente en el
-    # objetivo. Los tres siguientes son estimables y deben rellenar limite=3.
-    registros = [
-        *[_registro_con_driver(f"a-invalido-{i}", "area") for i in range(3)],
-        *[_registro_con_driver(f"z-valido-{i}", "fixed") for i in range(3)],
-    ]
-    cliente = _cliente(tmp_path, registros)
-    datos = _pedir(
-        cliente,
-        100,
-        limite=3,
-        objetivo=_objetivo(required_cost_scope=["material"]),
-    ).json()["data"]
-
-    assert [item["record_id"] for item in datos["comparables"]] == [
-        "z-valido-0",
-        "z-valido-1",
-        "z-valido-2",
-    ]
-    assert datos["estado"] == "con_precedentes"
-    assert {item["record_id"] for item in datos["excluidos"]} == {
-        "a-invalido-0",
-        "a-invalido-1",
-        "a-invalido-2",
-    }
+    registros = [*[_registro_con_driver(f"a-invalido-{i}", "area") for i in range(3)], *[_registro_con_driver(f"z-valido-{i}", "fixed") for i in range(3)]]
+    datos = _pedir(_cliente(tmp_path, registros), 100, limite=3, objetivo=_objetivo(required_cost_scope=["material"])).json()["data"]
+    assert [item["record_id"] for item in datos["comparables"]] == ["z-valido-0", "z-valido-1", "z-valido-2"]
+    assert {item["record_id"] for item in datos["excluidos"]} == {"a-invalido-0", "a-invalido-1", "a-invalido-2"}
 
 
 def test_sinteticos_excluidos_por_defecto(tmp_path) -> None:

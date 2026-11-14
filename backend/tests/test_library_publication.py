@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from backend.app.estimacion.table_costs import get_table_cost_catalog
 from backend.app.main import create_app
-from backend.app.operacion.auth import hash_password
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,15 +35,10 @@ def _production_client(data_dir: Path, tmp_path: Path, monkeypatch) -> TestClien
     catalog = tmp_path / "catalog.json"
     catalog.write_text(get_table_cost_catalog().model_dump_json(), encoding="utf-8")
     monkeypatch.setenv("VEXPLORER_ENV", "production")
-    users = tmp_path / "users.json"
-    users.write_text(json.dumps({"publisher": hash_password("test-publication-password")}), encoding="utf-8")
-    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "true")
-    monkeypatch.setenv("VEXPLORER_USERS_FILE", str(users))
+    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
     monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
     monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(catalog))
-    client = TestClient(create_app(data_dir=data_dir, frontend_dir=tmp_path / "missing-frontend"))
-    client.auth = ("publisher", "test-publication-password")
-    return client
+    return TestClient(create_app(data_dir=data_dir, frontend_dir=tmp_path / "missing-frontend"))
 
 
 def _mark_extraction_synthetic(data_dir: Path, run_id: str) -> None:
@@ -111,5 +105,20 @@ def test_production_library_requires_declared_real_reviewed_attestation_and_reje
         assert stored["source_kind"] == "real_furniture"
         assert stored["source_reference"] == "work-order:controlled-real-001"
         assert stored["approved_for_public_library"] is True
-        assert stored["attested_by"] == "publisher"
+        assert stored["attested_by"] == "Técnica responsable"
         assert stored["attested_at"]
+
+
+
+
+
+
+
+def test_bundled_fixture_denylist_covers_both_checkout_line_endings() -> None:
+    import hashlib
+    from backend.app.similarity.publication import KNOWN_BUNDLED_FIXTURE_SHA256
+
+    for fixture in sorted((ROOT / "data" / "planos_demo").glob("*.dxf")):
+        lf = fixture.read_bytes().replace(b"\r\n", b"\n")
+        for content in (lf, lf.replace(b"\n", b"\r\n")):
+            assert hashlib.sha256(content).hexdigest() in KNOWN_BUNDLED_FIXTURE_SHA256, fixture.name

@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.provider import OpenAIResponsesProvider, ProviderError
+from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.runner import AgentLimits
 from backend.app.contratos.modelos import Bounds2D, DrawingExtraction, DrawingObservation, DrawingView, Evidence, ObservedDimension, InspectGeneralContextArgs
@@ -14,7 +14,6 @@ from backend.app.general_furniture import live as general_live
 from backend.app.general_furniture.live import general_furniture_tool_schemas
 from backend.app.general_furniture.live import run_general_furniture_agent
 from backend.app.general_furniture.live import GeneralVisualPage
-from backend.app.general_furniture import live as general_live
 from backend.app.agente.vision import VisionMark
 
 
@@ -102,75 +101,6 @@ def test_openai_provider_accepts_generic_instructions_without_changing_default_c
     provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
 
     assert captured["instructions"] == "GENERIC_FURNITURE_INSTRUCTIONS"
-
-
-def test_vector_context_announces_typed_assembly_and_exact_document_references() -> None:
-    provider = _Provider()
-    run_general_furniture_agent(_extraction(), ledger_revision="ledger-1", provider=provider)
-    context = json.loads(provider.input_items[0]["content"][0]["text"])
-    authority = context["reference_authority"]
-    assert authority["allowed_source_document_refs"] == []
-    assert authority["assembly_source_ref_examples"] == [
-        "view:front", "observation:obs-front", "evidence:ev-width", "dimension:overall-width",
-    ]
-    assert authority["assembly_source_ref_prefixes"] == ["view", "observation", "contour", "evidence", "dimension"]
-    assert "source_document_refs=[]" in authority["instruction"]
-
-
-def test_live_tool_exposes_bounded_assembly_relations_and_ambiguity_rule() -> None:
-    provider = _Provider()
-
-    run_general_furniture_agent(
-        _extraction(), ledger_revision="ledger-1", provider=provider,
-    )
-
-    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
-    assert {"assembly_relations", "assembly_alternatives"} <= set(
-        schema["parameters"]["properties"]
-    )
-    assert "supported_by" in schema["description"]
-    assert "fixed_to" in schema["description"]
-    assert "unknown/conflict" in schema["description"]
-    assert "side_panel, top_panel, bottom_panel" in schema["description"]
-    assert "assembly_not_identifiable" in schema["description"]
-    assert "No declares uniones como observadas" in GENERAL_FURNITURE_SYSTEM_PROMPT
-    assert "hidden joinery" in GENERAL_FURNITURE_SYSTEM_PROMPT
-    payload = json.loads(provider.input_items[0]["content"][0]["text"])
-    assert "rol canónico" in payload["instruction"]
-    assert "assembly_not_identifiable" in payload["instruction"]
-
-
-def test_live_prompt_prefers_canonical_roles_without_closing_the_ontology() -> None:
-    provider = _Provider()
-
-    run_general_furniture_agent(
-        _extraction(), ledger_revision="ledger-1", provider=provider,
-    )
-
-    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
-    payload = json.loads(provider.input_items[0]["content"][0]["text"])
-    combined = " ".join(
-        (GENERAL_FURNITURE_SYSTEM_PROMPT, schema["description"], payload["instruction"])
-    )
-    assert "usa exactamente el canónico" in combined
-    assert "rol custom snake_case estable" in combined
-    assert "usa unknown solo" in combined
-    assert "No colapses componentes del mismo rol" in combined
-    assert "cantidad cuenta ocurrencias físicas" in combined
-
-
-def test_live_prompt_separates_functional_support_from_hidden_joinery() -> None:
-    provider = _Provider()
-
-    run_general_furniture_agent(
-        _extraction(), ledger_revision="ledger-1", provider=provider,
-    )
-
-    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
-    combined = f"{GENERAL_FURNITURE_SYSTEM_PROMPT} {schema['description']}"
-    assert "supported_by describe apoyo funcional" in combined
-    assert "puede coexistir con fixed_to" in combined
-    assert "fixed_to solo con evidencia visible propia" in combined
 
 
 def test_live_agent_preserves_visual_mark_mapping_and_projection_context() -> None:
@@ -384,8 +314,74 @@ def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -
     assert "secret provider payload" not in json.dumps(caught.value.trace)
 
 
+from backend.app.agente.provider import OpenAIResponsesProvider, ProviderError
+
 from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, run_general_furniture_agent
 
+def test_vector_context_announces_typed_assembly_and_exact_document_references() -> None:
+    provider = _Provider()
+    run_general_furniture_agent(_extraction(), ledger_revision="ledger-1", provider=provider)
+    context = json.loads(provider.input_items[0]["content"][0]["text"])
+    authority = context["reference_authority"]
+    assert authority["allowed_source_document_refs"] == []
+    assert authority["assembly_source_ref_examples"] == [
+        "view:front", "observation:obs-front", "evidence:ev-width", "dimension:overall-width",
+    ]
+    assert authority["assembly_source_ref_prefixes"] == ["view", "observation", "contour", "evidence", "dimension"]
+    assert "source_document_refs=[]" in authority["instruction"]
+
+def test_live_tool_exposes_bounded_assembly_relations_and_ambiguity_rule() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    assert {"assembly_relations", "assembly_alternatives"} <= set(
+        schema["parameters"]["properties"]
+    )
+    assert "supported_by" in schema["description"]
+    assert "fixed_to" in schema["description"]
+    assert "unknown/conflict" in schema["description"]
+    assert "side_panel, top_panel, bottom_panel" in schema["description"]
+    assert "assembly_not_identifiable" in schema["description"]
+    assert "No declares uniones como observadas" in GENERAL_FURNITURE_SYSTEM_PROMPT
+    assert "hidden joinery" in GENERAL_FURNITURE_SYSTEM_PROMPT
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    assert "rol canónico" in payload["instruction"]
+    assert "assembly_not_identifiable" in payload["instruction"]
+
+def test_live_prompt_prefers_canonical_roles_without_closing_the_ontology() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    combined = " ".join(
+        (GENERAL_FURNITURE_SYSTEM_PROMPT, schema["description"], payload["instruction"])
+    )
+    assert "usa exactamente el canónico" in combined
+    assert "rol custom snake_case estable" in combined
+    assert "usa unknown solo" in combined
+    assert "No colapses componentes del mismo rol" in combined
+    assert "cantidad cuenta ocurrencias físicas" in combined
+
+def test_live_prompt_separates_functional_support_from_hidden_joinery() -> None:
+    provider = _Provider()
+
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    combined = f"{GENERAL_FURNITURE_SYSTEM_PROMPT} {schema['description']}"
+    assert "supported_by describe apoyo funcional" in combined
+    assert "puede coexistir con fixed_to" in combined
+    assert "fixed_to solo con evidencia visible propia" in combined
 
 def test_raster_live_accepts_announced_document_reference_without_fake_view() -> None:
     provider = _RasterProvider()
@@ -419,7 +415,6 @@ def test_raster_live_accepts_announced_document_reference_without_fake_view() ->
     assert "source_view_ids=[]" in proposal_schema["description"]
     assert "no midas píxeles" in proposal_schema["description"]
 
-
 def test_raster_fake_view_failure_preserves_validation_reason_in_typed_error() -> None:
     page = GeneralVisualPage(
         reference="pdf-sha:pdf-page:0001", media_type="image/png",
@@ -438,7 +433,6 @@ def test_raster_fake_view_failure_preserves_validation_reason_in_typed_error() -
     assert caught.value.trace[-1]["details"] == [{
         "loc": [], "msg": "proposal_reference_outside_ledger", "type": "value_error",
     }]
-
 
 def test_live_error_preserves_only_allowlisted_provider_diagnostic() -> None:
     class FailingProvider:

@@ -368,7 +368,10 @@ def _write_dxf(
             document.classes.classes = OrderedDict(
                 sorted(document.classes.classes.items())
             )
-        document.saveas(path, encoding="utf-8", fmt="asc")
+        # Preserve the original Windows byte format on every host.
+        document.filename = str(path)
+        with path.open("w", encoding="utf-8", errors="dxfreplace", newline="\r\n") as stream:
+            document.write(stream, fmt="asc")
     finally:
         ezdxf.options.write_fixed_meta_data_for_testing = previous
 
@@ -387,6 +390,7 @@ def _write_bundle(dxf_path: Path, case_id: str, destination: Path) -> dict[str, 
     with zipfile.ZipFile(destination, "x", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, data in (("input.dxf", raw), ("case.json", _json_bytes(metadata))):
             info = zipfile.ZipInfo(name, _ZIP_DATE)
+            info.create_system = 0  # Frozen DOS ZIP metadata, independent of host OS.
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o600 << 16
             archive.writestr(info, data)
@@ -399,7 +403,7 @@ def _write_hashes(root: Path) -> None:
         for path in sorted(root.rglob("*"))
         if path.is_file() and path.name != "SHA256SUMS"
     ]
-    (root / "SHA256SUMS").write_text("".join(lines), encoding="utf-8")
+    (root / "SHA256SUMS").write_text("".join(lines), encoding="utf-8", newline="\r\n")
 
 
 def prepare_semantic_corpus(

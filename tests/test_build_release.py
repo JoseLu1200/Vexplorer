@@ -25,9 +25,16 @@ def _repository(tmp_path: Path) -> Path:
         "backend/__init__.py",
         "backend/app/main.py",
         "backend/app/catalog.json",
+        "backend/app/ingesta/README.md",
+        "deploy/SYSTEMD_RELEASE.md",
         "deploy/requirements-runtime.txt",
+        "deploy/systemd-production.env.example",
+        "deploy/systemd-user/vexplorer.service",
+        "deploy/systemd-user/vexplorer-backup.service",
+        "deploy/systemd-user/vexplorer-backup.timer",
         "frontend/index.html",
         "frontend/app.js",
+        "frontend/api/client.js",
         "frontend/styles.css",
         "frontend/package.json",
         "frontend/package-lock.json",
@@ -40,6 +47,7 @@ def _repository(tmp_path: Path) -> Path:
         "requirements-demo.txt",
         "tools/__init__.py",
         "tools/backup.py",
+        "tools/backup_rotate.py",
         "tools/manage_users.py",
     ):
         _write(repo, relative)
@@ -64,8 +72,18 @@ def test_allowlist_includes_local_runtime_additions_and_excludes_private_content
 
     assert "backend/app/main.py" in paths
     assert "frontend/core/ui.js" in paths
+    assert "frontend/api/client.js" in paths
     assert "frontend/assets/fonts/geist.woff2" in paths
     assert "frontend/assets/fonts/OFL.txt" in paths
+    assert "tools/backup_rotate.py" in paths
+    assert "backend/app/ingesta/README.md" in paths
+    assert {
+        "deploy/SYSTEMD_RELEASE.md",
+        "deploy/systemd-production.env.example",
+        "deploy/systemd-user/vexplorer.service",
+        "deploy/systemd-user/vexplorer-backup.service",
+        "deploy/systemd-user/vexplorer-backup.timer",
+    } <= set(paths)
     assert not any(path.startswith(("data/", "evaluation/", ".runtime/")) for path in paths)
     assert ".env" not in paths
     assert not any("/tests/" in f"/{path}" for path in paths)
@@ -116,3 +134,8 @@ def test_build_is_byte_reproducible_and_manifest_matches_payload(tmp_path: Path)
     assert release["git_head"] == first.git_head
     assert release["working_tree"] == "includes_allowlisted_uncommitted_content"
     assert "created_at" not in release
+
+
+
+
+

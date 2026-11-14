@@ -19,6 +19,11 @@ from backend.app.contratos.modelos import (
     ProposeGeneralFurnitureArgs,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.evidence_accounting import (
+    EvidenceAccountingReport,
+    build_evidence_accounting_report,
+    derive_relevant_candidate_regions,
+)
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
     query_compact_measurements,
@@ -48,6 +53,12 @@ Una vista no es una ocurrencia física. Una instancia visible en varias proyecci
 GENERAL_FURNITURE_SYSTEM_PROMPT += """
 No declares uniones como observadas. `assembly_relations` solo expresa relaciones estructuradas revisables entre IDs de componentes, con estado hypothesis, unknown o conflict, premisas y fuentes autorizadas; no añade geometría numérica. Examina cada par de componentes que la evidencia muestre interactuando y cita source_refs visibles. supported_by describe apoyo funcional y puede coexistir con fixed_to; fixed_to solo con evidencia visible propia, nunca por asumir hidden joinery. Si el apoyo visible está respaldado pero el método de unión no, emite supported_by como hypothesis y conserva la fijación como unknown, sin inventar una alternativa. Si no hay ningún par visible respaldado, los campos assembly pueden quedar vacíos y debes registrar `assembly_not_identifiable` en unknown_fields o en la razón pública.
 Para las funciones cubiertas por este vocabulario usa exactamente el canónico: side_panel, top_panel, bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, leg_frame, stretcher, support, unknown. Si existe una función legítima fuera del catálogo, usa un rol custom snake_case estable y explícalo; usa unknown solo cuando la función no sea resoluble. No traduzcas ni crees sinónimos de un concepto ya cubierto. No colapses componentes del mismo rol cuando tengan dimensiones, fuentes o identidad física distintas. cantidad cuenta ocurrencias físicas del componente, nunca vistas ni el número de contornos."""
+
+
+class ProposalEvidenceAccountingError(ValueError):
+    def __init__(self, report: EvidenceAccountingReport) -> None:
+        super().__init__("proposal_evidence_accounting_incomplete")
+        self.report = report
 
 
 class GeneralFurnitureProvider(Protocol):
@@ -151,6 +162,35 @@ def _safe_live_error_code(error: Exception) -> str:
 
 
 def _safe_validation_details(error: Exception) -> list[dict[str, object]]:
+    if isinstance(error, ProposalEvidenceAccountingError):
+        report = error.report
+        return [{
+            "loc": ["evidence_dispositions"],
+            "msg": "proposal_evidence_accounting_incomplete",
+            "type": "value_error",
+            "unresolved_candidate_region_ids": list(report.unresolved_region_ids[:64]),
+            "invalid_candidate_region_ids": list(report.invalid_region_ids[:64]),
+            "invalid_candidate_region_reasons": [
+                {
+                    "candidate_region_id": region_id,
+                    "reason_code": reason_code,
+                }
+                for region_id, reason_code in report.invalid_region_reasons[:64]
+            ],
+            "missing_dimension_targets": list(report.missing_dimension_targets[:64]),
+            "untraceable_dimension_targets": list(
+                report.untraceable_dimension_targets[:64]
+            ),
+            "truncated": any(
+                len(values) > 64
+                for values in (
+                    report.unresolved_region_ids,
+                    report.invalid_region_ids,
+                    report.missing_dimension_targets,
+                    report.untraceable_dimension_targets,
+                )
+            ),
+        }]
     if isinstance(error, ValidationError):
         return [
             {
@@ -215,7 +255,7 @@ def general_furniture_tool_schemas(
         "length_binding_id/width_binding_id/thickness_binding_id=null y source_view_ids=[]. "
         "Cita source_document_refs solo desde allowed_source_document_refs; no midas píxeles."
         if raster_without_metric_ledger
-        else "Propone un escenario constructivo provisional completo usando IDs del ledger. Parámetros observed/deduced: binding_id obligatorio y nominal_mm/range_mm null; estimated: binding_id null y nominal_mm+rango+source_refs+premisas. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos crea un parámetro estimated separado con rango y premisa. quantity_basis_refs incluye premise:<id> y refs exactas; decision.target_refs usa namespaces tipados. Usa bindings copy/add/subtract/scale_rational; dependientes de estimate siguen estimated. Comprueba estabilidad global y, si hace falta, propone un detalle estimated explícito de estabilización o anclaje, no solo una nota pendiente."
+        else "Propone un escenario constructivo provisional completo usando IDs del ledger. Contabiliza cada candidate_region_id mediante evidence_dispositions tipadas: assigned debe concordar con un único componente; duplicate_projection conserva hipótesis y componente; nonmaterial usa reason_code específico; si no se puede decidir usa unresolved. No conviertas cada región o proyección en pieza. Parámetros observed/deduced: binding_id obligatorio y nominal_mm/range_mm null; estimated: binding_id null y nominal_mm+rango+source_refs+premisas. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos crea un parámetro estimated separado con rango y premisa. quantity_basis_refs incluye premise:<id> y refs exactas; decision.target_refs usa namespaces tipados. Usa bindings copy/add/subtract/scale_rational; dependientes de estimate siguen estimated. Comprueba estabilidad global y, si hace falta, propone un detalle estimated explícito de estabilización o anclaje, no solo una nota pendiente."
     )
     proposal_description += (
         " Declara assembly_relations solo como hypothesis/unknown/conflict con IDs de "
@@ -262,6 +302,34 @@ def run_general_furniture_agent(
     tool_calls = 0
     repairs = 0
     trace: list[dict[str, object]] = []
+    last_incomplete: tuple[
+        GeneralFurnitureProposal,
+        GeneralFurnitureDraft,
+        EvidenceAccountingReport,
+    ] | None = None
+    incomplete_seen_at_call = 0
+    incomplete_followup_responses = 0
+
+    def preserve_incomplete(
+        reason_code: str, *, metadata: dict[str, object] | None = None
+    ) -> GeneralFurnitureAgentOutcome:
+        assert last_incomplete is not None
+        proposal, draft, accounting = last_incomplete
+        trace.append(
+            {
+                "tool": "proponer_mueble_general",
+                "ok": False,
+                "summary": (
+                    "Proposal preserved as incomplete after bounded recovery."
+                ),
+                "reason_code": reason_code,
+                "evidence_accounting": accounting.to_payload(),
+                **(metadata or {}),
+            }
+        )
+        return GeneralFurnitureAgentOutcome(
+            proposal, draft, calls, tool_calls, tuple(trace)
+        )
     evidence = {item.id: item for item in extraction.evidence}
     dimensions = {item.id: item for item in extraction.dimensions}
     general_measures = derive_geometry_measurements(extraction)
@@ -352,8 +420,20 @@ def run_general_furniture_agent(
         ).to_payload(),
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
+        "evidence_accounting": {
+            "candidate_regions": [
+                asdict(item) for item in derive_relevant_candidate_regions(extraction)
+            ],
+            "authority": "candidate_evidence_not_physical_piece_or_recall",
+            "required_dispositions": (
+                "Exactly one typed evidence_disposition per candidate_region_id. "
+                "assigned must match one component; duplicate_projection remains a "
+                "reviewable hypothesis; nonmaterial needs a specific reason and exact "
+                "source refs; otherwise use unresolved."
+            ),
+        },
         "evidence_ids": sorted(evidence),
-        "instruction": "Propón un escenario constructivo coherente, no una plantilla. Parámetros observed/deduced: binding_id requerido, nominal_mm=null y range_mm=null. Parámetros estimated: binding_id=null, nominal+rango+método+source_refs+premise:<id>. No escribas dimensiones libres: usa bindings anunciados en compact_geometry.measurements o dimension:<id>; su asignación a una pieza sigue siendo hipótesis. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos usa un parámetro estimated separado. Dependientes de estimate conservan estimated. Comprueba estabilidad/vuelco/arriostramiento y, si procede, declara un detalle estimated explícito, no solo pendiente. Las cantidades provisionales requieren premisa y grupos físicos; nunca cuentes proyecciones como unidades. Para cada concepto cubierto usa exactamente un rol canónico anunciado; no colapses componentes del mismo rol con dimensiones, fuentes o identidad distintas. Examina pares visiblemente interactuantes y cita source_refs: supported_by es apoyo funcional y puede coexistir con fixed_to; fixed_to exige evidencia visible propia. Si solo el apoyo está respaldado, emite supported_by hypothesis y deja la fijación unknown. Si no hay par respaldado permite assembly vacío y registra assembly_not_identifiable; no infieras hidden joinery ni números.",
+        "instruction": "Propón un escenario constructivo coherente, no una plantilla. Parámetros observed/deduced: binding_id requerido, nominal_mm=null y range_mm=null. Parámetros estimated: binding_id=null, nominal+rango+método+source_refs+premise:<id>. Una cota observed solo se asigna a la misma geometría visible; para piezas ocultas o componentes distintos usa un parámetro estimated separado. Dependientes de estimate conservan estimated. Comprueba estabilidad/vuelco/arriostramiento y, si procede, declara un detalle estimated explícito, no solo pendiente. Las cantidades provisionales requieren premisa y grupos físicos; nunca cuentes proyecciones como unidades. Para conceptos cubiertos usa exactamente el rol canónico side_panel, top_panel, bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, leg_frame, stretcher, support, unknown. Para una función legítima fuera del catálogo usa un rol custom snake_case estable; usa unknown solo si la función no se resuelve. No colapses componentes del mismo rol con dimensiones, fuentes o identidad distintas; cantidad cuenta ocurrencias físicas, no vistas ni contornos. Examina pares visiblemente interactuantes y cita source_refs. supported_by es apoyo funcional y puede coexistir con fixed_to; fixed_to exige evidencia visible propia. Si solo el apoyo está respaldado, emite supported_by hypothesis y deja la fijación unknown. Si no hay par respaldado permite assembly vacío y registra assembly_not_identifiable; no infieras hidden joinery ni números.",
         "visual_pages": [
             {
                 "reference": item.reference,
@@ -395,6 +475,8 @@ def run_general_furniture_agent(
     while calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
+            if last_incomplete is not None:
+                return preserve_incomplete("agent_deadline_exceeded")
             raise GeneralLiveError(
                 "agent_deadline_exceeded", trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -412,6 +494,8 @@ def run_general_furniture_agent(
         except GeneralLiveError:
             raise
         except Exception as exc:
+            if last_incomplete is not None:
+                return preserve_incomplete(_safe_live_error_code(exc))
             raise GeneralLiveError(
                 _safe_live_error_code(exc), trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -426,8 +510,18 @@ def run_general_furniture_agent(
             input_items = [
                 {"role": "user", "content": "Debes usar una herramienta permitida."}
             ]
+            if last_incomplete is not None and calls > incomplete_seen_at_call:
+                incomplete_followup_responses += 1
+                if incomplete_followup_responses >= max(
+                    1, limits.max_validation_repairs
+                ):
+                    return preserve_incomplete(
+                        "post_proposal_inspection_budget_exhausted"
+                    )
             continue
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
+            if last_incomplete is not None:
+                return preserve_incomplete("tool_call_budget_exhausted")
             raise GeneralLiveError(
                 "tool_call_budget_exhausted", trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -566,6 +660,33 @@ def run_general_furniture_agent(
                         proposal,
                         allowed_document_refs=allowed_document_refs,
                     )
+                    accounting = build_evidence_accounting_report(
+                        extraction,
+                        proposal,
+                        draft,
+                        projection_hypotheses=projection_hypotheses,
+                    )
+                    if not accounting.reviewable:
+                        last_incomplete = (proposal, draft, accounting)
+                        incomplete_seen_at_call = calls
+                        incomplete_followup_responses = 0
+                        if repairs < limits.max_validation_repairs:
+                            raise ProposalEvidenceAccountingError(accounting)
+                        trace.append(
+                            {
+                                "tool": call.name,
+                                "ok": False,
+                                "summary": (
+                                    "Proposal preserved as incomplete after bounded "
+                                    "evidence-accounting repairs."
+                                ),
+                                "evidence_accounting": accounting.to_payload(),
+                                **metadata,
+                            }
+                        )
+                        return GeneralFurnitureAgentOutcome(
+                            proposal, draft, calls, tool_calls, tuple(trace)
+                        )
                     trace.append(
                         {
                             "tool": call.name,
@@ -605,6 +726,10 @@ def run_general_furniture_agent(
                     }
                 )
                 if repairs > limits.max_validation_repairs:
+                    if last_incomplete is not None:
+                        return preserve_incomplete(
+                            "validation_repair_budget_exhausted"
+                        )
                     raise GeneralLiveError(
                         "validation_repair_budget_exhausted",
                         trace=tuple(trace), model_calls=calls,
@@ -624,6 +749,16 @@ def run_general_furniture_agent(
                 }
             )
         input_items = outputs
+        if last_incomplete is not None and calls > incomplete_seen_at_call:
+            incomplete_followup_responses += 1
+            if incomplete_followup_responses >= max(
+                1, limits.max_validation_repairs
+            ):
+                return preserve_incomplete(
+                    "post_proposal_inspection_budget_exhausted"
+                )
+    if last_incomplete is not None:
+        return preserve_incomplete("model_call_budget_exhausted")
     raise GeneralLiveError(
         "model_call_budget_exhausted", trace=tuple(trace),
         model_calls=calls, tool_calls=tool_calls,

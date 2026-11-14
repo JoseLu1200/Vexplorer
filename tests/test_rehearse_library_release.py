@@ -35,3 +35,8 @@ def test_snapshot_gate_rejects_wrong_commit_but_allows_reviewed_dirty_tree(tmp_p
 
     (repository / "untracked.txt").write_text("not frozen\n", encoding="utf-8")
     assert assert_frozen_tree(repository, head) == head
+
+
+
+
+

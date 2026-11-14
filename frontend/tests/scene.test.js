@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { cameraZoomPosition, generalCatalogScene, generalSceneSelection, normaliseScene, sceneLoadPlan, sceneMeshCenter } from "../core/scene.js";
+import { observeContainerSize, resizeRendererToContainer } from "../components/SceneViewer.js";
 import * as sceneTools from "../core/scene.js";
 import * as viewerTools from "../components/SceneViewer.js";
-import { cameraZoomPosition, normaliseScene, sceneMeshCenter } from "../core/scene.js";
-import { observeContainerSize, resizeRendererToContainer } from "../components/SceneViewer.js";
 
 test("general furniture renders an explicitly unplaced layout without fabricating unknown thickness or occurrences", () => {
   assert.equal(typeof sceneTools.generalSceneForViewer, "function");
@@ -324,6 +324,52 @@ test("3D viewer keeps its last valid projection while hidden and resizes when vi
   assert.equal(draws, 1);
 });
 
+const accepted=(field)=>({field,status:"accepted",targetRef:`component:panel.${field}`,checkIds:[`${field}-ok`],checkSummaries:[`${field} coherente`],sourceRefs:["view:front"]});
+
+test("general scene becomes an explicitly non-physical catalogue from accepted dimensions and occurrences",()=>{
+  const scene=generalCatalogScene({scene:{status:"schematic_ready",warnings:["Representación esquemática."],items:[{component_id:"panel",occurrence_ids:[],scenario_occurrence_ids:["scenario:panel:1","scenario:panel:2"],occurrence_status:"provisional",length:{value_mm:800},width:{value_mm:400},thickness:{value_mm:18}}]},bom:[{componentId:"panel",label:"Panel",role:"side",machineFieldReviews:[accepted("length"),accepted("width"),accepted("thickness"),accepted("quantity")],sourceEvidenceIds:["ev-1"]}]},{reviewerKind:"machine"});
+  const model=normaliseScene(scene);
+  assert.equal(model.objects.length,2);
+  assert.deepEqual(model.objects[0].dimensions,[800,400,18]);
+  assert.equal(model.objects[0].pieceId,"scenario:panel:1");
+  assert.equal(model.objects[0].proposalId,"panel");
+  assert.equal(model.objects[0].placementBasis,"catalogue_visualisation_not_physical");
+  assert.match(model.assumptions.join(" "),/catálogo de piezas separadas.*no representa un montaje físico/i);
+  assert.notDeepEqual(model.objects[0].position,model.objects[1].position);
+});
+
+test("general scene omits provisional occurrences when machine quantity was rejected",()=>{
+  const scene=generalCatalogScene({scene:{status:"schematic_incomplete",warnings:[],items:[{component_id:"panel",occurrence_ids:[],scenario_occurrence_ids:["scenario:panel:1"],occurrence_status:"provisional",length:{value_mm:800},width:{value_mm:400},thickness:{value_mm:18}}]},bom:[{componentId:"panel",machineFieldReviews:[accepted("length"),accepted("width"),accepted("thickness"),{...accepted("quantity"),status:"rejected",checkSummaries:["Cantidad no respaldada"]}]}]},{reviewerKind:"machine"});
+  assert.equal(scene.objects.length,0);
+  assert.match(scene.warnings.join(" "),/cantidad rechazada/i);
+  assert.doesNotMatch(scene.warnings.join(" "),/\brejected\b/i);
+});
+
+test("general scene omits a component without a known accepted thickness instead of inventing it",()=>{
+  const scene=generalCatalogScene({scene:{status:"schematic_incomplete",warnings:[],items:[{component_id:"panel",occurrence_ids:["occ-1"],scenario_occurrence_ids:[],occurrence_status:"confirmed",length:{value_mm:800},width:{value_mm:400},thickness:{value_mm:null}}]},bom:[{componentId:"panel",machineFieldReviews:[accepted("length"),accepted("width"),{...accepted("thickness"),status:"abstained",checkSummaries:["Grosor ilegible"]}]}]},{reviewerKind:"machine"});
+  assert.equal(scene.objects.length,0);
+  assert.match(scene.warnings.join(" "),/grosor.*ilegible|grosor.*desconocido/i);
+  assert.doesNotMatch(scene.warnings.join(" "),/revisión humana/i);
+});
+
+test("scene routing uses exact general revisions and keeps legacy result revisions separate",()=>{
+  const general=sceneLoadPlan({runId:"run-1",resultRevision:99,generalWorkspace:{isGeneral:true,proposalRevision:4,reviewRevision:2,reviewerKind:"machine"},generalDerived:{proposalRevision:4,reviewRevision:2,scene:{items:[],warnings:[]},bom:[]}});
+  assert.equal(general.kind,"general");
+  assert.equal(general.identity,"run-1:general:4:2");
+  assert.equal(general.fetchLegacy,false);
+  const legacy=sceneLoadPlan({runId:"run-2",resultRevision:7,generalWorkspace:null,generalDerived:null});
+  assert.deepEqual(legacy,{kind:"legacy",identity:"run-2:legacy:7",fetchLegacy:true,scene:null});
+  const stale=sceneLoadPlan({runId:"run-1",resultRevision:99,generalWorkspace:{isGeneral:true,proposalRevision:4,reviewRevision:3,reviewerKind:"machine"},generalDerived:{proposalRevision:4,reviewRevision:2,scene:{items:[{component_id:"panel"}]},bom:[]}});
+  assert.equal(stale.identity,"run-1:general:4:3");
+  assert.equal(stale.scene.objects.length,0);
+  assert.match(stale.scene.warnings[0],/no corresponde al snapshot general actual/i);
+});
+
+test("general scene selection resolves an occurrence through its component proposal id",()=>{
+  const component={id:"panel",label:"Panel aceptado"},workspace={components:[component]};
+  assert.equal(generalSceneSelection(workspace,{pieceId:"scenario:panel:1",proposalId:"panel"}),component);
+  assert.equal(generalSceneSelection(workspace,{pieceId:"scenario:other:1",proposalId:"other"}),null);
+});
 
 test("general proposal remains inspectable in 3D without claiming review", () => {
   const scene = sceneTools.generalSceneForViewer({}, [{id:"side", dimensions:{length:{value:2400},width:{value:550},thickness:{value:18}}}]);

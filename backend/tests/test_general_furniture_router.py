@@ -5,9 +5,6 @@ from fastapi.testclient import TestClient
 
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
-from backend.app.general_furniture.derivations import derive_general_package
-from backend.tests.test_general_furniture_derivations import _review
-from backend.tests.test_general_furniture_repository import _assembly_attempt
 from backend.tests.test_general_furniture_proposal import _extraction, _proposal
 
 
@@ -91,7 +88,11 @@ def test_router_returns_exact_immutable_proposal_snapshot_by_revision(tmp_path) 
     ).status_code == 422
 
 
+from backend.app.general_furniture.derivations import derive_general_package
 
+from backend.tests.test_general_furniture_derivations import _review
+
+from backend.tests.test_general_furniture_repository import _assembly_attempt
 
 def test_get_assembly_is_read_only_and_revision_exact(tmp_path) -> None:
     repository = GeneralFurnitureRepository(tmp_path / "general.sqlite3")

@@ -192,3 +192,8 @@ def test_post_apply_verification_requires_server_attestation(tmp_path) -> None:
 
     with pytest.raises(BackfillError, match="library_publication_verification_failed"):
         verify_published_items(manifest, published_without_attestation)
+
+
+
+
+

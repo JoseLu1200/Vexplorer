@@ -111,13 +111,7 @@ def test_pesos_invalidos_y_revision_inexistente(tmp_path: Path, monkeypatch) -> 
 def test_normalizar_pesos() -> None:
     assert normalizar_pesos(1, 1).model_dump() == {"geometrico": 0.5, "semantico": 0.5}
     assert normalizar_pesos(0, 2).model_dump() == {"geometrico": 0.0, "semantico": 1.0}
-    for pesos in (
-        (0, 0),
-        (-1, 2),
-        (float("nan"), 1),
-        (float("inf"), 1),
-        (1e308, 1e308),
-    ):
+    for pesos in ((0, 0), (-1, 2), (float("nan"), 1), (float("inf"), 1), (1e308, 1e308)):
         with pytest.raises(ValueError, match="pesos_invalidos"):
             normalizar_pesos(*pesos)
 

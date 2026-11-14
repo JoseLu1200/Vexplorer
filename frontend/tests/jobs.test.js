@@ -38,6 +38,13 @@ test("job polling preserves the server error and stops at failed", async () => {
   assert.equal(result.error.message, "Trabajo interrumpido");
 });
 
+test("job polling preserves recovery checkpoint and cause",async()=>{
+  const result=await pollJob("job-recover",{getJob:async()=>({id:"job-recover",state:"interrupted",run_id:"run-1",cause:"provider_timeout",checkpoint:{phase:"proposal",proposal_saved:true,proposal_id:"proposal-1",proposal_revision:2,review_revision:0},recovery:{safe_action:"resume_review",endpoint:"/api/v1/jobs/job-recover/resume"}}),wait:async()=>{}});
+  assert.equal(result.cause,"provider_timeout");
+  assert.deepEqual(result.checkpoint,{phase:"proposal",proposal_saved:true,proposal_id:"proposal-1",proposal_revision:2,review_revision:0});
+  assert.equal(result.recovery.safe_action,"resume_review");
+});
+
 test("job polling aborts without issuing another request", async () => {
   const controller = new AbortController(); let calls = 0;
   await assert.rejects(() => pollJob("job-3", {

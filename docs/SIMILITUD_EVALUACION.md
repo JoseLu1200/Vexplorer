@@ -72,3 +72,5 @@ El orden por coseno bruto coloca primero al negativo. `rank_semantic_candidates`
 - No se usan embeddings reales. El informe publica `uses_actual_embeddings=false`, `provider_called=false` y `actual_embedding_ranking_measured=false`.
 - No se usan respuestas ocultas. El fixture publica `external_reference_paths=()` y `uses_hidden_benchmark_answers=false`.
 - La evaluación comprueba invariantes y regresiones conocidas sobre una galería pequeña. No sustituye un benchmark independiente, estratificado por familias y proyectos, con anotación ciega de relevancia.
+
+

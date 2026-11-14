@@ -2,14 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-from backend.app.contratos.modelos import (
-    GeneralAssemblyAttempt,
-    GeneralAssemblyValidationIssue,
-    GeneralAssemblyValidationReport,
-    GeneralScene,
-)
-from backend.app.general_furniture.derivations import derive_general_package
-from backend.app.general_furniture.assembly import validate_assembly
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.proposal import materialize_general_proposal
 from backend.app.general_furniture.derivations import derive_general_package
@@ -107,12 +99,20 @@ def test_repository_rejects_construction_plan_from_another_exact_snapshot(tmp_pa
         )
 
 
+from backend.app.contratos.modelos import (
+    GeneralAssemblyAttempt,
+    GeneralAssemblyValidationIssue,
+    GeneralAssemblyValidationReport,
+    GeneralScene,
+)
+
+from backend.app.general_furniture.assembly import validate_assembly
+
 from backend.tests.test_general_furniture_assembly import (
     _candidate as _assembly_candidate,
     _extraction as _assembly_extraction,
     _review as _assembly_review,
 )
-
 
 def _assembly_attempt(*, review_revision: int, assembly_revision: int) -> GeneralAssemblyAttempt:
     return GeneralAssemblyAttempt(
@@ -130,7 +130,6 @@ def _assembly_attempt(*, review_revision: int, assembly_revision: int) -> Genera
         model="test-assembly", policy_version="general-assembly-v1",
         sources=("drawing:drawing-1",), trace=(),
     )
-
 
 def test_repository_persists_assembly_attempts_and_rejects_stale_review_writer(tmp_path) -> None:
     repository = GeneralFurnitureRepository(tmp_path / "general.sqlite3")
@@ -153,7 +152,6 @@ def test_repository_persists_assembly_attempts_and_rejects_stale_review_writer(t
             "run-1", _assembly_attempt(review_revision=1, assembly_revision=2),
             base_assembly_revision=1,
         )
-
 
 def test_repository_exposes_distinct_accepted_assembly_alternatives(tmp_path) -> None:
     repository = GeneralFurnitureRepository(tmp_path / "general.sqlite3")
@@ -234,7 +232,6 @@ def test_repository_exposes_distinct_accepted_assembly_alternatives(tmp_path) ->
     assert terminal_state.current.report.placements == diagnostic_report.placements
     assert terminal_state.current.report.scene is None
     assert terminal_package.scene.status != "mounted_hypothesis"
-
 
 def test_repository_persists_assembly_cancellation_flag(tmp_path) -> None:
     path = tmp_path / "general.sqlite3"

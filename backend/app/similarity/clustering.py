@@ -34,13 +34,11 @@ def complete_linkage_groups(
     # Store only cluster pairs whose complete-linkage minimum score >= threshold.
     # Value is (min_pair_score, has_different_run_ids).
     active_edges: dict[tuple[int, int], tuple[float, bool]] = {}
-    pair_scores: dict[tuple[str, str], float] = {}
     for i in range(count):
         left = ordered[i]
         for j in range(i + 1, count):
             right = ordered[j]
             score = float(score_fn(left, right))
-            pair_scores[(left.id, right.id)] = score
             if score >= threshold:
                 active_edges[(i, j)] = (score, left.run_id != right.run_id)
 
@@ -102,6 +100,13 @@ def complete_linkage_groups(
 
     groups: list[SimilarityGroup] = []
     for members in sorted(cluster_keys[cid] for cid in clusters if len(clusters[cid]) >= 2):
+        member_set = set(members)
+        pair_scores = [
+            float(score_fn(left, right))
+            for index, left in enumerate(ordered)
+            for right in ordered[index + 1 :]
+            if left.id in member_set and right.id in member_set
+        ]
         digest = hashlib.sha256("\n".join(members).encode()).hexdigest()[:16]
         groups.append(
             SimilarityGroup(
@@ -110,12 +115,9 @@ def complete_linkage_groups(
                 method=method,
                 score_kind=score_kind,
                 threshold=threshold,
+                linkage="complete",
+                minimum_pair_score=round(min(pair_scores), 6),
                 explanation=explanation,
-                minimum_pair_score=min(
-                    pair_scores[(left, right)]
-                    for index, left in enumerate(members)
-                    for right in members[index + 1:]
-                ),
             )
         )
     return tuple(groups)

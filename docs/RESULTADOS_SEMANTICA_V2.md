@@ -1,5 +1,7 @@
 # Evaluación semántica ampliada — 2026-11-14
 
+Resultado: mejora modesta en concordancia de roles y ocurrencias; el problema funcional no queda resuelto. El montaje no está validado y la auditoría identifica límites ontológicos y de exhaustividad del benchmark. El swarm implementó correcciones y midió ambos snapshots sobre 30 planos reservados de un corpus propio de 80.
+
 ## Alcance
 
 Trabajo ejecutado por swarm GPT-6.1 Sol: inferencia, montaje, dataset, evaluación y auditoría independiente, coordinados desde el repositorio. Se preservaron los cambios locales anteriores y se copió el código previo a `.runtime/semantic-v2-original` antes de las correcciones.
@@ -27,7 +29,20 @@ No se comparan directamente estos F1 de recuperación completa con los F1 histó
 
 ## Resultados
 
-Pendientes de finalizar ambas ejecuciones de la revisión 3 del corpus y el scoring independiente. Los lotes de revisión 2 se conservan como diagnóstico, excluidos del resultado principal por el defecto de disposición de vistas descrito abajo. No se atribuye todavía mejora empírica a las correcciones.
+Ambos snapshots completaron los 30 casos; las cuatro fases puntuadas tienen 0/30 casos completos contra la referencia. La mejora observada es modesta y no resuelve la validación funcional. Los F1 siguientes son concordancia léxica estricta con una referencia cerrada, no una estimación limpia de comprensión funcional: la auditoría posterior detectó desalineación de vocabulario y un grafo de referencia no exhaustivo.
+
+| Versión / fase | Roles TP/FP/FN | F1 roles | Ocurrencias TP/FP/FN | F1 ocurrencias | Relaciones TP/FP/FN | F1 relaciones |
+|---|---:|---:|---:|---:|---:|---:|
+| Anterior / propuesta | 33/80/147 | 0,2253 | 46/111/234 | 0,2105 | 0/0/50 | 0 |
+| Anterior / revisada | 32/81/148 | 0,2184 | 42/104/238 | 0,1972 | 0/0/50 | 0 |
+| Corregida / propuesta | 37/74/143 | 0,2543 | 64/113/216 | 0,2801 | 0/90/50 | 0 |
+| Corregida / revisada | 37/74/143 | 0,2543 | 55/100/225 | 0,2529 | 0/90/50 | 0 |
+
+Tras revisión, el cambio es +0,0359 F1 en roles y +0,0557 en ocurrencias. La revisión de la versión corregida no mejora roles ni relaciones y reduce ocurrencias de 0,2801 a 0,2529. La nueva vía de reparación funciona en tests, pero no se activó en este lote: 0/30 reparaciones frente a 25/30 de la versión anterior. Ambas terminaron `incomplete` en 30/30; ninguna aprobó fabricación.
+
+Los 90 FP de relaciones son tripletas no admitidas por esta referencia, no 90 uniones físicamente demostradas incorrectas. Se emitieron 44 `supported_by`, 44 `adjacent_to` y 2 `contained_by`; ningún triple completo coincidió en ambos extremos léxicos. La referencia anterior rev3 mantiene los mismos F1 de roles/ocurrencias y montaje 0, pero omite apoyos obligatorios en alternativas: FN de relaciones 35→50 para anterior y 20→50 para corregida. Se conserva esa sensibilidad, sin elegir el resultado favorable.
+
+Los lotes rev2 con vistas superpuestas quedan excluidos del resultado principal y se conservan como diagnóstico. Ver [resumen detallado](../.runtime/semantic-v2-results/summary.md), [procedencia y hashes](../.runtime/semantic-v2-results/derivation-manifest.json) y [integridad de los freezes](../.runtime/semantic-v2-freeze-verification.json).
 
 ## Verificación
 
@@ -60,8 +75,24 @@ Esta corrección de anotación es posterior al inicio de la inferencia y anterio
 
 ## Reproducibilidad de generación
 
-Se detectó que ezdxf ordenaba los registros CLASS según PYTHONHASHSEED. La generación v2 actual canonicaliza ese orden y un test en procesos separados compara semillas 1 y 4 byte a byte. La generación histórica v1 conserva su serialización y requiere PYTHONHASHSEED=0 para comparación exacta. Este arreglo afecta solo futuras generaciones; los bundles rev3 usados en inferencia y su copia pública en el erratum permanecen intactos. Tras estos ajustes pasan 17 pruebas del corpus y 51 de corpus/evaluador/runner.
+Se detectó que ezdxf ordenaba los registros CLASS según PYTHONHASHSEED. La generación v2 actual canonicaliza ese orden y un test en procesos separados compara semillas 1 y 4 byte a byte. La generación histórica v1 conserva su serialización y requiere PYTHONHASHSEED=0 para comparación exacta. Este arreglo afecta solo futuras generaciones; los bundles rev3 usados en inferencia y su copia pública en el erratum permanecen intactos. Tras estos ajustes pasan 17 pruebas del corpus; después del arreglo del adaptador, la verificación conjunta corpus/evaluador/runner pasó 52 pruebas en 25 s.
 
 ## Interpretación de las métricas
 
 Roles y ocurrencias evalúan etiquetas funcionales y cantidades agregadas por rol. El montaje principal evalúa relaciones requeridas entre roles; no certifica el encaje 3D de cada ocurrencia ni una unión de fabricación. Los métodos de fijación no observables se conservan aparte como opcionales. Un desconocido puede ser una abstención adecuada, pero sigue siendo información no recuperada en el F1 principal. Las predicciones correctas opcionales no elevan el recobrado de las relaciones obligatorias.
+
+
+## Corrección del adaptador durante la puntuación
+
+El primer intento de scoring rechazó las salidas corregidas porque varias relaciones entre ocurrencias distintas colapsaban a la misma tripleta al proyectar IDs a roles. El evaluador trabaja con un conjunto de tripletas por rol, por lo que el adaptador ahora elimina duplicados exactos después de esa proyección, también dentro de cada alternativa. No modifica cantidades físicas, predicados distintos ni direcciones. Una prueba independiente de dos patas del mismo rol reproduce el fallo y verifica la conversión.
+
+Los nativos estaban congelados antes de abrir referencias. Los manifiestos semánticos derivados se regeneran después de esa apertura con la transformación pública corregida; se conservan los anteriores, sus rechazos y los hashes de procedencia. No se repite inferencia ni se cambian respuestas nativas, scoring o referencia. Esta cronología distingue la congelación nativa original del re-freeze del formato de evaluación.
+
+
+## Carencias que permanecen
+
+La auditoría independiente de desarrollo encontró 27 roles de referencia, 17 fuera del vocabulario preferido por el prompt. Hay equivalencias como desktop/tabletop, leg/table_leg o media_shelf/shelf que los aliases actuales no reconocen. Los aliases con guion son redundantes tras normalización. No se añadieron equivalencias a posteriori para mejorar el score.
+
+El grafo de referencia es cerrado pero no exhaustivo. En el caso de desarrollo sx-001, el pipeline obtiene F1=1 en roles y ocurrencias y recupera el apoyo requerido, pero cinco relaciones adicionales plausibles cuentan como FP porque no están anotadas. Por eso el 0 TP exacto del reservado no demuestra ausencia de comprensión del apoyo funcional, y los 90 FP no cuantifican limpiamente errores físicos.
+
+También persiste una descomposición insuficiente y una revisión que no recupera lo omitido. Este incremento corrige fallos de ejecución, representación, generación y medición; no convierte el sistema en un intérprete fiable ni en un aprobador autónomo. Para medir y cerrar esa carencia se necesita una ontología pública congelada con rol padre/subtipo, referencias de montaje revisadas como requerido/permitido/contradicho y una nueva evaluación independiente, además de planos reales anotados para estimar rendimiento de uso. Cambiar aliases o completar el gold después de ver este reservado no produciría una nueva prueba ciega.

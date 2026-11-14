@@ -483,7 +483,7 @@ GeneralMachineTargetRef = Annotated[
     Field(
         min_length=1,
         max_length=200,
-        pattern=r"^(component:.+\.(length|width|thickness|quantity|material|finish|existence|kind|role|geometry)|parameter:.+|constraint:.+|detail:.+|decision:.+)$",
+        pattern=r"^(component:.+\.(length|width|thickness|quantity|material|finish|existence|kind|role|geometry)|parameter:.+|constraint:.+|detail:.+|decision:.+|evidence_region:.+)$",
     ),
 ]
 
@@ -792,6 +792,19 @@ class GeneralComponentProposal(StrictModel):
     quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32, description="Must include at least one closed premise:<id>; may also cite exact ledger refs such as contour:<id>, observation:<id>, evidence:<id>, view:<id>, document:<id>, or visual:<id>.")
 
 
+class GeneralEvidenceDisposition(StrictModel):
+    candidate_region_id: str = Field(min_length=1, max_length=200)
+    kind: Literal["assigned", "duplicate_projection", "nonmaterial", "unresolved"]
+    component_id: str | None = Field(default=None, min_length=1, max_length=120)
+    duplicate_of_region_id: str | None = Field(default=None, min_length=1, max_length=200)
+    reason_code: Literal[
+        "hole", "cutout", "rabbet", "groove", "annotation", "drawing_frame",
+        "void", "other_unresolved",
+    ] | None = None
+    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    rationale: str = Field(min_length=1, max_length=500)
+
+
 class GeneralAssemblyRelation(StrictModel):
     subject_component_id: str = Field(min_length=1, max_length=120)
     relation: Literal["supported_by", "fixed_to", "attached_to", "contained_by", "aligned_with", "adjacent_to", "hinged_to", "unknown"]
@@ -831,6 +844,7 @@ class GeneralFurnitureProposal(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
     assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
@@ -1009,6 +1023,7 @@ class ProposeGeneralFurnitureArgs(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
     assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
@@ -1246,6 +1261,7 @@ class GeneralFurnitureReview(StrictModel):
     scenario_occurrences: tuple[GeneralScenarioOccurrence, ...] = ()
     machine_checks: tuple[GeneralAutoReviewCheck, ...] = ()
     machine_field_reviews: tuple[GeneralMachineFieldReview, ...] = ()
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     auto_review_status: Literal["accepted", "incomplete", "conflict", "abstained"] | None = None
     furniture_quantity: GeneralQuantity = GeneralQuantity(value=None, state="unknown")
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
@@ -1285,6 +1301,7 @@ class GeneralFurnitureReview(StrictModel):
                 *(f"constraint:{item.id}" for item in self.construction_constraints),
                 *(f"detail:{item.id}" for item in self.construction_details),
                 *(f"decision:{item.id}" for item in self.construction_decisions),
+                *(f"evidence_region:{item.candidate_region_id}" for item in self.evidence_dispositions),
             }
             if field_review.target_ref not in valid_targets:
                 raise ValueError("machine field review targets an unknown component field")
@@ -1369,6 +1386,7 @@ class GeneralFurnitureDraft(StrictModel):
     construction_details: tuple[GeneralConstructionDetail, ...] = Field(default=(), max_length=128)
     construction_decisions: tuple[GeneralConstructionDecision, ...] = Field(default=(), max_length=128)
     construction_placements: tuple[GeneralPiecePlacement, ...] = Field(default=(), max_length=5000)
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     assembly_relations: tuple[GeneralAssemblyRelation, ...] = ()
     assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = ()
     status: Literal["needs_review"] = "needs_review"

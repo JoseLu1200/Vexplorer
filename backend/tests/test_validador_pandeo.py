@@ -210,37 +210,17 @@ def test_explicit_intermediate_vertical_support_reduces_effective_span() -> None
 
 
 def test_unassociated_vertical_piece_does_not_shorten_shelf_span() -> None:
-    shelf = {
-        "id": "shelf-1200",
-        "role": "shelf",
-        "length_mm": 1200.0,
-        "thickness_mm": 16.0,
-    }
-    unrelated_divider = {
-        "id": "divider-other-module",
-        "role": "divider",
-        "quantity": 1,
-        "length_mm": 300.0,
-        "thickness_mm": 16.0,
-    }
-
+    shelf = {"id": "shelf-1200", "role": "shelf", "length_mm": 1200.0, "thickness_mm": 16.0}
+    unrelated_divider = {"id": "divider-other-module", "role": "divider", "quantity": 1, "length_mm": 300.0, "thickness_mm": 16.0}
     finding = evaluate_deflection_plausibility([shelf, unrelated_divider])[0]
-
     assert finding["code"] == PANDEO_WARNING_CODE
     assert finding["observed"]["intermediate_supports"] == 0
     assert finding["observed"]["effective_span_mm"] == 1200.0
 
 
 def test_unconfirmed_catalog_never_emits_structural_pass() -> None:
-    shelf = {
-        "id": "shelf-700",
-        "role": "shelf",
-        "length_mm": 700.0,
-        "thickness_mm": 16.0,
-    }
-
+    shelf = {"id": "shelf-700", "role": "shelf", "length_mm": 700.0, "thickness_mm": 16.0}
     finding = evaluate_deflection_plausibility([shelf])[0]
-
     assert finding["status"] == "unknown"
     assert finding["severity"] == "info"
     assert finding["catalog"]["confirmed_by_workshop"] is False

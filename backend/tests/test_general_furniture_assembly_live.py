@@ -425,3 +425,24 @@ def test_terminal_preserves_rejected_deterministic_placements_without_scene() ->
     assert terminal.report.placements == evaluated.placements
     assert terminal.report.global_bounds_mm == evaluated.global_bounds_mm
     assert terminal.report.issues[0].source_refs == ("assembly_revision:1",)
+
+
+def test_provisional_occurrences_obey_instance_budget_before_provider():
+    from backend.app.contratos.modelos import GeneralScenarioOccurrence
+    review = _review()
+    component = review.components[0]
+    provisional = tuple(GeneralScenarioOccurrence(
+        id=f"scenario-{index}", component_id=component.id, occurrence_index=index,
+        scenario_id="scenario", quantity_target_ref=f"component:{component.id}.quantity",
+        check_ids=("quantity", "duplicates"), premise_refs=("premise:quantity",),
+        source_refs=("visual:page",),
+    ) for index in range(1, 102))
+    review = review.model_copy(update={"occurrences": (), "scenario_occurrences": provisional})
+    provider = _SequenceProvider([])
+    with pytest.raises(AssemblyLiveError, match="assembly_instance_budget_exhausted"):
+        run_general_assembly_agent(
+            AssemblyAgentContext(run_id="run", proposal_revision=1, review_revision=1,
+                                 extraction=_extraction(), review=review),
+            provider=provider, evaluator=lambda candidate: None, attempt_sink=lambda attempt: None,
+        )
+    assert provider.feedback == []

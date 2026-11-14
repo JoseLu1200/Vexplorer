@@ -52,53 +52,26 @@ def test_explanation_unknown_revision_is_not_silently_replaced(tmp_path: Path, m
     assert response.json()["error"]["code"] == "result_not_found"
 
 
-def test_explanations_include_advisory_deflection_warning_for_long_shelf(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_explanations_include_advisory_deflection_warning_for_long_shelf(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
     client = TestClient(create_app(data_dir=tmp_path))
     with FIXTURE.open("rb") as stream:
-        document_id = client.post(
-            "/api/v1/documents",
-            files={"file": ("drawing.dxf", stream, "application/dxf")},
-        ).json()["data"]["document_id"]
-    created = client.post(
-        "/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only"}
-    ).json()["data"]
+        document_id = client.post("/api/v1/documents", files={"file": ("drawing.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
+    created = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only"}).json()["data"]
     run_id = created["run"]["id"]
-    shelf = next(
-        component
-        for component in created["result"]["scenarios"][0]["components"]
-        if component["role"] == "shelf"
-    )
-    reviewed = client.post(
-        f"/api/v1/runs/{run_id}/reviews",
-        json={
-            "base_result_revision": 1,
-            "reviewer_name": "Técnica",
-            "decisions": [
-                {
-                    "proposal_id": shelf["id"],
-                    "action": "confirm",
-                    "role": "shelf",
-                    "quantity": 1,
-                    "length_mm": 1200,
-                    "width_mm": 300,
-                    "thickness_mm": 16,
-                    "material": "tablero",
-                    "finish": "melamina",
-                    "notes": "Balda larga confirmada",
-                }
-            ],
-        },
-    )
+    shelf = next(component for component in created["result"]["scenarios"][0]["components"] if component["role"] == "shelf")
+    reviewed = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Técnica",
+        "decisions": [{
+            "proposal_id": shelf["id"], "action": "confirm", "role": "shelf", "quantity": 1,
+            "length_mm": 1200, "width_mm": 300, "thickness_mm": 16,
+            "material": "tablero", "finish": "melamina", "notes": "Balda larga confirmada",
+        }],
+    })
     assert reviewed.status_code == 201
-
-    response = client.get(
-        f"/api/v1/runs/{run_id}/explanations", params={"result_revision": 2}
-    )
-
+    response = client.get(f"/api/v1/runs/{run_id}/explanations", params={"result_revision": 2})
     assert response.status_code == 200
     warnings = response.json()["data"]["warnings"]
     assert any(item.startswith("pandeo_luz_excesiva:") for item in warnings)

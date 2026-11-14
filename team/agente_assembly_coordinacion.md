@@ -38,7 +38,7 @@
 
 ## Final technical verification
 
-- Root full suite: 793 passed, 2 existing deprecation warnings, 138.82s. Frontend: 191 passed, zero failures.
+- Root full suite: 793 passed, 2 existing deprecation warnings, 138.82s. Frontend: 192 passed, zero failures.
 - Independent Sol review: no residual Critical/Important must-fix. Final terminal diagnostic delta also covered by runtime focal 45 passing tests.
 - Production-local service restarted with final backend at https://localhost:8765, launcher PID 13172. No public deployment or commit created; prior dirty work preserved.
 - Reference evaluation: all 16 placements match dimensions, centers, faces and normal axes within 1mm after one global proper alignment and bijection. Frozen data and report hashes are recorded in docs/VERIFICACION_MONTAJE_GENERAL_2026-11-14.md.
@@ -46,4 +46,4 @@
 - Ruling: allow explicit diagnostic inspection of deterministic rejected placements, clearly labelled and never used as an accepted derived scene; default/reload remain schematic. This lets the user inspect actual geometry without implying approval.
 - Final public revalidation preserves 16 placements and 9 real issues; numerical box-fit noise and duplicate issue spam corrected.
 - Second furniture abstains because occurrence coverage is insufficient; unknown-unit control abstains with assembly_metric_scale_required and zero model calls. No missing quantities or scale invented.
-- Pending final artifact: browser screenshot/interaction confirmation for explicit diagnostic mode. All model work is stopped; no further paid calls needed to confirm missing machining evidence.
+- Final browser verified: explicit diagnostic shows 16 occurrences upright via global Z-up display; selection, orbit, zoom, explode and restore, exit and reload pass. Screenshot: .runtime/assembly-verification/browser-complex-rejected-16-world.png. No JavaScript/network errors. All model work stopped; no further paid calls needed to confirm missing machining evidence. Minor presentation limit: selector visually retains Z immediately after leaving diagnostic, while the scene resets; reload resets selector Y.

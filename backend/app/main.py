@@ -46,7 +46,7 @@ from backend.app.historico.service import find_comparables
 from backend.app.historico.real_service import HistoricalStore
 from backend.app.historico.models import ProvisionalDimension, ProvisionalQuantity, ProvisionalScenarioRow, ProvisionalScenarioSnapshot, ProvisionalText
 from backend.app.api.history import create_history_router
-from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
+from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralFurnitureAgentOutcome, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
 from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
 from backend.app.general_furniture.assembly import validate_assembly
 from backend.app.general_furniture.assembly_live import AssemblyAgentContext, AssemblyAgentLimits, AssemblyLiveError, build_terminal_assembly_attempt, run_general_assembly_agent
@@ -299,7 +299,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
         recording_max_count = int(os.getenv("VEXPLORER_RECORDING_MAX_COUNT", str(DEFAULT_RECORDING_MAX_COUNT)))
         recording_max_bytes = int(os.getenv("VEXPLORER_RECORDING_MAX_BYTES", str(DEFAULT_RECORDING_MAX_BYTES)))
-        general_job_timeout_s = float(os.getenv("VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS", "300"))
+        general_job_timeout_s = float(os.getenv(
+            "VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS",
+            "600" if environment == "production" else "300",
+        ))
         general_review_max_calls = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5"))
         general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
         general_review_max_semantic_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2"))
@@ -826,10 +829,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             path = request.url.path.rstrip("/")
             shared_feature = (
                 path == "/api/v1/history" or path.startswith("/api/v1/history/")
-                or path == "/api/v1/library" or path.startswith("/api/v1/library/")
                 or path == "/api/v1/semantic-explorer/review"
                 or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
-                or (path.startswith("/api/v1/runs/") and path.endswith(("/library", "/similarity")))
             )
             if shared_feature:
                 return _error(403, "private_feature_unavailable", "Esta operación del catálogo privado no está disponible en el acceso público.")
@@ -852,7 +853,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     async def revalidate_unhashed_frontend_code(request: Request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if request.method in {"GET", "HEAD"} and not path.startswith("/api/") and (path == "/" or Path(path).suffix.lower() in {".html", ".js", ".css"}):
+        if request.method in {"GET", "HEAD"} and not path.startswith("/api/") and (
+            path == "/" or Path(path).suffix.lower() in {".html", ".js", ".css"}
+        ):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -885,9 +888,11 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             else settings.unavailable_reason if not live_available
             else "recording_storage_exhausted:maintenance_or_increase_quota_required"
         )
-        semantic_capability = {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
+        indexed_library = repository.get_library_items()
+        indexed_semantic_count = sum(item.embedding is not None for item in indexed_library)
+        semantic_capability = {"available": semantic_provider is not None, "provider_configured": semantic_provider is not None, "cached_search_available": indexed_semantic_count > 0, "indexed_record_count": indexed_semantic_count, "generation_requires_authentication": False, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
         if public_production:
-            semantic_capability = {**semantic_capability, "available": False, "unavailable_reason": "private_feature_unavailable"}
+            semantic_capability = {**semantic_capability, "available": False, "generation_requires_authentication": True, "unavailable_reason": "public_semantic_indexing_requires_authentication"}
         capabilities = {
             "live_available": effective_live_available,
             "recorded_replay_available": replay_available,
@@ -908,6 +913,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         "max_validation_repairs": general_review_max_repairs,
                         "max_semantic_repairs": general_review_max_semantic_repairs,
                         "job_timeout_s": general_job_timeout_s,
+                        "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
                     },
                 },
                 "construction_completion": {
@@ -925,9 +931,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 },
             },
             "history": {"available": not public_production and _module_available("backend.app.api.history")},
+            "library": {"available": True, "read_available": True, "geometric_search_available": True, "offline_save_available": True, "semantic_cached_search_available": indexed_semantic_count > 0, "semantic_generation_available": semantic_provider is not None and not public_production},
             "evaluation": {"available": False, "reason": "offline_private_reference"},
         }
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "library_requires_real_reviewed": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "library_requires_real_reviewed": public_production, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -1545,7 +1552,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         recording = repository.find_agent_recording(fingerprint)
         return _ok({"available": recording is not None, "document_id": request.document_id, "input_kind": request.input_kind})
 
-    def _execute_run(request: RunRequest, *, actor: str | None = None):
+    def _execute_run(
+        request: RunRequest, *, actor: str | None = None, job_id: str | None = None,
+    ):
         if request.mode == "live" and not live_available:
             return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
         try:
@@ -1667,6 +1676,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "schema_version": "0.2.0",
                     "error": {
                         "code": "general_live_provider_failed",
+                        "phase": "proposal",
                         "reason_code": exc.code,
                         "provider_status_code": exc.provider_status_code,
                         "provider_code": exc.provider_code,
@@ -1679,7 +1689,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     },
                 }, status_code=502)
             except Exception as exc:
-                return _error(502, "general_live_provider_failed", f"La propuesta general live falló: {type(exc).__name__}.", True)
+                response = _error(502, "general_live_provider_failed", f"La propuesta general live falló: {type(exc).__name__}.", True)
+                payload = json.loads(response.body)
+                payload["error"]["phase"] = "proposal"
+                return JSONResponse(payload, status_code=502)
         try:
             run = repository.create_run(
                 run_id,
@@ -1706,6 +1719,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             if recording_reservation_id is not None:
                 repository.release_agent_recording_reservation(recording_reservation_id)
             raise
+        if job_id is not None:
+            repository.link_job_run(job_id, run_id)
         if general_outcome is not None:
             general_revision = general_furniture_repository.save_proposal(
                 run_id, general_outcome.proposal, general_outcome.draft,
@@ -1725,7 +1740,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             })
             remaining = general_job_timeout_s - (time.monotonic() - (general_started or time.monotonic()))
             if remaining <= 0:
-                error = {"code": "general_auto_review_failed", "message": "La revisión autónoma agotó el plazo total del trabajo.", "retryable": True, "run_id": run_id}
+                error = {"code": "general_auto_review_failed", "phase": "autonomous_review", "proposal_revision": general_revision, "message": "La revisión autónoma agotó el plazo total del trabajo.", "retryable": True, "run_id": run_id}
                 repository.append_event(run_id, "general_auto_review_failed", error)
                 return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=504)
             try:
@@ -1735,12 +1750,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 )
             except GeneralAutonomousError as exc:
                 record_general_auto_review_failure(run_id, exc)
-                error = {"code": exc.code, "message": "La revisión autónoma falló de forma acotada.", "retryable": True, "run_id": run_id}
+                error = {"code": exc.code, "phase": "autonomous_review", "proposal_revision": general_revision, "message": "La revisión autónoma falló de forma acotada.", "retryable": True, "run_id": run_id}
                 return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=502)
             except Exception as exc:
                 code = "general_auto_review_unavailable" if str(exc) == "general_auto_review_unavailable" else "general_auto_review_failed"
                 status = 503 if code == "general_auto_review_unavailable" else 502
-                error = {"code": code, "message": f"La revisión autónoma falló: {type(exc).__name__}.", "retryable": True, "run_id": run_id}
+                error = {"code": code, "phase": "autonomous_review", "proposal_revision": general_revision, "message": f"La revisión autónoma falló: {type(exc).__name__}.", "retryable": True, "run_id": run_id}
                 repository.append_event(run_id, "general_auto_review_failed", {"code": code, "reviewer_kind": "machine"})
                 return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=status)
             if general_auto_outcome is not None:
@@ -1838,7 +1853,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         def process() -> None:
             try:
                 repository.start_job(job_id)
-                response = _execute_run(request, actor=actor)
+                response = _execute_run(request, actor=actor, job_id=job_id)
                 payload = json.loads(response.body)
                 if response.status_code == 201:
                     repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
@@ -1852,6 +1867,150 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "message": f"El trabajo falló de forma segura: {type(exc).__name__}.",
                     "retryable": False,
                 })
+
+        job_executor.submit_reserved(process)
+
+    def recoverable_job_view(job: dict, *, actor: str | None) -> dict:
+        """Expose persisted progress without presenting a proposal as approved."""
+        result = dict(job)
+        error = result.get("error") if isinstance(result.get("error"), dict) else {}
+        saved_attempt = repository.get_job_resume_checkpoint(result["id"]) or {}
+        effective_run_id = result.get("run_id") or error.get("run_id") or saved_attempt.get("run_id")
+        if effective_run_id and result.get("run_id") is None:
+            result["run_id"] = effective_run_id
+        record = general_furniture_repository.get(effective_run_id) if effective_run_id else None
+        result["checkpoint"] = {
+            "phase": error.get("phase") or ("autonomous_review" if effective_run_id else "proposal"),
+            "proposal_saved": record is not None,
+            "proposal_id": record.proposal.id if record else None,
+            "proposal_revision": record.proposal_revision if record else 0,
+            "review_revision": record.review_revision if record else 0,
+        }
+        recovery = {
+            "safe_action": None, "endpoint": None, "attempt_kind": None,
+            "repeats_proposer": False, "continues_original_provider_call": False,
+            "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
+            "max_model_calls": general_review_max_calls,
+            "max_validation_repairs": general_review_max_repairs,
+            "max_semantic_repairs": general_review_max_semantic_repairs,
+        }
+        if result.get("state") in {"failed", "interrupted"} and error.get("retryable") is True:
+            try:
+                request = RunRequest.model_validate_json(repository.get_job_request(result["id"]))
+            except (KeyError, ValueError):
+                request = None
+            can_resume = request is not None and request.mode == "live" and request.input_kind == "general_furniture" and record is not None and record.review is None
+            recovery.update({
+                "safe_action": "resume_review" if can_resume else "retry_from_start",
+                "endpoint": f"/api/v1/jobs/{result['id']}/{'resume' if can_resume else 'retry'}",
+                "attempt_kind": "review_from_saved_proposal" if can_resume else "full_retry",
+                "repeats_proposer": not can_resume,
+            })
+        result["recovery"] = recovery
+        return result
+
+    def build_resume_checkpoint(source_job_id: str, *, actor: str | None) -> tuple[RunRequest, dict]:
+        source = repository.get_job_for_actor(source_job_id, actor=actor)
+        request = RunRequest.model_validate_json(repository.get_job_request(source_job_id))
+        error = source.get("error")
+        if source["state"] not in {"failed", "interrupted"} or not isinstance(error, dict) or error.get("retryable") is not True:
+            raise ValueError("job_not_retryable")
+        saved_attempt = repository.get_job_resume_checkpoint(source_job_id) or {}
+        run_id = source.get("run_id") or error.get("run_id") or saved_attempt.get("run_id")
+        if request.mode != "live" or request.input_kind != "general_furniture" or not run_id:
+            raise ValueError("job_resume_checkpoint_unavailable")
+        run = repository.get_run(run_id)
+        extraction = repository.get_extraction(run_id)
+        record = general_furniture_repository.get(run_id)
+        manifest = load_document_manifest(request.document_id)
+        document_sha256 = ((manifest.get("sha256") or manifest.get("source", {}).get("sha256")) if manifest else None)
+        if (
+            record is None or record.review is not None or not document_sha256
+            or run.document_id != request.document_id
+            or record.proposal.drawing_id != extraction.drawing_id
+            or record.proposal.ledger_revision != run.candidate_revision
+        ):
+            raise ValueError("job_resume_checkpoint_unavailable")
+        return request, {
+            "phase": "autonomous_review", "run_id": run_id,
+            "document_id": request.document_id, "document_sha256": document_sha256,
+            "drawing_id": extraction.drawing_id, "ledger_revision": run.candidate_revision,
+            "proposal_id": record.proposal.id, "proposal_revision": record.proposal_revision,
+            "review_revision": record.review_revision,
+            "attempt_kind": "review_from_saved_proposal",
+            "continues_original_provider_call": False,
+            "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
+            "max_model_calls": general_review_max_calls,
+            "max_validation_repairs": general_review_max_repairs,
+            "max_semantic_repairs": general_review_max_semantic_repairs,
+        }
+
+    def enqueue_resume_job(job_id: str) -> None:
+        def process() -> None:
+            checkpoint = repository.get_job_resume_checkpoint(job_id)
+            try:
+                if checkpoint is None:
+                    raise ValueError("job_resume_checkpoint_missing")
+                repository.start_job(job_id)
+                repository.link_job_run(job_id, checkpoint["run_id"])
+                manifest = load_document_manifest(checkpoint["document_id"])
+                document_sha256 = ((manifest.get("sha256") or manifest.get("source", {}).get("sha256")) if manifest else None)
+                run = repository.get_run(checkpoint["run_id"])
+                extraction = repository.get_extraction(checkpoint["run_id"])
+                record = general_furniture_repository.get(checkpoint["run_id"])
+                if (
+                    record is None
+                    or record.proposal_revision != checkpoint["proposal_revision"]
+                    or record.review_revision != checkpoint["review_revision"]
+                    or record.proposal.id != checkpoint["proposal_id"]
+                    or run.document_id != checkpoint["document_id"]
+                    or extraction.drawing_id != checkpoint["drawing_id"]
+                    or run.candidate_revision != checkpoint["ledger_revision"]
+                    or document_sha256 != checkpoint["document_sha256"]
+                ):
+                    raise ValueError("job_resume_checkpoint_stale")
+                context = general_furniture_context(checkpoint["run_id"])
+                proposal_outcome = GeneralFurnitureAgentOutcome(
+                    proposal=record.proposal, draft=record.draft,
+                    model_calls=0, tool_calls=0, trace=(),
+                )
+                repository.append_event(checkpoint["run_id"], "general_auto_review_resumed", {
+                    "proposal_revision": record.proposal_revision,
+                    "review_revision": record.review_revision,
+                    "attempt_kind": "review_from_saved_proposal",
+                    "continues_original_provider_call": False,
+                })
+                outcome = execute_general_autonomous(
+                    context, proposal_outcome,
+                    timeout_s=checkpoint["review_attempt_timeout_s"],
+                    proposal_revision=record.proposal_revision,
+                    previous_review=record.review,
+                    checkpoint_sink=lambda item: persist_general_auto_checkpoint(checkpoint["run_id"], item),
+                )
+                latest = general_furniture_repository.get(checkpoint["run_id"])
+                if latest is None or latest.proposal_revision != outcome.review.proposal_revision or latest.review_revision != checkpoint["review_revision"]:
+                    raise ValueError("job_resume_checkpoint_stale")
+                general_furniture_repository.save_review(checkpoint["run_id"], outcome.review, outcome.derived)
+                record_general_auto_review_events(checkpoint["run_id"], outcome)
+                repository.finish_job(job_id, run_id=checkpoint["run_id"])
+            except GeneralAutonomousError as exc:
+                if checkpoint is not None:
+                    record_general_auto_review_failure(checkpoint["run_id"], exc)
+                repository.finish_job(job_id, run_id=checkpoint["run_id"] if checkpoint else None, error={
+                    "code": exc.code, "phase": "autonomous_review",
+                    "proposal_revision": checkpoint.get("proposal_revision") if checkpoint else None,
+                    "message": "El nuevo intento de revisión falló de forma acotada.", "retryable": True,
+                })
+            except Exception as exc:
+                code = str(exc) if str(exc).startswith("job_resume_checkpoint_") else "job_resume_failed"
+                try:
+                    repository.finish_job(job_id, run_id=checkpoint["run_id"] if checkpoint else None, error={
+                        "code": code, "phase": "autonomous_review",
+                        "message": "No se pudo reanudar la revisión desde el checkpoint persistido.",
+                        "retryable": code == "job_resume_failed",
+                    })
+                except ValueError:
+                    pass
 
         job_executor.submit_reserved(process)
 
@@ -1922,6 +2081,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except ValueError:
             return _error(409, "job_request_invalid", "La solicitud persistida no admite reintento.")
         if replay is not None:
+            if repository.get_job_resume_checkpoint(replay["id"]) is not None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe una reanudación de revisión para este trabajo.")
             return _ok(replay, 202)
         if not job_executor.reserve():
             return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
@@ -1946,21 +2107,65 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "El trabajo no admite reintento.")
         if not created:
             job_executor.release()
+            if repository.get_job_resume_checkpoint(job["id"]) is not None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe una reanudación de revisión para este trabajo.")
             return _ok(job, 202)
         enqueue_reserved_job(retry_job_id, request, actor)
         return _ok(job, 202)
+
+    @app.post("/api/v1/jobs/{job_id}/resume")
+    def resume_job(job_id: str, http_request: Request):
+        if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
+            return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
+        actor = http_request.state.actor
+        try:
+            replay = repository.get_job_retry(job_id, actor=actor)
+            request, checkpoint = build_resume_checkpoint(job_id, actor=actor)
+        except KeyError:
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        except ValueError as exc:
+            code = str(exc)
+            if code not in {"job_not_retryable", "job_resume_checkpoint_unavailable"}:
+                code = "job_resume_checkpoint_unavailable"
+            return _error(409, code, "No hay una propuesta persistida compatible para reanudar la revisión.")
+        if replay is not None:
+            if repository.get_job_resume_checkpoint(replay["id"]) is None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe un reintento completo para este trabajo.")
+            return _ok(recoverable_job_view(replay, actor=actor), 202)
+        if not job_executor.reserve():
+            return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
+        retry_job_id = f"job-{uuid4().hex}"
+        try:
+            job, created = repository.reserve_job_retry(
+                job_id, retry_job_id, actor=actor, resume_checkpoint=checkpoint,
+                **public_job_admission(http_request, request),
+            )
+        except PublicJobAdmissionDenied as exc:
+            job_executor.release()
+            return public_job_admission_denied(exc)
+        except (KeyError, ValueError) as exc:
+            job_executor.release()
+            return _error(409, str(exc), "No se pudo reservar la reanudación.")
+        if not created:
+            job_executor.release()
+            if repository.get_job_resume_checkpoint(job["id"]) is None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe otro tipo de reintento.")
+            return _ok(recoverable_job_view(job, actor=actor), 202)
+        enqueue_resume_job(retry_job_id)
+        return _ok(recoverable_job_view(job, actor=actor), 202)
 
     @app.get("/api/v1/jobs/{job_id}")
     def get_job(job_id: str, http_request: Request):
         if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
             return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
         try:
-            return _ok(repository.get_job_for_actor(job_id, actor=http_request.state.actor))
+            job = repository.get_job_for_actor(job_id, actor=http_request.state.actor)
+            return _ok(recoverable_job_view(job, actor=http_request.state.actor))
         except KeyError:
             return _error(404, "job_not_found", "Trabajo inexistente.")
 
     @app.get("/api/v1/runs/{run_id}")
-    def get_run(run_id: str):
+    def get_run(run_id: str, http_request: Request):
         try:
             run, result = repository.get_run(run_id), repository.get_result(run_id)
         except KeyError:
@@ -1974,7 +2179,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             estimate = load_estimate(run_id, result.result_revision).model_dump(mode="json")
         except KeyError:
             estimate = None
-        return _ok({"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json"), "estimate": estimate})
+        latest_job = repository.get_latest_job_for_run(run_id, actor=http_request.state.actor)
+        return _ok({
+            "run": run.model_dump(mode="json"), "result": result.model_dump(mode="json"),
+            "estimate": estimate,
+            "latest_job": recoverable_job_view(latest_job, actor=http_request.state.actor) if latest_job else None,
+        })
 
     @app.get("/api/v1/runs/{run_id}/revisions")
     def get_revisions(run_id: str):
@@ -2132,7 +2342,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
         publication = None
-        if environment == "production":
+        if public_production:
             try:
                 run = repository.get_run(run_id)
                 extraction = repository.get_extraction(run_id)
@@ -2155,6 +2365,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "Completa la revisión del mueble antes de guardarlo en la biblioteca.")
         embedding = None
         if request.embedding_mode == "openai":
+            if public_production:
+                return _error(403, "public_semantic_indexing_requires_authentication", "La indexación semántica con proveedor de pago requiere acceso autenticado; el guardado público admite modo offline.")
             if semantic_provider is None:
                 return _error(503, "semantic_provider_unavailable", embedding_settings.unavailable_reason or "El proveedor semántico no está configurado.", True)
             model = semantic_provider.model

@@ -444,9 +444,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.output is None:
         print(payload, end="")
     else:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

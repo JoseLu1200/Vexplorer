@@ -1,4 +1,3 @@
-import { explainSimilarityMatch } from "./core/similarity_explain.js";
 import { createApiClient, ApiError } from "./api/client.js";
 import { normaliseDrawing, pathMatchesView, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
@@ -14,42 +13,33 @@ import { generalAssemblyDiagnosticScene, generalAssemblyScene, generalSceneForVi
 import { jobStatusLabel, pollJob } from "./core/jobs.js";
 import { nextFocusTarget } from "./core/focus.js";
 import { artifactRequestIdentity, buildTableCostScope, buildTableReviewPayload, componentDrawingSheet, componentMaterialOverrides, normaliseTableCostCatalog, normaliseTableDrawingManifest, normaliseTableWorkspace, presentTableComponentExplanation, presentTableCosts, tableExportFormat, tableMaterialScopeSelection, tableRunOptions } from "./core/table.js";
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "./core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalReviewMessage, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery } from "./core/general.js";
 import { presentHistoricalComparables, presentHistoricalEstimate, presentHistoricalRecord, presentHistoryImport, presentProvisionalScenarios } from "./core/history.js";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "./core/ingestion.js";
-import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, presentLibraryDifferences, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
-import { formatSimilarityScore, libraryCounts, libraryEmptyMessage, presentPieceDifferences, similarityScoreLabel } from "./core/similarity-ui.js";
+import { activateWorkspacePanel, formControlName, inputKindLabel, librarySavePayload, publicFeatureAvailability, restoredSourceLabel, sceneContextLabel, tableDiagnosticLabel, tableResourcesReady } from "./core/ui.js";
+import { generalSceneSelection, sceneLoadPlan } from "./core/scene.js";
+import { explainSimilarityMatch } from "./core/similarity_explain.js";
 import { DEFAULT_NEAR_DUPLICATE_THRESHOLD, evaluateDuplicatePrecedent, formatDuplicatePrecedentBanner } from "./core/duplicate_alert.js";
+import { formatSimilarityScore, libraryCounts, libraryEmptyMessage, presentPieceDifferences, similarityScoreLabel } from "./core/similarity-ui.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, jobRecovery: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
+let reconstructionPanel;
+const reconstructionButton=document.createElement('button');
+reconstructionButton.type='button';reconstructionButton.className='button';reconstructionButton.textContent='Construcción 3D';
+reconstructionButton.disabled=true;
+reconstructionButton.title='Disponible al abrir un plano como Mueble general';
+reconstructionButton.addEventListener('click',async()=>{
+  if(!state.runId||!state.generalWorkspace){setMessage('Abre primero un plano como Mueble general.',true);return;}
+  if(!reconstructionPanel){const {createReconstructionPanel}=await import('./components/ReconstructionPanel.js');reconstructionPanel=createReconstructionPanel();}
+  reconstructionPanel.open(state.runId,reconstructionButton);
+});
+document.querySelector('.navigator__head')?.append(reconstructionButton);
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence(), duplicateFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
-
-function generalDimensionPresentation(field){return presentGeneralConstructionDimension(field??{});}
-function generalDimensionText(field){const value=generalDimensionPresentation(field);return[value.display,value.stateLabel,value.rangeDisplay?`rango ${value.rangeDisplay}`:null].filter(Boolean).join(" · ");}
-function generalQuantityText(field){const value=presentGeneralConstructionQuantity(field??{});return[value.display,value.rangeDisplay?`rango ${value.rangeDisplay}`:null].filter(Boolean).join(" · ");}
-function generalUnknownSummary(component){const labels={length:"largo",width:"ancho",thickness:"grosor",quantity:"cantidad",material:"material",finish:"acabado"},fields={length:component.dimensions.length,width:component.dimensions.width,thickness:component.dimensions.thickness,quantity:component.quantity,...(component.constructionPiece?{}:{material:component.material,finish:component.finish})};return Object.entries(fields).filter(([,field])=>field?.value==null).map(([name,field])=>{const review=field?.machineReview,status=({rejected:"rechazado",conflict:"en conflicto",abstained:"abstención",unreviewed:"sin revisar"})[field?.reviewStatus??review?.status];return status?`${labels[name]} (${status}${review?.reason?`: ${review.reason}`:""})`:labels[name];}).join(", ")||"Ninguno";}
-function createExplanationList(labelText, items, listClassName, itemClassName = "") {
-  const section = document.createElement("div");
-  section.className = "similarity-explain-section";
-  const label = document.createElement("span");
-  label.className = "similarity-explain-label";
-  label.textContent = labelText;
-  const list = document.createElement("ul");
-  list.className = `similarity-explain-list ${listClassName}`;
-  items.forEach((entry) => {
-    const li = document.createElement("li");
-    if (itemClassName) li.className = itemClassName;
-    li.textContent = entry;
-    list.append(li);
-  });
-  section.append(label, list);
-  return section;
-}
 
 function text(node, value) { if (node) node.textContent = String(value ?? ""); }
 function unlock(id) { $(`#${id}`)?.classList.remove("is-locked"); }
@@ -57,26 +47,13 @@ function setMessage(value, error = false) { const node = $("#global-message"); t
 
 function emptyParagraph(value) { const node = document.createElement("p"); node.className = "empty-copy"; node.textContent = value; return node; }
 function toggleHidden(node, hidden) { node?.toggleAttribute("hidden", Boolean(hidden)); }
-function semanticAvailabilityText(config = state.config) { const semantic=config.semantic??config.capabilities?.semantic??{},available=Boolean(semantic.available??config.semantic_available); return available?`Semántico real · ${semantic.model??config.semantic_model??"modelo configurado"}`:"Semántico no disponible: usa el descriptor geométrico offline."; }
+function semanticAvailabilityText(config = state.config) { const semantic=config.semantic??config.capabilities?.semantic??{},model=semantic.model??config.semantic_model??"modelo no publicado",rawDimensions=semantic.dimensions,dimensions=Number.isInteger(rawDimensions)?`${rawDimensions} dimensiones`:rawDimensions??"dimensiones no publicadas",indexed=Number.isInteger(semantic.indexed_record_count)?semantic.indexed_record_count:0,providerConfigured=Boolean(semantic.provider_configured||semantic.available),searchAvailable=Boolean(semantic.cached_search_available||semantic.available),provider=providerConfigured?"Proveedor semántico configurado":"Proveedor semántico no configurado",search=searchAvailable?"búsqueda semántica disponible":"búsqueda semántica no disponible",generation=semantic.generation_requires_authentication?"Generar embeddings requiere autenticación.":semantic.available?"Generación de embeddings disponible.":"Generación de embeddings no disponible.";return `${provider} · ${model} · ${dimensions} · ${indexed} registros indexados; ${search}. ${generation}`; }
 function previewFigure(src,label){const figure=document.createElement("figure"),image=document.createElement("img"),caption=document.createElement("figcaption");image.src=src;image.alt=label;image.loading="lazy";caption.textContent=label;figure.append(image,caption);return figure;}
 async function appendComparisonThumbnails(card,item,candidate){const candidateRunId=candidate?.run_id??item.candidate_run_id??item.run_id;if(!state.documentId||!candidateRunId)return;const root=document.createElement("div");root.className="comparison-thumbnails";root.append(previewFigure(api.documentPreviewUrl(state.documentId),"Diseño consultado"));const pending=emptyParagraph("Cargando referencia…");root.append(pending);card.append(root);try{const run=await api.getRun(candidateRunId),documentId=run.document_id??run.run?.document_id;if(!documentId)throw new TypeError();pending.replaceWith(previewFigure(api.documentPreviewUrl(documentId),"Diseño de referencia"));}catch{pending.textContent="Preview de referencia no disponible.";}}
 function appendPieceDifferences(card,item){const differences=presentPieceDifferences(item.differences);if(!differences.length)return;const section=document.createElement("div");section.className="piece-differences";const heading=document.createElement("b");heading.textContent="Diferencias por pieza";section.append(heading);differences.forEach((difference)=>{const line=document.createElement("span");line.textContent=`${difference.label} · ${difference.fieldLabel}: ${difference.summary}${difference.ratioLabel?` · ${difference.ratioLabel}`:""}`;section.append(line);});card.append(section);}
 function updateGroupingLabels(){const semantic=$("#similarity-mode").value==="semantic";text($("#threshold-label"),semantic?"Similitud coseno mínima":"Similitud geométrica mínima");text($("#threshold-help"),`Enlace completo: todos los pares del grupo deben alcanzar la similitud ${semantic?"coseno":"geométrica"} indicada. Los umbrales son orientativos y no certifican equivalencia de fabricación.`);}
 const typologyLabel=(value)=>({rectangular_table:"mesa rectangular",table:"mesa",cabinet:"armario",shelving:"estantería"})[value]??value??"no publicada";
-const compatibilityWarningLabel=(value)=>({material_unknown:"Material sin confirmar",material_tariff_id_unknown:"Material o tarifa sin confirmar",finish_unknown:"Acabado sin confirmar",process_unknown:"Proceso de fabricación sin confirmar",material_mismatch:"Los materiales difieren",finish_mismatch:"Los acabados difieren",technical_fields_unknown:"Datos técnicos incompletos"})[value]??`Advertencia técnica: ${value}`;
-
-function appendSimilarityExplanation(card, item, candidate) {
-  if (!item.score_components) return;
-  const query = [...state.libraryItems.values()].find((entry) => entry.run_id === state.runId && entry.result_revision === state.snapshot?.result_revision);
-  const explained = explainSimilarityMatch(item, { queryDescriptor: query?.descriptor, candidateDescriptor: candidate?.descriptor });
-  if (explained.coincidences.length) card.append(createExplanationList("Coincidencias", explained.coincidences, "similarity-explain-list--coincidences", "similarity-badge similarity-badge--match"));
-  if (explained.scoreBreakdown.length) {
-    const breakdown = document.createElement("div");
-    breakdown.className = "similarity-score-breakdown";
-    explained.scoreBreakdown.forEach((value) => { const chip = document.createElement("span"); chip.className = "similarity-score-chip"; chip.textContent = value.text; breakdown.append(chip); });
-    card.append(breakdown);
-  }
-}
+const compatibilityWarningLabel=(value)=>({material_unknown:"Material sin confirmar",material_tariff_id_unknown:"Material o tarifa sin confirmar",finish_unknown:"Acabado sin confirmar",process_unknown:"Proceso de fabricación sin confirmar",material_mismatch:"Los materiales difieren",finish_mismatch:"Los acabados difieren",technical_fields_unknown:"Datos técnicos incompletos",cosine_not_probability_or_technical_equivalence:"El coseno no es probabilidad ni equivalencia técnica"})[value]??`Advertencia técnica: ${value}`;
 
 function resetEstimateUi() {
   $("#estimate-lines").replaceChildren(emptyParagraph("La revisión actual todavía no tiene estimación. Calcula una nueva para evitar reutilizar importes anteriores."));
@@ -91,10 +68,12 @@ function configureExportActions(){const table=state.tableWorkspace?.isTable===tr
 
 function resetRunUi() {
   setAssemblyDiagnostic(false);
+  reconstructionButton.disabled=true;
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate(); duplicateFence.invalidate();
   hideDuplicatePrecedentBanner();
   state.jobAbort?.abort();
   Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  state.jobRecovery=null;
   clearRunSession(localStorage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
@@ -121,7 +100,15 @@ function resetRunUi() {
 
 function configureModes(config = {}) {
   state.config = config;
+  state.features = publicFeatureAvailability(config);
+  const libraryTab=$('[data-panel="library"]'),libraryPanel=$('[data-panel-content="library"]');
+  const estimateTab=$('[data-panel="estimate"]'),estimatePanel=$('[data-panel-content="estimate"]');
+  toggleHidden(libraryTab,!state.features.library);toggleHidden(libraryPanel,!state.features.library);
+  toggleHidden(estimateTab,!state.features.costs);toggleHidden(estimatePanel,!state.features.costs);
+  toggleHidden($("#history-import-form"),!state.features.history);
+  toggleHidden($("#history-list"),!state.features.history);
   toggleHidden($("#library-publication"),!config.library_requires_real_reviewed);
+  toggleHidden($("#historical-scenarios"),!state.features.history);toggleHidden($("#historical-confirmed-details"),!state.features.history);
   availableModes(config.capabilities ?? config).forEach((mode) => {
     const input = $(`[name="mode"] [value="${mode.id}"]`) ?? $(`[name="mode"][value="${mode.id}"]`);
     if (input) input.disabled = !mode.enabled;
@@ -130,7 +117,7 @@ function configureModes(config = {}) {
   if (config.recorded_replay_available || config.replay_available || config.capabilities?.replay_available) text($("#replay-note"), "Grabación real disponible");
   const semantic = config.semantic ?? config.capabilities?.semantic ?? {};
   const semanticOption = $("#similarity-mode option[value='semantic']");
-  const semanticAvailable = Boolean(semantic.available ?? config.semantic_available);
+  const semanticAvailable = state.features.semantic;
   if (semanticOption) semanticOption.disabled = !semanticAvailable;
   const historySemanticOption = $('#history-retrieval-method option[value="semantic"]');
   if(historySemanticOption)historySemanticOption.disabled=!semanticAvailable;
@@ -450,7 +437,7 @@ function renderEvidence(component, contourId) {
     details.textContent = typedDimensions?`Largo ${generalDimensionText(dims.length)} · Ancho ${generalDimensionText(dims.width)} · Grosor ${generalDimensionText(dims.thickness)} · Cantidad ${component.constructionPiece?generalQuantityText(component.quantity):(value(component.quantity) ?? "desconocida")}`:`Largo ${formatMeasurement(value(dims.length ?? component.length_mm),"mm")} · Ancho ${formatMeasurement(value(dims.width ?? component.width_mm),"mm")} · Grosor ${formatMeasurement(value(dims.thickness ?? component.thickness_mm),"mm")} · Cantidad ${value(component.quantity) ?? "desconocida"}`;
     summary.append(details);
     if(typedDimensions)Object.entries({Largo:dims.length,Ancho:dims.width,Grosor:dims.thickness}).forEach(([label,dimension])=>{const item=generalDimensionPresentation(dimension);if(item.value==null&&!item.explanation)return;const card=document.createElement("div");card.className="detail-item";const title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");title.textContent=`${label} · ${item.stateLabel}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.formula&&`fórmula ${item.formula}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.operandRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);});
-    if(component.constructionPiece){const item=presentGeneralConstructionQuantity(component.quantity),card=document.createElement("div"),title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");card.className="detail-item";title.textContent=`Cantidad · ${item.approximate?"Estimada":"Propuesta"}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);}
+    if(component.constructionPiece){const item=presentGeneralConstructionQuantity({...component.quantity,component_kind:component.quantity?.component_kind??component.kind}),card=document.createElement("div"),title=document.createElement("b"),copy=document.createElement("span"),refs=document.createElement("code");card.className="detail-item";title.textContent=`${item.scopeLabel} · ${item.approximate?"Estimada":"Propuesta"}`;copy.textContent=[item.display,item.rangeDisplay&&`rango ${item.rangeDisplay}`,item.method&&`método ${item.method}`,item.explanation].filter(Boolean).join(" · ");refs.textContent=[...item.sourceRefs,...item.assumptionRefs].join(" · ")||"Sin referencias publicadas";card.append(title,copy,refs);root.append(card);}
     if(component.rawHypothesis){const raw=component.rawHypothesis,rawLine=document.createElement("p");rawLine.textContent=`Hipótesis original, conservada solo para inspección: largo ${formatMeasurement(raw.dimensions.length.value,"mm")} · ancho ${formatMeasurement(raw.dimensions.width.value,"mm")} · grosor ${formatMeasurement(raw.dimensions.thickness.value,"mm")} · cantidad ${raw.quantity.value??"desconocida"}. Los valores rechazados, conflictivos o no revisados no se usan en la tabla ni en las exportaciones.`;summary.append(rawLine);}
     const formula = component.length_derivation ?? component.formula ?? component.derivation;
     if (formula) { const note = document.createElement("p"); note.textContent = `Fórmula: ${formula}`; summary.append(note); }
@@ -483,17 +470,19 @@ function renderEvidence(component, contourId) {
 
 async function loadScene() {
   const warning = $("#scene-warning"); warning.hidden = true;
-  if (!state.runId || !Number.isInteger(state.snapshot?.result_revision)) { warning.hidden = false; text(warning, "3D no disponible: registra una revisión con medidas completas."); return; }
-  const identity=`${state.runId}:${state.snapshot.result_revision}`, token=sceneFence.issue(identity);
+  if (!state.runId) { warning.hidden = false; text(warning, "3D no disponible: todavía no hay una ejecución cargada."); return; }
+  const plan=sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived});
+  if(plan.kind==="legacy"&&!Number.isInteger(state.snapshot?.result_revision)){warning.hidden=false;text(warning,"3D no disponible: la ejecución actual no tiene una revisión geométrica consultable.");return;}
+  const identity=plan.identity,token=sceneFence.issue(identity),currentIdentity=()=>sceneLoadPlan({runId:state.runId,resultRevision:state.snapshot?.result_revision,generalWorkspace:state.generalWorkspace,generalDerived:state.generalDerived}).identity;
   try {
-    const diagnostic=state.assemblyDiagnostic?generalAssemblyDiagnosticScene(state.generalAssembly,state.generalDerived?.scene??{}):null;
+    const diagnostic=state.assemblyDiagnostic?generalAssemblyDiagnosticScene(state.generalAssembly,plan.scene.state === "unavailable" ? {} : state.generalDerived?.scene??{}):null;
     if(state.assemblyDiagnostic&&!diagnostic)setAssemblyDiagnostic(false);
     const raw = state.generalWorkspace?.isGeneral
-      ? generalSceneForViewer(diagnostic??generalAssemblyScene(state.generalAssembly,state.generalDerived?.scene??{}), state.generalWorkspace.components)
+      ? generalSceneForViewer(diagnostic??generalAssemblyScene(state.generalAssembly,plan.scene.state === "unavailable" ? {} : state.generalDerived?.scene??{}), state.generalWorkspace.components)
       : await api.getScene(state.runId, state.snapshot.result_revision);
-    if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return;
+    if (!sceneFence.isCurrent(token, currentIdentity())) return;
     state.scene = raw;
-    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=state.generalWorkspace?.components?.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(generalComponent)return selectGeneralComponent(generalComponent,item); const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
+    if (!sceneViewer) { const module = await import("./components/SceneViewer.js"); if (!sceneFence.isCurrent(token, currentIdentity())) return; sceneViewer = new module.SceneViewer($("#scene-viewer"), { onSelect: (item) => { const generalComponent=state.generalWorkspace?.components?.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(generalComponent)return selectGeneralComponent(generalComponent,item); const observation=state.partsWorkspace?.observations.find((entry)=>entry.id===item.partObservationId); if(observation)return selectPartObservation(observation); const tableComponent=state.tableWorkspace?.evaluated?.components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if(tableComponent)return selectTableComponent(tableComponent); const { components } = extractComponents(); const component = components.find((entry)=>[item.pieceId,item.proposalId].includes(entry.id)); if (component) selectComponent(component); } }); }
     sceneViewer.setDisplayUpAxis(state.assemblyDiagnostic?state.assemblyDisplayUp:"y",false);const model = sceneViewer.setScene(raw); $("#explode-control").hidden = false;
     if(state.selected?.componentId)sceneViewer.select(state.selected.componentId,state.selected.occurrenceKey??null);
     const assumptions=(raw.assumptions??model.assumptions??[]).map(translateAssumption);
@@ -503,7 +492,7 @@ async function loadScene() {
     const messages = model.warnings.map((message)=>readableWarnings[message]??message);
     if(!model.objects.length&&!messages.length)messages.push("No hay componentes con medidas suficientes para una vista espacial. Consulta la tabla y el plano fuente.");
     warning.hidden = !messages.length; text(warning, messages.join(" · "));
-  } catch (error) { if(!sceneFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para la revisión ${state.snapshot.result_revision}: ${error.message}`); }
+  } catch (error) { if(!sceneFence.isCurrent(token,currentIdentity()))return; state.scene = null; warning.hidden = false; text(warning, `3D no disponible para el snapshot actual: ${error.message}`); }
 }
 
 const partStateLabel=(value)=>({observed:"Observado",unknown:"Desconocido",conflict:"Conflicto",ambiguous:"Ambigua",complete:"Completa",partial:"Parcial",hypothesis:"Hipótesis",human_confirmed:"Confirmado"})[value]??value;
@@ -597,7 +586,11 @@ function renderTableAndReview(){
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-submit").disabled=!program; text($("#revision-label"),Number.isInteger(state.snapshot?.result_revision)?`Revisión ${state.snapshot.result_revision}`:"Revisión pendiente"); unlock("parts-stage"); unlock("review-stage");
 }
 
-function generalFieldValue(field) { return field?.value == null ? "Desconocido" : `${typeof field.value === "number" ? Number(field.value.toFixed(2)) : field.value}${field.unit ? ` ${field.unit}` : ""}`; }
+function generalFieldValue(field) { return field?.value == null ? "Desconocido" : `${field.value}${field.unit ? ` ${field.unit}` : ""}`; }
+function generalDimensionPresentation(field){return presentGeneralConstructionDimension(field??{});}
+function generalDimensionText(field){const value=generalDimensionPresentation(field);return[value.display,value.stateLabel,value.rangeDisplay?`rango ${value.rangeDisplay}`:null].filter(Boolean).join(" · ");}
+function generalQuantityText(field){const value=presentGeneralConstructionQuantity(field??{});return[value.display,value.rangeDisplay?`rango ${value.rangeDisplay}`:null].filter(Boolean).join(" · ");}
+function generalUnknownSummary(component){const labels={length:"largo",width:"ancho",thickness:"grosor",quantity:"cantidad",material:"material",finish:"acabado"},fields={length:component.dimensions.length,width:component.dimensions.width,thickness:component.dimensions.thickness,quantity:component.quantity,...(component.constructionPiece?{}:{material:component.material,finish:component.finish})};return Object.entries(fields).filter(([,field])=>field?.value==null).map(([name,field])=>{const review=field?.machineReview,status=({rejected:"rechazado",conflict:"en conflicto",abstained:"abstención",unreviewed:"sin revisar"})[field?.reviewStatus??review?.status];return status?`${labels[name]} (${status}${review?.reason?`: ${review.reason}`:""})`:labels[name];}).join(", ")||"Ninguno";}
 function generalStatusLabel(value){return({needs_review:"Revisión necesaria",reviewed_incomplete:"Revisado con datos pendientes",approved:"Aprobado",ready:"Listo",incomplete:"Incompleto",complete:"Completa",partial:"Parcial",unavailable:"No disponible"})[value]??String(value??"Desconocido");}
 function generalArtifactLabel(value){return({bom_csv:"BOM CSV",bom_json:"BOM JSON",drawing_svg:"Esquema SVG",drawing_dxf:"Esquema DXF",construction_overview_svg:"Construcción SVG",construction_overview_dxf:"Construcción DXF",piece_sheet_svg:"Pieza SVG",piece_sheet_dxf:"Pieza DXF"})[value]??String(value??"Artefacto");}
 
@@ -625,7 +618,7 @@ function renderGeneralOperationEditors(workspace,root){
 async function createManualGeneralProposal(){try{const label=$("#general-manual-label").value,kind=$("#general-manual-kind").value,role=$("#general-manual-role").value,reason=$("#general-manual-reason").value,proposal=buildManualGeneralProposal({drawingId:state.drawing?.drawing_id??state.generalWorkspace?.drawingId,ledgerRevision:state.snapshot?.candidate_revision??state.generalWorkspace?.ledgerRevision,label,kind,role,reason});await api.createGeneralProposal(state.runId,{mode:"manual",base_proposal_revision:state.generalWorkspace?.proposalRevision??0,proposal});text($("#review-message"),"Propuesta manual opcional creada con medidas desconocidas. Puedes corregirla o lanzar la verificación automática.");await refreshRun();}catch(error){text($("#review-message"),error.message);}}
 
 function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-review-operations"),!visible);toggleHidden($("#review-form > .form-grid"),!visible);toggleHidden($("#review-submit"),!visible);}
-async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent;if(button){button.disabled=true;button.textContent="Iniciando nueva ejecución…";}try{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
+async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent,resume=state.jobRecovery?.safeAction==="resume_review";if(button){button.disabled=true;button.textContent=resume?"Reanudando revisión…":"Iniciando nueva ejecución…";}try{if(resume){text($("#review-message"),"Reanudando la revisión del borrador guardado sin repetir la propuesta.");await retryCurrentJob();}else{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
 
 async function retryGeneralAssembly(){
   const proposal=state.generalWorkspace?.proposalRevision,review=state.generalWorkspace?.reviewRevision;
@@ -661,17 +654,18 @@ function appendGeneralAssemblyStatus(root){
 
 function renderGeneralFurniture() {
   reconstructionButton.disabled=!state.runId;
-  const workspace=state.generalWorkspace,derived=state.generalDerived,components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:piece.role,role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:row.role??"pieza",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
-  text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${components.length} ${components.length===1?"pieza":"piezas"} · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
+  const workspace=state.generalWorkspace,derived=state.generalDerived,componentKinds=new Map(workspace.components.map((item)=>[item.id,item.kind])),components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:componentKinds.get(piece.componentId)??piece.quantity?.component_kind??"unknown",role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:componentKinds.get(row.componentId)??"unknown",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
+  const counts=presentConstructionCounts(components);text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${counts.typeCount} tipos · ${counts.cutPieceCount} piezas para corte · ${counts.hardwareEstimated} herrajes estimados · ${counts.unknownCount} cantidades sin resolver · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
   const constructionSummary=$("#general-construction-summary"),estimated=components.flatMap((item)=>Object.values(item.dimensions??{})).filter((item)=>item?.state==="estimated"&&item?.value!=null).length;constructionSummary.hidden=!components.length;constructionSummary.replaceChildren();if(components.length){const line=document.createElement("p");line.textContent=`${derived?.construction?.summary.label??"Propuesta provisional"}: ${components.length} tipos de pieza · ${estimated} cotas estimadas aceptadas. Las cifras con ≈ incluyen rango y fundamento en el inspector.`;constructionSummary.append(line);}
   const impact=$("#general-impact-decisions"),impactList=$("#general-impact-decisions > div"),decisions=derived?.construction?.topDecisions.length?derived.construction.topDecisions:[...workspace.constructionDecisions].sort((a,b)=>({high:0,medium:1,low:2}[a.impact]??3)-({high:0,medium:1,low:2}[b.impact]??3)).slice(0,3);impact.hidden=!decisions.length;impactList.replaceChildren();decisions.forEach((decision)=>{const card=document.createElement("article");card.className="impact-decision";const title=document.createElement("b"),copy=document.createElement("p");title.textContent=`${({high:"Impacto alto",medium:"Impacto medio",low:"Impacto bajo"})[decision.impact]??"Decisión"} · ${decision.summary}`;copy.textContent=decision.rationale;card.append(title,copy);if(decision.alternatives.length){const alternatives=document.createElement("small");alternatives.textContent=`Alternativas consideradas: ${decision.alternatives.join(" · ")}`;card.append(alternatives);}impactList.append(card);});
   $("#parts-head").innerHTML="<tr><th>Componente</th><th>Tipo</th><th>Cant.</th><th>Largo</th><th>Ancho</th><th>Grosor</th><th>Desconocidos</th></tr>";
   const body=$("#parts-body"); body.replaceChildren();
-  components.forEach((component)=>{const row=document.createElement("tr");row.dataset.componentId=component.id;row.tabIndex=0;const values=[component.label,component.kind,component.constructionPiece?generalQuantityText(component.quantity):generalFieldValue(component.quantity),generalDimensionText(component.dimensions.length),generalDimensionText(component.dimensions.width),generalDimensionText(component.dimensions.thickness),generalUnknownSummary(component)];values.forEach((value,index)=>{const cell=document.createElement("td");cell.textContent=value;if(index===2&&component.constructionPiece){cell.dataset.origin=component.quantity.state;cell.title=component.quantity.explanation??"";}if(index>=3&&index<=5){const dimension=[component.dimensions.length,component.dimensions.width,component.dimensions.thickness][index-3],presentation=generalDimensionPresentation(dimension);cell.dataset.origin=presentation.state;cell.title=[presentation.explanation,presentation.method&&`Método: ${presentation.method}`].filter(Boolean).join(" · ");}if(index>1&&(value.startsWith("Desconocid")||index===6&&value!=="Ninguno"))cell.classList.add("unknown");row.append(cell);});row.addEventListener("click",()=>selectGeneralComponent(component));row.addEventListener("keydown",(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGeneralComponent(component);}});body.append(row);});
+  components.forEach((component)=>{const row=document.createElement("tr");row.dataset.componentId=component.id;row.tabIndex=0;const values=[component.label,component.kind,component.constructionPiece?generalQuantityText(component.quantity):generalFieldValue(component.quantity),generalDimensionText(component.dimensions.length),generalDimensionText(component.dimensions.width),generalDimensionText(component.dimensions.thickness),generalUnknownSummary(component)];values.forEach((value,index)=>{const cell=document.createElement("td");cell.textContent=value;if(index===2&&component.constructionPiece){cell.dataset.origin=component.quantity.state;cell.title=component.quantity.explanation??"";}if(index>=3&&index<=5){const dimension=[component.dimensions.length,component.dimensions.width,component.dimensions.thickness][index-3],presentation=generalDimensionPresentation(dimension);cell.dataset.origin=presentation.state;cell.title=[presentation.explanation,presentation.method&&`Método: ${presentation.method}`].filter(Boolean).join(" · ");}if(index>1&&(value.startsWith("Desconocid")||index===6&&value!=="Ninguno"))cell.classList.add("unknown");row.append(cell);});row.addEventListener("click",()=>{state.selected={type:"general",id:component.id};renderEvidence(component);});body.append(row);});
   if(!components.length){const row=document.createElement("tr"),cell=document.createElement("td");row.className="empty-row";cell.colSpan=7;cell.textContent="La propuesta constructiva no contiene piezas utilizables; el plano fuente y los avisos siguen disponibles.";row.append(cell);body.append(row);}
   const options=$("#scenario-options"); options.replaceChildren(); const legend=document.createElement("legend");legend.textContent="Revisión visual automática de hipótesis";options.append(legend);const provenance=workspace.machineProvenance,autoStatus=({accepted:"coherencia aceptada",incomplete:"coherencia incompleta",conflict:"coherencia en conflicto",abstained:"abstención"})[workspace.autoReviewStatus]??"sin estado publicado",reviewRelation=({separate_model:"modelo revisor separado",self_review:"auto-revisión del mismo modelo"})[provenance?.review_relation]??"relación entre modelos no publicada",summary=emptyParagraph(workspace.reviewerKind==="machine"?`Revisión de máquina · ${autoStatus} · ${provenance?.model??workspace.reviewerName??"modelo configurado"} · ${reviewRelation} · política ${provenance?.policy_version??"no publicada"}. No confirma la hipótesis como hecho.`:`La revisión automática no publicó un resultado. Las incógnitas permanecen visibles y no bloquean el plano fuente.`);options.append(summary);workspace.autoChecks.forEach((check)=>{const item=document.createElement("p");item.textContent=`Comprobación de coherencia (${check.method==="model_visual"?"modelo visual":"determinista"}): ${check.summary??check.id??check.kind} · ${check.outcome??"sin resultado"}`;options.append(item);});const actions=document.createElement("div");actions.className="library-actions";const retry=document.createElement("button");retry.type="button";retry.id="general-auto-review";retry.className="button button--primary";retry.textContent="Nueva ejecución con auto-revisión";retry.disabled=!state.documentId;retry.addEventListener("click",requestGeneralAutoReview);const advanced=document.createElement("button");advanced.type="button";advanced.className="button";advanced.textContent="Corrección humana avanzada";advanced.setAttribute("aria-expanded","false");advanced.addEventListener("click",()=>{const visible=advanced.getAttribute("aria-expanded")!=="true";advanced.setAttribute("aria-expanded",String(visible));advanced.textContent=visible?"Ocultar corrección humana":"Corrección humana avanzada";setGeneralManualCorrectionVisible(visible);});actions.append(retry,advanced);options.append(actions);
   const controls=$("#general-operation-components");if(workspace.components.length)renderGeneralOperationEditors(workspace,controls);else{controls.replaceChildren();const manual=document.createElement("fieldset");manual.className="general-manual-proposal";const title=document.createElement("legend");title.textContent="Crear propuesta manual sin inventar medidas";manual.append(title);[["general-manual-label","Nombre del componente","text",""],["general-manual-kind","Tipo","text","panel"],["general-manual-role","Rol","text","unknown"],["general-manual-reason","Motivo técnico","text",""]].forEach(([id,labelText,type,value])=>{const label=document.createElement("label"),input=document.createElement("input");label.textContent=labelText;input.id=id;input.type=type;input.value=value;label.append(input);manual.append(label);});const create=document.createElement("button");create.type="button";create.className="button button--primary";create.textContent="Crear propuesta manual";create.addEventListener("click",createManualGeneralProposal);manual.append(create);controls.append(manual);}
-  setGeneralManualCorrectionVisible(false); toggleHidden($("#legacy-review-fields"),true); toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.components.length;text($("#review-message"),workspace.status==="reviewed_incomplete"?"El modelo se abstuvo en los campos sin respaldo suficiente. BOM, esquema y descargas conservan esas incógnitas; la corrección humana es opcional.":"La revisión automática publicó el resultado de coherencia actual. La corrección humana sigue disponible como opción avanzada.");
+  if(state.jobRecovery?.safeAction==="resume_review")text($("#general-auto-review"),"Reanudar revisión guardada");
+  setGeneralManualCorrectionVisible(false); toggleHidden($("#legacy-review-fields"),true); toggleHidden($("#review-material").closest("label"),true); toggleHidden($("#review-finish").closest("label"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.components.length;text($("#review-message"),generalReviewMessage(workspace,state.jobRecovery));
   text($("#revision-label"),Number.isInteger(workspace.proposalRevision)?`Propuesta ${workspace.proposalRevision}`:"Propuesta pendiente");
   const derivedStatus=$("#general-derived-status"),assemblyEligible=Number.isInteger(workspace.proposalRevision)&&workspace.reviewRevision>0;toggleHidden(derivedStatus,!derived&&!assemblyEligible);derivedStatus.replaceChildren();if(derived){derivedStatus.append(document.createTextNode(`${derived.bom.length} filas BOM · ${derived.artifacts.filter((item)=>item.status==="incomplete").length} artefactos incompletos · base de coste ${generalStatusLabel(derived.costBasis.status)}. `));derived.artifacts.forEach((artifact)=>{const link=document.createElement("a");link.className="button";link.href=api.generalArtifactUrl(state.runId,artifact.id,derived.proposalRevision,derived.reviewRevision);link.download=artifact.filename??"";link.textContent=`${generalArtifactLabel(artifact.kind)} · ${generalStatusLabel(artifact.status)}`;derivedStatus.append(link);});}if(assemblyEligible)appendGeneralAssemblyStatus(derivedStatus);
   $("#integral-controls").hidden=false; const exportActions=$(".export-actions"); if(exportActions&&!$("#general-export-actions",exportActions))exportActions.append($("#general-export-actions")); $("#general-export-actions").hidden=false; $$('[data-export="bom_csv"],[data-export="bom_json"]').forEach((button)=>button.disabled=!derived?.bom.length);
@@ -764,7 +758,7 @@ async function refreshRun() {
   if (!state.runId) return;
   setAssemblyDiagnostic(false);
   const requestedRun=state.runId, token=runFence.issue(requestedRun);
-  const snapshot=normaliseRunPayload(await api.getRun(requestedRun));
+  const runRecord=await api.getRun(requestedRun),snapshot=normaliseRunPayload(runRecord);
   if (!runFence.isCurrent(token,state.runId)) return;
   state.snapshot = snapshot;
   state.partsWorkspace = normalisePartsWorkspace(snapshot);
@@ -777,6 +771,7 @@ async function refreshRun() {
   const status = snapshotStatusPresentation(state.snapshot);
   text($("#upload-status"), status.label); setMessage(status.message, state.snapshot.state === "failed");
   text($("#run-mode-label"), executionModeLabel(state.snapshot.mode));
+  const latestJob=runRecord.latest_job;if(latestJob&&["failed","interrupted"].includes(latestJob.state)){const recovery=presentJobRecovery(latestJob);state.jobId=latestJob.id;state.jobRecovery=recovery;text($("#job-status"),recovery.phaseLabel);setMessage(recovery.message,true);toggleHidden($("#job-retry"),!recovery.safeAction);$("#job-retry").disabled=!recovery.safeAction;text($("#job-retry"),recovery.actionLabel);}
   const replay=presentReplaySource(state.snapshot),replaySource=$("#replay-source"),replayText=replay.available?`${replay.summary} · ${replay.detail}`:""; toggleHidden(replaySource,!replay.available); text(replaySource,replayText); replaySource.title=replayText;
   try { const drawing=await api.getDrawing(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.drawing=drawing; renderDrawing(); if(!state.documentIngestion){text($("#document-provenance"),restoredSourceLabel(drawing)); $("#document-provenance").title="Metadatos recuperados de la ejecución; el nombre original no forma parte de este endpoint.";} } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
   try { const ledger=await api.getLedger(requestedRun); if(!runFence.isCurrent(token,state.runId))return; state.ledger=ledger; } catch (error) { if(!runFence.isCurrent(token,state.runId))return; if (!(error instanceof ApiError) || ![404,409].includes(error.status)) throw error; }
@@ -785,18 +780,20 @@ async function refreshRun() {
     try{general=await api.getGeneralFurniture(requestedRun);}catch(error){if(!(error instanceof ApiError)||error.status!==404)throw error;general={run_id:requestedRun,status:"reviewed_incomplete",proposal_revision:null,review_revision:0,draft:{drawing_id:state.drawing?.drawing_id??snapshot.document_id,ledger_revision:state.ledger?.ledger_revision??state.ledger?.revision??"pending",components:[]},automatic_review_unavailable:true};} if(!runFence.isCurrent(token,state.runId))return;
     state.generalWorkspace=normaliseGeneralWorkspace(general);
     const machineStatus=generalMachineStatusPresentation(state.generalWorkspace);if(machineStatus){text($("#upload-status"),machineStatus.label);setMessage(machineStatus.message);}
-    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){const failure=generalDerivedLoadFailure(error);if(failure){text($("#upload-status"),failure.label);setMessage(failure.message,true);}else if(!(error instanceof ApiError)||error.status!==404)throw error;}try{state.generalAssembly=normaliseGeneralAssemblyResponse(await api.getGeneralAssembly(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))state.generalAssemblyError=error.message;}}
+    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){const failure=generalDerivedLoadFailure(error);if(failure){text($("#upload-status"),failure.label);setMessage(failure.message,true);}else if(!(error instanceof ApiError)||error.status!==404)throw error;}}
+    if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalAssembly=normaliseGeneralAssemblyResponse(await api.getGeneralAssembly(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))state.generalAssemblyError=error.message;}}
   }
   renderPartsAndReview(); updateArtifactTabs();
   const tableReady=tableResourcesReady(state.tableWorkspace,state.snapshot);
+  if(tableReady){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
   await loadRevisionContext();
   if(!runFence.isCurrent(token,state.runId))return;
   void checkDuplicatePrecedent(requestedRun, state.snapshot?.result_revision);
   if (state.activeView === "3d") await loadScene();
   const scenarioReady=Boolean(state.generalWorkspace?.isGeneral&&state.generalWorkspace.reviewerKind==="machine"&&Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0),confirmedDetails=$("#historical-confirmed-details"),confirmedSummary=$("#historical-confirmed-details > summary");toggleHidden($("#historical-scenarios"),!scenarioReady);$("#historical-scenarios-button").disabled=!scenarioReady;confirmedDetails.open=!scenarioReady;confirmedSummary.hidden=!scenarioReady;
   toggleHidden($("#table-cost-scope"),!state.tableWorkspace.isTable); text($("#estimate-button"),state.tableWorkspace.isTable?"Calcular costes de mesa":"Calcular estimación");
-  if(state.tableWorkspace.isTable){toggleHidden($("#history-estimate-controls"),true);resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph(tableReady?"Cargando componentes…":"Completa la revisión para configurar costes.")); if(tableReady){try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} if(state.snapshot?.estimate){try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}} $("#estimate-button").disabled=!tableReady; configureExportActions(); unlock("estimate-stage");}
-  else if(state.generalWorkspace?.isGeneral){toggleHidden($("#history-estimate-controls"),false);resetEstimateUi();const target=state.generalDerived?.historicalTarget,scopeReady=Boolean(target?.required_cost_scope?.length||target?.required_hours_scope?.length),ready=Boolean(target?.currency&&scopeReady);$("#estimate-button").disabled=!ready;text($("#estimate-button"),"Estimar desde histórico confirmado");text($("#estimate-uncertainty"),ready?`Base confirmada ${target.basis_revision} · moneda ${target.currency} · alcance de coste ${target.required_cost_scope.join(", ")||"ninguno"} · alcance de horas ${target.required_hours_scope.join(", ")||"ninguno"}.`:`El histórico confirmado requiere moneda y alcance humanos. Los escenarios condicionales automáticos se muestran por separado.`);if(scenarioReady)await loadHistoricalScenarios();if(ready)await loadHistoricalComparables();unlock("estimate-stage");}
+  if(state.tableWorkspace.isTable){toggleHidden($("#history-estimate-controls"),true);resetEstimateUi(); $("#table-component-material-tariffs").replaceChildren(emptyParagraph(tableReady?"Cargando componentes…":"Completa la revisión para configurar costes.")); if(tableReady){try{const catalog=await api.getTableCostCatalog(); if(!runFence.isCurrent(token,state.runId))return; renderTableCostCatalog(catalog);}catch(error){if(!runFence.isCurrent(token,state.runId))return;text($("#estimate-lines"),error.message);} try{const costs=await api.getTableCosts(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return;renderTableCosts(costs);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}} $("#estimate-button").disabled=!tableReady; configureExportActions(); unlock("estimate-stage");}
+  else if(state.generalWorkspace?.isGeneral){toggleHidden($("#history-estimate-controls"),!state.features.history);resetEstimateUi();const target=state.generalDerived?.historicalTarget,scopeReady=Boolean(target?.required_cost_scope?.length||target?.required_hours_scope?.length),ready=state.features.history&&Boolean(target?.currency&&scopeReady);$("#estimate-button").disabled=!ready;text($("#estimate-button"),state.features.history?"Estimar desde histórico confirmado":"Histórico privado no disponible");text($("#estimate-uncertainty"),state.features.history?(ready?`Base confirmada ${target.basis_revision} · moneda ${target.currency} · alcance de coste ${target.required_cost_scope.join(", ")||"ninguno"} · alcance de horas ${target.required_hours_scope.join(", ")||"ninguno"}.`:`El histórico confirmado requiere moneda y alcance humanos. Los escenarios condicionales automáticos se muestran por separado.`):"El acceso público mantiene el flujo CAD; el catálogo histórico privado no está disponible.");if(state.features.history&&scenarioReady)await loadHistoricalScenarios();if(ready)await loadHistoricalComparables();unlock("estimate-stage");}
   else {toggleHidden($("#history-estimate-controls"),true);if (state.snapshot.estimate) renderEstimate(state.snapshot.estimate); else resetEstimateUi(); if (["completed","needs_review"].includes(state.snapshot.state)) { await loadComparables(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; unlock("estimate-stage"); }}
 }
 
@@ -810,10 +807,15 @@ async function loadRevisionContext() {
     revisions.forEach((item) => { const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=`Revisión ${item.result_revision ?? item.revision ?? "—"}`; const detail=document.createElement("span"); detail.textContent=`${item.review?.reviewer_name ?? "Sistema"} · ${item.selected_table_program_id??item.review?.selected_assembly_candidate_id??item.review?.selected_scenario_id??item.state??"sin propuesta seleccionada"}`; card.append(title,detail); root.append(card); });
     if (!revisions.length) root.append(emptyParagraph("Sin revisiones registradas."));
   } catch { /* endpoint aditivo: el resto del visor sigue operativo */ }
-  try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
+  if(state.features.library)try { const library=await api.getLibrary(); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; renderLibraryEntries(library); } catch { /* biblioteca aditiva */ }
   if (Number.isInteger(revision)) {
     try { const explanations=await api.getExplanations(runId, revision); if(!contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))return; state.explanations = explanations; } catch { if(contextFence.isCurrent(token,`${state.runId}:${state.snapshot?.result_revision}`))state.explanations = null; }
-    const libraryReady=!state.tableWorkspace?.isTable||tableResourcesReady(state.tableWorkspace,state.snapshot); $("#save-library").disabled = !libraryReady; $("#find-similar").disabled = !libraryReady; if(!libraryReady)text($("#semantic-note"),"Completa la revisión de mesa antes de guardar o buscar por descriptor.");else text($("#semantic-note"),semanticAvailabilityText());
+    const supportedDescriptor=!state.generalWorkspace?.isGeneral;
+    const libraryReady=supportedDescriptor&&(!state.tableWorkspace?.isTable||tableResourcesReady(state.tableWorkspace,state.snapshot));
+    $("#save-library").disabled = !libraryReady; $("#find-similar").disabled = !libraryReady;
+    if(!supportedDescriptor)text($("#semantic-note"),"Biblioteca admite revisiones de piezas y mesa; el descriptor de mueble general está pendiente.");
+    else if(!libraryReady)text($("#semantic-note"),"Completa la revisión de mesa antes de guardar o buscar por descriptor.");
+    else text($("#semantic-note"),semanticAvailabilityText());
   } else { state.explanations = null; $("#save-library").disabled = true; $("#find-similar").disabled = true; }
   state.scene = null;
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren(); text($("#scene-context"),"2D fuente · sin reconstrucción cargada");
@@ -826,13 +828,15 @@ function hideDuplicatePrecedentBanner() {
   toggleHidden(banner, true);
   text($("#duplicate-precedent-message"), "");
   const link = $("#duplicate-precedent-link");
-  link?.removeAttribute("href");
-  text(link, "");
+  if (link) {
+    link.removeAttribute("href");
+    text(link, "");
+  }
 }
 
 async function checkDuplicatePrecedent(runId, revision) {
   hideDuplicatePrecedentBanner();
-  if (!runId || !Number.isInteger(revision)) {
+  if (!state.features.library || !runId || !Number.isInteger(revision)) {
     duplicateFence.invalidate();
     return;
   }
@@ -856,22 +860,28 @@ async function checkDuplicatePrecedent(runId, revision) {
       ? result.threshold_used
       : DEFAULT_NEAR_DUPLICATE_THRESHOLD;
     const evaluation = evaluateDuplicatePrecedent(labelledMatches, { threshold });
-    if (!evaluation.found) return;
+    if (!evaluation.found) {
+      hideDuplicatePrecedentBanner();
+      return;
+    }
     const formatted = formatDuplicatePrecedentBanner(evaluation);
-    const banner = $("#duplicate-precedent-banner"), message = $("#duplicate-precedent-message"), link = $("#duplicate-precedent-link");
+    const banner = $("#duplicate-precedent-banner");
+    const message = $("#duplicate-precedent-message");
+    const link = $("#duplicate-precedent-link");
     if (!banner || !message || !link) return;
-    const url = new URL(location.href);
-    url.searchParams.set("run", evaluation.runId);
     text(message, formatted.message);
-    link.href = url;
+    link.href = formatted.linkUrl;
     text(link, formatted.linkText);
     toggleHidden(banner, false);
   } catch {
-    if (duplicateFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) hideDuplicatePrecedentBanner();
+    if (duplicateFence.isCurrent(token, `${state.runId}:${state.snapshot?.result_revision}`)) {
+      hideDuplicatePrecedentBanner();
+    }
   }
 }
 
 async function loadComparables(requestedRun=state.runId, requestedRevision=state.snapshot?.result_revision) {
+  if(!state.features.library)return;
   try {
     const response = await api.getComparables(requestedRun); if(state.runId!==requestedRun||state.snapshot?.result_revision!==requestedRevision)return; const items = response.comparables ?? response.items ?? response ?? [];
     const root = $("#comparables-list"); root.replaceChildren();
@@ -972,12 +982,14 @@ async function followJob(initialJob) {
   const controller = new AbortController(); state.jobAbort = controller; state.jobId = initialJob.id;
   persistJob(initialJob, localStorage);
   const intervalMs = Number(state.config?.run_submission?.poll_interval_ms) || 500;
-  const result = await pollJob(initialJob.id, {
+  let result;
+  try{result = await pollJob(initialJob.id, {
     signal: controller.signal,
     intervalMs,
     getJob: api.getJob,
     onUpdate: async (job) => {
       persistJob({ id: job.id, run_id: job.runId, state: job.state }, localStorage);
+      if(job.checkpoint||job.recovery)state.jobRecovery=presentJobRecovery(job);
       const automatic=$("#upload-form").elements.input_kind.value==="general_furniture"&&$("#upload-form").elements.mode.value==="live",label=automatic&&["queued","running"].includes(job.state)?`Revisión visual automática · ${jobStatusLabel(job)}`:jobStatusLabel(job);text($("#job-status"), `${label} · ${job.id}`);
       text($("#upload-status"), label);
       if (job.runId) {
@@ -985,12 +997,12 @@ async function followJob(initialJob) {
         try { await refreshTraceHistory(); } catch { text($("#trace-gap-status"), "La traza aún no está disponible; se volverá a consultar."); }
       }
     },
-  });
+  });}catch(error){state.jobAbort=null;if(error?.name==="TimeoutError"&&state.jobRecovery){const recovery=state.jobRecovery,message=`La espera local agotó el tiempo. ${recovery.message}`;setMessage(message,true);text($("#job-status"),recovery.phaseLabel);toggleHidden($("#job-retry"),!recovery.safeAction);text($("#job-retry"),recovery.actionLabel);throw new ApiError(message,{code:"local_poll_timeout",retryable:Boolean(recovery.safeAction)});}throw error;}
   if (controller.signal.aborted) return null;
   state.jobAbort = null;
   if (result.state !== "succeeded" || !result.runId) {
-    const retryable=Boolean(result.error?.retryable)&&["failed","interrupted"].includes(result.state);toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;
-    const error = new ApiError(result.error?.message ?? "El trabajo no terminó correctamente.", { code: result.error?.code ?? result.state, retryable: Boolean(result.error?.retryable) });
+    const presented=presentJobRecovery(result),retryable=Boolean(presented.safeAction)&&["failed","interrupted"].includes(result.state);state.jobRecovery=presented;toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;text($("#job-retry"),presented.actionLabel);text($("#job-status"),presented.phaseLabel);setMessage(presented.message,true);
+    const error = new ApiError(presented.message, { code: result.error?.code ?? result.state, retryable });
     throw error;
   }
   toggleHidden($("#job-retry"),true);
@@ -999,7 +1011,7 @@ async function followJob(initialJob) {
   return result;
 }
 
-async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry");button.disabled=true;try{setMessage(`Creando una nueva ejecución enlazada a ${sourceJobId}; el trabajo original se conserva.`);const next=await api.retryJob(sourceJobId);text($("#job-status"),`Reintento de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
+async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry"),action=state.jobRecovery?.safeAction;button.disabled=true;try{const resume=action==="resume_review";setMessage(resume?`Reanudando la revisión de la propuesta recuperada; no se repetirá el proponente.`:`Repitiendo desde el inicio. Esta acción puede volver a consumir el proveedor; el trabajo original se conserva.`);const next=resume?await api.resumeJob(sourceJobId):await api.retryJob(sourceJobId);state.jobRecovery=null;text($("#job-status"),`${resume?"Reanudación":"Reintento"} de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
 
 async function runUpload(event) {
   event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
@@ -1037,7 +1049,7 @@ function renderHistoryRecords(raw) {
   items.forEach((item)=>{const presented=presentHistoricalRecord(item),card=document.createElement("div");card.className="detail-item";const title=document.createElement("b"),detail=document.createElement("span"),source=document.createElement("span");title.textContent=item.name??item.project_name??item.project_id??item.record_id??item.id??"Registro histórico";detail.textContent=presented.provenanceLabel;source.textContent=`Fuente: ${item.provenance?.source??"sin fuente"}${item.provenance?.source_date?` · ${item.provenance.source_date}`:""}`;card.append(title,detail,source);root.append(card);}); if(!items.length)root.append(emptyParagraph("No hay registros con esta procedencia."));
 }
 
-async function refreshHistoryRecords(){try{const raw=await api.getHistory({origin:$("#history-provenance").value,limit:25,offset:0});renderHistoryRecords(raw);}catch(error){$("#history-list")?.replaceChildren(emptyParagraph(error.message));}}
+async function refreshHistoryRecords(){if(!state.features.history)return;try{const raw=await api.getHistory({origin:$("#history-provenance").value,limit:25,offset:0});renderHistoryRecords(raw);}catch(error){$("#history-list")?.replaceChildren(emptyParagraph(error.message));}}
 
 async function importHistory(event){event.preventDefault();const file=$("#history-file").files[0];if(!file)return text($("#history-import-status"),"Selecciona un CSV. Cada registro debe declarar su origen y su fuente.");try{const raw=await api.importHistory(file,{dryRun:false}),result=presentHistoryImport(raw);text($("#history-import-status"),`${result.summary}${result.errors.length?` · ${result.errors.join(" ")}`:""}`);await refreshHistoryRecords();}catch(error){text($("#history-import-status"),error.message);}}
 
@@ -1101,7 +1113,6 @@ function toggleTrace(open) {
 }
 
 function setupWorkspaceControls() {
-  $(".library-actions")?.prepend($("#library-publication"));
   $$('[data-artifact-view]').forEach((button)=>{button.role="tab";button.tabIndex=button.getAttribute("aria-selected")==="true"?0:-1;button.addEventListener("click",()=>activateArtifactView(button.dataset.artifactView,button));}); $("#trace-drawer").inert=true;
   const panelButtons=$$('[data-panel]'),panels=$$('[data-panel-content]'),activatePanel=(button,compact=false)=>activateWorkspacePanel(panelButtons,panels,button,{compact,reducedMotion:globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches===true}); panelButtons.forEach((button)=>button.addEventListener("click",()=>activatePanel(button,globalThis.matchMedia?.("(max-width: 980px)").matches===true))); activatePanel(panelButtons.find((button)=>button.classList.contains("is-active"))??panelButtons[0]);
   ["entities","texts","dimensions"].forEach((name)=>$(`#toggle-${name}`).addEventListener("change",applyLayerVisibility));
@@ -1138,21 +1149,179 @@ function updateTableRunControls() {
   if(!state.runId)text($("#input-kind-label"),inputKindLabel(inputKind));
 }
 
+function createExplanationList(labelText, items, listClassName, itemClassName = "") {
+  const section = document.createElement("div");
+  section.className = "similarity-explain-section";
+  const label = document.createElement("span");
+  label.className = "similarity-explain-label";
+  label.textContent = labelText;
+  const list = document.createElement("ul");
+  list.className = `similarity-explain-list ${listClassName}`;
+  items.forEach((entry) => {
+    const li = document.createElement("li");
+    if (itemClassName) li.className = itemClassName;
+    li.textContent = entry;
+    list.append(li);
+  });
+  section.append(label, list);
+  return section;
+}
+
 function renderLibraryResults(raw, mode) {
-  const root=$("#library-list"); root.replaceChildren(); const items=raw.matches??raw.items??raw.groups??raw??[],counts=libraryCounts(raw,items);
-  items.forEach((item)=>{const candidate=state.libraryItems.get(item.library_item_id);item.typology_label=typologyLabel(item.typology_label??item.family??candidate?.descriptor?.family);item.compatibility_warnings=(item.compatibility_warnings??[]).map(compatibilityWarningLabel);item.member_ids=item.member_ids??item.equivalent_record_ids;});
-  text($("#library-status"),`Comparación: ${counts.designs} diseños candidatos · ${counts.records} registros candidatos · ${counts.duplicates} duplicados detectados.`);
-  items.forEach((item)=>{const candidate=state.libraryItems.get(item.library_item_id),card=document.createElement("article"),title=document.createElement("b"),typology=document.createElement("span"),detail=document.createElement("span"),differences=document.createElement("span"),warning=document.createElement("small"),presented=presentLibraryDifferences(item.differences??[]);card.className="detail-item library-result";title.textContent=candidate?.label??item.label??item.name??item.run_id??item.library_item_id??(item.id?`Grupo ${item.id}`:"Elemento de biblioteca");typology.textContent=`Coincidencia tipológica: ${item.typology_label??item.family??candidate?.descriptor?.family??"no publicada"}`;const rawScore=similarityScoreLabel(item,mode),score=rawScore?` · ${rawScore}`:"",technicalScore=Number.isFinite(item.technical_score)?` · similitud técnica ${formatSimilarityScore(item.technical_score)}`:" · similitud técnica no calculada",members=item.member_ids?.length?` · ${item.member_ids.length} registros`:"",criterion=item.linkage==="complete"?` · agrupación por enlace completo${Number.isFinite(item.minimum_pair_score)?` (mínimo entre pares ${formatSimilarityScore(item.minimum_pair_score)})`:""}`:"";detail.textContent=`Comparación técnica: ${mode === "semantic" ? `descriptor semántico · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}` : `descriptor geométrico offline · ${item.descriptor_version ?? item.descriptor?.descriptor_version ?? candidate?.descriptor?.descriptor_version ?? "furniture-v1"}`}${score}${technicalScore}${members}${criterion}`;differences.textContent=presented.summary.join(" · ")||(item.explanation?"Comparación disponible":"Sin diferencias técnicas documentadas");warning.className="comparison-warning";warning.textContent="La similitud no certifica compatibilidad. No confirma material, acabado ni proceso de fabricación.";card.append(title,typology,detail,differences,warning);(item.compatibility_warnings??[]).forEach((value)=>card.append(emptyParagraph(`Metadato o compatibilidad sin confirmar: ${value}`)));appendPieceDifferences(card,item);appendSimilarityExplanation(card,item,candidate);appendComparisonThumbnails(card,item,candidate);const technical=[...presented.technical,...(item.explanation?[String(item.explanation)]:[])];if(technical.length){const disclosure=document.createElement("details"),disclosureTitle=document.createElement("summary"),content=document.createElement("div");disclosure.className="library-comparison-details";disclosureTitle.textContent="Datos de comparación";technical.forEach((value)=>{const line=document.createElement("code");line.textContent=value;content.append(line);});disclosure.append(disclosureTitle,content);card.append(disclosure);}const linked=item.member_ids?.map((id)=>state.libraryItems.get(id)).filter(Boolean)??(candidate?[candidate]:[]);if(linked.length){const links=document.createElement("div");links.className="library-members";linked.forEach((entry)=>links.append(libraryRunLink(entry)));card.append(links);}root.append(card);});
-  if(!items.length)root.append(emptyParagraph(libraryEmptyMessage(counts.records)));
-  if(Number.isInteger(raw.excluded_count)&&raw.excluded_count>0){const reasons=raw.excluded_reasons&&typeof raw.excluded_reasons==="object"?Object.entries(raw.excluded_reasons).filter(([,count])=>count>0).map(([reason,count])=>`${count} ${reason}`).join(" · "):"sin desglose publicado";root.append(emptyParagraph(`${raw.excluded_count} registros no fueron comparables (${reasons}); pueden tener descriptor o embedding incompatible o ausente.`));}
+  const root = $("#library-list");
+  root.replaceChildren();
+  const items = raw.matches ?? raw.items ?? raw.groups ?? raw ?? [];
+  const counts = libraryCounts(raw, items);
+  text($("#library-status"), `Comparación: ${counts.designs} diseños candidatos · ${counts.records} registros candidatos · ${counts.duplicates} duplicados detectados.`);
+  const queryEntry = [...state.libraryItems.values()].find(
+    (entry) => entry.run_id === state.runId && entry.result_revision === state.snapshot?.result_revision,
+  );
+  items.forEach((item) => {
+    const candidate = state.libraryItems.get(item.library_item_id);
+    item.member_ids=item.member_ids??item.equivalent_record_ids;
+    const card = document.createElement("div");
+    card.className = "detail-item similarity-match-card";
+    const title = document.createElement("b");
+    title.textContent =
+      candidate?.label ??
+      item.label ??
+      item.name ??
+      item.run_id ??
+      item.library_item_id ??
+      (item.id ? `Grupo ${item.id}` : "Elemento de biblioteca");
+    const detail = document.createElement("span");
+    const score = Number.isFinite(item.score) ? ` · ${similarityScoreLabel(item, mode)}` : "";
+    const members = item.member_ids?.length ? ` · ${item.member_ids.length} miembros` : "";
+    const threshold = Number.isFinite(item.threshold) ? ` · umbral ${item.threshold.toFixed(2)}` : "";
+    detail.textContent = `${
+      mode === "semantic"
+        ? `Semántico real · ${item.embedding?.model ?? candidate?.embedding?.model ?? "modelo configurado"}`
+        : `Geométrico offline · ${
+            item.descriptor_version ??
+            item.descriptor?.descriptor_version ??
+            candidate?.descriptor?.descriptor_version ??
+            "furniture-v1"
+          }`
+    }${score}${members}${threshold}`;
+    card.append(title, detail);
+
+    const isGroup = Array.isArray(item.member_ids) && !Array.isArray(item.differences) && !item.score_components;
+    if (isGroup) {
+      const groupSummary = document.createElement("span");
+      groupSummary.textContent = item.explanation ? "Comparación disponible" : "Sin diferencias documentadas";
+      card.append(groupSummary);
+      if (item.explanation) {
+        const disclosure = document.createElement("details");
+        const disclosureTitle = document.createElement("summary");
+        const content = document.createElement("div");
+        disclosure.className = "library-comparison-details";
+        disclosureTitle.textContent = "Datos de comparación";
+        const line = document.createElement("code");
+        line.textContent = String(item.explanation);
+        content.append(line);
+        disclosure.append(disclosureTitle, content);
+        card.append(disclosure);
+      }
+    } else {
+      const explained = explainSimilarityMatch(item, {
+        queryDescriptor: queryEntry?.descriptor ?? null,
+        candidateDescriptor: candidate?.descriptor ?? null,
+      });
+      if (explained.coincidences.length) {
+        card.append(
+          createExplanationList(
+            "Coincidencias",
+            explained.coincidences,
+            "similarity-explain-list--coincidences",
+            "similarity-badge similarity-badge--match",
+          ),
+        );
+      }
+      if (explained.differences.length) {
+        card.append(
+          createExplanationList(
+            "Diferencias",
+            explained.differences,
+            "similarity-explain-list--differences",
+          ),
+        );
+      }
+      if (!explained.coincidences.length && !explained.differences.length && !item.explanation) {
+        const emptyNote = document.createElement("span");
+        emptyNote.className = "similarity-explain-empty";
+        emptyNote.textContent = "Sin diferencias documentadas";
+        card.append(emptyNote);
+      }
+      if (explained.scoreBreakdown.length) {
+        const breakdown = document.createElement("div");
+        breakdown.className = "similarity-score-breakdown";
+        explained.scoreBreakdown.forEach((component) => {
+          const chip = document.createElement("span");
+          chip.className = "similarity-score-chip";
+          chip.textContent = component.text;
+          breakdown.append(chip);
+        });
+        card.append(breakdown);
+      }
+      const technical = [...explained.technical, ...(item.explanation ? [String(item.explanation)] : [])];
+      if (technical.length) {
+        const disclosure = document.createElement("details");
+        const disclosureTitle = document.createElement("summary");
+        const content = document.createElement("div");
+        disclosure.className = "library-comparison-details";
+        disclosureTitle.textContent = "Datos de comparación";
+        technical.forEach((value) => {
+          const line = document.createElement("code");
+          line.textContent = value;
+          content.append(line);
+        });
+        disclosure.append(disclosureTitle, content);
+        card.append(disclosure);
+      }
+    }
+
+    const linked = (item.member_ids ?? item.equivalent_record_ids)?.map((id) => state.libraryItems.get(id)).filter(Boolean) ?? (candidate ? [candidate] : []);
+    if (linked.length) {
+      const links = document.createElement("div");
+      links.className = "library-members";
+      linked.forEach((entry) => links.append(libraryRunLink(entry)));
+      card.append(links);
+    }
+    card.append(emptyParagraph(`Coincidencia tipológica: ${typologyLabel(item.typology_label ?? item.family ?? candidate?.descriptor?.family)}`));
+    card.append(emptyParagraph("Comparación técnica: la similitud no certifica material, acabado ni proceso de fabricación."));
+    for (const warning of item.compatibility_warnings ?? []) card.append(emptyParagraph(compatibilityWarningLabel(warning)));
+    appendPieceDifferences(card, item);
+    appendComparisonThumbnails(card, item, candidate);
+    if (Number.isFinite(item.technical_score)) card.append(emptyParagraph(`Similitud técnica ${formatSimilarityScore(item.technical_score)}`));
+    if (item.linkage === "complete") card.append(emptyParagraph(`Agrupación por enlace completo · mínimo entre pares ${formatSimilarityScore(item.minimum_pair_score)}`));
+    root.append(card);
+  });
+  if (!items.length) root.append(emptyParagraph(libraryEmptyMessage(counts.records)));
+  if (Number.isInteger(raw.excluded_count) && raw.excluded_count > 0)
+    root.append(emptyParagraph(`${raw.excluded_count} elementos de otra versión de descriptor se excluyeron de la comparación.`));
 }
 
 function renderLibraryEntries(raw) {
   const items=raw.items??raw??[]; state.libraryItems=new Map(items.map((item)=>[item.id,item])); const root=$("#library-list"); root.replaceChildren();
-  const counts=libraryCounts(raw,items);text($("#library-status"),`Biblioteca: ${counts.designs} diseños únicos · ${counts.records} registros almacenados · ${counts.duplicates} duplicados detectados.`);text($("#provider-status"),semanticAvailabilityText().replace(/^Semántico/,"Proveedor semántico"));
+  const counts=libraryCounts(raw,items);text($("#library-status"),`Biblioteca: ${counts.designs} diseños únicos · ${counts.records} registros almacenados · ${counts.duplicates} duplicados detectados.`);text($("#provider-status"),semanticAvailabilityText());
   items.forEach((item)=>{ const card=document.createElement("div"); card.className="detail-item"; const title=document.createElement("b"); title.textContent=item.label; const descriptor=item.descriptor??{}; const detail=document.createElement("span"); if(descriptor.descriptor_version==="furniture-v2"){const presented=presentDescriptorV2(descriptor); detail.textContent=`Revisión ${item.result_revision} · ${presented.familyLabel} · ${presented.structureLabel} · ${presented.thicknessLabel} · Clasificación ${presented.classificationLabel.toLowerCase()}${presented.unknownLabels.length?` · Desconocidos: ${presented.unknownLabels.join(", ")}`:""}`;} else if(descriptor.descriptor_version==="furniture-v3")detail.textContent=`Revisión ${item.result_revision} · Mesa rectangular · ${descriptor.structure==="side_support_table"?"dos soportes laterales":"cuatro patas"} · ${descriptor.components?.map((component)=>`${TABLE_ROLE_LABELS[component.role]??component.role} × ${component.quantity}`).join(" · ")??"sin componentes"} · Clasificación confirmada`; else detail.textContent=`Revisión ${item.result_revision} · ${descriptor.family??"familia desconocida"} · ${descriptor.descriptor_version??"descriptor sin versión"}`; const embedding=document.createElement("span"); embedding.textContent=item.embedding?`Embedding real: ${item.embedding.model} (${item.embedding.dimensions})`:`Solo descriptor geométrico offline`; card.append(title,detail,embedding); root.append(card); });
   if(!items.length)root.append(emptyParagraph(`${libraryEmptyMessage(0)} El proveedor semántico y el histórico tienen estados independientes.`));
   if(Number.isInteger(raw.excluded_count)&&raw.excluded_count>0)root.append(emptyParagraph(`${raw.excluded_count} elementos incompatibles quedaron fuera de este espacio de descriptor.`));
+}
+
+async function refreshInitialLibrary() {
+  text($("#provider-status"), semanticAvailabilityText());
+  if (!state.features.library) {
+    text($("#library-status"), "Biblioteca no disponible en este acceso.");
+    return;
+  }
+  try {
+    const library = await api.getLibrary();
+    renderLibraryEntries(library);
+  } catch (error) {
+    text($("#library-status"), `Biblioteca no disponible: ${error.message}`);
+    $("#library-list").replaceChildren(emptyParagraph("No se pudo consultar la Biblioteca."));
+  }
 }
 
 function libraryRunLink(item) {
@@ -1161,7 +1330,7 @@ function libraryRunLink(item) {
 }
 
 async function estimateCurrentRevision(){ if(state.tableWorkspace?.isTable)return estimateTableRevision(); const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral){const target=state.generalDerived?.historicalTarget;if(!target)throw new TypeError("La revisión general no tiene una base histórica autoritativa.");const {includeSynthetic}=historicalRetrievalOptions(),comparableResult=await loadHistoricalComparables();if(!actionFence.isCurrent(token,actionIdentity()))return;const comparableIds=(comparableResult?.items??[]).map((item)=>item.record_id);const estimate=await api.estimateFromHistory({target,comparable_ids:comparableIds,include_synthetic:includeSynthetic});if(!actionFence.isCurrent(token,actionIdentity()))return;renderHistoricalEstimate(estimate);return;}const estimate=await api.estimate(state.runId,{result_revision:state.snapshot?.result_revision}); if(!actionFence.isCurrent(token,actionIdentity()))return; renderEstimate(estimate); await refreshTraceHistory();}catch(error){if(actionFence.isCurrent(token,actionIdentity()))setMessage(error.message,true);} }
-async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`,payload=librarySavePayload({resultRevision:state.snapshot.result_revision,label,semantic:$("#similarity-mode").value==="semantic"});if(state.config.library_requires_real_reviewed){const sourceReference=$("#library-source-reference").value.trim(),approved=$("#library-public-approved").checked;if(!sourceReference||!approved)throw new TypeError("Declara una referencia verificable y confirma la publicación del mobiliario real revisado.");payload.publication={source_kind:"real_furniture",source_reference:sourceReference,approved_for_public_library:true};} await api.saveToLibrary(state.runId,payload); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),"Revisión guardada en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
+async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=actionFence.issue(identity); try{if(state.generalWorkspace?.isGeneral)throw new TypeError("Biblioteca admite revisiones de piezas y mesa; el descriptor de mueble general está pendiente.");const label=state.drawing?.drawing_id??`Revisión ${state.snapshot.result_revision}`,semanticRequested=$("#similarity-mode").value==="semantic"&&!state.config.semantic?.generation_requires_authentication,payload=librarySavePayload({resultRevision:state.snapshot.result_revision,label,semantic:semanticRequested});if(state.config.library_requires_real_reviewed){const sourceReference=$("#library-source-reference").value.trim(),approved=$("#library-public-approved").checked;if(!sourceReference||!approved)throw new TypeError("Declara una referencia verificable y confirma la publicación del mobiliario real revisado.");payload.publication={source_kind:"real_furniture",source_reference:sourceReference,approved_for_public_library:true};} await api.saveToLibrary(state.runId,payload); if(!actionFence.isCurrent(token,actionIdentity()))return; const library=await api.getLibrary(); if(!actionFence.isCurrent(token,actionIdentity()))return; renderLibraryEntries(library); await refreshTraceHistory(); if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),semanticRequested?"Revisión guardada con índice semántico.":"Revisión guardada offline en la biblioteca técnica.");}catch(error){if(actionFence.isCurrent(token,actionIdentity()))text($("#semantic-note"),error.message);} }
 async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 
@@ -1242,14 +1411,15 @@ async function boot() {
   $("#group-library").addEventListener("click",groupCurrentLibrary);
   $("#duplicate-precedent-dismiss")?.addEventListener("click", hideDuplicatePrecedentBanner);
   $("#similarity-mode").addEventListener("change",updateGroupingLabels);updateGroupingLabels();
-  $$("[data-threshold-preset]").forEach((button)=>button.addEventListener("click",()=>{$("#group-threshold").value=button.dataset.thresholdPreset;}));
+  $$('[data-threshold-preset]').forEach((button)=>button.addEventListener("click",()=>{$("#group-threshold").value=button.dataset.thresholdPreset;}));
   $("#restore-run-retry").addEventListener("click",()=>{if(state.runId)restoreRunReference(state.runId);});
   $("#job-retry").addEventListener("click",retryCurrentJob);
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
+  await refreshInitialLibrary();
   try {
     state.session=await api.getSession();
     const authenticated=state.session.authenticated===true&&Boolean(state.session.username), reviewer=$("#reviewer-name");
-    text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:state.session.environment==="production"?"Sin acceso restringido · identidad manual":"Local · identidad manual");
+    text($("#session-user"),authenticated?`${state.session.username} · identidad del servidor`:state.features.sessionLabel??(state.session.environment==="production"?"Acceso público · CAD disponible":"Local · identidad manual"));
     if(authenticated){reviewer.value=state.session.username;reviewer.readOnly=true;}
   } catch { text($("#session-user"),"Local · identidad manual"); }
   await refreshHistoryRecords();

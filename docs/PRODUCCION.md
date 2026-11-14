@@ -58,9 +58,3 @@ Env, usuarios y catálogo se custodian por separado. Las copias programadas resi
 La activación cambia atómicamente `current` y reinicia solo Vexplorer. Conserve release y env anteriores para rollback. No sobrescriba datos restaurados encima de los activos.
 
 Después compruebe acceso público, bloqueos 403, persistencia tras reinicio, restauración funcional y códigos HTTP de aplicaciones vecinas. Health por sí solo no valida CAD.
-
-## Empaquetado reproducible local
-
-`python -m tools.build_release --output .runtime/release-build` genera un snapshot determinista del runtime allowlisted. Incluye backend, frontend servido, fuentes locales, `frontend/core/ui.js`, herramientas operativas y manifiestos de dependencias Python/Node; excluye secretos, env, bases de datos, datasets, referencias privadas, pruebas y `.runtime`. Falla si falta una entrada esencial. `RELEASE.json` identifica el commit base y el SHA-256 del árbol de payload; `MANIFEST.sha256` permite verificar cada entrada. El archivo no contiene una fecha variable y normaliza tiempos, propietarios y modos de tar/gzip.
-
-El comando no transfiere ni activa el resultado. Antes de promover un candidato, ejecútelo dos veces sobre el árbol integrado, compruebe igualdad de `candidate_id`, `payload_tree_sha256` y SHA-256 del archivo, y después siga el flujo de backup, restauración y smoke anterior. El `git_head` de un snapshot con cambios locales solo identifica su base; el hash de payload identifica los bytes empaquetados. Para un cierre completamente trazable, integre primero y vuelva a generar el candidato desde el commit definitivo.

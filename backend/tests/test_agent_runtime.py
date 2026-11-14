@@ -314,8 +314,6 @@ def test_runner_attaches_provider_provenance_to_each_action_without_raw_payload(
     assert "raw" not in action.__dict__
 
 
-
-
 def test_provider_classifies_incomplete_reason_without_echoing_remote_body() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

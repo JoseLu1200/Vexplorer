@@ -90,6 +90,15 @@ def test_production_requires_basic_auth_but_health_and_local_mode_remain_compati
     assert session.json()["data"] == {
         "authenticated": True, "username": "alice", "environment": "production"
     }
+    config = client.get("/api/v1/config", auth=("alice", "correct horse"))
+    assert config.json()["data"]["library_requires_real_reviewed"] is False
+    private_save = client.post(
+        "/api/v1/runs/run-abc/library",
+        json={"result_revision": 1, "label": "private", "embedding_mode": "offline"},
+        auth=("alice", "correct horse"),
+        headers={"Origin": "https://vexplorer.example"},
+    )
+    assert private_save.status_code == 404
 
     monkeypatch.setenv("VEXPLORER_ENV", "local")
     local = TestClient(create_app(data_dir=tmp_path / "local", frontend_dir=tmp_path / "none"))
@@ -209,7 +218,7 @@ def test_concurrent_uploads_cannot_overbook_storage_quota(tmp_path: Path, monkey
     assert len(list((data / "documents").glob("*.dxf"))) == 1
 
 
-def test_public_cad_does_not_expose_shared_history_or_paid_catalog_mutations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_public_cad_hides_history_but_exposes_offline_library_routes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _production_env(tmp_path, monkeypatch)
     monkeypatch.setenv("VEXPLORER_ENV", "production")
     monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
@@ -219,16 +228,21 @@ def test_public_cad_does_not_expose_shared_history_or_paid_catalog_mutations(tmp
             ("GET", "/api/v1/history"),
             ("GET", "/api/v1/history/records"),
             ("POST", "/api/v1/history/import/json"),
-            ("GET", "/api/v1/library"),
-            ("POST", "/api/v1/library/groups"),
             ("POST", "/api/v1/semantic-explorer/review"),
-            ("POST", "/api/v1/runs/run-abc/library"),
-            ("POST", "/api/v1/runs/run-abc/similarity"),
         ]:
             response = client.request(method, path)
             assert response.status_code == 403, (path, response.text)
             assert response.json()["error"]["code"] == "private_feature_unavailable"
+        assert client.get("/api/v1/library").status_code == 200
+        grouped = client.post("/api/v1/library/groups", json={"mode": "geometric", "threshold": 0.8})
+        assert grouped.status_code == 200
+        save = client.post("/api/v1/runs/run-abc/library", json={"result_revision": 1, "label": "real", "embedding_mode": "offline"})
+        assert save.status_code == 404
+        similar = client.post("/api/v1/runs/run-abc/similarity", json={"result_revision": 1, "mode": "geometric"})
+        assert similar.status_code == 404
         config = client.get("/api/v1/config").json()["data"]
         assert config["capabilities"]["history"]["available"] is False
+        assert config["capabilities"]["library"]["available"] is True
         assert config["semantic"]["available"] is False
+        assert config["semantic"]["generation_requires_authentication"] is True
         assert client.get("/api/v1/health").status_code == 200

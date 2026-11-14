@@ -148,11 +148,7 @@ def test_cosine_matrix_errors():
         cosine_matrix((1.0, 2.0), [(1.0, float("nan"))])
 
     with pytest.raises(ValueError, match="invalid_embedding"):
-        cosine_matrix(
-            (1.0, 2.0),
-            np.asarray([(float("nan"), 0.0)], dtype=np.float64),
-            normalized=True,
-        )
+        cosine_matrix((1.0, 2.0), np.asarray([(float("nan"), 0.0)], dtype=np.float64), normalized=True)
 
 
 def test_knn_classifier_uses_math_utils_error_semantics():

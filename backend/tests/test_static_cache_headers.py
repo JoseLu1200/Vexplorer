@@ -20,3 +20,8 @@ def test_unhashed_frontend_code_revalidates_without_changing_api_cache_headers(t
         assert client.get(path).headers["cache-control"] == "no-cache"
     assert client.get("/logo.svg").headers.get("cache-control") != "no-cache"
     assert client.get("/api/v1/health").headers.get("cache-control") != "no-cache"
+
+
+
+
+

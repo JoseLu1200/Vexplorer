@@ -20,8 +20,15 @@ from pathlib import Path, PurePosixPath
 
 _REQUIRED = (
     "backend/__init__.py",
+    "backend/app/ingesta/README.md",
     "backend/app/main.py",
+    "deploy/SYSTEMD_RELEASE.md",
     "deploy/requirements-runtime.txt",
+    "deploy/systemd-production.env.example",
+    "deploy/systemd-user/vexplorer-backup.service",
+    "deploy/systemd-user/vexplorer-backup.timer",
+    "deploy/systemd-user/vexplorer.service",
+    "frontend/api/client.js",
     "frontend/app.js",
     "frontend/index.html",
     "frontend/package-lock.json",
@@ -35,25 +42,40 @@ _REQUIRED = (
     "requirements-demo.txt",
     "tools/__init__.py",
     "tools/backup.py",
+    "tools/backup_rotate.py",
     "tools/manage_users.py",
 )
 _ROOT_FILES = (
     "backend/__init__.py",
+    "backend/app/ingesta/README.md",
+    "deploy/SYSTEMD_RELEASE.md",
     "deploy/requirements-runtime.txt",
+    "deploy/systemd-production.env.example",
+    "deploy/systemd-user/vexplorer-backup.service",
+    "deploy/systemd-user/vexplorer-backup.timer",
+    "deploy/systemd-user/vexplorer.service",
     "pyproject.toml",
     "requirements-demo.txt",
     "tools/__init__.py",
     "tools/backup.py",
+    "tools/backup_rotate.py",
     "tools/manage_users.py",
 )
 _FRONTEND_TOP_LEVEL = (
     "frontend/app.js",
+    "frontend/explorer.css",
+    "frontend/explorer.html",
+    "frontend/explorer.js",
     "frontend/index.html",
     "frontend/package-lock.json",
     "frontend/package.json",
+    "frontend/reconstruction-state.js",
+    "frontend/reconstruction.css",
+    "frontend/reconstruction.html",
+    "frontend/reconstruction.js",
     "frontend/styles.css",
 )
-_FRONTEND_DIRS = ("frontend/assets", "frontend/components", "frontend/core", "frontend/vendor")
+_FRONTEND_DIRS = ("frontend/api", "frontend/assets", "frontend/components", "frontend/core", "frontend/vendor")
 _BACKEND_SUFFIXES = frozenset({".py", ".json"})
 _FRONTEND_SUFFIXES = frozenset({".css", ".html", ".js", ".json", ".png", ".svg", ".txt", ".webp", ".woff2"})
 
@@ -192,3 +214,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

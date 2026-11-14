@@ -50,7 +50,7 @@ Ejemplo de manifiesto (los marcadores no son datos válidos):
 }
 ```
 
-El modo predeterminado solo inventaría y validaría el plan:
+El modo predeterminado solo inventariaría y validaría el plan:
 
 ```powershell
 .\.venv\Scripts\python.exe -m tools.backfill_library `
@@ -63,13 +63,15 @@ El comando devuelve código 3 si alguna selección no es elegible y no escribe n
 
 El contrato actualizado de `LibraryItem` conserva la referencia de fuente y la atestación derivada por el servidor: identidad autenticada o, en acceso anónimo, la identidad manual de la revisión; nunca acepta `attested_by` o `attested_at` aportados por el cliente. El informe operativo conserva además la referencia separada de autorización y del backup. Debe guardarse con acceso restringido junto con su evidencia; no se debe publicar si las referencias contienen datos internos.
 
+La declaración manual o anónima es una atestación basada en confianza: conserva responsabilidad y trazabilidad, pero no demuestra automáticamente la procedencia real del mueble.
+
 ## Activación y reversión del código revisado
 
 No se despliega un snapshot mientras sus bytes sigan cambiando. El corte requiere `SHIP` del revisor Astra, suite integrada y QA independiente sobre el paquete exacto. El repositorio puede conservar cambios revisados sin commit: la autoridad del corte es el archivo inmutable, su manifiesto y sus hashes, no un requisito artificial de worktree limpio.
 
 La inspección posterior detectó que producción avanzó a `cad-d0ea7a85e787`, commit `d0ea7a85e787f4358ab4dbb05ea0250395f2083b` de `feat/cad-completion`. Ese release contiene 35 rutas runtime que no existen en el HEAD `c94a888` del worktree principal, incluidas reconstrucción 3D, explorador semántico y planos de construcción. Por ello queda prohibido activar un paquete construido solo desde `c94a888`: los cambios de Biblioteca deben integrarse y revisarse sobre `feat/cad-completion` o una descendiente que conserve su manifiesto runtime. Inmediatamente antes de cualquier ensayo se vuelve a leer `current`; un cambio concurrente invalida el valor capturado y detiene el corte.
 
-Esa base CAD también aplica una frontera de acceso público más restrictiva: `GET /api/v1/library` devuelve 403 y la configuración anuncia semántica no disponible. La reparación de Biblioteca debe reconciliar esa política, no sobrescribirla sin revisión. La lectura pública puede mostrar el estado vacío honesto; cualquier escritura debe seguir exigiendo mueble real revisado, atestación tipada y control de admisión. Generar embeddings mediante un proveedor con coste en acceso anónimo requiere una decisión y límite explícitos; configurar el proveedor no autoriza llamadas públicas ilimitadas.
+La base CAD permite lectura, agrupación y búsqueda públicas sobre la Biblioteca persistida, además de guardado offline cuando la revisión y la atestación cumplen la política. El histórico económico sigue siendo privado. Generar embeddings mediante un proveedor con coste requiere acceso autenticado; configurar el proveedor no autoriza llamadas públicas ilimitadas.
 
 1. Inmediatamente antes del corte, comprobar en solo lectura `readlink -f /home/kripta/apps/vexplorer/current`, estado de `vexplorer.service`, espacio e integridad de las tres SQLite.
 2. Generar el paquete desde el commit congelado mediante el tooling de release vigente; verificar manifiesto y SHA-256 local/remoto. No incorporar `.runtime`, datasets, datos ni secretos.
@@ -91,3 +93,5 @@ Tras recibir el commit exacto y el `SHIP`, el ensayo local reproducible es:
 El comando se niega a trabajar si el HEAD base no coincide o el destino ya existe. Admite cambios locales revisados porque `tools.build_release` los congela por allowlist. Construye dos archivos consecutivos, exige igualdad byte a byte y registra `candidate_id`, hash del árbol runtime y SHA-256 del archivo en `rehearsal.json`; si otro proceso altera bytes runtime entre ambas lecturas, la reproducibilidad falla. Es exclusivamente local (`remote_actions=false`): no transfiere, activa, reinicia ni toca datos.
 
 Mientras no exista un run que cumpla todos los criterios, el resultado correcto es mostrar cero diseños y explicar que no hay muebles reales revisados publicados; no generar ejemplos ficticios para ocultar el estado vacío.
+
+

@@ -73,7 +73,7 @@ test("production publication requires an explicit real reviewed attestation", ()
   assert.match(app,/library_requires_real_reviewed/);
   assert.match(app,/source_kind:"real_furniture"/);
   assert.match(app,/approved_for_public_library:true/);
-  assert.match(app,/library-actions"\)\?\.prepend\(\$\("#library-publication"\)\)/);
+  assert.match(html,/data-panel-content="library"[\s\S]*?id="library-publication"/);
 });
 
 test("grouping controls name their criterion and offer useful presets", () => {
@@ -84,3 +84,29 @@ test("grouping controls name their criterion and offer useful presets", () => {
   assert.match(html, /data-threshold-preset="0\.85"/);
   assert.match(html, /data-threshold-preset="0\.95"/);
 });
+
+test("boot resolves library and provider status before any run is selected", () => {
+  assert.match(app, /async function refreshInitialLibrary\(\)/);
+  assert.match(app, /await api\.getLibrary\(\)/);
+  assert.match(app, /renderLibraryEntries\(library\)/);
+  assert.match(app, /Biblioteca no disponible:/);
+  assert.match(app, /configureModes\(await api\.getConfig\(\)\)[\s\S]*await refreshInitialLibrary\(\)/);
+});
+
+test("public status separates configured provider, empty index and private generation", () => {
+  assert.match(app, /Proveedor semántico configurado/);
+  assert.match(app, /registros indexados/);
+  assert.match(app, /búsqueda semántica no disponible/);
+  assert.match(app, /Generar embeddings requiere autenticación/);
+  assert.match(app, /toggleHidden\(\$\("#history-list"\),!state\.features\.history\)/);
+  assert.match(app, /toggleHidden\(estimateTab,!state\.features\.costs\)/);
+  assert.match(app, /toggleHidden\(estimatePanel,!state\.features\.costs\)/);
+});
+
+test("cached semantic search remains available without a configured generation provider", () => {
+  assert.match(app, /providerConfigured=Boolean\(semantic\.provider_configured\|\|semantic\.available\)/);
+  assert.match(app, /searchAvailable=Boolean\(semantic\.cached_search_available\|\|semantic\.available\)/);
+  assert.match(app, /Number\.isInteger\(rawDimensions\)\?`\$\{rawDimensions\} dimensiones`/);
+});
+
+

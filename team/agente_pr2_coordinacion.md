@@ -43,3 +43,20 @@ Coordinación asumió las reservas de los agentes al agotarse su cuota y complet
 - Revisión independiente GPT-6.1 Sol: único blocker auth/publicación corregido; sin otros blockers altos/medios en el árbol revisado.
 
 Durante la verificación llegó `03953f5` a `origin/embeddings` (lectura DXF/DWG y cotas en conflicto). Se integra antes del push; nunca se fuerza ni reemplaza el historial remoto. La CI final debe validar también ese incremento.
+
+## Reconciliación con main concurrente
+
+`main` avanzó a `ab1bb62` e incorporó el historial `cb6b410` mediante una resolución que omitió correcciones del swarm y sus registros. Se integra ese main, preservando recuperación durable, contabilidad de evidencia, montaje por instancia, publicación pública controlada e interfaz técnica. Se restauran selectivamente los fixes PR2 y los registros originales; no se reemplaza globalmente el árbol nuevo.
+
+El revisor final completa DIMLFAC a partir de warnings reales y POLYLINE2D hasta contornos. El revisor upstream restaura backend/calibrador y sus regresiones; coordinación restaura coincidencias justificadas, reinicio y umbral calibrado del aviso de duplicados, preservando la nueva interfaz. Los commits concurrentes `03953f5` y `1c22e1c` están incluidos. Suite final y CI pendientes sobre esta unión.
+
+## Cierre de reconciliación antes de CI
+
+La unión incluye `main` hasta `fdb94dc` y ambas mejoras concurrentes de PR2. Se preserva la política de main: biblioteca privada autenticada y atestación para la biblioteca pública (`public_production`); la adaptación temporal del fixture de publicación a auth ya no es necesaria al incorporar el acceso público offline legítimo. Se auditó por AST que las regresiones del swarm `cb6b410` siguen presentes; las sustituciones de pruebas de montaje, biblioteca pública y corpus pertenecen a mejoras posteriores de main.
+
+- Frontend final: 260 passed. Navegador local: servicio disponible y cero errores de consola.
+- DIMLFAC real: DXF generado, `extract_drawing` serializado y `normaliseDrawing` ejecutado en Node muestran `1200 [conflicto: geom 600 mm]`.
+- Focal backend exhaustivo tras recuperar regresiones: 128 passed. Autenticación/publicación fresca: 14 passed.
+- Suite completa de reconciliación: 1387 passed/6 failed, corregidos y probados; segunda pasada: 1394 passed/1 failed por política anterior ya cargada en memoria. Nueva suite con código congelado iniciada antes de publicar. No se presentan esas dos pasadas como verdes.
+- Revisión independiente final: frontend y runner sin blockers altos/medios. Wheel, pip check y compileall correctos.
+- Resultado de suite congelada y CI sobre la cabecera publicada se registrará en la PR antes del merge.

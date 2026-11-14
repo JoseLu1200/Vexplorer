@@ -58,6 +58,22 @@ export function tableResourcesReady(workspace, snapshot) {
   );
 }
 
+export function publicFeatureAvailability(config = {}) {
+  const history = config.capabilities?.history?.available !== false;
+  const library = config.capabilities?.library?.available !== false;
+  const costs = config.capabilities?.costs?.available ?? history;
+  const semanticCapability = config.semantic ?? config.capabilities?.semantic ?? {};
+  const semantic = Boolean(semanticCapability.available || semanticCapability.cached_search_available);
+  const publicCad = config.environment === "production" && config.authenticated === false && !history;
+  return {
+    history,
+    library,
+    semantic,
+    costs,
+    publicCad,
+    sessionLabel: publicCad ? "Acceso público · CAD disponible" : null,
+  };
+}
 export function tableDiagnosticLabel(value) {
   const raw = String(value ?? "");
   const missing = raw.match(/^profile_measure_unknown:([a-z_]+)$/);

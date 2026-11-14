@@ -29,3 +29,5 @@ export function presentPieceDifferences(differences) {
 export function libraryEmptyMessage(recordCount) {
   return recordCount===0?"Biblioteca pública vacía: guarda una revisión de mobiliario real para iniciar las comparaciones. Los fixtures de demo no se publican.":"No hay diseños que alcancen el criterio seleccionado.";
 }
+
+
