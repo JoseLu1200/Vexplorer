@@ -1031,7 +1031,7 @@ class TableCostTariff(StrictModel):
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     concept_type: Literal["fixed", "material_area", "material_volume", "edge", "operation", "labor", "finish"]
-    scope: Literal["material", "edge", "operation"]
+    scope: Literal["material", "edge", "operation", "preparation"]
     rate_eur_per_unit: float = Field(ge=0, allow_inf_nan=False)
     rate_unit: Literal["EUR/m2", "EUR/m3", "EUR/m", "EUR/unit", "EUR/h"]
     synthetic: Literal[True] = True
