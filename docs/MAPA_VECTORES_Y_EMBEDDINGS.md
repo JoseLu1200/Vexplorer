@@ -112,3 +112,19 @@ Toda similitud coseno en producción y explorador pasa por `backend/app/similari
 - `cosine_similarity` y `cosine_matrix` garantizan contratos de error estrictos:
   - `ValueError("embedding_space_incompatible")` si los vectores están vacíos o difieren en dimensión.
   - `ValueError("invalid_embedding")` si contienen `NaN`/`Inf` o tienen norma cero.
+
+---
+
+## 5. Estado tras la fusión de `precedentes` (ideas 2.1–3.5)
+
+El paquete `backend/app/precedentes/` (detalle en [PRECEDENTES](PRECEDENTES.md)) consume los sistemas anteriores sin crear un espacio vectorial nuevo, salvo el mecanismo de imagen (3.3):
+
+| Pieza | Sistemas que usa | Relación con las líneas de trabajo de la sección 3 |
+|---|---|---|
+| 2.1 Sugerencias de valores que faltan | B (`geometric_match`, umbral calibrado de `thresholds.py`) | **Línea 2 implementada en backend:** moda o mediana, soporte n/N, rango e ids de vecinos; estado `hipotesis` y abstención. Score relativo al techo alcanzable por la consulta. Falta la interfaz en Revisar. |
+| 2.3 Score híbrido | A + B, coseno de `math_utils.py`, umbrales de `thresholds.py` | **Línea 1 a medias:** combina geométrico y coseno con pesos explícitos y abstención, pero el texto embebido sigue incluyendo medidas. Separarlas exige una nueva `descriptor_version` y volver a embeber. |
+| 2.5 / 2.6 Regeneración y versionado del espacio | A | Mantenimiento del espacio de producción: obsoletos, deriva del modelo y rotación de la referencia. |
+| 2.2 Presupuesto por analogía · 3.5 Herrajes | C (`find_comparables`, `estimate`) | Alerta por dispersión robusta del vecindario; herrajes en almacén propio. |
+| 3.2 Búsqueda en lenguaje natural | B (filtros deterministas sobre descriptores) | LLM → filtros estructurados; no embebe la consulta. |
+| 3.3 Embeddings de imagen | Nuevo espacio por `espacio_id`, coseno de `math_utils.py` | **Punto de enganche para las líneas 3 y 4:** protocolo `ProveedorEmbeddingImagen` y almacén listos; falta conectar `dinov3` o `embeddinggemma2` como proveedor. |
+| 3.4 Decisiones de revisión · 2.7 Evaluación | Componentes de B y A | Recomendación de pesos por AUC y métricas P@k / nDCG con juicios de relevancia. |
