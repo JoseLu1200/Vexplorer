@@ -1,0 +1,122 @@
+{
+  "snapshot_id": "35ad604586a816af30f1a8a84022b2efdbea5c68f072a5e2c5e3f91746b40989",
+  "source": "library:0fc4cdd3c8ae97bed1058f0c7d6e389989a262d98f9b58d080cdc34b65bcb555",
+  "space": {
+    "provider": "openai",
+    "model": "text-embedding-3-small",
+    "revision": "provider-managed",
+    "mode": "text",
+    "dimensions": 256,
+    "preprocessing": "semantic_text-v1",
+    "precision": "float32",
+    "descriptor_version": "furniture-v3",
+    "normalization": "l2"
+  },
+  "vector_space_id": "0fc4cdd3c8ae97bed1058f0c7d6e389989a262d98f9b58d080cdc34b65bcb555",
+  "projection": {
+    "method": "PCA 2D",
+    "version": "pca-centered-svd-v1",
+    "explained_variance_ratio": [
+      1.0,
+      1.2042062572371719e-29
+    ],
+    "purpose": "visualization_only"
+  },
+  "provenance": "Biblioteca de la instancia; revisiones vigentes; embeddings persistidos del proveedor",
+  "synthetic": false,
+  "points": [
+    {
+      "id": "library-run-161fc0b9bf7c46f499ddf84abe105d9b",
+      "label": "DEMO principal - mesa 1200 x 700 - revision de demostracion",
+      "category": "rectangular_table",
+      "category_origin": "reviewed",
+      "split": null,
+      "group_id": null,
+      "run_id": "run-161fc0b9bf7c46f499ddf84abe105d9b",
+      "result_revision": 2,
+      "attributes": {
+        "width_mm": 1200.0,
+        "depth_mm": 700.0,
+        "height_mm": 750.0,
+        "material": null,
+        "finish": null,
+        "structure": "side_support_table"
+      },
+      "classification": null,
+      "content_hash": "d11df5cea1fbf0060d6b29085b19e2a4bb5e3fe8092807c0910258a54d02730f",
+      "has_image": false,
+      "x": -0.011113564126353595,
+      "y": 6.681518417309832e-17
+    },
+    {
+      "id": "library-run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+      "label": "DEMO agente en vivo - mesa con vision - revision de demostracion",
+      "category": "rectangular_table",
+      "category_origin": "reviewed",
+      "split": null,
+      "group_id": null,
+      "run_id": "run-6d385f0ec7cd48e29dc7e654adc2d1d5",
+      "result_revision": 2,
+      "attributes": {
+        "width_mm": 1200.0,
+        "depth_mm": 700.0,
+        "height_mm": 750.0,
+        "material": null,
+        "finish": null,
+        "structure": "side_support_table"
+      },
+      "classification": null,
+      "content_hash": "d11df5cea1fbf0060d6b29085b19e2a4bb5e3fe8092807c0910258a54d02730f",
+      "has_image": false,
+      "x": -0.01111356412635359,
+      "y": 6.678962989252912e-17
+    },
+    {
+      "id": "library-run-73b753c668734be99eb6b7cdac9d45fc",
+      "label": "DEMO mesa 001 - alternativa de catalogo revisada para demo",
+      "category": "rectangular_table",
+      "category_origin": "reviewed",
+      "split": null,
+      "group_id": null,
+      "run_id": "run-73b753c668734be99eb6b7cdac9d45fc",
+      "result_revision": 2,
+      "attributes": {
+        "width_mm": 1200.0,
+        "depth_mm": 700.0,
+        "height_mm": 750.0,
+        "material": null,
+        "finish": null,
+        "structure": "side_support_table"
+      },
+      "classification": null,
+      "content_hash": "d11df5cea1fbf0060d6b29085b19e2a4bb5e3fe8092807c0910258a54d02730f",
+      "has_image": false,
+      "x": -0.01111356412635359,
+      "y": 6.67896298925291e-17
+    },
+    {
+      "id": "library-run-d5b7fce18fee4c699bc49a5110c75240",
+      "label": "DEMO mesa 002 - alternativa de catalogo revisada para demo",
+      "category": "rectangular_table",
+      "category_origin": "reviewed",
+      "split": null,
+      "group_id": null,
+      "run_id": "run-d5b7fce18fee4c699bc49a5110c75240",
+      "result_revision": 2,
+      "attributes": {
+        "width_mm": 1400.0,
+        "depth_mm": 800.0,
+        "height_mm": 760.0,
+        "material": null,
+        "finish": null,
+        "structure": "side_support_table"
+      },
+      "classification": null,
+      "content_hash": "27f75f96cf7c66300f5ef57d1775277cf66d65e7e306badbb8479e90dc9c8986",
+      "has_image": false,
+      "x": 0.03334069237906076,
+      "y": 6.67981479860522e-17
+    }
+  ],
+  "space_key": "library:0fc4cdd3c8ae97bed1058f0c7d6e389989a262d98f9b58d080cdc34b65bcb555"
+}

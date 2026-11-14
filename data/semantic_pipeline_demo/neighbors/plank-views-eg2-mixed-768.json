@@ -1,0 +1,1266 @@
+{
+  "release_id": "7d58f75b1abfc54326f09f17f3822b6b77d08694cd4d900d3b96839fe9908578",
+  "method": "exact_cosine_original_dimensions",
+  "neighbors": {
+    "plank-001:front": [
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9824053047478529
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9811262889184744
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9764431300530793
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9760353555378222
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9760022796374584
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9727337420018105
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9716099421310701
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9713978434592676
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9706798374511718
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9688490694486813
+      }
+    ],
+    "plank-001:side": [
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9824053047478529
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.979551335309738
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9738250069305546
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9691909562036858
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9678970262741399
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9677879142929425
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9675366841754884
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9658733364599634
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9653801598191121
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9638859836144789
+      }
+    ],
+    "plank-001:top": [
+      {
+        "id": "plank-010:top",
+        "cosine": 0.987718559186024
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9798289359922174
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9776576968053892
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9765609666145069
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9727337420018105
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9687392280715745
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9614807082729688
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9601330812041535
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9566004313861821
+      },
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9563739123688102
+      }
+    ],
+    "plank-002:front": [
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9769745919120865
+      },
+      {
+        "id": "plank-004:front",
+        "cosine": 0.9731490900863755
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9725016830946474
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9699829353934892
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9695089387519256
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9618576212581857
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9595084073685121
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9590729260100124
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9569489436566467
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.954676500148711
+      }
+    ],
+    "plank-002:side": [
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9848471834588677
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9804428954100617
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9699829353934892
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.9684288688902911
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9681862021127576
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.966793394476608
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9665055739059484
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9656451566628464
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9635339459862706
+      },
+      {
+        "id": "plank-004:front",
+        "cosine": 0.9626538183724681
+      }
+    ],
+    "plank-002:top": [
+      {
+        "id": "plank-003:top",
+        "cosine": 0.9856986160678856
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9752330338526842
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9730504933661881
+      },
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9676858528904702
+      },
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9593504552279988
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9591197755540677
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9563739123688102
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9555033185904813
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9527815345414474
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9503650562490357
+      }
+    ],
+    "plank-003:front": [
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9725016830946474
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.968036968459517
+      },
+      {
+        "id": "plank-008:side",
+        "cosine": 0.9612247446126178
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9610526394871843
+      },
+      {
+        "id": "plank-004:front",
+        "cosine": 0.9585974228372793
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9565717336802125
+      },
+      {
+        "id": "plank-010:side",
+        "cosine": 0.9556472566393714
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9552111625813388
+      },
+      {
+        "id": "plank-010:front",
+        "cosine": 0.9535061367038558
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9488323154311207
+      }
+    ],
+    "plank-003:side": [
+      {
+        "id": "plank-008:front",
+        "cosine": 0.9683697394410176
+      },
+      {
+        "id": "plank-008:side",
+        "cosine": 0.9622217336358785
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9606110698869412
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.960248652143083
+      },
+      {
+        "id": "plank-010:side",
+        "cosine": 0.9558206446349847
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9552111625813388
+      },
+      {
+        "id": "plank-010:front",
+        "cosine": 0.9538573215192877
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9516139421172596
+      },
+      {
+        "id": "plank-007:front",
+        "cosine": 0.950252638224681
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.950175693076393
+      }
+    ],
+    "plank-003:top": [
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9856986160678856
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9732728636103011
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.969951879110212
+      },
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9666339101759428
+      },
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9593243887318754
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9569164416692024
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9547746320891887
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.954271312044446
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9540070376840548
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9531919566201958
+      }
+    ],
+    "plank-004:front": [
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9805700930965073
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9731490900863755
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.964130249654858
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9626538183724681
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9611520396800419
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9585974228372793
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9563719463057846
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9554261028319688
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9547288086146561
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9520325174796953
+      }
+    ],
+    "plank-004:side": [
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9730735639303882
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9702442109186713
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9684288688902911
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.968007140226199
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9663271802433402
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9637585514211253
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9614433599161665
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9595968820468795
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.955940631080805
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9552392684362934
+      }
+    ],
+    "plank-004:top": [
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9929465152536833
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9738534884756688
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9697527280466864
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9641538790576165
+      },
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9593504552279988
+      },
+      {
+        "id": "plank-003:top",
+        "cosine": 0.9593243887318754
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9591998896747498
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9539318008096388
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9518849274158934
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9498622538298207
+      }
+    ],
+    "plank-005:front": [
+      {
+        "id": "plank-004:front",
+        "cosine": 0.9805700930965073
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9769745919120865
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.968036968459517
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9668517969436088
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9618368323691286
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9613459041817394
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9612059740346666
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9578933859420367
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9569603631650557
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.955401662823831
+      }
+    ],
+    "plank-005:side": [
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9848471834588677
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9825437455760065
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.974810306673471
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.9702442109186713
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9695089387519256
+      },
+      {
+        "id": "plank-004:front",
+        "cosine": 0.964130249654858
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9634746490044885
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9631434952914069
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9626509805027772
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9620702027522066
+      }
+    ],
+    "plank-005:top": [
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9929465152536833
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9779197748823585
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9721971279945637
+      },
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9676858528904702
+      },
+      {
+        "id": "plank-003:top",
+        "cosine": 0.9666339101759428
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9634842993846433
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9609724604081498
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9564518415955914
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9562415932108753
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9507065137582591
+      }
+    ],
+    "plank-006:front": [
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9823023336817193
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9813106132434709
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9811262889184744
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9783809213257437
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9776576968053892
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9681862021127576
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9678060013431853
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9658733364599634
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9646972290032358
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9640375880269841
+      }
+    ],
+    "plank-006:side": [
+      {
+        "id": "plank-001:side",
+        "cosine": 0.979551335309738
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9764431300530793
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.974810306673471
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9737978295909496
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.9730735639303882
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9690666313596166
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9678060013431853
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.966793394476608
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9643848324878387
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.961736718590848
+      }
+    ],
+    "plank-006:top": [
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9812574578926206
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9798289359922174
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9783809213257437
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9771537532685339
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9688490694486813
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9659850877685507
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9653801598191121
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9643848324878387
+      },
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9641538790576165
+      },
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9634842993846433
+      }
+    ],
+    "plank-007:front": [
+      {
+        "id": "plank-007:side",
+        "cosine": 0.9727537440887093
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9553580078668962
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9527429574356493
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9520798599640687
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.950804556366518
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.950252638224681
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9490112423243349
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9489086693778022
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.9488991752652991
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9484644726912362
+      }
+    ],
+    "plank-007:side": [
+      {
+        "id": "plank-007:front",
+        "cosine": 0.9727537440887093
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9564196343620193
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.955940631080805
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9553960705595794
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.953131564234873
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.952750473767048
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9520477159783447
+      },
+      {
+        "id": "plank-008:front",
+        "cosine": 0.9517542451466434
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9515911771250283
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9513208794915076
+      }
+    ],
+    "plank-007:top": [
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9815389785597306
+      },
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9779197748823585
+      },
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9738534884756688
+      },
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9730504933661881
+      },
+      {
+        "id": "plank-003:top",
+        "cosine": 0.969951879110212
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9691909562036858
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9667164842012625
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9653740988547517
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9622825104100107
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9614807082729688
+      }
+    ],
+    "plank-008:front": [
+      {
+        "id": "plank-008:side",
+        "cosine": 0.9796359933660319
+      },
+      {
+        "id": "plank-010:side",
+        "cosine": 0.9774761703289663
+      },
+      {
+        "id": "plank-010:front",
+        "cosine": 0.9702629222609627
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9683697394410176
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.9517542451466434
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9474194772238909
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.938441251654071
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9380138821345405
+      },
+      {
+        "id": "plank-007:front",
+        "cosine": 0.9363757348713038
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9359298506011231
+      }
+    ],
+    "plank-008:side": [
+      {
+        "id": "plank-008:front",
+        "cosine": 0.9796359933660319
+      },
+      {
+        "id": "plank-010:side",
+        "cosine": 0.9747388617752152
+      },
+      {
+        "id": "plank-010:front",
+        "cosine": 0.9738081706028725
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9622217336358785
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9612247446126178
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.9508447712983024
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9485430575437092
+      },
+      {
+        "id": "plank-007:front",
+        "cosine": 0.948218448777062
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.941959447304559
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9382628505724242
+      }
+    ],
+    "plank-008:top": [
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9858766189862774
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9813106132434709
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9771537532685339
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9765609666145069
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9713978434592676
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9690666313596166
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9638859836144789
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9635339459862706
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9634746490044885
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9627939930238751
+      }
+    ],
+    "plank-009:front": [
+      {
+        "id": "plank-009:top",
+        "cosine": 0.973221215451908
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9716099421310701
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9677342190523783
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9675366841754884
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9668517969436088
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9656451566628464
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9640375880269841
+      },
+      {
+        "id": "plank-004:front",
+        "cosine": 0.9611520396800419
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9611218614058943
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9599495666789042
+      }
+    ],
+    "plank-009:side": [
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9825437455760065
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.9804428954100617
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.9737978295909496
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9706798374511718
+      },
+      {
+        "id": "plank-004:side",
+        "cosine": 0.968007140226199
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9678970262741399
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9677342190523783
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9646972290032358
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9606110698869412
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.958358097992387
+      }
+    ],
+    "plank-009:top": [
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9815389785597306
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9760353555378222
+      },
+      {
+        "id": "plank-002:top",
+        "cosine": 0.9752330338526842
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9738250069305546
+      },
+      {
+        "id": "plank-003:top",
+        "cosine": 0.9732728636103011
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.973221215451908
+      },
+      {
+        "id": "plank-005:top",
+        "cosine": 0.9721971279945637
+      },
+      {
+        "id": "plank-010:top",
+        "cosine": 0.9705155440004904
+      },
+      {
+        "id": "plank-004:top",
+        "cosine": 0.9697527280466864
+      },
+      {
+        "id": "plank-001:top",
+        "cosine": 0.9687392280715745
+      }
+    ],
+    "plank-010:front": [
+      {
+        "id": "plank-010:side",
+        "cosine": 0.9798641236676251
+      },
+      {
+        "id": "plank-008:side",
+        "cosine": 0.9738081706028725
+      },
+      {
+        "id": "plank-008:front",
+        "cosine": 0.9702629222609627
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9538573215192877
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9535061367038558
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.9435364615149732
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.9337973891006943
+      },
+      {
+        "id": "plank-005:side",
+        "cosine": 0.9306465266206277
+      },
+      {
+        "id": "plank-009:side",
+        "cosine": 0.9299625367394885
+      },
+      {
+        "id": "plank-007:front",
+        "cosine": 0.928825955473573
+      }
+    ],
+    "plank-010:side": [
+      {
+        "id": "plank-010:front",
+        "cosine": 0.9798641236676251
+      },
+      {
+        "id": "plank-008:front",
+        "cosine": 0.9774761703289663
+      },
+      {
+        "id": "plank-008:side",
+        "cosine": 0.9747388617752152
+      },
+      {
+        "id": "plank-003:side",
+        "cosine": 0.9558206446349847
+      },
+      {
+        "id": "plank-003:front",
+        "cosine": 0.9556472566393714
+      },
+      {
+        "id": "plank-005:front",
+        "cosine": 0.953072058716249
+      },
+      {
+        "id": "plank-007:side",
+        "cosine": 0.9481774355141999
+      },
+      {
+        "id": "plank-002:side",
+        "cosine": 0.939977175375619
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9394413016753449
+      },
+      {
+        "id": "plank-009:front",
+        "cosine": 0.9380225799166645
+      }
+    ],
+    "plank-010:top": [
+      {
+        "id": "plank-001:top",
+        "cosine": 0.987718559186024
+      },
+      {
+        "id": "plank-008:top",
+        "cosine": 0.9858766189862774
+      },
+      {
+        "id": "plank-006:front",
+        "cosine": 0.9823023336817193
+      },
+      {
+        "id": "plank-006:top",
+        "cosine": 0.9812574578926206
+      },
+      {
+        "id": "plank-001:front",
+        "cosine": 0.9760022796374584
+      },
+      {
+        "id": "plank-009:top",
+        "cosine": 0.9705155440004904
+      },
+      {
+        "id": "plank-001:side",
+        "cosine": 0.9677879142929425
+      },
+      {
+        "id": "plank-007:top",
+        "cosine": 0.9667164842012625
+      },
+      {
+        "id": "plank-002:front",
+        "cosine": 0.9618576212581857
+      },
+      {
+        "id": "plank-006:side",
+        "cosine": 0.961736718590848
+      }
+    ]
+  }
+}
