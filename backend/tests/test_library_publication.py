@@ -112,3 +112,13 @@ def test_production_library_requires_declared_real_reviewed_attestation_and_reje
 
 
 
+
+
+def test_bundled_fixture_denylist_covers_both_checkout_line_endings() -> None:
+    import hashlib
+    from backend.app.similarity.publication import KNOWN_BUNDLED_FIXTURE_SHA256
+
+    for fixture in sorted((ROOT / "data" / "planos_demo").glob("*.dxf")):
+        lf = fixture.read_bytes().replace(b"\r\n", b"\n")
+        for content in (lf, lf.replace(b"\n", b"\r\n")):
+            assert hashlib.sha256(content).hexdigest() in KNOWN_BUNDLED_FIXTURE_SHA256, fixture.name

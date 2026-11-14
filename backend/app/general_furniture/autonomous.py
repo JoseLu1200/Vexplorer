@@ -769,8 +769,8 @@ def _effective_auto_status(
         for field in (() if component.kind == "hardware" else ("material", "finish")):
             target = f"component:{component.id}.{field}"
             state = getattr(component, field).state
-            expected = "abstained" if state == "unknown" else "accepted"
-            if state == "conflict" or field_status.get(target) != expected:
+            allowed_statuses = {None, "abstained"} if state == "unknown" else {"accepted"}
+            if state == "conflict" or field_status.get(target) not in allowed_statuses:
                 return "incomplete"
     return "accepted"
 
