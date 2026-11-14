@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.contratos.modelos import GeneralAutoReviewCheck, GeneralMachineFieldReview, GeneralMachineProvenance, GeneralScenarioOccurrence, GeneralValue
 from backend.app.general_furniture.autonomous import GeneralAutonomousError
+from backend.app.general_furniture.autonomous import GENERAL_AUTO_REVIEW_PROMPT
 from backend.app.general_furniture.autonomous import run_general_autonomous
 from backend.app.general_furniture.autonomous import _reject_forged_machine_facts
 from backend.app.general_furniture.autonomous import _review_input
@@ -38,6 +39,20 @@ def test_critic_tool_only_accepts_checks_and_decisions_not_component_rewrites() 
     assert "components" not in properties
     assert "operations" not in properties
     assert {"scenario_id", "checks", "field_reviews", "unresolved", "status"} <= set(properties)
+
+
+def test_critic_and_repair_reject_cross_geometry_observed_dimension_transfer() -> None:
+    repair = next(
+        item["description"]
+        for item in _tool_schemas()
+        if item["name"] == "proponer_mueble_general"
+    )
+
+    assert "misma geometría visible" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "pieza oculta" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "parámetro estimated separado" in repair
+    assert "estabilidad" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "detalle estimated explícito" in repair
 
 
 def test_provisional_occurrence_is_not_a_confirmed_physical_occurrence() -> None:
@@ -202,18 +217,6 @@ def test_autonomous_reviewer_keeps_deduced_authority_and_records_machine_proof()
 
     class Provider:
         def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
-            component = {
-                "id": "auto-component-1", "label": source.label, "kind": source.kind, "role": source.role,
-                "length": source.length.model_dump(mode="json"), "width": source.width.model_dump(mode="json"),
-                "thickness": source.thickness.model_dump(mode="json"), "quantity": source.quantity.model_dump(mode="json"),
-                "material": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "replaces_component_ids": [source.id], "source_view_ids": list(source.source_view_ids),
-                "source_observation_ids": list(source.source_observation_ids), "source_contour_ids": list(source.source_contour_ids),
-                "source_evidence_ids": list(source.source_evidence_ids), "source_dimension_ids": list(source.source_dimension_ids),
-                "source_document_refs": list(source.source_document_refs), "assumptions": list(source.assumptions),
-                "unknown_fields": list(source.unknown_fields),
-            }
             arguments = {
                 "scenario_id": "scenario-auto-1",
                 "checks": [{"id": "visual-length", "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:{source.id}.length"], "source_refs": ["visual:page-1"], "summary": "La vista es coherente con la asignación propuesta."}],
@@ -315,7 +318,6 @@ def test_partial_machine_coverage_cannot_report_accepted() -> None:
 
     class Provider:
         def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
-            component = _review_component(source, component_id="partial")
             arguments = {
                 "scenario_id": "scenario-partial",
                 "checks": [_visual_check("only-length", source.id, "length")],
@@ -344,7 +346,6 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
             nonlocal calls
             calls += 1
             if calls == 1:
-                component = _review_component(original, component_id="critic-p1")
                 arguments = {
                     "scenario_id": "scenario-p1",
                     "checks": [{"id": "wrong-role", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{original.id}.length"], "source_refs": ["visual:page-1"], "summary": "La cota fue asignada al eje semántico equivocado."}],
@@ -464,7 +465,6 @@ def test_semantic_repair_rejects_numeric_binding_outside_ledger() -> None:
             nonlocal calls
             calls += 1
             if calls == 1:
-                component = _review_component(original, component_id="critic-p1")
                 args = {"scenario_id": "scenario-p1", "checks": [{"id": "bad", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{original.id}.length"], "source_refs": ["visual:page-1"], "summary": "Binding incorrecto."}], "field_reviews": [{"target_ref": f"component:{original.id}.length", "status": "rejected", "check_ids": ["bad"]}], "unresolved": ["repairable:length_binding"], "status": "conflict"}
                 name = "entregar_revision_autonoma"
             else:

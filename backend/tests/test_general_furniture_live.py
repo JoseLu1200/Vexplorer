@@ -30,6 +30,21 @@ def _extraction() -> DrawingExtraction:
     )
 
 
+def test_prompt_forbids_transferring_observed_dimension_to_hidden_geometry() -> None:
+    prompt = general_live.GENERAL_FURNITURE_SYSTEM_PROMPT
+    description = next(
+        item["description"]
+        for item in general_furniture_tool_schemas()
+        if item["name"] == "proponer_mueble_general"
+    )
+
+    assert "misma geometría visible" in prompt
+    assert "piezas ocultas" in prompt
+    assert "parámetro estimated separado" in description
+    assert "estabilidad" in prompt
+    assert "detalle estimated explícito" in description
+
+
 class _Provider:
     def __init__(self) -> None:
         self.tools = None
@@ -260,7 +275,7 @@ def test_cad_tool_description_is_unchanged_when_raster_mode_is_disabled() -> Non
         "Propone un escenario constructivo provisional completo usando IDs del ledger"
     )
     assert "nominal_mm+rango+source_refs+premisas" in proposal_schema["description"]
-    assert "decision.target_refs usa siempre namespace" in proposal_schema["description"]
+    assert "decision.target_refs usa namespaces tipados" in proposal_schema["description"]
 
 
 def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -> None:
