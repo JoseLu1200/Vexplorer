@@ -146,6 +146,7 @@ export function normaliseTableCostCatalog(raw = {}) {
     version: raw.catalog_version ?? null,
     synthetic: raw.synthetic === true,
     materials: (raw.material_tariffs ?? raw.materials ?? tariffs.filter((item) => item.scope === "material")).map(tariff),
+    edges: tariffs.filter((item) => item.scope === "edge").map(tariff),
     operations: (raw.operation_tariffs ?? raw.operations ?? tariffs.filter((item) => item.scope === "operation")).map(tariff),
   };
 }
