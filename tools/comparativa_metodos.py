@@ -58,7 +58,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def _reader(args: argparse.Namespace) -> ManifestReader:
     if args.corpus == "development":
-        return DevelopmentManifestReader(args.demo_dir, args.reference_dir)
+        return DevelopmentManifestReader(args.demo_dir, args.reference_dir, args.staging_dir or args.run_dir / "inputs")
     if args.public_dir is None or args.private_dir is None:
         raise ComparisonError("plankassembly corpus needs --public-dir and --private-dir")
     staging = args.staging_dir or args.run_dir / "inputs"
@@ -92,11 +92,13 @@ def main(argv: list[str] | None = None) -> int:
                 variants, enable_model_variants=args.enable_model_variants,
                 adapter=adapter, precedent_index=index,
             )
-            execute_run(
+            record = execute_run(
                 reader, methods, args.run_dir,
                 limits=RunLimits(repetitions_stochastic=args.repetitions),
                 requested_variants=variants,
             )
+            # Record this digest outside the run directory to detect a rewritten freeze record.
+            print(f"outputs_digest {record['outputs_digest']}")
         if args.command in {"score", "run"}:
             report = score_run(
                 reader, args.run_dir,

@@ -251,20 +251,27 @@ class DevelopmentManifestReader(ManifestReader):
 
     corpus_id = "development"
 
-    def __init__(self, demo_dir: Path, reference_dir: Path) -> None:
+    def __init__(self, demo_dir: Path, reference_dir: Path, staging_dir: Path) -> None:
         self.demo_dir = Path(demo_dir)
         self.reference_dir = Path(reference_dir)
+        self.staging_dir = Path(staging_dir)
+        stems = (*_DEV_WITH_REFERENCE, *_DEV_WITHOUT_REFERENCE)
+        # Opaque ids: the method never sees the revealing file names or the source path.
+        self.id_map: dict[str, str] = {f"dev-{n:03d}": stem for n, stem in enumerate(stems, 1)}
 
     def public_cases(self) -> list[PublicCase]:
+        self.staging_dir.mkdir(parents=True, exist_ok=True)
         cases = []
-        for stem in (*_DEV_WITH_REFERENCE, *_DEV_WITHOUT_REFERENCE):
-            path = self.demo_dir / f"{stem}.dxf"
+        for case_id, stem in self.id_map.items():
+            source = self.demo_dir / f"{stem}.dxf"
             try:
-                data = path.read_bytes()
+                data = source.read_bytes()
             except OSError as exc:
-                raise ComparisonError(f"development case missing: {path.name}") from exc
+                raise ComparisonError(f"development case missing: {case_id}") from exc
+            target = self.staging_dir / f"{case_id}.dxf"
+            target.write_bytes(data)
             cases.append(PublicCase(
-                case_id=stem, path=path, sha256=sha256_bytes(data), format="dxf", unit="mm",
+                case_id=case_id, path=target, sha256=sha256_bytes(data), format="dxf", unit="mm",
                 view_kind="separated_part_views", instruction=PUBLIC_INSTRUCTION,
             ))
         return cases
@@ -286,6 +293,7 @@ class DevelopmentManifestReader(ManifestReader):
             "id": self.corpus_id,
             "kind": "own_synthetic_development_cases",
             "all_cases_inspected_during_development": True,
+            "id_map": dict(self.id_map),
             "cases_with_reference": list(_DEV_WITH_REFERENCE),
             "cases_without_reference": list(_DEV_WITHOUT_REFERENCE),
             "excluded": dict(_DEV_EXCLUDED),
@@ -310,11 +318,13 @@ class DevelopmentManifestReader(ManifestReader):
                 ))
             return ReferenceCase(case_id, tuple(components))
 
-        result: dict[str, ReferenceCase | None] = {
-            case: None for case in (*_DEV_WITH_REFERENCE, *_DEV_WITHOUT_REFERENCE)
-        }
+        by_stem = {stem: case_id for case_id, stem in self.id_map.items()}
+        result: dict[str, ReferenceCase | None] = dict.fromkeys(self.id_map)
         # Abstention references are derived from the descriptor controls, not reviewed values.
-        result["piezas_completo"] = build("piezas_completo", None)
-        result["piezas_qty_desconocida"] = build("piezas_qty_desconocida", "quantity")
-        result["piezas_espesor_desconocido"] = build("piezas_espesor_desconocido", "thickness")
+        for stem, hide in (
+            ("piezas_completo", None),
+            ("piezas_qty_desconocida", "quantity"),
+            ("piezas_espesor_desconocido", "thickness"),
+        ):
+            result[by_stem[stem]] = build(by_stem[stem], hide)
         return result

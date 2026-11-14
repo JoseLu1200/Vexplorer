@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import tempfile
 
 import pytest
 
@@ -76,8 +77,11 @@ def plank_reader(tmp_path: Path, dirs: tuple[Path, Path]) -> PlankAssemblyManife
     return PlankAssemblyManifestReader(dirs[0], dirs[1], tmp_path / "staging")
 
 
-def dev_reader() -> DevelopmentManifestReader:
-    return DevelopmentManifestReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference")
+def dev_reader(staging: Path | None = None, demo_dir: Path | None = None) -> DevelopmentManifestReader:
+    return DevelopmentManifestReader(
+        demo_dir or REPO / "data" / "planos_demo", REPO / "evaluation" / "reference",
+        staging or Path(tempfile.mkdtemp(prefix="comparativa-staging-")),
+    )
 
 
 class SpyReader(DevelopmentManifestReader):
@@ -105,7 +109,7 @@ def perfect_dev_adapter(request: AdapterRequest) -> AdapterResponse:
 
 def test_reference_is_not_opened_before_the_run_is_frozen(tmp_path: Path) -> None:
     SpyReader.private_reads = 0
-    reader = SpyReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference")
+    reader = SpyReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference", tmp_path / "stage")
     run_dir = tmp_path / "run"
     methods = build_methods(("A",))
 
@@ -132,7 +136,7 @@ def test_reference_is_not_opened_before_the_run_is_frozen(tmp_path: Path) -> Non
 
 def test_extra_output_file_after_freezing_blocks_the_reference(tmp_path: Path) -> None:
     SpyReader.private_reads = 0
-    reader = SpyReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference")
+    reader = SpyReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference", tmp_path / "stage")
     execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
     (tmp_path / "run" / "outputs" / "A" / "late.rep1.json").write_text("{}", encoding="utf-8")
     with pytest.raises(ReferenceNotFrozen):
@@ -249,7 +253,7 @@ def test_model_variants_run_with_doubles_and_record_versions(tmp_path: Path) -> 
     assert b["abstention"]["asserted_unidentifiable"] == 4
     assert b["resources"]["model_calls"] == 20 and b["resources"]["cost_eur_reported_total"] is None
     assert report["freeze"]["methods"]["B"]["adapter"]["name"] == "adapter"
-    first = json.loads(next((tmp_path / "run" / "outputs" / "B").glob("piezas_completo.rep1.json")).read_text(encoding="utf-8"))
+    first = json.loads(next((tmp_path / "run" / "outputs" / "B").glob("dev-001.rep1.json")).read_text(encoding="utf-8"))
     assert first["versions"]["run"]["model"] == "double-model"
     assert first["limits"]["max_model_calls"] == 15 and first["input_sha256"]
 
@@ -279,7 +283,7 @@ def test_d_without_admitted_index_is_not_evaluated_never_zero(tmp_path: Path) ->
 
 def test_adapter_failure_and_invalid_output_are_recorded_not_scored(tmp_path: Path) -> None:
     def broken(request: AdapterRequest) -> AdapterResponse:
-        if request.case.case_id == "piezas_completo":
+        if request.case.case_id == "dev-001":
             raise RuntimeError("provider down")
         return AdapterResponse(components=[{"key": "k", "dimensions_mm": {"length": -4}}])
 
@@ -560,3 +564,103 @@ def test_quantity_precision_and_recall_only_cover_identifiable_quantities() -> N
         assert q["reference_total"] == 0 and q["recall"] is None and q["precision"] is None
     assert abstain["abstention"]["correct_abstentions"] == 3 and abstain["abstention"]["asserted_unidentifiable"] == 0
     assert invent["abstention"]["asserted_unidentifiable"] == 3 and invent["abstention"]["asserted_matching_reference_value"] == 3
+
+
+# ----------------------------------- review fixes: opaque ids, seal checks, freeze (4, 6, 7)
+
+def test_development_corpus_hands_out_opaque_ids_and_staged_paths(tmp_path: Path) -> None:
+    reader = dev_reader(tmp_path / "stage")
+    cases = reader.public_cases()
+    assert [c.case_id for c in cases] == [f"dev-{n:03d}" for n in range(1, 6)]
+    for case in cases:
+        blob = json.dumps(case.payload) + str(case.path)
+        for revealing in ("piezas", "qty", "espesor", "planos_demo", "evaluation", "reference", "desconocid"):
+            assert revealing not in blob
+        assert case.path.is_relative_to(tmp_path / "stage") and case.path.is_file()
+        assert set(case.payload) == {"id", "file", "format", "unit", "view_kind", "instruction", "sha256"}
+    assert reader.id_map["dev-001"] == "piezas_completo"  # the mapping stays harness-side
+    assert reader.corpus_info()["id_map"] == reader.id_map
+
+
+def test_variant_a_is_unchanged_by_staging_the_dev_inputs(tmp_path: Path) -> None:
+    from evaluation.comparativa.methods import RulesMethod
+    from evaluation.comparativa.model import PublicCase
+
+    staged = dev_reader(tmp_path / "stage").public_cases()
+    assert "planos_demo" not in str(staged[0].path)
+    for case in staged:
+        original = REPO / "data" / "planos_demo" / f"{dev_reader(tmp_path / 's2').id_map[case.case_id]}.dxf"
+        twin = PublicCase(case.case_id, original, case.sha256, case.format, case.unit, case.view_kind, case.instruction)
+        method = RulesMethod()
+        limits = RunLimits()
+        assert (
+            [c.to_json() for c in method.run(case, repetition=1, limits=limits, context={}).components]
+            == [c.to_json() for c in method.run(twin, repetition=1, limits=limits, context={}).components]
+        )
+
+
+def _copy_demo(tmp_path: Path) -> Path:
+    import shutil
+
+    demo = tmp_path / "demo"
+    demo.mkdir()
+    for source in (REPO / "data" / "planos_demo").glob("piezas_*.dxf"):
+        shutil.copyfile(source, demo / source.name)
+    return demo
+
+
+def test_score_run_rejects_inputs_that_changed_after_freezing(tmp_path: Path) -> None:
+    demo = _copy_demo(tmp_path)
+    reader = dev_reader(tmp_path / "s1", demo)
+    execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+    (demo / "piezas_completo.dxf").write_bytes((demo / "piezas_completo.dxf").read_bytes() + b"\n")
+    SpyReader.private_reads = 0
+    spy = SpyReader(demo, REPO / "evaluation" / "reference", tmp_path / "s2")
+    with pytest.raises(ComparisonError, match="inputs"):
+        score_run(spy, tmp_path / "run")
+    assert SpyReader.private_reads == 0
+
+
+def test_score_run_rejects_a_missing_case_with_a_controlled_error(tmp_path: Path) -> None:
+    demo = _copy_demo(tmp_path)
+    execute_run(dev_reader(tmp_path / "s1", demo), build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+    (demo / "piezas_espesor_36.dxf").unlink()
+    with pytest.raises(ComparisonError):
+        score_run(dev_reader(tmp_path / "s2", demo), tmp_path / "run")
+
+
+def test_score_run_rejects_a_different_corpus_description(tmp_path: Path) -> None:
+    reader = dev_reader(tmp_path / "s1")
+    execute_run(reader, build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+
+    class Renamed(DevelopmentManifestReader):
+        def corpus_info(self):
+            return {**super().corpus_info(), "kind": "something_else"}
+
+    other = Renamed(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference", tmp_path / "s2")
+    with pytest.raises(ComparisonError, match="corpus"):
+        score_run(other, tmp_path / "run")
+
+
+def test_scoring_an_output_for_an_unknown_case_is_a_controlled_error() -> None:
+    from evaluation.comparativa.scoring import score_outputs
+
+    with pytest.raises(ComparisonError):
+        score_outputs([_out([])], {}, {}, tolerance_mm=1.0, match_tolerance_mm=5.0)
+
+
+def test_freeze_record_with_duplicate_output_paths_is_rejected(tmp_path: Path) -> None:
+    from evaluation.comparativa.freeze import _outputs_digest
+
+    execute_run(dev_reader(tmp_path / "s"), build_methods(("A",)), tmp_path / "run", clock=fixed_clock())
+    path = tmp_path / "run" / "freeze.json"
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record["outputs"].append({**record["outputs"][0], "repetition": 99})  # same path, valid digest
+    record["outputs_digest"] = _outputs_digest(sorted(
+        record["outputs"], key=lambda e: (e["variant"], e["case_id"], e["repetition"])
+    ))
+    record["outputs"].sort(key=lambda e: (e["variant"], e["case_id"], e["repetition"]))
+    record["outputs_digest"] = _outputs_digest(record["outputs"])
+    path.write_bytes(canonical_json(record))
+    with pytest.raises(ReferenceNotFrozen, match="duplicate"):
+        verify_freeze(tmp_path / "run")

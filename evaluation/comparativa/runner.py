@@ -11,6 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import json
 from pathlib import Path
 from typing import Any
 
@@ -133,6 +134,12 @@ def score_run(
 
     run_dir = Path(run_dir)
     token = verify_freeze(run_dir)
+    record = load_freeze_record(run_dir)
+    # Public-side cross-checks against the seal, before any private read.
+    if {case.case_id: case.sha256 for case in reader.public_cases()} != record.get("inputs"):
+        raise ComparisonError("public inputs differ from the frozen run (changed, added or missing case)")
+    if json.loads(json.dumps(reader.corpus_info())) != record.get("corpus"):
+        raise ComparisonError("corpus description differs from the frozen run")
     outputs = load_outputs(run_dir, token)
     references = reader.load_references(token)
     scores = score_outputs(
@@ -141,6 +148,6 @@ def score_run(
     )
     return build_report(
         scores,
-        freeze=load_freeze_record(run_dir),
+        freeze=record,
         settings={"tolerance_mm": tolerance_mm, "match_tolerance_mm": match_tolerance_mm},
     )

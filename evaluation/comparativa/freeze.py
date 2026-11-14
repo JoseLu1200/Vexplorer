@@ -103,6 +103,8 @@ def verify_freeze(run_dir: Path) -> FreezeToken:
     if record.get("outputs_digest") != _outputs_digest(entries):
         raise ReferenceNotFrozen("freeze record digest mismatch")
     listed: set[str] = set()
+    if len({entry.get("path") for entry in entries}) != len(entries):
+        raise ReferenceNotFrozen("duplicate output paths in freeze record")
     for entry in entries:
         relative = entry.get("path")
         if not isinstance(relative, str) or relative.startswith(("/", "..")) or ".." in Path(relative).parts:
