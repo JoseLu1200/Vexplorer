@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
+from backend.app.validador.plausibilidad import evaluate_plausibility
 from backend.app.contratos.modelos import (
     AssemblyCandidate,
     DecompositionScenario,
@@ -289,6 +290,10 @@ def run_table_agent(
     entities = {item.id: item for item in extraction.entities}
     views = {item.id: item for item in extraction.views}
     allowed_evidence_ids = {evidence_id for item in analysis.measures for evidence_id in item.evidence_ids}
+    try:
+        plausibility_findings = evaluate_plausibility(extraction)
+    except (FileNotFoundError, ValueError):
+        plausibility_findings = ()
     input_items = [{"role": "user", "content": json.dumps({
         "input_kind": analysis.input_kind,
         "profile": analysis.profile,
@@ -296,6 +301,12 @@ def run_table_agent(
         "state": analysis.state,
         "warnings": analysis.warnings,
         "measurements": [{"id": item.id, "semantic": item.semantic, "axis": item.axis, "state": item.state, "slot_origin": item.slot_origin} for item in analysis.measures],
+        "plausibility": {
+            "findings": plausibility_findings[:20],
+            "total": len(plausibility_findings),
+            "truncated": len(plausibility_findings) > 20,
+            "authority": "advisory_workshop_catalog_not_measurement_source",
+        },
     }, ensure_ascii=False)}]
     actions: list[AgentAction] = []
     while model_calls < limits.max_model_calls:
