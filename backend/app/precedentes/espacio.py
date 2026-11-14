@@ -5,8 +5,8 @@ referencia por (modelo, dimensiones, versión de frases) en un SQLite propio; ca
 compara el coseno por frase con una tolerancia. Si el proveedor cambia su modelo interno sin cambiar
 el nombre, la deriva aparece aquí aunque el nombre del modelo sea el mismo.
 
-La integración con ``EmbeddingMetadata`` (identificador de espacio en la biblioteca) queda pendiente
-porque cambia el contrato (requiere acuerdo A/B).
+La huella no se guarda en ``EmbeddingMetadata`` (cambiaría el contrato y requiere acuerdo A/B): se
+vincula a cada embedding mediante sellos por ``cache_key`` en el mismo SQLite (ver ``mantenimiento``).
 """
 
 from __future__ import annotations
@@ -171,8 +171,8 @@ def resumir(huella: HuellaEspacio, incluir_vectores: bool = False) -> ResumenHue
 class AlmacenEspacio:
     """SQLite propio con una huella de referencia por (modelo, dimensiones, versión de frases)."""
 
-    def __init__(self, ruta: Path) -> None:
-        self._ruta = ruta
+    def __init__(self, ruta: Path, timeout_s: float = 5.0) -> None:
+        self._ruta, self._timeout_s = ruta, timeout_s
         ruta.parent.mkdir(parents=True, exist_ok=True)
         with self._conectar() as db:
             db.execute(
@@ -186,9 +186,13 @@ class AlmacenEspacio:
                 "carga TEXT NOT NULL, retirada_en TEXT NOT NULL)"
             )
 
+    @property
+    def ruta(self) -> Path:
+        return self._ruta
+
     @contextmanager
     def _conectar(self) -> Iterator[sqlite3.Connection]:
-        conexion = sqlite3.connect(self._ruta)
+        conexion = sqlite3.connect(self._ruta, timeout=self._timeout_s)
         try:
             with conexion:
                 yield conexion

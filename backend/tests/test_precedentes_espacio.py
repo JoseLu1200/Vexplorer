@@ -44,7 +44,7 @@ class RepositorioVacio:
 
 def _cliente(tmp_path: Path, proveedor) -> TestClient:
     app = FastAPI()
-    app.include_router(crear_router_embeddings(RepositorioVacio(), proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: "2026-11-14T00:00:00+00:00"))
+    app.include_router(crear_router_embeddings(RepositorioVacio(), proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: "2026-11-14T00:00:00+00:00", intervalo_minimo_verificacion_s=0))  # el intervalo persiste en la BD: se prueba aparte
     return TestClient(app)
 
 
@@ -136,6 +136,7 @@ def test_deriva_sugiere_rotar_y_la_rotacion_archiva_la_anterior(tmp_path: Path) 
     _cliente_con_reloj(tmp_path, ProveedorFalso(), reloj).post(VERIFICAR)
     original = _cliente(tmp_path, None).get(REFERENCIA).json()["data"][0]["huella_id"]
     derivado = _cliente_con_reloj(tmp_path, ProveedorFalso(deriva=0.5), reloj)
+    reloj.t += 61  # el intervalo mínimo persiste en la BD aunque cambie de router/proceso
     deriva = derivado.post(VERIFICAR).json()["data"]
     assert deriva["estado"] == "deriva_detectada" and deriva["accion_sugerida"] == "rotar_referencia"
     assert "rotar" in deriva["mensaje"]
@@ -145,7 +146,7 @@ def test_deriva_sugiere_rotar_y_la_rotacion_archiva_la_anterior(tmp_path: Path) 
     assert rotado.status_code == 200
     datos = rotado.json()["data"]
     assert datos["referencia_anterior"]["huella"]["huella_id"] == original
-    assert datos["referencia_anterior"]["retirada_en"] == "t1061"
+    assert datos["referencia_anterior"]["retirada_en"] == "t1122"
     assert datos["referencia_nueva"]["huella_id"] == deriva["huella_actual"]
 
     reloj.t += 61
