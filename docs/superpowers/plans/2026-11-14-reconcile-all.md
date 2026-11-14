@@ -12,9 +12,9 @@ No alterar índices ni archivos de los worktrees de origen; no importar secretos
 
 ## Pasos
 
-- [ ] Inventariar refs y trabajo sin commit; fijar snapshots y hashes.
-- [ ] Incorporar transcript, reconstrucción y CAD; resolver contratos y endpoints conservando capacidades.
-- [ ] Incorporar snapshot UX y conciliar frontend, acceso y empaquetado.
-- [ ] Reconciliar ramas históricas mediante equivalencia y comprobación de sus cambios exclusivos; documentar decisiones.
-- [ ] Ejecutar Python/JS, pruebas de navegador y revisión independiente; corregir regresiones.
+- [x] Inventariar refs y trabajo sin commit; fijar snapshots y hashes.
+- [x] Incorporar transcript, reconstrucción y CAD; resolver contratos y endpoints conservando capacidades.
+- [x] Incorporar snapshot UX y conciliar frontend, acceso y empaquetado.
+- [x] Reconciliar ramas históricas mediante equivalencia y comprobación de sus cambios exclusivos; documentar decisiones.
+- [x] Ejecutar Python/JS, pruebas de navegador y revisión independiente; corregir regresiones.
 - [ ] Revisar de nuevo orígenes, actualizar documentación, fusionar/publicar main y verificar CI.

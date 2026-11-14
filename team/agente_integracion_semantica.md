@@ -51,3 +51,12 @@ Verificación ejecutada desde `.worktrees/semantic-main`: 721 pruebas Python apr
 ## Reconciliación completa autorizada
 
 El usuario amplía explícitamente el alcance el 2026-11-14 a todas las ramas pendientes y al trabajo UX sin commit. Integración en `integration/reconcile-all` desde `4504adb`. Se permite resolver solapes de los cambios existentes, incluidos sus contratos ya desarrollados, sin diseñar contratos nuevos. Las reservas anteriores describen la fase del explorador; esta fase incluye CAD, reconstrucción, estimaciones, UX y pruebas. Se preservan los worktrees originales y sus índices. Las ramas activas se vuelven a comprobar antes de publicar.
+
+
+### Cierre de reconciliación
+
+Integrados transcript, CAD, reconstrucción, histórico y overhaul UX original. Snapshots preservan índices de origen. Ramas antiguas reconciliadas por equivalencia: se conservaron implementaciones actuales tras comprobar las variantes, evitando reintroducir versiones superadas. CAD final `8e5f584`, reconstrucción snapshots `07a48c6` y `9e74cfb`. Resueltos solapes de tablas, leyendas, identidad de escenas y navegación semántica. Docker incluye fuentes locales, página 3D y reconstruction-state.js.
+
+Verificación local final: `python -m pytest -q`: 837 passed en 74,52 s; `npm test --prefix frontend`: 187 aprobadas; pip check y compileall sin errores. Chromium: navegación biblioteca→explorador, 117 puntos/10 vecinos, página reconstrucción y móvil sin desbordamiento ni errores JS/HTTP. Prueba de regresión del enlace semántico observada fallar y pasar. Se mantiene evidencia en .runtime/reconciliation. No se repite inferencia pagada ni se modifica el overhaul visual original. Publicación/CI y revisión final se verifican antes de dar la entrega por cerrada.
+
+Revisión final independiente Astra: sin hallazgos críticos ni importantes tras actualizar la procedencia de CAD. Pruebas del revisor: 22 de reconstrucción y 187 JS aprobadas. Minor diferido: la sincronización del tema del panel 3D abierto ocurre al reabrirlo, no mediante un listener durante su apertura. Docker local no se ejecuta por falta de daemon; CI construye la imagen y es la puerta de publicación verificada.
