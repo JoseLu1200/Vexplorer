@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRefinement, clearProposal } from '../reconstruction-state.js';
+import { buildRefinement, clearProposal, refinementQuestions } from '../reconstruction-state.js';
 
 test('refinement transmits only answered questions and explicit finite dimensions', () => {
   assert.deepEqual(buildRefinement({
@@ -31,4 +31,11 @@ test('clearProposal removes previous geometry, downloads and assessment before n
   assert.equal(nodes.viewer.textContent, '');
   assert.equal(nodes.exploded.checked, false);
   assert.equal(nodes.exploded.disabled, true);
+});
+
+test('previous declarations stay editable after the model stops asking', () => {
+  assert.deepEqual(refinementQuestions({clarifications:[{question:'Uso',answer:'Mesa'}]},
+    {missing_information:['Montaje','Uso']}), [
+      {question:'Montaje',answer:''},{question:'Uso',answer:'Mesa'},
+    ]);
 });
