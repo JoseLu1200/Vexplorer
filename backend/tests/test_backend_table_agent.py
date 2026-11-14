@@ -84,6 +84,12 @@ def test_table_agent_inspects_source_values_then_proposes_reference_only_program
     context = json.loads(provider.inputs[0][0]["content"])
     assert context["input_kind"] == "mounted_orthographic_views"
     assert all("value_mm" not in item for item in context["measurements"])
+    assert context["plausibility"] == {
+        "findings": [],
+        "total": 0,
+        "truncated": False,
+        "authority": "advisory_workshop_catalog_not_measurement_source",
+    }
     inspected = json.loads(provider.inputs[1][0]["output"])
     assert inspected["ok"] is True
     assert {item["value_mm"] for item in inspected["measures"]} == {1200, 750, 700}
