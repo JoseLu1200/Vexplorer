@@ -251,13 +251,13 @@ def reconstruct_parts_scene(
             warnings.append(f"incomplete_piece:{use.id}")
             continue
         assert piece.quantity is not None
-        if piece.field_states.get("quantity") == "confirmed":
-            occurrence_indices_by_use[use.id] = tuple(range(1, piece.quantity + 1))
-        elif use.occurrence_indices:
+        if use.allocated_quantity is not None and use.occurrence_indices:
             if len(use.occurrence_indices) != piece.quantity:
                 warnings.append(f"resolved_quantity_mismatch:{use.id}")
                 continue
             occurrence_indices_by_use[use.id] = use.occurrence_indices
+        elif use.allocated_quantity is None and piece.field_states.get("quantity") == "confirmed":
+            occurrence_indices_by_use[use.id] = tuple(range(1, piece.quantity + 1))
         else:
             warnings.append(f"resolved_occurrences_missing:{use.id}")
     if result.state != "completed" or warnings:

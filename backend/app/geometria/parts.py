@@ -83,13 +83,17 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         raise ValueError("separated_part_views input_kind required")
 
     labels_by_key: dict[str, dict[str, str]] = defaultdict(dict)
+    duplicate_part_views: set[tuple[str, str]] = set()
     quantities_by_key: dict[str, list[tuple[int, str]]] = defaultdict(list)
     text_evidence = {item.source_entity_id: f"evidence-text-{item.source_entity_id}" for item in extraction.texts}
     for text in extraction.texts:
         part_match = PART_LABEL.fullmatch(text.text.strip())
         if part_match:
             key = part_match.group("key")
-            labels_by_key[key][part_match.group("role").upper()] = text.view_id
+            role = part_match.group("role").upper()
+            if role in labels_by_key[key]:
+                duplicate_part_views.add((key, role))
+            labels_by_key[key][role] = text.view_id
             if part_match.group("quantity"):
                 quantities_by_key[key].append((int(part_match.group("quantity")), text_evidence[text.source_entity_id]))
             continue
@@ -125,6 +129,8 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         source_entity_ids: set[str] = set()
         observation_evidence: set[str] = set()
         warnings: list[str] = []
+        duplicate_roles = sorted(role for duplicate_key, role in duplicate_part_views if duplicate_key == key)
+        warnings.extend(f"duplicate_part_view:{key}:{role}" for role in duplicate_roles)
         for role, view_id in sorted(labels_by_key[key].items()):
             contours = contours_by_view.get(view_id, ())
             if not contours:
@@ -194,7 +200,7 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
             if dimension.state == "conflict":
                 warnings.append(f"dimension_conflict:{key}:{name}")
         complete = quantity.state == "observed" and all(dimension.state == "observed" for _, dimension in dimensions)
-        ambiguous = quantity.state == "ambiguous" or any(dimension.state == "conflict" for _, dimension in dimensions)
+        ambiguous = bool(duplicate_roles) or quantity.state == "ambiguous" or any(dimension.state == "conflict" for _, dimension in dimensions)
         observations.append(SeparatedPartObservation(
             id=f"part-observation-{key.lower()}", part_key=key,
             association_basis="ambiguous" if ambiguous else "explicit_key",
@@ -205,7 +211,7 @@ def extract_separated_parts(extraction: DrawingExtraction) -> SeparatedPartsExtr
         ))
         extraction_warnings.extend(warnings)
 
-    if not labels_by_key:
+    if any(contour.view_id.startswith("view-unassociated-") for contour in extraction.contours):
         views_by_id = {view.id: view for view in extraction.views}
         labels_by_view = {
             text.view_id: text for text in extraction.texts if text.text.strip().upper() in AXES_BY_ROLE
