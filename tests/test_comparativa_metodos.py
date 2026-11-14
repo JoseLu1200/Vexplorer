@@ -919,3 +919,358 @@ def test_unannotated_fields_filter_the_match_like_identifiable_ones() -> None:
     assert off["identity"]["matched"] == 0 and off["identity"]["matched_partial"] == 1
     ok = _score([_out([_c("p", 700, 500, 20)])], reference)
     assert ok["identity"]["matched"] == 1 and ok["abstention"]["asserted_unidentifiable"] == 0
+
+
+# ------------------------------------------------ regression tests for audit findings
+
+def test_bool_in_usage_stats_is_excluded() -> None:
+    from evaluation.comparativa.scoring import score_outputs
+
+    output = {
+        "variant": "A",
+        "case_id": "c1",
+        "repetition": 1,
+        "status": "ok",
+        "reason": None,
+        "components": [],
+        "timing": {"duration_s": 1.0},
+        "usage": {
+            "model_calls": True,
+            "tool_calls": False,
+            "input_tokens": True,
+            "output_tokens": 10,
+            "cost_eur": True,
+        },
+    }
+    metas = {"c1": CaseMeta("c1", "fam", "dev", "p", True)}
+    scored = score_outputs([output], metas, {"c1": None}, tolerance_mm=1.0, match_tolerance_mm=5.0)
+    res = scored["A"]["fam"]["dev"]["resources"]
+    assert res["model_calls"] == 0
+    assert res["tool_calls"] == 0
+    assert res["input_tokens"] == 0
+    assert res["output_tokens"] == 10
+    assert res["cost_eur_reported_total"] is None
+
+
+def test_not_evaluated_usage_not_accumulated() -> None:
+    from evaluation.comparativa.scoring import score_outputs
+
+    output = {
+        "variant": "A",
+        "case_id": "c1",
+        "repetition": 1,
+        "status": "not_evaluated",
+        "reason": "disabled",
+        "components": [],
+        "timing": {"duration_s": 5.0},
+        "usage": {"model_calls": 5, "cost_eur": 0.5},
+    }
+    metas = {"c1": CaseMeta("c1", "fam", "dev", "p", True)}
+    scored = score_outputs([output], metas, {"c1": None}, tolerance_mm=1.0, match_tolerance_mm=5.0)
+    res = scored["A"]["fam"]["dev"]["resources"]
+    assert res["observations"] == 0
+    assert res["duration_s_total"] == 0
+    assert res["model_calls"] == 0
+    assert res["cost_eur_reported_total"] is None
+
+
+def test_unc_path_redacted_in_safe_error() -> None:
+    from evaluation.comparativa.runner import _safe_error
+
+    exc = ValueError(r"cannot open file \\server\share\folder\case.dxf: invalid format")
+    err = _safe_error(exc)
+    assert r"\\server\share\folder\case.dxf" not in err["message"]
+    assert "<path>" in err["message"]
+
+
+def test_zip_bundle_exceeding_max_bytes_is_rejected(tmp_path: Path) -> None:
+    import zipfile
+    from evaluation.comparativa.manifest import PlankAssemblyManifestReader, _MAX_DXF_BYTES
+
+    public_dir = tmp_path / "public"
+    private_dir = tmp_path / "private"
+    staging_dir = tmp_path / "staging"
+    public_dir.mkdir()
+    private_dir.mkdir()
+    cases_dir = public_dir / "agent_cases"
+    cases_dir.mkdir()
+
+    zip_path = cases_dir / "case-01.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("case.json", json.dumps({
+            "id": "case-01", "file": "case-01.dxf", "format": "dxf", "unit": "mm",
+            "view_kind": "assembled_orthographic", "instruction": "test", "sha256": "0" * 64,
+        }))
+        zf.writestr("input.dxf", b"0" * (_MAX_DXF_BYTES + 10))
+
+    (public_dir / "cases.json").write_text(json.dumps([{"id": "case-01", "sha256": "0" * 64, "split": "train", "family_hash": "f1"}]), encoding="utf-8")
+    (public_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    (private_dir / "references.json").write_text("[]", encoding="utf-8")
+
+    reader = PlankAssemblyManifestReader(public_dir, private_dir, staging_dir)
+    with pytest.raises(ComparisonError, match="member exceeds maximum size|unsafe member"):
+        reader.public_cases()
+
+
+def test_disjoint_dirs_enforced(tmp_path: Path) -> None:
+    from evaluation.comparativa.manifest import PlankAssemblyManifestReader, DevelopmentManifestReader
+
+    pub = tmp_path / "pub"
+    priv = tmp_path / "priv"
+    pub.mkdir()
+    priv.mkdir()
+
+    with pytest.raises(ComparisonError, match="disjoint"):
+        PlankAssemblyManifestReader(pub, priv, priv / "staging")
+
+    with pytest.raises(ComparisonError, match="disjoint"):
+        PlankAssemblyManifestReader(pub, priv, priv)
+
+    ref = tmp_path / "ref"
+    demo = tmp_path / "demo"
+    ref.mkdir()
+    demo.mkdir()
+    with pytest.raises(ComparisonError, match="disjoint"):
+        DevelopmentManifestReader(demo, ref, ref / "sub")
+
+
+def test_fit_strict_unidentifiable_large_error_does_not_overflow() -> None:
+    from evaluation.comparativa.scoring import _fit_strict
+    from evaluation.comparativa.model import Component, RefComponent, RefField
+
+    ref = RefComponent(
+        "R1",
+        {
+            "length": RefField(1000.0, True),
+            "width": RefField(500.0, True),
+            "thickness": RefField(20.0, False),
+        },
+        RefField(1.0, True),
+    )
+    pred = Component(
+        "p1",
+        {"length": 1000.0, "width": 500.0, "thickness": 999_999.0},
+        {"length": "observed", "width": "observed", "thickness": "hypothesis"},
+        1,
+        "observed",
+    )
+    fit = _fit_strict(pred, ref, tolerance=5.0)
+    assert fit is not None
+    assert fit[0][0] == -2
+    assert fit[0][1] == 0.0
+    assert fit[1] == {"length": "length", "width": "width", "thickness": "thickness"}
+
+
+def test_hungarian_guard_raises_on_unreachable_state() -> None:
+    from evaluation.comparativa.scoring import _hungarian
+
+    with pytest.raises(ComparisonError, match="Hungarian assignment failed"):
+        _hungarian([[10**60]])
+
+
+def test_cli_invalid_parameters_rejected(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+
+    assert cli_main(["freeze", "--run-dir", str(run_dir), "--repetitions", "0"]) == 2
+    assert cli_main(["freeze", "--run-dir", str(run_dir), "--variants", ""]) == 2
+    assert cli_main(["freeze", "--run-dir", str(run_dir), "--variants", "A,A"]) == 2
+    assert cli_main(["score", "--run-dir", str(run_dir), "--tolerance-mm", "10", "--match-tolerance-mm", "5"]) == 2
+    assert cli_main(["score", "--run-dir", str(run_dir), "--tolerance-mm", "-1"]) == 2
+    assert cli_main(["score", "--run-dir", str(run_dir), "--tolerance-mm", "nan"]) == 2
+
+
+def test_component_and_to_json_validation() -> None:
+    from evaluation.comparativa.model import parse_component, Component
+
+    with pytest.raises(ComparisonError, match="dimensions_mm"):
+        parse_component({"key": "k", "dimensions_mm": {"length": 1_000_001.0, "width": 10, "thickness": 10}, "quantity": 1})
+
+    with pytest.raises(ComparisonError, match="dimensions_mm"):
+        parse_component({"key": "k", "dimensions_mm": {"length": 0.0, "width": 10, "thickness": 10}, "quantity": 1})
+
+    with pytest.raises(ComparisonError, match="dimensions_mm"):
+        parse_component({"key": "k", "dimensions_mm": {"length": True, "width": 10, "thickness": 10}, "quantity": 1})
+
+    with pytest.raises(ComparisonError, match="quantity"):
+        parse_component({"key": "k", "dimensions_mm": {"length": 100, "width": 10, "thickness": 10}, "quantity": 1_000_001})
+
+    with pytest.raises(ComparisonError, match="quantity"):
+        parse_component({"key": "k", "dimensions_mm": {"length": 100, "width": 10, "thickness": 10}, "quantity": True})
+
+    bad_comp = Component("", {"length": 100.0, "width": 10.0, "thickness": 10.0}, {"length": "observed", "width": "observed", "thickness": "observed"}, 1, "observed")
+    with pytest.raises(ComparisonError, match="key"):
+        bad_comp.to_json()
+
+
+def test_runner_caps_components_at_500(tmp_path: Path) -> None:
+    class BigOutputMethod:
+        variant = "A"
+        stochastic = False
+        def describe(self): return {"variant": "A"}
+        def run(self, case, *, repetition, limits, context):
+            from evaluation.comparativa.model import MethodResult
+            return MethodResult(status="ok", components=[
+                {"key": f"p{i}", "dimensions_mm": {"length": 100, "width": 50, "thickness": 10}, "quantity": 1}
+                for i in range(501)
+            ])
+
+    reader = dev_reader(tmp_path / "s")
+    run_dir = tmp_path / "run"
+    execute_run(reader, [BigOutputMethod()], run_dir, clock=fixed_clock())
+    output_files = list((run_dir / "outputs" / "A").glob("*.json"))
+    assert output_files
+    data = json.loads(output_files[0].read_text(encoding="utf-8"))
+    assert data["status"] == "failed"
+    assert data["reason"] == "limit_exceeded"
+
+
+def test_rules_method_accepts_assembled_orthographic_partial(tmp_path: Path) -> None:
+    from evaluation.comparativa.methods import RulesMethod
+    from evaluation.comparativa.model import PublicCase
+
+    src_dxf = REPO / "data" / "planos_demo" / "piezas_completo.dxf"
+    target_dxf = tmp_path / "partial.dxf"
+    target_dxf.write_bytes(src_dxf.read_bytes())
+
+    case = PublicCase(
+        case_id="c_partial",
+        path=target_dxf,
+        sha256="0" * 64,
+        format="dxf",
+        unit="mm",
+        view_kind="assembled_orthographic_partial",
+        instruction="test",
+    )
+    method = RulesMethod()
+    res = method.run(case, repetition=1, limits=RunLimits(), context={})
+    assert res.status == "ok"
+    assert res.versions.get("rule_path") == "A2:rectangle_hypotheses"
+
+
+def test_plank_reference_bounds_validation() -> None:
+    from evaluation.comparativa.manifest import _plank_reference
+
+    bad_row = {
+        "id": "c1",
+        "components": [{"bounds_mm": [100, 0, 0, 50, 100, 100]}],
+    }
+    with pytest.raises(ComparisonError, match="bounds_mm"):
+        _plank_reference("c1", bad_row, True)
+
+    bad_row2 = {
+        "id": "c1",
+        "components": [{"bounds_mm": [0, 0, 0, True, 100, 100]}],
+    }
+    with pytest.raises(ComparisonError, match="bounds_mm"):
+        _plank_reference("c1", bad_row2, True)
+
+    bad_row3 = {
+        "id": "c1",
+        "components": [{"bounds_mm": [0, 0, 0, float("nan"), 100, 100]}],
+    }
+    with pytest.raises(ComparisonError, match="bounds_mm"):
+        _plank_reference("c1", bad_row3, True)
+
+
+def test_freeze_tampering_traversal_and_symlink_rejected(tmp_path: Path, monkeypatch) -> None:
+    from evaluation.comparativa.freeze import _outputs_digest, verify_freeze, load_outputs, FreezeToken
+
+    reader = dev_reader(tmp_path / "s")
+    run_dir = tmp_path / "run"
+    execute_run(reader, build_methods(("A",)), run_dir, clock=fixed_clock())
+    token = verify_freeze(run_dir)
+
+    freeze_json = run_dir / "freeze.json"
+    record = json.loads(freeze_json.read_text(encoding="utf-8"))
+    record["outputs"][0]["path"] = "outputs/A/../../escape.json"
+    record["outputs_digest"] = _outputs_digest(record["outputs"])
+    freeze_json.write_bytes(canonical_json(record))
+    with pytest.raises(ReferenceNotFrozen, match="unsafe output path|output path mismatch"):
+        verify_freeze(run_dir)
+
+    run_dir2 = tmp_path / "run2"
+    execute_run(dev_reader(tmp_path / "s2"), build_methods(("A",)), run_dir2, clock=fixed_clock())
+    real_token = verify_freeze(run_dir2)
+
+    monkeypatch.setattr(Path, "is_symlink", lambda self: self.name == "dev-001.rep1.json")
+    with pytest.raises(ReferenceNotFrozen, match="symlink"):
+        verify_freeze(run_dir2)
+
+    monkeypatch.undo()
+
+    other_dir = tmp_path / "other"
+    other_dir.mkdir()
+    with pytest.raises(ReferenceNotFrozen, match="token run_dir mismatch"):
+        load_outputs(other_dir, real_token)
+
+    tampered_token = FreezeToken(run_dir2, "0" * 64, real_token.seal)
+    with pytest.raises(ReferenceNotFrozen, match="outputs digest mismatch"):
+        load_outputs(run_dir2, tampered_token)
+
+
+def test_freeze_inputs_and_corpus_tampering_rejected(tmp_path: Path) -> None:
+    reader = dev_reader(tmp_path / "s")
+    run_dir = tmp_path / "run"
+    execute_run(reader, build_methods(("A",)), run_dir, clock=fixed_clock())
+    token = verify_freeze(run_dir)
+
+    freeze_file = run_dir / "freeze.json"
+    record = json.loads(freeze_file.read_text(encoding="utf-8"))
+    record["inputs"]["dev-001"] = "0" * 64
+    freeze_file.write_bytes(canonical_json(record))
+
+    with pytest.raises(ReferenceNotFrozen, match="inputs mismatch"):
+        reader.load_references(token)
+
+    record["inputs"] = {c.case_id: c.sha256 for c in reader.public_cases()}
+    record["corpus"]["id"] = "tampered"
+    freeze_file.write_bytes(canonical_json(record))
+
+    with pytest.raises(ReferenceNotFrozen, match="corpus mismatch"):
+        reader.load_references(token)
+
+
+def test_load_outputs_hash_tampering_caught(tmp_path: Path) -> None:
+    from evaluation.comparativa.freeze import load_outputs
+
+    reader = dev_reader(tmp_path / "s")
+    run_dir = tmp_path / "run"
+    execute_run(reader, build_methods(("A",)), run_dir, clock=fixed_clock())
+    token = verify_freeze(run_dir)
+
+    victim = next((run_dir / "outputs").rglob("*.json"))
+    victim.write_bytes(b'{"tampered": true}')
+
+    with pytest.raises(ReferenceNotFrozen, match="hash mismatch"):
+        load_outputs(run_dir, token)
+
+
+def test_report_cost_formatting() -> None:
+    from evaluation.comparativa.report import render_markdown
+
+    report = {
+        "corpus": {"id": "test", "kind": "test"},
+        "freeze": {"outputs_digest": "abc", "settings": {}},
+        "settings": {"tolerance_mm": 1.0, "match_tolerance_mm": 5.0},
+        "variants_without_outputs": [],
+        "limitations": [],
+        "variants": {
+            "B": {
+                "families": {
+                    "fam": {
+                        "dev": {
+                            "sample": {"cases": 1, "observations": 1, "observations_scored": 1, "cases_with_reference": 1, "cases_without_reference": 0, "status_counts": {"ok": 1}, "reason_counts": {}},
+                            "dimensions": {"coverage": 1.0, "predicted_fields": 3, "eligible_fields": 3, "mae_mm": 0.0, "within_tolerance_rate": 1.0, "role_label_mismatches": 0},
+                            "identity": {"matched": 1, "false_positives": 0, "omissions": 0, "precision": 1.0, "recall": 1.0, "matched_partial": 0, "ambiguous_class_pairs": 0, "quantity": {"compared_components": 1, "exact_rate": 1.0, "precision": 1.0, "recall": 1.0}},
+                            "abstention": {"unidentifiable_fields": 0, "correct_abstentions": 0, "correct_abstention_rate": None, "asserted_unidentifiable": 0, "over_abstention_rate": None, "lower_bound": {"correct_abstention_rate": None, "asserted_unidentifiable": 0}},
+                            "fields_without_reference": {"fields": 0},
+                            "resources": {"duration_s_total": 1.2345, "model_calls": 1, "tool_calls": 0, "input_tokens": 10, "output_tokens": 5, "cost_eur_reported_total": 0.012345},
+                        }
+                    }
+                }
+            }
+        },
+    }
+    md = render_markdown(report)
+    assert "0.0123" in md
+

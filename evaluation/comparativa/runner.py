@@ -26,7 +26,7 @@ from .freeze import (
 )
 from .manifest import ManifestReader
 from .methods import Method
-from .model import ComparisonError, MethodResult, RunLimits, parse_component
+from .model import OUTPUT_STATUSES, ComparisonError, MethodResult, RunLimits, parse_component
 from .report import build_report
 from .scoring import score_outputs
 
@@ -37,7 +37,7 @@ class Clock:
     now_iso: Callable[[], str] = field(default=lambda: datetime.now(UTC).isoformat())
 
 
-_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^\s'\"]*|(?<![\w<])/(?:[\w.\-]+/)+[\w.\-]*")
+_PATH_RE = re.compile(r"\\\\[^\s'\"]+|[A-Za-z]:[\\/][^\s'\"]*|(?<![\w<])/(?:[\w.\-]+/)+[\w.\-]*")
 
 
 def _safe_error(exc: Exception) -> dict[str, str]:
@@ -86,7 +86,9 @@ def execute_run(
                 status, reason = result.status, result.reason
                 components: list[dict[str, Any]] = []
                 usage = result.usage or {}
-                if status == "ok" and duration > limits.timeout_s:
+                if status not in OUTPUT_STATUSES:
+                    status, reason, error = "failed", "invalid_status", _safe_error(ComparisonError(f"invalid result status: {status!r}"))
+                elif status == "ok" and duration > limits.timeout_s:
                     # The timeout is not preventive: it is checked after the method returned.
                     status, reason = "failed", "timeout_exceeded"
                 elif status == "ok" and (
@@ -94,6 +96,8 @@ def execute_run(
                     or _count(usage, "tool_calls") > limits.max_tool_calls
                 ):
                     status, reason = "failed", "limit_exceeded"
+                elif status == "ok" and len(result.components) > 500:
+                    status, reason, error = "failed", "limit_exceeded", _safe_error(ComparisonError("component limit exceeded (> 500)"))
                 elif status == "ok":
                     try:
                         components = [parse_component(item, f"{case.case_id}.components[{i}]").to_json()

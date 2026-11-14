@@ -89,7 +89,7 @@ def verify_freeze(run_dir: Path) -> FreezeToken:
 
     run_dir = Path(run_dir)
     freeze_path = run_dir / FREEZE_FILE
-    if not freeze_path.is_file():
+    if not freeze_path.is_file() or freeze_path.is_symlink():
         raise ReferenceNotFrozen("no freeze record: outputs are not frozen")
     try:
         record = json.loads(freeze_path.read_bytes().decode("utf-8"))
@@ -102,24 +102,64 @@ def verify_freeze(run_dir: Path) -> FreezeToken:
         raise ReferenceNotFrozen("freeze record lists no outputs")
     if record.get("outputs_digest") != _outputs_digest(entries):
         raise ReferenceNotFrozen("freeze record digest mismatch")
-    listed: set[str] = set()
+    expected_root = (run_dir.resolve() / OUTPUT_DIR).resolve()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ReferenceNotFrozen("freeze record entry is not a dict")
     if len({entry.get("path") for entry in entries}) != len(entries):
         raise ReferenceNotFrozen("duplicate output paths in freeze record")
+    listed: set[str] = set()
     for entry in entries:
+        rep = entry.get("repetition")
+        if not isinstance(rep, int) or isinstance(rep, bool):
+            raise ReferenceNotFrozen("freeze record repetition is not an integer")
+        variant = str(entry.get("variant", ""))
+        case_id = str(entry.get("case_id", ""))
         relative = entry.get("path")
-        if not isinstance(relative, str) or relative.startswith(("/", "..")) or ".." in Path(relative).parts:
+        if not isinstance(relative, str):
             raise ReferenceNotFrozen("unsafe output path in freeze record")
+        p = Path(relative)
+        if p.is_absolute() or bool(p.drive) or bool(p.root) or ".." in p.parts:
+            raise ReferenceNotFrozen("unsafe output path in freeze record")
+        if relative != output_relative_path(variant, case_id, rep):
+            raise ReferenceNotFrozen(f"output path mismatch: {relative}")
+        if relative in listed:
+            raise ReferenceNotFrozen(f"duplicate output path in freeze record: {relative}")
         listed.add(relative)
+
+        cur = run_dir.resolve()
+        for part in p.parts:
+            cur = cur / part
+            if cur.is_symlink():
+                raise ReferenceNotFrozen(f"symlink in output path: {cur}")
+
         path = run_dir / relative
+        if path.is_symlink():
+            raise ReferenceNotFrozen(f"symlink in output path: {path}")
+
+        try:
+            resolved = path.resolve()
+        except OSError as exc:
+            raise ReferenceNotFrozen(f"cannot resolve output path: {exc}") from exc
+
+        if not resolved.is_relative_to(expected_root):
+            raise ReferenceNotFrozen(f"output path outside outputs directory: {relative}")
+
         try:
             data = path.read_bytes()
         except OSError as exc:
             raise ReferenceNotFrozen(f"frozen output missing: {relative}") from exc
         if sha256_bytes(data) != entry.get("sha256"):
             raise ReferenceNotFrozen(f"frozen output changed after freezing: {relative}")
+
+    outputs_dir = run_dir / OUTPUT_DIR
+    if outputs_dir.exists():
+        for item in outputs_dir.rglob("*"):
+            if item.is_symlink():
+                raise ReferenceNotFrozen("symlink detected in outputs directory")
     present = {
         path.relative_to(run_dir).as_posix()
-        for path in (run_dir / OUTPUT_DIR).rglob("*")
+        for path in outputs_dir.rglob("*")
         if path.is_file()
     }
     if present != listed:
@@ -136,8 +176,16 @@ def load_outputs(run_dir: Path, token: FreezeToken) -> list[dict[str, Any]]:
 
     if not isinstance(token, FreezeToken) or not token.is_genuine():
         raise ReferenceNotFrozen("a verified freeze token is required")
+    if Path(run_dir).resolve() != Path(token.run_dir).resolve():
+        raise ReferenceNotFrozen("token run_dir mismatch")
     record = load_freeze_record(run_dir)
-    return [
-        json.loads((Path(run_dir) / entry["path"]).read_text(encoding="utf-8"))
-        for entry in record["outputs"]
-    ]
+    if record.get("outputs_digest") != token.outputs_digest:
+        raise ReferenceNotFrozen("outputs digest mismatch with token")
+    outputs = []
+    for entry in record.get("outputs", []):
+        path = Path(run_dir) / entry["path"]
+        raw = path.read_bytes()
+        if sha256_bytes(raw) != entry.get("sha256"):
+            raise ReferenceNotFrozen(f"frozen output changed or hash mismatch: {entry.get('path')}")
+        outputs.append(json.loads(raw.decode("utf-8")))
+    return outputs

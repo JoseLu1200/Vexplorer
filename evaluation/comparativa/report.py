@@ -105,7 +105,7 @@ def render_markdown(report: dict[str, Any]) -> str:
                     (
                         f"- Recursos: {_num(res['duration_s_total'], 3)} s totales, llamadas modelo {res['model_calls']}, "
                         f"herramientas {res['tool_calls']}, tokens {res['input_tokens']}/{res['output_tokens']}, "
-                        f"coste observado {'no informado' if cost is None else cost}"
+                        f"coste observado {'no informado' if cost is None else _num(cost, 4)}"
                     ),
                 ]
                 lines += [f"### {family} / {split}", "", *bullets, ""]

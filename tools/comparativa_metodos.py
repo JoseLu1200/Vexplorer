@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -85,9 +86,20 @@ def _write_reports(args: argparse.Namespace, report: dict[str, Any]) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.repetitions < 1:
+            raise ComparisonError("repetitions must be >= 1")
+        variant_list = [item.strip().upper() for item in args.variants.split(",") if item.strip()]
+        if not variant_list:
+            raise ComparisonError("variants must not be empty")
+        if len(variant_list) != len(set(variant_list)):
+            raise ComparisonError("variants must be unique")
+        if not (math.isfinite(args.tolerance_mm) and math.isfinite(args.match_tolerance_mm)):
+            raise ComparisonError("tolerances must be finite numbers")
+        if not (0 <= args.tolerance_mm <= args.match_tolerance_mm):
+            raise ComparisonError("tolerances must satisfy 0 <= tolerance_mm <= match_tolerance_mm")
         reader = _reader(args)
         if args.command in {"freeze", "run"}:
-            variants = tuple(item.strip().upper() for item in args.variants.split(",") if item.strip())
+            variants = tuple(variant_list)
             adapter = _load_adapter(args.adapter) if args.adapter else None
             index = PrecedentIndex.from_file(args.precedent_index) if args.precedent_index else None
             methods = build_methods(

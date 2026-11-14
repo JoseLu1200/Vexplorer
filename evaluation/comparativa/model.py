@@ -88,11 +88,40 @@ class Component:
     source_ids: tuple[str, ...] = ()
 
     def to_json(self) -> dict[str, Any]:
+        if not isinstance(self.key, str) or not self.key.strip():
+            raise ComparisonError("Component.key must be a non-empty string")
+        if not isinstance(self.dimensions_mm, dict):
+            raise ComparisonError("Component.dimensions_mm must be a dict")
+        if not isinstance(self.dimension_states, dict):
+            raise ComparisonError("Component.dimension_states must be a dict")
+        dims: dict[str, float | None] = {}
+        states: dict[str, str] = {}
+        for name in DIMENSION_FIELDS:
+            if name not in self.dimensions_mm or name not in self.dimension_states:
+                raise ComparisonError(f"Component missing dimension field {name}")
+            val = self.dimensions_mm[name]
+            st = self.dimension_states[name]
+            if val is not None:
+                if isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val) or val <= 0 or val > 1_000_000.0:
+                    raise ComparisonError(f"Component.dimensions_mm.{name} must be in (0, 1000000]")
+                val = float(val)
+            if st not in FIELD_STATES or (val is None) != (st == "unknown"):
+                raise ComparisonError(f"Component.dimension_states.{name} is invalid")
+            dims[name] = val
+            states[name] = st
+        qty = self.quantity
+        if qty is not None:
+            if isinstance(qty, bool) or not isinstance(qty, int) or qty < 1 or qty > 1_000_000:
+                raise ComparisonError("Component.quantity must be an integer in 1..1000000 or None")
+        if self.quantity_state not in FIELD_STATES or (qty is None) != (self.quantity_state == "unknown"):
+            raise ComparisonError("Component.quantity_state is invalid or disagrees with quantity")
+        if not isinstance(self.source_ids, (list, tuple)) or not all(isinstance(s, str) for s in self.source_ids):
+            raise ComparisonError("Component.source_ids must be a sequence of strings")
         return {
             "key": self.key,
-            "dimensions_mm": {name: self.dimensions_mm[name] for name in DIMENSION_FIELDS},
-            "dimension_states": {name: self.dimension_states[name] for name in DIMENSION_FIELDS},
-            "quantity": self.quantity,
+            "dimensions_mm": dims,
+            "dimension_states": states,
+            "quantity": qty,
             "quantity_state": self.quantity_state,
             "source_ids": list(self.source_ids),
         }
@@ -121,8 +150,8 @@ def parse_component(raw: Any, label: str = "component") -> Component:
         if value is not None:
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ComparisonError(f"{label}.dimensions_mm.{name} must be a number or null")
-            if not math.isfinite(value) or value <= 0:
-                raise ComparisonError(f"{label}.dimensions_mm.{name} must be positive and finite")
+            if not math.isfinite(value) or value <= 0 or value > 1_000_000.0:
+                raise ComparisonError(f"{label}.dimensions_mm.{name} must be positive, finite and <= 1,000,000")
             value = float(value)
         state = states_raw.get(name, "hypothesis" if value is not None else "unknown")
         if state not in FIELD_STATES:
@@ -132,8 +161,13 @@ def parse_component(raw: Any, label: str = "component") -> Component:
         dims[name] = value
         states[name] = state
     quantity = raw.get("quantity")
-    if quantity is not None and (isinstance(quantity, bool) or not isinstance(quantity, int) or quantity < 1):
-        raise ComparisonError(f"{label}.quantity must be a positive integer or null")
+    if quantity is not None and (
+        isinstance(quantity, bool)
+        or not isinstance(quantity, int)
+        or quantity < 1
+        or quantity > 1_000_000
+    ):
+        raise ComparisonError(f"{label}.quantity must be an integer between 1 and 1,000,000 or null")
     quantity_state = raw.get("quantity_state", "hypothesis" if quantity is not None else "unknown")
     if quantity_state not in FIELD_STATES or (quantity is None) != (quantity_state == "unknown"):
         raise ComparisonError(f"{label}.quantity_state is invalid or disagrees with quantity")

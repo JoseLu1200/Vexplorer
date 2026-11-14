@@ -44,6 +44,7 @@ from typing import Any
 
 from .model import (
     DIMENSION_FIELDS,
+    OUTPUT_STATUSES,
     CaseMeta,
     ComparisonError,
     Component,
@@ -185,7 +186,7 @@ def _fit_strict(
     slots = _slots(reference)
     if len(known) < MIN_KNOWN_DIMENSIONS or len(known) > len(slots):
         return None
-    best: tuple[tuple[int, float, tuple[str, ...]], dict[str, str]] | None = None
+    best: tuple[tuple[int, Any, float, int, tuple[str, ...]], dict[str, str]] | None = None
     for chosen in permutations(slots, len(known)):
         diffs = [
             abs(value - reference.dimensions[slot].value)  # type: ignore[operator]
@@ -196,10 +197,19 @@ def _fit_strict(
         fits = sum(d <= tolerance for d in diffs)
         if fits < MIN_KNOWN_DIMENSIONS:
             continue
-        rank = (-fits, sum(diffs), chosen)
+        mapping = {name: slot for (name, _), slot in zip(known, chosen, strict=True)}
+        fit_dist = sum(d for d in diffs if d <= tolerance)
+        cost = _pair_cost(component, reference, mapping)
+        rank = (
+            -fits,
+            cost,
+            fit_dist,
+            sum(name != slot for name, slot in mapping.items()),
+            chosen,
+        )
         if best is None or rank < best[0]:
-            best = (rank, {name: slot for (name, _), slot in zip(known, chosen, strict=True)})
-    return None if best is None else ((best[0][0], best[0][1]), best[1])
+            best = (rank, mapping)
+    return None if best is None else ((best[0][0], best[0][2]), best[1])
 
 
 # Integer weights keep the lexicographic order exact inside a linear assignment:
@@ -249,6 +259,8 @@ def _hungarian(cost: list[list[int]]) -> list[int]:
                     minv[j], way[j] = current, j0
                 if minv[j] < delta:
                     delta, j1 = minv[j], j
+            if j1 == 0:
+                raise ComparisonError("Hungarian assignment failed: no augmenting path (j1 == 0)")
             for j in range(m + 1):
                 if used[j]:
                     u[owner[j]] += delta
@@ -560,6 +572,8 @@ def score_outputs(
 
     groups: dict[tuple[str, str, str], _Group] = {}
     for output in sorted(outputs, key=lambda o: (o["variant"], o["case_id"], o["repetition"])):
+        if output.get("status") not in OUTPUT_STATUSES:
+            raise ComparisonError(f"invalid output status: {output.get('status')!r}")
         meta = metas.get(output["case_id"])
         if meta is None:
             raise ComparisonError(f"frozen output for unknown case {output['case_id']!r}")
@@ -570,12 +584,14 @@ def score_outputs(
             group.reasons[f"{output['status']}:{output['reason']}"] += 1
         if output["status"] in {"ok", "failed"}:
             group.durations.append(float(output["timing"]["duration_s"]))
-        usage = output.get("usage") or {}
-        for field_name in ("model_calls", "tool_calls", "input_tokens", "output_tokens"):
-            if isinstance(usage.get(field_name), int):
-                group.c[field_name] += usage[field_name]
-        if isinstance(usage.get("cost_eur"), (int, float)) and not isinstance(usage["cost_eur"], bool):
-            group.costs.append(float(usage["cost_eur"]))
+            usage = output.get("usage") or {}
+            for field_name in ("model_calls", "tool_calls", "input_tokens", "output_tokens"):
+                val = usage.get(field_name)
+                if isinstance(val, int) and not isinstance(val, bool):
+                    group.c[field_name] += val
+            cost_val = usage.get("cost_eur")
+            if isinstance(cost_val, (int, float)) and not isinstance(cost_val, bool):
+                group.costs.append(float(cost_val))
         if output["status"] not in {"ok", "failed"}:
             continue
         reference = references.get(output["case_id"])

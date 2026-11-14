@@ -102,7 +102,7 @@ class RulesMethod:
             return MethodResult(
                 components=self._separated_parts(case), versions={"rule_path": "A1:separated_parts"}
             )
-        if case.view_kind == "assembled_orthographic":
+        if case.view_kind in {"assembled_orthographic", "assembled_orthographic_partial"}:
             return MethodResult(
                 components=self._rectangle_hypotheses(case), versions={"rule_path": "A2:rectangle_hypotheses"}
             )

@@ -9,13 +9,14 @@ private side is reached through ``_read_private`` only.
 from __future__ import annotations
 
 import json
+import math
 import re
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from .freeze import FreezeToken, sha256_bytes, verify_freeze
+from .freeze import FreezeToken, load_freeze_record, sha256_bytes, verify_freeze
 from .model import (
     DIMENSION_FIELDS,
     PUBLIC_INSTRUCTION,
@@ -38,6 +39,13 @@ def _read_json(path: Path, label: str) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ComparisonError(f"cannot read {label}: {exc}") from exc
+
+
+def _assert_disjoint(dir_a: Path, dir_b: Path, label_a: str, label_b: str) -> None:
+    a = dir_a.resolve()
+    b = dir_b.resolve()
+    if a == b or a in b.parents or b in a.parents:
+        raise ComparisonError(f"{label_a} and {label_b} directories must be disjoint")
 
 
 class ManifestReader(ABC):
@@ -67,6 +75,11 @@ class ManifestReader(ABC):
         current = verify_freeze(token.run_dir)
         if current.outputs_digest != token.outputs_digest:
             raise ReferenceNotFrozen("freeze token does not match the frozen run")
+        record = load_freeze_record(token.run_dir)
+        if record.get("inputs") != {c.case_id: c.sha256 for c in self.public_cases()}:
+            raise ReferenceNotFrozen("inputs mismatch with frozen run")
+        if record.get("corpus") != json.loads(json.dumps(self.corpus_info())):
+            raise ReferenceNotFrozen("corpus mismatch with frozen run")
         return self._read_private()
 
 
@@ -101,10 +114,8 @@ class PlankAssemblyManifestReader(ManifestReader):
         self._cases: list[PublicCase] | None = None
         self._meta: dict[str, CaseMeta] = {}
         self._manifest: dict[str, Any] = {}
-        public = self.public_dir.resolve()
-        private = self.private_dir.resolve()
-        if public == private or private in public.parents or public in private.parents:
-            raise ComparisonError("public and private directories must be separate")
+        _assert_disjoint(self.public_dir, self.private_dir, "public", "private")
+        _assert_disjoint(self.staging_dir, self.private_dir, "staging", "private")
 
     def _load_public(self) -> None:
         if self._cases is not None:
@@ -151,8 +162,15 @@ class PlankAssemblyManifestReader(ManifestReader):
                 for info in archive.infolist():
                     if info.is_dir() or info.file_size > _MAX_DXF_BYTES:
                         raise ComparisonError(f"bundle {case_id}: unsafe member")
-                metadata = json.loads(archive.read("case.json").decode("utf-8"))
-                data = archive.read("input.dxf")
+                with archive.open("case.json") as fp:
+                    raw_json = fp.read(_MAX_DXF_BYTES + 1)
+                    if len(raw_json) > _MAX_DXF_BYTES:
+                        raise ComparisonError(f"bundle {case_id}: member exceeds maximum size")
+                    metadata = json.loads(raw_json.decode("utf-8"))
+                with archive.open("input.dxf") as fp:
+                    data = fp.read(_MAX_DXF_BYTES + 1)
+                    if len(data) > _MAX_DXF_BYTES:
+                        raise ComparisonError(f"bundle {case_id}: member exceeds maximum size")
         except (OSError, zipfile.BadZipFile, UnicodeError, json.JSONDecodeError) as exc:
             raise ComparisonError(f"bundle {case_id} unreadable: {exc}") from exc
         if not isinstance(metadata, dict) or set(metadata) != set(PUBLIC_PAYLOAD_KEYS):
@@ -160,6 +178,8 @@ class PlankAssemblyManifestReader(ManifestReader):
         if metadata["id"] != case_id or sha256_bytes(data) != metadata["sha256"]:
             raise ComparisonError(f"bundle {case_id}: id or hash mismatch")
         target = self.staging_dir / f"{case_id}.dxf"
+        if target.is_symlink():
+            raise ComparisonError(f"bundle target {target} is a symlink")
         target.write_bytes(data)
         return PublicCase(
             case_id=case_id,
@@ -198,8 +218,16 @@ class PlankAssemblyManifestReader(ManifestReader):
         if not isinstance(rows, list):
             raise ComparisonError("private references.json must be an array")
         result: dict[str, ReferenceCase | None] = {case_id: None for case_id in self._meta}
+        seen_ids: set[str] = set()
         for row in rows:
+            if not isinstance(row, dict):
+                raise ComparisonError("private reference row must be an object")
             case_id = row.get("id")
+            if not isinstance(case_id, str):
+                raise ComparisonError("private reference case id must be a string")
+            if case_id in seen_ids:
+                raise ComparisonError(f"duplicate reference case id {case_id!r}")
+            seen_ids.add(case_id)
             meta = self._meta.get(case_id)
             if meta is None:
                 raise ComparisonError(f"reference {case_id!r} has no public case")
@@ -212,10 +240,25 @@ class PlankAssemblyManifestReader(ManifestReader):
 def _plank_reference(case_id: str, row: dict[str, Any], quantity_identifiable: bool | None) -> ReferenceCase:
     """Group planks of identical dimensions into component types with a count."""
 
+    if not isinstance(row, dict):
+        raise ComparisonError(f"case {case_id}: reference row must be an object")
+    raw_components = row.get("components")
+    if not isinstance(raw_components, list):
+        raise ComparisonError(f"case {case_id}: components must be a list")
     groups: dict[tuple[float, float, float], int] = {}
-    for component in row["components"]:
-        bounds = component["bounds_mm"]
-        sizes = sorted((round(bounds[i + 3] - bounds[i], 3) for i in range(3)), reverse=True)
+    for idx, component in enumerate(raw_components):
+        if not isinstance(component, dict):
+            raise ComparisonError(f"case {case_id}.components[{idx}]: must be an object")
+        bounds = component.get("bounds_mm")
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 6:
+            raise ComparisonError(f"case {case_id}.components[{idx}]: bounds_mm must have 6 elements")
+        for val in bounds:
+            if isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val):
+                raise ComparisonError(f"case {case_id}.components[{idx}]: bounds_mm elements must be finite numbers")
+        for i in range(3):
+            if not bounds[i + 3] > bounds[i]:
+                raise ComparisonError(f"case {case_id}.components[{idx}]: bounds_mm[{i+3}] must be > bounds_mm[{i}]")
+        sizes = sorted((round(float(bounds[i + 3] - bounds[i]), 3) for i in range(3)), reverse=True)
         key = (sizes[0], sizes[1], sizes[2])
         groups[key] = groups.get(key, 0) + 1
     components = []
@@ -225,6 +268,7 @@ def _plank_reference(case_id: str, row: dict[str, Any], quantity_identifiable: b
             dimensions={name: RefField(value, True) for name, value in zip(DIMENSION_FIELDS, dims)},
             quantity=RefField(float(count), quantity_identifiable),
         ))
+    return ReferenceCase(case_id, tuple(components))
     return ReferenceCase(case_id, tuple(components))
 
 
@@ -291,7 +335,11 @@ class PlankAssemblyCorpusReader(PlankAssemblyManifestReader):
             raise ComparisonError("private references.json must be an array")
         by_id: dict[str, dict[str, Any]] = {}
         for row in rows:
-            case_id = row.get("id") if isinstance(row, dict) else None
+            if not isinstance(row, dict):
+                raise ComparisonError("private reference row must be an object")
+            case_id = row.get("id")
+            if not isinstance(case_id, str):
+                raise ComparisonError("private reference case id must be a string")
             meta = self._meta.get(case_id)
             if meta is None:
                 raise ComparisonError(f"reference {case_id!r} has no public case")
@@ -302,9 +350,19 @@ class PlankAssemblyCorpusReader(PlankAssemblyManifestReader):
             by_id[case_id] = row
         result: dict[str, ReferenceCase | None] = {case_id: None for case_id in self._meta}
         for case_id, row in by_id.items():
-            source = by_id.get(row["variant_of"]) if row.get("variant_of") else row
-            if source is None or "components" not in source:
-                continue  # no reference available: counted in the sample, never scored
+            variant_of = row.get("variant_of")
+            if variant_of is not None:
+                if not isinstance(variant_of, str):
+                    raise ComparisonError(f"reference {case_id}: variant_of must be a string")
+                if variant_of not in by_id:
+                    raise ComparisonError(f"reference {case_id}: variant_of base {variant_of!r} does not exist")
+                source = by_id[variant_of]
+                if not isinstance(source, dict) or "components" not in source:
+                    raise ComparisonError(f"reference {case_id}: variant_of base {variant_of!r} has no components")
+            else:
+                source = row
+                if "components" not in source:
+                    continue  # no reference available: counted in the sample, never scored
             result[case_id] = _plank_reference(case_id, source, self.quantity_identifiable)
         return result
 
@@ -340,6 +398,7 @@ class DevelopmentManifestReader(ManifestReader):
         self.demo_dir = Path(demo_dir)
         self.reference_dir = Path(reference_dir)
         self.staging_dir = Path(staging_dir)
+        _assert_disjoint(self.staging_dir, self.reference_dir, "staging", "reference")
         stems = (*_DEV_WITH_REFERENCE, *_DEV_WITHOUT_REFERENCE)
         # Opaque ids: the method never sees the revealing file names or the source path.
         self.id_map: dict[str, str] = {f"dev-{n:03d}": stem for n, stem in enumerate(stems, 1)}
