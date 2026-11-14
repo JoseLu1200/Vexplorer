@@ -45,6 +45,13 @@ def test_provider_uses_configured_output_budget_without_exposing_secrets() -> No
     assert ProviderSettings(api_key="key", model="model", max_output_tokens=999999999).available is False
 
 
+def test_provider_vision_is_explicit_opt_in(monkeypatch) -> None:
+    monkeypatch.delenv("OPENAI_VISION_ENABLED", raising=False)
+    assert ProviderSettings.from_env().vision_enabled is False
+    monkeypatch.setenv("OPENAI_VISION_ENABLED", "true")
+    assert ProviderSettings.from_env().vision_enabled is True
+
+
 def test_inspect_evidence_rejects_unbounded_id_batches() -> None:
     with pytest.raises(ValueError):
         InspectEvidenceArgs(evidence_ids=tuple(f"evidence-{index}" for index in range(51)))
