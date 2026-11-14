@@ -52,12 +52,40 @@ class Bounds2D(StrictModel):
         return self
 
 
+class CircularGeometry(StrictModel):
+    kind: Literal["circle", "arc"]
+    center_source: Point2D
+    center_mm: Point2D | None = None
+    radius_source: float = Field(gt=0, allow_inf_nan=False)
+    radius_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    start_angle_deg: float | None = Field(default=None, allow_inf_nan=False)
+    end_angle_deg: float | None = Field(default=None, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def angles_match_kind(self) -> "CircularGeometry":
+        if self.kind == "circle" and (self.start_angle_deg is not None or self.end_angle_deg is not None):
+            raise ValueError("circle cannot contain arc angles")
+        if self.kind == "arc" and (self.start_angle_deg is None or self.end_angle_deg is None):
+            raise ValueError("arc requires finite start and end angles")
+        return self
+
+
 class DrawingEntity(StrictModel):
     id: str = Field(min_length=1)
     kind: str = Field(min_length=1)
     layer: str
     source_points: tuple[Point2D, ...] = Field(min_length=1)
     points_mm: tuple[Point2D, ...] | None
+    linetype: str | None = None
+    circular: CircularGeometry | None = None
+
+    @model_validator(mode="after")
+    def circular_matches_entity_kind(self) -> "DrawingEntity":
+        if self.circular is not None and self.kind.upper() != self.circular.kind.upper():
+            raise ValueError("circular geometry kind must match entity kind")
+        if self.circular is None and self.kind.upper() in ("CIRCLE", "ARC"):
+            raise ValueError("circle and arc entities require typed circular geometry")
+        return self
 
 
 class DrawingView(StrictModel):
@@ -189,6 +217,7 @@ class DrawingExtraction(StrictModel):
             if item.dimension_id not in dimension_ids or item.source_entity_id not in entity_ids or item.view_id not in view_ids:
                 raise ValueError("dimension graphic has an unknown reference")
         metric_values_present = any(entity.points_mm is not None for entity in self.entities)
+        metric_values_present |= any(entity.circular is not None and (entity.circular.center_mm is not None or entity.circular.radius_mm is not None) for entity in self.entities)
         metric_values_present |= any(view.bounds_mm is not None for view in self.views)
         metric_values_present |= any(contour.points_mm is not None for contour in self.contours)
         metric_values_present |= any(item.value_mm is not None for item in self.dimensions)
@@ -199,6 +228,8 @@ class DrawingExtraction(StrictModel):
                 raise ValueError("unknown unit cannot contain metric values")
         elif self.unit_scale_to_mm is None or self.coordinate_unit != "mm":
             raise ValueError("resolved units require scale and mm coordinates")
+        elif any(entity.circular is not None and (entity.circular.center_mm is None or entity.circular.radius_mm is None) for entity in self.entities):
+            raise ValueError("resolved circular geometry requires metric center and radius")
         return self
 
 
@@ -986,6 +1017,12 @@ class TableCostScope(StrictModel):
     edge_scope: Literal["none", "all_exposed"] = "none"
     operation_tariff_ids: tuple[str, ...] = ()
 
+    @model_validator(mode="after")
+    def unique_operation_tariffs(self) -> "TableCostScope":
+        if len(self.operation_tariff_ids) != len(set(self.operation_tariff_ids)):
+            raise ValueError("duplicate operation tariff ids")
+        return self
+
 
 class TableCostTariff(StrictModel):
     id: str = Field(min_length=1)
@@ -1311,6 +1348,12 @@ class Estimate(StrictModel):
 
 class InspectEvidenceArgs(StrictModel):
     evidence_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class ListEvidenceArgs(StrictModel):
+    cursor: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=50)
+    kind: Literal["geometry", "annotation", "view_association"] | None = None
 
 
 class SelectScenarioArgs(StrictModel):
