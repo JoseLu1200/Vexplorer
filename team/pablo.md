@@ -11,10 +11,16 @@
 
 - Objetivo concreto: mejoras específicas de CAD y del harness derivadas de la investigación de la sesión, en la rama `mejoras/cad-harness` para comprobar el merge después.
 - Referencia del plan: T1 (extracción geométrica), T11 (propuestas desde planos pobres) y exportación de [CASO_DE_USO_Y_EVALUACION](../docs/CASO_DE_USO_Y_EVALUACION.md).
-- Estado: dos bloques implementados y verificados con pytest (166 pruebas); pendientes de revisión y merge. Sin commit del segundo bloque.
+- Estado: tres bloques implementados y verificados con pytest (178 pruebas). Bloques 1 y 2 en commits subidos; bloque 3 sin commit. Pendiente de revisión y merge.
 
 ## Alcance y reservas
 
+- Ampliación del 2026-11-14 (tercer bloque), por petición del usuario: "Dale, aplicalos", sobre la lista de mejoras propuesta en la sesión:
+  - `pyproject.toml` (raíz, compartido): solo `package-data` del catálogo y `ruff` como extra de desarrollo
+  - `backend/app/validador/` (comprobación de cotas apoyadas en geometría), `backend/app/servicios/decomposition.py` (evidencia de taladros en laterales)
+  - pruebas nuevas `backend/tests/test_tercer_bloque.py`, `backend/tests/test_replay_y_comparacion.py`
+  - tras la respuesta "Aplicar las dos": `backend/app/contratos/modelos.py` (`RunSnapshot.mode` y `CompareCandidatesArgs`), nuevos `backend/app/agente/replay.py` y `backend/app/agente/comparacion.py`
+  - Fuera de alcance: `frontend/` (C) y datos reales del taller. Cambios de `contratos/` (replay grabado y `comparar_candidatas`) solo tras preguntar.
 - Ampliación del 2026-11-14 (segunda sesión), por petición del usuario: "Pues aplica todos los cambios, soy pablo", tras leer [INVESTIGACION_ALIMENTACION_HARNESS](../docs/INVESTIGACION_ALIMENTACION_HARNESS.md) y el aviso de que el canal visual requiere acuerdo A/B:
   - `backend/app/agente/config.py`, `backend/app/agente/provider.py`, `backend/app/agente/tools.py`, nuevo `backend/app/agente/vision.py`; `backend/app/main.py` ya estaba en el alcance
   - paquete nuevo `backend/app/validador/` (plausibilidad con catálogo del taller)
@@ -63,6 +69,8 @@
 | 2026-11-14 | Catálogo por defecto solo con Sistema 32 (Ø5, paso 32, retranqueo 37); espesores y cantos vacíos | Únicos valores confirmados en la investigación; el resto lo aporta compras | `validador/catalogo_taller.json` |
 | 2026-11-14 | `VisualizeViewArgs` en `contratos/` y canal visual desactivado por defecto | El usuario pidió "aplica todos los cambios" tras el aviso de que requería acuerdo A/B; se limita a un modelo aditivo detrás de `VEXPLORER_AGENT_VISION` | Mensaje del usuario del 2026-11-14. Sin acuerdo de A/B ni aviso a C/D |
 | 2026-11-14 | `max_output_tokens` por defecto 4096 | 1200 es frágil con modelos de razonamiento; configurable con `OPENAI_MAX_OUTPUT_TOKENS` | `agente/config.py` |
+| 2026-11-14 | `RunSnapshot.mode` con `recorded_replay` y `CompareCandidatesArgs` | El usuario eligió "Aplicar las dos" tras la pregunta que indicaba que la regla 7 exige acuerdo A/B | Respuesta del usuario del 2026-11-14. Sin acuerdo de A/B ni aviso a C/D |
+| 2026-11-14 | Replay indexado por huella de lo que vio el modelo, sin grabaciones sintéticas en el repo | Una grabación solo es fiel si el contexto es idéntico; inventar una sería simular actividad (HARNESS.md) | `agente/replay.py` |
 | 2026-11-14 | Entorno `.venv` local con `pip install -e ".[test]"` | Solo dependencias ya declaradas en `pyproject.toml`; `.venv` está ignorado por git | `git check-ignore .venv` |
 
 ## Dependencias / avisos
@@ -70,6 +78,7 @@
 - Necesito de: A y B para validar los cambios de contrato y geometría; D para confirmar el E2E.
 - Afecta a: C (campos nuevos y endpoint `format=cutlist` sin interfaz; nuevos tipos de entidad CIRCLE, ARC, HATCH, ELLIPSE, SPLINE, POLYLINE, ATTRIB que el visor dibuja como polilíneas; las cotas por ordenadas no tienen gráfico). A (ingesta y geometría ampliadas). B (contexto, proveedor, herramienta visual y `VisualizeViewArgs`). D (sin cambios en `tests/test_demo_*`, que siguen pasando).
 - Aviso realizado: ninguno a A/B/C/D; se informa al usuario en el informe de la sesión.
+- Cambio de `contratos/` en el tercer bloque: `RunSnapshot.mode` admite `recorded_replay` y `CompareCandidatesArgs`; afecta a C (el frontend ya contempla `recorded_replay`).
 - Cambio de `contratos/`: sí, aditivo (`DrawingEntity.linetype`, `ComponentProposal.observed_thickness_mm` y `thickness_source_entity_ids`, `ReviewDecision` y `ResolvedPiece` con `grain` y `edge_banding`). Autorizado por el usuario; sin acuerdo explícito de A y B.
 
 ## Pruebas y revisión
@@ -81,6 +90,10 @@
 | Suite completa tras los cambios | `.venv/Scripts/python.exe -m pytest -q` | 140 passed | Sin pruebas de JavaScript ni navegador (no hay Node en este equipo) |
 | Segundo bloque: ingesta, validador, contexto, visión | `.venv/Scripts/python.exe -m pytest -q` | 166 passed (26 nuevas en `test_ingesta_ampliada.py`, `test_validador_plausibilidad.py`, `test_agente_contexto.py`, `test_agente_vision.py`) | Planos sintéticos; ningún DWG real de taller |
 | Planos de demo tras el segundo bloque | extracción de `data/planos_demo/*.dxf` | Mismo estado (`ready` salvo unidades desconocidas), sin avisos nuevos salvo `unit_hint_measurement:metric` en el de unidades desconocidas | — |
+| Tercer bloque | `.venv/Scripts/python.exe -m pytest -q` | 178 passed (6 en `test_tercer_bloque.py`, 6 en `test_replay_y_comparacion.py`) | Sin DWG real; sin frontend; grabación y replay solo con proveedor simulado |
+| Regresión de demos en el tercer bloque | JSON de `extract_drawing` y escenarios de `data/planos_demo/*.dxf` antes y después | Idéntico | — |
+| Rendimiento | plano sintético de 25 000 líneas en 1 000 INSERT | 309 s → 1,1 s | Medición única en este equipo |
+| Lint | `ruff check` sobre archivos creados en la rama | limpio | Archivos preexistentes con avisos de estilo previos, sin tocar |
 | Proveedor real | no ejecutado | pendiente | Ni el contexto nuevo ni `input_image` se probaron contra la API; solo `httpx.MockTransport` y proveedor falso |
 
 ## Bloqueos y cierre

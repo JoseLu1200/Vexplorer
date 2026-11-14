@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
+dev = ["pytest>=8,<10", "ruff>=0.6,<1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "backend/tests"]
@@ -26,3 +27,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["tools*", "backend*"]
+
+[tool.setuptools.package-data]
+"backend.app.validador" = ["catalogo_taller.json"]
