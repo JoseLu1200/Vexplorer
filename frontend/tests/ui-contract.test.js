@@ -10,6 +10,9 @@ test("upload defaults to mounted table views and keeps parts and legacy opt-ins"
   assert.match(html, /value="mounted_orthographic_views" selected/);
   assert.match(html, /value="separated_part_views"/);
   assert.match(html, /value="mounted_views_legacy"/);
+  assert.match(html, /name="table_template_id"/);
+  assert.match(html, /value="side_supports_v1"/);
+  assert.match(html, /value="corner_supports_v1"/);
 });
 
 test("technical viewer exposes source and derived drawing tabs without replacing the source", () => {
@@ -41,4 +44,11 @@ test("technical workspace has dedicated parts, classification and scene premise 
   assert.match(html, /id="scene-context"/);
   assert.match(html, /id="legacy-review-fields"/);
   assert.match(html, /id="part-decisions"/);
+});
+
+test("table cost scope is explicit and never hides a partial known subtotal as a total", () => {
+  assert.match(html, /id="table-cost-scope"/);
+  assert.match(html, /id="table-material-tariff"/);
+  assert.match(html, /id="table-edge-scope"/);
+  assert.match(html, /id="table-operation-tariffs"/);
 });
