@@ -7,8 +7,10 @@
 - Piezas con espesor, material, largo o ancho desconocidos van al grupo
   ``sin_clasificar`` con motivo (largo/ancho se añaden porque sin ellos la
   superficie quedaría infraestimada).
-- Tableros = ceil(superficie / (área_tablero × aprovechamiento)). Es una
-  ESTIMACIÓN por superficie, no un nesting real.
+- ``estimacion``: tableros = ceil(superficie / (área_tablero × aprovechamiento)). Es
+  una ESTIMACIÓN por superficie, se conserva solo como referencia.
+- ``nesting``: colocación real por guillotina (ver ``nesting.py``) con ancho de sierra,
+  margen y rotación; es la cifra de tableros que debe usarse para preparar el corte.
 """
 
 from __future__ import annotations
@@ -20,6 +22,15 @@ from collections.abc import Sequence
 from pydantic import Field
 
 from backend.app.precedentes.comun import ModeloEstricto, normalizar_texto
+from backend.app.precedentes.nesting import (
+    LIMITE_OCURRENCIAS,
+    MOTIVOS_NO_CABE,
+    DemasiadasOcurrencias,
+    ParametrosNesting,
+    ResultadoNesting,
+    cabe_en_area_util,
+    nestear,
+)
 from backend.app.precedentes.piezas import (
     OrigenDatos,
     PiezaRef,
@@ -28,18 +39,13 @@ from backend.app.precedentes.piezas import (
 )
 
 NOTA_ESTIMACION = (
-    "Estimación por superficie: ceil(superficie / (área de tablero × aprovechamiento)). "
-    "No es un nesting; el número real de tableros puede ser mayor."
+    "Referencia por superficie: ceil(superficie / (área de tablero × aprovechamiento)). "
+    "No es un nesting; la colocación real está en el campo `nesting` y el número real "
+    "de tableros puede ser mayor."
 )
 
 
-class ConfiguracionLotes(ModeloEstricto):
-    tablero_largo_mm: float = Field(
-        default=2440.0, gt=0, le=10_000, allow_inf_nan=False
-    )
-    tablero_ancho_mm: float = Field(
-        default=1220.0, gt=0, le=10_000, allow_inf_nan=False
-    )
+class ConfiguracionLotes(ParametrosNesting):
     aprovechamiento: float = Field(default=0.8, gt=0, le=1, allow_inf_nan=False)
 
 
@@ -76,6 +82,7 @@ class LoteCorte(ModeloEstricto):
     unidades_con_cantidad_supuesta: int
     superficie_m2: float
     estimacion: EstimacionTableros
+    nesting: ResultadoNesting
     piezas_que_no_caben: tuple[PiezaNoCabe, ...]
 
 
@@ -99,7 +106,8 @@ class ResultadoLotes(ModeloEstricto):
     origen_datos: OrigenDatos
     aviso: str = (
         "Preparación de lote revisable. Agrupa por espesor, material y acabado exactos; "
-        "el recuento de tableros es una estimación, no un nesting."
+        "`nesting` coloca cada ocurrencia con una heurística de guillotina (no garantiza "
+        "el mínimo de tableros) y `estimacion` es solo la referencia por superficie."
     )
 
 
@@ -118,11 +126,13 @@ def _motivo_sin_clasificar(pieza: PiezaRef) -> str | None:
 
 
 def cabe_en_tablero(
-    largo: float, ancho: float, configuracion: ConfiguracionLotes
+    largo: float,
+    ancho: float,
+    configuracion: ConfiguracionLotes,
+    rotable: bool = True,
 ) -> bool:
-    """La pieza cabe en el tablero en alguna de las dos orientaciones."""
-    tl, ta = configuracion.tablero_largo_mm, configuracion.tablero_ancho_mm
-    return (largo <= tl and ancho <= ta) or (largo <= ta and ancho <= tl)
+    """La pieza cabe, sola, en el área útil del tablero (con giro si está permitido)."""
+    return cabe_en_area_util(largo, ancho, configuracion, rotable)
 
 
 def estimar_tableros(superficie_mm2: float, configuracion: ConfiguracionLotes) -> int:
@@ -159,23 +169,26 @@ def preparar_lotes(
             pieza
         )
 
+    total_ocurrencias = sum(unidades(p) for m in por_clave.values() for p in m)
+    if total_ocurrencias > LIMITE_OCURRENCIAS:
+        raise DemasiadasOcurrencias(total_ocurrencias)
+
     lotes: list[LoteCorte] = []
     for (espesor, material, acabado), miembros in por_clave.items():
         superficie_mm2 = sum(
             float(p.largo_mm or 0) * float(p.ancho_mm or 0) * unidades(p)
             for p in miembros
         )
+        resultado_nesting = nestear(miembros, configuracion)
         no_caben = tuple(
             PiezaNoCabe(
-                origen_id=p.origen_id,
-                pieza_id=p.pieza_id,
-                largo_mm=float(p.largo_mm or 0),
-                ancho_mm=float(p.ancho_mm or 0),
+                origen_id=n.origen_id,
+                pieza_id=n.pieza_id,
+                largo_mm=float(n.largo_mm or 0),
+                ancho_mm=float(n.ancho_mm or 0),
             )
-            for p in miembros
-            if not cabe_en_tablero(
-                float(p.largo_mm or 0), float(p.ancho_mm or 0), configuracion
-            )
+            for n in resultado_nesting.no_colocadas
+            if n.motivo in MOTIVOS_NO_CABE
         )
         lotes.append(
             LoteCorte(
@@ -195,6 +208,7 @@ def preparar_lotes(
                     tablero_ancho_mm=configuracion.tablero_ancho_mm,
                     aprovechamiento=configuracion.aprovechamiento,
                 ),
+                nesting=resultado_nesting,
                 piezas_que_no_caben=no_caben,
             )
         )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationError, model_validator
 
 from backend.app.precedentes.comun import (
     PREFIJO_API,
@@ -18,6 +18,7 @@ from backend.app.precedentes.gemelas import (
     detectar_gemelas,
 )
 from backend.app.precedentes.lotes import ConfiguracionLotes, preparar_lotes
+from backend.app.precedentes.nesting import DemasiadasOcurrencias
 from backend.app.precedentes.piezas import (
     LIMITE_PIEZAS,
     FuenteBiblioteca,
@@ -80,6 +81,11 @@ class PeticionLotes(ModeloEstricto):
         default=1220.0, gt=0, le=10_000, allow_inf_nan=False
     )
     aprovechamiento: float = Field(default=0.8, gt=0, le=1, allow_inf_nan=False)
+    # Parámetros del nesting (3.1). Todos opcionales: sin ellos se aplican los valores
+    # por defecto de ``ParametrosNesting``.
+    kerf_mm: float = Field(default=3.0, ge=0, le=50, allow_inf_nan=False)
+    margen_mm: float = Field(default=0.0, ge=0, le=500, allow_inf_nan=False)
+    permitir_rotacion: bool = True
 
 
 def _error(estado: int, codigo: str, mensaje: str) -> JSONResponse:
@@ -176,11 +182,25 @@ def crear_router_piezas(fuente_biblioteca: FuenteBiblioteca | None = None) -> AP
             return _error(
                 422, "pieza_duplicada", "Piezas duplicadas: " + ", ".join(duplicados)
             )
-        configuracion = ConfiguracionLotes(
-            tablero_largo_mm=peticion.tablero_largo_mm,
-            tablero_ancho_mm=peticion.tablero_ancho_mm,
-            aprovechamiento=peticion.aprovechamiento,
-        )
-        return respuesta_ok(preparar_lotes(piezas, configuracion, pedidos=todos_ids))
+        try:
+            configuracion = ConfiguracionLotes(
+                tablero_largo_mm=peticion.tablero_largo_mm,
+                tablero_ancho_mm=peticion.tablero_ancho_mm,
+                aprovechamiento=peticion.aprovechamiento,
+                kerf_mm=peticion.kerf_mm,
+                margen_mm=peticion.margen_mm,
+                permitir_rotacion=peticion.permitir_rotacion,
+            )
+        except ValidationError:
+            return _error(
+                422,
+                "configuracion_invalida",
+                "El margen no deja área útil en el tablero.",
+            )
+        try:
+            resultado = preparar_lotes(piezas, configuracion, pedidos=todos_ids)
+        except DemasiadasOcurrencias as exc:
+            return _error(422, "demasiadas_ocurrencias", str(exc))
+        return respuesta_ok(resultado)
 
     return router
