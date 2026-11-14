@@ -39,7 +39,7 @@ Astra detectó y se corrigieron problemas que las pruebas iniciales no cubrían:
 
 Se han revisado los datasets de `1hack` y admitido dos fuentes económicas públicas adicionales: cuatro presupuestos académicos y quince coeficientes de tiempo de producción. Los precios de venta permanecen separados de los costes de fabricación. Véase [FUENTES_HISTORICO_PUBLICO](FUENTES_HISTORICO_PUBLICO.md).
 
-Pendiente de cerrar este registro: revisión final de Astra sobre árbol definitivo, evaluación pareada de veinte planos reservados y despliegue con comprobación remota.
+Pendiente de cerrar este registro: integración final de artefactos y presentación, revisión de Astra sobre el árbol definitivo y despliegue con comprobación remota.
 
 ## Checkpoint de implementación antes de cierre
 
@@ -47,7 +47,7 @@ El usuario solicitó eliminar la revisión humana obligatoria y, posteriormente,
 
 El primer checkpoint se verificó con 584 pruebas Python y 145 JavaScript aprobadas. El job HTTP real de la mesa propia terminó correctamente con GPT-6.1 Sol y GPT-6 Astra: una tapa y dos soportes como ocurrencias provisionales, sin confirmación humana. El primer auditor marcó un falso fallo al leer un nivel incorrecto del envelope SSE; se corrigió y la auditoría reanudada pasó 11/11 comprobaciones sobre el mismo job.
 
-Los pilotos multimodales sobre casos diagnósticos revelaron defectos reales: tipos de comprobación indebidos expuestos al modelo, referencias con sintaxis ambigua y respuestas repetitivas. Se corrigieron restricciones y se compactó el contexto geométrico alrededor del 70 %. Después de un piloto que agotó 300 s, la versión v5 restringe al crítico a emitir decisiones sobre campos y comprobaciones. Los dos casos diagnósticos siguientes terminaron en 91,841 y 102,059 s, con abstenciones explícitas donde faltaba evidencia. El exportador de evaluación corregido en `208c5d6` excluye esas abstenciones de las predicciones respaldadas; el coordinador verificó sus 18 pruebas focales. La cohorte nueva de veinte entradas se está ejecutando con esa versión congelada, sin abrir sus referencias privadas.
+Los pilotos multimodales sobre casos diagnósticos revelaron defectos reales: tipos de comprobación indebidos expuestos al modelo, referencias con sintaxis ambigua y respuestas repetitivas. Se corrigieron restricciones y se compactó el contexto geométrico alrededor del 70 %. Después de un piloto que agotó 300 s, la versión v5 restringe al crítico a emitir decisiones sobre campos y comprobaciones. Los dos casos diagnósticos siguientes terminaron en 91,841 y 102,059 s, con abstenciones explícitas donde faltaba evidencia. El exportador de evaluación corregido en `208c5d6` excluye esas abstenciones de las predicciones respaldadas; el coordinador verificó sus 18 pruebas focales. La cohorte nueva de veinte entradas se ejecutó con esa versión congelada antes de abrir sus referencias privadas; los resultados se recogen más abajo.
 
 Hay 19 registros públicos admitidos e importados en el servidor QA: cuatro presupuestos académicos con costes/horas y quince coeficientes de tiempo de producción. Procedencia publicada, naturaleza y alcance permanecen explícitos. La validación económica con un presupuesto retenido cada vez dio MAE 48,82 PLN y 0,46775 h sobre cuatro registros de una sola fuente. No es una medida de precisión empresarial.
 
@@ -59,4 +59,28 @@ Tras el cambio de contrato del crítico y las correcciones de interfaz, el coord
 
 Una segunda aceptación HTTP, en servidor aislado con el algoritmo v5, pasó 10/10 comprobaciones sobre un DXF diagnóstico público. Produjo tres ocurrencias provisionales, ninguna física, y cuatro escenarios económicos numéricos con las fuentes publicadas: costes de 285,68 / 238,89 / 140,01 / 242,38 PLN y tiempos de 3,5 / 2,5 / 3 / 2,5 horas. Son escenarios condicionales, no aciertos económicos medidos ni una cotización. El informe local es `.runtime/transcript-qa/v5-http/audit-plank-001.json`; el undécimo check de la auditoría anterior comprobaba específicamente la reanudación de un job ya terminado.
 
-La revisión visual del commit exacto `208c5d6` comprobó fuente, esquema, descargas BOM y 19 registros publicados, sin errores de consola ni solicitudes fallidas. Detectó dos problemas de presentación: el badge de fuente al restaurar una ejecución y rótulos/ocurrencias provisionales recortados en SVG. Se corrigen en un worktree aislado mientras continúa la evaluación. Una prueba raster adicional falló antes de obtener propuesta; su causa se está investigando con instrumentación del proveedor y no se presenta como aceptación PDF autónoma.
+La revisión visual del commit exacto `208c5d6` comprobó fuente, esquema, descargas BOM y 19 registros publicados, sin errores de consola ni solicitudes fallidas. Detectó dos problemas de presentación: el badge de fuente al restaurar una ejecución y rótulos/ocurrencias provisionales recortados en SVG. Se corrigieron en el worktree aislado. La comprobación posterior conserva tres ocurrencias visibles, procedencia íntegra y contornos DXF en milímetros exactos; no dibuja rectángulos con medidas inventadas para ejes desconocidos.
+
+## Evaluación pareada de veinte planos
+
+El runner de `208c5d6` completó 19 de 20 ciclos y conservó las veinte propuestas iniciales. Un caso falló en el proveedor después de P1 y mantiene final vacío en el denominador. Antes de abrir referencias, el coordinador verificó los 192 archivos del manifiesto sin discrepancias. Su SHA-256 es `8022af9e835773321d399a9b1345329d9a2a48756638678171060896c3f3b2b2`.
+
+| Métrica | Propuesta inicial | Salida del crítico |
+|---|---:|---:|
+| Tipos alineados / referencia agrupada | 109 / 115 | 99 / 115 |
+| F1 de tipos | 0,948 | 0,884 |
+| Cantidades comparables / tipos de referencia | 104 / 115 | 98 / 115 |
+| Precisión de ocurrencias | 0,964 | 0,977 |
+| Recobrado de ocurrencias | 0,882 | 0,836 |
+| Campos dimensionales comparados / conocidos | 327 / 345 | 297 / 345 |
+| Campos dentro de 1 mm / comparados | 317 / 327 | 287 / 297 |
+
+La agrupación y alineación usan tripletas dimensionales sin orientación; la medición del error conserva los ejes largo/ancho/espesor. El MAE por campo fue 6,331 mm y 6,970 mm: intercambiar ejes puede conservar el tipo geométrico y seguir siendo un error de asignación. La precisión de ocurrencias sube y la cobertura baja. No se demuestra mejora global por el crítico ni mejora de reparación DXF: los 19 finales tuvieron cero reparaciones semánticas. La caída mezcla abstenciones y el fallo del proveedor. Los escenarios carecen de adjudicación semántica independiente; estos resultados no certifican montaje ni ahorro empresarial. Detalles y splits en [EVALUACION_INTEGRAL](EVALUACION_INTEGRAL.md).
+
+## PDF raster y reparación real
+
+La reproducción instrumentada identificó un error concreto: se anunciaban referencias documentales que el materializador no admitía. También se observó una vista inventada y una respuesta incompleta del proveedor. Se unificaron referencias cerradas entre P1, reparación y crítico; una página raster sin ledger mantiene vistas/bindings vacíos y dimensiones nulas. Los errores operativos conservan códigos, contadores y trazas acotadas sin cuerpos ni secretos.
+
+El control PDF raster posterior completó el flujo HTTP real: Sol produjo P1; Astra detectó conflicto, reformuló P2 y emitió C2 con estado incompleto. Se conservaron cinco componentes y seis ocurrencias provisionales, todas las dimensiones desconocidas. La reparación cambió etiquetas, supuestos y campos desconocidos; no demuestra una mejora de precisión dimensional. El control es mecánico y prueba el recorrido raster, no exactitud de mobiliario. Informe local: `.worktrees/conditional-hours/.runtime/raster-fix-http-20261114/qa-report.json`.
+
+Antes del cierre se detectó otra incoherencia: el evaluador excluía los valores no aceptados por el crítico, pero algunos derivados y la tabla conservaban los números originales sin su decisión de revisión. Se está alineando la proyección de BOM, planos, escena y tabla con las decisiones del crítico; la propuesta y la revisión originales permanecen inmutables para trazabilidad.
