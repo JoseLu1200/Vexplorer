@@ -32,7 +32,7 @@ Jev se ejecutó realmente mediante API: 320 respuestas válidas, con el modelo f
 
 ## Orden de lectura
 
-Para la siguiente fase, empezar por la [decisión de arquitectura para producción](DECISION_ARQUITECTURA_PRODUCCION.md) y su [diseño técnico](DISENO_ARQUITECTURA_PRODUCCION.md). La dirección está aceptada; los criterios de activación y la integración del runtime siguen pendientes. Los documentos siguientes conservan la evidencia experimental que la sustenta.
+Empezar por la [decisión de arquitectura para producción](DECISION_ARQUITECTURA_PRODUCCION.md) y su [diseño técnico](DISENO_ARQUITECTURA_PRODUCCION.md). El incremento del [explorador integrado](INTEGRACION_EXPLORADOR.md) implementa un piloto privado integrado en `main`: [operación](OPERACION_EXPLORADOR.md), [inventario documental](INVENTARIO_DOCUMENTAL.md) y [verificación propia](../../team/agente_integracion_semantica.md). La activación industrial y el despliegue siguen pendientes. Los documentos siguientes conservan la evidencia experimental que lo sustenta.
 
 | Documento | Qué contiene |
 |---|---|

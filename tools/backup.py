@@ -20,7 +20,7 @@ class BackupError(ValueError):
 
 
 _DATABASE_ALIAS = re.compile(r"[a-z][a-z0-9_-]{0,62}")
-_DEFAULT_OPTIONAL_DATABASES = ("general_furniture", "history")
+_DEFAULT_OPTIONAL_DATABASES = ("general_furniture", "history", "semantic_explorer")
 
 
 def _sha256(path: Path) -> str:
