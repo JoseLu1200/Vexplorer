@@ -1,0 +1,857 @@
+{
+  "release": "d0ea7a85e787f4358ab4dbb05ea0250395f2083b",
+  "public_without_login": true,
+  "python_tests_passed": 895,
+  "javascript_tests_passed": 194,
+  "ci_run": 43592672878,
+  "candidate_F02": {
+    "status": "passed",
+    "resources": {
+      "document_id": "doc-a3e4fe0a1e5543e18b23dbd78f841749",
+      "job_id": "job-477548e4a3f34a41bafdc1a7dc7abd7e",
+      "run_id": "run-2c017f406d8542f6af222d7b18472c14",
+      "proposal_revision": 1,
+      "review_revision": 1
+    },
+    "checks": [
+      {
+        "id": "session",
+        "status": "PASS",
+        "detail": "The target exposed the public environment without credentials.",
+        "evidence": {
+          "environment": "production",
+          "authenticated": false
+        }
+      },
+      {
+        "id": "source_manifest",
+        "status": "PASS",
+        "detail": "The server manifest preserves the exact public DXF source hash.",
+        "evidence": {
+          "document_id": "doc-a3e4fe0a1e5543e18b23dbd78f841749",
+          "source_sha256": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5",
+          "normalized_sha256": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5"
+        }
+      },
+      {
+        "id": "real_provider_events",
+        "status": "PASS",
+        "detail": "Durable events prove real proposer/reviewer provider calls.",
+        "evidence": {
+          "event_types": [
+            "general_auto_review",
+            "general_auto_review_completed",
+            "general_auto_review_started",
+            "general_auto_review_tool_completed",
+            "general_proposal_committed",
+            "general_tool_completed",
+            "result_committed",
+            "run_finished",
+            "run_state_changed"
+          ],
+          "provider_response_ids": [
+            "resp_0bb599aa4ae805cd006af84d7f6bb887d29ea7bf624d21f143",
+            "resp_0bb599aa4ae805cd006af84d827a6087d2a28b21a98f226477",
+            "resp_0df7edb4e793d8a5006af84e1856e087d2ab38bab4ebce9f35"
+          ]
+        }
+      },
+      {
+        "id": "source_image_hash_events",
+        "status": "PASS",
+        "detail": "Public events bind actual visual hashes and crop provenance to the source DXF hash.",
+        "evidence": {
+          "image_sha256s": [
+            "0e9a3da6b67e56adde2fdd38d0ae88d1f8f9daa1ede05ea0ca0b9008b68ded55",
+            "900f91c1ac89362a433e057f6954ffe24a3b1faf22c29ff739fe5aa745082ec1",
+            "ce32628ce7cb47198cb4746adca216faba131c821b8d141c38b282a8f5daa3fb",
+            "fe67fa5d6d3ff5856d42384f4ea1e64235158e9c52dd20f9bcf9508ab8f43170"
+          ],
+          "visual_artifacts": [
+            {
+              "reference": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5:view:view-unknown:overview",
+              "sha256": "ce32628ce7cb47198cb4746adca216faba131c821b8d141c38b282a8f5daa3fb",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8E",
+                "contour-entity-8F",
+                "contour-entity-90",
+                "contour-entity-91",
+                "contour-entity-92",
+                "contour-entity-94",
+                "contour-entity-9A"
+              ],
+              "crop_bounds_source": [
+                -120.0,
+                -100.0,
+                1650.0,
+                1550.0
+              ],
+              "marks": []
+            },
+            {
+              "reference": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5:view:view-unknown:region-001",
+              "sha256": "fe67fa5d6d3ff5856d42384f4ea1e64235158e9c52dd20f9bcf9508ab8f43170",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8E",
+                "contour-entity-8F",
+                "contour-entity-90",
+                "contour-entity-91",
+                "contour-entity-92"
+              ],
+              "crop_bounds_source": [
+                0.0,
+                0.0,
+                900.0,
+                800.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-8E"
+                },
+                {
+                  "mark_id": "M002",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-8F"
+                },
+                {
+                  "mark_id": "M003",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-90"
+                },
+                {
+                  "mark_id": "M004",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-91"
+                },
+                {
+                  "mark_id": "M005",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-92"
+                }
+              ]
+            },
+            {
+              "reference": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5:view:view-unknown:region-002",
+              "sha256": "0e9a3da6b67e56adde2fdd38d0ae88d1f8f9daa1ede05ea0ca0b9008b68ded55",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-94"
+              ],
+              "crop_bounds_source": [
+                1200.0,
+                0.0,
+                1650.0,
+                800.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-94"
+                }
+              ]
+            },
+            {
+              "reference": "971fa577a95f855ff374c37be6db9b8ade3d544965df770a02f164fabb0276f5:view:view-unknown:region-003",
+              "sha256": "900f91c1ac89362a433e057f6954ffe24a3b1faf22c29ff739fe5aa745082ec1",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-9A"
+              ],
+              "crop_bounds_source": [
+                0.0,
+                1050.0,
+                900.0,
+                1500.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-9A"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "machine_review_provenance",
+        "status": "PASS",
+        "detail": "The final critic is machine-attributed with policy and response provenance.",
+        "evidence": {
+          "proposal_revision": 1,
+          "review_revision": 1,
+          "auto_review_status": "incomplete",
+          "machine_provenance": {
+            "model": "gpt-6-astra",
+            "policy_version": "general-auto-review-v2",
+            "response_ids": [
+              "resp_0df7edb4e793d8a5006af84debd9a087d2b5ea0d3c234a01a9",
+              "resp_0df7edb4e793d8a5006af84e1856e087d2ab38bab4ebce9f35"
+            ],
+            "review_relation": "separate_model"
+          }
+        }
+      },
+      {
+        "id": "separate_live_models",
+        "status": "PASS",
+        "detail": "The fresh live run used a Sol proposer and a separate Astra critic.",
+        "evidence": {
+          "proposer_models": [
+            "gpt-6.1-sol"
+          ],
+          "reviewer_model": "gpt-6-astra"
+        }
+      },
+      {
+        "id": "no_forged_confirmed_facts",
+        "status": "PASS",
+        "detail": "Machine facts contain no forged confirmations; physical occurrences require observed/derived quantity and hypotheses remain provisional.",
+        "evidence": {
+          "physical": 0,
+          "provisional": 28
+        }
+      },
+      {
+        "id": "proposal_lineage",
+        "status": "PASS",
+        "detail": "P1/P2 lineage is explicit when the autonomous critic performs semantic repair.",
+        "evidence": {
+          "semantic_repair": false,
+          "committed_revisions": [
+            1
+          ],
+          "final_proposal_revision": 1
+        }
+      },
+      {
+        "id": "exact_revision_derived",
+        "status": "PASS",
+        "detail": "Derived package retrieval is pinned to the exact reviewed proposal snapshot.",
+        "evidence": {
+          "proposal_revision": 1,
+          "review_revision": 1,
+          "package_status": "incomplete"
+        }
+      },
+      {
+        "id": "provisional_exports",
+        "status": "PASS",
+        "detail": "CSV and SVG retain provisional/unknown occurrence labels and manufacturing warning.",
+        "evidence": {
+          "csv_rows": 11,
+          "csv_occurrence_states": [
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional"
+          ],
+          "svg_label": "provisional scenario",
+          "csv_sha256": "a25d8d690f0761c0567f71511f273575ef205e9553937fd6fadd7257161ee028",
+          "svg_sha256": "da9417f52fcc71a54320c4d0a618fe90e95bdf6ce9f3a41cd9969d78ff163dfd"
+        }
+      },
+      {
+        "id": "numeric_construction_outputs",
+        "status": "PASS",
+        "detail": "Every primary CAD piece is numeric and exposes downloadable SVG and DXF sheets.",
+        "evidence": {
+          "piece_count": 11,
+          "manufactured_piece_count": 9,
+          "hardware_count": 2,
+          "hardware_pending_field_count": 5,
+          "numeric_dimension_count": 27,
+          "piece_sheet_svg_count": 11,
+          "piece_sheet_dxf_count": 11
+        }
+      },
+      {
+        "id": "historical_scenarios_exact_snapshot",
+        "status": "SKIP",
+        "detail": "Public acceptance intentionally omits private history/catalog endpoints.",
+        "evidence": {
+          "omitted_endpoint": "/api/v1/history/scenarios"
+        }
+      }
+    ],
+    "report_sha256": "9f44c62af01da033b173cae967e7dcf7d440ae1b733e4e9017886fa10165e88d"
+  },
+  "production_F01": {
+    "status": "passed",
+    "resources": {
+      "document_id": "doc-9782e3ed998148f7ac0c2c6a7308f3d8",
+      "job_id": "job-c274ad8111844cc3ad5ceb22b4062f5a",
+      "run_id": "run-475e0cc1ab924aa4b4257c8eae88d55d",
+      "proposal_revision": 1,
+      "review_revision": 1
+    },
+    "checks": [
+      {
+        "id": "session",
+        "status": "PASS",
+        "detail": "The target exposed the public environment without credentials.",
+        "evidence": {
+          "environment": "production",
+          "authenticated": false
+        }
+      },
+      {
+        "id": "source_manifest",
+        "status": "PASS",
+        "detail": "The server manifest preserves the exact public DXF source hash.",
+        "evidence": {
+          "document_id": "doc-9782e3ed998148f7ac0c2c6a7308f3d8",
+          "source_sha256": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8",
+          "normalized_sha256": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8"
+        }
+      },
+      {
+        "id": "real_provider_events",
+        "status": "PASS",
+        "detail": "Durable events prove real proposer/reviewer provider calls.",
+        "evidence": {
+          "event_types": [
+            "general_auto_review",
+            "general_auto_review_completed",
+            "general_auto_review_started",
+            "general_auto_review_tool_completed",
+            "general_proposal_committed",
+            "general_tool_completed",
+            "result_committed",
+            "run_finished",
+            "run_state_changed"
+          ],
+          "provider_response_ids": [
+            "resp_081fab427367d3b8006af84f01632887d2965ef30814534b36",
+            "resp_081fab427367d3b8006af84f07527487d2834b8706f4d3ef56",
+            "resp_081fab427367d3b8006af84f63af0c87d2b3d53b12fbcfc678",
+            "resp_0e7e2b2da9511346006af84f9c6f2c87d2bdf76840ab16262e"
+          ]
+        }
+      },
+      {
+        "id": "source_image_hash_events",
+        "status": "PASS",
+        "detail": "Public events bind actual visual hashes and crop provenance to the source DXF hash.",
+        "evidence": {
+          "image_sha256s": [
+            "129c1459f353e7d5a6a9f165c811825c55c1ebeb41e3c51b5673efeafae35489",
+            "551bf6693806745079a58b9fa7587127837ef9782c42be91ab8d921f8853905b",
+            "b1b69b218f1eef0c7a3442d276cc93b97f7f9fa55d0ba0d76d578509d90af202",
+            "b294b6dc0f0bc3600d1652c4351d6626bb2e0ed694fbfeefd361b1b3efd30ccc"
+          ],
+          "visual_artifacts": [
+            {
+              "reference": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8:view:view-unknown:overview",
+              "sha256": "129c1459f353e7d5a6a9f165c811825c55c1ebeb41e3c51b5673efeafae35489",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8E",
+                "contour-entity-8F",
+                "contour-entity-90",
+                "contour-entity-91",
+                "contour-entity-93",
+                "contour-entity-94",
+                "contour-entity-95",
+                "contour-entity-96",
+                "contour-entity-98",
+                "contour-entity-99",
+                "contour-entity-9A",
+                "contour-entity-9B",
+                "contour-entity-9C"
+              ],
+              "crop_bounds_source": [
+                -120.0,
+                -100.0,
+                2100.0,
+                1700.0
+              ],
+              "marks": []
+            },
+            {
+              "reference": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8:view:view-unknown:region-001",
+              "sha256": "551bf6693806745079a58b9fa7587127837ef9782c42be91ab8d921f8853905b",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-8E",
+                "contour-entity-8F",
+                "contour-entity-90",
+                "contour-entity-91"
+              ],
+              "crop_bounds_source": [
+                0.0,
+                0.0,
+                1200.0,
+                750.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-8E"
+                },
+                {
+                  "mark_id": "M002",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-8F"
+                },
+                {
+                  "mark_id": "M003",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-90"
+                },
+                {
+                  "mark_id": "M004",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-91"
+                }
+              ]
+            },
+            {
+              "reference": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8:view:view-unknown:region-002",
+              "sha256": "b294b6dc0f0bc3600d1652c4351d6626bb2e0ed694fbfeefd361b1b3efd30ccc",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-93",
+                "contour-entity-94",
+                "contour-entity-95",
+                "contour-entity-96"
+              ],
+              "crop_bounds_source": [
+                1500.0,
+                0.0,
+                2100.0,
+                750.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-93"
+                },
+                {
+                  "mark_id": "M002",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-94"
+                },
+                {
+                  "mark_id": "M003",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-95"
+                },
+                {
+                  "mark_id": "M004",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-96"
+                }
+              ]
+            },
+            {
+              "reference": "314bc7d108c3fd5199be3c80f0482da88c83c229516d144a4a3d1cbb116e6bb8:view:view-unknown:region-003",
+              "sha256": "b1b69b218f1eef0c7a3442d276cc93b97f7f9fa55d0ba0d76d578509d90af202",
+              "source_view_ids": [
+                "view-unknown"
+              ],
+              "source_contour_ids": [
+                "contour-entity-98",
+                "contour-entity-99",
+                "contour-entity-9A",
+                "contour-entity-9B",
+                "contour-entity-9C"
+              ],
+              "crop_bounds_source": [
+                0.0,
+                1050.0,
+                1200.0,
+                1650.0
+              ],
+              "marks": [
+                {
+                  "mark_id": "M001",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-98"
+                },
+                {
+                  "mark_id": "M002",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-99"
+                },
+                {
+                  "mark_id": "M003",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-9A"
+                },
+                {
+                  "mark_id": "M004",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-9B"
+                },
+                {
+                  "mark_id": "M005",
+                  "source_kind": "contour",
+                  "source_id": "contour-entity-9C"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "machine_review_provenance",
+        "status": "PASS",
+        "detail": "The final critic is machine-attributed with policy and response provenance.",
+        "evidence": {
+          "proposal_revision": 1,
+          "review_revision": 1,
+          "auto_review_status": "incomplete",
+          "machine_provenance": {
+            "model": "gpt-6-astra",
+            "policy_version": "general-auto-review-v2",
+            "response_ids": [
+              "resp_0e7e2b2da9511346006af84f9c6f2c87d2bdf76840ab16262e"
+            ],
+            "review_relation": "separate_model"
+          }
+        }
+      },
+      {
+        "id": "separate_live_models",
+        "status": "PASS",
+        "detail": "The fresh live run used a Sol proposer and a separate Astra critic.",
+        "evidence": {
+          "proposer_models": [
+            "gpt-6.1-sol"
+          ],
+          "reviewer_model": "gpt-6-astra"
+        }
+      },
+      {
+        "id": "no_forged_confirmed_facts",
+        "status": "PASS",
+        "detail": "Machine facts contain no forged confirmations; physical occurrences require observed/derived quantity and hypotheses remain provisional.",
+        "evidence": {
+          "physical": 0,
+          "provisional": 13
+        }
+      },
+      {
+        "id": "proposal_lineage",
+        "status": "PASS",
+        "detail": "P1/P2 lineage is explicit when the autonomous critic performs semantic repair.",
+        "evidence": {
+          "semantic_repair": false,
+          "committed_revisions": [
+            1
+          ],
+          "final_proposal_revision": 1
+        }
+      },
+      {
+        "id": "exact_revision_derived",
+        "status": "PASS",
+        "detail": "Derived package retrieval is pinned to the exact reviewed proposal snapshot.",
+        "evidence": {
+          "proposal_revision": 1,
+          "review_revision": 1,
+          "package_status": "incomplete"
+        }
+      },
+      {
+        "id": "provisional_exports",
+        "status": "PASS",
+        "detail": "CSV and SVG retain provisional/unknown occurrence labels and manufacturing warning.",
+        "evidence": {
+          "csv_rows": 7,
+          "csv_occurrence_states": [
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional",
+            "provisional"
+          ],
+          "svg_label": "provisional scenario",
+          "csv_sha256": "3b4685919516e684d2dc1a63bf235f6d7bffa2849014ac5e04fe4afd3ff1c767",
+          "svg_sha256": "24231b71f602cdc9c7c462fd7a62824d5f4d9508dce8cb9f4f597f692100c202"
+        }
+      },
+      {
+        "id": "numeric_construction_outputs",
+        "status": "PASS",
+        "detail": "Every primary CAD piece is numeric and exposes downloadable SVG and DXF sheets.",
+        "evidence": {
+          "piece_count": 7,
+          "manufactured_piece_count": 6,
+          "hardware_count": 1,
+          "hardware_pending_field_count": 3,
+          "numeric_dimension_count": 18,
+          "piece_sheet_svg_count": 7,
+          "piece_sheet_dxf_count": 7
+        }
+      },
+      {
+        "id": "historical_scenarios_exact_snapshot",
+        "status": "SKIP",
+        "detail": "Public acceptance intentionally omits private history/catalog endpoints.",
+        "evidence": {
+          "omitted_endpoint": "/api/v1/history/scenarios"
+        }
+      }
+    ],
+    "report_sha256": "bafe81762dbfdab49f2169f0984cbb80e79b12ecf281b1210f3d896b24b1b790"
+  },
+  "production_3d": {
+    "status": "passed",
+    "job_id": "bc9ac84f882044dd874f3e0606612b15",
+    "idempotency_replay": "passed",
+    "job_state": "needs_review",
+    "certified_for_manufacturing": false,
+    "component_count": 9,
+    "artifact_count": 38,
+    "artifacts": [
+      {
+        "name": "assembly.glb",
+        "bytes": 9380,
+        "sha256": "b344d35620dd6b6001c00a31466ae6d6d002454e14ef0244b8c723145525d058"
+      },
+      {
+        "name": "bom.csv",
+        "bytes": 811,
+        "sha256": "570fbac94e2f5fafc87de506cbbad13846b941dafb7eda1875a07a4023b8f9a3"
+      },
+      {
+        "name": "checks.json",
+        "bytes": 1378,
+        "sha256": "56a399e6b63ee2c934b25f600fdaaf3a8e3f03e60949949fda53dba428947663"
+      },
+      {
+        "name": "exploded.png",
+        "bytes": 3011,
+        "sha256": "1168efc63d2ee4b5763f9b1749c01459b24b8806b20c055b8214445f0abc831f"
+      },
+      {
+        "name": "mask-00.png",
+        "bytes": 1214,
+        "sha256": "6eac1f6828c20f4883878d08a71e018d2492746a2b6706b7c120ce1cbc4f6837"
+      },
+      {
+        "name": "mask-01.png",
+        "bytes": 1227,
+        "sha256": "48fb70e8273185770374b627bdb5ff87d52d0e733a4bde1db30e4868ef7d163f"
+      },
+      {
+        "name": "mask-02.png",
+        "bytes": 1214,
+        "sha256": "6eac1f6828c20f4883878d08a71e018d2492746a2b6706b7c120ce1cbc4f6837"
+      },
+      {
+        "name": "mask-03.png",
+        "bytes": 1227,
+        "sha256": "48fb70e8273185770374b627bdb5ff87d52d0e733a4bde1db30e4868ef7d163f"
+      },
+      {
+        "name": "mask-04.png",
+        "bytes": 514,
+        "sha256": "6b642270cd0fb7f19a929f953107b2f92a08ad8361ef3042c680e03ac5546fc3"
+      },
+      {
+        "name": "mask-05.png",
+        "bytes": 516,
+        "sha256": "a6369d0699480a6536f8cc902c61e87e46b31c97c1caf558eb74bda35554bbaf"
+      },
+      {
+        "name": "parts/faldon_frontal.dxf",
+        "bytes": 16208,
+        "sha256": "7b91f576dcc5257d5556146aa94acf7148e171d02012dd32be9c8cdf320ba1b4"
+      },
+      {
+        "name": "parts/faldon_frontal.svg",
+        "bytes": 926,
+        "sha256": "32c82f12a2684020bf231525691f51cd76e6c9e2d0ec06e336209eebb6c8a5ed"
+      },
+      {
+        "name": "parts/faldon_lateral_derecho.dxf",
+        "bytes": 16153,
+        "sha256": "9769175d4cda1525c5d8192695491da0cb984c2127952b7b0036aecc5343b52d"
+      },
+      {
+        "name": "parts/faldon_lateral_derecho.svg",
+        "bytes": 938,
+        "sha256": "adaf8b886e9942ae0dd95583a7ce088fc9bddee3e72cb0a7466d56f82bb2ddb9"
+      },
+      {
+        "name": "parts/faldon_lateral_izquierdo.dxf",
+        "bytes": 16153,
+        "sha256": "617c63f75f2dc7abe2acade18f1cd5ccd0c95b087560af25109d646daf06eb9f"
+      },
+      {
+        "name": "parts/faldon_lateral_izquierdo.svg",
+        "bytes": 940,
+        "sha256": "d5b39a915e5815ea3e37e42ff677689fbff1061786cb9fb12ffd1271a8d426b6"
+      },
+      {
+        "name": "parts/faldon_trasero.dxf",
+        "bytes": 16208,
+        "sha256": "c08661c18826ab220c357c6cb12676f80bb19e1718101fb8dd5f18b463708bf2"
+      },
+      {
+        "name": "parts/faldon_trasero.svg",
+        "bytes": 926,
+        "sha256": "53a09b4fc9926e4ac2d16e60a16bd3c48835727f96330c36e00f6f9bc5311bf0"
+      },
+      {
+        "name": "parts/pata_frontal_derecha.dxf",
+        "bytes": 16191,
+        "sha256": "6b2670b4d3d73f5cfc267bd1b9f5ffc306d48f636825d87a4709c79f6494087b"
+      },
+      {
+        "name": "parts/pata_frontal_derecha.svg",
+        "bytes": 887,
+        "sha256": "1c071f1dd454dd9cb7f75e6c36eefced1b7199bfb794a6ea0a97b55ea0951f0a"
+      },
+      {
+        "name": "parts/pata_frontal_izquierda.dxf",
+        "bytes": 16191,
+        "sha256": "9b9f939765db31fb409725e069eb11f76f882f347e8a7f2a4c9b616478b1596a"
+      },
+      {
+        "name": "parts/pata_frontal_izquierda.svg",
+        "bytes": 889,
+        "sha256": "73e8f3526698e14ddb38fb999f16abae961d7bbacb0dba858b2ad5479c835002"
+      },
+      {
+        "name": "parts/pata_trasera_derecha.dxf",
+        "bytes": 16191,
+        "sha256": "b6843b8d218943d18778ed91f34b5a0383333938f634c2da53c805d56223bd7f"
+      },
+      {
+        "name": "parts/pata_trasera_derecha.svg",
+        "bytes": 887,
+        "sha256": "66da6cf81bc486a7831c3480ceb750b7ed32cb9307f15f15fac67d0cca36f270"
+      },
+      {
+        "name": "parts/pata_trasera_izquierda.dxf",
+        "bytes": 16191,
+        "sha256": "92bc16407138ca773fa7add75a4b4a6fb4f28df3cdb41de8bc3cfb21d36e986e"
+      },
+      {
+        "name": "parts/pata_trasera_izquierda.svg",
+        "bytes": 889,
+        "sha256": "286239df1cc88f4cfb0f984a9da4454cee6c33f04f60c80da92f2bbe28b72737"
+      },
+      {
+        "name": "parts/tablero.dxf",
+        "bytes": 16207,
+        "sha256": "4e0d2d20b95a174b7ddc0ae63254600649479db0a216f76e10e972a9f1402e93"
+      },
+      {
+        "name": "parts/tablero.svg",
+        "bytes": 831,
+        "sha256": "bcd4d32d4c1f1f25195ac30862695a29f6137179391ba4626451dbeee849d006"
+      },
+      {
+        "name": "proposal.json",
+        "bytes": 7218,
+        "sha256": "7ab8b88dfd85f7153b14f259cc5281e09112a65fd508669eabede52bd29658e8"
+      },
+      {
+        "name": "retrieval-context.jsonl",
+        "bytes": 6463,
+        "sha256": "109cbf7bfa1de98c6470e8b82e454ac2e3a46e48e4848cb3a3529a880ba12410"
+      },
+      {
+        "name": "revision.json",
+        "bytes": 10976,
+        "sha256": "deb235864708dc207530f8a0f0d08b6face2111630356f42a592d9ecb3b68e56"
+      },
+      {
+        "name": "scene.json",
+        "bytes": 4042,
+        "sha256": "a1b37c1fbc9a07b9a49d48d8a5086252c24f391a2c070961dfb8c313c2bb464a"
+      },
+      {
+        "name": "view-00.png",
+        "bytes": 2212,
+        "sha256": "42ec8b52148abb8cbe2e5d818dae3f7b6ba0440c4792793a244b4beb0865f4d6"
+      },
+      {
+        "name": "view-01.png",
+        "bytes": 2259,
+        "sha256": "5b8552ebf1a3c7ef808e3bb170deeedf24706af4668b3c0db92d5b7de6fef9a6"
+      },
+      {
+        "name": "view-02.png",
+        "bytes": 2212,
+        "sha256": "42ec8b52148abb8cbe2e5d818dae3f7b6ba0440c4792793a244b4beb0865f4d6"
+      },
+      {
+        "name": "view-03.png",
+        "bytes": 2259,
+        "sha256": "5b8552ebf1a3c7ef808e3bb170deeedf24706af4668b3c0db92d5b7de6fef9a6"
+      },
+      {
+        "name": "view-04.png",
+        "bytes": 1337,
+        "sha256": "050566bd9b5ef35e5e8807a3c80f0c4b99974ba68fc42ba46edbace1d57573eb"
+      },
+      {
+        "name": "view-05.png",
+        "bytes": 1336,
+        "sha256": "22b171b0eec1130fca2253fcc23119d8bd0227857a0295a3d3dc656ef526198c"
+      }
+    ]
+  },
+  "operations": {
+    "backup": "/home/kripta/apps/vexplorer/shared/backups/scheduled-20261114T121333Z.zip",
+    "backup_sha256": "376c1c1d7938f7be04d26beb3103fdf720521d39f5685c3b482162b9991c5f73",
+    "current": "/home/kripta/apps/vexplorer/releases/cad-d0ea7a85e787",
+    "manifest_sha256": "317c42f831e691d2457f443755a880b382974565d0e241c23a2e2587a0f6c118",
+    "reconstruction": {
+      "artifact_name": "assembly.glb",
+      "artifact_sha256": "b344d35620dd6b6001c00a31466ae6d6d002454e14ef0244b8c723145525d058",
+      "job_id": "bc9ac84f882044dd874f3e0606612b15"
+    },
+    "release_json_sha256": "2ab280204e44a5795bac0cdd5ee44ec5feb753ed91560f1d909f5a02dc7a7fd2",
+    "restore": "/home/kripta/apps/vexplorer/shared/restores/scheduled-evidence-20261114T121329Z",
+    "snapshots": {
+      "after_backup": "ee5b66025d241b2fdffb912d7b33740176b44c473757ce1bdddd7277e127d4a7",
+      "after_restart": "b3e1a7a5ea61a69df5ee58f946759b985ed3e6e1694e4c3da8592a4a2d41f2bd",
+      "before": "cf70ad873727a7f61af644714811195ac76b8f805112dab641094169b4967369",
+      "restored": "bd31057ba9b44c1c6376fda8fbe8bc04c9a721d3cda1ec5bc5b3b058e6edb5bd"
+    },
+    "status": "passed"
+  },
+  "limitations": [
+    "Developer-authored controls, not independent industrial accuracy evidence.",
+    "Incomplete specifications remain explicit; outputs are not manufacturing certification.",
+    "Single worker only; scheduled backups remain on the same host."
+  ]
+}
