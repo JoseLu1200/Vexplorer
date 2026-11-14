@@ -182,3 +182,38 @@ def test_tilted_circle_and_arc_ocs_are_rejected_before_xy_measurement(tmp_path: 
 
     assert not extraction.entities
     assert sum(warning.startswith("unsupported_entity_plane:") for warning in extraction.warnings) == 2
+
+
+def test_negative_z_arc_is_rejected_because_contract_angles_are_not_ocs_typed(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    modelspace.add_circle((0, 0), 10, dxfattribs={"extrusion": (0, 0, -1)})
+    modelspace.add_arc((30, 0), 10, 15, 125, dxfattribs={"extrusion": (0, 0, -1)})
+
+    extraction = extract_drawing(_save(document, tmp_path, "negative-z.dxf"))
+
+    assert [item.kind for item in extraction.entities] == ["CIRCLE"]
+    assert any(warning.startswith("unsupported_arc_orientation:") for warning in extraction.warnings)
+
+
+def test_multiple_curves_share_one_global_point_budget(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    for offset in range(4):
+        modelspace.add_ellipse((offset * 100, 0), major_axis=(20, 0), ratio=0.5)
+    path = _save(document, tmp_path, "many-curves.dxf")
+
+    with pytest.raises(ValueError, match="drawing point limit exceeded"):
+        parse_dxf(path, max_points=150)
+
+
+def test_global_point_budget_also_counts_exact_line_points(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    modelspace = document.modelspace()
+    modelspace.add_line((0, 0), (1, 0))
+    modelspace.add_line((0, 1), (1, 1))
+
+    with pytest.raises(ValueError, match="drawing point limit exceeded"):
+        parse_dxf(_save(document, tmp_path, "line-budget.dxf"), max_points=3)
