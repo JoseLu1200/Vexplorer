@@ -135,14 +135,16 @@ class Lease:
     def renovar(self) -> None:
         """Extiende la expiración; ``CandadoPerdido`` si otro titular ya tomó el candado o no se puede renovar."""
         try:
-            with _conexion(self._candado.ruta, self._candado.timeout_s) as db:
-                cambiadas = db.execute(
-                    "UPDATE candados SET expira_en=? WHERE nombre=? AND titular=?",
-                    (self._candado.reloj() + self._ttl_s, self._nombre, self._titular),
-                ).rowcount
+            with _conexion(self._candado.ruta, self._candado.timeout_s) as db, _transaccion(db):
+                ahora = self._candado.reloj()
+                cur = db.execute(
+                    "UPDATE candados SET expira_en=? WHERE nombre=? AND titular=? AND expira_en > ?",
+                    (ahora + self._ttl_s, self._nombre, self._titular, ahora),
+                )
+                cambiadas = cur.rowcount
         except sqlite3.DatabaseError as exc:
             raise CandadoPerdido(f"{self._nombre}:no_renovable") from exc
-        if cambiadas == 0:
+        if cambiadas != 1:
             raise CandadoPerdido(self._nombre)
 
 
@@ -358,10 +360,12 @@ class ColaMantenimiento:
             pendientes.add(clave)
 
         def ejecutar() -> None:
-            with self._cerrojo:
-                pendientes.discard(clave)
-            if not detener.is_set():
-                tarea()
+            try:
+                if not detener.is_set():
+                    tarea()
+            finally:
+                with self._cerrojo:
+                    pendientes.discard(clave)
 
         ejecutor.submit(ejecutar)
 

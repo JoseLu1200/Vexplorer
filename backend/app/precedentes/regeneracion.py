@@ -254,7 +254,12 @@ def _modificado_durante_regeneracion(repositorio: RepositorioBiblioteca, leido: 
         actual = repositorio.get_library_item(leido.run_id)
     except KeyError:
         return True
-    return (actual.created_at, actual.result_revision, actual.descriptor_fingerprint) != (leido.created_at, leido.result_revision, leido.descriptor_fingerprint)
+    return (
+        actual.created_at != leido.created_at
+        or actual.result_revision != leido.result_revision
+        or actual.descriptor_fingerprint != leido.descriptor_fingerprint
+        or actual.embedding != leido.embedding
+    )
 
 
 def regenerar_elemento(
@@ -318,6 +323,7 @@ def regenerar_elemento(
         descriptor_fingerprint=descriptor_fingerprint(descriptor),
         created_at=ahora(),
         embedding=metadatos,
+        publication=getattr(elemento, "publication", None),
     )
     if latido is not None:
         latido()

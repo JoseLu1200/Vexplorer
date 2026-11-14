@@ -259,3 +259,30 @@ def test_herrajes_sinteticos_se_descartan_sin_opt_in() -> None:
     assert con_opt_in == agregar_sugerencias(
         (comparable,), {"s-1": herrajes}, minimo_soporte=1, incluir_sinteticos=True
     )
+
+
+def test_importacion_concurrente_idempotente(tmp_path) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    from backend.app.precedentes.herrajes import (
+        AlmacenHerrajes,
+        ImportacionHerrajes,
+        RegistroHerrajes,
+    )
+
+    almacen = AlmacenHerrajes(tmp_path / "herrajes.sqlite3")
+    datos = ImportacionHerrajes(
+        registros=(
+            RegistroHerrajes.model_validate(_herrajes("rec-1", [{"tipo": "bisagra", "cantidad": 2}])),
+            RegistroHerrajes.model_validate(_herrajes("rec-2", [{"tipo": "tirador", "cantidad": 1}])),
+        )
+    )
+
+    def tarea() -> None:
+        almacen.importar(datos)
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(lambda _: tarea(), range(20)))
+
+    pagina = almacen.listar()
+    assert pagina.total == 2

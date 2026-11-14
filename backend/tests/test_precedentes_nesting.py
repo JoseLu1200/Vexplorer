@@ -373,7 +373,7 @@ def test_peor_caso_una_pieza_por_tablero() -> None:
 def test_lote_incluye_nesting_y_conserva_la_estimacion() -> None:
     piezas = [
         pieza("a", largo=2000, ancho=1000, cantidad=2),
-        pieza("b", largo=1000, ancho=1000, cantidad=None, pedido="P2"),
+        pieza("b", largo=1000, ancho=1000, cantidad=1, pedido="P2"),
     ]
     lote = preparar_lotes(piezas, ConfiguracionLotes()).lotes[0]
     assert lote.estimacion.es_estimacion is True
@@ -603,3 +603,17 @@ def test_endpoint_sin_campos_nuevos_sigue_funcionando() -> None:
     lote = r.json()["data"]["lotes"][0]
     assert lote["estimacion"]["tableros"] == 1
     assert lote["nesting"]["tableros"] == 1
+
+
+def test_area_util_positiva_casos_frontera_flotantes() -> None:
+    # Margen exactamente la mitad del ancho -> 100 - 2 * 50 = 0 -> inválido
+    with pytest.raises(ValueError, match="El margen no deja área útil"):
+        ParametrosNesting(tablero_largo_mm=2000, tablero_ancho_mm=100.0, margen_mm=50.0)
+
+    # Margen que sobrepasa por un épsilon
+    with pytest.raises(ValueError, match="El margen no deja área útil"):
+        ParametrosNesting(tablero_largo_mm=2000, tablero_ancho_mm=100.0, margen_mm=50.0001)
+
+    # Margen estrictamente menor que deja área útil
+    p = ParametrosNesting(tablero_largo_mm=2000, tablero_ancho_mm=100.0, margen_mm=49.999)
+    assert p.margen_mm == 49.999

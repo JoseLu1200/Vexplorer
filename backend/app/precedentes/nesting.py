@@ -27,6 +27,7 @@ nesting con motivo ``medida_desconocida``.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -38,6 +39,25 @@ from backend.app.precedentes.piezas import PiezaRef, unidades
 METODO_NESTING = "guillotina_ffd_bssf"
 LIMITE_OCURRENCIAS = 3000
 _UM = 1000  # micrómetros por milímetro
+
+
+def _um_arriba(mm: float) -> int:
+    # El redondeo previo a 6 decimales elimina el ruido de coma flotante (1220.3 mm
+    # es 1220300.0000000002 µm) para que ``ceil`` no sume un micrómetro espurio.
+    return math.ceil(round(mm * _UM, 6))
+
+
+def _um_abajo(mm: float) -> int:
+    return math.floor(round(mm * _UM, 6))
+
+
+def _um_pieza(mm: float) -> int:
+    """Piezas, margen y kerf se redondean hacia arriba; el tablero, hacia abajo.
+
+    Todo error de redondeo juega en contra de la pieza, nunca a su favor: lo que se
+    declara colocado cabe de verdad en el tablero físico.
+    """
+    return max(1, _um_arriba(mm))
 
 MOTIVO_MEDIDA_DESCONOCIDA = "medida_desconocida"
 MOTIVO_MAS_GRANDE = "mas_grande_que_el_area_util"
@@ -74,8 +94,8 @@ class ParametrosNesting(ModeloEstricto):
     @model_validator(mode="after")
     def _area_util_positiva(self) -> ParametrosNesting:
         if (
-            self.tablero_largo_mm - 2 * self.margen_mm <= 0
-            or self.tablero_ancho_mm - 2 * self.margen_mm <= 0
+            _um_abajo(self.tablero_largo_mm) - 2 * _um_arriba(self.margen_mm) <= 0
+            or _um_abajo(self.tablero_ancho_mm) - 2 * _um_arriba(self.margen_mm) <= 0
         ):
             raise ValueError("El margen no deja área útil en el tablero.")
         return self
@@ -118,25 +138,6 @@ class ResultadoNesting(ModeloEstricto):
     no_colocadas: tuple[PiezaNoColocada, ...]
     aprovechamiento_total: float
     nota: str = NOTA_NESTING
-
-
-def _um_arriba(mm: float) -> int:
-    # El redondeo previo a 6 decimales elimina el ruido de coma flotante (1220.3 mm
-    # es 1220300.0000000002 µm) para que ``ceil`` no sume un micrómetro espurio.
-    return math.ceil(round(mm * _UM, 6))
-
-
-def _um_abajo(mm: float) -> int:
-    return math.floor(round(mm * _UM, 6))
-
-
-def _um_pieza(mm: float) -> int:
-    """Piezas, margen y kerf se redondean hacia arriba; el tablero, hacia abajo.
-
-    Todo error de redondeo juega en contra de la pieza, nunca a su favor: lo que se
-    declara colocado cabe de verdad en el tablero físico.
-    """
-    return max(1, _um_arriba(mm))
 
 
 class _Geometria(NamedTuple):
@@ -276,18 +277,28 @@ def nestear(
     """
     ordenadas = sorted(piezas, key=lambda p: (p.origen_id, p.pieza_id))
     claves = [(p.origen_id, p.pieza_id) for p in ordenadas]
-    if len(set(claves)) != len(claves):
-        repetidas = sorted({f"{o}/{i}" for o, i in claves if claves.count((o, i)) > 1})
+    conteo = Counter(claves)
+    if len(conteo) != len(claves):
+        repetidas = sorted(f"{o}/{i}" for (o, i), c in conteo.items() if c > 1)
         raise ValueError("Piezas duplicadas: " + ", ".join(repetidas))
+
+    margen, kerf, ancho_util, alto_util, area_tablero = _geometria(parametros)
+
     total = sum(
         unidades(p)
         for p in ordenadas
-        if p.largo_mm is not None and p.ancho_mm is not None
+        if p.largo_mm is not None
+        and p.ancho_mm is not None
+        and _cabe(
+            _um_pieza(p.largo_mm),
+            _um_pieza(p.ancho_mm),
+            ancho_util,
+            alto_util,
+            parametros.permitir_rotacion and p.rotable,
+        )
     )
     if total > LIMITE_OCURRENCIAS:
         raise DemasiadasOcurrencias(total)
-
-    margen, kerf, ancho_util, alto_util, area_tablero = _geometria(parametros)
 
     items: list[_Item] = []
     no_colocadas: list[PiezaNoColocada] = []

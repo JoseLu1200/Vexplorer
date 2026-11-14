@@ -132,6 +132,16 @@ def test_lease_expirado_se_readquiere_y_el_titular_viejo_no_lo_pisa(tmp_path: Pa
     assert a.estado("regeneracion").ocupado is False
 
 
+def test_lease_expirado_no_puede_renovarse_aunque_nadie_haya_adquirido_el_candado(tmp_path: Path) -> None:
+    reloj = RelojFalso()
+    ruta = tmp_path / "espacio.sqlite3"
+    candado = CandadoPersistente(ruta, reloj)
+    with candado.ocupar("regeneracion", 60) as lease:
+        reloj.t += 61
+        with pytest.raises(CandadoPerdido):
+            lease.renovar()
+
+
 def test_renovar_extiende_la_expiracion(tmp_path: Path) -> None:
     reloj = RelojFalso()
     ruta = tmp_path / "espacio.sqlite3"
@@ -257,6 +267,7 @@ def test_deriva_rotacion_marca_obsoleto_y_la_regeneracion_no_reutiliza_la_cache(
     antes = repositorio.get_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version)
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
+    repositorio.save_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version, antes)
     [elemento] = _obsoletos(router)
     assert elemento["motivos"] == ["huella_retirada"] and elemento["estado"] == "pendiente"
 
@@ -319,9 +330,13 @@ def _preparar_cache_retirada(principal, router, proveedor, monkeypatch):
     """Referencia H1, run A guardado y sellado con H1, rotación a H2: la cache de A queda en el espacio retirado."""
     router.post(VERIFICAR)
     run_a = _run_revisado(principal, "a")
-    _guardar(principal, run_a)
+    guardado_a = _guardar(principal, run_a)
+    repositorio = principal.app.state.repository
+    meta = guardado_a["embedding"]
+    vector_a = repositorio.get_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"])
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
+    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector_a)
     assert [item["motivos"] for item in _obsoletos(router)] == [["huella_retirada"]]
     return run_a, _run_revisado(principal, "b")
 
@@ -420,9 +435,12 @@ def test_auto_con_revision_antigua_y_huella_retirada_regenera_sin_cambiar_la_rev
     principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
     router.post(VERIFICAR)
     run_id = _run_revisado(principal, "a")
-    _guardar(principal, run_id, revision=1)  # sellado con H1
+    guardado1 = _guardar(principal, run_id, revision=1)  # sellado con H1
+    meta = guardado1["embedding"]
+    vector = repositorio.get_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"])
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
+    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector)
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
     monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
@@ -464,7 +482,7 @@ def test_cola_de_fondo_acotada_deduplicada_y_cancelable() -> None:
     assert dentro.wait(5)
     for clave in ("x", "x", "x", "y"):
         cola.encolar(clave, lambda clave=clave: ejecutadas.append(clave))
-    assert cola.pendientes() == 2  # "x" deduplicada
+    assert cola.pendientes() == 3  # bloqueante en curso + "x" deduplicada + "y"
     for numero in range(100):
         cola.encolar(f"k{numero}", lambda: None)
     assert cola.pendientes() <= mantenimiento.COLA_MAXIMA
@@ -621,7 +639,7 @@ def test_apagar_una_cola_no_cancela_la_de_otra_app(tmp_path: Path, monkeypatch) 
     assert dentro.wait(5)
     dos.state.cola_mantenimiento.encolar("pendiente", lambda: ejecutadas.append("dos"))
     uno.state.cola_mantenimiento.apagar()  # apagado de otra app en el mismo proceso
-    assert dos.state.cola_mantenimiento.pendientes() == 1
+    assert dos.state.cola_mantenimiento.pendientes() == 2  # bloqueante en curso + pendiente
     soltar.set()
     dos.state.cola_mantenimiento.esperar(10)
     assert ejecutadas == ["dos"]
@@ -723,3 +741,31 @@ def test_base_ilegible_no_es_un_500(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(mantenimiento, "_conexion", ilegible)
     with pytest.raises(CandadoNoDisponible), candado.ocupar("espacio", 60):
         pass
+
+
+def test_save_to_library_no_sella_si_el_espacio_rota_durante_el_embed(tmp_path: Path, monkeypatch) -> None:
+    from datetime import UTC, datetime
+
+    principal, router, repositorio, proveedor = _entorno(tmp_path, monkeypatch)
+    assert router.post(VERIFICAR).json()["data"]["estado"] == "referencia_creada"
+    run_id = _run_revisado(principal, "rot-durante-embed")
+    almacen = AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3")
+    embed_original = proveedor.embed
+    primera = [True]
+
+    def embed_con_rotacion_simultanea(texto: str) -> EmbeddingResult:
+        resultado = embed_original(texto)
+        if primera[0]:
+            primera[0] = False
+            proveedor.deriva = 0.75
+            nueva = calcular_huella(proveedor)
+            time.sleep(0.01)
+            almacen.rotar(nueva, datetime.now(UTC).isoformat())
+            proveedor.deriva = 0.0
+        return resultado
+
+    monkeypatch.setattr(proveedor, "embed", embed_con_rotacion_simultanea)
+    guardado = _guardar(principal, run_id)
+    assert guardado["embedding"]["status"] == "generated"
+    clave = repositorio.get_library_item(run_id).embedding.cache_key
+    assert RegistroEspacio(almacen).sello(clave) is None

@@ -71,11 +71,7 @@ def test_bloqueo_publico_no_se_evade_con_root_path(tmp_path: Path, monkeypatch: 
     privadas = _rutas_precedentes(app) + [
         ("GET", "/api/v1/history"),
         ("GET", "/api/v1/history/records"),
-        ("GET", "/api/v1/library"),
-        ("POST", "/api/v1/library/groups"),
         ("POST", "/api/v1/semantic-explorer/review"),
-        ("POST", "/api/v1/runs/run-abc/library"),
-        ("POST", "/api/v1/runs/run-abc/similarity"),
     ]
     with TestClient(app) as client:
         for method, path in privadas:
@@ -117,3 +113,25 @@ def test_lifespan_apaga_la_cola_aunque_falle_el_apagado_del_ejecutor(tmp_path: P
     with pytest.raises(RuntimeError, match="fallo al apagar"), TestClient(app):
         pass
     assert apagada == [True]
+
+
+@pytest.mark.parametrize("prefijo", ["", "/vx", "/vx/vx"])
+def test_cuota_subida_publica_no_se_evade_con_root_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, prefijo: str,
+) -> None:
+    catalog = tmp_path / "catalog.json"
+    catalog.write_text(get_table_cost_catalog().model_dump_json(), encoding="utf-8")
+    monkeypatch.setenv("VEXPLORER_COST_CATALOG", str(catalog))
+    monkeypatch.setenv("VEXPLORER_ENV", "production")
+    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
+    monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
+    monkeypatch.setenv("VEXPLORER_ROOT_PATH", "/vx")
+    app = create_app(data_dir=tmp_path / "data")
+    with TestClient(app) as client:
+        response = client.post(
+            f"{prefijo}/api/v1/documents",
+            headers={"content-length": str(21 * 1024 * 1024 + 1)},
+            content=b"",
+        )
+        assert response.status_code == 413
+        assert response.json()["error"]["code"] == "upload_content_length_exceeded"

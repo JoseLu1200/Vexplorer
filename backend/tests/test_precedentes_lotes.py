@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -46,18 +47,18 @@ def pieza(
     )
 
 
-def item_v2(run_id: str) -> LibraryItem:
+def item_v2(run_id: str, revision: int = 1, material: str = "MELAMINA") -> LibraryItem:
     return LibraryItem(
-        id=f"lib-{run_id}",
+        id=f"lib-{run_id}-r{revision}",
         run_id=run_id,
-        result_revision=1,
+        result_revision=revision,
         label=run_id,
         descriptor=FurnitureDescriptorV2(
             family="rectangular_shelving",
             dimensions=DescriptorDimensions(),
             roles=(RoleQuantity(role="side", quantity=2),),
             structure="unknown",
-            material="MELAMINA",
+            material=material,
             finish="Mate",
             thicknesses_mm=(18.0,),
             classification_status="hypothesis",
@@ -266,3 +267,44 @@ def test_total_de_piezas_limitado_antes_de_validar() -> None:
     assert r.status_code == 422
     demasiados = [{"pedido_id": f"P{i}"} for i in range(201)]
     assert cliente().post(RUTA, json={"pedidos": demasiados}).status_code == 422
+
+
+def test_limite_pedidos_corta_antes_de_validar() -> None:
+    from backend.app.precedentes.api_piezas import MAXIMO_PEDIDOS, PeticionLotes
+
+    demasiados = [{"pedido_id": f"P{i}", "piezas": []} for i in range(MAXIMO_PEDIDOS + 1)]
+    with pytest.raises(ValueError, match=f"Máximo {MAXIMO_PEDIDOS} pedidos."):
+        PeticionLotes.model_validate({"pedidos": demasiados})
+
+
+def test_ids_duplicados_con_counter() -> None:
+    from backend.app.precedentes.piezas import PiezaRef, ids_duplicados
+
+    piezas = [
+        PiezaRef(origen_id="O1", pieza_id="P1", fuente="peticion"),
+        PiezaRef(origen_id="O1", pieza_id="P2", fuente="peticion"),
+        PiezaRef(origen_id="O1", pieza_id="P1", fuente="peticion"),
+        PiezaRef(origen_id="O1", pieza_id="P1", fuente="peticion"),
+        PiezaRef(origen_id="O2", pieza_id="P1", fuente="peticion"),
+        PiezaRef(origen_id="O2", pieza_id="P1", fuente="peticion"),
+    ]
+    assert ids_duplicados(piezas) == ("O1/P1", "O2/P1")
+
+
+def test_biblioteca_elige_mayor_result_revision() -> None:
+    from backend.app.precedentes.piezas import piezas_desde_biblioteca
+
+    item_rev1 = item_v2("run-rev", revision=1, material="ROBLE")
+    item_rev2 = item_v2("run-rev", revision=2, material="PINO")
+
+    # Debe seleccionar las piezas de revision=2
+    piezas = piezas_desde_biblioteca([item_rev1, item_rev2])
+    assert len(piezas) == 1
+    assert piezas[0].material == "PINO"
+
+    # Y en el endpoint /lotes:
+    c = cliente([item_rev1, item_rev2])
+    r = c.post(RUTA, json={"run_ids": ["run-rev"]})
+    assert r.status_code == 200
+    lotes = r.json()["data"]["lotes"]
+    assert lotes[0]["clave"]["material"] == "pino"

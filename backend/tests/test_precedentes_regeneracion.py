@@ -45,7 +45,7 @@ def _entorno(tmp_path: Path, monkeypatch, proveedor=None) -> tuple[TestClient, T
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
     principal = create_app(data_dir=tmp_path)
     app = FastAPI()
-    app.include_router(crear_router_embeddings(principal.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ))
+    app.include_router(crear_router_embeddings(principal.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ, intervalo_minimo_verificacion_s=0))
     return TestClient(principal), TestClient(app)
 
 
@@ -167,7 +167,7 @@ class ProveedorOtroModelo(ProveedorFalso):
 
 def _router(principal: TestClient, tmp_path: Path, proveedor) -> TestClient:
     app = FastAPI()
-    app.include_router(crear_router_embeddings(principal.app.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ))
+    app.include_router(crear_router_embeddings(principal.app.state.repository, proveedor, AlmacenEspacio(tmp_path / "precedentes_espacio.sqlite3"), ahora=lambda: RELOJ, intervalo_minimo_verificacion_s=0))
     return TestClient(app)
 
 
@@ -256,7 +256,7 @@ def test_fallo_al_invalidar_no_rota_referencia_ni_expone_detalle(tmp_path: Path,
 
     monkeypatch.setattr(principal.app.state.repository, "invalidate_embeddings", falla_invalidacion, raising=False)
     fallido = _router(principal, tmp_path, ProveedorFalso()).post(ROTAR)
-    assert fallido.status_code == 500
+    assert fallido.status_code == 503
     assert fallido.json()["error"]["code"] == "invalidacion_embeddings_fallida"
     assert "ruta-secreta" not in fallido.text
     assert cliente.get(REFERENCIA).json()["data"][0]["huella_id"] == referencia_original

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from collections import Counter
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import Field, model_validator
 
+from backend.app.contratos.modelos import LibraryItem
 from backend.app.precedentes.comun import (
     PREFIJO_API,
     ModeloEstricto,
@@ -64,6 +67,8 @@ class PeticionLotes(ParametrosNesting):
         if isinstance(datos, dict):
             pedidos = datos.get("pedidos")
             if isinstance(pedidos, list | tuple):
+                if len(pedidos) > MAXIMO_PEDIDOS:
+                    raise ValueError(f"Máximo {MAXIMO_PEDIDOS} pedidos.")
                 total = sum(
                     len(p.get("piezas") or ())
                     for p in pedidos
@@ -127,7 +132,8 @@ def crear_router_piezas(fuente_biblioteca: FuenteBiblioteca | None = None) -> AP
         ids_explicitos = [p.pedido_id for p in peticion.pedidos] + list(
             peticion.run_ids
         )
-        repetidos = sorted({i for i in ids_explicitos if ids_explicitos.count(i) > 1})
+        conteo = Counter(ids_explicitos)
+        repetidos = sorted(i for i, c in conteo.items() if c > 1)
         if repetidos:
             return _error(
                 422, "pedido_duplicado", "Pedidos repetidos: " + ", ".join(repetidos)
@@ -144,9 +150,11 @@ def crear_router_piezas(fuente_biblioteca: FuenteBiblioteca | None = None) -> AP
                 return _error(
                     503, "biblioteca_no_disponible", "No hay biblioteca configurada."
                 )
-            por_run = {
-                item.run_id: item for item in fuente_biblioteca.get_library_items()
-            }
+            por_run: dict[str, LibraryItem] = {}
+            for item in fuente_biblioteca.get_library_items():
+                actual = por_run.get(item.run_id)
+                if actual is None or item.result_revision > actual.result_revision:
+                    por_run[item.run_id] = item
             faltan = [r for r in peticion.run_ids if r not in por_run]
             if faltan:
                 return _error(
