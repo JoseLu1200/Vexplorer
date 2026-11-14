@@ -21,6 +21,13 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
 const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
+const reconstructionButton=document.createElement('button');
+reconstructionButton.type='button';reconstructionButton.className='button';reconstructionButton.textContent='Construcción propuesta';
+reconstructionButton.addEventListener('click',()=>{
+  if(!state.runId||!state.generalWorkspace){setMessage('Abre primero un plano como Mueble general.',true);return;}
+  window.open(`./reconstruction.html?run=${encodeURIComponent(state.runId)}`,'_blank','noopener');
+});
+document.querySelector('.navigator__head')?.append(reconstructionButton);
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
 const actionIdentity=()=>`${state.runId}:${state.snapshot?.result_revision}`;
 

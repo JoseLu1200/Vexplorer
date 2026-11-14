@@ -676,6 +676,18 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
     ))
+    from backend.app.reconstruction3d.router import create_reconstruction_router
+    from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
+    from dataclasses import replace
+    reconstruction_provider = agent_provider
+    if reconstruction_provider is None and settings.available:
+        reconstruction_provider = OpenAIResponsesProvider(
+            replace(settings, max_output_tokens=8192, vision_enabled=True), instructions=RECONSTRUCTION_PROMPT,
+        )
+    app.include_router(create_reconstruction_router(
+        root=root, context_loader=general_furniture_context,
+        provider=reconstruction_provider, executor=job_executor,
+    ))
     app.include_router(create_general_furniture_router(
         repository=general_furniture_repository,
         context_loader=general_furniture_context,
