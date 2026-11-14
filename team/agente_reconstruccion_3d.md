@@ -8,6 +8,10 @@ Rama `feat/reconstruction-3d`, base `affe009`. Nuevos módulos `backend/app/reco
 
 ## Estado
 
+Continuación autorizada tras conclusión Idol: implementar aclaraciones y cotas generales comprobadas, revisiones inmutables y formulario en el visor del módulo propio. Base del incremento a9908bb; se mantiene aislamiento. Diseño/plan reconstruction-refinement. No hay cambios en contratos, economía o frontend ajeno a reconstruction.*.
+
+Ruling: ejecución directa del incremento reversible ya autorizado; no repetir aprobaciones de enfoque. Se conserva stack y rama existente. Las cotas aportadas se tratan como declaraciones humanas y no como observaciones extraídas.
+
 Comparación y revisión final completadas. 6 montajes B + 18 splats A/C/D, 144 vistas inspeccionadas, recuperación EmbeddingGemma2 completa y 30 clasificaciones Jev válidas con normalización común. Informe: `docs/RECONSTRUCCION_3D_RESULTADOS.md`. Conclusión: priorizar montaje por componentes; no se observa valor adicional de Idol para despiece, geometría o recuperación en esta muestra. Mantener rama aislada sin merge/push.
 
 ## Verificación
