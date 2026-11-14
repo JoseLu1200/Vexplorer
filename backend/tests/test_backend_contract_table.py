@@ -62,6 +62,8 @@ def test_table_ledger_requires_traceable_observed_values_and_exact_ids():
     assert analysis.admitted_measurement_ids == tuple(item.id for item in analysis.measures)
     with pytest.raises(ValidationError):
         TableMeasure(id="bad", semantic="overall_width", axis="width", value_mm=1200, state="observed")
+    geometric = TableMeasure(id="section", semantic="unknown", axis="section", value_mm=30, state="observed", view_ids=("front",), evidence_ids=("ev-section",), source_entity_ids=("line-section",), geometry_relation="offset_from_min_x")
+    assert geometric.measurement_ids == () and geometric.value_mm == 30
 
 
 def test_table_program_rejects_future_binding_references_and_wrong_topology():

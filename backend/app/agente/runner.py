@@ -257,16 +257,21 @@ def run_parts_agent(
 
 
 def run_table_agent(
+    extraction: DrawingExtraction,
     analysis: MountedTableAnalysis,
     provider: Provider,
     limits: AgentLimits = AgentLimits(),
 ) -> TableAgentOutcome:
+    if extraction.drawing_id != analysis.drawing_id or extraction.input_kind != "mounted_orthographic_views":
+        raise ValueError("table_analysis_scope_mismatch")
     started = time.monotonic()
     model_calls = 0
     tool_calls = 0
     repairs = 0
     previous_response_id = None
     measures = {item.id: item for item in analysis.measures}
+    entities = {item.id: item for item in extraction.entities}
+    views = {item.id: item for item in extraction.views}
     allowed_evidence_ids = {evidence_id for item in analysis.measures for evidence_id in item.evidence_ids}
     input_items = [{"role": "user", "content": json.dumps({
         "input_kind": analysis.input_kind,
@@ -300,7 +305,15 @@ def run_table_agent(
                     args = InspectTableMeasuresArgs.model_validate_json(json.dumps(arguments), strict=True)
                     unknown = [item for item in args.measurement_ids if item not in measures]
                     selected = [measures[item] for item in args.measurement_ids if item in measures]
-                    data = {"ok": not unknown, "error": "unknown_reference" if unknown else None, "measures": [item.model_dump(mode="json") for item in selected]}
+                    source_entity_ids = {entity_id for item in selected for entity_id in item.source_entity_ids}
+                    source_view_ids = {view_id for item in selected for view_id in item.view_ids}
+                    data = {
+                        "ok": not unknown,
+                        "error": "unknown_reference" if unknown else None,
+                        "measures": [item.model_dump(mode="json") for item in selected],
+                        "source_entities": [entities[item].model_dump(mode="json") for item in sorted(source_entity_ids) if item in entities],
+                        "views": [views[item].model_dump(mode="json") for item in sorted(source_view_ids) if item in views],
+                    }
                     actions.append(AgentAction(call.name, not unknown, tuple(evidence_id for item in selected for evidence_id in item.evidence_ids), "Medidas y fuentes del ledger inspeccionadas." if not unknown else "Referencia de medida desconocida rechazada."))
                 elif call.name == "proponer_descomposicion":
                     args = ProposeTableProgramArgs.model_validate_json(json.dumps(arguments), strict=True)
