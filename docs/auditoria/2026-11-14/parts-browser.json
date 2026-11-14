@@ -1,0 +1,143 @@
+{
+  "schema": "vexplorer-parts-browser-audit-1",
+  "date": "2026-11-14",
+  "method": "Transcripción de observaciones de herramientas Chrome DevTools sobre interfaz real y API local; no es un test automatizado independiente.",
+  "input_policy": {
+    "public_fixture": "data/planos_demo/piezas_completo.dxf",
+    "upload": "Bytes reales del DXF cargados mediante File/DataTransfer y botón Abrir de la interfaz; upload_file no disponible por restricción de ruta del conector.",
+    "assembled_input": false,
+    "private_reference_read": false
+  },
+  "runs": {
+    "geometry": "run-876e17a4dd664168bc6cd309676e3726",
+    "live": "run-0e8da02c083645a29d18fa4bccb91da9"
+  },
+  "observations": [
+    {
+      "name": "Upload y asociación",
+      "result": "pass",
+      "observed": "9 vistas, 3 observaciones, cantidad 2 por tipo; total 6 ejemplares."
+    },
+    {
+      "name": "Selección K2",
+      "result": "pass",
+      "observed": "Tres vistas asociadas, seis cotas, 864 × 300 × 18 mm y cantidad 2; contornos resaltados y evidencia en inspector."
+    },
+    {
+      "name": "Encaje repetido",
+      "result": "pass",
+      "observed": {
+        "viewport_css": [
+          799.111,
+          260
+        ],
+        "viewBox": [
+          -176.719447,
+          -1351.554576,
+          3759.231363,
+          1223.109151
+        ],
+        "repeat_stable": true,
+        "labels_inside": true
+      }
+    },
+    {
+      "name": "Revisión humana",
+      "result": "pass",
+      "observed": "Revisión 2 registrada por Agente auditor — prueba de piezas separadas. Asignaciones K1 lateral, K2 tapa/base, K3 baldas; motivo explícito sobre colocación esquemática."
+    },
+    {
+      "name": "Fórmula",
+      "result": "pass",
+      "observed": "Ancho 900 mm = 864 + 18 + 18; alto 1200; fondo 300. Alternativas muestran asignaciones distintas."
+    },
+    {
+      "name": "3D",
+      "result": "pass",
+      "observed": "Seis paneles; controles nativos de órbita, selección y despiece visual probados. Etiquetas: colocación esquemática y colisiones no evaluadas."
+    },
+    {
+      "name": "Economía",
+      "result": "pass",
+      "observed": {
+        "total_eur": 127.84,
+        "material_eur": 87.84,
+        "fixed_eur": 40,
+        "synthetic": true,
+        "hours": null
+      }
+    },
+    {
+      "name": "Exportación desde botones",
+      "result": "pass",
+      "observed": {
+        "json_status": 200,
+        "csv_status": 200,
+        "json_transfer_bytes": 64420,
+        "csv_transfer_bytes": 1312,
+        "revision": 2
+      }
+    },
+    {
+      "name": "Traza actualizada",
+      "result": "pass",
+      "observed": "Guardar revisión en biblioteca añade secuencia 6 visible inmediatamente después de revisión humana (4) y estimación (5). No requiere recarga."
+    },
+    {
+      "name": "Restauración live",
+      "result": "pass",
+      "observed": "URL de ejecución live restaurada; etiqueta Ejecución: agente en vivo visible, independiente del selector de próxima ejecución."
+    },
+    {
+      "name": "Responsive",
+      "result": "pass",
+      "observed": [
+        {
+          "innerWidth": 1140,
+          "documentWidth": 1140
+        },
+        {
+          "innerWidth": 901,
+          "documentWidth": 886
+        },
+        {
+          "innerWidth": 501,
+          "documentWidth": 492,
+          "select_width": 228.111
+        }
+      ],
+      "limit": "El navegador no permitió ancho CSS inferior a 501 en esta sesión; no se afirma verificación visual a 390."
+    },
+    {
+      "name": "Consola",
+      "result": "pass",
+      "observed": "Sin errores ni advertencias en páginas comprobadas tras la última navegación."
+    },
+    {
+      "name": "Corrección humana posterior desde navegador",
+      "result": "pass",
+      "observed": {
+        "run": "run-78322e8c8b034ce4a6bb0cce61815555",
+        "from_revision": 3,
+        "to_revision": 4,
+        "original_observed_quantity": null,
+        "previous_confirmed_quantity": 2,
+        "new_confirmed_quantity": 3,
+        "result_state": "completed",
+        "scene_state": "ready",
+        "objects": 7,
+        "material_eur": 100.8,
+        "fixed_eur": 40,
+        "total_eur": 140.8
+      },
+      "procedure": "Formulario real precompletado; cantidad modificada, persona y motivo registrados. Coste quedó pendiente en revisión4 y se recalculó mediante botón."
+    }
+  ],
+  "screenshots": [
+    "parts-browser-2d.png",
+    "parts-browser-3d.png"
+  ],
+  "limitations": [
+    "La captura 2D precede al ajuste del chip de modo; el ajuste posterior se comprobó mediante DOM y captura 3D."
+  ]
+}

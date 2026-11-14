@@ -36,19 +36,19 @@ Archivos: `backend/app/contratos/modelos.py`, `main.py`, `agente/*`, `servicios/
 
 - [x] Acuerdo A/B escrito antes de implementar; comunicar shapes a C/D.
 - [x] Publicar contrato aditivo y pruebas de validación/compatibilidad; commits `86fe0c1` + `6a82a8e`, integrados como `56aeea3` + `700f406`. Asignación de ejemplares por rol en extensión acordada A/B.
-- [ ] Integrar extracción de A en `POST /runs` explícito; resultados parciales se mantienen revisables.
-- [ ] Implementar candidatos grounded, revisión y herramientas live sin cifras propuestas por el modelo.
-- [ ] Derivar descriptor incluyendo espesores y estado de clasificación; versionar espacio semántico y rechazar mezclas incompatibles.
-- [ ] Probar aislamiento, referencias desconocidas, revisión obsoleta, casos incompletos y exportación ligada a versión; commit de integración.
+- [x] Integrar extracción de A en `POST /runs` explícito; resultados parciales se mantienen revisables.
+- [x] Implementar candidatos grounded, revisión y herramientas live sin cifras propuestas por el modelo.
+- [x] Derivar descriptor incluyendo espesores y estado de clasificación; versionar espacio semántico y rechazar mezclas incompatibles.
+- [x] Probar aislamiento, referencias desconocidas, revisión obsoleta, casos incompletos y exportación ligada a versión; commit de integración.
 
 ### 2. Geometría y reconstrucción — A
 
 Archivos: `backend/app/ingesta/dxf_reader.py`, `geometria/extraction.py`, nuevo `geometria/parts.py`, `servicios/reconstruction.py`, sus pruebas. Consume tipos B. No modificar `decomposition.py` legacy para piezas separadas.
 
 - [x] Reproducir OCS/Z/DIMLFAC y corregir con regresiones (commit `854d003`).
-- [ ] Implementar `extract_separated_parts(extraction)` con keys/vistas/cotas/cantidad evidenciadas y conflictos.
-- [ ] Implementar `reconstruct_parts_scene(extraction, parts, result)` sin leer montaje de referencia ni fuentes legacy de conjunto.
-- [ ] Probar varias vistas ≠ cantidad, ejes sin ordenar, unidad desconocida, huecos y posiciones explícitamente hipotéticas; commits.
+- [x] Implementar `extract_separated_parts(extraction)` con keys/vistas/cotas/cantidad evidenciadas y conflictos.
+- [x] Implementar `reconstruct_parts_scene(extraction, parts, result)` sin leer montaje de referencia ni fuentes legacy de conjunto.
+- [x] Probar varias vistas ≠ cantidad, ejes sin ordenar, unidad desconocida, huecos y posiciones explícitamente hipotéticas; commits.
 
 ### 3. Fixtures y aceptación — D
 
@@ -56,26 +56,26 @@ Archivos: `tools/build_parts_fixture.py`, `data/planos_demo/piezas_*`, `evaluati
 
 - [x] Generar solo vistas de paneles, etiquetas opacas y cotas/cantidades admitidas; público `4ae1cee`, referencia privada `7d3376c` solo evaluador/root.
 - [x] Variantes con faltantes, asociación ambigua y posiciones/keys/dimensiones distintas; metadatos neutralizados en `1c399af`.
-- [ ] Prueba de recorrido que congela salida antes de abrir referencia; auditoría de aislamiento y aritmética.
-- [ ] Ejecutar pruebas relevantes y entregar commits/evidencia a root.
+- [x] Prueba de recorrido que congela salida antes de abrir referencia; auditoría de aislamiento y aritmética.
+- [x] Ejecutar pruebas relevantes y entregar commits/evidencia a root.
 
 ### 4. Visor y revisión — C
 
 Archivos: `frontend/*` y tests JS; consume contrato B.
 
-- [ ] Selector explícito de entrada y piezas/vistas asociadas; conservar 2D ante falta de montaje.
-- [ ] Entidades interiores y encuadre por vista; selección bidireccional exacta por IDs.
-- [ ] Mostrar familia/rol/montaje como hipótesis, desconocidos y premisas; revisión y escena nueva.
-- [ ] Bibliotecas y descriptor legible, traza actualizada; comprobar cambios de run/revisión y pantalla estrecha.
-- [ ] Tests JS y smoke contra API real; commit.
+- [x] Selector explícito de entrada y piezas/vistas asociadas; conservar 2D ante falta de montaje.
+- [x] Entidades interiores y encuadre por vista; selección bidireccional exacta por IDs.
+- [x] Mostrar familia/rol/montaje como hipótesis, desconocidos y premisas; revisión y escena nueva.
+- [x] Bibliotecas y descriptor legible, traza actualizada; comprobar cambios de run/revisión y pantalla estrecha.
+- [x] Tests JS y smoke contra API real; commit.
 
 ### 5. Integración, aceptación y entrega — coordinador
 
 Archivos: este plan, diseño, `team/agente_coordinador.md`, README/informe nuevo de aceptación; coordinación de cherry-picks/merges.
 
 - [x] Conservar auditoría baseline y evidencia HTTP/browser/live (`59623ef`), reforzada `20540ff` + `0a8161a`; Astra SHIP de auditoría, no de la nueva implementación.
-- [ ] Integrar contrato y commits en `feat/parts-integration`, resolver solo con el dueño del archivo.
-- [ ] Ejecutar suites finales y HTTP real; nueva instancia aislada y recorrido en Chrome con DXF de piezas separadas.
-- [ ] Ejecución live y embedding reales si están configurados; registrar resultados sin secretos.
-- [ ] GPT-6 Astra revisa diff final/evidencias; corregir hallazgos materiales y verificar.
+- [x] Integrar contrato y commits en `feat/parts-integration`, resolver solo con el dueño del archivo.
+- [x] Ejecutar suites finales y HTTP real; nueva instancia aislada y recorrido en Chrome con DXF de piezas separadas.
+- [x] Ejecución live y embedding reales si están configurados; registrar resultados sin secretos.
+- [x] GPT-6 Astra revisa diff final/evidencias; SHIP sobre `cbc549a`, con hallazgos corregidos y suite final verificada.
 - [ ] README con comandos/guion reales, capacidades verificadas y límites; integrar/push main conforme a autorización previa.

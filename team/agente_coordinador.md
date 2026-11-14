@@ -105,3 +105,13 @@ Completado: demo local integrada y verificada; aceptación final GPT-6 Astra SHI
 - Navegador real: geometry_only, live GPT-6.1 Sol con herramientas reales, selección de evidencia, revisiones2/3, invalidación y recálculo, comparables, ficha JSON, traza y variante incompleta. Decisiones de ensayo atribuidas al agente, no a un técnico humano.
 - Revisor final GPT-6 Astra: SHIP tras correcciones0dcd5fe/5c340a7. No quedan fallos importantes o críticos; quedan los límites declarados en README.
 - Servicio local activo en http://127.0.0.1:8765. Comandos reproducibles y guion en README; evidencia detallada en docs/VERIFICACION_DEMO.md.
+
+## Hito de piezas separadas — 14/11/2026
+
+- Agente coordinador: integración en `feat/parts-integration` desde `dab7ce5`. A/B/C/D trabajan en ramas/worktrees propios; B conserva propiedad única de contratos Pydantic. Se acuerda contrato 0.4 antes de implementar y se comunica a frontend/evaluación.
+- Entrada autorizada: DXF 2D de piezas separadas. Fixture propio, nueve vistas de tres observaciones y seis ejemplares; referencia reservada al evaluador, fuera del runtime. Sin datos ni derivados de PlankAssembly publicados.
+- Integrados extracción, revisión versionada, recálculo por piezas efectivas, escena, descriptor v2, herramientas live nativas y UI de vistas/cotas/confirmaciones. Se mantienen observaciones e historial inmutables.
+- Auditoría baseline conservada; nuevas pruebas HTTP y navegador documentan lo implementado y las correcciones, sin presentar simulaciones como proveedor real. Una modificación de cantidad humana 2→3 produce revisión4, siete objetos y 140,80 EUR sintéticos.
+- Evidencia y límites: `docs/VERIFICACION_PIEZAS_SEPARADAS.md` y `docs/auditoria/2026-11-14/parts-*`. Astra realiza revisión final del diff y reproduce los defectos corregidos.
+- La autorización de merge/push a main sigue vigente. No se solicita otra confirmación; el cierre requiere pruebas y revisión correctas. No se despliega al VPS.
+- Siguiente solicitud activa del usuario: acabar este hito y ampliar a planta/alzado/perfil del conjunto, caso mesa rectangular, propuesta generativa acotada, planos derivados y por pieza acotados y costes explicados. No se atribuye esa ampliación al hito 0.4.
