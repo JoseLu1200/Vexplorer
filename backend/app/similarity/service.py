@@ -642,7 +642,7 @@ def _complete_link_clusters(
             for right_index in range(left_index + 1, len(clusters)):
                 right = clusters[right_index]
                 scores = [cached_pair(a, b) for a in left for b in right]
-                if scores and all(
+                if len({by_id[item].run_id for item in left + right}) > 1 and scores and all(
                     score is not None and score >= threshold for score in scores
                 ):
                     candidates.append(
@@ -682,8 +682,7 @@ def geometric_groups(
 ) -> tuple[SimilarityGroup, ...]:
     def pair(left, right):
         if (
-            left.run_id == right.run_id
-            or left.descriptor.descriptor_version != right.descriptor.descriptor_version
+            left.descriptor.descriptor_version != right.descriptor.descriptor_version
         ):
             return None
         return geometric_match(left.descriptor, right).score
@@ -700,7 +699,7 @@ def geometric_groups(
                 threshold=threshold,
                 linkage="complete",
                 minimum_pair_score=round(minimum, 6),
-                explanation="Grupo complete-link reproducible: todos los pares alcanzan el umbral técnico; no demuestra identidad, fabricación ni intercambiabilidad.",
+                explanation="Grupo reproducible de enlace completo, sin encadenamiento: todos los pares alcanzan el umbral técnico; no demuestra identidad, fabricación ni intercambiabilidad.",
             )
         )
     return tuple(groups)
@@ -727,8 +726,6 @@ def semantic_groups(
         raise ValueError("embedding_space_incompatible")
 
     def pair(left, right):
-        if left.run_id == right.run_id:
-            return None
         return cosine_similarity(vectors[left.id], vectors[right.id])
 
     groups = []
@@ -743,7 +740,7 @@ def semantic_groups(
                 threshold=threshold,
                 linkage="complete",
                 minimum_pair_score=round(minimum, 6),
-                explanation="Grupo complete-link reproducible: todos los pares alcanzan el umbral de coseno; no es probabilidad ni similitud técnica certificada.",
+                explanation="Grupo reproducible de enlace completo, sin encadenamiento: todos los pares alcanzan el umbral de coseno; no es probabilidad ni similitud técnica certificada.",
             )
         )
     return tuple(groups)

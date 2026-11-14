@@ -588,6 +588,8 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
                     "unresolved": ["length", "thickness", "quantity"], "status": "incomplete",
                 }
                 name = "entregar_revision_autonoma"
+            if name == "entregar_revision_autonoma":
+                _abstain_missing_dimensions(arguments, input_items)
             return ProviderResponse(id=f"response-{calls}", model="reviewer-model", tool_calls=(ToolCall(call_id=f"call-{calls}", name=name, arguments_json=json.dumps(arguments)),))
 
     outcome = run_general_autonomous(
@@ -641,6 +643,8 @@ def test_autonomous_can_checkpoint_two_semantic_repairs_in_one_bounded_job() -> 
                     "status": "incomplete",
                 }
                 name = "entregar_revision_autonoma"
+            if name == "entregar_revision_autonoma":
+                _abstain_missing_dimensions(args, input_items)
             return ProviderResponse(
                 id=f"two-repair-{calls}", model="reviewer-model",
                 tool_calls=(ToolCall(call_id=f"two-call-{calls}", name=name, arguments_json=json.dumps(args)),),
@@ -1290,7 +1294,7 @@ def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof(
     outcome = run_general_autonomous(context, proposal_outcome, reviewer_provider=Provider(), proposer_model="proposer-model")
 
     assert outcome.review.reviewer_kind == "machine"
-    assert outcome.review.components[0].length.state == "hypothesis"
+    assert outcome.review.components[0].length.state == "deduced"
     assert outcome.review.machine_provenance.review_relation == "separate_model"
     assert outcome.status == "incomplete"
 
@@ -1365,6 +1369,9 @@ def test_provider_boundary_accepts_reviewed_geometry_but_keeps_package_incomplet
                 ],
                 "unresolved": ["Material y acabado no observados."], "status": "incomplete",
             }
+            for kind in ("quantity_basis", "duplicate_scan"):
+                arguments["checks"].append({"id": kind, "kind": kind, "outcome": "pass", "method": "model_visual", "target_refs": ["component:panel.quantity"], "source_refs": ["visual:page-1"], "summary": "Una ocurrencia distinta en el fixture."})
+            next(item for item in arguments["field_reviews"] if item["target_ref"] == "component:panel.quantity")["check_ids"] = ["quantity_basis", "duplicate_scan"]
             return ProviderResponse(id="review-complete-geometry", model="reviewer-model", tool_calls=(ToolCall(call_id="review-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
 
     outcome = run_general_autonomous(
@@ -1372,7 +1379,17 @@ def test_provider_boundary_accepts_reviewed_geometry_but_keeps_package_incomplet
         reviewer_provider=Provider(), proposer_model="proposer-model",
     )
 
-    assert outcome.status == "accepted"
-    assert outcome.review.auto_review_status == "accepted"
+    assert outcome.status == "incomplete"
+    assert outcome.review.auto_review_status == "incomplete"
+    assert any(item.target_ref == "component:panel.length" and item.status == "accepted" for item in outcome.review.machine_field_reviews)
     assert outcome.review.status == "reviewed_incomplete"
     assert outcome.derived.status == "incomplete"
+
+
+def _abstain_missing_dimensions(arguments, input_items):
+    item = input_items[0]
+    payload = json.loads(item["output"] if "output" in item else item["content"][0]["text"])
+    reviewed = {entry["target_ref"] for entry in arguments["field_reviews"]}
+    for target in payload.get("required_dimension_field_review_targets", ()):
+        if target not in reviewed:
+            arguments["field_reviews"].append({"target_ref": target, "status": "abstained", "check_ids": []})

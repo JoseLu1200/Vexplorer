@@ -1161,13 +1161,14 @@ def run_general_autonomous(
                     latest.unresolved,
                     component_ids={item.id for item in latest.components},
                 )
-                _validate_semantic_repair_delta(
-                    effective.proposal,
-                    repaired.proposal,
-                    directives=directives,
-                    checks=latest.checks,
-                    field_reviews=latest.field_reviews,
-                )
+                if directives:
+                    _validate_semantic_repair_delta(
+                        effective.proposal,
+                        repaired.proposal,
+                        directives=directives,
+                        checks=latest.checks,
+                        field_reviews=latest.field_reviews,
+                    )
                 effective = repaired
                 accounting_report = _accounting_report(context, effective)
                 allowed_refs.update(
