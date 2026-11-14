@@ -193,7 +193,7 @@ def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, 
 def extraction_payload(
     path: Path,
     *,
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy",
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy",
 ) -> dict[str, Any]:
     drawing = parse_dxf(path)
     labels = _view_labels(drawing, input_kind)
@@ -213,6 +213,11 @@ def extraction_payload(
         points_mm = _scaled(entity.points, drawing.unit_scale_to_mm)
         entities.append({"id": entity.id, "kind": entity.kind, "layer": entity.layer, "source_points": points_source, "points_mm": points_mm})
         by_view.setdefault(view_label, []).append(entity.id)
+        if entity.kind == "LINE":
+            evidence.append({
+                "id": f"evidence-geometry-{entity.id}", "kind": "geometry",
+                "source_entity_ids": [entity.id], "description": "Geometric segment observed in drawing",
+            })
         if entity.kind in {"TEXT", "MTEXT"} and entity.text is not None:
             position_source, position_mm = _point_payload(entity.points[0], drawing.unit_scale_to_mm)
             texts.append({
@@ -309,7 +314,7 @@ def extraction_payload(
 def extract_drawing(
     path: Path,
     *,
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy",
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy",
 ) -> Any:
     """Return the contract-owned Pydantic model without duplicating its schema here."""
     from backend.app.contratos.modelos import DrawingExtraction
