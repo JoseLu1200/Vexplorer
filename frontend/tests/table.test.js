@@ -148,8 +148,9 @@ test("table review accepts explicit targets and only confirms declared unresolve
 });
 
 test("table costs expose explicit tariffs, partial subtotal and largest known contribution", () => {
-  const catalog = normaliseTableCostCatalog({ catalog_version: "synthetic-1", synthetic: true, tariffs: [{ id: "board-1", label: "Tablero demo", scope: "material", rate_eur_per_unit: 42, rate_unit: "EUR/m2" }, { id: "cut-1", label: "Corte", scope: "operation", rate_eur_per_unit: 3, rate_unit: "EUR/unit" }] });
+  const catalog = normaliseTableCostCatalog({ catalog_version: "synthetic-1", synthetic: true, tariffs: [{ id: "board-1", label: "Tablero demo", scope: "material", rate_eur_per_unit: 42, rate_unit: "EUR/m2" }, { id: "edge-1", label: "Canteado expuesto", scope: "edge", rate_eur_per_unit: 1.5, rate_unit: "EUR/m" }, { id: "cut-1", label: "Corte", scope: "operation", rate_eur_per_unit: 3, rate_unit: "EUR/unit" }] });
   assert.deepEqual(catalog.materials[0], { id: "board-1", label: "Tablero demo", rate: 42, rateUnit: "EUR/m2" });
+  assert.equal(catalog.edges[0].rate, 1.5);
   const result = presentTableCosts({
     result_revision: 2,
     program_hash: "b".repeat(64),
