@@ -26,3 +26,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["tools*", "backend*"]
+
+[tool.setuptools.package-data]
+"backend.app.validador" = ["*.json"]
