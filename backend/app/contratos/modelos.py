@@ -821,6 +821,7 @@ class HumanReview(StrictModel):
     timestamp: str
     selected_scenario_id: str | None
     selected_assembly_candidate_id: str | None = None
+    selected_table_program_id: str | None = None
 
 
 class Result(StrictModel):
@@ -842,6 +843,9 @@ class Result(StrictModel):
     table_programs: tuple[TableProgramProposal, ...] = ()
     selected_table_program_id: str | None = None
     evaluated_table_program: EvaluatedTableProgram | None = None
+    table_review_decisions: tuple[TableReviewDecision, ...] = ()
+    table_confirmed_values: tuple[TableConfirmedValue, ...] = ()
+    table_cost_scope: TableCostScope | None = None
 
     @model_validator(mode="after")
     def parts_payload_matches_semantics(self) -> "Result":
@@ -1231,6 +1235,7 @@ class RunSnapshot(StrictModel):
     created_at: str
     agent_selected_scenario_id: str | None = None
     agent_selected_assembly_candidate_id: str | None = None
+    agent_selected_table_program_id: str | None = None
     document_id: str | None = None
     input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
 

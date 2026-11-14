@@ -59,11 +59,13 @@ class SimilarityRequest(RequestModel):
     result_revision: int = Field(gt=0)
     mode: Literal["geometric", "semantic"]
     limit: int = Field(default=10, ge=1, le=50)
+    descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
 
 
 class GroupRequest(RequestModel):
     mode: Literal["geometric", "semantic"]
     threshold: float = Field(default=0.8, ge=-1, le=1, allow_inf_nan=False)
+    descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None
 
 
 def _ok(data, status_code: int = 200):
@@ -326,8 +328,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok(item.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/library")
-    def list_library():
-        return _ok([item.model_dump(mode="json") for item in repository.get_library_items()])
+    def list_library(descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] | None = None):
+        items = repository.get_library_items()
+        if descriptor_version is None:
+            return _ok([item.model_dump(mode="json") for item in items])
+        selected = [item for item in items if item.descriptor.descriptor_version == descriptor_version]
+        return _ok({"items": [item.model_dump(mode="json") for item in selected], "descriptor_version": descriptor_version, "excluded_count": len(items) - len(selected)})
 
     @app.post("/api/v1/runs/{run_id}/similarity")
     def similar(run_id: str, request: SimilarityRequest):
@@ -335,7 +341,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             result = repository.get_result(run_id, request.result_revision)
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
-        candidates = [item for item in repository.get_library_items() if item.run_id != run_id]
+        all_candidates = [item for item in repository.get_library_items() if item.run_id != run_id]
+        descriptor_version = request.descriptor_version or build_descriptor(result).descriptor_version
+        candidates = [item for item in all_candidates if item.descriptor.descriptor_version == descriptor_version]
+        excluded_count = len(all_candidates) - len(candidates)
         if request.mode == "semantic":
             try:
                 query = repository.get_library_item(run_id)
@@ -358,12 +367,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             descriptor = build_descriptor(result)
             matches = [geometric_match(descriptor, item) for item in candidates]
         matches.sort(key=lambda item: (-item.score, item.library_item_id))
-        return _ok([item.model_dump(mode="json") for item in matches[:request.limit]])
+        payload = [item.model_dump(mode="json") for item in matches[:request.limit]]
+        if request.descriptor_version is not None:
+            return _ok({"matches": payload, "descriptor_version": descriptor_version, "excluded_count": excluded_count})
+        return _ok(payload)
 
     @app.post("/api/v1/library/groups")
     def groups(request: GroupRequest):
+        all_items = repository.get_library_items()
+        items = tuple(item for item in all_items if request.descriptor_version is None or item.descriptor.descriptor_version == request.descriptor_version)
+        excluded_count = len(all_items) - len(items)
         if request.mode == "semantic":
-            items = repository.get_library_items()
             try:
                 vectors = {
                     item.id: repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
@@ -376,8 +390,14 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 code = str(exc)
                 return _error(409, code, "Los embeddings faltan, son inválidos o pertenecen a espacios incompatibles.")
         else:
-            values = geometric_groups(repository.get_library_items(), request.threshold)
-        return _ok([item.model_dump(mode="json") for item in values])
+            try:
+                values = geometric_groups(items, request.threshold)
+            except ValueError as exc:
+                return _error(409, str(exc), "Los descriptores pertenecen a espacios incompatibles.")
+        payload = [item.model_dump(mode="json") for item in values]
+        if request.descriptor_version is not None:
+            return _ok({"groups": payload, "descriptor_version": request.descriptor_version, "excluded_count": excluded_count})
+        return _ok(payload)
 
     @app.post("/api/v1/runs/{run_id}/estimate")
     def estimate(run_id: str, request: EstimateRequest):
