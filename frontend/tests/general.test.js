@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalReviewMessage, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -201,6 +201,13 @@ test("recovery presentation distinguishes saved proposal from completed review",
   assert.match(recovery.message,/agotó el tiempo/i);
   assert.equal(recovery.actionLabel,"Reanudar revisión sin repetir la propuesta");
   assert.match(recovery.message,/no equivale a una revisión aprobada/i);
+  assert.doesNotMatch(recovery.message,/checkpoint/i);
+});
+
+test("review copy never claims a result before a review revision exists",()=>{
+  assert.equal(generalReviewMessage({reviewRevision:0,status:"reviewed_incomplete"},{proposalSaved:true}),"Borrador guardado recuperado; la revisión automática sigue pendiente. Puedes reanudarla sin repetir la propuesta.");
+  assert.match(generalReviewMessage({reviewRevision:1,status:"reviewed_incomplete"},null),/abstuvo/);
+  assert.match(generalReviewMessage({reviewRevision:1,status:"approved"},null),/publicó el resultado/);
 });
 
 test("recovery translates real timeout codes and autonomous review phase",()=>{

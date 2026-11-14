@@ -5,7 +5,7 @@ import json
 import pytest
 
 from backend.app.agente.provider import ProviderResponse, ToolCall
-from backend.app.contratos.modelos import GeneralAutoReviewArgs, GeneralAutoReviewDecisionArgs, GeneralMachineFieldReview, GeneralModelVisualCheck, GeneralPieceGeometry, GeneralQuantity, GeneralReviewOperation
+from backend.app.contratos.modelos import GeneralAutoReviewArgs, GeneralAutoReviewDecisionArgs, GeneralMachineFieldReview, GeneralModelVisualCheck, GeneralPieceGeometry, GeneralQuantity, GeneralReviewOperation, GeneralValue
 from backend.app.general_furniture import autonomous
 from backend.app.general_furniture.evidence_accounting import build_evidence_accounting_report
 from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, GeneralVisualPage
@@ -220,3 +220,27 @@ def test_unknown_material_and_finish_do_not_block_geometric_coherence_status() -
     assert autonomous._effective_auto_status(
         abstained_args, required_review_targets=targets
     ) == "incomplete"
+
+
+def test_hardware_can_be_coherent_without_invented_catalog_dimensions() -> None:
+    _, _, draft, _ = _vector_case(assigned_count=10)
+    component = draft.components[0].model_copy(update={
+        "kind": "hardware",
+        "quantity": GeneralQuantity(value=1, state="deduced", dependency_refs=("premise:p1",)),
+        "width": GeneralValue(value_mm=None, state="unknown"),
+        "thickness": GeneralValue(value_mm=None, state="unknown"),
+        "geometry": GeneralPieceGeometry(shape_kind="hardware", source_contour_ids=(), basis_refs=("premise:p1",), rationale="Herraje provisional."),
+        "unknown_fields": ("width", "thickness"),
+    })
+    draft = draft.model_copy(update={"components": (component,)})
+    targets = tuple(f"component:panel.{field}" for field in ("kind", "existence", "quantity"))
+    decision = GeneralAutoReviewDecisionArgs(
+        scenario_id="base",
+        checks=(GeneralModelVisualCheck(id="hardware", kind="visual_consistency", outcome="pass", target_refs=targets, source_refs=("visual:accounting-page",), summary="Clasificación constructiva provisional."),),
+        field_reviews=tuple(GeneralMachineFieldReview(target_ref=target, status="accepted", check_ids=("hardware",)) for target in targets),
+        unresolved=(), status="accepted",
+    )
+    args = autonomous._server_review_args(decision, draft, None)
+
+    assert args.components[0].width.state == "unknown"
+    assert autonomous._effective_auto_status(args, required_review_targets=targets) == "accepted"

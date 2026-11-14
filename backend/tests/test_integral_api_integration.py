@@ -25,14 +25,23 @@ def _accepted_dimension_decisions(required_targets: list[str], visual_ref: str):
     checks = []
     field_reviews = []
     for index, target in enumerate(required_targets, start=1):
-        check_id = f"visual-dimension-{index}"
-        checks.append({
-            "id": check_id, "kind": "duplicate_scan" if target.startswith("evidence_region:") else "visual_consistency", "outcome": "pass",
-            "method": "model_visual", "target_refs": [target],
-            "source_refs": [visual_ref], "summary": "Asignación dimensional contrastada.",
-        })
+        kinds = (
+            ("quantity_basis", "duplicate_scan")
+            if target.endswith(".quantity")
+            else (("duplicate_scan",) if target.startswith("evidence_region:") else ("visual_consistency",))
+        )
+        check_ids = []
+        for kind in kinds:
+            check_id = f"visual-{index}-{kind}"
+            check_ids.append(check_id)
+            checks.append({
+                "id": check_id, "kind": kind, "outcome": "pass",
+                "method": "model_visual", "target_refs": [target],
+                "source_refs": [visual_ref],
+                "summary": "Target requerido contrastado por el fixture.",
+            })
         field_reviews.append({
-            "target_ref": target, "status": "accepted", "check_ids": [check_id],
+            "target_ref": target, "status": "accepted", "check_ids": check_ids,
         })
     return checks, field_reviews
 
@@ -58,6 +67,17 @@ class _GeneralLiveProvider:
             required_targets.extend(
                 context.get("required_evidence_disposition_review_targets", [])
             )
+            required_targets.extend(
+                context.get("required_cut_piece_field_review_targets", [])
+            )
+            required_targets.extend(
+                context.get("required_hardware_field_review_targets", [])
+            )
+            for group in context.get(
+                "required_hardware_classification_field_review_targets", []
+            ):
+                if group.get("any_of"):
+                    required_targets.append(group["any_of"][0])
             checks, field_reviews = _accepted_dimension_decisions(
                 list(dict.fromkeys(required_targets)),
                 context["visual_artifacts"][0]["reference"],

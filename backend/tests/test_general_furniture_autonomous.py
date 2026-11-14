@@ -528,7 +528,6 @@ def test_typed_hardware_requires_explicit_visual_classification_decision() -> No
     )
     assert feedback["details"][0]["missing_any_of"] == [[
         f"component:{source.id}.kind",
-        f"component:{source.id}.geometry",
     ]]
     accepted = {
         item.target_ref for item in outcome.review.machine_field_reviews

@@ -161,7 +161,7 @@ def test_failed_review_restores_checkpoint_and_resume_does_not_repeat_proposer(t
     assert repeated_response.json()["data"]["id"] == resumed["id"]
     completed = _wait_job(client, resumed["id"])
 
-    assert completed["state"] == "succeeded"
+    assert completed["state"] == "succeeded", completed.get("error")
     assert completed["run_id"] == failed["run_id"]
     assert completed["retry_of_job_id"] == source["id"]
     assert proposer.proposal_calls == 1
