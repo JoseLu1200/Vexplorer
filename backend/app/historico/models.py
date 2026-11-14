@@ -194,8 +194,13 @@ class HistoricalTarget(StrictModel):
 
 
 class EmbeddingSpace(StrictModel):
+    provider: Literal["embeddinggemma2", "legacy"] = "legacy"
     model: str
+    model_revision: str = "provider-managed-legacy"
+    modality: Literal["text", "mixed"] = "text"
     dimensions: int = Field(gt=0)
+    normalization: Literal["l2"] = "l2"
+    preprocessing_version: str = "legacy-unspecified"
 
 
 class HistoricalComparable(StrictModel):

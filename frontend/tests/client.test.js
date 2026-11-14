@@ -228,6 +228,18 @@ test("general assembly cancellation targets the durable retry job without a requ
   assert.equal(request[1].body,undefined);
 });
 
+test("recent projects, executions and generic cancellation use durable resources", async () => {
+  const requests=[];
+  const client=createApiClient({fetchImpl:async(url,init={})=>{requests.push([url,init]);return response(200,{data:{items:[],next_cursor:null,state:"cancelled"}});}});
+  await client.getProjects({limit:20,cursor:"next token"});
+  await client.getExecutions({limit:10});
+  await client.cancelJob("job/7");
+  assert.equal(requests[0][0],"/api/v1/projects?limit=20&cursor=next+token");
+  assert.equal(requests[1][0],"/api/v1/executions?limit=10");
+  assert.equal(requests[2][0],"/api/v1/jobs/job%2F7/cancel");
+  assert.equal(requests[2][1].method,"POST");
+});
+
 test("historical imports, records, comparables and estimates have visible client operations", async () => {
   const requests = [];
   const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };

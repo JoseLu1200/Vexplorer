@@ -29,6 +29,7 @@ from backend.app.semantic.descriptor import (
 from backend.app.semantic.embeddings import (
     EmbeddingProviderError,
     EmbeddingResult,
+    EmbeddingSpaceIdentity,
     embedding_cache_key,
 )
 
@@ -40,6 +41,7 @@ EstadoRegeneracion = Literal["pendiente", "regenerado", "de_cache", "error", "om
 class ProveedorEmbeddings(Protocol):
     model: str
     dimensions: int
+    identity: EmbeddingSpaceIdentity
 
     def embed(self, text: str) -> EmbeddingResult: ...
 
@@ -53,9 +55,9 @@ class RepositorioBiblioteca(Protocol):
 
     def get_result(self, run_id: str, revision: int | None = None) -> Result: ...
 
-    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]: ...
+    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, *, space_id: str | None = None) -> tuple[float, ...]: ...
 
-    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...]) -> None: ...
+    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...], *, space_id: str | None = None, identity_json: str | None = None) -> None: ...
 
     def invalidate_embeddings(self, model: str, dimensions: int) -> int: ...
 
@@ -182,10 +184,11 @@ def regenerar_elemento(
     except ValueError as exc:
         return _resultado(obsoleto, "omitido", motivo_omision=str(exc) or "descriptor_no_disponible")
     modelo, dimensiones, version = proveedor.model, proveedor.dimensions, descriptor.descriptor_version
+    identidad = proveedor.identity
     texto = semantic_text(descriptor)
-    clave = embedding_cache_key(version, modelo, dimensiones, texto)
+    clave = embedding_cache_key(identidad, version, texto)
     try:
-        repositorio.get_embedding(clave, modelo, dimensiones, version)
+        repositorio.get_embedding(clave, modelo, dimensiones, version, space_id=identidad.space_id)
         estado: EstadoRegeneracion = "de_cache"
     except (KeyError, ValueError, EmbeddingProviderError):
         # Ausente o corrupto en caché: se vuelve a embeber y se sobrescribe.
@@ -193,11 +196,23 @@ def regenerar_elemento(
             generado = proveedor.embed(texto)
             if generado.model != modelo or generado.dimensions != dimensiones:
                 raise EmbeddingProviderError("embedding_space_incompatible")
-            repositorio.save_embedding(clave, generado.model, generado.dimensions, version, generado.vector)
+            repositorio.save_embedding(
+                clave, generado.model, generado.dimensions, version, generado.vector,
+                space_id=identidad.space_id,
+                identity_json=identidad.model_dump_json(),
+            )
         except EmbeddingProviderError as exc:
             return _resultado(obsoleto, "error", codigo=str(exc) or "semantic_provider_failed")
         estado = "regenerado"
-    metadatos = EmbeddingMetadata(model=modelo, dimensions=dimensiones, descriptor_version=version, cache_key=clave, status="cache" if estado == "de_cache" else "generated")
+    metadatos = EmbeddingMetadata(
+        provider=identidad.provider, model=modelo,
+        model_revision=identidad.model_revision, modality=identidad.modality,
+        normalization=identidad.normalization,
+        preprocessing_version=identidad.preprocessing_version,
+        prompt_name=identidad.prompt_name,
+        dimensions=dimensiones, descriptor_version=version, cache_key=clave,
+        status="cache" if estado == "de_cache" else "generated",
+    )
     actualizado = LibraryItem(
         id=elemento.id,
         run_id=elemento.run_id,

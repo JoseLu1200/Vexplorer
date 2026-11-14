@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+const uiSource = await readFile(new URL("../core/ui.js", import.meta.url), "utf8");
 
 test("upload defaults to general CAD completion and keeps specialized opt-ins", () => {
   assert.match(html, /name="input_kind"/);
@@ -167,6 +168,11 @@ test("automatic general review exposes conditional historical scenarios separate
   assert.match(app,/missing\.label/);
   assert.match(app,/\[\$\{missing\.code\}\]/);
   assert.match(app,/\["bom_csv","bom_json"\]/);
+});
+
+test("semantic library generation uses the EmbeddingGemma 2 contract key", () => {
+  assert.match(uiSource, /embeddinggemma2/);
+  assert.doesNotMatch(uiSource, /embedding_mode\s*:\s*"openai"/);
 });
 
 test("PDF pages require an explicit page and optional confirmed scale before analysis", () => {

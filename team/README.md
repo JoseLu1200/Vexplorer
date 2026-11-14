@@ -1,5 +1,9 @@
 # Equipo de agentes de Vexplorer
 
+## Correcciones de auditoría — swarm autorizado
+
+El usuario autorizó explícitamente todo el alcance y los registros del swarm el 2026-11-14. Se trabaja en el checkout `data/offline-pipeline-demo`, base `b2bc33d`, conservando otros worktrees. El [plan de hallazgos](../docs/superpowers/plans/2026-11-14-hallazgos.md) y [registro de coordinación](agente_hallazgos_coordinacion.md) delimitan las reservas actuales: `agente_hallazgos_security`, `jobs`, `embeddings`, `frontend`, `browser_ci`, `evaluation` y `review`. Implementadores GPT-6.1 Sol; revisión GPT-6 Astra. Las secciones compartidas de API y persistencia se coordinan explícitamente. La autorización incluye la migración semántica de metadata y sus consumidores; la biblioteca publicada sigue siendo catálogo compartido, sin conceder acceso al proyecto fuente privado.
+
 ## Prioridad vigente: completar planos CAD 2D
 
 El usuario corrigió el alcance el 2026-11-14: interpretar vistas de un mueble completo con cotas escasas, deducir o estimar medidas y detalles, proponer piezas necesarias y entregar sus planos acotados con explicaciones útiles. El [diseño vigente](../docs/superpowers/specs/2026-11-14-cad-completion.md) y su [plan](../docs/superpowers/plans/2026-11-14-cad-completion.md) se implementan en `.worktrees/cad-completion`, rama `feat/cad-completion`, base `0e65713`. Las estimaciones numéricas justificadas forman parte del resultado provisional principal y no sustituyen observaciones. No se requiere revisión humana.

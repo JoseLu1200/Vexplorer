@@ -98,7 +98,7 @@ def test_semantic_groups_use_compatible_cached_embeddings_without_fallback(tmp_p
     client = TestClient(create_app(data_dir=tmp_path, embedding_provider=FakeEmbeddingProvider()))
     for label in ("semantic-a", "semantic-b"):
         run_id = _reviewed_run(client, label)
-        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "openai"})
+        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": label, "embedding_mode": "embeddinggemma2"})
         assert saved.status_code == 201
 
     response = client.post("/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.99, "include_summary": True})
@@ -175,7 +175,7 @@ def test_semantic_similarity_preserves_cosine_and_reranks_by_technical_evidence(
     exact = _reviewed_run(client, "exact-semantic", ROOT / "data" / "planos_demo" / "mueble_demo_004.dxf")
     changed = _reviewed_run(client, "changed-semantic", ROOT / "data" / "planos_demo" / "mueble_demo_002.dxf")
     for run_id in (query, exact, changed):
-        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "openai"})
+        saved = client.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "embeddinggemma2"})
         assert saved.status_code == 201
 
     response = client.post(f"/api/v1/runs/{query}/similarity", json={"result_revision": 2, "mode": "semantic", "limit": 2, "include_summary": True})
@@ -214,10 +214,80 @@ def test_semantic_similarity_excludes_candidate_without_embedding_instead_of_fai
     client = TestClient(create_app(data_dir=tmp_path, embedding_provider=FakeEmbeddingProvider()))
     query = _reviewed_run(client, "embedded-query")
     offline = _reviewed_run(client, "offline-candidate")
-    assert client.post(f"/api/v1/runs/{query}/library", json={"result_revision": 2, "label": query, "embedding_mode": "openai"}).status_code == 201
+    assert client.post(f"/api/v1/runs/{query}/library", json={"result_revision": 2, "label": query, "embedding_mode": "embeddinggemma2"}).status_code == 201
     assert client.post(f"/api/v1/runs/{offline}/library", json={"result_revision": 2, "label": offline, "embedding_mode": "offline"}).status_code == 201
 
     response = client.post(f"/api/v1/runs/{query}/similarity", json={"result_revision": 2, "mode": "semantic", "include_summary": True})
 
     assert response.status_code == 200
     assert response.json()["data"] == {"matches": [], "descriptor_version": "furniture-v1", "excluded_count": 1, "record_count": 0, "design_count": 0, "duplicate_record_count": 0}
+
+
+def test_embeddinggemma2_automatic_thresholds_fail_closed_until_calibrated(tmp_path: Path, monkeypatch) -> None:
+    from backend.app.semantic.embeddings import EmbeddingResult, EmbeddingSpaceIdentity
+
+    class Provider:
+        identity = EmbeddingSpaceIdentity.embeddinggemma2_text("revision-a")
+        model = identity.model
+        dimensions = identity.dimensions
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(tuple([1.0] + [0.0] * 767), self.model, self.dimensions)
+
+    client = TestClient(create_app(data_dir=tmp_path, embedding_provider=Provider()))
+    run_id = _reviewed_run(client, "eg2-threshold")
+    assert client.post(
+        f"/api/v1/runs/{run_id}/library",
+        json={"result_revision": 2, "label": run_id, "embedding_mode": "embeddinggemma2"},
+    ).status_code == 201
+
+    automatic = client.post(
+        f"/api/v1/runs/{run_id}/similarity",
+        json={"result_revision": 2, "mode": "semantic", "include_abstention": True},
+    )
+    assert automatic.status_code == 409
+    assert automatic.json()["error"]["code"] == "semantic_threshold_uncalibrated"
+    assert client.post(
+        f"/api/v1/runs/{run_id}/similarity",
+        json={"result_revision": 2, "mode": "semantic", "include_abstention": True, "min_score": 0.5},
+    ).status_code == 200
+
+    groups = client.post("/api/v1/library/groups", json={"mode": "semantic"})
+    assert groups.status_code == 409
+    assert groups.json()["error"]["code"] == "semantic_threshold_uncalibrated"
+    assert client.post(
+        "/api/v1/library/groups", json={"mode": "semantic", "threshold": 0.5}
+    ).status_code == 200
+
+
+def test_embeddinggemma2_groups_infer_single_descriptor_for_exact_calibration(tmp_path: Path, monkeypatch) -> None:
+    from backend.app.semantic.embeddings import EmbeddingResult, EmbeddingSpaceIdentity
+
+    class Provider:
+        identity = EmbeddingSpaceIdentity.embeddinggemma2_text("revision-a")
+        model = identity.model
+        dimensions = identity.dimensions
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(tuple([1.0] + [0.0] * 767), self.model, self.dimensions)
+
+    calibration = tmp_path / "thresholds.json"
+    calibration.write_text(
+        __import__("json").dumps({
+            "group": {
+                f"semantic:furniture-v1:embeddinggemma2:{Provider.identity.space_id}": 0.9
+            }
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("VEXPLORER_SIMILARITY_THRESHOLDS_FILE", str(calibration))
+    client = TestClient(create_app(data_dir=tmp_path / "data", embedding_provider=Provider()))
+    run_id = _reviewed_run(client, "eg2-calibrated")
+    assert client.post(
+        f"/api/v1/runs/{run_id}/library",
+        json={"result_revision": 2, "label": run_id, "embedding_mode": "embeddinggemma2"},
+    ).status_code == 201
+
+    response = client.post("/api/v1/library/groups", json={"mode": "semantic"})
+
+    assert response.status_code == 200

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { clearRunSession, persistJob, persistRunId, restoredRunRecovery, restoreJob, restoreRunId } from "../core/session.js";
+import { browserStorage, clearRunSession, createResilientStorage, persistJob, persistRunId, restoredRunRecovery, restoreJob, restoreRunId } from "../core/session.js";
 
 function storage() {
   const values = new Map();
@@ -51,4 +51,46 @@ test("only an invalid run id or confirmed 404 discards a restored pointer", () =
   assert.deepEqual(restoredRunRecovery("run-abc123", { status: 404, code: "run_not_found" }), { discard: true, retry: false, reason: "run_not_found" });
   assert.deepEqual(restoredRunRecovery("run-abc123", { status: 404, code: "invalid_response" }), { discard: false, retry: true, reason: "temporarily_unavailable" });
   assert.equal(restoredRunRecovery("run-abc123", { status: 422 }).discard, false);
+});
+
+test("blocked browser storage falls back to memory without evaluating the getter again", () => {
+  let reads = 0;
+  const scope = {};
+  Object.defineProperty(scope, "localStorage", { get() { reads += 1; throw new DOMException("blocked", "SecurityError"); } });
+  const store = browserStorage(scope);
+  persistJob({ id: "job-memory", state: "queued" }, store);
+  assert.deepEqual(restoreJob(store), { id: "job-memory", run_id: null, state: "queued" });
+  assert.equal(reads, 1);
+});
+
+test("quota failures keep the newest run in memory and still update the URL", () => {
+  const primary = { getItem: () => "run-stale", setItem() { throw new DOMException("full", "QuotaExceededError"); }, removeItem() { throw new DOMException("blocked", "SecurityError"); } };
+  const store = createResilientStorage(primary); let changedUrl;
+  persistRunId("run-current", store, { pathname: "/", search: "", hash: "" }, { replaceState: (_state, _title, url) => { changedUrl = url; } });
+  assert.equal(restoreRunId({ search: "" }, store), "run-current");
+  assert.equal(changedUrl, "/?run=run-current");
+});
+
+test("history replacement failures never break persistence or clearing", () => {
+  const store = createResilientStorage(null);
+  const blockedHistory = { replaceState() { throw new DOMException("opaque origin", "SecurityError"); } };
+  assert.doesNotThrow(() => persistRunId("run-memory", store, { pathname: "/", search: "", hash: "" }, blockedHistory));
+  assert.equal(restoreRunId({ search: "" }, store), "run-memory");
+  assert.doesNotThrow(() => clearRunSession(store, { pathname: "/", search: "?run=run-memory", hash: "" }, blockedHistory));
+  assert.equal(restoreRunId({ search: "" }, store), null);
+});
+
+test("cancelled jobs do not survive reload as active work", () => {
+  const store=storage();persistJob({id:"job-cancelled",state:"running"},store);persistJob({id:"job-cancelled",state:"cancelled"},store);
+  assert.equal(restoreJob(store),null);
+});
+
+test("exported session helpers tolerate raw throwing storage", () => {
+  const blocked={getItem(){throw new DOMException("blocked","SecurityError");},setItem(){throw new DOMException("blocked","SecurityError");},removeItem(){throw new DOMException("blocked","SecurityError");}};
+  let changedUrl;
+  assert.equal(restoreRunId({search:""},blocked),null);
+  assert.doesNotThrow(()=>persistJob({id:"job-raw",state:"queued"},blocked));
+  assert.doesNotThrow(()=>persistRunId("run-raw",blocked,{pathname:"/",search:"",hash:""},{replaceState:(_a,_b,url)=>{changedUrl=url;}}));
+  assert.equal(changedUrl,"/?run=run-raw");
+  assert.doesNotThrow(()=>clearRunSession(blocked,{pathname:"/",search:"?run=run-raw",hash:""},{replaceState(){}}));
 });

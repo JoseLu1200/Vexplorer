@@ -98,6 +98,24 @@ def test_calibrated_thresholds_load_from_json_with_precedence_and_fallback(tmp_p
     assert resolve_group_threshold("geometric", config_path=malformed_file) == 0.85
 
 
+def test_embeddinggemma2_requires_exact_vector_space_calibration(tmp_path) -> None:
+    space_key = "embeddinggemma2:space-a"
+    with pytest.raises(ValueError, match="semantic_threshold_uncalibrated"):
+        resolve_similarity_threshold(
+            "semantic", "furniture-v2", space_key,
+            config_path=tmp_path / "missing.json",
+        )
+
+    config = tmp_path / "thresholds.json"
+    config.write_text(
+        '{"similarity":{"semantic:furniture-v2:embeddinggemma2:space-a":0.91}}',
+        encoding="utf-8",
+    )
+    assert resolve_similarity_threshold(
+        "semantic", "furniture-v2", space_key, config_path=config
+    ) == 0.91
+
+
 def test_evaluate_similarity_abstention_handles_empty_below_and_passing_matches() -> None:
     empty_res = evaluate_similarity_abstention([], 0.90)
     assert empty_res.abstained is True
@@ -182,7 +200,7 @@ def test_similarity_endpoint_abstains_sin_precedentes_when_below_semantic_thresh
     for run_id, label in ((first, "A"), (second, "B")):
         saved = client.post(
             f"/api/v1/runs/{run_id}/library",
-            json={"result_revision": 2, "label": label, "embedding_mode": "openai"},
+            json={"result_revision": 2, "label": label, "embedding_mode": "embeddinggemma2"},
         )
         assert saved.status_code == 201
 
@@ -234,7 +252,7 @@ def test_group_request_uses_calibrated_default_threshold_per_mode(tmp_path: Path
         run_id = _reviewed_run(client, label, material=material, finish=finish)
         saved = client.post(
             f"/api/v1/runs/{run_id}/library",
-            json={"result_revision": 2, "label": label, "embedding_mode": "openai"},
+            json={"result_revision": 2, "label": label, "embedding_mode": "embeddinggemma2"},
         )
         assert saved.status_code == 201
 

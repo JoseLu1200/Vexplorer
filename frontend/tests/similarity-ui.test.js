@@ -90,7 +90,7 @@ test("boot resolves library and provider status before any run is selected", () 
   assert.match(app, /await api\.getLibrary\(\)/);
   assert.match(app, /renderLibraryEntries\(library\)/);
   assert.match(app, /Biblioteca no disponible:/);
-  assert.match(app, /configureModes\(await api\.getConfig\(\)\)[\s\S]*await refreshInitialLibrary\(\)/);
+  assert.match(app, /configureModes\(await api\.getConfig\(\)\)[\s\S]*Promise\.all\(\[refreshInitialLibrary\(\),refreshRecent\(\)\]\)/);
 });
 
 test("public status separates configured provider, empty index and private generation", () => {

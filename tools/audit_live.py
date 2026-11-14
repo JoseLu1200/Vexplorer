@@ -65,9 +65,9 @@ def main() -> None:
         else:
             review.update(scenario_id="scenario-between-sides", confirmed_thickness_mm=18)
         reviewed = call("POST", f"/runs/{run_id}/reviews", json=review)
-        items.append(call("POST", f"/runs/{run_id}/library", json={"result_revision": reviewed["result_revision"], "label": "Auditoría proveedor " + filename, "embedding_mode": "openai"}))
+        items.append(call("POST", f"/runs/{run_id}/library", json={"result_revision": reviewed["result_revision"], "label": "Auditoría proveedor " + filename, "embedding_mode": "embeddinggemma2"}))
     call("POST", f"/runs/{run_id}/similarity", json={"result_revision": 2, "mode": "semantic", "limit": 10})
-    call("POST", f"/runs/{run_id}/library", json={"result_revision": 2, "label": "Auditoría proveedor repetición", "embedding_mode": "openai"})
+    call("POST", f"/runs/{run_id}/library", json={"result_revision": 2, "label": "Auditoría proveedor repetición", "embedding_mode": "embeddinggemma2"})
     if separated:
         assert items[0]["descriptor_fingerprint"] == items[2]["descriptor_fingerprint"], "IDs/translation changed semantic fingerprint"
         assert items[0]["descriptor_fingerprint"] != items[3]["descriptor_fingerprint"], "Thickness missing from semantic fingerprint"

@@ -1071,6 +1071,7 @@ def run_general_autonomous(
     proposal_revision: int = 1,
     previous_review: GeneralFurnitureReview | None = None,
     checkpoint_sink: Callable[[GeneralAutonomousCheckpoint], None] | None = None,
+    cancelled: Callable[[], bool] | None = None,
 ) -> GeneralAutonomousOutcome:
     if len(context.visual_pages) > 4 or any(len(item.content) > 4 * 1024 * 1024 for item in context.visual_pages):
         raise ValueError("general_auto_visual_context_budget_exceeded")
@@ -1114,6 +1115,11 @@ def run_general_autonomous(
     input_items = _review_input(context, effective)
 
     for model_call in range(1, limits.max_model_calls + 1):
+        if cancelled is not None and cancelled():
+            raise GeneralAutonomousError(
+                "job_cancelled", trace=tuple(trace),
+                model_calls=model_call - 1, tool_calls=tool_calls,
+            )
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
             raise GeneralAutonomousError(
@@ -1136,6 +1142,11 @@ def run_general_autonomous(
                 _safe_autonomous_error_code(exc), trace=tuple(trace),
                 model_calls=model_call, tool_calls=tool_calls,
             ) from exc
+        if cancelled is not None and cancelled():
+            raise GeneralAutonomousError(
+                "job_cancelled", trace=tuple(trace),
+                model_calls=model_call, tool_calls=tool_calls,
+            )
         previous_response_id = response.id
         response_ids.append(response.id)
         if not response.tool_calls:

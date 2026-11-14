@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date
+import hashlib
+import json
 from math import isfinite
 from typing import Annotated, Literal
 
@@ -2861,12 +2863,57 @@ class FurnitureDescriptorV3(StrictModel):
 
 
 class EmbeddingMetadata(StrictModel):
-    provider: Literal["openai"] = "openai"
+    provider: Literal["embeddinggemma2", "openai"] = "openai"
     model: str = Field(min_length=1)
+    model_revision: str | None = None
+    modality: Literal["text", "mixed"] = "text"
+    normalization: Literal["l2"] = "l2"
+    preprocessing_version: str | None = None
+    prompt_name: str | None = None
     dimensions: int = Field(gt=0)
     descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] = "furniture-v1"
     cache_key: str = Field(min_length=1)
     status: Literal["generated", "cache"]
+
+    @model_validator(mode="after")
+    def complete_embeddinggemma2_identity(self) -> "EmbeddingMetadata":
+        if self.provider == "embeddinggemma2" and (
+            self.model != "google/embeddinggemma-2"
+            or not self.model_revision
+            or not self.preprocessing_version
+            or self.prompt_name != "SentenceSimilarity"
+            or self.dimensions != 768
+        ):
+            raise ValueError("incomplete_embeddinggemma2_space_identity")
+        return self
+
+    @property
+    def space_identity(self) -> tuple[object, ...]:
+        return (
+            self.provider,
+            self.model,
+            self.model_revision,
+            self.modality,
+            self.dimensions,
+            self.normalization,
+            self.preprocessing_version,
+            self.prompt_name,
+            self.descriptor_version,
+        )
+
+    @property
+    def space_id(self) -> str:
+        payload = {
+            "provider": self.provider,
+            "model": self.model,
+            "model_revision": self.model_revision,
+            "modality": self.modality,
+            "dimensions": self.dimensions,
+            "normalization": self.normalization,
+            "preprocessing_version": self.preprocessing_version,
+            "prompt_name": self.prompt_name,
+        }
+        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 class LibraryPublicationProvenance(StrictModel):

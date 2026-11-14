@@ -100,9 +100,10 @@ Existe tooling local de preparación, todavía no backend ni frontend: `python -
 
 Decisión del equipo (2026-11-14): el único modelo de embeddings para similitud es **EmbeddingGemma 2** (`google/embeddinggemma-2`, clave `embeddinggemma2`). Los demás (DINOv3, MiniLM, OpenAI `text-embedding-3-small`) ya se probaron en el [laboratorio semántico](docs/semantic-lab/README.md) y se descartan. No propongas ni añadas trabajo nuevo con ellos.
 
-Estado del código a esa fecha, pendiente de migrar:
+Estado del código tras la migración del runtime del 2026-11-14:
 
-- El runtime (biblioteca semántica e histórico) sigue usando OpenAI `text-embedding-3-small` vía `backend/app/semantic/embeddings.py` y `backend/app/agente/config.py` (`OPENAI_EMBEDDING_MODEL` en `.env.example`, `compose.yaml` y `deploy/*.env.example`). Hay que sustituirlo por EmbeddingGemma 2.
+- El runtime textual de biblioteca e histórico usa EmbeddingGemma 2 desde un snapshot local fijado, 768 dimensiones, normalización L2 y prompt `SentenceSimilarity`. No descarga pesos en ejecución; si faltan el snapshot o las dependencias declara la capacidad no disponible.
+- El runtime textual y el explorador mixto son espacios distintos. No se fabrican imágenes para registros históricos textuales ni se comparan vectores OpenAI heredados con EmbeddingGemma 2.
 - El explorador semántico ya lee espacios preparados con `tools/prepare_semantic_explorer.py`, cuyo modelo por defecto es `embeddinggemma2`.
 - `dinov3` y `minilm` solo quedan como opciones en `tools/semantic_lab/encode.py` y `tools/prepare_semantic_explorer.py` (laboratorio). DINOv3 en `tools/reconstruction3d/low_memory.py` es parte del pipeline de reconstrucción 3D, no un embedding de similitud: no se ve afectado.
 

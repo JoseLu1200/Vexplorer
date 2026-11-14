@@ -6,7 +6,7 @@ import time
 from base64 import b64encode
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.agente.comparacion import compare_assembly_candidates, compare_legacy_candidates, compare_table_programs
@@ -251,7 +251,7 @@ def _resolve_table_program_pieces(
     )
 
 
-def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits()) -> AgentOutcome:
+def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], provider: Provider, limits: AgentLimits = AgentLimits(), *, cancelled: Callable[[], bool] | None = None) -> AgentOutcome:
     started = time.monotonic()
     model_calls = 0
     tool_calls = 0
@@ -268,6 +268,8 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
     repairs = 0
     actions: list[AgentAction] = []
     while model_calls < limits.max_model_calls:
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         remaining = _remaining_time(started, limits.timeout_s)
         model_calls += 1
         try:
@@ -276,6 +278,8 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
             _remaining_time(started, limits.timeout_s)
             raise
         _remaining_time(started, limits.timeout_s)
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [{"role": "user", "content": "Debes usar una herramienta permitida."}]
@@ -383,6 +387,8 @@ def run_parts_agent(
     candidates: tuple[AssemblyCandidate, ...],
     provider: Provider,
     limits: AgentLimits = AgentLimits(),
+    *,
+    cancelled: Callable[[], bool] | None = None,
 ) -> PartsAgentOutcome:
     started = time.monotonic()
     model_calls = 0
@@ -422,6 +428,8 @@ def run_parts_agent(
     }, ensure_ascii=False)}]
     actions: list[AgentAction] = []
     while model_calls < limits.max_model_calls:
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         remaining = _remaining_time(started, limits.timeout_s)
         model_calls += 1
         try:
@@ -435,6 +443,8 @@ def run_parts_agent(
             _remaining_time(started, limits.timeout_s)
             raise
         _remaining_time(started, limits.timeout_s)
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [{"role": "user", "content": "Debes usar una herramienta permitida."}]
@@ -533,6 +543,7 @@ def run_table_agent(
     *,
     vision_enabled: bool = False,
     comparison_candidates: tuple[TableProgramProposal, ...] = (),
+    cancelled: Callable[[], bool] | None = None,
 ) -> TableAgentOutcome:
     if extraction.drawing_id != analysis.drawing_id or extraction.input_kind != "mounted_orthographic_views":
         raise ValueError("table_analysis_scope_mismatch")
@@ -592,6 +603,8 @@ def run_table_agent(
         }
     input_items = [{"role": "user", "content": json.dumps(context, ensure_ascii=False)}]
     while model_calls < limits.max_model_calls:
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         remaining = _remaining_time(started, limits.timeout_s)
         model_calls += 1
         try:
@@ -600,6 +613,8 @@ def run_table_agent(
             _remaining_time(started, limits.timeout_s)
             raise
         _remaining_time(started, limits.timeout_s)
+        if cancelled is not None and cancelled():
+            raise RuntimeError("job_cancelled")
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [{"role": "user", "content": "Debes inspeccionar IDs o proponer un programa mediante una herramienta permitida."}]

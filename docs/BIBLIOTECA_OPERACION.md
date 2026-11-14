@@ -6,7 +6,7 @@ La Biblioteca pública vacía es coherente con la política vigente: **solo mueb
 
 Inspección de solo lectura de `https://gex-dashboard.hopto.org/vexplorer/`:
 
-- `semantic.available=true`, modelo `text-embedding-3-small`, 256 dimensiones;
+- `semantic.available=true`, proveedor `embeddinggemma2`, modelo `google/embeddinggemma-2`, revisión fijada y 768 dimensiones;
 - `GET /api/v1/library` devolvió cero elementos;
 - `shared/data/vexplorer.sqlite3` pasó `integrity_check=ok` y contenía 3 runs, 4 resultados, 0 elementos de Biblioteca y 0 vectores en caché;
 - los tres runs usaban el mismo documento de 51.234 bytes y SHA-256 `c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82`, idéntico a `data/planos_demo/mesa_demo_001.dxf`;
@@ -36,7 +36,7 @@ Ejemplo de manifiesto (los marcadores no son datos válidos):
       "run_id": "run-00000000000000000000000000000000",
       "result_revision": 2,
       "label": "Armario de proyecto revisado",
-      "embedding_mode": "openai",
+      "embedding_mode": "embeddinggemma2",
       "provenance": {
         "source_kind": "real_furniture",
         "document_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

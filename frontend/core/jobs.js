@@ -1,4 +1,4 @@
-const TERMINAL_STATES = new Set(["succeeded", "failed", "interrupted"]);
+const TERMINAL_STATES = new Set(["succeeded", "failed", "interrupted", "cancelled"]);
 
 function abortError() {
   return new DOMException("Operación cancelada", "AbortError");
@@ -16,7 +16,7 @@ export async function pollJob(jobId, { getJob, onUpdate = () => {}, wait = (mill
     if (now()-startedAt>=timeoutMs) throw timeoutError();
     const raw = await getJob(jobId);
     if (signal?.aborted) throw abortError();
-    const job = { id: raw?.id ?? jobId, state: raw?.state ?? "failed", runId: raw?.run_id ?? null, error: raw?.error ?? null, cause:raw?.cause??raw?.error?.code??null, checkpoint:raw?.checkpoint??null, recovery:raw?.recovery??null };
+    const job = { id: raw?.id ?? jobId, state: raw?.state ?? "failed", runId: raw?.run_id ?? null, error: raw?.error ?? null, cause:raw?.cause??raw?.error?.code??null, checkpoint:raw?.checkpoint??null, recovery:raw?.recovery??null, queuePosition:Number.isInteger(raw?.queue_position)?raw.queue_position:null, cancelRequested:raw?.cancel_requested===true, canCancel:raw?.can_cancel===true };
     await onUpdate(job);
     if (TERMINAL_STATES.has(job.state)) return job;
     await wait(intervalMs);
@@ -24,5 +24,7 @@ export async function pollJob(jobId, { getJob, onUpdate = () => {}, wait = (mill
 }
 
 export function jobStatusLabel(job) {
-  return ({ queued: "En cola", running: "Analizando", succeeded: "Análisis terminado", failed: "Análisis fallido", interrupted: "Análisis interrumpido" })[job?.state] ?? "Estado del trabajo desconocido";
+  if (job?.cancelRequested && ["queued", "running"].includes(job.state)) return "Cancelación solicitada…";
+  if (job?.state === "queued" && Number.isInteger(job.queuePosition)) return `En cola · posición ${job.queuePosition}`;
+  return ({ queued: "En cola", running: "Analizando", succeeded: "Análisis terminado", failed: "Análisis fallido", interrupted: "Análisis interrumpido", cancelled: "Análisis cancelado" })[job?.state] ?? "Estado del trabajo desconocido";
 }

@@ -14,7 +14,7 @@ from backend.app.precedentes.api_embeddings import crear_router_embeddings
 from backend.app.precedentes.comun import PREFIJO_API
 from backend.app.precedentes.espacio import AlmacenEspacio
 from backend.app.precedentes.regeneracion import HechosElemento, detectar_obsoletos
-from backend.app.semantic.embeddings import EmbeddingResult
+from backend.app.semantic.embeddings import EmbeddingResult, EmbeddingSpaceIdentity
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
@@ -31,6 +31,11 @@ class ProveedorFalso:
     def __init__(self, deriva: float = 0.0) -> None:
         self.llamadas = 0
         self.deriva = deriva
+        self.identity = EmbeddingSpaceIdentity(
+            provider="openai", model=self.model, model_revision="test-only",
+            modality="text", dimensions=self.dimensions, normalization="l2",
+            preprocessing_version="test-only", prompt_name=None,
+        )
 
     def embed(self, text: str) -> EmbeddingResult:
         self.llamadas += 1

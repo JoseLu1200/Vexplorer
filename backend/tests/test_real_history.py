@@ -24,6 +24,7 @@ from backend.app.historico.models import (
 )
 from backend.app.historico.real_service import HistoricalStore
 from backend.app.semantic.embeddings import EmbeddingResult
+from backend.app.semantic.embeddings import EMBEDDINGGEMMA2_TEXT_PREPROCESSING, EmbeddingSpaceIdentity
 
 
 def _record(
@@ -721,6 +722,60 @@ class _FakeEmbeddings:
         self.calls = getattr(self, "calls", 0) + 1
         vector = [1.0, 0.0] if "oak veneer" in text else [0.0, 1.0]
         return EmbeddingResult(vector=tuple(vector), model=self.model, dimensions=2)
+
+
+def test_history_cache_separates_model_revisions(tmp_path) -> None:
+    class RevisionEmbeddings(_FakeEmbeddings):
+        model = "google/embeddinggemma-2"
+        dimensions = 768
+
+        def __init__(self, revision: str) -> None:
+            self.identity = EmbeddingSpaceIdentity.embeddinggemma2_text(revision)
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(
+                vector=tuple([1.0] + [0.0] * 767),
+                model=self.model,
+                dimensions=self.dimensions,
+            )
+
+    db = tmp_path / "history.sqlite3"
+    first = HistoricalStore(db, embedding_provider=RevisionEmbeddings("revision-a"))
+    first.import_records(HistoricalImport(records=(_record(),)), dry_run=False)
+    first.find_comparables(_target(), limit=1, retrieval_method="semantic")
+    second = HistoricalStore(db, embedding_provider=RevisionEmbeddings("revision-b"))
+    second.find_comparables(_target(), limit=1, retrieval_method="semantic")
+
+    with sqlite3.connect(db) as connection:
+        rows = connection.execute(
+            "SELECT space_id FROM historical_embeddings ORDER BY space_id"
+        ).fetchall()
+    assert len(rows) == 2
+    assert rows[0][0] != rows[1][0]
+
+
+def test_history_reports_complete_embedding_space_identity(tmp_path) -> None:
+    class RevisionEmbeddings(_FakeEmbeddings):
+        model = "google/embeddinggemma-2"
+        dimensions = 768
+        identity = EmbeddingSpaceIdentity.embeddinggemma2_text("revision-a")
+
+        def embed(self, text: str) -> EmbeddingResult:
+            return EmbeddingResult(vector=tuple([1.0] + [0.0] * 767), model=self.model, dimensions=768)
+
+    store = HistoricalStore(tmp_path / "history.sqlite3", embedding_provider=RevisionEmbeddings())
+    store.import_records(HistoricalImport(records=(_record(),)), dry_run=False)
+    response = store.find_comparables(_target(), limit=1, retrieval_method="semantic")
+
+    assert response.embedding_space.model_dump() == {
+        "provider": "embeddinggemma2",
+        "model": "google/embeddinggemma-2",
+        "model_revision": "revision-a",
+        "modality": "text",
+        "dimensions": 768,
+        "normalization": "l2",
+        "preprocessing_version": EMBEDDINGGEMMA2_TEXT_PREPROCESSING,
+    }
 
 
 def test_semantic_retrieval_is_explicit_and_reports_embedding_space(tmp_path) -> None:
