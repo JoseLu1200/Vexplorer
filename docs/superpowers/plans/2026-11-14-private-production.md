@@ -24,50 +24,50 @@
 
 ### Task 1: Private API and persistence (backend)
 Files: backend/app/main.py, backend/app/servicios/repository.py, new backend/app/operacion/*, new backend/tests/test_private_*.py, team/agente_backend.md.
-- [ ] Reproduce audit findings; tests first for transactional revisions, idempotency, event sequencing and estimates consistency.
-- [ ] Implement authenticated private mode using named users and hashed passwords from server config, trustworthy reviewer attribution, bounded request processing and safe errors. Local demo remains compatible.
-- [ ] Add durable bounded job endpoints for frontend submission/status with restart handling; preserve existing /runs behavior for integrations.
-- [ ] Wire injected economic catalog and new economic scope through existing routes. Coordinate exact interface with task 2.
-- [ ] Publish runtime environment and auth/job API to tasks 4/5; run targeted tests.
+- [x] Reproduce audit findings; tests first for transactional revisions, idempotency, event sequencing and estimates consistency.
+- [x] Implement authenticated private mode using named users and hashed passwords from server config, trustworthy reviewer attribution, bounded request processing and safe errors. Local demo remains compatible.
+- [x] Add durable bounded job endpoints for frontend submission/status with restart handling; preserve existing /runs behavior for integrations.
+- [x] Wire injected economic catalog and new economic scope through existing routes. Coordinate exact interface with task 2.
+- [x] Publish runtime environment and auth/job API to tasks 4/5; run targeted tests.
 
 ### Task 2: Economic completion and contract (economics)
 Files: contratos/modelos.py (sole writer), estimacion/table_costs.py plus catalog loader, semantic/descriptor.py, related new/existing economic tests, own team/agente_costes_produccion.md.
-- [ ] Agree A/B additive delta with geometry; notify frontend/backend before code changes.
-- [ ] Support configured real catalog with version/source/date; retain labeled demo catalog. Validate tariff concept/unit/scope.
-- [ ] Explicit scope for material, edge, operations, labor hours, finishing and exclusions with human reasons. Add per-component material overrides if coherent with interface.
-- [ ] Compute reproducible complete/partial costs, hours, largest contributor and optional provisional sale price from explicit margin; never equate biggest piece with highest cost automatically.
-- [ ] Persist catalog snapshot/provenance in estimate. Keep v0.5 payloads readable.
-- [ ] Add correction of human-confirmed table values in cooperation with geometry; test conservation of observations.
+- [x] Agree A/B additive delta with geometry; notify frontend/backend before code changes.
+- [x] Support configured real catalog with version/source/date; retain labeled demo catalog. Validate tariff concept/unit/scope.
+- [x] Explicit scope for material, edge, operations, labor hours, finishing and exclusions with human reasons. Add per-component material overrides if coherent with interface.
+- [x] Compute reproducible complete/partial costs, hours, largest contributor and optional provisional sale price from explicit margin; never equate biggest piece with highest cost automatically.
+- [x] Persist catalog snapshot/provenance in estimate. Keep v0.5 payloads readable.
+- [x] Add correction of human-confirmed table values in cooperation with geometry; test conservation of observations.
 
 ### Task 3: Geometry, review and derived drawings
 Files: geometria/*, ingesta/*, servicios/{decomposition,reconstruction,table_reconstruction}.py, salida/*, geometry tests, team/agente_geometria.md.
-- [ ] Fix reproduced audit failures with independent regression values.
-- [ ] Ensure repeated review can amend a prior human value; raw observed ledger remains unchanged and contradictions remain blocking.
-- [ ] Verify general, component and cut sheets carry all supported length/width/thickness dimensions, occurrence quantities, state and provenance.
-- [ ] Improve missing component views/dimensions where supported; do not invent joints/manufacturing claims.
-- [ ] Agree contract delta with B; notify frontend; run geometry/render regression checks.
+- [x] Fix reproduced audit failures with independent regression values.
+- [x] Ensure repeated review can amend a prior human value; raw observed ledger remains unchanged and contradictions remain blocking.
+- [x] Verify general, component and cut sheets carry all supported length/width/thickness dimensions, occurrence quantities, state and provenance.
+- [x] Improve missing component views/dimensions where supported; do not invent joints/manufacturing claims.
+- [x] Agree contract delta with B; notify frontend; run geometry/render regression checks.
 
 ### Task 4: Integrated private-team interface
 Files: frontend/*, team/agente_frontend.md.
-- [ ] Integrate job submission/polling, session identity and restored state with API from task 1.
-- [ ] Show configurable real/demo costs, operation quantities and explicit exclusions/price from task 2.
-- [ ] Fix audit issues: missing events/labels, revision-required API methods, stale requests, edit prior human values, keyboard/focus basics.
-- [ ] Add meaningful logic tests and actual browser flow evidence, preserving current design.
+- [x] Integrate job submission/polling, session identity and restored state with API from task 1.
+- [x] Show configurable real/demo costs, operation quantities and explicit exclusions/price from task 2.
+- [x] Fix audit issues: missing events/labels, revision-required API methods, stale requests, edit prior human values, keyboard/focus basics.
+- [x] Add meaningful logic tests and actual browser flow evidence, preserving current design.
 
 ### Task 5: Deploy, backup and repeatable validation
 Files: Dockerfile, compose.yaml, .dockerignore, deploy/*, .github/workflows/*, tools/backup.py, tests/test_backup.py, docs/PRODUCCION.md, own team/agente_operacion.md.
-- [ ] Nonroot container with local frontend dependencies, persistent volume, healthcheck, TLS reverse proxy and no public unauthenticated backend port.
-- [ ] Deployment configuration matches task 1; documented named-user setup without embedding secrets.
-- [ ] SQLite-consistent backup and verified restore to new destination, no destructive overwrite; tests for snapshot integrity and unsafe archives.
-- [ ] CI Python/JS and packaging checks; test container if engine available, otherwise explicitly record limitation.
+- [x] Nonroot container with local frontend dependencies, persistent volume, healthcheck, TLS reverse proxy and no public unauthenticated backend port.
+- [x] Deployment configuration matches task 1; documented named-user setup without embedding secrets.
+- [x] SQLite-consistent backup and verified restore to new destination, no destructive overwrite; tests for snapshot integrity and unsafe archives.
+- [x] CI Python/JS and packaging checks; test container if engine available, otherwise explicitly record limitation.
 
 ### Task 6: Independent acceptance and audit closure
 Files: tools/audit_production.py, tests/test_production_acceptance.py, evaluation/* additions, docs/AUDITORIA_COMPLETA_2026-11-14.md; coordinator owns README/AGENTS/CLAUDE historical status banners.
-- [ ] Record complete history/docs/source audit and distinguish old claims from current capabilities.
-- [ ] End-to-end offline acceptance for review→drawings→costs→export/restart and negative cases.
-- [ ] Regenerate stale evaluation inputs to a new local output, verify no answer leakage; keep external data out of Git.
-- [ ] Run full suite, HTTP and browser checks; package actual diff and evidence for Astra.
-- [ ] Fix reviewer findings and report observed limits, deployment status and outstanding external acceptance.
+- [x] Record complete history/docs/source audit and distinguish old claims from current capabilities.
+- [x] End-to-end offline acceptance for review→drawings→costs→export/restart and negative cases.
+- [x] Regenerate stale evaluation inputs to a new local output, verify no answer leakage; keep external data out of Git.
+- [x] Run full suite, HTTP and browser checks; package actual diff and evidence for Astra.
+- [x] Fix reviewer findings and report observed limits, deployment status and outstanding external acceptance.
 
 ### Task 7: Authorized isolated VPS deployment
 User identified SSH alias `kripta` and `gex-dashboard.hopto.org` on 2026-11-14, explicitly requiring preservation of every existing site/app.
@@ -80,9 +80,9 @@ User identified SSH alias `kripta` and `gex-dashboard.hopto.org` on 2026-11-14, 
 
 ### Task 8: PR #1 reviewed integration
 User explicitly requests merging PR1 after conflict resolution and adopting improvements. Current head 0fe4be7 (14 commits); baseline blocks 1/2 already selectively adapted. Root preserves current production snapshot, ports useful block3 changes, then records a real merge with both parents and explicit resolutions preserving adapted code.
-- [ ] Port bounded union-find and curve/hidden-line/hole evidence improvements; test 25k disconnected lines and deterministic outputs.
-- [ ] Distinguish paperspace annotations/dimensions with global limits including nested content; fix reproduced dimension-attachment false pass using actual geometry.
-- [ ] Adapt recorded replay to all 3 runners/jobs/auth: DB-authoritative live provenance, exact input/config/transcript checks, no provider calls on replay; preserve human review separation.
-- [ ] Add bounded strict candidate comparison to relevant tool sets with current revision validation.
-- [ ] Add declared ruff dev extra, preserve main package-data and document decisions for all PR commits.
-- [ ] Verify complete integrated tree and fresh Astra review before normal push/merge and VPS rollout. No force push, no raw legacy overwrite.
+- [x] Port bounded union-find and curve/hidden-line/hole evidence improvements; test 25k disconnected lines and deterministic outputs.
+- [x] Distinguish paperspace annotations/dimensions with global limits including nested content; fix reproduced dimension-attachment false pass using actual geometry.
+- [x] Adapt recorded replay to all 3 runners/jobs/auth: DB-authoritative live provenance, exact input/config/transcript checks, no provider calls on replay; preserve human review separation.
+- [x] Add bounded strict candidate comparison to relevant tool sets with current revision validation.
+- [x] Add declared ruff dev extra, preserve main package-data and document decisions for all PR commits.
+- [x] Verify complete integrated tree and fresh Astra review before normal push/merge and VPS rollout. No force push, no raw legacy overwrite.

@@ -8,7 +8,7 @@ El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [ve
 
 ## Auditoría e incremento privado
 
-La [auditoría completa](docs/AUDITORIA_COMPLETA_2026-11-14.md) recorre los 495 commits accesibles al comenzar, la documentación y los módulos propios; identifica defectos que la suite anterior no detectaba. El [diseño privado](docs/superpowers/specs/2026-11-14-private-production-design.md) y el [plan](docs/superpowers/plans/2026-11-14-private-production.md) registran el incremento posterior y sus criterios de aceptación. La guía [PRODUCCION](docs/PRODUCCION.md) incluye usuarios, catálogo, despliegue y copias. El alcance sigue siendo el perfil de mesa y los recorridos acotados descritos abajo; validación industrial y aceptación con técnicos se informan por separado.
+La [auditoría completa](docs/AUDITORIA_COMPLETA_2026-11-14.md) recorre los 495 commits accesibles al comenzar, la documentación y los módulos propios; identifica defectos que la suite anterior no detectaba. La [verificación privada](docs/VERIFICACION_PRIVADA_2026-11-14.md) recoge 423 pruebas Python, 108 JavaScript, CI, navegador y el SHIP de Astra. El [diseño privado](docs/superpowers/specs/2026-11-14-private-production-design.md) y el [plan](docs/superpowers/plans/2026-11-14-private-production.md) registran sus criterios de aceptación. La guía [PRODUCCION](docs/PRODUCCION.md) incluye usuarios, catálogo, despliegue y copias. El alcance sigue siendo el perfil de mesa y los recorridos acotados descritos abajo; validación industrial y aceptación con técnicos se informan por separado.
 
 ## Instalación y arranque local (PowerShell)
 
