@@ -10,6 +10,7 @@ from backend.app.main import create_app
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "planos_demo" / "piezas_completo.dxf"
+THICKNESS_UNKNOWN_FIXTURE = ROOT / "data" / "planos_demo" / "piezas_espesor_desconocido.dxf"
 
 
 def _client(tmp_path: Path, monkeypatch) -> TestClient:
@@ -260,3 +261,84 @@ def test_parts_review_rejects_role_outside_selected_candidate(tmp_path: Path, mo
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "role_override_requires_candidate"
+
+
+def test_parts_review_recomputes_selected_candidate_from_confirmed_thickness(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    with THICKNESS_UNKNOWN_FIXTURE.open("rb") as stream:
+        uploaded = client.post(
+            "/api/v1/documents",
+            files={"file": (THICKNESS_UNKNOWN_FIXTURE.name, stream, "application/dxf")},
+        )
+    document_id = uploaded.json()["data"]["document_id"]
+    created = client.post("/api/v1/runs", json={
+        "document_id": document_id,
+        "mode": "geometry_only",
+        "input_kind": "separated_part_views",
+    }).json()["data"]
+    run_id = created["run"]["id"]
+    candidate = created["result"]["assembly_candidates"][0]
+    observations = {
+        item["id"]: item for item in created["result"]["part_analysis"]["observations"]
+    }
+    unknown_use = next(
+        item for item in candidate["uses"]
+        if observations[item["part_observation_id"]]["dimensions"]["thickness"]["value_mm"] is None
+    )
+
+    reviewed = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Operadora local",
+        "assembly_candidate_id": candidate["id"],
+        "decisions": [{
+            "proposal_id": unknown_use["id"],
+            "action": "confirm",
+            "role": unknown_use["role"],
+            "thickness_mm": 18,
+            "notes": "Confirma espesor ausente desde revisión humana.",
+        }],
+        "notes": "Selecciona candidato y confirma la premisa dimensional.",
+    })
+
+    assert reviewed.status_code == 201
+    result = reviewed.json()["data"]
+    assert result["state"] == "completed"
+    assert result["part_analysis"]["observations"] == created["result"]["part_analysis"]["observations"]
+    selected = next(
+        item for item in result["assembly_candidates"]
+        if item["id"] == result["selected_assembly_candidate_id"]
+    )
+    assert {item["axis"]: item["value_mm"] for item in selected["derived_dimensions"]} == {
+        "width": 900.0, "height": 1200.0, "depth": 300.0,
+    }
+    assert "human_confirmed_operands_used" in selected["assumptions"]
+    assert any(
+        ref.startswith("review:2:piece:")
+        for constraint in selected["constraints"] for ref in constraint["operand_refs"]
+    )
+    scene = client.get(f"/api/v1/runs/{run_id}/scene", params={"result_revision": 2})
+    assert scene.status_code == 200
+    assert scene.json()["data"]["state"] == "ready"
+    assert len(scene.json()["data"]["objects"]) == 6
+
+    initial = client.get(f"/api/v1/runs/{run_id}/parts", params={"result_revision": 1}).json()["data"]
+    original = next(item for item in initial["assembly_candidates"] if item["id"] == candidate["id"])
+    assert any(item["state"] == "unknown" for item in original["derived_dimensions"])
+
+    material_review = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 2,
+        "reviewer_name": "Operadora local",
+        "assembly_candidate_id": candidate["id"],
+        "material": "tablero confirmado",
+        "notes": "Añade material sin modificar la premisa dimensional anterior.",
+    })
+    assert material_review.status_code == 201
+    latest = material_review.json()["data"]
+    assert latest["state"] == "completed"
+    retained = next(item for item in latest["pieces"] if item["proposal_id"] == unknown_use["id"])
+    assert retained["thickness_mm"] == 18
+    assert retained["field_states"]["thickness_mm"] == "confirmed"
+    assert retained["material"] == "tablero confirmado"
+    revision_two = client.get(f"/api/v1/runs/{run_id}/revisions").json()["data"][1]
+    prior = next(item for item in revision_two["pieces"] if item["proposal_id"] == unknown_use["id"])
+    assert prior["thickness_mm"] == 18 and prior["material"] is None
