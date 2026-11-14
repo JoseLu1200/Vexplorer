@@ -1,0 +1,34 @@
+{
+  "fixture_collection": "original_synthetic_mounted_orthographic_views",
+  "provenance": "authored_for_development_not_derived_from_a_corpus",
+  "license_audit": "no_third_party_source_assets",
+  "input_contract": {
+    "format": "DXF R2010",
+    "units": "mm",
+    "semantics": "mounted_orthographic_views",
+    "views": [
+      "FRONT",
+      "TOP",
+      "SIDE"
+    ],
+    "local_axes": [
+      "FRONT=(W,H)",
+      "TOP=(W,D)",
+      "SIDE=(D,H)"
+    ]
+  },
+  "cases": {
+    "mesa_demo_001.dxf": {
+      "purpose": "mounted_orthographic_views_development_case"
+    },
+    "mesa_demo_002.dxf": {
+      "purpose": "mounted_orthographic_views_development_case"
+    },
+    "mesa_demo_003.dxf": {
+      "purpose": "mounted_orthographic_views_development_case"
+    },
+    "mesa_demo_004.dxf": {
+      "purpose": "mounted_orthographic_views_development_case"
+    }
+  }
+}
