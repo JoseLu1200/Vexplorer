@@ -5,13 +5,18 @@ from hashlib import sha256
 from math import atan2, cos, isfinite, radians, sin
 from pathlib import Path
 import re
-from typing import Iterable
+from typing import Any, Iterable, Iterator
 
 import ezdxf
 
 
 UNIT_BY_INSUNITS = {1: ("in", 25.4), 4: ("mm", 1.0), 5: ("cm", 10.0), 6: ("m", 1000.0)}
 MAX_ENTITIES = 100_000
+MAX_BLOCK_DEPTH = 8
+
+
+class _EntityLimitExceeded(ValueError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -28,6 +33,8 @@ class ParsedEntity:
     dimension_line: tuple[tuple[float, float], tuple[float, float]] | None = None
     text_position: tuple[float, float] | None = None
     display_text: str | None = None
+    linetype: str | None = None
+    circular: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -47,7 +54,7 @@ def _planar_xy_points(points: Iterable[object], tolerance: float = 1e-9) -> tupl
     points_3d = tuple((float(point[0]), float(point[1]), float(point[2])) for point in points)  # type: ignore[index]
     if not all(isfinite(value) for point in points_3d for value in point):
         raise ValueError("DXF entity contains non-finite coordinates")
-    if points_3d and max(point[2] for point in points_3d) - min(point[2] for point in points_3d) > tolerance:
+    if points_3d and any(abs(point[2]) > tolerance for point in points_3d):
         return None
     return tuple((x, y) for x, y, _ in points_3d)
 
@@ -81,6 +88,77 @@ def _finite_points(points: Iterable[tuple[float, float]]) -> tuple[tuple[float, 
     return result
 
 
+def _linetype(
+    document: object,
+    entity: object,
+    layer: str,
+    parent_linetype: str | None = None,
+) -> str | None:
+    name = str(entity.dxf.linetype).strip().upper()  # type: ignore[attr-defined]
+    if name == "BYBLOCK":
+        return parent_linetype
+    if name == "BYLAYER":
+        try:
+            name = str(document.layers.get(layer).dxf.linetype).strip().upper()  # type: ignore[attr-defined]
+        except (AttributeError, KeyError, ezdxf.DXFError):
+            return None
+    return None if name in {"", "BYLAYER", "BYBLOCK", "CONTINUOUS"} else name
+
+
+def _expanded_entities(
+    document: object,
+    modelspace: object,
+    *,
+    max_entities: int,
+    warnings: list[str],
+) -> Iterator[tuple[object, str, str, str | None]]:
+    visits = 0
+
+    def count() -> None:
+        nonlocal visits
+        visits += 1
+        if visits > max_entities:
+            raise _EntityLimitExceeded(f"entity limit exceeded after block expansion: > {max_entities}")
+
+    def walk(
+        entity: object,
+        entity_id: str,
+        parent_layer: str | None = None,
+        parent_linetype: str | None = None,
+        depth: int = 0,
+    ) -> Iterator[tuple[object, str, str, str | None]]:
+        count()
+        own_layer = str(entity.dxf.layer)  # type: ignore[attr-defined]
+        layer = parent_layer if parent_layer is not None and own_layer == "0" else own_layer
+        linetype = _linetype(document, entity, layer, parent_linetype)
+        if entity.dxftype() != "INSERT":  # type: ignore[attr-defined]
+            yield entity, entity_id, layer, linetype
+            return
+        if depth >= MAX_BLOCK_DEPTH:
+            warnings.append(f"unsupported_block_depth:{entity_id}")
+            return
+        for index, attrib in enumerate(getattr(entity, "attribs", ()), start=1):
+            yield from walk(attrib, f"{entity_id}-a{index}", layer, linetype, depth + 1)
+        cells = entity.multi_insert() if getattr(entity, "mcount", 1) > 1 else (entity,)  # type: ignore[attr-defined]
+        for cell_index, cell in enumerate(cells, start=1):
+            if cell is not entity:
+                count()
+            cell_id = f"{entity_id}-m{cell_index}" if getattr(entity, "mcount", 1) > 1 else entity_id
+            try:
+                children = cell.virtual_entities()  # type: ignore[attr-defined]
+                for child_index, child in enumerate(children, start=1):
+                    if child.dxftype() == "ATTDEF":
+                        continue
+                    yield from walk(child, f"{cell_id}-b{child_index}", layer, linetype, depth + 1)
+            except _EntityLimitExceeded:
+                raise
+            except (ezdxf.DXFError, KeyError, ValueError, ZeroDivisionError):
+                warnings.append(f"unsupported_block:{cell_id}")
+
+    for ordinal, entity in enumerate(modelspace, start=1):  # type: ignore[arg-type]
+        yield from walk(entity, _entity_id(entity, ordinal))
+
+
 def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
     """Read the deliberately small, documented DXF subset used by the demo."""
     raw = path.read_bytes()
@@ -95,16 +173,16 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
         warnings.append("source_unit_unknown")
 
     parsed: list[ParsedEntity] = []
-    for ordinal, entity in enumerate(modelspace, start=1):
+    for entity, entity_id, layer, linetype in _expanded_entities(
+        document, modelspace, max_entities=max_entities, warnings=warnings,
+    ):
         kind = entity.dxftype()
-        layer = str(entity.dxf.layer)
-        entity_id = _entity_id(entity, ordinal)
         if kind == "LINE":
             points = _planar_xy_points((entity.dxf.start, entity.dxf.end))
             if points is None:
                 warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
                 continue
-            parsed.append(ParsedEntity(entity_id, kind, layer, points))
+            parsed.append(ParsedEntity(entity_id, kind, layer, points, linetype=linetype))
         elif kind == "LWPOLYLINE":
             vertices = tuple(entity.get_points("xyb"))
             if any(abs(float(vertex[2])) > 1e-12 for vertex in vertices):
@@ -114,11 +192,37 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
             if points is None:
                 warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
                 continue
-            parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.closed)))
-        elif kind in {"TEXT", "MTEXT"}:
+            parsed.append(ParsedEntity(entity_id, kind, layer, points, bool(entity.closed), linetype=linetype))
+        elif kind in {"CIRCLE", "ARC"}:
+            center_wcs = entity.ocs().to_wcs(entity.dxf.center)
+            if kind == "CIRCLE":
+                radius = float(entity.dxf.radius)
+                sample_wcs = entity.ocs().to_wcs((entity.dxf.center.x + radius, entity.dxf.center.y, entity.dxf.center.z))
+                points = _planar_xy_points((sample_wcs,))
+                start_angle = end_angle = None
+            else:
+                radius = float(entity.dxf.radius)
+                points = _planar_xy_points((entity.start_point, entity.end_point))
+                start_angle = float(entity.dxf.start_angle)
+                end_angle = float(entity.dxf.end_angle)
+            center = _planar_xy_points((center_wcs,))
+            if center is None or points is None or not isfinite(radius) or radius <= 0:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            parsed.append(ParsedEntity(
+                entity_id, kind, layer, points, closed=kind == "CIRCLE", linetype=linetype,
+                circular={
+                    "kind": kind.lower(), "center_source": center[0], "radius_source": radius,
+                    "start_angle_deg": start_angle, "end_angle_deg": end_angle,
+                },
+            ))
+        elif kind in {"TEXT", "MTEXT", "ATTRIB"}:
             text = entity.plain_text() if kind == "MTEXT" else str(entity.dxf.text)
-            insert = _point2(entity.dxf.insert)
-            parsed.append(ParsedEntity(entity_id, kind, layer, (insert,), text=text.strip()))
+            insert = _planar_xy_points((entity.dxf.insert,))
+            if insert is None:
+                warnings.append(f"unsupported_entity_plane:{kind}:{entity_id}")
+                continue
+            parsed.append(ParsedEntity(entity_id, kind, layer, insert, text=text.strip(), linetype=linetype))
         elif kind == "DIMENSION":
             dimension_type = int(entity.dxf.dimtype) & 0x0F
             conflict = False

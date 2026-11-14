@@ -68,6 +68,7 @@
 - Delta A/B aceptado: `catalog_table_programs(analysis)` genera exactamente dos alternativas `catalog_baseline` incompatibles (soportes laterales o de esquina), ninguna elegida por apariencia. Los espesores/secciones ausentes son slots/premisas unknown del programa, no medidas CAD ficticias ni mediciones sin asignar.
 - Adendum A/B 0.5 aceptado: todos los slots numéricos son `TableMeasure`; los requeridos por perfil se distinguen como unknown/no observados y sólo `TableConfirmedValue` humano puede resolverlos. Catálogo requiere `table_template_id` explícito. El evaluador deriva cobertura/disposiciones y bloquea conflictos; no confía en cobertura declarada por modelo. Hash topológico canónico conserva semántica de resta. Premisas y aceptaciones de programa/componente/premisa son separadas; rechazo bloquea dependientes. Cost scope y descriptor V3 quedan tipados y versionados por B.
 - Cierre del adendum: antes de Review todos los bindings/componentes/placements son `proposed`, incluso si copian observaciones. Aceptar el programa valida topología/bindings y permite `calculated`, pero no acepta componentes ni premisas. Las premisas iniciales son siempre requeridas por registry; perfil, revisión de ledger y origen los inyecta servidor, no la herramienta del modelo.
+- Delta CAD A/B aceptado: `DrawingEntity.linetype` conserva el tipo de línea efectivo y `CircularGeometry` conserva CIRCLE/ARC exactos (centro, radio y ángulos) sin presentar muestras discretizadas como geometría exacta. A mantiene propiedad de reader/extraction; B fue único escritor del contrato `f8c8fb4`.
 
 ## Pruebas y revisión
 
@@ -89,10 +90,11 @@
 | Hardening escena | `python -m pytest backend/tests/test_reconstruction.py -q` | 8 passed | Incluye cambio de montaje en revisión 3 e incoherencias de revisión |
 | Suite final A | `python -m pytest -q` | 72 passed | Ejecución fresca tras hardening |
 | Sintaxis/diff | `python -m compileall -q backend/app/ingesta backend/app/geometria`; `git diff --check` | pasa sin salida | No sustituye prueba E2E |
+| CAD montado endurecido | `python -m pytest backend/tests/test_ingesta_cad_geometry.py backend/tests/test_mounted_view_inference.py backend/tests/test_geometry.py backend/tests/test_mounted_table_geometry.py backend/tests/test_table_reconstruction.py -q` | 37 passed | Inferencia sólo para triple ortográfico único; curvas no circulares siguen fuera del subconjunto |
 
 ## Bloqueos y cierre
 
 - Bloqueos: ninguno para el alcance propio.
 - Pendientes: B integra endpoint de escena; C consume textos/cotas/escena; D ejecuta aceptación independiente.
-- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/TEXT/MTEXT/DIMENSION lineal sin override/escala conflictivos; sin bloques, arcos, bulges, paperspace ni inferencia de unión física. Escena solo para roles y dos montajes admitidos tras revisión; no trasera, material, mecanizados, colisiones certificadas ni sólidos de fabricación.
+- Límites: modelspace; subconjunto LINE/LWPOLYLINE recto/CIRCLE/ARC exactos/TEXT/MTEXT/ATTRIB/DIMENSION lineal; bloques anidados 2D se expanden con profundidad y cantidad acotadas. Bulges, ELLIPSE/SPLINE/HATCH y paperspace siguen fuera del subconjunto; no se proyectan entidades con Z no nulo. Escena solo para roles y dos montajes admitidos tras revisión; no trasera, material, mecanizados, colisiones certificadas ni sólidos de fabricación.
 - Reservas liberadas: ninguna.

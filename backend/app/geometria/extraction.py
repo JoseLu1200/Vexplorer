@@ -49,7 +49,7 @@ def _bounds(points: list[tuple[float, float]]) -> dict[str, float]:
 
 def _view_labels(
     drawing: ParsedDrawing,
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"],
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"],
 ) -> list[tuple[str, tuple[float, float]]]:
     labels = []
     for entity in drawing.entities:
@@ -65,6 +65,80 @@ def _view_labels(
             if normalized in VIEW_LABELS:
                 labels.append((VIEW_LABELS[normalized], entity.points[0]))
     return labels
+
+
+def _infer_mounted_view_labels(
+    drawing: ParsedDrawing,
+    *,
+    tolerance: float = 1e-6,
+) -> list[tuple[str, tuple[float, float], str]]:
+    """Infer only an unambiguous aligned FRONT/TOP/SIDE envelope triple."""
+    candidates: list[tuple[ParsedEntity, dict[str, float]]] = []
+    for entity in drawing.entities:
+        if entity.kind != "LWPOLYLINE" or not entity.closed or len(entity.points) != 4:
+            continue
+        bounds = _bounds(list(entity.points))
+        corners = {
+            (bounds["min_x"], bounds["min_y"]),
+            (bounds["max_x"], bounds["min_y"]),
+            (bounds["max_x"], bounds["max_y"]),
+            (bounds["min_x"], bounds["max_y"]),
+        }
+        if set(entity.points) != corners:
+            continue
+        candidates.append((entity, bounds))
+
+    maximal = []
+    for entity, bounds in candidates:
+        contained = any(
+            other.id != entity.id
+            and other_bounds["min_x"] <= bounds["min_x"] + tolerance
+            and other_bounds["min_y"] <= bounds["min_y"] + tolerance
+            and other_bounds["max_x"] >= bounds["max_x"] - tolerance
+            and other_bounds["max_y"] >= bounds["max_y"] - tolerance
+            and (
+                other_bounds["min_x"] < bounds["min_x"] - tolerance
+                or other_bounds["min_y"] < bounds["min_y"] - tolerance
+                or other_bounds["max_x"] > bounds["max_x"] + tolerance
+                or other_bounds["max_y"] > bounds["max_y"] + tolerance
+            )
+            for other, other_bounds in candidates
+        )
+        if not contained:
+            maximal.append((entity, bounds))
+    if len(maximal) != 3:
+        return []
+
+    solutions: list[dict[str, tuple[ParsedEntity, dict[str, float]]]] = []
+    for front_entity, front in maximal:
+        remaining = [(entity, bounds) for entity, bounds in maximal if entity.id != front_entity.id]
+        for top_entity, top in remaining:
+            side_entity, side = next(item for item in remaining if item[0].id != top_entity.id)
+            same_width = (
+                abs((front["max_x"] - front["min_x"]) - (top["max_x"] - top["min_x"])) <= tolerance
+                and abs(front["min_x"] - top["min_x"]) <= tolerance
+            )
+            same_height = (
+                abs((front["max_y"] - front["min_y"]) - (side["max_y"] - side["min_y"])) <= tolerance
+                and abs(front["min_y"] - side["min_y"]) <= tolerance
+            )
+            if same_width and same_height:
+                solutions.append({
+                    "FRONT": (front_entity, front),
+                    "TOP": (top_entity, top),
+                    "SIDE": (side_entity, side),
+                })
+    if len(solutions) != 1:
+        return []
+
+    result = []
+    for role, (entity, bounds) in solutions[0].items():
+        center = (
+            (bounds["min_x"] + bounds["max_x"]) / 2.0,
+            (bounds["min_y"] + bounds["max_y"]) / 2.0,
+        )
+        result.append((role, center, entity.id))
+    return result
 
 
 def _view_id(view_key: str) -> str:
@@ -197,6 +271,10 @@ def extraction_payload(
 ) -> dict[str, Any]:
     drawing = parse_dxf(path)
     labels = _view_labels(drawing, input_kind)
+    inferred_labels: list[tuple[str, tuple[float, float], str]] = []
+    if not labels and input_kind in {"mounted_views_legacy", "mounted_orthographic_views"}:
+        inferred_labels = _infer_mounted_view_labels(drawing)
+        labels = [(role, center) for role, center, _ in inferred_labels]
     regions = _view_regions(drawing, labels)
     evidence: list[dict[str, Any]] = []
     entities: list[dict[str, Any]] = []
@@ -207,13 +285,40 @@ def extraction_payload(
     by_view: dict[str, list[str]] = {label: [] for label, _ in labels}
     by_view.setdefault("UNKNOWN", [])
 
+    for role, _, entity_id in inferred_labels:
+        evidence.append({
+            "id": f"evidence-inferred-view-{role.lower()}",
+            "kind": "view_association",
+            "source_entity_ids": [entity_id],
+            "description": "Orthographic view role inferred from a unique aligned envelope triple",
+        })
+
     for entity in drawing.entities:
         view_label = _assign_view(entity, labels, regions)
         points_source = [{"x": x, "y": y} for x, y in entity.points]
         points_mm = _scaled(entity.points, drawing.unit_scale_to_mm)
-        entities.append({"id": entity.id, "kind": entity.kind, "layer": entity.layer, "source_points": points_source, "points_mm": points_mm})
+        circular = None
+        if entity.circular is not None:
+            center_x, center_y = entity.circular["center_source"]
+            circular = {
+                **entity.circular,
+                "center_source": {"x": center_x, "y": center_y},
+                "center_mm": (
+                    {"x": center_x * drawing.unit_scale_to_mm, "y": center_y * drawing.unit_scale_to_mm}
+                    if drawing.unit_scale_to_mm is not None else None
+                ),
+                "radius_mm": (
+                    entity.circular["radius_source"] * drawing.unit_scale_to_mm
+                    if drawing.unit_scale_to_mm is not None else None
+                ),
+            }
+        entities.append({
+            "id": entity.id, "kind": entity.kind, "layer": entity.layer,
+            "source_points": points_source, "points_mm": points_mm,
+            "linetype": entity.linetype, "circular": circular,
+        })
         by_view.setdefault(view_label, []).append(entity.id)
-        if entity.kind == "LINE":
+        if entity.kind in {"LINE", "CIRCLE", "ARC"}:
             evidence.append({
                 "id": f"evidence-geometry-{entity.id}", "kind": "geometry",
                 "source_entity_ids": [entity.id], "description": "Geometric segment observed in drawing",
@@ -289,7 +394,7 @@ def extraction_payload(
         bounds_mm = {key: value * drawing.unit_scale_to_mm for key, value in bounds_source.items()} if drawing.unit_scale_to_mm is not None else None
         views.append({"id": _view_id(label), "label": _view_role(label), "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
-    status = "needs_review" if drawing.unit_scale_to_mm is None or any(
+    status = "needs_review" if inferred_labels or drawing.unit_scale_to_mm is None or any(
         warning.startswith("unsupported_") or "conflict" in warning or "override" in warning
         for warning in drawing.warnings
     ) else "ready"
@@ -305,7 +410,9 @@ def extraction_payload(
         "drawing_id": drawing.drawing_id, "input_kind": input_kind, "status": status, "source_unit": drawing.source_unit,
         "unit_scale_to_mm": drawing.unit_scale_to_mm,
         "coordinate_unit": "mm" if drawing.unit_scale_to_mm is not None else "source",
-        "synthetic": "planos_demo" in path.parts, "warnings": list(drawing.warnings), "entities": entities,
+        "synthetic": "planos_demo" in path.parts,
+        "warnings": [*drawing.warnings, *(["view_labels_inferred_from_alignment"] if inferred_labels else [])],
+        "entities": entities,
         "views": views, "contours": contours, "dimensions": dimensions, "evidence": evidence,
         "observations": observations, "texts": texts, "dimension_graphics": dimension_graphics,
     }
