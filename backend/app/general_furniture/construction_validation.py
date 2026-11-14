@@ -336,7 +336,8 @@ def validate_construction_scenario(
     proposal_components = {item.id: item for item in proposal.components}
     for component in proposal.components:
         quantity_ref = f"component:{component.id}.quantity"
-        if component.quantity.value is not None and not component.quantity_basis_refs:
+        quantity_basis = component.quantity_basis_refs + component.quantity.dependency_refs
+        if component.quantity.value is not None and not quantity_basis:
             resolver.issue(
                 "error",
                 "construction_quantity_basis_missing",

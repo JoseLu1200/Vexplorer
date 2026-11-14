@@ -76,9 +76,12 @@ def apply_general_review(
             raise ValueError("review_reference_outside_proposal")
         for name in ("length", "width", "thickness"):
             value = getattr(component, name)
+            originals = [getattr(item, name) for item in sources]
+            field_evidence = allowed_refs["evidence"] | {ref for original in originals for ref in original.evidence_ids}
+            field_dimensions = allowed_refs["dimension"] | {ref for original in originals for ref in original.dimension_ids}
             if (
-                not set(value.evidence_ids) <= allowed_refs["evidence"]
-                or not set(value.dimension_ids) <= allowed_refs["dimension"]
+                not set(value.evidence_ids) <= field_evidence
+                or not set(value.dimension_ids) <= field_dimensions
             ):
                 raise ValueError("review_field_reference_outside_proposal")
             if value.state == "confirmed":
@@ -98,7 +101,8 @@ def apply_general_review(
             "conflict",
         ) and component.quantity not in [item.quantity for item in sources]:
             raise ValueError("unconfirmed_quantity_must_match_proposal")
-        if not set(component.quantity.evidence_ids) <= allowed_refs["evidence"]:
+        quantity_evidence = allowed_refs["evidence"] | {ref for item in sources for ref in item.quantity.evidence_ids}
+        if not set(component.quantity.evidence_ids) <= quantity_evidence:
             raise ValueError("review_field_reference_outside_proposal")
         for name in ("material", "finish"):
             value = getattr(component, name)

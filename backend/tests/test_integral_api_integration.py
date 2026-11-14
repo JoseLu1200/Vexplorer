@@ -776,10 +776,12 @@ def test_production_job_integrates_general_review_derived_and_history_persistent
     assert "event: general_auto_review_started" in event_history
     assert "event: general_auto_review_tool_completed" in event_history
     assert "event: general_auto_review_completed" in event_history
-    assert '"construction_scenario_id":"base"' in event_history
-    assert '"construction_validation_status":"valid"' in event_history
-    assert '"construction_basis_revision":"run:' in event_history
-    assert '"construction_piece_count":' in event_history
+    event_payloads = [json.loads(line[6:])["data"] for line in event_history.splitlines() if line.startswith("data: ")]
+    completion = next(item for item in event_payloads if "construction_basis_revision" in item)
+    assert completion["construction_scenario_id"] == "base"
+    assert completion["construction_validation_status"] == "valid"
+    assert completion["construction_basis_revision"].startswith("run:")
+    assert completion["construction_piece_count"] == 1
     assert "test-general-reviewer" in event_history
     assert "test-general-live" in event_history
     assert "arguments_json" not in event_history

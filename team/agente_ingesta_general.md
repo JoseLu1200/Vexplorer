@@ -32,6 +32,7 @@
 - Implementado `construction_drawings.py`: SVG/DXF exactos en mm, artifacts snapshot-exactos, capas/colores/linetypes por autoridad, título/leyenda/restricciones visibles, provenance y cotas con terminadores.
 - Detalle gráfico verificado: taladro circular estimado con diámetro/rango y leader ortogonal a zona reservada, sin clipping del texto.
 - La proyección canónica de `derivations.py` enmascara dependencias rechazadas antes de invocar el planner; este módulo no duplica esa lógica.
+- Corregido `basis_revision` al identificador exacto run/proposal/review/scenario exigido por repositorio; placements con cobertura inválida se eliminan también del plan, no solo de la lámina.
 
 - Implementado conversor DWG mediante ODA configurable, salida validada por el lector DXF real y errores tipados de disponibilidad, ejecución y salida.
 - Añadido GNU LibreDWG `dwg2dxf` como proveedor preferido en modo `auto`; selección y ejecutables quedan explícitos por variables `VEXPLORER_*`, y ODA avisa que exige licencia autorizada.
@@ -82,6 +83,7 @@
 | Planner/renderer propio | `python -m pytest backend/tests/test_general_furniture_construction_{planner,drawings}.py -q` | 7 passed | Incluye gate de placements, detalle gráfico y artifacts SVG/DXF |
 | Estática planos | `python -m ruff check ...`; `compileall`; `git diff --check` | correcto | Ruff disponible en Python global, no en venv |
 | Inspección visual | PNG renderizado desde SVG propio | cotas/ticks/rangos/cantidad/restricción y callout completos, sin texto recortado | Artefacto `.runtime/cad-completion-drawings/pieza-side-panel-p2-r1.png` |
+| Suite Python compartida | `python -m pytest -q` | 757 passed, 6 failed, 2 warnings | Captura anterior al último fix incluía 1 RED propio de placements ya GREEN; restantes ajenos: aislamiento de referencia, string prompt, historial `deduced` y eventos/integración |
 
 ## Bloqueos y cierre
 

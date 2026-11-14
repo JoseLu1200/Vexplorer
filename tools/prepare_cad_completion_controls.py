@@ -654,7 +654,8 @@ def main() -> int:
     parser.add_argument(
         "--private-dir",
         type=Path,
-        default=Path("evaluation/reference/cad_completion_controls"),
+        required=True,
+        help="Separate evaluator-only reference output directory; never supplied to inference.",
     )
     parser.add_argument("--case-id", action="append", choices=PUBLIC_CASE_IDS)
     args = parser.parse_args()

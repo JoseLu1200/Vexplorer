@@ -55,6 +55,18 @@ def _draft() -> GeneralFurnitureDraft:
     )
 
 
+def test_review_preserves_server_resolved_field_provenance() -> None:
+    value = GeneralValue(value_mm=564, state="deduced", dependency_refs=("binding:opening",), evidence_ids=("evidence-overall",), dimension_ids=("dim-overall",))
+    quantity = GeneralQuantity(value=2, state="hypothesis", dependency_refs=("premise:p1",), evidence_ids=("evidence-count",))
+    draft = _draft()
+    draft = draft.model_copy(update={"components": (draft.components[0].model_copy(update={"length": value, "quantity": quantity}),)})
+    component = _component(quantity=quantity).model_copy(update={"length": value})
+    request = GeneralFurnitureReviewRequest(base_proposal_revision=1, base_review_revision=0, reviewer_name="reviewer", reason="Preserve resolved provenance.", operations=(GeneralReviewOperation(kind="replace", source_component_ids=("panel-proposed",), result_component_ids=("panel-reviewed",), reason="Same field."),), components=(component,))
+    review = apply_general_review(run_id="run", proposal_id="proposal-1", proposal_revision=1, draft=draft, request=request)
+    assert review.components[0].length == value
+    assert review.components[0].quantity == quantity
+
+
 def test_review_creates_occurrences_from_reviewed_quantity_not_source_views() -> None:
     component = _component(
         quantity=GeneralQuantity(value=2, state="confirmed", dependency_refs=("human:quantity",))

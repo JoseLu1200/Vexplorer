@@ -566,7 +566,7 @@ class GeneralConstructionParameter(StrictModel):
     method: Literal[
         "observed_copy", "arithmetic", "fit", "symmetry", "equal_spacing",
         "proportion", "construction_assumption",
-    ]
+    ] = Field(description="observed requires observed_copy; deduced allows arithmetic, fit, symmetry, equal_spacing, proportion; estimated allows fit, symmetry, equal_spacing, proportion, construction_assumption. Arithmetic of estimates is a deduced parameter with a binding; the server propagates estimated uncertainty.")
     binding_id: str | None = Field(default=None, min_length=1, max_length=120, description="Required for observed/deduced; must be null for estimated.")
     source_refs: tuple[str, ...] = Field(max_length=32)
     assumption_refs: tuple[str, ...] = Field(max_length=16)
@@ -580,7 +580,7 @@ class GeneralConstructionParameter(StrictModel):
             "estimated": {"fit", "symmetry", "equal_spacing", "proportion", "construction_assumption"},
         }
         if self.method not in allowed_methods[self.basis]:
-            raise ValueError("construction parameter method does not match basis")
+            raise ValueError(f"construction parameter method does not match basis {self.basis}; allowed: {', '.join(sorted(allowed_methods[self.basis]))}")
         if self.basis == "estimated":
             if self.nominal_mm is None or self.range_mm is None:
                 raise ValueError("estimated parameter requires nominal and range")
