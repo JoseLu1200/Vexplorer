@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.prompts import SYSTEM_PROMPT
+from backend.app.agente.prompts import system_prompt
 
 
 @dataclass(frozen=True)
@@ -34,12 +34,12 @@ class OpenAIResponsesProvider:
     def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
         payload: dict[str, Any] = {
             "model": self.settings.model,
-            "instructions": SYSTEM_PROMPT,
+            "instructions": system_prompt(self.settings.vision_enabled),
             "input": input_items,
             "tools": tools,
             "tool_choice": "required",
             "parallel_tool_calls": False,
-            "max_output_tokens": 1200,
+            "max_output_tokens": self.settings.max_output_tokens,
         }
         if previous_response_id:
             payload["previous_response_id"] = previous_response_id
@@ -52,7 +52,10 @@ class OpenAIResponsesProvider:
         response.raise_for_status()
         body = response.json()
         if body.get("status") in ("failed", "incomplete"):
-            raise RuntimeError(f"provider_response_{body['status']}")
+            # A truncated response never yields partial tool calls; the reason tells whether to raise max_output_tokens.
+            details = body.get("incomplete_details") or body.get("error") or {}
+            reason = details.get("reason") or details.get("code") if isinstance(details, dict) else None
+            raise RuntimeError(f"provider_response_{body['status']}" + (f":{str(reason)[:60]}" if reason else ""))
         calls = []
         for item in body.get("output", []):
             if item.get("type") != "function_call":

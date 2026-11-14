@@ -90,7 +90,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @app.get("/api/v1/config")
     def config():
-        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": settings.available, "unavailable_reason": settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if settings.available else []), "modality": "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in tool_schemas()], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": settings.available, "unavailable_reason": settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if settings.available else []), "modality": "structured_vector_evidence_with_ledger_render" if settings.vision_enabled else "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in tool_schemas(settings.vision_enabled)], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.post("/api/v1/documents")
     async def upload_document(file: UploadFile = File(...)):
@@ -151,7 +151,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         agent_selected_scenario_id = None
         if request.mode == "live":
             try:
-                outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits())
+                outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits(), vision=settings.vision_enabled)
             except Exception as exc:
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
             scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))

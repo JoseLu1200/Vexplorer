@@ -3,16 +3,35 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+DEFAULT_MAX_OUTPUT_TOKENS = 4096
+
+
+def _positive_int(raw: str | None, default: int) -> int:
+    try:
+        value = int(raw) if raw is not None else default
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
 
 @dataclass(frozen=True)
 class ProviderSettings:
     api_key: str | None
     model: str | None
     base_url: str = "https://api.openai.com/v1"
+    # Reasoning models spend output tokens before emitting the tool call; 1200 proved too tight to rely on.
+    max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
+    # Optional Set-of-Mark vision channel (tool visualizar_vista); off unless explicitly enabled.
+    vision_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "ProviderSettings":
-        return cls(api_key=os.getenv("OPENAI_API_KEY"), model=os.getenv("OPENAI_MODEL"), base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"))
+        return cls(
+            api_key=os.getenv("OPENAI_API_KEY"), model=os.getenv("OPENAI_MODEL"),
+            base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
+            max_output_tokens=_positive_int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS"), DEFAULT_MAX_OUTPUT_TOKENS),
+            vision_enabled=os.getenv("VEXPLORER_AGENT_VISION", "").strip().lower() in {"1", "true", "yes", "on"},
+        )
 
     @property
     def available(self) -> bool:

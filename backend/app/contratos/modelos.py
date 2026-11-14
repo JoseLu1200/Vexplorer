@@ -507,3 +507,11 @@ class SelectScenarioArgs(StrictModel):
 class ExplainPieceArgs(StrictModel):
     piece_id: str = Field(min_length=1)
     result_revision: int = Field(gt=0)
+
+
+# Additive (mejoras/cad-harness, second block): arguments of the optional `visualizar_vista` tool, only exposed when
+# VEXPLORER_AGENT_VISION is enabled. Authorized by the user without explicit A/B agreement; see team/pablo.md.
+# Both fields are required (strict tool schemas); an empty highlight list is valid.
+class VisualizeViewArgs(StrictModel):
+    view_id: str = Field(min_length=1)
+    highlight_contour_ids: tuple[str, ...] = Field(max_length=20)
