@@ -318,6 +318,7 @@ def run_table_agent(
     }
     actions: list[AgentAction] = []
     visualized_view_ids: set[str] = set()
+    vision_calls = 0
     visual_view_ids: set[str] = set()
     if vision_enabled:
         label_order = {"FRONT": 0, "TOP": 1, "SIDE": 2, "UNKNOWN": 3}
@@ -368,16 +369,17 @@ def run_table_agent(
                         data["details"] = _valid_reference_details(measures)
                     actions.append(AgentAction(call.name, not unknown, tuple(evidence_id for item in selected for evidence_id in item.evidence_ids), "Medidas y fuentes del ledger inspeccionadas." if not unknown else "Referencia de medida desconocida rechazada."))
                 elif call.name == "visualizar_vista" and vision_enabled:
+                    vision_calls += 1
                     args = VisualizeTableViewArgs.model_validate_json(json.dumps(arguments), strict=True)
-                    if args.view_id not in visual_view_ids:
+                    if vision_calls > 3:
+                        data = {"ok": False, "error": "vision_call_budget_exhausted"}
+                        actions.append(AgentAction(call.name, False, (), "Presupuesto de llamadas visuales agotado."))
+                    elif args.view_id not in visual_view_ids:
                         data = {"ok": False, "error": "unknown_reference", "details": _valid_reference_details(visual_view_ids)}
                         actions.append(AgentAction(call.name, False, (), "Referencia de vista desconocida rechazada."))
                     elif args.view_id in visualized_view_ids:
                         data = {"ok": False, "error": "view_already_visualized"}
                         actions.append(AgentAction(call.name, False, (), "Vista ya visualizada en esta ejecución."))
-                    elif len(visualized_view_ids) >= 3:
-                        data = {"ok": False, "error": "vision_call_budget_exhausted"}
-                        actions.append(AgentAction(call.name, False, (), "Presupuesto de vistas visuales agotado."))
                     else:
                         try:
                             artifact = render_view(extraction, args.view_id)
