@@ -37,3 +37,6 @@ def test_snapshot_gate_rejects_wrong_commit_but_allows_reviewed_dirty_tree(tmp_p
     assert assert_frozen_tree(repository, head) == head
 
 
+
+
+

@@ -36,6 +36,8 @@ class ProviderResponse:
 
 
 class ProviderError(RuntimeError):
+    """Provider failure with allowlisted operational metadata only."""
+
     def __init__(
         self,
         code: str,
@@ -69,7 +71,9 @@ def _bounded_count(value: Any) -> int | None:
 
 def _bounded_operational_text(value: Any, *, limit: int = 128) -> str | None:
     value = _bounded_text(value, limit=limit)
-    if value is None or not all(character.isalnum() or character in "._:-" for character in value):
+    if value is None or not all(
+        character.isalnum() or character in "._:-" for character in value
+    ):
         return None
     return value
 
@@ -84,14 +88,21 @@ def _http_error_code(response: httpx.Response, *, deadline: float) -> str | None
     raw_body = bytearray()
     try:
         for chunk in response.iter_bytes(chunk_size=_PROVIDER_RESPONSE_CHUNK_BYTES):
-            if time.monotonic() >= deadline or len(raw_body) + len(chunk) > _MAX_PROVIDER_ERROR_BYTES:
+            if (
+                time.monotonic() >= deadline
+                or len(raw_body) + len(chunk) > _MAX_PROVIDER_ERROR_BYTES
+            ):
                 return None
             raw_body.extend(chunk)
         body = json.loads(raw_body)
     except (httpx.HTTPError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
         return None
     error = body.get("error") if isinstance(body, dict) else None
-    return _bounded_operational_text(error.get("code")) if isinstance(error, dict) else None
+    return (
+        _bounded_operational_text(error.get("code"))
+        if isinstance(error, dict)
+        else None
+    )
 
 
 class OpenAIResponsesProvider:
@@ -167,9 +178,11 @@ class OpenAIResponsesProvider:
                     status_code=response.status_code,
                     request_id=_request_id(response.headers),
                     response_id=_bounded_operational_text(body.get("id")),
-                    incomplete_reason=_bounded_operational_text(incomplete.get("reason"))
-                    if isinstance(incomplete, dict)
-                    else None,
+                    incomplete_reason=(
+                        _bounded_operational_text(incomplete.get("reason"))
+                        if isinstance(incomplete, dict)
+                        else None
+                    ),
                 )
             response_id = _bounded_text(body.get("id"))
             if response_id is None:

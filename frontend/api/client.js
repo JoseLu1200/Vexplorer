@@ -113,6 +113,9 @@ export function createApiClient({ fetchImpl = globalThis.fetch, idFactory = defa
     getGeneralFurniture: (runId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/general`),
     reviewGeneralFurniture: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/general/reviews`, body),
     getGeneralDerived: (runId, proposalRevision, reviewRevision) => { const query=new URLSearchParams({proposal_revision:String(requiredRevision(proposalRevision)),review_revision:String(requiredRevision(reviewRevision))}); return json(`/api/v1/runs/${encodeURIComponent(runId)}/general/derived?${query}`); },
+    getGeneralAssembly: (runId, proposalRevision, reviewRevision) => { const query=new URLSearchParams({proposal_revision:String(requiredRevision(proposalRevision)),review_revision:String(requiredRevision(reviewRevision))}); return json(`/api/v1/runs/${encodeURIComponent(runId)}/general/assembly?${query}`); },
+    retryGeneralAssembly: (runId, body) => post(`/api/v1/runs/${encodeURIComponent(runId)}/general/assembly/retry`, body),
+    cancelGeneralAssembly: (runId, jobId) => json(`/api/v1/runs/${encodeURIComponent(runId)}/general/assembly/retry/${encodeURIComponent(jobId)}/cancel`,{method:"POST"}),
     generalArtifactUrl: (runId, artifactId, proposalRevision, reviewRevision) => {
       const query = new URLSearchParams({ proposal_revision: String(requiredRevision(proposalRevision)), review_revision: String(requiredRevision(reviewRevision)) });
       return resourceUrl(`/api/v1/runs/${encodeURIComponent(runId)}/general/artifacts/${encodeURIComponent(artifactId)}?${query}`);

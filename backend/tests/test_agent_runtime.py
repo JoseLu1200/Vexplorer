@@ -312,3 +312,38 @@ def test_runner_attaches_provider_provenance_to_each_action_without_raw_payload(
     assert (action.provider_input_tokens, action.provider_output_tokens, action.provider_total_tokens) == (21, 8, 29)
     assert "arguments" not in action.__dict__
     assert "raw" not in action.__dict__
+
+
+def test_provider_classifies_incomplete_reason_without_echoing_remote_body() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "response-incomplete",
+                "status": "incomplete",
+                "incomplete_details": {
+                    "reason": "max_output_tokens",
+                    "unsafe_remote_detail": "do-not-propagate",
+                },
+                "usage": {
+                    "input_tokens": 4653,
+                    "output_tokens": 16384,
+                    "output_tokens_details": {"reasoning_tokens": 16384},
+                    "total_tokens": 21037,
+                },
+                "output": [],
+            },
+        )
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(api_key="super-secret", model="gpt-6.1-sol", base_url="https://example.test/v1"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(ProviderError) as caught:
+        provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
+
+    assert str(caught.value) == "provider_response_incomplete"
+    assert caught.value.response_id == "response-incomplete"
+    assert caught.value.incomplete_reason == "max_output_tokens"
+    assert "unsafe" not in repr(caught.value)

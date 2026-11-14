@@ -194,3 +194,6 @@ def test_post_apply_verification_requires_server_attestation(tmp_path) -> None:
         verify_published_items(manifest, published_without_attestation)
 
 
+
+
+

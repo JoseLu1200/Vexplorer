@@ -9,6 +9,9 @@ from backend.app.contratos.modelos import (
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.inference import resolve_construction_graph
+from backend.app.general_furniture.assembly_semantics import (
+    validate_assembly_source_references,
+)
 
 
 def _unknown() -> GeneralValue:
@@ -74,6 +77,11 @@ def materialize_general_proposal(
     ]
     if any(not external_ref_is_allowed(reference) for reference in nested_source_refs):
         raise ValueError("construction_reference_outside_authority")
+    validate_assembly_source_references(
+        extraction,
+        proposal,
+        allowed_document_refs=allowed_document_refs,
+    )
     for component in proposal.components:
         checks = (
             (component.source_view_ids, ledger["view"]),
@@ -282,4 +290,6 @@ def materialize_general_proposal(
         construction_decisions=proposal.construction_decisions,
         construction_placements=proposal.construction_placements,
         evidence_dispositions=proposal.evidence_dispositions,
+        assembly_relations=proposal.assembly_relations,
+        assembly_alternatives=proposal.assembly_alternatives,
     )

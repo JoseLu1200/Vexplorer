@@ -203,6 +203,31 @@ test("general furniture endpoints keep proposal and review revisions explicit", 
   assert.equal(client.generalArtifactUrl("run general","bom/1",3,2),"/api/v1/runs/run%20general/general/artifacts/bom%2F1?proposal_revision=3&review_revision=2");
 });
 
+test("general assembly reads exact revisions without spending and retries as a durable idempotent job", async () => {
+  const requests = [];
+  const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(init.method === "POST" ? 202 : 200, { data: { id: "assembly-job", state: "queued" } }); };
+  const client = createApiClient({ fetchImpl, idFactory: () => "assembly-retry-key" });
+
+  await client.getGeneralAssembly("run assembly", 4, 2);
+  await client.retryGeneralAssembly("run assembly", { base_proposal_revision: 4, base_review_revision: 2 });
+
+  assert.equal(requests[0][0], "/api/v1/runs/run%20assembly/general/assembly?proposal_revision=4&review_revision=2");
+  assert.equal(requests[0][1].method, undefined, "read-only assembly inspection remains a GET");
+  assert.equal(requests[1][0], "/api/v1/runs/run%20assembly/general/assembly/retry");
+  assert.equal(requests[1][1].method, "POST");
+  assert.equal(requests[1][1].headers["Idempotency-Key"], "assembly-retry-key");
+  assert.deepEqual(JSON.parse(requests[1][1].body), { base_proposal_revision: 4, base_review_revision: 2 });
+});
+
+test("general assembly cancellation targets the durable retry job without a request body", async () => {
+  let request;
+  const client=createApiClient({fetchImpl:async(url,init={})=>{request=[url,init];return response(202,{data:{job_id:"job/7",cancel_requested:true}});}});
+  assert.deepEqual(await client.cancelGeneralAssembly("run assembly","job/7"),{job_id:"job/7",cancel_requested:true});
+  assert.equal(request[0],"/api/v1/runs/run%20assembly/general/assembly/retry/job%2F7/cancel");
+  assert.equal(request[1].method,"POST");
+  assert.equal(request[1].body,undefined);
+});
+
 test("historical imports, records, comparables and estimates have visible client operations", async () => {
   const requests = [];
   const fetchImpl = async (url, init = {}) => { requests.push([url, init]); return response(200, { data: {} }); };

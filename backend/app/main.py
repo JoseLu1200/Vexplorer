@@ -35,7 +35,7 @@ from backend.app.agente.replay import (
 )
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, LibraryItem, LibraryPublicationProvenance, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
+from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -48,6 +48,8 @@ from backend.app.historico.models import ProvisionalDimension, ProvisionalQuanti
 from backend.app.api.history import create_history_router
 from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralFurnitureAgentOutcome, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
 from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
+from backend.app.general_furniture.assembly import validate_assembly
+from backend.app.general_furniture.assembly_live import AssemblyAgentContext, AssemblyAgentLimits, AssemblyLiveError, build_terminal_assembly_attempt, run_general_assembly_agent
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
 from backend.app.general_furniture.visual_evidence import render_visual_evidence
@@ -214,6 +216,11 @@ class PdfPageSelectionRequest(RequestModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class GeneralAssemblyRetryRequest(RequestModel):
+    base_proposal_revision: int = Field(gt=0)
+    base_review_revision: int = Field(gt=0)
+
+
 def _ok(data, status_code: int = 200):
     return JSONResponse({"schema_version": "0.2.0", "data": data}, status_code=status_code)
 
@@ -252,7 +259,7 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
 
 
-def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None) -> FastAPI:
+def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None, general_assembly_provider=None) -> FastAPI:
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
@@ -299,6 +306,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
         general_review_max_semantic_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2"))
         general_review_max_output_tokens = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_OUTPUT_TOKENS", "16384"))
+        general_assembly_max_calls = int(os.getenv("VEXPLORER_GENERAL_ASSEMBLY_MAX_CALLS", "5"))
+        general_assembly_timeout_s = float(os.getenv("VEXPLORER_GENERAL_ASSEMBLY_TIMEOUT_SECONDS", "180"))
     except ValueError as exc:
         raise ValueError("invalid_numeric_production_limit") from exc
     if max_storage_bytes < MAX_UPLOAD_BYTES:
@@ -309,6 +318,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         raise ValueError("invalid_public_live_quota")
     if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 0 <= general_review_max_semantic_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
         raise ValueError("invalid_general_review_policy")
+    if not 1 <= general_assembly_max_calls <= 5 or not 1 <= general_assembly_timeout_s <= 180:
+        raise ValueError("invalid_general_assembly_policy")
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
     staging_dir = root / ".document-staging"
@@ -345,6 +356,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         general_review_provider = agent_provider
     if general_review_provider is None and review_settings.available:
         general_review_provider = OpenAIResponsesProvider(review_settings, instructions=GENERAL_AUTO_REVIEW_PROMPT)
+    assembly_model = os.getenv("VEXPLORER_GENERAL_ASSEMBLY_MODEL") or settings.model
+    if general_assembly_provider is None and settings.available:
+        assembly_settings = ProviderSettings(
+            api_key=settings.api_key,
+            model=assembly_model,
+            base_url=settings.base_url,
+            max_output_tokens=general_review_max_output_tokens,
+            vision_enabled=False,
+        )
+        general_assembly_provider = OpenAIResponsesProvider(
+            assembly_settings,
+            instructions=(
+                "Reconstruye montaje ortogonal solo con referencias geométricas provistas. "
+                "Usa herramientas nativas, evalúa y corrige; nunca inventes coordenadas libres."
+            ),
+        )
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         yield
@@ -490,6 +517,111 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             previous_review=previous_review,
             checkpoint_sink=checkpoint_sink,
         )
+
+    def execute_general_assembly(
+        run_id: str,
+        proposal_revision: int,
+        review_revision: int,
+        cancelled=None,
+        cancellation_job_id: str | None = None,
+    ) -> GeneralAssemblyAttempt:
+        if general_assembly_provider is None:
+            raise RuntimeError("general_assembly_unavailable")
+        record = general_furniture_repository.get(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
+        if (
+            record is None
+            or record.review is None
+            or record.proposal_revision != proposal_revision
+            or record.review_revision != review_revision
+        ):
+            raise ValueError("general_assembly_revision_conflict")
+        context = general_furniture_context(run_id)
+        latest = general_furniture_repository.get_assembly_attempt(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
+        base_revision = latest.assembly_revision if latest is not None else 0
+        agent_context = AssemblyAgentContext(
+            run_id=run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+            extraction=context.extraction,
+            review=record.review,
+            visual_pages=context.visual_pages,
+        )
+
+        def persist_attempt(attempt: GeneralAssemblyAttempt) -> None:
+            general_furniture_repository.save_assembly_attempt(
+                run_id,
+                attempt,
+                base_assembly_revision=attempt.assembly_revision - 1,
+                cancellation_job_id=cancellation_job_id,
+            )
+
+        try:
+            outcome = run_general_assembly_agent(
+                agent_context,
+                provider=general_assembly_provider,
+                evaluator=lambda candidate: validate_assembly(
+                    context.extraction, record.review, candidate
+                ),
+                base_assembly_revision=base_revision,
+                limits=AssemblyAgentLimits(
+                    max_model_calls=general_assembly_max_calls,
+                    timeout_s=general_assembly_timeout_s,
+                ),
+                attempt_sink=persist_attempt,
+                cancelled=cancelled,
+            )
+            repository.append_event(run_id, "general_assembly_completed", {
+                "proposal_revision": proposal_revision,
+                "review_revision": review_revision,
+                "assembly_revision": outcome.attempt.assembly_revision,
+                "status": outcome.attempt.report.status,
+                "model_calls": outcome.model_calls,
+                "tool_calls": outcome.tool_calls,
+            })
+            return outcome.attempt
+        except Exception as exc:
+            assembly_error_code = (
+                exc.code
+                if isinstance(exc, AssemblyLiveError)
+                else str(exc)
+                if str(exc).startswith("assembly_")
+                else "assembly_runtime_failed"
+            )
+            latest_after = general_furniture_repository.get_assembly_attempt(
+                run_id,
+                proposal_revision=proposal_revision,
+                review_revision=review_revision,
+            )
+            terminal_base = (
+                latest_after.assembly_revision if latest_after is not None else base_revision
+            )
+            terminal = build_terminal_assembly_attempt(
+                agent_context,
+                assembly_revision=terminal_base + 1,
+                attempt_index=terminal_base + 1,
+                model=assembly_model or f"injected:{type(general_assembly_provider).__name__}",
+                error=exc,
+            )
+            persist_attempt(terminal)
+            repository.append_event(run_id, "general_assembly_failed", {
+                "proposal_revision": proposal_revision,
+                "review_revision": review_revision,
+                "code": assembly_error_code,
+                "model_calls": exc.model_calls if isinstance(exc, AssemblyLiveError) else 0,
+                "tool_calls": exc.tool_calls if isinstance(exc, AssemblyLiveError) else 0,
+                "provider_status_code": exc.provider_status_code if isinstance(exc, AssemblyLiveError) else None,
+                "provider_code": exc.provider_code if isinstance(exc, AssemblyLiveError) else None,
+                "provider_incomplete_reason": exc.provider_incomplete_reason if isinstance(exc, AssemblyLiveError) else None,
+            })
+            raise
 
     def record_general_live_events(run_id: str, proposal_revision: int, outcome) -> None:
         for item in outcome.trace:
@@ -891,6 +1023,106 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         auto_review_event_sink=record_general_auto_review_events if general_review_provider is not None else None,
         direct_auto_review_enabled=False,
     ))
+
+    @app.post("/api/v1/runs/{run_id}/general/assembly/retry")
+    def retry_general_assembly(
+        run_id: str,
+        body: GeneralAssemblyRetryRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
+        record = general_furniture_repository.get(run_id)
+        if record is None or record.review is None:
+            return _error(404, "general_review_not_found", "No existe una revisión de BOM para montar.")
+        if (
+            record.proposal_revision != body.base_proposal_revision
+            or record.review_revision != body.base_review_revision
+        ):
+            return _error(409, "general_assembly_revision_conflict", "La revisión cambió antes del reintento.")
+        if general_assembly_provider is None:
+            return _error(503, "general_assembly_unavailable", "El proveedor de montaje no está disponible.", True)
+        if environment == "production" and not idempotency_key:
+            return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
+        if idempotency_key is not None and not 1 <= len(idempotency_key) <= 128:
+            return _error(422, "invalid_idempotency_key", "Idempotency-Key no es válido.")
+        request_json = json.dumps({
+            "kind": "general_assembly_retry",
+            "run_id": run_id,
+            **body.model_dump(mode="json"),
+        }, sort_keys=True, separators=(",", ":"))
+        if idempotency_key is not None:
+            try:
+                replay = repository.get_idempotent_job(
+                    request_json,
+                    actor=http_request.state.actor,
+                    idempotency_key=idempotency_key,
+                )
+            except ValueError as exc:
+                return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+            if replay is not None:
+                return _ok(replay, 202)
+        if not job_executor.reserve():
+            return _error(429, "job_capacity_exhausted", "La cola de trabajos está completa.", True)
+        job_id = f"job-{uuid4().hex}"
+        try:
+            job, created = repository.reserve_job(
+                job_id,
+                request_json,
+                actor=http_request.state.actor,
+                idempotency_key=idempotency_key,
+            )
+        except ValueError as exc:
+            job_executor.release()
+            return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
+        if not created:
+            job_executor.release()
+            return _ok(job, 202)
+
+        def process_assembly_retry() -> None:
+            try:
+                repository.start_job(job_id)
+                execute_general_assembly(
+                    run_id,
+                    body.base_proposal_revision,
+                    body.base_review_revision,
+                    cancelled=lambda: general_furniture_repository.is_assembly_cancelled(
+                        job_id, run_id
+                    ),
+                    cancellation_job_id=job_id,
+                )
+                repository.finish_job(job_id, run_id=run_id)
+            except Exception as exc:
+                repository.finish_job(job_id, run_id=run_id, error={
+                    "code": exc.code if isinstance(exc, AssemblyLiveError) else "general_assembly_failed",
+                    "message": "El reintento de montaje no terminó con una escena validada.",
+                    "retryable": True,
+                    "run_id": run_id,
+                })
+
+        job_executor.submit_reserved(process_assembly_retry)
+        return _ok(job, 202)
+
+    @app.post("/api/v1/runs/{run_id}/general/assembly/retry/{job_id}/cancel")
+    def cancel_general_assembly_retry(run_id: str, job_id: str):
+        try:
+            job = repository.get_job(job_id)
+            request_payload = json.loads(repository.get_job_request(job_id))
+        except (KeyError, json.JSONDecodeError):
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        if (
+            request_payload.get("kind") != "general_assembly_retry"
+            or request_payload.get("run_id") != run_id
+        ):
+            return _error(404, "general_assembly_job_not_found", "El trabajo no pertenece a este montaje.")
+        if job["state"] not in {"queued", "running"}:
+            return _error(409, "general_assembly_job_not_cancellable", "El trabajo ya terminó.")
+        general_furniture_repository.request_assembly_cancellation(
+            job_id, run_id, datetime.now(UTC).isoformat()
+        )
+        repository.append_event(run_id, "general_assembly_cancel_requested", {
+            "job_id": job_id,
+        })
+        return _ok({"job_id": job_id, "cancel_requested": True}, 202)
 
     @app.post("/api/v1/documents")
     async def upload_document(http_request: Request, file: UploadFile = File(...)):
@@ -1445,6 +1677,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         "code": "general_live_provider_failed",
                         "phase": "proposal",
                         "reason_code": exc.code,
+                        "provider_status_code": exc.provider_status_code,
+                        "provider_code": exc.provider_code,
+                        "provider_incomplete_reason": exc.provider_incomplete_reason,
                         "message": "La propuesta general live falló de forma acotada.",
                         "retryable": True,
                         "model_calls": exc.model_calls,
@@ -1531,6 +1766,26 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     run_id, general_auto_outcome.review, general_auto_outcome.derived,
                 )
                 record_general_auto_review_events(run_id, general_auto_outcome)
+                repository.append_event(run_id, "general_assembly_started", {
+                    "proposal_revision": general_auto_outcome.review.proposal_revision,
+                    "review_revision": general_auto_outcome.review.review_revision,
+                })
+                if general_assembly_provider is None:
+                    repository.append_event(run_id, "general_assembly_unavailable", {
+                        "proposal_revision": general_auto_outcome.review.proposal_revision,
+                        "review_revision": general_auto_outcome.review.review_revision,
+                    })
+                else:
+                    try:
+                        execute_general_assembly(
+                            run_id,
+                            general_auto_outcome.review.proposal_revision,
+                            general_auto_outcome.review.review_revision,
+                        )
+                    except Exception:
+                        # Assembly is an independent, retryable phase. Its persisted
+                        # failure never discards the reviewed BOM or the durable run.
+                        pass
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
@@ -1908,7 +2163,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         try:
-            estimate = repository.get_estimate(run_id, result.result_revision).model_dump(mode="json")
+            load_estimate = (
+                repository.get_table_cost_estimate
+                if result.input_semantics == "mounted_orthographic_views"
+                else repository.get_estimate
+            )
+            estimate = load_estimate(run_id, result.result_revision).model_dump(mode="json")
         except KeyError:
             estimate = None
         latest_job = repository.get_latest_job_for_run(run_id, actor=http_request.state.actor)
@@ -2091,7 +2351,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 attested_by=http_request.state.actor or result.review.reviewer_name,
                 attested_at=datetime.now(UTC).isoformat(),
             )
-        descriptor = build_descriptor(result)
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError as exc:
+            return _error(409, str(exc), "Completa la revisión del mueble antes de guardarlo en la biblioteca.")
         embedding = None
         if request.embedding_mode == "openai":
             if public_production:
@@ -2142,7 +2405,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except KeyError:
             return _error(404, "result_not_found", "Revisión inexistente.")
         all_candidates = tuple(item for item in repository.get_library_items() if item.run_id != run_id)
-        descriptor = build_descriptor(result)
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError as exc:
+            return _error(409, str(exc), "Completa la revisión del mueble antes de buscar similares.")
         if request.descriptor_version is not None and request.descriptor_version != descriptor.descriptor_version:
             return _error(409, "descriptor_space_incompatible", "La revisión consultada pertenece a otra versión de descriptor.")
         descriptor_version = request.descriptor_version or descriptor.descriptor_version
