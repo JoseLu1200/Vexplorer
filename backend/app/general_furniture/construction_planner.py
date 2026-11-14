@@ -20,10 +20,29 @@ from backend.app.contratos.modelos import (
 
 _VIEW_GAP_MM = 100.0
 _DIMENSION_OFFSET_MM = 45.0
+_CALLOUT_LINE_MAX_CHARS = 120
 
 
 def _refs(*values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(reference for items in values for reference in items))
+
+
+def _split_preserving_text(text: str, limits: tuple[int, ...]) -> tuple[str, ...]:
+    """Wrap at word boundaries while retaining every source character."""
+    chunks: list[str] = []
+    remaining = text
+    index = 0
+    while remaining:
+        limit = limits[min(index, len(limits) - 1)]
+        if len(remaining) <= limit:
+            chunks.append(remaining)
+            break
+        boundary = remaining.rfind(" ", 0, limit + 1)
+        take = limit if boundary <= 0 else boundary + 1
+        chunks.append(remaining[:take])
+        remaining = remaining[take:]
+        index += 1
+    return tuple(chunks)
 
 
 def _review_status(review: GeneralFurnitureReview, component_id: str, field: str) -> str:
@@ -189,7 +208,8 @@ def _piece_sheet(
             ),
         ))
         callout_x = length + _VIEW_GAP_MM + thickness + 80
-        for index, detail in enumerate(details):
+        callout_row = 0
+        for detail in details:
             if detail.geometry is None:
                 continue
             state = detail.state
@@ -220,7 +240,12 @@ def _piece_sheet(
                     source_refs=dimension.source_refs,
                 ))
             target = detail.geometry.points_mm[0]
-            label_point = Point2D(x=callout_x, y=width + 35 + index * 28)
+            prefix = f"{detail.id} · {detail.kind}: "
+            rationale_lines = _split_preserving_text(
+                detail.rationale,
+                (max(1, _CALLOUT_LINE_MAX_CHARS - len(prefix)), _CALLOUT_LINE_MAX_CHARS),
+            )
+            label_point = Point2D(x=callout_x, y=width + 35 + callout_row * 20)
             edge_x = length + 30
             primitives.append(GeneralSheetPrimitive(
                 kind="detail_callout",
@@ -230,10 +255,19 @@ def _piece_sheet(
                     Point2D(x=edge_x, y=label_point.y),
                     label_point,
                 ),
-                text=f"{detail.id} · {detail.kind}: {detail.rationale}",
+                text=prefix + rationale_lines[0],
                 state=state,
                 source_refs=detail_refs,
             ))
+            for line_index, line in enumerate(rationale_lines[1:], start=1):
+                primitives.append(GeneralSheetPrimitive(
+                    kind="text",
+                    points_mm=(Point2D(x=callout_x, y=label_point.y - 5 + line_index * 18),),
+                    text=line,
+                    state=state,
+                    source_refs=detail_refs,
+                ))
+            callout_row += len(rationale_lines) + 1
     quantity_prefix = "≈ " if piece.quantity.state == "estimated" else ""
     quantity_text = "?" if piece.quantity.value is None else f"{quantity_prefix}{piece.quantity.value} uds."
     label_y = (piece.width.value_mm or 0) + 60
