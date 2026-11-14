@@ -111,7 +111,11 @@ def evaluar(biblioteca: tuple[LibraryItem, ...], juicios: ConjuntoJuicios, k: in
             advertencias.append(f"consulta '{consulta.consulta_id}': candidatos juzgados excluidos (mismo run o versión de descriptor distinta) {filtrados}; limitan el recall")
         metricas.append(evaluar_consulta(consulta.consulta_id, ranking, dict(consulta.relevancias), k))
         exclusiones.append(excluidos)
-    aviso = "Juicios sintéticos: las métricas solo prueban el mecanismo, no son evidencia de calidad." if juicios.origen == "synthetic" else None
+    avisos = {
+        "synthetic": "Juicios sintéticos: las métricas solo prueban el mecanismo, no son evidencia de calidad.",
+        "derived_reference": "Juicios derivados por regla de la referencia privada, no revisados por personas: miden acuerdo con esa regla, no preferencia del técnico.",
+    }
+    aviso = avisos.get(juicios.origen)
     return InformeRecuperacion(
         metodo=metodo, origen_juicios=juicios.origen, version_juicios=juicios.version, aviso=aviso,
         agregadas=agregar(tuple(metricas), k), por_consulta=tuple(metricas), exclusiones=tuple(exclusiones), advertencias=tuple(advertencias),
