@@ -61,6 +61,26 @@ def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path,
     assert reviewed.json()["data"]["state"] == "completed"
     assert reviewed.json()["data"]["evaluated_table_program"]["state"] == "completed"
 
+    scene = client.get(f"/api/v1/runs/{run_id}/scene", params={"result_revision": 2})
+    assert scene.status_code == 200
+    assert scene.json()["data"]["state"] == "ready"
+    assert len(scene.json()["data"]["objects"]) == 3
+    explanations = client.get(f"/api/v1/runs/{run_id}/explanations", params={"result_revision": 2})
+    assert explanations.status_code == 200
+    assert {item["role"] for item in explanations.json()["data"]["pieces"]} == {"tabletop", "side_support"}
+    assert all(item["formulas"] and item["premises"] for item in explanations.json()["data"]["pieces"])
+
+    drawings = client.post(f"/api/v1/runs/{run_id}/table-drawings", json={"result_revision": 2})
+    assert drawings.status_code == 201, drawings.text
+    manifest = drawings.json()["data"]
+    assert {item["kind"] for item in manifest["sheets"]} >= {"general", "component", "cut_sheet"}
+    first_format = manifest["sheets"][0]["formats"][0]
+    artifact = client.get(first_format["url"])
+    assert artifact.status_code == 200
+    assert artifact.headers["content-type"].split(";")[0] == first_format["media_type"]
+    persisted_manifest = client.get(f"/api/v1/runs/{run_id}/table-drawings", params={"result_revision": 2})
+    assert persisted_manifest.status_code == 200 and persisted_manifest.json()["data"] == manifest
+
     catalog = client.get("/api/v1/table-cost-catalog")
     assert catalog.status_code == 200 and catalog.json()["data"]["synthetic"] is True
     cost = client.post(f"/api/v1/runs/{run_id}/table-costs", json={"result_revision": 2, "scope": {"material_tariff_id": None, "edge_scope": "none", "operation_tariff_ids": []}})
@@ -69,6 +89,16 @@ def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path,
     assert cost.json()["data"]["grand_total_eur"] is None
     stored = client.get(f"/api/v1/runs/{run_id}/table-costs", params={"result_revision": 2})
     assert stored.status_code == 200 and stored.json()["data"] == cost.json()["data"]
+    exported = client.get(f"/api/v1/runs/{run_id}/exports", params={"format": "json"})
+    assert exported.status_code == 200
+    bundle = exported.json()
+    assert bundle["schema_version"] == "0.5.0"
+    assert bundle["result"]["evaluated_table_program"]["program_hash"] == manifest["program_hash"]
+    assert bundle["table_drawings"] == manifest
+    assert bundle["estimate"]["total_state"] == "partial"
+    assert bundle["descriptor"]["descriptor_version"] == "furniture-v3"
+    assert bundle["scene"]["state"] == "ready"
+    assert bundle["explanations"]["pieces"]
 
 
 def test_table_run_rejects_implicit_catalog_choice(tmp_path, monkeypatch):
