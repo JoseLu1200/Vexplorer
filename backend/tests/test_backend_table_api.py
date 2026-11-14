@@ -2,6 +2,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.geometria import extract_drawing
+from backend.app.geometria.mounted_table import analyze_mounted_table, catalog_table_programs
 from backend.app.main import create_app
 
 
@@ -35,6 +38,17 @@ def _accept_all(program):
         *({"target_kind": "component", "target_id": item["id"], "action": "accept", "reason": "Acepta componente"} for item in program["components"]),
         *({"target_kind": "premise", "target_id": item["id"], "action": "accept", "reason": "Acepta premisa"} for item in program["premises"]),
     ]
+
+
+class _OneProgramProvider:
+    def __init__(self, arguments):
+        self.arguments = arguments
+
+    def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+        return ProviderResponse(
+            id="response-live-table",
+            tool_calls=(ToolCall(call_id="propose-live-table", name="proponer_descomposicion", arguments=self.arguments),),
+        )
 
 
 def test_table_baseline_run_review_and_partial_cost_are_revision_bound(tmp_path, monkeypatch):
@@ -115,3 +129,41 @@ def test_table_run_rejects_implicit_catalog_choice(tmp_path, monkeypatch):
         document_id = client.post("/api/v1/documents", files={"file": ("mesa.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
     response = client.post("/api/v1/runs", json={"document_id": document_id, "mode": "geometry_only", "input_kind": "mounted_orthographic_views", "table_profile": "rectangular_table_v1", "proposal_mode": "catalog_baseline"})
     assert response.status_code == 422
+
+
+def test_live_model_generated_table_program_can_be_reviewed_to_completion(tmp_path, monkeypatch):
+    extraction = extract_drawing(FIXTURE, input_kind="mounted_orthographic_views")
+    analysis = analyze_mounted_table(extraction)
+    baseline = catalog_table_programs(analysis)[0]
+    arguments = {
+        "bindings": [item.model_dump(mode="json") for item in baseline.bindings],
+        "components": [item.model_dump(mode="json") for item in baseline.components],
+        "premises": [item.model_dump(mode="json") for item in baseline.premises],
+        "assumptions": list(baseline.assumptions),
+        "evidence_ids": list(baseline.evidence_ids),
+    }
+    client = TestClient(create_app(data_dir=tmp_path, agent_provider=_OneProgramProvider(arguments)))
+    with FIXTURE.open("rb") as stream:
+        document_id = client.post("/api/v1/documents", files={"file": ("mesa.dxf", stream, "application/dxf")}).json()["data"]["document_id"]
+    created = client.post("/api/v1/runs", json={
+        "document_id": document_id,
+        "mode": "live",
+        "input_kind": "mounted_orthographic_views",
+        "table_profile": "rectangular_table_v1",
+        "proposal_mode": "model_generated",
+    })
+    assert created.status_code == 201, created.text
+    payload = created.json()["data"]
+    program = payload["result"]["table_programs"][0]
+    assert program["proposal_origin"] == "model_generated"
+    assert program["table_template_id"] is None
+    reviewed = client.post(f'/api/v1/runs/{payload["run"]["id"]}/reviews', json={
+        "base_result_revision": 1,
+        "reviewer_name": "Técnica local",
+        "table_program_id": program["id"],
+        "table_decisions": _accept_all(program),
+        "notes": "Valida expresamente el programa generado.",
+    })
+    assert reviewed.status_code == 201, reviewed.text
+    assert reviewed.json()["data"]["state"] == "completed"
+    assert reviewed.json()["data"]["evaluated_table_program"]["state"] == "completed"
