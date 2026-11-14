@@ -517,8 +517,12 @@ def recompute_reviewed_assembly_candidate(
         if candidate.layout == "between_sides":
             horizontal_conflict = max(horizontal_values) - min(horizontal_values) > DIMENSION_TOLERANCE_MM
             horizontal_result = top_length if not horizontal_conflict else None
-        elif candidate.layout == "cap_sides" and common_thickness is not None:
-            expected_shelf = top_length - 2 * common_thickness
+        elif (
+            candidate.layout == "cap_sides"
+            and top is not None and base is not None
+            and top.thickness_mm is not None and base.thickness_mm is not None
+        ):
+            expected_shelf = top_length - top.thickness_mm - base.thickness_mm
             horizontal_conflict = abs(top_length - base_length) > DIMENSION_TOLERANCE_MM or abs(shelf_length - expected_shelf) > DIMENSION_TOLERANCE_MM
             horizontal_result = shelf_length if not horizontal_conflict else None
 
@@ -529,10 +533,18 @@ def recompute_reviewed_assembly_candidate(
         height_value = side.length_mm if side else None
         width_operation, height_operation = "sum", "equal"
     elif candidate.layout == "cap_sides":
+        horizontal_operands = horizontal_operands + (
+            operand(top, "thickness_mm"), operand(base, "thickness_mm"),
+        )
         width_operands = (operand(top, "length_mm"),)
         width_value = top.length_mm if top else None
-        height_operands = (operand(side, "length_mm"), operand(top, "thickness_mm"), operand(top, "thickness_mm"))
-        height_value = side.length_mm + 2 * top.thickness_mm if side and top and side.length_mm is not None and top.thickness_mm is not None else None
+        height_operands = (operand(side, "length_mm"), operand(top, "thickness_mm"), operand(base, "thickness_mm"))
+        height_value = (
+            side.length_mm + top.thickness_mm + base.thickness_mm
+            if side and top and base
+            and side.length_mm is not None and top.thickness_mm is not None and base.thickness_mm is not None
+            else None
+        )
         width_operation, height_operation = "equal", "sum"
     else:
         width_operands = (operand(top, "length_mm"),)
@@ -543,7 +555,7 @@ def recompute_reviewed_assembly_candidate(
     constraints = (
         make_constraint(dimension="width", kind="equal_dimensions", operation="equal", operands=depth_operands, compatible_result=common_depth, incompatible=depth_conflict),
         make_constraint(dimension="thickness", kind="equal_dimensions", operation="equal", operands=thickness_operands, compatible_result=common_thickness, incompatible=thickness_conflict),
-        make_constraint(dimension="length", kind="role_compatibility", operation="equal" if candidate.layout == "between_sides" else "difference", operands=horizontal_operands, compatible_result=horizontal_result, incompatible=horizontal_conflict),
+        make_constraint(dimension="length", kind="role_compatibility", operation="equal" if candidate.layout == "between_sides" else "compatibility", operands=horizontal_operands, compatible_result=horizontal_result, incompatible=horizontal_conflict),
         make_constraint(dimension="assembled_width", kind="exterior_from_parts", operation=width_operation, operands=width_operands, compatible_result=width_value),
         make_constraint(dimension="assembled_height", kind="exterior_from_parts", operation=height_operation, operands=height_operands, compatible_result=height_value),
     )
