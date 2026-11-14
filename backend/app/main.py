@@ -1873,9 +1873,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         """Expose persisted progress without presenting a proposal as approved."""
         result = dict(job)
         error = result.get("error") if isinstance(result.get("error"), dict) else {}
-        record = general_furniture_repository.get(result["run_id"]) if result.get("run_id") else None
+        effective_run_id = result.get("run_id") or error.get("run_id")
+        if effective_run_id and result.get("run_id") is None:
+            result["run_id"] = effective_run_id
+        record = general_furniture_repository.get(effective_run_id) if effective_run_id else None
         result["checkpoint"] = {
-            "phase": error.get("phase") or ("autonomous_review" if result.get("run_id") else "proposal"),
+            "phase": error.get("phase") or ("autonomous_review" if effective_run_id else "proposal"),
             "proposal_saved": record is not None,
             "proposal_id": record.proposal.id if record else None,
             "proposal_revision": record.proposal_revision if record else 0,
@@ -2051,6 +2054,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "Idempotency-Key ya fue usado para otra solicitud.")
         if not created:
             job_executor.release()
+            if repository.get_job_resume_checkpoint(job["id"]) is not None:
+                return _error(409, "job_recovery_action_conflict", "Ya existe una reanudación de revisión para este trabajo.")
             return _ok(job, 202)
 
         enqueue_reserved_job(job_id, request, http_request.state.actor)

@@ -30,6 +30,8 @@
 - `evidence_coverage` es accounting, nunca precisión/recall físico ni criterio de autoaceptación.
 - El proponente recibe reparación acotada. Si agota presupuesto, conserva la última propuesta/draft válida como incompleta junto al informe; no inventa cotas ni descarta todo el resultado.
 - La crítica autónoma y el contexto compacto se integran por sus propietarios transferidos; no se editaron aquí.
+- El snapshot de revisión propaga las `evidence_dispositions` exactas de su fuente constructiva, de modo que el contrato puede aceptar solo `evidence_region:<id>` pertenecientes a esa propuesta.
+- El proveedor fake integral se actualizó al contrato actual con parámetros estimated acotados, disposiciones exactas y reviews requeridas; no se mockeó ni debilitó el motor.
 
 ## Pruebas y cierre
 
@@ -37,5 +39,7 @@
 |---|---|---|---|
 | Diagnóstico de artefactos | extracción local de conteos desde propuestas y DXF permitidos | 36/40 y 21/31 contornos citados | no es evaluación contra GT ni recall físico |
 | Accounting + live + materialización + contexto | `python -m pytest backend/tests/test_general_furniture_evidence_accounting.py backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_proposal.py backend/tests/test_general_furniture_context_payload.py -q` | 31 passed | suite focal; integración global corresponde a `/root` |
+| Recovery + live + accounting | `python -m pytest backend/tests/test_job_recovery.py backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_evidence_accounting.py -q` | 24 passed | recuperación reanuda crítico sin repetir proponente |
+| Integración producción general | `python -m pytest backend/tests/test_integral_api_integration.py::test_production_job_integrates_general_review_derived_and_history_persistently -q` | 1 passed | cubre persistencia y flujo integral |
 
 - Sin commits ni despliegue. No se usaron respuestas privadas/GT ni reglas específicas para 030/016.

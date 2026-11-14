@@ -490,9 +490,10 @@ class DemoRepository:
         actor_key = actor or "local-demo"
         with self._connect() as db:
             row = db.execute(
-                "SELECT id FROM jobs WHERE run_id=? AND COALESCE(actor,'local-demo')=? "
+                "SELECT id FROM jobs WHERE (run_id=? OR json_extract(error_json,'$.run_id')=?) "
+                "AND COALESCE(actor,'local-demo')=? "
                 "ORDER BY updated_at DESC,id DESC LIMIT 1",
-                (run_id, actor_key),
+                (run_id, run_id, actor_key),
             ).fetchone()
             return self._get_job_in_transaction(db, row["id"]) if row else None
 

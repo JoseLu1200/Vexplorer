@@ -470,7 +470,7 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
         )
     )
     return [
-        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Incluye un field_review individual para cada target requerido de dimensiones, existencia y disposición de evidencia, y al menos un any_of por hardware. Un mismo check multitarjeta puede respaldar varios targets contrastados, pero accepted exige que incluya cada target exacto. duplicate_projection exige duplicate_scan o cross_view_identity dirigido; no acredita identidad física. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
+        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Incluye un field_review individual para cada target requerido de dimensiones, existencia y disposición de evidencia, y al menos un any_of por hardware. accepted kind=hardware es clasificación constructiva provisional, no certificación ni identificación comercial. Un mismo check multitarjeta puede respaldar varios targets contrastados, pero accepted exige que incluya cada target exacto. duplicate_projection exige duplicate_scan o cross_view_identity dirigido; no acredita identidad física. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
         schema("proponer_mueble_general", repair_description, ProposeGeneralFurnitureArgs),
     ]
 
@@ -532,6 +532,26 @@ def _required_hardware_classification_target_groups(
     )
 
 
+def _required_cut_piece_review_targets(components) -> tuple[str, ...]:
+    return tuple(sorted(
+        f"component:{component.id}.{field}"
+        for component in components
+        if component.kind != "hardware"
+        for field in (
+            "kind", "existence", "geometry", "length", "width", "thickness",
+            "quantity",
+        )
+    ))
+
+
+def _required_hardware_quantity_targets(components) -> tuple[str, ...]:
+    return tuple(sorted(
+        f"component:{component.id}.quantity"
+        for component in components
+        if component.kind == "hardware"
+    ))
+
+
 def _validate_numeric_dimension_review_coverage(args: GeneralAutoReviewArgs) -> None:
     reviewed = {item.target_ref for item in args.field_reviews}
     missing = tuple(
@@ -554,13 +574,17 @@ def _validate_required_review_coverage(
     *,
     required_existence_targets: tuple[str, ...],
     required_disposition_targets: tuple[str, ...],
+    required_component_targets: tuple[str, ...] = (),
 ) -> None:
     reviewed = {item.target_ref for item in field_reviews}
-    missing = tuple(
-        target
-        for target in (*required_existence_targets, *required_disposition_targets)
-        if target not in reviewed
-    )
+    required = tuple(dict.fromkeys(
+        target for target in (
+            *required_component_targets,
+            *required_existence_targets,
+            *required_disposition_targets,
+        )
+    ))
+    missing = tuple(target for target in required if target not in reviewed)
     if missing:
         raise _MissingRequiredFieldReviews(missing)
 
@@ -573,7 +597,8 @@ def _validate_evidence_disposition_checks(
     for review in args.field_reviews:
         if (
             review.status != "accepted"
-            or disposition_kinds.get(review.target_ref) != "duplicate_projection"
+            or disposition_kinds.get(review.target_ref)
+            not in {"duplicate_projection", "multi_region_assigned"}
         ):
             continue
         selected = tuple(checks.get(check_id) for check_id in review.check_ids)
@@ -703,6 +728,7 @@ def _effective_auto_status(
     args: GeneralAutoReviewArgs,
     construction_validation=None,
     accounting_report: EvidenceAccountingReport | None = None,
+    required_review_targets: tuple[str, ...] = (),
 ) -> str:
     if construction_validation is not None and construction_validation.status == "invalid":
         return "conflict"
@@ -711,6 +737,9 @@ def _effective_auto_status(
     if args.status == "abstained":
         return "abstained"
     if accounting_report is not None and not accounting_report.reviewable:
+        return "incomplete"
+    accepted = {item.target_ref for item in args.field_reviews if item.status == "accepted"}
+    if not set(required_review_targets) <= accepted:
         return "incomplete"
     if not args.components:
         return "incomplete"
@@ -908,6 +937,12 @@ def _review_payload(
             outcome.draft.components
         )
     ]
+    required_cut_piece_field_review_targets = list(
+        _required_cut_piece_review_targets(outcome.draft.components)
+    )
+    required_hardware_quantity_field_review_targets = list(
+        _required_hardware_quantity_targets(outcome.draft.components)
+    )
     visible_source_refs = set()
     for page in context.visual_pages:
         visible_source_refs.add(f"visual:{page.reference}")
@@ -947,6 +982,12 @@ def _review_payload(
             context.extraction, measurements, regions, projections
         ).to_payload(),
         "referenced_segment_measurements": referenced_measurements,
+        "required_cut_piece_field_review_targets": (
+            required_cut_piece_field_review_targets
+        ),
+        "required_hardware_quantity_field_review_targets": (
+            required_hardware_quantity_field_review_targets
+        ),
         "evidence_accounting": accounting.to_payload(),
         "region_visual_links": [
             item.to_payload()
@@ -972,7 +1013,7 @@ def _review_payload(
             "authority": "repair_request_only_not_acceptance_or_confirmation",
         },
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Entrega solo checks, field_reviews, unresolved y status. Decide cada target requerido de dimensión, existencia y disposición, y un any_of por hardware. Cada field_review es individual aunque un check contrastado cubra varios targets exactos. La cobertura contable no confirma piezas, cantidades, identidad ni fabricabilidad. duplicate_projection requiere duplicate_scan o cross_view_identity dirigido; nonmaterial requiere contraste dirigido. accepted exige check model_visual pass con el mismo target; evidencia insuficiente queda abstained/incomplete.",
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status. Para cada pieza de corte decide kind, existence, geometry, length, width, thickness y quantity anunciados; material/finish no bloquean coherencia geométrica. Para hardware decide existence, quantity y al menos kind o geometry sin inventar cotas de catálogo. Decide también cada disposición. accepted kind=hardware es clasificación constructiva provisional, no una certificación comercial. Cada field_review es individual aunque un check contrastado cubra varios targets exactos. La cobertura contable no confirma piezas, cantidades, identidad ni fabricabilidad. duplicate_projection y asignaciones multi-región requieren duplicate_scan o cross_view_identity dirigido; nonmaterial requiere contraste dirigido. accepted exige check model_visual pass con el mismo target; evidencia insuficiente queda abstained/incomplete.",
     })
     if raster_without_metric_ledger:
         payload["allowed_document_refs"] = list(allowed_document_refs)
@@ -1167,15 +1208,21 @@ def run_general_autonomous(
             )
             args = _server_review_args(decision, effective.draft, current_previous)
             _validate_numeric_dimension_review_coverage(args)
-            _validate_required_review_coverage(
-                args.field_reviews,
-                required_existence_targets=(
-                    accounting_report.required_existence_review_targets
-                ),
-                required_disposition_targets=(
-                    accounting_report.required_disposition_review_targets
-                ),
-            )
+            required_component_targets = tuple(sorted({
+                *_required_cut_piece_review_targets(effective.draft.components),
+                *_required_hardware_quantity_targets(effective.draft.components),
+            }))
+            if decision.status == "accepted":
+                _validate_required_review_coverage(
+                    args.field_reviews,
+                    required_existence_targets=(
+                        accounting_report.required_existence_review_targets
+                    ),
+                    required_disposition_targets=(
+                        accounting_report.required_disposition_review_targets
+                    ),
+                    required_component_targets=required_component_targets,
+                )
             current_allowed_refs = allowed_refs | {
                 f"premise:{item.id}" for item in effective.proposal.premises
             }
@@ -1193,7 +1240,13 @@ def run_general_autonomous(
             _validate_evidence_disposition_checks(
                 args,
                 {
-                    f"evidence_region:{item.candidate_region_id}": item.kind
+                    f"evidence_region:{item.candidate_region_id}": (
+                        "multi_region_assigned"
+                        if item.kind == "assigned"
+                        and item.component_id
+                        in set(accounting_report.multi_region_component_ids)
+                        else item.kind
+                    )
                     for item in effective.proposal.evidence_dispositions
                 },
             )
@@ -1213,7 +1266,14 @@ def run_general_autonomous(
                 effective.proposal, effective.draft
             )
             effective_status = _effective_auto_status(
-                args, construction_validation, accounting_report
+                args,
+                construction_validation,
+                accounting_report,
+                tuple(sorted({
+                    *required_component_targets,
+                    *accounting_report.required_existence_review_targets,
+                    *accounting_report.required_disposition_review_targets,
+                })),
             )
             recoverable_measurements = _recoverable_dimension_measurements(args, measurements)
             if (
@@ -1257,10 +1317,13 @@ def run_general_autonomous(
                     repair_output = {
                         "ok": True,
                         "status": "repair_requested",
+                        "proposal": effective.proposal.model_dump(mode="json"),
+                        "draft": effective.draft.model_dump(mode="json"),
                         "unresolved": args.unresolved,
                         "semantic_repair_directives": _semantic_repair_directives(args.unresolved, component_ids={item.id for item in args.components}),
+                        "evidence_accounting": accounting_report.to_payload(),
                         "construction_validation": construction_validation.model_dump(mode="json"),
-                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
+                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Resuelve regiones unresolved/invalid y cotas ausentes o sin traza sin inventar piezas, identidad ni cantidad. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
                     }
                     if construction_validation.status == "invalid":
                         repair_output["instruction"] = (

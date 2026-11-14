@@ -29,10 +29,12 @@ class _Client:
 
     def get(self, path: str):
         if path == "/api/v1/config":
-            return _Response(200, {"data": {"autonomous_review": {
-                "reviewer_model": "gpt-6-astra",
-                "limits": {"job_timeout_s": self.timeout},
-            }}})
+            return _Response(200, {"data": {"capabilities": {"general_furniture": {
+                "autonomous_review": {
+                    "reviewer_model": "gpt-6-astra",
+                    "limits": {"job_timeout_s": self.timeout},
+                },
+            }}}})
         if path == "/api/v1/jobs/job-1":
             return _Response(200, {"data": {"id": "job-1", "state": "succeeded", "run_id": "run-1", "error": None}})
         if path == "/api/v1/runs/run-1/general":

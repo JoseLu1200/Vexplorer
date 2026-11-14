@@ -89,6 +89,23 @@ class _GeneralLiveProvider:
             for region in candidate_regions
             for contour_id in region["contour_ids"]
         ))
+        components = [{
+            "id": "panel", "label": "Panel propuesto", "kind": "panel",
+            "role": "unknown",
+            "length_binding_id": "length" if dimension else None,
+            "width_binding_id": "panel-width",
+            "thickness_binding_id": "panel-thickness",
+            "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+            "premise_ids": ["premise"],
+            "source_view_ids": [view["id"]] if view else [],
+            "source_observation_ids": [observation["id"]] if observation else [],
+            "source_contour_ids": candidate_contour_ids,
+            "source_evidence_ids": dimension["evidence_ids"] if dimension else [],
+            "source_dimension_ids": [dimension["id"]] if dimension else [],
+            "source_document_refs": visual_refs,
+            "assumptions": ["Rol pendiente de revisión."],
+            "unknown_fields": (["quantity", "material", "finish", "placement"] if dimension else ["length", "quantity", "material", "finish", "placement"]),
+        }]
         arguments = {
             "bindings": ([{"id": "length", "operation": "copy", "operand_refs": [f"dimension:{dimension['id']}"]}] if dimension else []) + [
                 {"id": "panel-width", "operation": "copy", "operand_refs": ["parameter:panel-width"]},
@@ -114,17 +131,7 @@ class _GeneralLiveProvider:
                     "rationale": "Estimación acotada del fixture para revisar el flujo.",
                 },
             ],
-            "components": [{
-                "id": "panel", "label": "Panel propuesto", "kind": "panel", "role": "unknown",
-                "length_binding_id": "length" if dimension else None,
-                "width_binding_id": "panel-width", "thickness_binding_id": "panel-thickness",
-                "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "premise_ids": ["premise"], "source_view_ids": [view["id"]] if view else [],
-                "source_observation_ids": [observation["id"]] if observation else [], "source_contour_ids": candidate_contour_ids,
-                "source_evidence_ids": dimension["evidence_ids"] if dimension else [], "source_dimension_ids": [dimension["id"]] if dimension else [],
-                "source_document_refs": visual_refs, "assumptions": ["Rol pendiente de revisión."],
-                "unknown_fields": (["quantity", "material", "finish", "placement"] if dimension else ["length", "quantity", "material", "finish", "placement"]),
-            }],
+            "components": components,
             "evidence_dispositions": [
                 {
                     "candidate_region_id": region["id"], "kind": "assigned",

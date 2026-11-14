@@ -1261,6 +1261,7 @@ class GeneralFurnitureReview(StrictModel):
     scenario_occurrences: tuple[GeneralScenarioOccurrence, ...] = ()
     machine_checks: tuple[GeneralAutoReviewCheck, ...] = ()
     machine_field_reviews: tuple[GeneralMachineFieldReview, ...] = ()
+    evidence_dispositions: tuple[GeneralEvidenceDisposition, ...] = Field(default=(), max_length=2048)
     auto_review_status: Literal["accepted", "incomplete", "conflict", "abstained"] | None = None
     furniture_quantity: GeneralQuantity = GeneralQuantity(value=None, state="unknown")
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
@@ -1300,6 +1301,7 @@ class GeneralFurnitureReview(StrictModel):
                 *(f"constraint:{item.id}" for item in self.construction_constraints),
                 *(f"detail:{item.id}" for item in self.construction_details),
                 *(f"decision:{item.id}" for item in self.construction_decisions),
+                *(f"evidence_region:{item.candidate_region_id}" for item in self.evidence_dispositions),
             }
             if field_review.target_ref not in valid_targets:
                 raise ValueError("machine field review targets an unknown component field")

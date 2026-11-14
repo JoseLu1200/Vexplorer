@@ -35,9 +35,10 @@ def capture_cases(
     evaluation_phase: str = "development",
 ) -> dict[str, Any]:
     config = _data(client.get("/api/v1/config"))
-    configured_timeout = (
-        config.get("autonomous_review", {}).get("limits", {}).get("job_timeout_s")
+    autonomous = config.get("autonomous_review") or (
+        config.get("capabilities", {}).get("general_furniture", {}).get("autonomous_review", {})
     )
+    configured_timeout = autonomous.get("limits", {}).get("job_timeout_s")
     if configured_timeout != REQUIRED_JOB_TIMEOUT_S:
         raise ValueError("blind capture requires published job_timeout_s=600")
     frozen_cases: list[dict[str, Any]] = []
@@ -115,7 +116,7 @@ def capture_cases(
         runtime_config={
             "config_evidence": {
                 "job_timeout_s": configured_timeout,
-                "reviewer_model": config.get("autonomous_review", {}).get("reviewer_model"),
+                "reviewer_model": autonomous.get("reviewer_model"),
                 "response_sha256": hashlib.sha256(
                     json.dumps(config, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
                 ).hexdigest(),
