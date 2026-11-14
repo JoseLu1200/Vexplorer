@@ -1,5 +1,5 @@
 import { createApiClient, ApiError } from "./api/client.js";
-import { normaliseDrawing, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
+import { normaliseDrawing, pathMatchesView, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, presentReplaySource, snapshotStatusPresentation } from "./core/presentation.js";
@@ -148,7 +148,10 @@ function renderDrawing() {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
     node.setAttribute("d", path.circular?svgCircularPath(path.circular):svgPath(path.points, path.closed));
     node.setAttribute("class", "drawing-path");
-    node.dataset.contourId = path.id; node.dataset.viewId = path.viewId ?? ""; node._entityIds = path.entityIds; node.classList.add("layer-entities");
+    node.dataset.contourId = path.id;
+    node.dataset.viewId = path.viewId ?? "";
+    node.dataset.viewIds = (Array.isArray(path.viewIds) && path.viewIds.length ? path.viewIds : (path.viewId ? [path.viewId] : [])).join(",");
+    node._entityIds = path.entityIds; node.classList.add("layer-entities");
     node.setAttribute("tabindex", "0");
     node.setAttribute("role", "button");
     node.setAttribute("aria-label", `Contorno ${path.id}`);
@@ -214,9 +217,14 @@ function activateView(viewId, button) {
   toggleHidden($("#original-view"), viewId !== "original");
   toggleHidden($("#scene-viewer"), viewId !== "3d");
   toggleHidden($("#explode-control"), viewId !== "3d");
-  const partId=viewId.startsWith("part:")?viewId.slice(5):null;
-  const allowed=partId?partSelectionViewIds(state.partsWorkspace,partId):null;
-  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => node.classList.toggle("is-view-hidden", viewId!=="all" && (allowed ? !allowed.has(node.dataset.viewId) : node.dataset.viewId!==viewId)));
+  const partId = viewId.startsWith("part:") ? viewId.slice(5) : null;
+  const allowed = partId ? partSelectionViewIds(state.partsWorkspace, partId) : null;
+  const activeFilter = allowed ?? viewId;
+  $$('[data-view-id]', $("#drawing-viewer")).forEach((node) => {
+    const viewIds = node.dataset.viewIds ? node.dataset.viewIds.split(",").filter(Boolean) : [];
+    const visible = pathMatchesView({ viewId: node.dataset.viewId || null, viewIds }, activeFilter);
+    node.classList.toggle("is-view-hidden", !visible);
+  });
   if (viewId === "3d") loadScene();
   else { text($("#scene-context"),viewId==="original"?"CAD original · representación visual":"2D fuente · evidencia observada"); if (!["original"].includes(viewId)) fitDrawing(); }
 }
@@ -275,13 +283,17 @@ function fitDrawing() {
   if(state.activeArtifact!=="source"){fitDerivedDrawing();return;}
   if(state.activeView==="3d"){sceneViewer?.fit(); sceneViewer?.draw(); return;}
   if (!state.drawingModel) return;
-  const partId=state.activeView.startsWith("part:")?state.activeView.slice(5):null;
-  const viewIds=partId?partSelectionViewIds(state.partsWorkspace,partId):(state.activeView==="all"?null:new Set([state.activeView]));
-  const points=state.drawingModel.pointsForViews(viewIds).map(([x,y])=>[x,-y]);
-  if (!points.length) return;
-  const rect=$("#cad-viewport").getBoundingClientRect();
-  state.viewport=fitViewport(boundsForPoints(points),rect.width||900,rect.height||520,state.drawingModel.fitPaddingForViews(viewIds));
-  if(state.activeView==="all")state.fittedViewport={...state.viewport};
+  const partId = state.activeView.startsWith("part:") ? state.activeView.slice(5) : null;
+  const viewIds = partId ? partSelectionViewIds(state.partsWorkspace, partId) : (state.activeView === "all" ? null : new Set([state.activeView]));
+  const scopedPoints = state.drawingModel.pointsForViews(viewIds);
+  const useScoped = state.activeView !== "all" && scopedPoints.length > 0;
+  const fitViewIds = useScoped ? viewIds : null;
+  const points = (useScoped ? scopedPoints : state.drawingModel.pointsForViews(null)).map(([x, y]) => [x, -y]);
+  const bounds = boundsForPoints(points);
+  if (!bounds) return;
+  const rect = $("#cad-viewport").getBoundingClientRect();
+  state.viewport = fitViewport(bounds, rect.width || 900, rect.height || 520, state.drawingModel.fitPaddingForViews(fitViewIds));
+  if (state.activeView === "all") state.fittedViewport = { ...state.viewport };
   applyViewport();
 }
 function applyLayerVisibility() { [["entities","#toggle-entities"],["texts","#toggle-texts"],["dimensions","#toggle-dimensions"]].forEach(([name,id]) => $$(`.layer-${name}`).forEach((node)=>node.classList.toggle("is-layer-hidden", !$(id).checked))); }
