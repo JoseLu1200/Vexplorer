@@ -11,6 +11,8 @@ from backend.app.contratos.modelos import (
     TablePremise,
     TableProgramProposal,
     TableReviewDecision,
+    TableDrawingPrimitive,
+    Point2D,
 )
 
 
@@ -86,3 +88,15 @@ def test_review_separates_acceptance_from_human_values():
     assert confirmed.source == "human"
     with pytest.raises(ValidationError):
         TableConfirmedValue(target_kind="component_dimension", target_id="top", value_mm=30, reason="No se admite saltar el DAG")
+
+
+def test_technical_drawing_can_preserve_observed_state():
+    primitive = TableDrawingPrimitive(
+        id="dimension-width",
+        kind="dimension",
+        points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=0)),
+        value_mm=1200,
+        state="observed",
+        dependency_refs=("measure:width",),
+    )
+    assert primitive.state == "observed"
