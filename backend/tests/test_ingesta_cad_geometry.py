@@ -137,3 +137,20 @@ def test_recovered_document_is_explicitly_gated_for_review(tmp_path: Path, monke
 
     assert extraction.status == "needs_review"
     assert "recovered_dxf:fixes=1:errors=0" in extraction.warnings
+
+
+def test_ordinate_dimension_preserves_observed_offset_without_fake_graphic(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    dimension = document.modelspace().add_ordinate_dim(
+        feature_location=(125.0, 50.0), offset=(20.0, 20.0),
+        origin=(25.0, 10.0), dtype=1,
+    )
+    dimension.render()
+
+    extraction = extract_drawing(_save(document, tmp_path, "ordinate.dxf"))
+
+    assert len(extraction.dimensions) == 1
+    assert extraction.dimensions[0].value_mm == 100.0
+    assert extraction.dimensions[0].graphic_id is None
+    assert not extraction.dimension_graphics
