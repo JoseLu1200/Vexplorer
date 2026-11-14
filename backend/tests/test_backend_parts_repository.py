@@ -123,3 +123,29 @@ def test_parts_review_rejects_quantity_override_of_observed_allocation(tmp_path:
     repeated = next(item for item in reviewed.pieces if item.proposal_id == observed_use.id)
     assert repeated.quantity == observed_use.allocated_quantity
     assert repeated.field_states["quantity"] == "observed"
+
+
+def test_parts_review_rejects_unknown_envelope_quantity_incompatible_with_role(tmp_path: Path) -> None:
+    extraction, parts, candidate = _parts_payload()
+    use = candidate.uses[0].model_copy(update={"role": "side_panel"})
+    candidate = candidate.model_copy(update={"uses": (use,)})
+    repository = DemoRepository(tmp_path / "envelope-quantity.sqlite3")
+    repository.create_run(
+        "run-envelope", "geometry_only", extraction, (),
+        part_analysis=parts, assembly_candidates=(candidate,),
+    )
+
+    with pytest.raises(ValueError, match="incompatible_role_quantity"):
+        repository.review("run-envelope", ReviewRequest(
+            base_result_revision=1,
+            reviewer_name="Operadora local",
+            assembly_candidate_id=candidate.id,
+            decisions=(ReviewDecision(
+                proposal_id=use.id,
+                action="confirm",
+                role="side_panel",
+                quantity=3,
+                notes="Cantidad incompatible con laterales de envolvente.",
+            ),),
+            notes="Selecciona candidato.",
+        ))

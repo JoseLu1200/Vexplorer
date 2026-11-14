@@ -173,3 +173,90 @@ def test_parts_live_uses_native_grounded_tools_and_persists_selection(tmp_path: 
     assert "inspeccionar_pieza" in events
     assert "entregar_candidato_montaje" in events
     assert f'"selected_assembly_candidate_id": "{selected}"' in events
+
+
+def test_parts_review_rejects_change_to_observed_dimension(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    document_id = _upload(client)
+    created = client.post("/api/v1/runs", json={
+        "document_id": document_id,
+        "mode": "geometry_only",
+        "input_kind": "separated_part_views",
+    }).json()["data"]
+    run_id = created["run"]["id"]
+    candidate = created["result"]["assembly_candidates"][0]
+    side_use = next(item for item in candidate["uses"] if item["role"] == "side_panel")
+
+    response = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Operadora local",
+        "assembly_candidate_id": candidate["id"],
+        "decisions": [{
+            "proposal_id": side_use["id"],
+            "action": "confirm",
+            "role": "side_panel",
+            "length_mm": 999,
+            "notes": "Intento de sustituir una medida observada.",
+        }],
+        "notes": "Selecciona candidato.",
+    })
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "observed_dimension_override"
+    snapshot = client.get(f"/api/v1/runs/{run_id}").json()["data"]
+    assert snapshot["result"]["result_revision"] == 1
+
+    observation = next(
+        item for item in created["result"]["part_analysis"]["observations"]
+        if item["id"] == side_use["part_observation_id"]
+    )
+    observed_length = observation["dimensions"]["length"]["value_mm"]
+    repeated = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Operadora local",
+        "assembly_candidate_id": candidate["id"],
+        "decisions": [{
+            "proposal_id": side_use["id"],
+            "action": "confirm",
+            "role": "side_panel",
+            "length_mm": observed_length + 0.05,
+            "notes": "Repite la medida dentro de tolerancia.",
+        }],
+        "notes": "Selecciona candidato.",
+    })
+    assert repeated.status_code == 201
+    side_piece = next(
+        item for item in repeated.json()["data"]["pieces"]
+        if item["proposal_id"] == side_use["id"]
+    )
+    assert side_piece["length_mm"] == observed_length
+    assert side_piece["field_states"]["length_mm"] == "observed"
+
+
+def test_parts_review_rejects_role_outside_selected_candidate(tmp_path: Path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    document_id = _upload(client)
+    created = client.post("/api/v1/runs", json={
+        "document_id": document_id,
+        "mode": "geometry_only",
+        "input_kind": "separated_part_views",
+    }).json()["data"]
+    run_id = created["run"]["id"]
+    candidate = created["result"]["assembly_candidates"][0]
+    side_use = next(item for item in candidate["uses"] if item["role"] == "side_panel")
+
+    response = client.post(f"/api/v1/runs/{run_id}/reviews", json={
+        "base_result_revision": 1,
+        "reviewer_name": "Operadora local",
+        "assembly_candidate_id": candidate["id"],
+        "decisions": [{
+            "proposal_id": side_use["id"],
+            "action": "confirm",
+            "role": "shelf",
+            "notes": "Intento de cambiar el rol del candidato seleccionado.",
+        }],
+        "notes": "Selecciona candidato.",
+    })
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "role_override_requires_candidate"
