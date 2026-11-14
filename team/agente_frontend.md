@@ -11,7 +11,7 @@ Identidad: agente de IA frontend; no representa a una persona. Autorización: so
 
 ## Tarea actual
 
-Ampliar la interfaz a un espacio CAD técnico compacto: vistas 2D con cotas dibujadas y herramientas de navegación, inspector pieza a evidencia, reconstrucción 3D local con Three.js y biblioteca de revisiones/similares con modo semántico real u offline geométrico explícito.
+Implementar el recorrido acotado `mounted_orthographic_views` para la familia `rectangular_table_v1`: conservar la fuente DXF, comparar propuesta generativa y baseline de catálogo, revisar componentes e incógnitas, y consultar planos derivados generales, por pieza y de corte con costes explicados. Se mantiene disponible el recorrido 0.4 de piezas separadas y el legado de estantería.
 
 ## Decisiones
 
@@ -24,10 +24,12 @@ Ampliar la interfaz a un espacio CAD técnico compacto: vistas 2D con cotas dibu
 
 ## Estado
 
-Fase implementada sobre `demo/viewer-frontend`, base `56faba4`. Consume el contrato aditivo acordado 0.3 para textos, gráficos de cota, explicaciones, escena por ocurrencia, revisiones y recuperación semántica/geométrica. Pendiente integración/QA final con los endpoints de B.
+Fase 0.5 iniciada en `feat/table-frontend` desde `main` `164356b`. La especificación y el plan de mesa están aprobados en `4ba95e6`; el contrato A/B 0.5 todavía debe congelarse antes de implementar adaptadores dependientes de sus campos. Análisis UX y contraste del frontend existente en curso.
 
 ## Dependencias / avisos
 
+- Pendiente aviso de B con modelos Pydantic y rutas exactas 0.5 para programa generativo, baseline de catálogo, revisión, manifiesto de láminas, SVG/DXF y costes. No se mantendrá un esquema paralelo en el navegador.
+- Geometría ha confirmado que `unknown|conflict` conserva `value_mm=null` y que medidas, componentes y colocaciones llevarán IDs de medición, vista, evidencia, bindings y operandos; faltan los nombres definitivos.
 - Contrato 0.2 acordado por A/B y consumido por IDs estables de entidad, contorno, evidencia y propuesta.
 - Three.js queda fijado en `0.187.0`; `npm ci` genera solo `three.module.js`, `three.core.js`, `OrbitControls.js` y la licencia bajo `frontend/vendor/`, sin CDN ni publicación de `node_modules`.
 - FastAPI sirve `frontend/` desde el mismo origen; las rutas de recursos son `/styles.css`, `/app.js` y módulos relativos.
