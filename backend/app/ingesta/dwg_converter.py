@@ -89,7 +89,10 @@ def _resolve_converter(
 
     oda_candidate = executable if requested == "oda" else os.getenv("VEXPLORER_ODA_EXECUTABLE")
     oda = _find_executable(
-        oda_candidate or os.getenv("VEXPLORER_ODA_EXECUTABLE") or os.getenv("ODA_FILE_CONVERTER"),
+        oda_candidate
+        or os.getenv("VEXPLORER_ODA_EXECUTABLE")
+        or os.getenv("ODA_FILE_CONVERTER")
+        or os.getenv("VEXPLORER_DWG_CONVERTER_PATH"),
         ("ODAFileConverter", "ODAFileConverter.exe"),
     )
     if oda is not None:

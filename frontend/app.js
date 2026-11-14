@@ -188,8 +188,32 @@ function renderDrawing() {
     svg.append(node);
   });
   model.dimensions.forEach((dimension) => {
-    dimension.segments.forEach((segment) => { const line = document.createElementNS("http://www.w3.org/2000/svg", "path"); line.setAttribute("d", svgPath(segment)); line.setAttribute("class", "dimension-line layer-dimensions"); line.dataset.viewId = dimension.viewId ?? ""; svg.append(line); });
-    if (dimension.position && dimension.label) { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", dimension.position[0]); label.setAttribute("y", -dimension.position[1]); label.setAttribute("class", "dimension-text layer-dimensions"); label.dataset.viewId = dimension.viewId ?? ""; label.textContent = dimension.label; svg.append(label); }
+    const conflict = dimension.conflict === true;
+    const conflictTitle = dimension.conflictReason || "Cota en conflicto (escala DIMLFAC o texto forzado distinto de la geometría)";
+    const appendConflictTitle = (node) => {
+      if (!conflict) return;
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = conflictTitle;
+      node.append(title);
+    };
+    dimension.segments.forEach((segment) => {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", svgPath(segment));
+      line.setAttribute("class", conflict ? "dimension-line layer-dimensions dimension-conflict" : "dimension-line layer-dimensions");
+      line.dataset.viewId = dimension.viewId ?? "";
+      appendConflictTitle(line);
+      svg.append(line);
+    });
+    if (dimension.position && dimension.label) {
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", dimension.position[0]);
+      label.setAttribute("y", -dimension.position[1]);
+      label.setAttribute("class", conflict ? "dimension-text layer-dimensions dimension-conflict" : "dimension-text layer-dimensions");
+      label.dataset.viewId = dimension.viewId ?? "";
+      label.textContent = dimension.label;
+      appendConflictTitle(label);
+      svg.append(label);
+    }
   });
   model.texts.forEach((item) => { const label = document.createElementNS("http://www.w3.org/2000/svg", "text"); label.setAttribute("x", item.position[0]); label.setAttribute("y", -item.position[1]); label.setAttribute("class", "drawing-text layer-texts"); label.dataset.viewId = item.viewId ?? ""; label.textContent = item.text; svg.append(label); });
   const tabs = $("#view-tabs");

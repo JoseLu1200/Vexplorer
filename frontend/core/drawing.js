@@ -65,6 +65,11 @@ export function normaliseDrawing(extraction) {
     const position = resolvedPoint(item, "position", metric);
     return position ? [{ id: item.id, viewId: item.view_id, text: safeText(item.text), position }] : [];
   });
+  const dimMap = new Map(
+    (extraction?.dimensions ?? [])
+      .filter((dim) => dim?.id != null)
+      .map((dim) => [dim.id, dim]),
+  );
   const dimensions = (extraction?.dimension_graphics ?? []).flatMap((item) => {
     const a = resolvedPoint(item, "extension_start_a", metric);
     const b = resolvedPoint(item, "extension_start_b", metric);
@@ -73,7 +78,27 @@ export function normaliseDrawing(extraction) {
     const position = resolvedPoint(item, "text_position", metric);
     const segments = [[a, start], [b, end], [start, end]].filter((segment) => segment.every(Boolean));
     if (!segments.length && !position) return [];
-    return [{ id: item.id, dimensionId: item.dimension_id, viewId: item.view_id, label: safeText(item.display_text ?? item.raw_text), segments, position }];
+    const dim = dimMap.get(item.dimension_id);
+    const conflict = Boolean(dim?.conflict || dim?.state === "conflict" || item?.conflict);
+    const baseLabel = safeText(item.display_text ?? item.raw_text);
+    const geomVal = metric ? dim?.value_mm : dim?.source_value;
+    const hasGeomVal = Number.isFinite(geomVal);
+    const unitText = metric ? "mm" : "source-unit";
+    const label = conflict
+      ? (hasGeomVal ? `${baseLabel} [conflicto: geom ${cleanNumber(geomVal)} ${unitText}]` : `${baseLabel} [conflicto]`)
+      : baseLabel;
+    const conflictReason = conflict ? (dim?.conflict_reason ?? item?.conflict_reason ?? dim?.reason ?? item?.reason ?? null) : null;
+    return [{
+      id: item.id,
+      dimensionId: item.dimension_id,
+      viewId: item.view_id,
+      label,
+      segments,
+      position,
+      conflict,
+      conflictReason,
+      geometryValue: conflict && hasGeomVal ? geomVal : null,
+    }];
   });
   const model = {
     drawingId: extraction?.drawing_id,
