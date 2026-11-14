@@ -1575,7 +1575,7 @@ class SelectAssemblyCandidateArgs(StrictModel):
 
 class CompareCandidatesArgs(StrictModel):
     candidate_revision: str = Field(min_length=1)
-    candidate_ids: tuple[str, str]
+    candidate_ids: tuple[str, ...] = Field(min_length=2, max_length=2)
 
     @model_validator(mode="after")
     def candidate_ids_are_distinct(self) -> "CompareCandidatesArgs":

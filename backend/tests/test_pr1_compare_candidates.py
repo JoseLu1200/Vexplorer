@@ -42,6 +42,8 @@ def test_compare_schema_is_strict_common_and_contains_no_free_numbers_or_paths()
         assert set(parameters["required"]) == {"candidate_revision", "candidate_ids"}
         ids = parameters["properties"]["candidate_ids"]
         assert ids["minItems"] == ids["maxItems"] == 2
+        assert ids["items"] == {"type": "string"}
+        assert "prefixItems" not in ids
         encoded = json.dumps(schema).lower()
         assert "path" not in encoded and "file" not in encoded
         assert "number" not in encoded and "integer" not in encoded
