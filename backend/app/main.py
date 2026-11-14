@@ -21,7 +21,7 @@ from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, Review
 from backend.app.estimacion.service import estimate_result
 from backend.app.geometria import extract_drawing
 from backend.app.historico.service import find_comparables
-from backend.app.salida.service import export_csv, export_json
+from backend.app.salida.service import export_csv, export_cutlist_csv, export_json
 from backend.app.salida.drawing_preview import render_drawing_preview
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
 from backend.app.servicios.explanations import explain_result
@@ -330,11 +330,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return _ok(value.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/exports")
-    def exports(run_id: str, format: Literal["json", "csv"] = Query(...)):
+    def exports(run_id: str, format: Literal["json", "csv", "cutlist"] = Query(...)):
         try:
             result = repository.get_result(run_id)
         except KeyError:
             return _error(404, "result_not_found", "Resultado inexistente.")
+        if format == "cutlist":
+            try:
+                payload = export_cutlist_csv(result)
+            except ValueError:
+                return _error(422, "result_has_no_confirmed_pieces", "La lista de corte solo incluye piezas confirmadas por revisión humana.")
+            return Response(payload, media_type="text/csv; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{run_id}-r{result.result_revision}-cutlist.csv"'})
         if format == "json":
             try:
                 estimate_value = repository.get_estimate(run_id, result.result_revision).model_dump(mode="json")
