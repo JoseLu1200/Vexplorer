@@ -11,11 +11,15 @@ from backend.app.contratos.modelos import (
     GeneralBomRow,
     GeneralCostBasis,
     GeneralCostBasisContributor,
+    GeneralDerivedFieldReview,
     GeneralDerivedArtifact,
     GeneralDerivedPackage,
     GeneralFurnitureReview,
+    GeneralQuantity,
     GeneralScene,
     GeneralSceneItem,
+    GeneralTextValue,
+    GeneralValue,
 )
 from backend.app.general_furniture.drawing_renderer import (
     render_general_component_drawings,
@@ -44,9 +48,18 @@ def _bom_csv(rows: tuple[GeneralBomRow, ...]) -> bytes:
             "thickness_mm",
             "material",
             "finish",
+            "length_review_status",
+            "width_review_status",
+            "thickness_review_status",
+            "quantity_review_status",
+            "material_review_status",
+            "finish_review_status",
         )
     )
     for row in rows:
+        review_statuses = {
+            item.field: item.status for item in row.machine_field_reviews
+        }
         writer.writerow(
             (
                 row.component_id,
@@ -62,6 +75,12 @@ def _bom_csv(rows: tuple[GeneralBomRow, ...]) -> bytes:
                 row.thickness.value_mm or "",
                 _csv_safe(row.material.value or ""),
                 _csv_safe(row.finish.value or ""),
+                review_statuses.get("length", ""),
+                review_statuses.get("width", ""),
+                review_statuses.get("thickness", ""),
+                review_statuses.get("quantity", ""),
+                review_statuses.get("material", ""),
+                review_statuses.get("finish", ""),
             )
         )
     return stream.getvalue().encode("utf-8-sig")
@@ -112,6 +131,74 @@ def _drawing_dxf(rows: tuple[GeneralBomRow, ...]) -> bytes:
     return stream.getvalue().encode("utf-8")
 
 
+_MACHINE_FIELDS = (
+    "length", "width", "thickness", "quantity", "material", "finish"
+)
+
+
+def _masked_unknown(value):
+    if isinstance(value, GeneralValue):
+        return GeneralValue(
+            value_mm=None,
+            state="unknown",
+            dependency_refs=value.dependency_refs,
+            evidence_ids=value.evidence_ids,
+            dimension_ids=value.dimension_ids,
+        )
+    if isinstance(value, GeneralQuantity):
+        return GeneralQuantity(
+            value=None,
+            state="unknown",
+            dependency_refs=value.dependency_refs,
+            evidence_ids=value.evidence_ids,
+        )
+    if isinstance(value, GeneralTextValue):
+        return GeneralTextValue(
+            value=None,
+            state="unknown",
+            dependency_refs=value.dependency_refs,
+            evidence_ids=value.evidence_ids,
+        )
+    raise TypeError("unsupported_general_derived_field")
+
+
+def _machine_projected_fields(review: GeneralFurnitureReview, component):
+    if review.reviewer_kind != "machine":
+        return (
+            {field: getattr(component, field) for field in _MACHINE_FIELDS},
+            (),
+        )
+    decisions = {item.target_ref: item for item in review.machine_field_reviews}
+    checks = {item.id: item for item in review.machine_checks}
+    projected = {}
+    metadata = []
+    for field in _MACHINE_FIELDS:
+        target_ref = f"component:{component.id}.{field}"
+        decision = decisions.get(target_ref)
+        status = decision.status if decision is not None else "unreviewed"
+        check_ids = decision.check_ids if decision is not None else ()
+        selected_checks = tuple(checks[item] for item in check_ids if item in checks)
+        metadata.append(
+            GeneralDerivedFieldReview(
+                field=field,
+                target_ref=target_ref,
+                status=status,
+                check_ids=check_ids,
+                check_summaries=tuple(item.summary for item in selected_checks),
+                source_refs=tuple(
+                    dict.fromkeys(
+                        reference
+                        for item in selected_checks
+                        for reference in item.source_refs
+                    )
+                ),
+            )
+        )
+        raw_value = getattr(component, field)
+        projected[field] = raw_value if status == "accepted" else _masked_unknown(raw_value)
+    return projected, tuple(metadata)
+
+
 def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPackage:
     occurrences = {}
     for item in review.occurrences:
@@ -119,30 +206,48 @@ def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPack
     provisional_occurrences = {}
     for item in review.scenario_occurrences:
         provisional_occurrences.setdefault(item.component_id, []).append(item.id)
-    rows = tuple(
-        GeneralBomRow(
+    rows_list = []
+    for item in review.components:
+        projected, machine_field_reviews = _machine_projected_fields(review, item)
+        quantity_is_usable = (
+            review.reviewer_kind != "machine"
+            or next(
+                value.status
+                for value in machine_field_reviews
+                if value.field == "quantity"
+            ) == "accepted"
+        )
+        physical_ids = (
+            tuple(occurrences.get(item.id, ())) if quantity_is_usable else ()
+        )
+        scenario_ids = (
+            tuple(provisional_occurrences.get(item.id, ()))
+            if quantity_is_usable
+            else ()
+        )
+        rows_list.append(GeneralBomRow(
             component_id=item.id,
             label=item.label,
             kind=item.kind,
             role=item.role,
-            occurrence_ids=tuple(occurrences.get(item.id, ())),
-            scenario_occurrence_ids=tuple(provisional_occurrences.get(item.id, ())),
-            occurrence_status="confirmed" if occurrences.get(item.id) else "provisional" if provisional_occurrences.get(item.id) else "unknown",
-            quantity=item.quantity,
-            length=item.length,
-            width=item.width,
-            thickness=item.thickness,
-            material=item.material,
-            finish=item.finish,
+            occurrence_ids=physical_ids,
+            scenario_occurrence_ids=scenario_ids,
+            occurrence_status="confirmed" if physical_ids else "provisional" if scenario_ids else "unknown",
+            quantity=projected["quantity"],
+            length=projected["length"],
+            width=projected["width"],
+            thickness=projected["thickness"],
+            material=projected["material"],
+            finish=projected["finish"],
             source_view_ids=item.source_view_ids,
             source_observation_ids=item.source_observation_ids,
             source_contour_ids=item.source_contour_ids,
             source_evidence_ids=item.source_evidence_ids,
             source_dimension_ids=item.source_dimension_ids,
             source_document_refs=item.source_document_refs,
-        )
-        for item in review.components
-    )
+            machine_field_reviews=machine_field_reviews,
+        ))
+    rows = tuple(rows_list)
     contributors = []
     for row in rows:
         count = len(row.occurrence_ids)
@@ -198,6 +303,12 @@ def derive_general_package(review: GeneralFurnitureReview) -> GeneralDerivedPack
                 for field in component.unknown_fields
             }
             | set(all_missing)
+            | {
+                f"{row.component_id}:{item.field}_machine_{item.status}"
+                for row in rows
+                for item in row.machine_field_reviews
+                if item.status != "accepted"
+            }
         )
     )
     artifact_status = "incomplete" if incomplete_reasons else "ready"

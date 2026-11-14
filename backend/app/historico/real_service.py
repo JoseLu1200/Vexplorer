@@ -1028,13 +1028,6 @@ class HistoricalStore:
                 and bool(value.check_ids)
             )
 
-        if any(
-            not accepted_dimension(row.length)
-            or not accepted_dimension(row.width)
-            for row in rows
-        ):
-            return abstain("provisional_geometry_evidence")
-
         def accepted_known_text(value) -> bool:
             return value.value is None or (
                 value.state == "hypothesis"
@@ -1051,23 +1044,38 @@ class HistoricalStore:
 
         materials = {row.material.value for row in rows if row.material.value}
         finishes = {row.finish.value for row in rows if row.finish.value}
-        if len(materials) > 1 or len(finishes) > 1:
-            return abstain("heterogeneous_material_finish")
-        known_material = next(iter(materials), None)
-        known_finish = next(iter(finishes), None)
+        material_is_heterogeneous = len(materials) > 1
+        finish_is_heterogeneous = len(finishes) > 1
+        known_material = next(iter(materials), None) if len(materials) == 1 else None
+        known_finish = next(iter(finishes), None) if len(finishes) == 1 else None
         material_is_conditional = any(row.material.value is None for row in rows)
         finish_is_conditional = any(row.finish.value is None for row in rows)
 
-        length_mm = sum(
-            float(row.length.value_mm) * int(row.quantity.value) for row in rows
+        complete_length = all(accepted_dimension(row.length) for row in rows)
+        complete_area = complete_length and all(
+            accepted_dimension(row.width) for row in rows
         )
-        area_mm2 = sum(
-            float(row.length.value_mm)
-            * float(row.width.value_mm)
-            * int(row.quantity.value)
-            for row in rows
+        complete_volume = complete_area and all(
+            accepted_dimension(row.thickness) for row in rows
         )
-        complete_volume = all(accepted_dimension(row.thickness) for row in rows)
+        length_mm = (
+            sum(
+                float(row.length.value_mm) * int(row.quantity.value)
+                for row in rows
+            )
+            if complete_length
+            else None
+        )
+        area_mm2 = (
+            sum(
+                float(row.length.value_mm)
+                * float(row.width.value_mm)
+                * int(row.quantity.value)
+                for row in rows
+            )
+            if complete_area
+            else None
+        )
         volume_mm3 = (
             sum(
                 float(row.length.value_mm)
@@ -1120,54 +1128,171 @@ class HistoricalStore:
                 f"review:{snapshot.review_revision}"
             ),
         )
-        prefiltered_records = tuple(
-            record
-            for record in self.list_records(limit=100_000, offset=0).items
-            if record.origin != "synthetic"
-            and record.family is not None
-            and record.material is not None
-            and record.finish is not None
-            and not (
+
+        def driver_is_available(driver: str, record: HistoricalRecord) -> bool:
+            if driver == "fixed":
+                return True
+            if driver == "item":
+                return record.quantity is not None
+            field = {
+                "length": "length_mm",
+                "area": "area_mm2",
+                "volume": "volume_mm3",
+            }[driver]
+            return getattr(retrieval_target, field) is not None and getattr(
+                record, field
+            ) is not None
+
+        def constraint_is_compatible(
+            kind: str,
+            explicit_value: str | None,
+            record_value: str | None,
+        ) -> bool:
+            if kind == "material":
+                if material_is_heterogeneous:
+                    return False
+                target_value = known_material
+            elif kind == "finish":
+                if finish_is_heterogeneous:
+                    return False
+                target_value = known_finish
+            else:
+                return True
+            reference_value = explicit_value or record_value
+            if reference_value is None:
+                return False
+            return target_value is None or reference_value.casefold() == target_value.casefold()
+
+        def declared_attributes_are_compatible(record: HistoricalRecord) -> bool:
+            if (
                 known_material is not None
+                and record.material is not None
                 and record.material.casefold() != known_material.casefold()
-            )
-            and not (
+            ):
+                return False
+            if (
                 known_finish is not None
+                and record.finish is not None
                 and record.finish.casefold() != known_finish.casefold()
+            ):
+                return False
+            if material_is_heterogeneous and record.material is not None:
+                return False
+            if finish_is_heterogeneous and record.finish is not None:
+                return False
+            return True
+
+        def metric_is_eligible(record: HistoricalRecord, metric: str) -> bool:
+            if record.origin == "synthetic" or record.family is None:
+                return False
+            if not declared_attributes_are_compatible(record):
+                return False
+            total = (
+                record.actual_cost
+                if metric == "cost"
+                else record.manufacturing_hours
             )
-            and not (record.actual_cost is not None and record.currency is None)
+            scope = record.cost_scope if metric == "cost" else record.hours_scope
+            if total is None or not scope:
+                return False
+            if metric == "cost" and (
+                record.currency is None
+                or record.material is None
+                or record.finish is None
+            ):
+                return False
+            if not record.concepts:
+                driver = (
+                    "area"
+                    if retrieval_target.area_mm2 is not None
+                    and record.area_mm2 is not None
+                    else "item"
+                )
+                return (
+                    driver_is_available(driver, record)
+                    and constraint_is_compatible(
+                        "material", None, record.material
+                    )
+                    and constraint_is_compatible("finish", None, record.finish)
+                )
+            bearing = tuple(
+                concept
+                for concept in record.concepts
+                if getattr(concept, metric) is not None
+            )
+            return bool(bearing) and all(
+                driver_is_available(concept.driver, record)
+                and constraint_is_compatible(
+                    concept.kind,
+                    concept.material if concept.kind == "material" else concept.finish,
+                    record.material if concept.kind == "material" else record.finish,
+                )
+                for concept in bearing
+            )
+
+        listed_records = self.list_records(limit=100_000, offset=0).items
+        eligibility = {
+            record.record_id: (
+                metric_is_eligible(record, "cost"),
+                metric_is_eligible(record, "hours"),
+            )
+            for record in listed_records
+        }
+        cost_candidates = tuple(
+            record for record in listed_records if eligibility[record.record_id][0]
         )
-        ranked = self.find_comparables(
-            retrieval_target,
-            limit=limit,
-            retrieval_method=retrieval_method,
-            include_synthetic=False,
-            _candidate_records=prefiltered_records,
+        hours_candidates = tuple(
+            record for record in listed_records if eligibility[record.record_id][1]
         )
-        compatible = []
-        for comparable in ranked.items:
-            record = comparable.record
-            compatible.append(record)
-            if len(compatible) == limit:
-                break
+
+        def ranked(candidates: tuple[HistoricalRecord, ...]):
+            if not candidates:
+                return ()
+            return self.find_comparables(
+                retrieval_target,
+                limit=limit,
+                retrieval_method=retrieval_method,
+                include_synthetic=False,
+                _candidate_records=candidates,
+            ).items
+
+        rankings = (ranked(cost_candidates), ranked(hours_candidates))
+        compatible: list[HistoricalRecord] = []
+        positions = [0, 0]
+        while len(compatible) < limit and any(
+            positions[index] < len(values) for index, values in enumerate(rankings)
+        ):
+            for index, values in enumerate(rankings):
+                if positions[index] >= len(values):
+                    continue
+                record = values[positions[index]].record
+                positions[index] += 1
+                if all(item.record_id != record.record_id for item in compatible):
+                    compatible.append(record)
+                    if len(compatible) == limit:
+                        break
         if not compatible:
-            return abstain("compatible_non_synthetic_reference")
+            reasons = ["compatible_non_synthetic_reference"]
+            if material_is_heterogeneous or finish_is_heterogeneous:
+                reasons.append("heterogeneous_material_finish")
+            return abstain(*reasons)
 
         scenarios: list[ProvisionalHistoricalScenario] = []
         for record in compatible:
-            inherited_material = known_material or record.material
-            inherited_finish = known_finish or record.finish
+            cost_is_eligible, hours_is_eligible = eligibility[record.record_id]
+            target_material = known_material or record.material
+            target_finish = known_finish or record.finish
             target = HistoricalTarget(
                 family=record.family,
                 area_mm2=area_mm2,
                 length_mm=length_mm,
                 volume_mm3=volume_mm3,
                 quantity=1,
-                material=inherited_material,
-                finish=inherited_finish,
-                currency=record.currency,
-                required_cost_scope=record.cost_scope,
-                required_hours_scope=record.hours_scope,
+                material=target_material,
+                finish=target_finish,
+                currency=record.currency if cost_is_eligible else None,
+                required_cost_scope=record.cost_scope if cost_is_eligible else (),
+                required_hours_scope=record.hours_scope if hours_is_eligible else (),
                 basis_revision=(
                     f"provisional:{snapshot.run_id}:proposal:{snapshot.proposal_revision}:"
                     f"review:{snapshot.review_revision}:reference:{record.record_id}"
@@ -1190,7 +1315,19 @@ class HistoricalStore:
                     state="conditional",
                 )
             )
-            if material_is_conditional:
+            if record.material is None:
+                assumptions.append(
+                    ProvisionalAssumption(
+                        code="reference_material_unreported",
+                        label="Reference material not reported",
+                        detail=(
+                            f"Reference '{record.record_id}' does not publish a material; "
+                            "this hours scenario does not invent one."
+                        ),
+                        state="conditional",
+                    )
+                )
+            elif material_is_conditional:
                 assumptions.append(
                     ProvisionalAssumption(
                         code="reference_material",
@@ -1202,7 +1339,19 @@ class HistoricalStore:
                         state="conditional",
                     )
                 )
-            if finish_is_conditional:
+            if record.finish is None:
+                assumptions.append(
+                    ProvisionalAssumption(
+                        code="reference_finish_unreported",
+                        label="Reference finish not reported",
+                        detail=(
+                            f"Reference '{record.record_id}' does not publish a finish; "
+                            "this hours scenario does not invent one."
+                        ),
+                        state="conditional",
+                    )
+                )
+            elif finish_is_conditional:
                 assumptions.append(
                     ProvisionalAssumption(
                         code="reference_finish",
@@ -1226,6 +1375,14 @@ class HistoricalStore:
                     state="conditional",
                 )
             )
+            scenario_missing_data = tuple(
+                value
+                for value in estimate.missing_data
+                if not (
+                    (value == "required_cost_scope" and not cost_is_eligible)
+                    or (value == "required_hours_scope" and not hours_is_eligible)
+                )
+            )
             scenarios.append(
                 ProvisionalHistoricalScenario(
                     scenario_id=(
@@ -1236,13 +1393,13 @@ class HistoricalStore:
                     source_effective_date=record.provenance.source_date,
                     condition=ProvisionalScenarioCondition(
                         family=record.family,
-                        material=inherited_material,
-                        finish=inherited_finish,
-                        currency=record.currency,
-                        cost_scope=record.cost_scope,
-                        hours_scope=record.hours_scope,
+                        material=record.material,
+                        finish=record.finish,
+                        currency=record.currency if cost_is_eligible else None,
+                        cost_scope=record.cost_scope if cost_is_eligible else (),
+                        hours_scope=record.hours_scope if hours_is_eligible else (),
                     ),
-                    currency=record.currency,
+                    currency=record.currency if cost_is_eligible else None,
                     scaling_basis=scaling_basis,
                     assumptions=tuple(assumptions),
                     contributors=estimate.contributors,
@@ -1253,7 +1410,7 @@ class HistoricalStore:
                     hours_range=estimate.hours_range,
                     cost_uncertainty=estimate.cost_uncertainty,
                     hours_uncertainty=estimate.hours_uncertainty,
-                    missing_data=estimate.missing_data,
+                    missing_data=scenario_missing_data,
                 )
             )
         return ProvisionalScenarioResponse(

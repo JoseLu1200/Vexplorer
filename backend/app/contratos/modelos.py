@@ -931,6 +931,23 @@ class GeneralFurnitureDraft(StrictModel):
     status: Literal["needs_review"] = "needs_review"
 
 
+class GeneralDerivedFieldReview(StrictModel):
+    field: Literal["length", "width", "thickness", "quantity", "material", "finish"]
+    target_ref: GeneralMachineTargetRef
+    status: Literal["accepted", "rejected", "conflict", "abstained", "unreviewed"]
+    check_ids: tuple[str, ...] = ()
+    check_summaries: tuple[str, ...] = ()
+    source_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def target_matches_field(self) -> "GeneralDerivedFieldReview":
+        if not self.target_ref.endswith(f".{self.field}"):
+            raise ValueError("derived field review target does not match field")
+        if self.status == "unreviewed" and self.check_ids:
+            raise ValueError("unreviewed derived field cannot cite review checks")
+        return self
+
+
 class GeneralBomRow(StrictModel):
     component_id: str
     label: str
@@ -951,6 +968,17 @@ class GeneralBomRow(StrictModel):
     source_evidence_ids: tuple[str, ...]
     source_dimension_ids: tuple[str, ...]
     source_document_refs: tuple[str, ...]
+    machine_field_reviews: tuple[GeneralDerivedFieldReview, ...] = ()
+
+    @model_validator(mode="after")
+    def machine_fields_are_closed(self) -> "GeneralBomRow":
+        fields = [item.field for item in self.machine_field_reviews]
+        if len(fields) != len(set(fields)):
+            raise ValueError("duplicate derived machine field review")
+        expected_prefix = f"component:{self.component_id}."
+        if any(not item.target_ref.startswith(expected_prefix) for item in self.machine_field_reviews):
+            raise ValueError("derived machine field targets another component")
+        return self
 
 
 class GeneralSceneItem(StrictModel):

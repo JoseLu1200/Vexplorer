@@ -24,7 +24,13 @@ from backend.app.contratos.modelos import (
     ProposeGeneralFurnitureArgs,
 )
 from backend.app.general_furniture.derivations import derive_general_package
-from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, _safe_validation_details, _strictify
+from backend.app.general_furniture.live import (
+    GeneralFurnitureAgentOutcome,
+    _is_raster_without_metric_ledger,
+    _safe_validation_details,
+    _strictify,
+    general_allowed_document_refs,
+)
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
@@ -64,6 +70,19 @@ class GeneralAutonomousError(RuntimeError):
         self.trace = trace
         self.model_calls = model_calls
         self.tool_calls = tool_calls
+
+
+def _safe_autonomous_error_code(error: Exception) -> str:
+    candidate = getattr(error, "code", None)
+    if (
+        isinstance(candidate, str)
+        and 0 < len(candidate) <= 120
+        and all(character.isalnum() or character in "_:-" for character in candidate)
+    ):
+        return candidate
+    if isinstance(error, TimeoutError):
+        return "general_auto_review_timeout"
+    return "general_auto_review_failed"
 
 
 @dataclass(frozen=True)
@@ -108,13 +127,19 @@ class GeneralAutonomousCheckpoint:
     trace_event: dict[str, object]
 
 
-def _tool_schemas() -> list[dict]:
+def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
     def schema(name: str, description: str, model: type) -> dict:
         return {"type": "function", "name": name, "description": description, "parameters": _strictify(model.model_json_schema()), "strict": True}
 
+    repair_description = (
+        "Repara una propuesta visual rechazada sin inventar ledger: usa bindings=[], "
+        "ejes null, source_view_ids=[] y solo source_document_refs exactas anunciadas."
+        if raster_without_metric_ledger
+        else "Repara una propuesta rechazada. Las dimensiones usan solo bindings del ledger; cantidades visuales siguen hypothesis con premisas cerradas."
+    )
     return [
         schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
-        schema("proponer_mueble_general", "Repara una propuesta rechazada. Las dimensiones usan solo bindings del ledger; cantidades visuales siguen hypothesis con premisas cerradas.", ProposeGeneralFurnitureArgs),
+        schema("proponer_mueble_general", repair_description, ProposeGeneralFurnitureArgs),
     ]
 
 
@@ -266,6 +291,13 @@ def _visual_metadata(page) -> dict[str, object]:
 
 def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
     measurements = derive_geometry_measurements(context.extraction)
+    raster_without_metric_ledger = _is_raster_without_metric_ledger(
+        context.extraction, measurements, context.visual_pages
+    )
+    allowed_document_refs = general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=raster_without_metric_ledger,
+    )
     try:
         regions = derive_source_spatial_regions(context.extraction, measurements)
         projections = derive_projection_hypotheses(context.extraction, measurements)
@@ -313,6 +345,9 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         visible_source_refs.add(f"visual:{page.reference}")
         visible_source_refs.update(page.source_contour_ids)
         visible_source_refs.update(mark.source_id for mark in page.marks)
+        if raster_without_metric_ledger:
+            visible_source_refs.add(page.reference)
+            visible_source_refs.update(page.source_document_refs)
     allowed_source_refs = sorted(
         visible_source_refs
         | {f"premise:{item.id}" for item in outcome.proposal.premises}
@@ -331,6 +366,18 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
         "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
     }
+    if raster_without_metric_ledger:
+        payload["allowed_document_refs"] = list(allowed_document_refs)
+        payload["raster_authority"] = {
+            "allowed_source_view_ids": [],
+            "allowed_source_document_refs": list(allowed_document_refs),
+            "allowed_numeric_binding_refs": [],
+            "instruction": (
+                "La página raster no crea una vista de ledger. Conserva source_view_ids=[], "
+                "bindings=[] y ejes null; las referencias documentales deben pertenecer "
+                "exactamente a allowed_source_document_refs."
+            ),
+        }
     content = [{"type": "input_text", "text": json.dumps(payload, ensure_ascii=False)}]
     content.extend({"type": "input_image", "image_url": f"data:{item.media_type};base64,{b64encode(item.content).decode('ascii')}", "detail": "high"} for item in context.visual_pages)
     return [{"role": "user", "content": content}]
@@ -343,7 +390,18 @@ def _materialize_repair(context, raw: dict) -> GeneralFurnitureAgentOutcome:
         id=f"general-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:16]}", drawing_id=context.extraction.drawing_id,
         ledger_revision=context.ledger_revision, proposal_origin="native_tool", **args.model_dump(),
     )
-    draft = materialize_general_proposal(context.extraction, proposal, allowed_document_refs=tuple(item.reference for item in context.visual_pages))
+    measurements = derive_geometry_measurements(context.extraction)
+    raster_without_metric_ledger = _is_raster_without_metric_ledger(
+        context.extraction, measurements, context.visual_pages
+    )
+    draft = materialize_general_proposal(
+        context.extraction,
+        proposal,
+        allowed_document_refs=general_allowed_document_refs(
+            context.visual_pages,
+            include_announced_children=raster_without_metric_ledger,
+        ),
+    )
     return GeneralFurnitureAgentOutcome(proposal, draft, 0, 1, ())
 
 
@@ -372,7 +430,16 @@ def run_general_autonomous(
         visual_refs.update(page.source_contour_ids)
         visual_refs.update(mark.source_id for mark in page.marks)
     measurements = derive_geometry_measurements(context.extraction)
+    raster_without_metric_ledger = _is_raster_without_metric_ledger(
+        context.extraction, measurements, context.visual_pages
+    )
     allowed_refs = set(visual_refs)
+    if raster_without_metric_ledger:
+        for page in context.visual_pages:
+            visual_refs.add(page.reference)
+            visual_refs.update(page.source_document_refs)
+            allowed_refs.add(page.reference)
+            allowed_refs.update(page.source_document_refs)
     allowed_refs.update(f"view:{item.id}" for item in context.extraction.views)
     allowed_refs.update(f"contour:{item.id}" for item in context.extraction.contours)
     allowed_refs.update(f"dimension:{item.id}" for item in context.extraction.dimensions)
@@ -383,8 +450,26 @@ def run_general_autonomous(
     for model_call in range(1, limits.max_model_calls + 1):
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
-            raise TimeoutError("general_auto_review_timeout")
-        response = reviewer_provider.create_response(input_items=input_items, tools=_tool_schemas(), previous_response_id=previous_response_id, timeout_s=remaining)
+            raise GeneralAutonomousError(
+                "general_auto_review_timeout", trace=tuple(trace),
+                model_calls=model_call - 1, tool_calls=tool_calls,
+            )
+        try:
+            response = reviewer_provider.create_response(
+                input_items=input_items,
+                tools=_tool_schemas(
+                    raster_without_metric_ledger=raster_without_metric_ledger
+                ),
+                previous_response_id=previous_response_id,
+                timeout_s=remaining,
+            )
+        except GeneralAutonomousError:
+            raise
+        except Exception as exc:
+            raise GeneralAutonomousError(
+                _safe_autonomous_error_code(exc), trace=tuple(trace),
+                model_calls=model_call, tool_calls=tool_calls,
+            ) from exc
         previous_response_id = response.id
         response_ids.append(response.id)
         if not response.tool_calls:
@@ -462,7 +547,25 @@ def run_general_autonomous(
                         critic_snapshot=args,
                         trace_event=event,
                     ))
-                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "repair_requested", "unresolved": args.unresolved, "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general; no inventes cifras."}, ensure_ascii=False)}]
+                repair_output = {
+                    "ok": True,
+                    "status": "repair_requested",
+                    "unresolved": args.unresolved,
+                    "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general; no inventes cifras.",
+                }
+                if raster_without_metric_ledger:
+                    repair_output.update({
+                        "allowed_source_view_ids": [],
+                        "allowed_source_document_refs": list(
+                            general_allowed_document_refs(
+                                context.visual_pages,
+                                include_announced_children=True,
+                            )
+                        ),
+                        "allowed_numeric_binding_refs": [],
+                        "raster_instruction": "Usa bindings=[], ejes null y source_view_ids=[].",
+                    })
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(repair_output, ensure_ascii=False)}]
                 continue
             checks = _deterministic_checks(args) + args.checks
             relation = "self_review" if proposer_model and proposer_model == getattr(response, "model", None) else "separate_model"

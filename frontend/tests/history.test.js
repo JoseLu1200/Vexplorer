@@ -113,3 +113,28 @@ test("provisional scenario abstention names geometry rather than blaming the his
   assert.equal(result.missingData[0].label,"La geometría provisional no tiene evidencia suficiente");
   assert.equal(result.assumptions[0].displayLabel,"Un mueble terminado condicional");
 });
+
+test("published hours-only scenarios keep absent economic fields open and translate production time",()=>{
+  const result=presentProvisionalScenarios({status:"provisional",scenarios:[{
+    scenario_id:"hours-only",label:"conditional_provisional_not_quote",currency:null,
+    condition:{furniture_quantity:1,material:null,finish:null,currency:null,cost_scope:[],hours_scope:["production_time"]},
+    cost_subtotal:null,cost_range:null,cost_uncertainty:"not_estimable",
+    manufacturing_hours:12.5,hours_range:null,hours_uncertainty:"medium",
+    assumptions:[
+      {code:"reference_material_unreported",label:"Reference material unreported",detail:"raw material detail",state:"conditional"},
+      {code:"reference_finish_unreported",label:"Reference finish unreported",detail:"raw finish detail",state:"conditional"},
+    ],
+    result_provenance:[{origin:"published",cost_basis:null,source:"Published workshop study",source_date:"2024-05-10",contributes_cost:false,contributes_hours:true,cost_scope:[],hours_scope:["production_time"]}],
+  }]});
+  const scenario=result.scenarios[0],visible=[scenario.conditionLabel,scenario.scopeLabel,scenario.costLabel,scenario.costRangeLabel,...scenario.assumptions.flatMap((item)=>[item.displayLabel,item.displayDetail])].join(" · ");
+  assert.equal(scenario.conditionLabel,"1 mueble · material no publicado (condición abierta) · acabado no publicado (condición abierta) · sin moneda (escenario solo de horas)");
+  assert.equal(scenario.scopeLabel,"Coste: no aplicable · Horas: tiempo de producción publicado");
+  assert.equal(scenario.costLabel,"Coste no aplicable en esta fuente");
+  assert.equal(scenario.costRangeLabel,"Rango de coste no aplicable");
+  assert.equal(scenario.costUncertaintyLabel,"Incertidumbre de coste no aplicable");
+  assert.equal(scenario.hoursLabel,"12,5 h");
+  assert.equal(scenario.assumptions[0].displayLabel,"Material de referencia no publicado");
+  assert.equal(scenario.assumptions[1].displayLabel,"Acabado de referencia no publicado");
+  assert.doesNotMatch(visible,/\bnull\b|\blabor\b|horas ERP/i);
+  assert.deepEqual(scenario.assumptions.map((item)=>item.code),["reference_material_unreported","reference_finish_unreported"]);
+});

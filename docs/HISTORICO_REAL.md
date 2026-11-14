@@ -109,7 +109,9 @@ Solo se consumen filas BOM `provisional` con cantidad `hypothesis` autoaceptada,
 
 La respuesta usa `conditional_provisional_not_quote` y crea una tarjeta por comparable no sintético, con máximo 3 por defecto. Nunca promedia tarjetas: cada una hereda de una sola referencia su familia condicional, moneda, scopes, fecha efectiva, `origin`, `cost_basis` y procedencia por métrica. La cantidad de mueble igual a 1 es un supuesto condicional, no una ocurrencia física. Contributors y scaling basis permanecen trazables; un único comparable conserva rangos `null` porque un punto no forma un intervalo calibrado.
 
-El endpoint no escribe el histórico, no modifica `GeneralHistoricalTarget` y no produce una oferta ni presupuesto industrial. Si faltan cantidad/geometría/evidencia o la BOM conocida mezcla materiales/acabados, responde `not_estimable` con `missing_data` explícito.
+El endpoint no escribe el histórico, no modifica `GeneralHistoricalTarget` y no produce una oferta ni presupuesto industrial. Si falta cantidad, evidencia o el agregado geométrico que exige el driver de una métrica, esa métrica se abstiene con `missing_data` explícito; una BOM heterogénea sigue bloqueando costes condicionados por material/acabado.
+
+La elegibilidad provisional se resuelve por métrica antes del ranking y del límite. El coste conserva sus requisitos estrictos de moneda, material y acabado publicados. Las horas con driver `item` o `fixed` pueden usar una referencia hours-only sin geometría, siempre que la cantidad provisional tenga evidencia autoaceptada; `length`, `area` y `volume` exigen su agregado completo autoaceptado y nunca suman un subconjunto conocido. Un registro hours-only no rellena material, acabado ni moneda ausentes: la condición conserva `null`, los supuestos lo declaran como no publicado y la procedencia mantiene el scope original (por ejemplo `production_time`, nunca renombrado a mano de obra). Coste y horas se rankean por separado antes de seleccionar hasta tres tarjetas, pero cada tarjeta sigue usando una sola referencia y no se promedian resultados.
 
 ## Fórmulas, escenarios e incertidumbre
 

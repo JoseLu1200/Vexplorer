@@ -3,11 +3,15 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
 from backend.app.agente.config import ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.provider import ProviderResponse, ToolCall
+from backend.app.agente.runner import AgentLimits
 from backend.app.contratos.modelos import Bounds2D, DrawingExtraction, DrawingObservation, DrawingView, Evidence, ObservedDimension, InspectGeneralContextArgs
+from backend.app.general_furniture import live as general_live
+from backend.app.general_furniture.live import general_furniture_tool_schemas
 from backend.app.general_furniture.live import run_general_furniture_agent
 from backend.app.general_furniture.live import GeneralVisualPage
 from backend.app.agente.vision import VisionMark
@@ -63,6 +67,8 @@ def test_live_agent_uses_strict_native_tool_and_returns_new_evidence_grounded_pr
     schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
     assert schema["strict"] is True
     assert schema["parameters"]["additionalProperties"] is False
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    assert "raster_authority" not in payload
 
 
 def test_openai_provider_accepts_generic_instructions_without_changing_default_contract() -> None:
@@ -153,3 +159,139 @@ def test_measurement_inspector_allows_explicit_first_segment_page() -> None:
     )
 
     assert request.query_measurements is True
+
+
+def _raster_extraction() -> DrawingExtraction:
+    return DrawingExtraction(
+        drawing_id="raster-drawing", status="needs_review",
+        source_unit="unknown", unit_scale_to_mm=None, coordinate_unit="source",
+        entities=(), views=(), contours=(), dimensions=(), evidence=(), observations=(),
+    )
+
+
+class _RasterProvider:
+    def __init__(self, *, source_view_ids=()) -> None:
+        self.source_view_ids = list(source_view_ids)
+        self.tools = None
+        self.input_items = None
+
+    def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+        self.tools = tools
+        self.input_items = input_items
+        arguments = {
+            "bindings": [],
+            "components": [{
+                "id": "visual-panel", "label": "Panel visual provisional",
+                "kind": "panel", "role": "unknown",
+                "length_binding_id": None, "width_binding_id": None,
+                "thickness_binding_id": None,
+                "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+                "premise_ids": ["visual-premise"],
+                "source_view_ids": self.source_view_ids,
+                "source_observation_ids": [], "source_contour_ids": [],
+                "source_evidence_ids": [], "source_dimension_ids": [],
+                "source_document_refs": ["document:pdf-child"],
+                "assumptions": ["Interpretación visual sin escala métrica."],
+                "unknown_fields": ["length", "width", "thickness", "quantity"],
+            }],
+            "premises": [{"id": "visual-premise", "description": "La silueta puede corresponder a un panel.", "required": True, "blocking": True}],
+            "assumptions": ["No se infieren milímetros desde píxeles."],
+        }
+        return ProviderResponse(
+            id="raster-response", model="fake",
+            tool_calls=(ToolCall(call_id="raster-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),),
+        )
+
+
+def test_raster_live_accepts_only_announced_document_reference_without_fake_view() -> None:
+    provider = _RasterProvider()
+    page = GeneralVisualPage(
+        reference="pdf-sha:pdf-page:0001", media_type="image/png",
+        sha256="b" * 64, content=b"png",
+        source_document_refs=("document:pdf-child",),
+    )
+
+    outcome = run_general_furniture_agent(
+        _raster_extraction(), ledger_revision="ledger-raster", provider=provider,
+        visual_pages=(page,),
+    )
+
+    assert outcome.draft.components[0].source_document_refs == ("document:pdf-child",)
+    payload = json.loads(provider.input_items[0]["content"][0]["text"])
+    assert payload["raster_authority"]["allowed_source_view_ids"] == []
+    assert payload["raster_authority"]["allowed_source_document_refs"] == [
+        "pdf-sha:pdf-page:0001", "document:pdf-child",
+    ]
+    assert payload["raster_authority"]["allowed_numeric_binding_refs"] == []
+    proposal_schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
+    assert "bindings=[]" in proposal_schema["description"]
+    assert "source_view_ids=[]" in proposal_schema["description"]
+
+
+def test_raster_fake_view_failure_keeps_safe_validation_reason_in_typed_error() -> None:
+    page = GeneralVisualPage(
+        reference="pdf-sha:pdf-page:0001", media_type="image/png",
+        sha256="b" * 64, content=b"png",
+        source_document_refs=("document:pdf-child",),
+    )
+
+    with pytest.raises(general_live.GeneralLiveError) as caught:
+        run_general_furniture_agent(
+            _raster_extraction(), ledger_revision="ledger-raster",
+            provider=_RasterProvider(source_view_ids=("pdf-page-0001",)),
+            visual_pages=(page,),
+            limits=AgentLimits(max_validation_repairs=0),
+        )
+
+    assert caught.value.code == "validation_repair_budget_exhausted"
+    assert caught.value.trace[-1]["ok"] is False
+    assert caught.value.trace[-1]["details"] == [{
+        "loc": [], "msg": "proposal_reference_outside_ledger", "type": "value_error",
+    }]
+
+
+def test_cad_tool_description_is_unchanged_when_raster_mode_is_disabled() -> None:
+    default_tools = general_furniture_tool_schemas()
+    explicit_cad_tools = general_furniture_tool_schemas(raster_without_metric_ledger=False)
+
+    assert default_tools == explicit_cad_tools
+    proposal_schema = next(item for item in default_tools if item["name"] == "proponer_mueble_general")
+    assert proposal_schema["description"].startswith(
+        "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings"
+    )
+
+
+def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -> None:
+    class ProviderFailure(RuntimeError):
+        code = "provider_response_incomplete"
+
+    class InspectThenFailProvider:
+        calls = 0
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            if self.calls == 2:
+                raise ProviderFailure("secret provider payload")
+            return ProviderResponse(
+                id="inspect-response", model="fake",
+                tool_calls=(ToolCall(
+                    call_id="inspect-call", name="inspeccionar_evidencia_general",
+                    arguments_json=json.dumps({
+                        "evidence_ids": [], "view_ids": ["front"],
+                        "measurement_ids": [], "query_measurements": False,
+                        "measurement_offset": 0, "measurement_limit": 64,
+                    }),
+                ),),
+            )
+
+    with pytest.raises(general_live.GeneralLiveError) as caught:
+        run_general_furniture_agent(
+            _extraction(), ledger_revision="ledger-1",
+            provider=InspectThenFailProvider(), limits=AgentLimits(max_model_calls=2),
+        )
+
+    assert caught.value.code == "provider_response_incomplete"
+    assert caught.value.model_calls == 2
+    assert caught.value.tool_calls == 1
+    assert caught.value.trace[-1]["tool"] == "inspeccionar_evidencia_general"
+    assert "secret provider payload" not in json.dumps(caught.value.trace)

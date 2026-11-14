@@ -15,6 +15,8 @@ const PROVISIONAL_ASSUMPTIONS={
   reference_family:["Condición de familia de referencia","El escenario solo aplica si el mueble pertenece a la familia del registro histórico citado."],
   reference_material:["Condición de material de referencia","El escenario adopta de forma condicional el material del registro histórico citado."],
   reference_finish:["Condición de acabado de referencia","El escenario adopta de forma condicional el acabado del registro histórico citado."],
+  reference_material_unreported:["Material de referencia no publicado","La fuente no publica el material; el escenario de horas mantiene esa condición abierta."],
+  reference_finish_unreported:["Acabado de referencia no publicado","La fuente no publica el acabado; el escenario de horas mantiene esa condición abierta."],
   reference_economic_context:["Contexto económico de referencia","La moneda y los alcances proceden solo del registro citado; el resultado no es una cotización."],
 };
 const PROVISIONAL_MISSING={
@@ -100,19 +102,20 @@ export function presentHistoricalEstimate(raw = {}) {
 
 export function presentProvisionalScenarios(raw={}){
   const rangeLabel=(value,unit)=>Array.isArray(value)&&value.length===2?`${decimal(value[0])}–${decimal(value[1])} ${unit}`:"Rango no estimable";
+  const scopeLabel=(value)=>({production_time:"tiempo de producción publicado"})[value]??String(value).replaceAll("_"," ");
   const scenarios=list(raw.scenarios).map((item)=>{
-    const condition=item.condition??{},provenance=list(item.result_provenance),source=provenance[0]??{},record=presentHistoricalRecord(source),currency=item.currency??condition.currency;
+    const condition=item.condition??{},provenance=list(item.result_provenance),source=provenance[0]??{},record=presentHistoricalRecord(source),currency=item.currency??condition.currency,costScope=list(condition.cost_scope),hoursScope=list(condition.hours_scope),costApplicable=costScope.length>0||provenance.some((entry)=>entry.contributes_cost===true),material=condition.material==null?"material no publicado (condición abierta)":`material ${condition.material}`,finish=condition.finish==null?"acabado no publicado (condición abierta)":`acabado ${condition.finish}`,currencyCondition=currency==null?(costApplicable?"moneda no publicada (condición abierta)":"sin moneda (escenario solo de horas)"):`moneda ${currency}`;
     return{
       ...item,
       labelText:"Escenario condicional provisional · no es una cotización",
-      costLabel:number(item.cost_subtotal)==null?"Coste no estimable":`${decimal(number(item.cost_subtotal))} ${currency??"moneda desconocida"}`,
+      costLabel:!costApplicable?"Coste no aplicable en esta fuente":number(item.cost_subtotal)==null?"Coste no estimable":`${decimal(number(item.cost_subtotal))} ${currency??"moneda desconocida"}`,
       hoursLabel:number(item.manufacturing_hours)==null?"Horas no estimables":`${decimal(number(item.manufacturing_hours))} h`,
-      costRangeLabel:rangeLabel(item.cost_range,currency??"moneda desconocida"),
+      costRangeLabel:!costApplicable?"Rango de coste no aplicable":rangeLabel(item.cost_range,currency??"moneda desconocida"),
       hoursRangeLabel:rangeLabel(item.hours_range,"h"),
-      costUncertaintyLabel:uncertaintyLabel(item.cost_uncertainty,"coste"),
+      costUncertaintyLabel:costApplicable?uncertaintyLabel(item.cost_uncertainty,"coste"):"Incertidumbre de coste no aplicable",
       hoursUncertaintyLabel:uncertaintyLabel(item.hours_uncertainty,"horas"),
-      conditionLabel:`1 mueble · material ${condition.material??"desconocido"} · acabado ${condition.finish??"desconocido"} · moneda ${currency??"desconocida"}`,
-      scopeLabel:`Coste: ${list(condition.cost_scope).join(", ")||"sin alcance"} · Horas: ${list(condition.hours_scope).join(", ")||"sin alcance"}`,
+      conditionLabel:`1 mueble · ${material} · ${finish} · ${currencyCondition}`,
+      scopeLabel:`Coste: ${costApplicable?costScope.map(scopeLabel).join(", ")||"alcance no publicado":"no aplicable"} · Horas: ${hoursScope.map(scopeLabel).join(", ")||"sin alcance"}`,
       provenanceLabel:[record.provenanceLabel,source.source,source.source_date?sourceDate(source.source_date):null].filter(Boolean).join(" · "),
       assumptions:list(item.assumptions).map(provisionalAssumption),
       missingData:list(item.missing_data).map(provisionalMissing),
