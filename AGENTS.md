@@ -16,6 +16,8 @@ El paquete contiene documentación y tooling de preparación del dataset, con pr
 
 ## Contratos y arquitectura
 
+El encargo vigente del usuario autoriza completar medidas y detalles faltantes mediante estimaciones explícitas. El [diseño CAD 2D](docs/superpowers/specs/2026-11-14-cad-completion.md) reemplaza, para la propuesta constructiva, la abstención sistemática de los dos puntos históricos siguientes sobre no rellenar valores. Se conservan observaciones inmutables y se distinguen nominal, rango, premisa y dependencias de cada estimación. Una estimación aceptada automáticamente aparece en la lista y los planos provisionales, sin convertirse en medida observada ni requerir aprobación humana.
+
 - Cambiar `contratos/` requiere acuerdo explícito A/B y aviso C. La propuesta escrita no equivale a ese acuerdo.
 - Pydantic será la única fuente de verdad; generar JSON Schema desde los modelos. No mantener esquemas paralelos a mano.
 - Mantener geometría determinista antes del LLM, herramientas nativas y validación final en servidor.
