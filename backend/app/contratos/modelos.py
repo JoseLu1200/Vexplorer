@@ -454,7 +454,7 @@ class TableMeasure(StrictModel):
     evidence_ids: tuple[str, ...] = ()
     source_entity_ids: tuple[str, ...] = ()
     slot_origin: Literal["drawing", "profile_required_slot"] = "drawing"
-    geometry_relation: Literal["dimension_annotation", "offset_from_min_x", "offset_from_max_x", "offset_from_min_y", "offset_from_max_y", "opposite_offsets", "profile_required_slot"] = "dimension_annotation"
+    geometry_relation: Literal["dimension_annotation", "envelope_extent", "offset_from_min_x", "offset_from_max_x", "offset_from_min_y", "offset_from_max_y", "opposite_offsets", "profile_required_slot"] = "dimension_annotation"
 
     @model_validator(mode="after")
     def value_matches_state(self) -> "TableMeasure":
@@ -981,6 +981,30 @@ class TableCostScope(StrictModel):
     material_tariff_id: str | None = None
     edge_scope: Literal["none", "all_exposed"] = "none"
     operation_tariff_ids: tuple[str, ...] = ()
+
+
+class TableCostTariff(StrictModel):
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    concept_type: Literal["fixed", "material_area", "material_volume", "edge", "operation", "labor", "finish"]
+    scope: Literal["material", "edge", "operation"]
+    rate_eur_per_unit: float = Field(ge=0, allow_inf_nan=False)
+    rate_unit: Literal["EUR/m2", "EUR/m3", "EUR/m", "EUR/unit", "EUR/h"]
+    synthetic: Literal[True] = True
+
+
+class TableCostCatalog(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    catalog_version: str = Field(min_length=1)
+    tariffs: tuple[TableCostTariff, ...]
+    synthetic: Literal[True] = True
+
+    @model_validator(mode="after")
+    def tariff_ids_are_unique(self) -> "TableCostCatalog":
+        ids = [item.id for item in self.tariffs]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate table tariff ids")
+        return self
 
 
 class TableCostConcept(StrictModel):
