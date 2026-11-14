@@ -871,7 +871,7 @@ class TableDrawingPrimitive(StrictModel):
     points_mm: tuple[Point2D, ...]
     text: str | None = None
     value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
-    state: Literal["calculated", "confirmed", "proposed", "unknown", "conflict"]
+    state: Literal["observed", "calculated", "confirmed", "proposed", "unknown", "conflict"]
     dependency_refs: tuple[str, ...] = ()
 
     @model_validator(mode="after")
