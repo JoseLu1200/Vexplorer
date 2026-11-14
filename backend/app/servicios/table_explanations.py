@@ -9,6 +9,7 @@ def explain_table_result(result: Result) -> ExplanationBundle:
     if analysis is None or evaluated is None:
         raise ValueError("table_evaluation_unavailable")
     measures = {item.id: item for item in analysis.measures}
+    confirmed_values = {item.target_id: item.value_mm for item in result.table_confirmed_values}
     bindings = {item.id: item for item in evaluated.bindings}
     specs = {item.id: item for item in evaluated.raw_program.components}
     premises = {item.id: item for item in evaluated.raw_program.premises}
@@ -41,10 +42,14 @@ def explain_table_result(result: Result) -> ExplanationBundle:
             if value.value_mm is None:
                 continue
             operand_ids = measurement_ids_for(binding_id)
-            operands = {item: measures[item].value_mm for item in sorted(operand_ids) if item in measures and measures[item].value_mm is not None}
+            operands = {
+                item: confirmed_values.get(item, measures[item].value_mm)
+                for item in sorted(operand_ids)
+                if item in measures and confirmed_values.get(item, measures[item].value_mm) is not None
+            }
             formulas.append(FormulaExplanation(field=field, expression=f"{field}=binding:{binding_id}", operands_mm=operands, result_mm=value.value_mm))
         states = {
-            "quantity": "calculated" if component.quantity is not None else "unknown",
+            "quantity": "calculated" if component.quantity is not None and component.accepted and evaluated.state == "completed" else "hypothesis" if component.quantity is not None else "unknown",
             "length_mm": "hypothesis" if component.length.state == "proposed" else "unknown" if component.length.state in ("unknown", "conflict") else component.length.state,
             "width_mm": "hypothesis" if component.width.state == "proposed" else "unknown" if component.width.state in ("unknown", "conflict") else component.width.state,
             "thickness_mm": "hypothesis" if component.thickness.state == "proposed" else "unknown" if component.thickness.state in ("unknown", "conflict") else component.thickness.state,
