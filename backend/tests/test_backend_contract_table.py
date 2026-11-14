@@ -154,6 +154,8 @@ def test_table_cost_catalog_has_unique_discoverable_tariffs():
         TableCostCatalog(catalog_version="table-costs-v1", tariffs=(tariff, tariff))
     with pytest.raises(ValidationError, match="duplicate operation tariff ids"):
         TableCostScope(operation_tariff_ids=("operation-a", "operation-a"))
+    preparation = TableCostTariff(id="prep-demo", label="Preparación demo", concept_type="fixed", scope="preparation", rate_eur_per_unit=25, rate_unit="EUR/unit")
+    assert preparation.scope == "preparation"
 
 
 def test_table_run_requires_explicit_profile_and_catalog_template():
