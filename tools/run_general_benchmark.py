@@ -48,6 +48,11 @@ PUBLIC_INSTRUCTION = (
     "Use only geometry visible in the assembled orthographic views. "
     "Keep unsupported identity, dimensions, roles and quantities unknown."
 )
+COMPLETION_INSTRUCTION = (
+    "Interpret the assembled furniture views, deduce or estimate missing dimensions "
+    "and construction details, and propose necessary parts with dimensioned piece "
+    "drawings. Keep observations distinct from explicit estimates and explain important decisions."
+)
 CASE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}")
 DATASET_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,119}")
 PUBLIC_METADATA_KEYS = {
@@ -210,7 +215,9 @@ def _read_valid_bundle(bundle: Path) -> tuple[str, bytes]:
         expected = ("input.dxf", "dxf", "mm", "assembled_orthographic")
         if tuple(metadata.get(key) for key in ("file", "format", "unit", "view_kind")) != expected:
             raise ValueError("unexpected_public_bundle_format")
-        if metadata.get("instruction") != PUBLIC_INSTRUCTION:
+        # These fixed labels declare the fixture task; bundle text is never
+        # forwarded as model instructions. The native harness owns its prompt.
+        if metadata.get("instruction") not in (PUBLIC_INSTRUCTION, COMPLETION_INSTRUCTION):
             raise ValueError("unexpected_public_bundle_instruction")
         digest = metadata.get("sha256")
         if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
