@@ -106,9 +106,11 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
     min_x, min_y, max_x, max_y = _geometry_bounds(sheet)
     span_x = max_x - min_x
     span_y = max_y - min_y
-    margin = max(20.0, max(span_x, span_y) * 0.05)
-    header = max(50.0, max(span_x, span_y) * 0.06)
-    footer = max(90.0, max(span_x, span_y) * 0.1)
+    drawing_span = max(span_x, span_y)
+    font_scale = max(1.0, drawing_span / 900.0)
+    margin = max(20.0 * font_scale, drawing_span * 0.05)
+    header = 60.0 * font_scale
+    footer = (90.0 + len(sheet.warnings) * 14.0) * font_scale
     width = span_x + margin * 2
     height = span_y + margin * 2 + header + footer
 
@@ -142,13 +144,25 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
     heading = ET.SubElement(
         root,
         _svg_tag("text"),
-        {"x": _format_mm(margin), "y": _format_mm(margin), "fill": "#111827", "font-size": "18", "font-family": "sans-serif"},
+        {
+            "x": _format_mm(margin),
+            "y": _format_mm(margin),
+            "fill": "#111827",
+            "font-size": _format_mm(18 * font_scale),
+            "font-family": "sans-serif",
+        },
     )
     heading.text = sheet.title
     notice = ET.SubElement(
         root,
         _svg_tag("text"),
-        {"x": _format_mm(margin), "y": _format_mm(margin + 22), "fill": "#b45309", "font-size": "11", "font-family": "sans-serif"},
+        {
+            "x": _format_mm(margin),
+            "y": _format_mm(margin + 22 * font_scale),
+            "fill": "#b45309",
+            "font-size": _format_mm(11 * font_scale),
+            "font-family": "sans-serif",
+        },
     )
     notice.text = "PLANO DERIVADO - NO VALIDADO PARA FABRICACION"
 
@@ -213,7 +227,7 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                     "x": _format_mm((md1[0] + md2[0]) / 2),
                     "y": _format_mm((md1[1] + md2[1]) / 2 - 5),
                     "fill": color,
-                    "font-size": "11",
+                    "font-size": _format_mm(11 * font_scale),
                     "font-family": "sans-serif",
                     "text-anchor": "middle",
                 },
@@ -228,25 +242,25 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                     "x": _format_mm(x),
                     "y": _format_mm(y),
                     "fill": color,
-                    "font-size": "12",
+                    "font-size": _format_mm(12 * font_scale),
                     "font-family": "sans-serif",
                 },
             )
             text.text = primitive.text or "?"
 
-    legend_y = height - footer + 20
+    legend_y = height - footer + 20 * font_scale
     legend = ET.SubElement(root, _svg_tag("g"), {"data-layer": "legend"})
     for index, (state, (color, _, label)) in enumerate(_STATE_STYLE.items()):
-        x = margin + (index % 3) * max(150.0, span_x / 3)
-        y = legend_y + (index // 3) * 24
+        x = margin + (index % 3) * max(150.0 * font_scale, span_x / 3)
+        y = legend_y + (index // 3) * 24 * font_scale
         ET.SubElement(
             legend,
             _svg_tag("rect"),
             {
                 "x": _format_mm(x),
-                "y": _format_mm(y - 10),
-                "width": "14",
-                "height": "4",
+                "y": _format_mm(y - 10 * font_scale),
+                "width": _format_mm(14 * font_scale),
+                "height": _format_mm(4 * font_scale),
                 "fill": color,
             },
         )
@@ -254,24 +268,24 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
             legend,
             _svg_tag("text"),
             {
-                "x": _format_mm(x + 20),
+                "x": _format_mm(x + 20 * font_scale),
                 "y": _format_mm(y),
                 "fill": "#374151",
-                "font-size": "10",
+                "font-size": _format_mm(10 * font_scale),
                 "font-family": "sans-serif",
             },
         )
         item.text = label
-    warning_y = legend_y + 60
+    warning_y = legend_y + 60 * font_scale
     for index, warning in enumerate(sheet.warnings):
         item = ET.SubElement(
             root,
             _svg_tag("text"),
             {
                 "x": _format_mm(margin),
-                "y": _format_mm(warning_y + index * 14),
+                "y": _format_mm(warning_y + index * 14 * font_scale),
                 "fill": "#b91c1c",
-                "font-size": "10",
+                "font-size": _format_mm(10 * font_scale),
                 "font-family": "sans-serif",
             },
         )
@@ -305,7 +319,8 @@ def _render_dxf(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
     text_height = max(2.5, min(12.0, span * 0.015))
 
     metadata_text = (
-        f"VEXPLORER TECHNICAL DRAWING\\Psheet_id={sheet.sheet_id}"
+        f"VEXPLORER TECHNICAL DRAWING\\Ptitle={sheet.title}"
+        f"\\Psheet_id={sheet.sheet_id}"
         f"\\Presult_revision={plan.result_revision}\\Pprogram_hash={plan.program_hash}"
         "\\PPLANO DERIVADO - NO VALIDADO PARA FABRICACION"
     )

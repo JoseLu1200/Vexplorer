@@ -115,6 +115,7 @@ def test_render_reopens_mm_dxf_and_preserves_numeric_dimensions_and_provenance()
     assert tuple(dimensions[0].dxf.defpoint2)[:2] == (0.0, 0.0)
     assert tuple(dimensions[0].dxf.defpoint3)[:2] == (1200.0, 0.0)
     metadata = "\n".join(entity.plain_text() for entity in document.modelspace().query("MTEXT"))
+    assert "Plano general" in metadata
     assert f"program_hash={PROGRAM_HASH}" in metadata
     assert "result_revision=3" in metadata
 
@@ -274,6 +275,49 @@ def test_svg_escapes_untrusted_text_and_contains_no_active_elements():
         for element in root.iter()
         for key in element.attrib
     )
+
+
+def test_large_general_sheet_scales_fonts_and_keeps_warnings_inside_page():
+    from backend.app.salida.technical_drawings import render_table_drawings
+
+    sheet = TableSheetPlan(
+        sheet_id="general-1200x700",
+        kind="general",
+        title="Mesa 1200 x 700 - planta y alzado",
+        page=1,
+        status="incomplete",
+        warnings=("hipotesis de montaje", "espesor pendiente", "uniones no evaluadas", "no apto para fabricar"),
+        primitives=(
+            TableDrawingPrimitive(
+                id="front",
+                kind="rect",
+                points_mm=(Point2D(x=0, y=0), Point2D(x=1200, y=750)),
+                state="proposed",
+            ),
+            TableDrawingPrimitive(
+                id="top",
+                kind="rect",
+                points_mm=(Point2D(x=1300, y=0), Point2D(x=2500, y=700)),
+                state="proposed",
+            ),
+        ),
+    )
+
+    root = ET.fromstring(_artifact(render_table_drawings(_plan(sheet)), sheet.sheet_id, "svg"))
+
+    _, _, view_width, view_height = (float(value) for value in root.attrib["viewBox"].split())
+    text_nodes = [element for element in root.iter() if element.tag.endswith("text")]
+    title = next(element for element in text_nodes if element.text == sheet.title)
+    legend = [
+        element
+        for element in text_nodes
+        if element.text in {"observado", "calculado", "hipotesis", "confirmado", "desconocido", "conflicto"}
+    ]
+    warnings = [element for element in text_nodes if (element.text or "").startswith("AVISO:")]
+    assert float(title.attrib["font-size"]) / view_width * 800 >= 10
+    assert min(float(element.attrib["font-size"]) for element in legend) / view_width * 800 >= 7
+    assert len(warnings) == 4
+    assert max(float(element.attrib["y"]) for element in warnings) < view_height
 
 
 def test_render_is_byte_deterministic_and_revisions_do_not_cross_contaminate():
