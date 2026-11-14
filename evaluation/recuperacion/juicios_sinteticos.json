@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "origen": "synthetic",
+  "descripcion": "Juicios inventados para probar el mecanismo de evaluación. NO son evidencia de calidad ni fueron revisados por el equipo. Los ids corresponden a una biblioteca sintética construida en backend/tests/test_precedentes_evaluacion.py.",
+  "consultas": [
+    {
+      "consulta_id": "sint-estanteria-1800",
+      "relevancias": {"sint-estanteria-1850": 2, "sint-estanteria-2000": 1, "sint-mesa-750": 0},
+      "nota": "Dos estanterías de alto parecido frente a una mesa."
+    },
+    {
+      "consulta_id": "sint-estanteria-2000",
+      "relevancias": {"sint-estanteria-1850": 2, "sint-estanteria-1800": 1, "sint-mesa-750": 0}
+    },
+    {
+      "consulta_id": "sint-mesa-750",
+      "relevancias": {"sint-estanteria-1800": 0, "sint-estanteria-1850": 0, "sint-estanteria-2000": 0},
+      "nota": "Sin comparables en la biblioteca: recall y nDCG quedan indefinidos."
+    }
+  ]
+}
