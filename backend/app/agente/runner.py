@@ -415,6 +415,11 @@ def run_table_agent(
                             view_id=artifact.view_id,
                         ))
                 elif call.name == "proponer_descomposicion":
+                    if vision_enabled and not visualized_view_ids:
+                        data = {"ok": False, "error": "visual_context_required"}
+                        actions.append(AgentAction(call.name, False, (), "El opt-in visual exige inspeccionar al menos una vista antes de proponer."))
+                        outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(data, ensure_ascii=False)})
+                        continue
                     args = ProposeTableProgramArgs.model_validate_json(json.dumps(arguments), strict=True)
                     referenced_measures = {operand.ref_id for binding in args.bindings for operand in binding.operand_refs if operand.ref_type == "measure"}
                     referenced_evidence = set(args.evidence_ids) | {evidence_id for component in args.components for evidence_id in component.evidence_ids}

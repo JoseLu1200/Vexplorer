@@ -160,3 +160,21 @@ def test_table_agent_caps_visual_tool_attempts_not_only_unique_views():
     fourth_output = json.loads(provider.inputs[4][0]["output"])
     assert fourth_output["error"] == "vision_call_budget_exhausted"
     assert outcome.tool_calls == 5
+
+
+def test_table_agent_requires_visual_context_before_proposal_when_opted_in():
+    provider = FakeProvider([
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="too-early", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+        ProviderResponse(id="r2", tool_calls=(ToolCall(call_id="vision", name="visualizar_vista", arguments={"view_id": "front"}),)),
+        ProviderResponse(id="r3", tool_calls=(ToolCall(call_id="ready", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+    ])
+    outcome = run_table_agent(
+        _extraction(), _analysis(), provider,
+        AgentLimits(max_model_calls=3, max_tool_calls=3, timeout_s=5),
+        vision_enabled=True,
+    )
+    rejected = json.loads(provider.inputs[1][0]["output"])
+    assert rejected["error"] == "visual_context_required"
+    assert [item.tool_name for item in outcome.actions] == [
+        "proponer_descomposicion", "visualizar_vista", "proponer_descomposicion",
+    ]
