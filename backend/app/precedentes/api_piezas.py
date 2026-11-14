@@ -18,6 +18,7 @@ from backend.app.precedentes.gemelas import (
     detectar_gemelas,
 )
 from backend.app.precedentes.lotes import ConfiguracionLotes, preparar_lotes
+from backend.app.precedentes.nesting import ParametrosNesting
 from backend.app.precedentes.piezas import (
     LIMITE_PIEZAS,
     FuenteBiblioteca,
@@ -50,7 +51,9 @@ class PedidoEntrada(ModeloEstricto):
     piezas: tuple[PiezaPedido, ...] = Field(default=(), max_length=LIMITE_PIEZAS)
 
 
-class PeticionLotes(ModeloEstricto):
+class PeticionLotes(ParametrosNesting):
+    """Hereda los parámetros del nesting (tablero, kerf, margen, giro) y su validación."""
+
     pedidos: tuple[PedidoEntrada, ...] = Field(default=(), max_length=MAXIMO_PEDIDOS)
     run_ids: tuple[str, ...] = Field(default=(), max_length=MAXIMO_PEDIDOS)
 
@@ -73,12 +76,6 @@ class PeticionLotes(ModeloEstricto):
         return datos
 
     incluir_biblioteca: bool = False
-    tablero_largo_mm: float = Field(
-        default=2440.0, gt=0, le=10_000, allow_inf_nan=False
-    )
-    tablero_ancho_mm: float = Field(
-        default=1220.0, gt=0, le=10_000, allow_inf_nan=False
-    )
     aprovechamiento: float = Field(default=0.8, gt=0, le=1, allow_inf_nan=False)
 
 
@@ -180,6 +177,9 @@ def crear_router_piezas(fuente_biblioteca: FuenteBiblioteca | None = None) -> AP
             tablero_largo_mm=peticion.tablero_largo_mm,
             tablero_ancho_mm=peticion.tablero_ancho_mm,
             aprovechamiento=peticion.aprovechamiento,
+            kerf_mm=peticion.kerf_mm,
+            margen_mm=peticion.margen_mm,
+            permitir_rotacion=peticion.permitir_rotacion,
         )
         return respuesta_ok(preparar_lotes(piezas, configuracion, pedidos=todos_ids))
 

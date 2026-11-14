@@ -42,6 +42,8 @@ class PiezaRef(ModeloEstricto):
     cantidad: int | None = Field(default=None, gt=0)
     material: str | None = Field(default=None, max_length=200)
     acabado: str | None = Field(default=None, max_length=200)
+    # False = tiene veta o no se puede girar 90° al cortar (lo usa el nesting de 3.1).
+    rotable: bool = True
     fuente: FuentePieza
 
 
@@ -55,6 +57,7 @@ class PiezaPedido(ModeloEstricto):
     cantidad: int | None = Field(default=None, gt=0)
     material: str | None = Field(default=None, max_length=200)
     acabado: str | None = Field(default=None, max_length=200)
+    rotable: bool = True
 
     def a_pieza_ref(self, origen_id: str) -> PiezaRef:
         """La fuente se fija siempre a ``peticion``: el cliente no puede declarar otra."""
