@@ -80,6 +80,25 @@ La revisión automática es una propiedad de proceso ortogonal a la certeza. `qu
 
 ## Ejecución
 
+### Congelación pareada pública
+
+`tools.run_general_benchmark` ejecuta el flujo nativo de mobiliario general sin abrir referencias ni puntuar resultados. El runner escribe `baseline.json` con creación exclusiva antes de invocar al crítico; un fallo posterior conserva esa primera pasada y su SHA-256. Al terminar la cohorte convierte determinísticamente los objetos nativos en `baseline-predictions.json` y `final-predictions.json`, ambos con `schema_version: 1.0`, y los incluye en `frozen-manifest.json`. En el manifest final evaluable solo conserva el valor numérico de un campo cuando la decisión de campo del crítico es `accepted`; valores rechazados, conflictivos, abstenciones o campos no revisados pasan a `null/unknown`, sin modificar el outcome ni la traza raw. Un escenario provisional se conserva con revisión global `accepted|incomplete` y se omite en `conflict|abstained`. Un caso fallido permanece en ambos manifiestos con componentes vacíos, de modo que la evaluación posterior contabilice el fallo en el denominador. Solo después de congelar ambos ficheros puede abrirse la referencia privada para construir sus alineaciones; baseline y final requieren copias de referencia separadas, cada una enlazada al SHA-256 exacto de su propio fichero de predicciones.
+
+Para blind20 el proceso de inferencia debe recibir exclusivamente los ZIP públicos individuales de `agent_cases`; no debe recibir el directorio raíz del adaptador, su `cases.json` ni el directorio privado:
+
+```powershell
+.venv\Scripts\python.exe -m tools.run_general_benchmark `
+  --input ..\plankassembly_adapter_blind20_v2\agent_cases `
+  --output .runtime\transcript-qa\blind20-paired `
+  --dataset-id plankassembly-blind20-v2 `
+  --strict-bundles `
+  --workers 2
+```
+
+Los valores por defecto son proponente `gpt-6.1-sol`, crítico `gpt-6-astra`, 16.384 tokens máximos, cinco llamadas de revisión, dos reparaciones de validación, dos workers y 300 segundos por caso. Modelos y presupuestos son configurables dentro de los límites del backend. La clave se carga desde `.env` mediante la configuración del servidor: no existe argumento CLI para ella y no se escribe en trazas ni manifiestos. Las trazas guardan respuestas estructuradas de herramientas y errores acotados, no prompts, cuerpos HTTP ni razonamiento oculto.
+
+En modo estricto cada ZIP debe contener exactamente `input.dxf` y `case.json`. Nombres, ID opaco, metadatos, tamaños declarados/comprimidos, ratio de compresión y SHA-256 se validan antes de descomprimir el DXF; no se extraen rutas ni se ejecuta contenido del bundle. Configuración, fuentes, PNG, código del runner/backend y dependencias declaradas quedan enlazados por SHA-256. El log y los timestamps locales documentan el orden operativo, pero no son una prueba criptográfica de cronología. Las pruebas offline no hacen llamadas a proveedores.
+
 ```powershell
 python -m tools.evaluate_cases `
   --predictions .runtime/evaluation/frozen-predictions.json `

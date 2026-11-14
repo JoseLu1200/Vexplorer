@@ -501,4 +501,3 @@ def test_auto_reviewed_metrics_remain_separate_from_hypothesis_and_human(tmp_pat
         "matched_acceptable_scenarios": 1,
         "unsupported_predicted_scenarios": 0,
     }
-
