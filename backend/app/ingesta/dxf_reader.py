@@ -237,10 +237,21 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
             dimension_type = int(entity.dxf.dimtype) & 0x0F
             conflict = False
             dimension_scale = 1.0
-            try:
-                measurement = float(entity.get_measurement()) if dimension_type in {0, 1} else None
-            except (TypeError, ValueError, ezdxf.DXFError):
-                measurement = None
+            if dimension_type == 6 and entity.dxf.hasattr("defpoint") and entity.dxf.hasattr("defpoint2"):
+                origin = _point2(entity.dxf.defpoint)
+                feature = _point2(entity.dxf.defpoint2)
+                measurement = abs(
+                    feature[0] - origin[0]
+                    if int(entity.dxf.dimtype) & 64
+                    else feature[1] - origin[1]
+                )
+                if not isfinite(measurement) or measurement <= 1e-9:
+                    measurement = None
+            else:
+                try:
+                    measurement = float(entity.get_measurement()) if dimension_type in {0, 1} else None
+                except (TypeError, ValueError, ezdxf.DXFError):
+                    measurement = None
             if measurement is None:
                 warnings.append(f"unsupported_dimension:{entity_id}")
             else:
