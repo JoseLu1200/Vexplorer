@@ -56,12 +56,13 @@ def test_parts_review_selects_candidate_and_resolves_only_observed_values(tmp_pa
 
 
 def test_historical_dimensions_use_selected_assembly_derivations_not_a_piece_axis(tmp_path: Path) -> None:
-    extraction, parts, candidate = _parts_payload()
-    constraints = tuple(AssemblyConstraint(id=f"constraint-{axis}", kind="exterior_from_parts", operation="sum", dimension=f"assembled_{axis}", operand_refs=(f"part.{axis}",), result_mm=value, status="pass", evidence_ids=("evidence-1",)) for axis, value in (("width", 900), ("height", 1200), ("depth", 300)))
-    dimensions = tuple(DerivedAssemblyDimension(axis=axis, value_mm=value, state="derived", operand_refs=(f"part.{axis}",), constraint_id=f"constraint-{axis}") for axis, value in (("width", 900), ("height", 1200), ("depth", 300)))
-    candidate = candidate.model_copy(update={"family": "rectangular_shelving", "layout": "between_sides", "constraints": constraints, "derived_dimensions": dimensions, "unknown_fields": ()})
+    fixture = Path(__file__).resolve().parents[2] / "data" / "planos_demo" / "piezas_completo.dxf"
+    extraction = extract_drawing(fixture, input_kind="separated_part_views")
+    parts = extract_separated_parts(extraction)
+    candidates = derive_assembly_candidates(parts)
+    candidate = candidates[0]
     repository = DemoRepository(tmp_path / "historical.sqlite3")
-    repository.create_run("run-parts", "geometry_only", extraction, (), part_analysis=parts, assembly_candidates=(candidate,))
+    repository.create_run("run-parts", "geometry_only", extraction, (), part_analysis=parts, assembly_candidates=candidates)
     reviewed = repository.review("run-parts", ReviewRequest(base_result_revision=1, reviewer_name="Operador", assembly_candidate_id=candidate.id, notes="Selecciona ensamblaje"))
     assert _assembly_dimensions(reviewed) == (900, 300, 1200)
 
