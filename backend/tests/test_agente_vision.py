@@ -11,6 +11,7 @@ from PIL import Image
 from backend.app.agente.vision import RenderedView, VisionMark, render_view
 from backend.app.contratos.modelos import (
     Bounds2D,
+    CircularGeometry,
     DrawingContour,
     DrawingEntity,
     DrawingExtraction,
@@ -96,6 +97,64 @@ def _extraction(
     )
 
 
+def _curved_extraction(kind: str = "CIRCLE") -> DrawingExtraction:
+    center = Point2D(x=50, y=50)
+    circular = CircularGeometry(
+        kind=kind.lower(),
+        center_source=center,
+        center_mm=center,
+        radius_source=25,
+        radius_mm=25,
+        start_angle_deg=0 if kind == "ARC" else None,
+        end_angle_deg=90 if kind == "ARC" else None,
+    )
+    endpoints = (
+        _points((75, 50), (50, 75)) if kind == "ARC" else _points((75, 50))
+    )
+    entity = DrawingEntity(
+        id=f"entity-{kind.lower()}",
+        kind=kind,
+        layer="CURVES",
+        source_points=endpoints,
+        points_mm=endpoints,
+        circular=circular,
+    )
+    annotation = DrawingEntity(
+        id="entity-dimension",
+        kind="DIMENSION",
+        layer="DIMENSIONS",
+        source_points=_points((0, 0), (100, 100), (0, 100), (100, 0)),
+        points_mm=_points((0, 0), (100, 100), (0, 100), (100, 0)),
+    )
+    view = DrawingView(
+        id="view-curves",
+        label="FRONT",
+        entity_ids=(annotation.id, entity.id),
+        bounds_source=Bounds2D(min_x=0, min_y=0, max_x=100, max_y=100),
+        bounds_mm=Bounds2D(min_x=0, min_y=0, max_x=100, max_y=100),
+    )
+    return DrawingExtraction(
+        drawing_id="drawing-curves",
+        status="ready",
+        source_unit="mm",
+        unit_scale_to_mm=1.0,
+        coordinate_unit="mm",
+        entities=(annotation, entity),
+        views=(view,),
+        contours=(),
+        dimensions=(),
+        evidence=(),
+        observations=(
+            DrawingObservation(
+                id="observation-curves",
+                view_id=view.id,
+                contour_ids=(),
+                dimension_ids=(),
+            ),
+        ),
+    )
+
+
 def test_render_is_deterministic_decodable_and_self_describing() -> None:
     extraction = _extraction()
 
@@ -175,3 +234,64 @@ def test_pixel_and_encoded_png_limits_are_enforced() -> None:
         render_view(_extraction(), "view-public", max_dimension_px=47)
     with pytest.raises(ValueError, match="^vision_budget_exceeded$"):
         render_view(_extraction(), "view-public", max_png_bytes=8)
+
+
+def test_annotations_are_omitted_and_circle_uses_typed_geometry() -> None:
+    rendered = render_view(_curved_extraction("CIRCLE"), "view-curves", max_dimension_px=128)
+
+    assert [mark.source_id for mark in rendered.marks] == ["entity-circle"]
+    with Image.open(BytesIO(rendered.png)) as image:
+        image.load()
+        pixels = image.convert("RGB")
+        dark = [
+            (x, y)
+            for y in range(image.height)
+            for x in range(image.width)
+            if max(pixels.getpixel((x, y))) < 180
+        ]
+    assert dark
+    assert any(x < image.width // 3 for x, _ in dark)
+    assert any(x > image.width * 2 // 3 for x, _ in dark)
+    assert any(y < image.height // 3 for _, y in dark)
+    assert any(y > image.height * 2 // 3 for _, y in dark)
+
+
+def test_arc_is_a_curve_not_the_false_endpoint_chord() -> None:
+    rendered = render_view(_curved_extraction("ARC"), "view-curves", max_dimension_px=256)
+
+    with Image.open(BytesIO(rendered.png)) as image:
+        image.load()
+        pixels = image.convert("RGB")
+        # The 0°→90° curve reaches the upper-right bounding-box corner.
+        upper_right_has_ink = any(
+            max(pixels.getpixel((x, y))) < 180
+            for y in range(20, image.height // 3)
+            for x in range(image.width * 2 // 3, image.width - 20)
+        )
+        chord_midpoint_is_blank = all(
+            min(pixels.getpixel((x, y))) > 220
+            for y in range(image.height // 2 - 3, image.height // 2 + 4)
+            for x in range(image.width // 2 - 3, image.width // 2 + 4)
+        )
+    assert upper_right_has_ink
+    assert chord_midpoint_is_blank
+
+
+def test_degenerate_arc_is_not_replaced_with_a_chord() -> None:
+    extraction = _curved_extraction("ARC")
+    entity = extraction.entities[1]
+    circular = entity.circular.model_copy(update={"end_angle_deg": 0})
+    entity = entity.model_copy(update={"circular": circular})
+    extraction = extraction.model_copy(update={"entities": (extraction.entities[0], entity)})
+
+    with pytest.raises(ValueError, match="^vision_geometry_unavailable$"):
+        render_view(extraction, "view-curves")
+
+
+def test_generated_curve_points_share_the_geometry_budget(monkeypatch: pytest.MonkeyPatch) -> None:
+    def image_must_not_be_created(*args, **kwargs):
+        raise AssertionError("curve budget was checked after raster allocation")
+
+    monkeypatch.setattr("backend.app.agente.vision.Image.new", image_must_not_be_created)
+    with pytest.raises(ValueError, match="^vision_budget_exceeded$"):
+        render_view(_curved_extraction("CIRCLE"), "view-curves", max_points=65)

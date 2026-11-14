@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from io import BytesIO
-from math import ceil
+from math import ceil, cos, radians, sin
 from typing import Literal
 
 from PIL import Image, ImageDraw, ImageFont
@@ -18,6 +18,8 @@ from backend.app.contratos.modelos import DrawingExtraction, Point2D
 
 _MARGIN_PX = 24
 _MIN_DIMENSION_PX = 2 * _MARGIN_PX + 1
+_CURVE_SEGMENTS_FULL = 64
+_ANNOTATION_KINDS = frozenset({"TEXT", "MTEXT", "ATTRIB", "DIMENSION"})
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,42 @@ class RenderedView:
 def _coordinates(points_mm: tuple[Point2D, ...] | None, points_source: tuple[Point2D, ...]) -> tuple[tuple[float, float], ...]:
     selected = points_mm if points_mm is not None else points_source
     return tuple((float(point.x), float(point.y)) for point in selected)
+
+
+def _curve_spec(entity) -> tuple[float, float, float, float, float, int] | None:
+    circular = entity.circular
+    if circular is None:
+        return None
+    metric = entity.points_mm is not None
+    center = circular.center_mm if metric else circular.center_source
+    radius = circular.radius_mm if metric else circular.radius_source
+    if center is None or radius is None:
+        return None
+    if circular.kind == "circle":
+        start, sweep = 0.0, 360.0
+    else:
+        if circular.start_angle_deg is None or circular.end_angle_deg is None:
+            return None
+        start = float(circular.start_angle_deg)
+        sweep = (float(circular.end_angle_deg) - start) % 360.0
+        if sweep == 0:
+            return None
+    segments = max(2, ceil(_CURVE_SEGMENTS_FULL * sweep / 360.0))
+    return float(center.x), float(center.y), float(radius), start, sweep, segments
+
+
+def _curve_coordinates(entity) -> tuple[tuple[float, float], ...] | None:
+    spec = _curve_spec(entity)
+    if spec is None:
+        return None
+    center_x, center_y, radius, start, sweep, segments = spec
+    return tuple(
+        (
+            center_x + radius * cos(radians(start + sweep * index / segments)),
+            center_y + radius * sin(radians(start + sweep * index / segments)),
+        )
+        for index in range(segments + 1)
+    )
 
 
 def render_view(
@@ -78,6 +116,11 @@ def render_view(
     point_count = 0
     for entity in entities_by_id.values():
         point_count += len(entity.points_mm if entity.points_mm is not None else entity.source_points)
+        curve = _curve_spec(entity)
+        if entity.circular is not None and curve is None:
+            raise ValueError("vision_geometry_unavailable")
+        if curve is not None:
+            point_count += curve[-1] + 1
         if point_count > max_points:
             raise ValueError("vision_budget_exceeded")
 
@@ -95,7 +138,16 @@ def render_view(
 
     # Only after all ledger budgets and references pass do we materialize
     # coordinate tuples or allocate a raster image.
-    entities = tuple(sorted(entities_by_id.values(), key=lambda item: item.id))
+    entities = tuple(
+        sorted(
+            (
+                entity
+                for entity in entities_by_id.values()
+                if entity.kind.upper() not in _ANNOTATION_KINDS
+            ),
+            key=lambda item: item.id,
+        )
+    )
     contours = tuple(
         sorted(
             (contour for contour in extraction.contours if contour.view_id == view_id),
@@ -103,7 +155,12 @@ def render_view(
         )
     )
     entity_lines = tuple(
-        (entity, _coordinates(entity.points_mm, entity.source_points)) for entity in entities
+        (
+            entity,
+            _curve_coordinates(entity)
+            or _coordinates(entity.points_mm, entity.source_points),
+        )
+        for entity in entities
     )
     contour_lines = tuple(
         (contour, _coordinates(contour.points_mm, contour.points_source))
