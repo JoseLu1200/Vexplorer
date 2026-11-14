@@ -140,3 +140,23 @@ def test_table_agent_vision_is_explicit_bounded_context_not_measurement_source()
     assert vision_action.artifact_sha256 == tool_output["sha256"]
     assert vision_action.mark_count == len(tool_output["marks"])
     assert {item["name"] for item in table_tool_schemas(include_vision=True)} == {"inspeccionar_medidas_mesa", "visualizar_vista", "proponer_descomposicion"}
+
+
+def test_table_agent_caps_visual_tool_attempts_not_only_unique_views():
+    def visual(call_id):
+        return ProviderResponse(
+            id=f"r-{call_id}",
+            tool_calls=(ToolCall(call_id=call_id, name="visualizar_vista", arguments={"view_id": "front"}),),
+        )
+    provider = FakeProvider([
+        visual("v1"), visual("v2"), visual("v3"), visual("v4"),
+        ProviderResponse(id="r-final", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+    ])
+    outcome = run_table_agent(
+        _extraction(), _analysis(), provider,
+        AgentLimits(max_model_calls=5, max_tool_calls=5, timeout_s=5),
+        vision_enabled=True,
+    )
+    fourth_output = json.loads(provider.inputs[4][0]["output"])
+    assert fourth_output["error"] == "vision_call_budget_exhausted"
+    assert outcome.tool_calls == 5
