@@ -31,6 +31,8 @@ test("responsive header never hides the active execution mode", () => {
 });
 
 test("responsive upload controls reflow instead of widening the document", () => {
+  assert.match(css, /@media\(max-width:1180px\) and \(min-width:981px\).*\.topbar\{[^}]*flex-wrap:wrap/s);
+  assert.match(css, /@media\(max-width:1180px\) and \(min-width:981px\).*\.quick-upload\{[^}]*flex-basis:100%/s);
   assert.match(css, /@media\(max-width:980px\).*\.quick-upload\{[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) auto/s);
   assert.match(css, /@media\(max-width:980px\).*\.quick-upload\{[^}]*flex:1 0 100%/s);
   assert.match(css, /@media\(max-width:980px\).*\.workbench\{[^}]*grid-template-columns:minmax\(0,1fr\)/s);
