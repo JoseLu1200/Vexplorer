@@ -1,5 +1,5 @@
 import { createApiClient, ApiError } from "./api/client.js";
-import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing.js";
+import { normaliseDrawing, selectionForComponent, svgCircularPath, svgPath } from "./core/drawing.js";
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
@@ -91,7 +91,7 @@ function renderDrawing() {
   state.viewport = { ...state.fittedViewport }; applyViewport();
   model.paths.forEach((path) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    node.setAttribute("d", svgPath(path.points, path.closed));
+    node.setAttribute("d", path.circular?svgCircularPath(path.circular):svgPath(path.points, path.closed));
     node.setAttribute("class", "drawing-path");
     node.dataset.contourId = path.id; node.dataset.viewId = path.viewId ?? ""; node._entityIds = path.entityIds; node.classList.add("layer-entities");
     node.setAttribute("tabindex", "0");
