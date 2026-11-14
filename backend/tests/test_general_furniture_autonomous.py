@@ -194,7 +194,7 @@ def test_raster_document_references_are_closed_and_shared_by_critic_and_repair()
     assert payload["raster_authority"]["allowed_source_view_ids"] == []
 
 
-def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof() -> None:
+def test_autonomous_reviewer_keeps_deduced_authority_and_records_machine_proof() -> None:
     extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
     proposal = _proposal()
     draft = materialize_general_proposal(extraction, proposal)
@@ -227,7 +227,7 @@ def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof(
     outcome = run_general_autonomous(context, proposal_outcome, reviewer_provider=Provider(), proposer_model="proposer-model")
 
     assert outcome.review.reviewer_kind == "machine"
-    assert outcome.review.components[0].length.state == "hypothesis"
+    assert outcome.review.components[0].length.state == "deduced"
     assert outcome.review.machine_provenance.review_relation == "separate_model"
     assert outcome.status == "incomplete"
 

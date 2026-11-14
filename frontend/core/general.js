@@ -12,9 +12,40 @@ export function generalMachineStatusPresentation(workspace){
 
 function field(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
-    return { value: value.value ?? value.value_mm ?? null, unit: value.unit ?? ("value_mm" in value ? "mm" : null), state: value.state ?? value.origin ?? "unknown", provenance: value.provenance ?? null, formula: value.formula ?? null, dependencyRefs:list(value.dependency_refs), evidenceIds:list(value.evidence_ids), dimensionIds:list(value.dimension_ids) };
+    const range=value.range_mm&&Number.isFinite(Number(value.range_mm.min_mm))&&Number.isFinite(Number(value.range_mm.max_mm))?{min:Number(value.range_mm.min_mm),max:Number(value.range_mm.max_mm)}:null;
+    return { value: value.value ?? value.value_mm ?? null, unit: value.unit ?? ("value_mm" in value ? "mm" : null), state: value.state ?? value.origin ?? "unknown", provenance: value.provenance ?? null, formula: value.formula ?? null, range, method:value.method??null, explanation:value.explanation??value.rationale??null, reviewStatus:value.review_status??null, dependencyRefs:list(value.dependency_refs), operandRefs:list(value.operand_refs), sourceRefs:list(value.source_refs), assumptionRefs:list(value.assumption_refs), evidenceIds:list(value.evidence_ids), dimensionIds:list(value.dimension_ids) };
   }
   return { value: value ?? null, unit: null, state: value == null ? "unknown" : "proposed", provenance: null, formula: null };
+}
+
+const CONSTRUCTION_STATE_LABELS={observed:"Observada",deduced:"Deducida",estimated:"Estimada",unknown:"Desconocida",conflict:"En conflicto"};
+
+export function presentGeneralConstructionDimension(raw = {}) {
+  const reviewStatus=raw.review_status??raw.reviewStatus??null,accepted=reviewStatus===null||reviewStatus==="accepted",numeric=Number(raw.value_mm??raw.value??raw.nominal_mm),value=accepted&&Number.isFinite(numeric)&&numeric>0?numeric:null;
+  const rangeValue=raw.range_mm??raw.range,range=rangeValue&&Number.isFinite(Number(rangeValue.min_mm??rangeValue.min))&&Number.isFinite(Number(rangeValue.max_mm??rangeValue.max))
+    ?{min:Number(rangeValue.min_mm??rangeValue.min),max:Number(rangeValue.max_mm??rangeValue.max)}:null;
+  const state=raw.state??raw.basis??"unknown",approximate=state==="estimated"&&value!==null;
+  return {
+    value,
+    state,
+    stateLabel:CONSTRUCTION_STATE_LABELS[state]??"Desconocida",
+    reviewStatus:reviewStatus??"accepted",
+    approximate,
+    display:value===null?"Desconocida":`${approximate?"≈ ":""}${value} mm`,
+    range,
+    rangeDisplay:range?`${range.min}–${range.max} mm`:null,
+    method:raw.method??null,
+    formula:raw.formula??null,
+    operandRefs:list(raw.operand_refs??raw.operandRefs),
+    sourceRefs:list(raw.source_refs??raw.sourceRefs),
+    assumptionRefs:list(raw.assumption_refs??raw.assumptionRefs),
+    explanation:raw.explanation??raw.rationale??null,
+  };
+}
+
+export function presentGeneralConstructionQuantity(raw = {}) {
+  const reviewStatus=raw.review_status??raw.reviewStatus??null,accepted=reviewStatus===null||reviewStatus==="accepted",numeric=Number(raw.value),value=accepted&&Number.isInteger(numeric)&&numeric>0?numeric:null,state=raw.state??"unknown",approximate=state==="estimated"&&value!==null,minValue=raw.min_value??raw.minValue??null,maxValue=raw.max_value??raw.maxValue??null,hasRange=Number.isInteger(Number(minValue))&&Number.isInteger(Number(maxValue));
+  return{...raw,value,state,reviewStatus:reviewStatus??"accepted",approximate,display:value===null?"Desconocida":`${approximate?"≈ ":""}${value} uds.`,minValue:hasRange?Number(minValue):null,maxValue:hasRange?Number(maxValue):null,rangeDisplay:hasRange?`${Number(minValue)}–${Number(maxValue)} uds.`:null,method:raw.method??null,sourceRefs:list(raw.source_refs??raw.sourceRefs),assumptionRefs:list(raw.assumption_refs??raw.assumptionRefs),explanation:raw.explanation??null};
 }
 
 function reviewedValue(original, rawValue, { numeric=false, humanRef }) {
@@ -108,6 +139,10 @@ export function normaliseGeneralWorkspace(raw = {}) {
     autoChecks: list(raw.review?.machine_checks),
     autoFieldReviews:list(raw.review?.machine_field_reviews),
     autoReviewStatus:raw.review?.auto_review_status??null,
+    constructionScenarioId: effective.construction_scenario_id??raw.proposal?.construction_scenario_id??null,
+    constructionParameters:list(effective.construction_parameters??raw.proposal?.construction_parameters).map((item)=>({id:item.id,label:item.label,...presentGeneralConstructionDimension(item),bindingId:item.binding_id??null})),
+    constructionDetails:list(effective.construction_details??raw.proposal?.construction_details).map((item)=>({...item,componentIds:list(item.component_ids),parameterRefs:list(item.parameter_refs),sourceRefs:list(item.source_refs),assumptionRefs:list(item.assumption_refs)})),
+    constructionDecisions:list(effective.construction_decisions??raw.proposal?.construction_decisions).map((item)=>({...item,targetRefs:list(item.target_refs),basisRefs:list(item.basis_refs),alternatives:list(item.alternatives)})),
   };
 }
 
@@ -152,26 +187,35 @@ export function completeGeneralReviewSnapshot(workspace, { operations=[], compon
 
 export function presentGeneralDerived(raw = {}) {
   const packageValue=raw.package??raw;
+  const constructionRaw=packageValue.construction,construction=constructionRaw?(()=>{const decisions=list(constructionRaw.decisions).map((item)=>({...item,targetRefs:list(item.target_refs),basisRefs:list(item.basis_refs),alternatives:list(item.alternatives)})),decisionById=new Map(decisions.map((item)=>[item.id,item]));return{
+    runId:constructionRaw.run_id,proposalRevision:constructionRaw.proposal_revision,reviewRevision:constructionRaw.review_revision,basisRevision:constructionRaw.basis_revision,scenarioId:constructionRaw.scenario_id,authority:constructionRaw.authority,
+    summary:{...(constructionRaw.summary??{}),componentCount:constructionRaw.summary?.component_count??0,occurrenceCount:constructionRaw.summary?.occurrence_count??0,sourceRefs:list(constructionRaw.summary?.source_refs),topDecisionIds:list(constructionRaw.summary?.top_decision_ids),warnings:list(constructionRaw.summary?.warnings)},
+    pieces:list(constructionRaw.pieces).map((item)=>({...item,pieceId:item.piece_id,componentId:item.component_id,scenarioId:item.scenario_id,occurrenceIds:list(item.occurrence_ids),scenarioOccurrenceIds:list(item.scenario_occurrence_ids),detailIds:list(item.detail_ids),sourceRefs:list(item.source_refs),sheetIds:list(item.sheet_ids),length:presentGeneralConstructionDimension(item.length),width:presentGeneralConstructionDimension(item.width),thickness:presentGeneralConstructionDimension(item.thickness),quantity:presentGeneralConstructionQuantity(item.quantity)})),
+    placements:list(constructionRaw.placements),details:list(constructionRaw.details).map((item)=>({...item,componentIds:list(item.component_ids),parameterRefs:list(item.parameter_refs),sourceRefs:list(item.source_refs),assumptionRefs:list(item.assumption_refs)})),decisions,topDecisions:list(constructionRaw.summary?.top_decision_ids).map((id)=>decisionById.get(id)).filter(Boolean),warnings:list(constructionRaw.warnings),sheets:list(constructionRaw.sheets).map((item)=>({...item,sheetId:item.sheet_id,pieceId:item.piece_id??null,primitives:list(item.primitives),warnings:list(item.warnings)})),
+  };})():null;
   return {
     proposalRevision: packageValue.proposal_revision ?? null,
     reviewRevision: packageValue.review_revision ?? null,
     status: packageValue.status ?? "unavailable",
     bom: list(packageValue.bom_rows ?? packageValue.bom).map((row) => ({ ...row, componentId: row.component_id, occurrenceIds: list(row.occurrence_ids), scenarioOccurrenceIds:list(row.scenario_occurrence_ids), occurrenceStatus:row.occurrence_status??"unknown", quantity: field(row.quantity), length:field(row.length), width:field(row.width), thickness:field(row.thickness), material: field(row.material), finish: field(row.finish), machineFieldReviews:list(row.machine_field_reviews).map((item)=>({...item,targetRef:item.target_ref,checkIds:list(item.check_ids),checkSummaries:list(item.check_summaries),sourceRefs:list(item.source_refs)})) })),
-    artifacts: list(packageValue.artifacts).map((artifact) => ({ ...artifact, incompleteReasons: list(artifact.incomplete_reasons), downloads: artifact.downloads ?? {} })),
+    artifacts: list(packageValue.artifacts).map((artifact) => ({ ...artifact, sheetId:artifact.sheet_id??null,componentId:artifact.component_id??null,incompleteReasons: list(artifact.incomplete_reasons), downloads: artifact.downloads ?? {} })),
     scene: packageValue.scene ?? { status: "unavailable" },
     costBasis: { ...(packageValue.cost_basis ?? {}), missingData: list(packageValue.cost_basis?.missing_data), contributors: list(packageValue.cost_basis?.contributors) },
     historicalTarget: raw.historical_target??null,
+    construction,
   };
 }
 
 function csv(value) { const text=String(value??""); return /[",\r\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text; }
 function fieldValue(value) { return value&&typeof value==="object"&&!Array.isArray(value)?(value.value??value.value_mm??null):value; }
 function csvText(value){const text=String(value??"");return /^[=+\-@]/.test(text.trimStart())?`'${text}`:text;}
+function dimensionCsvCells(value){const item=value&&typeof value==="object"?value:{value:value??null};return[fieldValue(item),item.state??"unknown",item.range?.min??item.range_mm?.min_mm??null,item.range?.max??item.range_mm?.max_mm??null,csvText(item.method),list(item.sourceRefs??item.source_refs).join("|"),list(item.assumptionRefs??item.assumption_refs).join("|")];}
 
 export function serialiseGeneralBom(bom, format) {
   if(format==="json")return JSON.stringify(list(bom),null,2);
-  const rows=list(bom).map((row)=>[row.component_id??row.componentId,csvText(row.label),csvText(row.role),fieldValue(row.quantity),row.quantity?.state??"unknown",row.occurrence_status??row.occurrenceStatus??"unknown",list(row.occurrence_ids??row.occurrenceIds).join("|"),list(row.scenario_occurrence_ids??row.scenarioOccurrenceIds).join("|"),fieldValue(row.dimensions?.length??row.length),fieldValue(row.dimensions?.width??row.width),fieldValue(row.dimensions?.thickness??row.thickness),csvText(fieldValue(row.material)),csvText(fieldValue(row.finish))].map(csv).join(","));
-  return ["component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish",...rows].join("\r\n");
+  const rows=list(bom).map((row)=>[row.component_id??row.componentId,csvText(row.label),csvText(row.role),fieldValue(row.quantity),row.quantity?.state??"unknown",row.occurrence_status??row.occurrenceStatus??"unknown",list(row.occurrence_ids??row.occurrenceIds).join("|"),list(row.scenario_occurrence_ids??row.scenarioOccurrenceIds).join("|"),...dimensionCsvCells(row.dimensions?.length??row.length),...dimensionCsvCells(row.dimensions?.width??row.width),...dimensionCsvCells(row.dimensions?.thickness??row.thickness),csvText(fieldValue(row.material)),csvText(fieldValue(row.finish))].map(csv).join(","));
+  const dimensionHeaders=(name)=>[`${name}_mm`,`${name}_state`,`${name}_range_min_mm`,`${name}_range_max_mm`,`${name}_method`,`${name}_source_refs`,`${name}_assumption_refs`];
+  return [["component_id","label","role","quantity","quantity_state","occurrence_status","physical_occurrence_ids","scenario_occurrence_ids",...dimensionHeaders("length"),...dimensionHeaders("width"),...dimensionHeaders("thickness"),"material","finish"].join(","),...rows].join("\r\n");
 }
 
 export function buildManualGeneralProposal({ drawingId, ledgerRevision, label, kind="unknown", role="unknown", reason, idFactory=(value)=>`${value}-${globalThis.crypto?.randomUUID?.()??Date.now()}` }) {

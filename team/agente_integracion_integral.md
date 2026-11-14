@@ -5,9 +5,15 @@
 - Nombre declarado por el usuario: agente de IA de integración integral; no representa a una persona.
 - Rol: integración backend del swarm GPT-6.1 Sol.
 - Archivo creado y designado explícitamente: `team/agente_integracion_integral.md`, delegación renovada por el usuario el 2026-11-14.
-- Última actualización: 2026-11-14, cierre de implementación local.
+- Última actualización: 2026-11-14, fase CAD completion en worktree aislado.
 
 ## Tarea de la sesión
+
+- Objetivo vigente: integrar el resultado constructivo provisional de vistas CAD 2D, con valores `estimated` aceptados dentro de BOM y planos por pieza, snapshots exactos P/R, eventos y artefactos descargables; conservar DrawingExtraction como observación inmutable.
+- Worktree/base: `.worktrees/cad-completion`, `0e65713`. No hay deploy ni uso de 8771.
+- Propiedad actual: `backend/app/main.py`, `backend/app/general_furniture/router.py`, `backend/app/general_furniture/repository.py`, tests de router/repositorio/integración y este registro. Contratos/inferencia/derivaciones pertenecen a general_backend; planner/renderers a ingesta; validación determinista a economy.
+- Decisión de persistencia congelada: sin tabla nueva; proposal/draft/review/derived JSON permanecen inmutables por CAS P/R. `GeneralDerivedPackage.construction` y artefactos por pieza quedan ligados a P/R exactos; `basis_revision` incluye run/P/R/scenario.
+- Avance temprano: GET general acepta query P/R exacta sin romper latest; repositorio rechaza derived cuya run/P/R no coincide con review; runner QA local preparado bajo `.runtime/cad-completion-http` para F01 y puerto 8773, sin secretos ni oráculo.
 
 - Objetivo concreto: conectar en la aplicación los adaptadores PDF/DWG, los módulos de mueble general e histórico real, publicar capacidades y conservar autenticación, actor, auditoría y flujos DXF/replay existentes.
 - Referencia del plan: brechas T11–T13 y formatos P1 descritos en `initial-plan.md` y la transcripción.

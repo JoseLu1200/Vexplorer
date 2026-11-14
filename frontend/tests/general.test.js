@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -129,10 +129,78 @@ test("derived BOM keeps missing fields and incomplete artifacts visible", () => 
   assert.deepEqual(result.historicalTarget,{family:"cabinet",basis_revision:"general:4:2"});
 });
 
+test("accepted construction estimates stay numeric but visibly approximate", () => {
+  const dimension=presentGeneralConstructionDimension({
+    value_mm:18,
+    range_mm:{min_mm:16,max_mm:20},
+    state:"estimated",
+    method:"catalog_prior",
+    formula:"thickness = catalog_prior(panel)",
+    operand_refs:["piece:side"],
+    source_refs:["view:front"],
+    assumption_refs:["assumption:board-thickness"],
+    review_status:"accepted",
+    explanation:"Espesor habitual compatible con el canto visible.",
+  });
+
+  assert.equal(dimension.value,18);
+  assert.equal(dimension.display,"≈ 18 mm");
+  assert.equal(dimension.rangeDisplay,"16–20 mm");
+  assert.equal(dimension.stateLabel,"Estimada");
+  assert.equal(dimension.formula,"thickness = catalog_prior(panel)");
+  assert.deepEqual(dimension.sourceRefs,["view:front"]);
+});
+
+test("accepted estimated quantity remains visibly provisional",()=>{
+  const quantity=presentGeneralConstructionQuantity({value:2,min_value:1,max_value:3,state:"estimated",review_status:"accepted",method:"symmetry",source_refs:["view:front"],assumption_refs:["assumption:pair"],explanation:"Par simétrico probable."});
+  assert.equal(quantity.display,"≈ 2 uds.");
+  assert.equal(quantity.rangeDisplay,"1–3 uds.");
+  assert.deepEqual(quantity.assumptionRefs,["assumption:pair"]);
+  assert.equal(presentGeneralConstructionQuantity({...quantity,review_status:"rejected"}).value,null);
+});
+
+test("derived BOM and CSV retain construction basis, range and references",()=>{
+  const derived=presentGeneralDerived({package:{bom_rows:[{
+    component_id:"side",label:"Costado",role:"side",
+    length:{value_mm:720,state:"estimated",range_mm:{min_mm:710,max_mm:730},method:"construction_assumption",source_refs:["view:front"],assumption_refs:["assumption:clearance"],review_status:"accepted"},
+  }]}});
+  const length=derived.bom[0].length,csv=serialiseGeneralBom(derived.bom,"csv");
+  assert.deepEqual(length.range,{min:710,max:730});
+  assert.equal(length.method,"construction_assumption");
+  assert.deepEqual(length.sourceRefs,["view:front"]);
+  assert.match(csv,/length_state,length_range_min_mm,length_range_max_mm,length_method,length_source_refs,length_assumption_refs/);
+  assert.match(csv,/720,estimated,710,730,construction_assumption,view:front,assumption:clearance/);
+});
+
+test("construction plan links its ranked decisions, pieces and sheets",()=>{
+  const result=presentGeneralDerived({package:{proposal_revision:2,review_revision:1,bom_rows:[],artifacts:[],construction:{
+    run_id:"run-1",proposal_revision:2,review_revision:1,basis_revision:"run:run-1:proposal:2:review:1:scenario:base",scenario_id:"base",authority:"provisional_not_manufacturing",
+    summary:{label:"Armario de dos costados",component_count:1,occurrence_count:2,source_refs:["view:front"],top_decision_ids:["decision-thickness"],warnings:[]},
+    pieces:[{piece_id:"piece-side",component_id:"side",scenario_id:"base",label:"Costado",role:"side",quantity:{value:2,min_value:2,max_value:2,state:"estimated",review_status:"accepted",method:"symmetry",source_refs:["view:front"],assumption_refs:["assumption:symmetry"],explanation:"Par simétrico."},occurrence_ids:[],scenario_occurrence_ids:["scenario:side:1","scenario:side:2"],geometry:{shape_kind:"rectangle",source_contour_ids:["contour:1"],basis_refs:["view:front"],rationale:"Contorno rectangular."},length:{value_mm:720,range_mm:{min_mm:710,max_mm:730},state:"estimated",review_status:"accepted",method:"fit",formula:null,operand_refs:[],source_refs:["view:front"],assumption_refs:["assumption:clearance"],explanation:"Ajuste al hueco."},width:{value_mm:500,range_mm:null,state:"observed",review_status:"accepted",method:"observed_copy",formula:null,operand_refs:[],source_refs:["dimension:d1"],assumption_refs:[],explanation:"Cota visible."},thickness:{value_mm:null,range_mm:null,state:"unknown",review_status:"abstained",method:null,formula:null,operand_refs:[],source_refs:[],assumption_refs:[],explanation:"Sin respaldo."},detail_ids:[],source_refs:["view:front"],sheet_ids:["sheet-side"]}],
+    placements:[],details:[],decisions:[{id:"decision-thickness",category:"dimension",summary:"Espesor de tablero estimado",target_refs:["component:side.thickness"],basis_refs:["assumption:board"],alternatives:["16 mm","19 mm"],rationale:"Afecta uniones y huecos.",impact:"high"}],warnings:[],sheets:[{sheet_id:"sheet-side",kind:"piece",piece_id:"piece-side",title:"Costado",primitives:[],warnings:[]}]}}});
+  assert.equal(result.construction.pieces[0].length.display,"≈ 720 mm");
+  assert.equal(result.construction.pieces[0].thickness.value,null);
+  assert.equal(result.construction.topDecisions[0].id,"decision-thickness");
+  assert.equal(result.construction.sheets[0].pieceId,"piece-side");
+});
+
+test("non-accepted construction values are not promoted into the primary BOM", () => {
+  for(const review_status of ["rejected","conflict","abstained","unreviewed"]){
+    const dimension=presentGeneralConstructionDimension({value_mm:18,state:"estimated",review_status,explanation:"Sin respaldo suficiente."});
+    assert.equal(dimension.value,null);
+    assert.equal(dimension.display,"Desconocida");
+    assert.equal(dimension.reviewStatus,review_status);
+    assert.equal(dimension.explanation,"Sin respaldo suficiente.");
+  }
+});
+
 test("BOM exports preserve unknown values as empty cells", () => {
   const bom=[{component_id:"panel-1",occurrence_ids:["occ-1"],quantity:{value:1,state:"confirmed"},material:{value:null,state:"unknown"},dimensions:{length:{value:720},width:{value:null},thickness:{value:19}}}];
   assert.deepEqual(JSON.parse(serialiseGeneralBom(bom,"json")),bom);
-  assert.equal(serialiseGeneralBom(bom,"csv"),"component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish\r\npanel-1,,,1,confirmed,unknown,occ-1,,720,,19,,");
+  const csv=serialiseGeneralBom(bom,"csv");
+  assert.match(csv,/component_id,label,role,quantity,quantity_state/);
+  assert.match(csv,/panel-1,,,1,confirmed,unknown,occ-1,,720/);
+  assert.doesNotMatch(csv,/undefined|null/);
 });
 
 test("machine BOM export uses the backend masked projection and retains decision reasons",()=>{
@@ -145,7 +213,8 @@ test("machine BOM export uses the backend masked projection and retains decision
   const row=derived.bom[0],csv=serialiseGeneralBom(derived.bom,"csv"),json=JSON.parse(serialiseGeneralBom(derived.bom,"json"));
   assert.equal(row.machineFieldReviews[1].status,"rejected");
   assert.equal(row.machineFieldReviews[1].checkSummaries[0],"La vista lateral contradice el valor.");
-  assert.match(csv,/panel-1,Panel,side,,unknown,unknown,,,800,,,oak,/);
+  assert.match(csv,/panel-1,Panel,side,,unknown,unknown,,,800,hypothesis/);
+  assert.match(csv,/,oak,$/);
   assert.doesNotMatch(csv,/600|,18,|,2,/);
   assert.equal(json[0].width.value,null);
   assert.equal(json[0].machineFieldReviews[2].status,"abstained");

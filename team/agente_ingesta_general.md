@@ -9,6 +9,11 @@
 
 ## Tarea de la sesión
 
+- Objetivo vigente adicional, delegado expresamente el 2026-11-14: implementar el planner y los renderers CAD 2D del escenario constructivo general, con una lámina de conjunto cuando existan placements y una lámina acotada por tipo de pieza en SVG/DXF.
+- Worktree: `.worktrees/cad-completion`, base `0e65713`; sin commits propios.
+- Propiedad exclusiva de este bloque: nuevos módulos de planner/renderer bajo `backend/app/general_furniture/` y pruebas nuevas disjuntas correspondientes.
+- Fuera de alcance: contratos Pydantic (backend general), validación constructiva (economía), wiring/API, frontend, PDF, 3D, histórico y despliegue.
+
 - Objetivo concreto: implementar ingesta PDF vectorial/ráster con procedencia de escala y unidades desconocidas, y conversión DWG mediante ODA configurable con errores honestos.
 - Referencia del plan: P1 de `initial-plan.md` y vacíos de `transcripcion-contexto-poc.md` relativos a formatos de entrada.
 - Estado: terminado y verificado.
@@ -21,6 +26,12 @@
 - Solapes detectados y acuerdo para resolverlos: la reserva histórica general de ingesta de A se limita aquí; la delegación actual transfiere expresamente PDF/DWG a este agente y no se editará su lector DXF.
 
 ## Hecho en el último bloque
+
+- Implementado `construction_planner.py`: una lámina por tipo de pieza rectangular/lineal explícito, vistas de cara/sección, cotas L/W/T, cantidad, estados observed/deduced/estimated, rangos y detalle local tipado; custom/unknown no inventa contorno.
+- El conjunto 2D solo se emite con cobertura exacta y única de occurrence refs; placements ausentes, duplicados o incompletos conservan planos de pieza y omiten el montaje con warning.
+- Implementado `construction_drawings.py`: SVG/DXF exactos en mm, artifacts snapshot-exactos, capas/colores/linetypes por autoridad, título/leyenda/restricciones visibles, provenance y cotas con terminadores.
+- Detalle gráfico verificado: taladro circular estimado con diámetro/rango y leader ortogonal a zona reservada, sin clipping del texto.
+- La proyección canónica de `derivations.py` enmascara dependencias rechazadas antes de invocar el planner; este módulo no duplica esa lógica.
 
 - Implementado conversor DWG mediante ODA configurable, salida validada por el lector DXF real y errores tipados de disponibilidad, ejecución y salida.
 - Añadido GNU LibreDWG `dwg2dxf` como proveedor preferido en modo `auto`; selección y ejecutables quedan explícitos por variables `VEXPLORER_*`, y ODA avisa que exige licencia autorizada.
@@ -44,6 +55,9 @@
 
 ## Dependencias / avisos
 
+- El planner CAD espera el contrato compacto congelado por backend general; no editará `backend/app/contratos/modelos.py`.
+- Coordinados backend general, economía y frontend antes de editar producto en el worktree aislado.
+
 - Necesito de: backend/raíz para conectar los adaptadores a upload/API.
 - Afecta a: selección de parser por extensión y persistencia de metadatos de fuente.
 - Aviso realizado: interfaz exacta se enviará al agente raíz antes de implementar.
@@ -64,6 +78,10 @@
 | Smoke LibreDWG real | `VEXPLORER_DWG_CONVERTER=libredwg` + `convert_dwg_to_dxf` sobre vanity DWG genuino | proveedor `libredwg_dwg2dxf`, unidad `m`, escala 1000, 130 entidades; hashes origen/DXF `ee2c7474...`/`f409ceb8...` | Un caso no demuestra fidelidad universal; el proveedor queda `requires_review` |
 | Auditor integral local | `python tools/audit_integral.py --base-url http://127.0.0.1:18766 --output .runtime/integral-audit-local/report-v3.json` con credenciales por entorno | `passed`, 16 checks; auth/actor marcados SKIP por modo local | Producción debe convertir esos SKIP en PASS |
 | Auditor integral + DWG | mismo comando contra puerto local aislado y `--dwg <vanity.dwg>` | `passed`, 16 checks; `optional_real_dwg` PASS con warnings LibreDWG honestos | Datos persistidos con prefijo `qa-integral-*` |
+| Planos constructivos focal | `python -m pytest` sobre contrato, validación, review, planner, drawings y derivations | 42 passed | Sin modelo live; F01 lo ejecuta coordinación |
+| Planner/renderer propio | `python -m pytest backend/tests/test_general_furniture_construction_{planner,drawings}.py -q` | 7 passed | Incluye gate de placements, detalle gráfico y artifacts SVG/DXF |
+| Estática planos | `python -m ruff check ...`; `compileall`; `git diff --check` | correcto | Ruff disponible en Python global, no en venv |
+| Inspección visual | PNG renderizado desde SVG propio | cotas/ticks/rangos/cantidad/restricción y callout completos, sin texto recortado | Artefacto `.runtime/cad-completion-drawings/pieza-side-panel-p2-r1.png` |
 
 ## Bloqueos y cierre
 

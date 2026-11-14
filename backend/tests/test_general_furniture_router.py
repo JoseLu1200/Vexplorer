@@ -48,3 +48,41 @@ def test_direct_auto_review_is_disabled_without_durable_job_wiring(tmp_path) -> 
 
     assert response.status_code == 409
     assert response.json()["detail"] == "general_auto_review_requires_durable_job"
+
+
+def test_router_returns_exact_immutable_proposal_snapshot_by_revision(tmp_path) -> None:
+    repository = GeneralFurnitureRepository(tmp_path / "general.sqlite3")
+    app = FastAPI()
+    app.include_router(create_general_furniture_router(
+        repository=repository,
+        context_loader=lambda run_id: GeneralFurnitureContext(
+            run_id=run_id,
+            extraction=_extraction().model_copy(update={"input_kind": "general_furniture"}),
+            ledger_revision="ledger-1",
+        ),
+    ))
+    client = TestClient(app)
+    first = _proposal().model_copy(update={"proposal_origin": "human"})
+    second = first.model_copy(update={"id": "proposal-2"})
+    for base, proposal in ((0, first), (1, second)):
+        response = client.post(
+            "/api/v1/runs/run-1/general/proposals",
+            json={
+                "mode": "manual", "base_proposal_revision": base,
+                "proposal": proposal.model_dump(mode="json"),
+            },
+        )
+        assert response.status_code == 201
+
+    exact = client.get(
+        "/api/v1/runs/run-1/general",
+        params={"proposal_revision": 1, "review_revision": 0},
+    )
+
+    assert exact.status_code == 200
+    assert exact.json()["data"]["proposal_revision"] == 1
+    assert exact.json()["data"]["review_revision"] == 0
+    assert exact.json()["data"]["proposal"]["id"] == first.id
+    assert client.get(
+        "/api/v1/runs/run-1/general", params={"review_revision": 1}
+    ).status_code == 422

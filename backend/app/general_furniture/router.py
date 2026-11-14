@@ -228,8 +228,21 @@ def create_general_furniture_router(
         return GeneralFurnitureEnvelope(data=repository.get(run_id))  # type: ignore[arg-type]
 
     @router.get("", response_model=GeneralFurnitureEnvelope)
-    def get_record(run_id: str) -> GeneralFurnitureEnvelope:
-        record = repository.get(run_id)
+    def get_record(
+        run_id: str,
+        proposal_revision: int | None = Query(default=None, gt=0),
+        review_revision: int | None = Query(default=None, ge=0),
+    ) -> GeneralFurnitureEnvelope:
+        if review_revision is not None and proposal_revision is None:
+            raise HTTPException(
+                status_code=422,
+                detail="proposal_revision_required_for_exact_review",
+            )
+        record = repository.get(
+            run_id,
+            proposal_revision=proposal_revision,
+            review_revision=review_revision,
+        )
         if record is None:
             raise HTTPException(status_code=404, detail="general_proposal_not_found")
         return GeneralFurnitureEnvelope(data=record)

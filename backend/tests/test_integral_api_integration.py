@@ -278,6 +278,17 @@ def test_config_advertises_integral_capabilities_without_exposing_evaluation(
     assert capabilities["general_furniture"]["autonomous_review"]["limits"] == {
         "max_model_calls": 5, "max_validation_repairs": 2, "job_timeout_s": 300.0,
     }
+    assert capabilities["general_furniture"]["construction_completion"] == {
+        "available": True,
+        "dimension_states": ["observed", "deduced", "estimated", "unknown", "conflict"],
+        "max_parameters": 32,
+        "max_components": 64,
+        "max_constraints": 128,
+        "max_details": 128,
+        "max_expression_depth": 8,
+        "piece_drawing_formats": ["svg", "dxf"],
+        "exact_snapshot_queries": True,
+    }
     assert capabilities["history"]["available"] is True
     assert capabilities["evaluation"]["available"] is False
 
@@ -765,6 +776,10 @@ def test_production_job_integrates_general_review_derived_and_history_persistent
     assert "event: general_auto_review_started" in event_history
     assert "event: general_auto_review_tool_completed" in event_history
     assert "event: general_auto_review_completed" in event_history
+    assert '"construction_scenario_id":"base"' in event_history
+    assert '"construction_validation_status":"valid"' in event_history
+    assert '"construction_basis_revision":"run:' in event_history
+    assert '"construction_piece_count":' in event_history
     assert "test-general-reviewer" in event_history
     assert "test-general-live" in event_history
     assert "arguments_json" not in event_history

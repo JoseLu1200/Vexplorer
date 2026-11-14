@@ -445,6 +445,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     def record_general_auto_review_events(run_id: str, outcome) -> None:
         provenance = outcome.review.machine_provenance
+        construction = getattr(outcome.derived, "construction", None)
+        construction_validation = outcome.review.construction_validation
         for item in outcome.trace:
             event_payload = {
                 "tool_name": item.get("tool"), "ok": bool(item.get("ok")),
@@ -470,6 +472,16 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "model_calls": outcome.model_calls, "tool_calls": outcome.tool_calls,
             "semantic_repairs": outcome.semantic_repairs,
             "cost_tracking": "token_usage_only",
+            "construction_scenario_id": outcome.review.construction_scenario_id,
+            "construction_validation_status": (
+                construction_validation.status if construction_validation else None
+            ),
+            "construction_basis_revision": (
+                construction.basis_revision if construction else None
+            ),
+            "construction_piece_count": (
+                len(construction.pieces) if construction else 0
+            ),
         })
 
     def record_general_auto_review_failure(run_id: str, exc: GeneralAutonomousError) -> None:
@@ -662,6 +674,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         "max_validation_repairs": general_review_max_repairs,
                         "job_timeout_s": general_job_timeout_s,
                     },
+                },
+                "construction_completion": {
+                    "available": True,
+                    "dimension_states": [
+                        "observed", "deduced", "estimated", "unknown", "conflict",
+                    ],
+                    "max_parameters": 32,
+                    "max_components": 64,
+                    "max_constraints": 128,
+                    "max_details": 128,
+                    "max_expression_depth": 8,
+                    "piece_drawing_formats": ["svg", "dxf"],
+                    "exact_snapshot_queries": True,
                 },
             },
             "history": {"available": _module_available("backend.app.api.history")},

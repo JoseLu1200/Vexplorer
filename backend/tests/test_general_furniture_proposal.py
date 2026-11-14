@@ -50,11 +50,11 @@ def _proposal() -> GeneralFurnitureProposal:
     )
 
 
-def test_materialize_keeps_component_assignment_hypothetical_even_when_source_measure_is_observed() -> None:
+def test_materialize_keeps_observation_immutable_and_marks_component_assignment_deduced() -> None:
     draft = materialize_general_proposal(_extraction(), _proposal())
 
     assert draft.components[0].length.value_mm == 800
-    assert draft.components[0].length.state == "hypothesis"
+    assert draft.components[0].length.state == "deduced"
     assert draft.components[0].length.dimension_ids == ("dim-width",)
     assert draft.components[0].width.state == "unknown"
 
@@ -84,7 +84,7 @@ def test_contour_extents_become_deterministic_bindable_measures_with_provenance(
     assert measures[0].source_contour_ids == ("contour-panel",)
 
 
-def test_materialize_binds_metric_geometry_measurement_as_component_hypothesis() -> None:
+def test_materialize_binds_metric_geometry_measurement_as_component_deduction() -> None:
     from backend.tests.test_general_furniture_measurements import _extraction as measurement_extraction
 
     extraction = measurement_extraction()
@@ -105,5 +105,21 @@ def test_materialize_binds_metric_geometry_measurement_as_component_hypothesis()
     draft = materialize_general_proposal(extraction, proposal)
 
     assert draft.components[0].length.value_mm == 100
-    assert draft.components[0].length.state == "hypothesis"
+    assert draft.components[0].length.state == "deduced"
     assert draft.components[0].length.dependency_refs == ("binding:panel-length",)
+
+
+def test_materialize_scale_rational_without_construction_parameters() -> None:
+    proposal = _proposal()
+    scaled = proposal.model_copy(update={
+        "bindings": (GeneralBinding(
+            id="width", operation="scale_rational",
+            operand_refs=("dimension:dim-width",),
+            rational_numerator=1, rational_denominator=2,
+        ),),
+    })
+
+    draft = materialize_general_proposal(_extraction(), scaled)
+
+    assert draft.components[0].length.value_mm == 400
+    assert draft.components[0].length.state == "deduced"

@@ -36,6 +36,9 @@ from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
     query_compact_measurements,
 )
+from backend.app.general_furniture.construction_validation import (
+    validate_construction_scenario,
+)
 from backend.app.general_furniture.proposal import materialize_general_proposal
 from backend.app.general_furniture.projection_hypotheses import (
     derive_projection_hypotheses,
@@ -47,9 +50,9 @@ from backend.app.general_furniture.review import apply_general_review
 AUTO_REVIEW_POLICY_VERSION = "general-auto-review-v2"
 GENERAL_AUTO_REVIEW_PROMPT = """Actúas como crítico multimodal separado del proponente. Contrasta cada propuesta con imágenes reales, geometría y referencias del ledger.
 Primero llama entregar_revision_autonoma. Si el servidor responde repair_requested, llama una sola vez proponer_mueble_general con una propuesta completa corregida; después vuelve a llamar entregar_revision_autonoma sobre esa propuesta.
-No midas píxeles ni inventes valores. Las dimensiones numéricas solo proceden de bindings dimension:/measurement: anunciados. Una cantidad visual solo puede ser hypothesis, con premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
+No midas píxeles ni inventes valores. Las dimensiones observadas solo proceden del ledger. Las dimensiones deduced/estimated pueden proceder de parámetros constructivos declarados, con nominal, rango, método, dependencias y supuestos explícitos; no las rechaces solo por no ser observadas. Una cantidad provisional hypothesis/deduced/estimated requiere premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
 Aceptar significa que una hipótesis es coherente, no que sea un hecho observado. Contrasta cada candidato en sus regiones: un contorno cerrado puede ser cara material, hueco, rebaje o límite interior. Busca duplicados entre proyecciones, incoherencias dimensionales y bases de cantidad antes de aceptar.
-Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. El formato es `component:<id>.<campo>` con punto antes de length/width/thickness/quantity/material/finish; kind, role y existencia no son campos revisables. El servidor recalcula bindings y geometría deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
+Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
 
 
 class ReviewerProvider(Protocol):
@@ -135,7 +138,12 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
         "Repara una propuesta visual rechazada sin inventar ledger: usa bindings=[], "
         "ejes null, source_view_ids=[] y solo source_document_refs exactas anunciadas."
         if raster_without_metric_ledger
-        else "Repara una propuesta rechazada. Las dimensiones usan solo bindings del ledger; cantidades visuales siguen hypothesis con premisas cerradas."
+        else (
+            "Repara una propuesta rechazada. Solo lo observed usa el ledger; "
+            "estimated declara nominal, rango, método, source_refs y premise refs, "
+            "y toda dimensión dependiente conserva estado estimated. Las cantidades "
+            "provisionales requieren premisas cerradas."
+        )
     )
     return [
         schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
@@ -157,21 +165,58 @@ def _deterministic_checks(args: GeneralAutoReviewArgs) -> tuple[GeneralAutoRevie
     return tuple(checks)
 
 
-def _validate_visual_checks(args: GeneralAutoReviewArgs, allowed_refs: set[str], visual_refs: set[str]) -> None:
+def _review_target_refs(proposal, draft) -> set[str]:
+    component_targets = {
+        f"component:{component.id}.{field}"
+        for component in draft.components
+        for field in (
+            "length", "width", "thickness", "quantity", "material", "finish",
+            "existence", "kind", "role", "geometry",
+        )
+    }
+    return component_targets | {
+        *(f"parameter:{item.id}" for item in draft.construction_parameters),
+        *(f"constraint:{item.id}" for item in draft.construction_constraints),
+        *(f"detail:{item.id}" for item in draft.construction_details),
+        *(f"decision:{item.id}" for item in draft.construction_decisions),
+    }
+
+
+def _validate_visual_checks(
+    args: GeneralAutoReviewArgs,
+    allowed_source_refs: set[str],
+    visual_refs: set[str],
+    allowed_target_refs: set[str] | None = None,
+) -> None:
     checks = {item.id: item for item in args.checks}
-    valid_targets = {f"component:{component.id}.{field}" for component in args.components for field in ("length", "width", "thickness", "quantity", "material", "finish")}
+    valid_targets = allowed_target_refs or {
+        f"component:{component.id}.{field}"
+        for component in args.components
+        for field in (
+            "length", "width", "thickness", "quantity", "material", "finish",
+            "existence", "kind", "role", "geometry",
+        )
+    }
     for check in args.checks:
         if check.method != "model_visual" or check.kind in {"geometry_match", "dimension_binding"}:
             raise ValueError("reviewer_cannot_claim_deterministic_check")
         if not set(check.target_refs) <= valid_targets:
             raise ValueError("machine_check_targets_unknown_field")
-        if not set(check.source_refs) <= allowed_refs or not set(check.source_refs) & visual_refs:
+        if not set(check.source_refs) <= allowed_source_refs or not set(check.source_refs) & visual_refs:
             raise ValueError("visual_check_reference_outside_context")
     for field_review in args.field_reviews:
         if field_review.target_ref not in valid_targets:
             raise ValueError("machine_field_review_targets_unknown_field")
         if field_review.status == "accepted" and not any(check_id in checks and checks[check_id].outcome == "pass" for check_id in field_review.check_ids):
             raise ValueError("accepted_machine_field_requires_visual_check")
+        if field_review.status == "accepted" and field_review.target_ref.endswith(".quantity"):
+            selected = [checks.get(check_id) for check_id in field_review.check_ids]
+            if (
+                any(item is None or item.outcome != "pass" for item in selected)
+                or not {"quantity_basis", "duplicate_scan"}
+                <= {item.kind for item in selected if item is not None}
+            ):
+                raise ValueError("accepted_provisional_quantity_requires_closed_checks")
 
 
 def _reject_forged_machine_facts(args: GeneralAutoReviewArgs) -> None:
@@ -213,6 +258,12 @@ def _server_review_args(
                 source_document_refs=item.source_document_refs,
                 assumptions=item.assumptions,
                 unknown_fields=item.unknown_fields,
+                scenario_id=item.scenario_id,
+                necessity=item.necessity,
+                geometry=item.geometry,
+                construction_parameter_ids=item.construction_parameter_ids,
+                detail_ids=item.detail_ids,
+                quantity_basis_refs=item.quantity_basis_refs,
             )
             for item in draft.components
         )
@@ -236,7 +287,9 @@ def _server_review_args(
     )
 
 
-def _effective_auto_status(args: GeneralAutoReviewArgs) -> str:
+def _effective_auto_status(args: GeneralAutoReviewArgs, construction_validation=None) -> str:
+    if construction_validation is not None and construction_validation.status == "invalid":
+        return "conflict"
     if any(item.outcome == "fail" for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews):
         return "conflict"
     if args.status == "abstained":
@@ -251,8 +304,11 @@ def _effective_auto_status(args: GeneralAutoReviewArgs) -> str:
     return "accepted" if args.status == "accepted" and not args.unresolved else "incomplete"
 
 
-def _repair_is_supported(args: GeneralAutoReviewArgs) -> bool:
-    return any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+def _repair_is_supported(args: GeneralAutoReviewArgs, construction_validation=None) -> bool:
+    return (
+        construction_validation is not None
+        and construction_validation.status == "invalid"
+    ) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
 
 
 def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAutoReviewCheck, ...]) -> tuple[GeneralScenarioOccurrence, ...]:
@@ -262,7 +318,11 @@ def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAuto
     for component in args.components:
         target = f"component:{component.id}.quantity"
         field_review = accepted.get(target)
-        if component.quantity.state != "hypothesis" or component.quantity.value is None or field_review is None:
+        if (
+            component.quantity.state not in {"hypothesis", "estimated", "deduced"}
+            or component.quantity.value is None
+            or field_review is None
+        ):
             continue
         selected = [by_id.get(check_id) for check_id in field_review.check_ids]
         if any(item is None or item.outcome != "pass" for item in selected) or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in selected if item is not None}:
@@ -335,11 +395,7 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         if page.next_offset is None:
             break
         offset = page.next_offset
-    allowed_target_refs = [
-        f"component:{component.id}.{field}"
-        for component in outcome.draft.components
-        for field in ("length", "width", "thickness", "quantity", "material", "finish")
-    ]
+    allowed_target_refs = sorted(_review_target_refs(outcome.proposal, outcome.draft))
     visible_source_refs = set()
     for page in context.visual_pages:
         visible_source_refs.add(f"visual:{page.reference}")
@@ -360,7 +416,7 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         "referenced_segment_measurements": referenced_measurements,
         "allowed_target_refs": allowed_target_refs,
         "allowed_source_refs": allowed_source_refs,
-        "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish>; use a dot before the field, never a colon",
+        "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish|existence|kind|role|geometry> or parameter:<id> or constraint:<id> or detail:<id> or decision:<id>",
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
@@ -504,11 +560,9 @@ def run_general_autonomous(
                         critic_snapshot=None,
                         trace_event=event,
                     ))
-                repaired_targets = [
-                    f"component:{component.id}.{field}"
-                    for component in effective.draft.components
-                    for field in ("length", "width", "thickness", "quantity", "material", "finish")
-                ]
+                repaired_targets = sorted(
+                    _review_target_refs(effective.proposal, effective.draft)
+                )
                 input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "allowed_target_refs": repaired_targets, "instruction": "Revisa ahora la propuesta reparada. Entrega solo checks/decisiones; no components/operations."}, ensure_ascii=False)}]
                 continue
             if call.name != "entregar_revision_autonoma":
@@ -522,7 +576,12 @@ def run_general_autonomous(
             current_allowed_refs = allowed_refs | {
                 f"premise:{item.id}" for item in effective.proposal.premises
             }
-            _validate_visual_checks(args, current_allowed_refs, visual_refs)
+            _validate_visual_checks(
+                args,
+                current_allowed_refs,
+                visual_refs,
+                _review_target_refs(effective.proposal, effective.draft),
+            )
             _reject_forged_machine_facts(args)
             request = GeneralFurnitureReviewRequest(
                 base_proposal_revision=current_revision,
@@ -535,8 +594,11 @@ def run_general_autonomous(
                 draft=effective.draft, request=request, previous_review=current_previous,
             )
             snapshots.append(args)
-            effective_status = _effective_auto_status(args)
-            if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args):
+            construction_validation = validate_construction_scenario(
+                effective.proposal, effective.draft
+            )
+            effective_status = _effective_auto_status(args, construction_validation)
+            if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args, construction_validation):
                 event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status}
                 trace.append(event)
                 if checkpoint_sink is not None:
@@ -553,6 +615,15 @@ def run_general_autonomous(
                     "unresolved": args.unresolved,
                     "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general; no inventes cifras.",
                 }
+                if construction_validation.status == "invalid":
+                    repair_output["construction_validation"] = (
+                        construction_validation.model_dump(mode="json")
+                    )
+                    repair_output["instruction"] = (
+                        "Corrige todas las restricciones deterministas fallidas mediante "
+                        "una propuesta completa; conserva observaciones y no inventes cifras. "
+                        "Las estimaciones válidas declaran nominal, rango, método y supuestos."
+                    )
                 if raster_without_metric_ledger:
                     repair_output.update({
                         "allowed_source_view_ids": [],
@@ -574,6 +645,7 @@ def run_general_autonomous(
                 "machine_provenance": GeneralMachineProvenance(model=getattr(response, "model", None) or "unknown-model", policy_version=AUTO_REVIEW_POLICY_VERSION, response_ids=tuple(dict.fromkeys(response_ids)), review_relation=relation),
                 "scenario_occurrences": _scenario_occurrences(args, checks), "machine_checks": checks,
                 "machine_field_reviews": args.field_reviews, "auto_review_status": effective_status,
+                "construction_validation": construction_validation,
                 "status": base_review.status if effective_status == "accepted" else "reviewed_incomplete",
             }
             review = GeneralFurnitureReview.model_validate(review_data)
