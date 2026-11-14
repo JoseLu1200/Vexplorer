@@ -112,3 +112,28 @@ def test_table_agent_unknown_measure_returns_bounded_valid_ids_for_repair():
     assert error["error"] == "unknown_reference"
     assert error["details"] == {"valid_ids": ["d", "h", "w"], "valid_ids_total": 3, "valid_ids_truncated": False}
     assert outcome.program.id.startswith("table-program-")
+
+
+def test_table_agent_vision_is_explicit_bounded_context_not_measurement_source():
+    provider = FakeProvider([
+        ProviderResponse(id="r1", tool_calls=(ToolCall(call_id="propose", name="proponer_descomposicion", arguments=_proposal_arguments()),)),
+    ])
+    outcome = run_table_agent(
+        _extraction(),
+        _analysis(),
+        provider,
+        AgentLimits(max_model_calls=1, max_tool_calls=1, timeout_s=5),
+        vision_enabled=True,
+    )
+    content = provider.inputs[0][0]["content"]
+    assert content[0]["type"] == "input_text"
+    context = json.loads(content[0]["text"])
+    assert context["vision"]["authority"] == "context_only_not_measurement_source"
+    assert len(context["vision"]["views"]) == 1
+    assert content[1]["type"] == "input_image"
+    assert content[1]["image_url"].startswith("data:image/png;base64,")
+    assert content[1]["detail"] == "high"
+    vision_action = outcome.actions[0]
+    assert vision_action.tool_name == "renderizar_contexto_visual"
+    assert vision_action.artifact_sha256 == context["vision"]["views"][0]["sha256"]
+    assert vision_action.mark_count == len(context["vision"]["views"][0]["marks"])
