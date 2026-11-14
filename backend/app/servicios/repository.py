@@ -165,7 +165,7 @@ class DemoRepository:
                     material=decision.material, finish=decision.finish,
                     source_observation_ids=proposal.source_observation_ids,
                     source_contour_ids=proposal.source_contour_ids, evidence_ids=proposal.evidence_ids,
-                    human_confirmation=decision.notes,
+                    human_confirmation=decision.notes, grain=decision.grain, edge_banding=decision.edge_banding,
                     field_states={"quantity": "confirmed" if decision.quantity else "unknown", "length_mm": "confirmed" if decision.length_mm else "unknown", "width_mm": "confirmed" if decision.width_mm else "unknown", "thickness_mm": "confirmed" if decision.thickness_mm else "unknown", "material": "confirmed" if decision.material else "unknown", "finish": "confirmed" if decision.finish else "unknown"},
                 )
             )

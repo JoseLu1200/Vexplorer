@@ -58,6 +58,8 @@ class DrawingEntity(StrictModel):
     layer: str
     source_points: tuple[Point2D, ...] = Field(min_length=1)
     points_mm: tuple[Point2D, ...] | None
+    # Additive (mejoras/cad-harness): resolved DXF linetype name, upper-case (e.g. CONTINUOUS, HIDDEN, DASHED); None if not read.
+    linetype: str | None = None
 
 
 class DrawingView(StrictModel):
@@ -217,6 +219,9 @@ class ComponentProposal(StrictModel):
     evidence_ids: tuple[str, ...]
     assumptions: tuple[str, ...] = Field(min_length=1)
     information_class: Literal["hypothesis"] = "hypothesis"
+    # Additive: thickness measured from drawn lines. It is an observation to confirm, never a confirmed value; thickness_mm stays None.
+    observed_thickness_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    thickness_source_entity_ids: tuple[str, ...] = ()
 
 
 class DecompositionScenario(StrictModel):
@@ -239,6 +244,9 @@ class ReviewDecision(StrictModel):
     material: str | None = None
     finish: str | None = None
     notes: str = Field(min_length=1)
+    # Additive: None means unknown; an empty edge_banding tuple means confirmed "no edge banding".
+    grain: Literal["length", "width", "none"] | None = None
+    edge_banding: tuple[Literal["length_1", "length_2", "width_1", "width_2"], ...] | None = None
 
 
 class ReviewRequest(StrictModel):
@@ -281,6 +289,8 @@ class ResolvedPiece(StrictModel):
     evidence_ids: tuple[str, ...]
     human_confirmation: str
     field_states: dict[str, Literal["observed", "calculated", "confirmed", "unknown"]]
+    grain: Literal["length", "width", "none"] | None = None
+    edge_banding: tuple[Literal["length_1", "length_2", "width_1", "width_2"], ...] | None = None
 
 
 class HumanReview(StrictModel):

@@ -36,6 +36,52 @@ def resolve_orthographic_dimensions(front: tuple[float, float], top: tuple[float
     return width, height, depth
 
 
+MIN_PLAUSIBLE_THICKNESS_MM = 3.0
+MAX_THICKNESS_FRACTION_OF_WIDTH = 0.1
+
+
+def _inner_vertical_gaps(extraction: DrawingExtraction, contour: DrawingContour, tolerance_mm: float = 1e-6) -> list[tuple[float, str]]:
+    """Inner vertical LINEs spanning a view outline, as (distance to the nearest vertical edge, entity id)."""
+    xs = [point.x for point in contour.points_mm or ()]
+    ys = [point.y for point in contour.points_mm or ()]
+    if not xs:
+        return []
+    min_x, max_x, min_y, max_y = min(xs), max(xs), min(ys), max(ys)
+    height = max_y - min_y
+    gaps: list[tuple[float, str]] = []
+    for entity in extraction.entities:
+        if entity.kind != "LINE" or not entity.points_mm or len(entity.points_mm) != 2:
+            continue
+        first, second = entity.points_mm
+        low, high = min(first.y, second.y), max(first.y, second.y)
+        if abs(first.x - second.x) > tolerance_mm or not min_x + tolerance_mm < first.x < max_x - tolerance_mm:
+            continue
+        if low < min_y - tolerance_mm or high > max_y + tolerance_mm or high - low < 0.8 * height:
+            continue
+        gaps.append((min(first.x - min_x, max_x - first.x), entity.id))
+    return gaps
+
+
+def observe_side_thickness(extraction: DrawingExtraction, front: DrawingContour, top: DrawingContour, overall_width: float) -> tuple[float, tuple[str, ...]] | None:
+    """Side-panel thickness drawn as symmetric inner vertical lines in FRONT and repeated in TOP.
+
+    Returns None unless exactly one symmetric gap exists in FRONT and TOP shows the same gap: an observation to be
+    confirmed by a person, never a measurement of the other panels.
+    """
+    low, high = MIN_PLAUSIBLE_THICKNESS_MM, MAX_THICKNESS_FRACTION_OF_WIDTH * overall_width
+    front_gaps = [item for item in _inner_vertical_gaps(extraction, front) if low <= item[0] <= high]
+    candidates = sorted({round(gap, 3) for gap, _ in front_gaps})
+    values = [value for value in candidates if sum(1 for gap, _ in front_gaps if abs(gap - value) <= 0.1) >= 2]
+    if len(values) != 1:
+        return None
+    value = values[0]
+    front_ids = tuple(entity_id for gap, entity_id in front_gaps if abs(gap - value) <= 0.1)
+    top_ids = tuple(entity_id for gap, entity_id in _inner_vertical_gaps(extraction, top) if abs(gap - value) <= 0.1)
+    if not top_ids:
+        return None
+    return value, tuple(sorted(set(front_ids) | set(top_ids)))
+
+
 def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[DecompositionScenario, ...]:
     """Apply explicit rectangular-shelving hypotheses to observed mounted views."""
     view_labels = {view.id: view.label for view in extraction.views}
@@ -88,13 +134,18 @@ def derive_decomposition_scenarios(extraction: DrawingExtraction) -> tuple[Decom
     entity_ids = set(front.source_entity_ids) | set(top.source_entity_ids) | set(side.source_entity_ids)
     evidence_ids = tuple(item.id for item in extraction.evidence if set(item.source_entity_ids) & entity_ids)
     common = dict(source_observation_ids=observation_ids, source_contour_ids=contour_ids, evidence_ids=evidence_ids)
+    observed_thickness = observe_side_thickness(extraction, front, top, overall_width)
 
     def proposal(scenario: str, role: str, label: str, quantity: int | None, length: float | None, derivation: str, basis: float) -> ComponentProposal:
         assumptions = ["Regla familiar para estantería rectangular; la proyección montada no demuestra cada pieza."]
+        thickness_fields: dict = {}
+        if role == "side_panel" and observed_thickness is not None:
+            thickness_fields = dict(observed_thickness_mm=observed_thickness[0], thickness_source_entity_ids=observed_thickness[1])
+            assumptions.append(f"Espesor observado de {observed_thickness[0]:g} mm por líneas verticales interiores simétricas en alzado y repetidas en planta; es una observación de los laterales que una persona debe confirmar, no se aplica a otras piezas.")
         if quantity is None:
             assumptions.append("Cantidad de baldas interiores no respaldada por líneas horizontales suficientes.")
         source_entity_ids = tuple(matched_lines) if role == "shelf" else tuple(sorted(entity_ids))
-        return ComponentProposal(id=f"proposal-{scenario}-{role}", label=label, role=role, quantity=quantity, length_mm=length, width_mm=depth, thickness_mm=None, length_derivation=derivation, length_basis_mm=basis, assumptions=tuple(assumptions), source_entity_ids=source_entity_ids, **common)
+        return ComponentProposal(id=f"proposal-{scenario}-{role}", label=label, role=role, quantity=quantity, length_mm=length, width_mm=depth, thickness_mm=None, length_derivation=derivation, length_basis_mm=basis, assumptions=tuple(assumptions), source_entity_ids=source_entity_ids, **thickness_fields, **common)
 
     between_key = "between-sides"
     cap_key = "cap-sides"

@@ -28,6 +28,7 @@ class ParsedEntity:
     dimension_line: tuple[tuple[float, float], tuple[float, float]] | None = None
     text_position: tuple[float, float] | None = None
     display_text: str | None = None
+    linetype: str | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,17 @@ def _point2(point: object) -> tuple[float, float]:
 def _entity_id(entity: object, ordinal: int) -> str:
     handle = getattr(getattr(entity, "dxf", None), "handle", None)
     return f"entity-{handle}" if isinstance(handle, str) and handle else f"entity-{ordinal}"
+
+
+def _linetype(document: object, entity: object) -> str | None:
+    """Effective linetype name, upper-case; BYLAYER resolves through the layer, BYBLOCK stays unknown."""
+    name = str(entity.dxf.linetype).strip().upper()  # type: ignore[attr-defined]
+    if name == "BYLAYER":
+        try:
+            name = str(document.layers.get(entity.dxf.layer).dxf.linetype).strip().upper()  # type: ignore[attr-defined]
+        except (ezdxf.DXFError, KeyError):
+            return None
+    return None if name in {"", "BYBLOCK", "BYLAYER"} else name
 
 
 def _finite_points(points: Iterable[tuple[float, float]]) -> tuple[tuple[float, float], ...]:
@@ -74,13 +86,13 @@ def parse_dxf(path: Path, *, max_entities: int = MAX_ENTITIES) -> ParsedDrawing:
         layer = str(entity.dxf.layer)
         entity_id = _entity_id(entity, ordinal)
         if kind == "LINE":
-            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((_point2(entity.dxf.start), _point2(entity.dxf.end)))))
+            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((_point2(entity.dxf.start), _point2(entity.dxf.end))), linetype=_linetype(document, entity)))
         elif kind == "LWPOLYLINE":
             vertices = tuple(entity.get_points("xyb"))
             if any(abs(float(vertex[2])) > 1e-12 for vertex in vertices):
                 warnings.append(f"unsupported_bulge:{entity_id}")
                 continue
-            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((float(x), float(y)) for x, y, _ in vertices), bool(entity.closed)))
+            parsed.append(ParsedEntity(entity_id, kind, layer, _finite_points((float(x), float(y)) for x, y, _ in vertices), bool(entity.closed), linetype=_linetype(document, entity)))
         elif kind in {"TEXT", "MTEXT"}:
             text = entity.plain_text() if kind == "MTEXT" else str(entity.dxf.text)
             insert = _point2(entity.dxf.insert)
