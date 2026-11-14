@@ -427,7 +427,9 @@ def _proposal_models(events: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
 
 
 def _validate_construction_outputs(
-    package: dict[str, Any], downloaded: list[tuple[dict[str, Any], bytes]]
+    package: dict[str, Any],
+    downloaded: list[tuple[dict[str, Any], bytes]],
+    review: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     construction = package.get("construction")
     if not isinstance(construction, dict):
@@ -435,9 +437,92 @@ def _validate_construction_outputs(
     pieces = construction.get("pieces")
     if not isinstance(pieces, list) or not pieces:
         raise AcceptanceFailure("construction_pieces_missing")
+    bom_component_ids = {
+        str(row.get("component_id"))
+        for row in package.get("bom_rows", [])
+        if isinstance(row, dict) and row.get("component_id")
+    }
+    manufactured_count = 0
+    hardware_count = 0
+    hardware_pending_fields = 0
+    reviewed_components = {
+        str(component.get("id")): component
+        for component in (review or {}).get("components", [])
+        if isinstance(component, dict) and component.get("id")
+    }
+    visual_passes = {
+        str(check.get("id")): check
+        for check in (review or {}).get("machine_checks", [])
+        if isinstance(check, dict)
+        and check.get("outcome") == "pass"
+        and check.get("method") == "model_visual"
+    }
+    accepted_reviews = {
+        str(field_review.get("target_ref")): field_review
+        for field_review in (review or {}).get("machine_field_reviews", [])
+        if isinstance(field_review, dict) and field_review.get("status") == "accepted"
+    }
     for piece in pieces:
         if not isinstance(piece, dict):
             raise AcceptanceFailure("construction_piece_invalid")
+        geometry = piece.get("geometry")
+        shape_kind = geometry.get("shape_kind") if isinstance(geometry, dict) else None
+        if shape_kind == "hardware":
+            hardware_count += 1
+            component_id = str(piece.get("component_id"))
+            component = reviewed_components.get(component_id)
+            classification_accepted = False
+            for suffix in ("kind", "geometry"):
+                target = f"component:{component_id}.{suffix}"
+                field_review = accepted_reviews.get(target)
+                if field_review is None:
+                    continue
+                if any(
+                    check_id in visual_passes
+                    and target in visual_passes[check_id].get("target_refs", [])
+                    for check_id in field_review.get("check_ids", [])
+                ):
+                    classification_accepted = True
+                    break
+            if (
+                not isinstance(component, dict)
+                or component.get("kind") != "hardware"
+                or not classification_accepted
+            ):
+                raise AcceptanceFailure("construction_hardware_classification_unreviewed")
+            if component_id not in bom_component_ids:
+                raise AcceptanceFailure("construction_hardware_bom_missing")
+            for field, value_key in (
+                ("quantity", "value"),
+                ("length", "value_mm"),
+                ("width", "value_mm"),
+                ("thickness", "value_mm"),
+            ):
+                value = piece.get(field)
+                if not isinstance(value, dict):
+                    raise AcceptanceFailure("construction_hardware_field_invalid")
+                number = value.get(value_key)
+                if isinstance(number, (int, float)) and not isinstance(number, bool) and number > 0:
+                    if (
+                        value.get("review_status") != "accepted"
+                        or value.get("state") in {None, "unknown", "conflict"}
+                        or not str(value.get("explanation") or "").strip()
+                    ):
+                        raise AcceptanceFailure("construction_hardware_numeric_unreviewed")
+                    continue
+                if (
+                    number is not None
+                    or value.get("state") not in {"unknown", "conflict"}
+                    or value.get("review_status")
+                    not in {"abstained", "rejected", "conflict", "unreviewed"}
+                    or not str(value.get("explanation") or "").strip()
+                ):
+                    raise AcceptanceFailure("construction_hardware_pending_not_explicit")
+                hardware_pending_fields += 1
+            continue
+        if shape_kind not in {"rectangle", "linear", "custom_contour"}:
+            raise AcceptanceFailure("construction_piece_geometry_not_manufacturable")
+        manufactured_count += 1
         quantity = piece.get("quantity")
         if not isinstance(quantity, dict) or not isinstance(quantity.get("value"), int):
             raise AcceptanceFailure("construction_piece_quantity_not_numeric")
@@ -458,9 +543,14 @@ def _validate_construction_outputs(
         }
         if not {"piece_sheet_svg", "piece_sheet_dxf"} <= formats:
             raise AcceptanceFailure("construction_piece_formats_missing")
+    if manufactured_count == 0:
+        raise AcceptanceFailure("construction_manufactured_pieces_missing")
     return {
         "piece_count": len(pieces),
-        "numeric_dimension_count": len(pieces) * 3,
+        "manufactured_piece_count": manufactured_count,
+        "hardware_count": hardware_count,
+        "hardware_pending_field_count": hardware_pending_fields,
+        "numeric_dimension_count": manufactured_count * 3,
         "piece_sheet_svg_count": sum(
             artifact.get("kind") == "piece_sheet_svg" for artifact, _ in downloaded
         ),
@@ -779,7 +869,7 @@ def run_autonomous_acceptance(config: AuditConfig) -> dict[str, Any]:
             "numeric_construction_outputs",
             True,
             "Every primary CAD piece is numeric and exposes downloadable SVG and DXF sheets.",
-            **_validate_construction_outputs(package, downloaded_artifacts),
+            **_validate_construction_outputs(package, downloaded_artifacts, review),
         )
         _audit_history_scenarios(
             audit,

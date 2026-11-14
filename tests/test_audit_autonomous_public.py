@@ -99,6 +99,8 @@ def test_public_mode_explicitly_skips_private_history_without_request(
 def test_numeric_primary_pieces_require_downloaded_svg_and_dxf() -> None:
     piece = {
         "piece_id": "p1",
+        "component_id": "p1",
+        "geometry": {"shape_kind": "rectangle"},
         "quantity": {"value": 2},
         "length": {"value_mm": 800.0},
         "width": {"value_mm": 300.0},
@@ -118,9 +120,121 @@ def test_numeric_primary_pieces_require_downloaded_svg_and_dxf() -> None:
     )
 
     assert evidence["piece_count"] == 1
+    assert evidence["manufactured_piece_count"] == 1
+    assert evidence["hardware_count"] == 0
     assert evidence["numeric_dimension_count"] == 3
     with pytest.raises(module.AcceptanceFailure, match="construction_piece_formats_missing"):
         module._validate_construction_outputs(package, [(svg, b"<svg/>")])
+
+
+def test_commercial_hardware_requires_bom_and_explicit_pending_fields() -> None:
+    pending = {
+        "value_mm": None,
+        "state": "unknown",
+        "review_status": "abstained",
+        "explanation": "Commercial catalogue dimension remains to be selected.",
+    }
+    hardware = {
+        "piece_id": "slides",
+        "component_id": "slides",
+        "geometry": {"shape_kind": "hardware"},
+        "quantity": {
+            "value": 3,
+            "state": "estimated",
+            "review_status": "accepted",
+            "explanation": "Three reviewed commercial slide pairs.",
+        },
+        "length": {
+            "value_mm": 400.0,
+            "state": "estimated",
+            "review_status": "accepted",
+            "explanation": "Reviewed nominal catalogue length.",
+        },
+        "width": dict(pending),
+        "thickness": dict(pending),
+        "sheet_ids": [],
+    }
+    panel = {
+        "piece_id": "side",
+        "component_id": "side",
+        "geometry": {"shape_kind": "rectangle"},
+        "quantity": {"value": 2},
+        "length": {"value_mm": 800.0},
+        "width": {"value_mm": 450.0},
+        "thickness": {"value_mm": 18.0},
+        "sheet_ids": ["sheet-side"],
+    }
+    package = {
+        "construction": {"pieces": [panel, hardware]},
+        "bom_rows": [{"component_id": "slides"}],
+    }
+    downloads = [
+        (
+            {"kind": kind, "status": "ready", "sheet_id": "sheet-side"},
+            b"content",
+        )
+        for kind in ("piece_sheet_svg", "piece_sheet_dxf")
+    ]
+    review = {
+        "components": [{"id": "slides", "kind": "hardware"}],
+        "machine_checks": [
+            {
+                "id": "visual-hardware",
+                "method": "model_visual",
+                "outcome": "pass",
+                "target_refs": ["component:slides.geometry"],
+            }
+        ],
+        "machine_field_reviews": [
+            {
+                "target_ref": "component:slides.geometry",
+                "status": "accepted",
+                "check_ids": ["visual-hardware"],
+            }
+        ],
+    }
+
+    evidence = module._validate_construction_outputs(package, downloads, review)
+
+    assert evidence["manufactured_piece_count"] == 1
+    assert evidence["hardware_count"] == 1
+    assert evidence["hardware_pending_field_count"] == 2
+    with pytest.raises(module.AcceptanceFailure, match="construction_hardware_bom_missing"):
+        module._validate_construction_outputs(
+            {"construction": {"pieces": [panel, hardware]}, "bom_rows": []},
+            downloads,
+            review,
+        )
+    with pytest.raises(
+        module.AcceptanceFailure,
+        match="construction_hardware_classification_unreviewed",
+    ):
+        module._validate_construction_outputs(
+            package, downloads, {"components": review["components"]}
+        )
+    with pytest.raises(
+        module.AcceptanceFailure, match="construction_manufactured_pieces_missing"
+    ):
+        module._validate_construction_outputs(
+            {
+                "construction": {"pieces": [hardware]},
+                "bom_rows": [{"component_id": "slides"}],
+            },
+            [],
+            review,
+        )
+    leaked = {**hardware, "length": {**hardware["length"], "review_status": "unreviewed"}}
+    with pytest.raises(
+        module.AcceptanceFailure, match="construction_hardware_numeric_unreviewed"
+    ):
+        module._validate_construction_outputs(
+            {
+                "construction": {"pieces": [panel, leaked]},
+                "bom_rows": [{"component_id": "slides"}],
+            },
+            downloads,
+            review,
+        )
 
 
 def test_estimated_quantity_keeps_occurrences_provisional() -> None:
