@@ -81,6 +81,18 @@ def test_table_program_has_no_free_numeric_operands_and_catalog_requires_templat
         TableProgramProposal.model_validate(program.model_copy(update={"proposal_origin": "catalog_baseline"}).model_dump())
 
 
+def test_table_program_allows_reachable_intermediate_binding_but_rejects_real_dead_node():
+    program = _program()
+    bindings = list(program.bindings)
+    bindings.insert(2, TableBinding(id="height-copy", operation="copy", operand_refs=(TableOperandRef(ref_type="measure", ref_id="height"),)))
+    top_t_index = next(index for index, item in enumerate(bindings) if item.id == "top-t")
+    bindings[top_t_index] = TableBinding(id="top-t", operation="subtract", operand_refs=(TableOperandRef(ref_type="binding", ref_id="height-copy"), TableOperandRef(ref_type="binding", ref_id="support-l")))
+    valid = TableProgramProposal.model_validate(program.model_copy(update={"bindings": tuple(bindings)}).model_dump())
+    assert valid.bindings[2].id == "height-copy"
+    with pytest.raises(ValidationError, match="dead bindings"):
+        TableProgramProposal.model_validate(valid.model_copy(update={"bindings": valid.bindings + (TableBinding(id="unused", operation="copy", operand_refs=(TableOperandRef(ref_type="measure", ref_id="width"),)),)}).model_dump())
+
+
 def test_review_separates_acceptance_from_human_values():
     decision = TableReviewDecision(target_kind="program", target_id="program-side", action="accept", reason="Montaje elegido por la técnica")
     confirmed = TableConfirmedValue(target_kind="measurement_slot", target_id="top-t", value_mm=30, reason="Espesor medido por la técnica")
