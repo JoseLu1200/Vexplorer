@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.agente.config import EmbeddingSettings, ProviderSettings
 from backend.app.agente.provider import OpenAIResponsesProvider
+from backend.app.agente.replay import RecordingProvider, ReplayProvider, has_recordings, load_recording, recording_fingerprint, save_recording
 from backend.app.agente.runner import AgentLimits, run_agent
 from backend.app.agente.tools import tool_schemas
 from backend.app.contratos.modelos import EmbeddingMetadata, LibraryItem, ReviewRequest
@@ -78,6 +80,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     documents_dir.mkdir(parents=True, exist_ok=True)
     repository = DemoRepository(root / "vexplorer.sqlite3")
     settings = ProviderSettings.from_env()
+    # Real agent runs are recorded here and can be replayed as the demo's plan B (never synthetic recordings).
+    recordings_dir = Path(os.environ["VEXPLORER_AGENT_RECORDINGS_DIR"]) if os.environ.get("VEXPLORER_AGENT_RECORDINGS_DIR") else root / "recordings"
     embedding_settings = EmbeddingSettings.from_env()
     semantic_provider = embedding_provider
     if semantic_provider is None and embedding_settings.available:
@@ -90,7 +94,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @app.get("/api/v1/config")
     def config():
-        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": settings.available, "unavailable_reason": settings.unavailable_reason, "recorded_replay_available": False, "modes": ["geometry_only"] + (["live"] if settings.available else []), "modality": "structured_vector_evidence_with_ledger_render" if settings.vision_enabled else "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in tool_schemas(settings.vision_enabled)], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
+        return _ok({"provider": "openai_responses", "model": settings.model, "live_available": settings.available, "unavailable_reason": settings.unavailable_reason, "recorded_replay_available": has_recordings(recordings_dir), "modes": ["geometry_only"] + (["live"] if settings.available else []) + (["recorded_replay"] if has_recordings(recordings_dir) else []), "modality": "structured_vector_evidence_with_ledger_render" if settings.vision_enabled else "structured_vector_evidence_without_vision", "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120}, "tools": [{"name": item["name"], "description": item["description"]} for item in tool_schemas(settings.vision_enabled)], "semantic": {"available": semantic_provider is not None, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}})
 
     @app.post("/api/v1/documents")
     async def upload_document(file: UploadFile = File(...)):
@@ -133,7 +137,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
     @app.post("/api/v1/runs")
     def create_run(request: RunRequest):
-        if request.mode == "recorded_replay":
+        if request.mode == "recorded_replay" and not has_recordings(recordings_dir):
             return _error(409, "recorded_replay_unavailable", "No existe una grabación real autorizada para replay.")
         if request.mode == "live" and not settings.available:
             return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
@@ -149,14 +153,32 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, "unsupported_geometry", "Las vistas no respaldan escenarios rectangulares coherentes.")
         trace_events: tuple[dict, ...] = ()
         agent_selected_scenario_id = None
-        if request.mode == "live":
+        provenance: dict = {}
+        if request.mode == "recorded_replay":
+            fingerprint = recording_fingerprint(extraction, scenarios, settings.vision_enabled)
+            recording = load_recording(recordings_dir, fingerprint)
+            if recording is None:
+                return _error(409, "recorded_replay_unavailable", "No existe una grabación real de este plano con la configuración actual.")
             try:
-                outcome = run_agent(extraction, scenarios, OpenAIResponsesProvider(settings), AgentLimits(), vision=settings.vision_enabled)
+                outcome = run_agent(extraction, scenarios, ReplayProvider(recording.responses), AgentLimits(), vision=settings.vision_enabled)
+            except Exception as exc:
+                return _error(409, "recorded_replay_stale", f"La grabación no se pudo reproducir: {type(exc).__name__}.")
+            provenance = {"provenance": "recorded_replay", "recorded_at": recording.recorded_at, "recorded_model": recording.model}
+        if request.mode == "live":
+            recorder = RecordingProvider(OpenAIResponsesProvider(settings))
+            try:
+                outcome = run_agent(extraction, scenarios, recorder, AgentLimits(), vision=settings.vision_enabled)
             except Exception as exc:
                 return _error(502, "live_provider_failed", f"La ejecución live falló sin fallback: {type(exc).__name__}.", True)
+            try:
+                save_recording(recordings_dir, recording_fingerprint(extraction, scenarios, settings.vision_enabled), extraction.drawing_id, settings.model, recorder.responses)
+            except OSError:
+                pass  # recording is a convenience for the demo; the live result stands without it
+            provenance = {"provenance": "live"}
+        if request.mode in ("live", "recorded_replay"):
             scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
             agent_selected_scenario_id = outcome.selected_scenario_id
-            trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary, "selected_scenario_id": action.selected_scenario_id} for action in outcome.actions)
+            trace_events = tuple({"tool_name": action.tool_name, "ok": action.ok, "evidence_ids": action.evidence_ids, "summary": action.summary, "selected_scenario_id": action.selected_scenario_id, **provenance} for action in outcome.actions)
         run_id = f"run-{uuid4().hex}"
         run = repository.create_run(run_id, request.mode, extraction, scenarios, trace_events, agent_selected_scenario_id, request.document_id)
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)

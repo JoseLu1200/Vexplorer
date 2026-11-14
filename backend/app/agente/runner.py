@@ -6,9 +6,10 @@ import time
 from dataclasses import dataclass
 from typing import Protocol
 
+from backend.app.agente.comparacion import compare_candidates
 from backend.app.agente.tools import tool_schemas
 from backend.app.agente.vision import render_view
-from backend.app.contratos.modelos import DecompositionScenario, DrawingExtraction, ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs, VisualizeViewArgs
+from backend.app.contratos.modelos import CompareCandidatesArgs, DecompositionScenario, DrawingExtraction, ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs, VisualizeViewArgs
 from backend.app.servicios.explanations import explain_proposal
 from backend.app.validador.plausibilidad import WorkshopCatalog, check_plausibility
 from pydantic import ValidationError
@@ -118,6 +119,7 @@ def _aggregates(extraction: DrawingExtraction) -> dict:
         "hole_rows": _evidence_with_prefix(extraction, "evidence-holes-"),
         "block_references": _evidence_with_prefix(extraction, "evidence-block-"),
         "hatches": _evidence_with_prefix(extraction, "evidence-hatch-"),
+        "hidden_lines": _evidence_with_prefix(extraction, "evidence-hidden-"),
         "layer_counts_info": _shown(len(layers)),
     }
 
@@ -243,6 +245,17 @@ def run_agent(extraction: DrawingExtraction, scenarios: tuple[DecompositionScena
                     else:
                         actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=(), summary="Escenario hipotético entregado para revisión humana.", selected_scenario_id=args.scenario_id))
                         return AgentOutcome(selected_scenario_id=args.scenario_id, model_calls=model_calls, tool_calls=tool_calls, actions=tuple(actions))
+                elif call.name == "comparar_candidatas":
+                    args = CompareCandidatesArgs.model_validate_json(json.dumps(arguments), strict=True)
+                    unknown = [item for item in args.candidate_ids if item not in proposals]
+                    if unknown or args.candidate_ids[0] == args.candidate_ids[1]:
+                        data = {"ok": False, "error": "unknown_reference" if unknown else "duplicate_reference", "valid_candidate_ids": _valid_ids(proposals)}
+                        actions.append(AgentAction(tool_name=call.name, ok=False, evidence_ids=(), summary="Comparación con propuestas desconocidas o repetidas rechazada."))
+                    else:
+                        comparison = compare_candidates(proposals[args.candidate_ids[0]], proposals[args.candidate_ids[1]])
+                        shared = tuple(comparison["relations"][0]["evidence_ids"])
+                        data = {"ok": True, **comparison}
+                        actions.append(AgentAction(tool_name=call.name, ok=True, evidence_ids=shared, summary="Comparación determinista de dos propuestas consultada."))
                 elif call.name == "visualizar_vista" and vision:
                     args = VisualizeViewArgs.model_validate_json(json.dumps(arguments), strict=True)
                     view_contours = {item.id for item in extraction.contours if item.view_id == args.view_id}

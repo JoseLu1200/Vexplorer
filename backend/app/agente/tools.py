@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.app.contratos.modelos import ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs, VisualizeViewArgs
+from backend.app.contratos.modelos import CompareCandidatesArgs, ExplainPieceArgs, InspectEvidenceArgs, SelectScenarioArgs, VisualizeViewArgs
 
 
 def _schema(name: str, description: str, model) -> dict:
@@ -13,6 +13,7 @@ def tool_schemas(vision: bool = False) -> list[dict]:
         _schema("inspeccionar_evidencia", "Consulta evidencias por ID dentro del ledger autorizado del run actual.", InspectEvidenceArgs),
         _schema("entregar_despiece", "Entrega una hipótesis de montaje existente por referencia; no la confirma ni añade medidas.", SelectScenarioArgs),
         _schema("explicar_pieza", "Devuelve fuentes, estados, premisas y desconocidos de una hipótesis de componente en la revisión 1; no la confirma ni revela razonamiento interno.", ExplainPieceArgs),
+        _schema("comparar_candidatas", "Compara dos propuestas distintas del run actual: relaciones same_physical_part, same_dimensions, mirrored_variant y alternative_hypothesis con estado pass, fail, unknown o not_applicable, evidencias compartidas y campos sin resolver. La similitud no demuestra intercambiabilidad.", CompareCandidatesArgs),
     ]
     if vision:
         tools.append(_schema(

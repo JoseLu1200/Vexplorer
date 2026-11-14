@@ -444,7 +444,9 @@ class SimilarityGroup(StrictModel):
 class RunSnapshot(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     id: str
-    mode: Literal["live", "geometry_only"]
+    # Additive (mejoras/cad-harness, third block): "recorded_replay" reproduces a real recorded agent run with visible
+    # provenance. Authorized by the user without explicit A/B agreement; see team/pablo.md.
+    mode: Literal["live", "geometry_only", "recorded_replay"]
     state: Literal["completed", "needs_review", "failed", "cancelled", "timed_out"]
     reason_code: str | None = None
     candidate_revision: str
@@ -515,3 +517,9 @@ class ExplainPieceArgs(StrictModel):
 class VisualizeViewArgs(StrictModel):
     view_id: str = Field(min_length=1)
     highlight_contour_ids: tuple[str, ...] = Field(max_length=20)
+
+
+# Additive (third block): arguments of `comparar_candidatas`, two distinct proposal IDs of the current run.
+# Authorized by the user without explicit A/B agreement; see team/pablo.md.
+class CompareCandidatesArgs(StrictModel):
+    candidate_ids: tuple[str, ...] = Field(min_length=2, max_length=2)

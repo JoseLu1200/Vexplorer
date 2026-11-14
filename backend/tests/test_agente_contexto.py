@@ -10,7 +10,11 @@ import pytest
 
 from backend.app.agente.config import DEFAULT_MAX_OUTPUT_TOKENS, ProviderSettings
 from backend.app.agente.prompts import SYSTEM_PROMPT, system_prompt
-from backend.app.agente.provider import OpenAIResponsesProvider, ProviderResponse, ToolCall
+from backend.app.agente.provider import (
+    OpenAIResponsesProvider,
+    ProviderResponse,
+    ToolCall,
+)
 from backend.app.agente.runner import MAX_DIGEST_ITEMS, AgentLimits, run_agent
 from backend.app.geometria import extract_drawing
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
