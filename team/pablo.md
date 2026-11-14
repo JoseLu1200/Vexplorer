@@ -28,7 +28,7 @@
   - este archivo
 - Dependencias que solo leeré: `backend/app/historico/`, `backend/app/semantic/`, `backend/app/similarity/`, `backend/app/agente/provider.py`, `backend/app/contratos/modelos.py`, `backend/app/servicios/repository.py`
 - Archivos compartidos que requieren coordinación: `backend/app/main.py` (registro de routers, una sola zona)
-- Solapes detectados y acuerdo para resolverlos: no se modifica `historico/` (propiedad de `agente_historico_real`) ni `contratos/`; los modelos nuevos viven en `precedentes/`.
+- Solapes detectados y acuerdo para resolverlos: este trabajo no modifica `historico/` (propiedad de `agente_historico_real`) ni `contratos/`; los modelos nuevos viven en `precedentes/`. Aviso: el diff de la rama contra `main` sí incluye cambios en `historico/real_service.py` (sustituye `_cosine` por `cosine_similarity`), `validador/`, `semantic_explorer/` y `frontend/`, pero vienen del commit `fa4ec3b` de Sergio (nivel 1, `team/sergio.md`). Los de `frontend/` necesitan el visto bueno de la Persona C antes del PR.
 
 ## Hecho en el último bloque
 
@@ -51,6 +51,11 @@
   - Mantenimiento: sin escritura condicional en el repositorio (ventana mínima entre relectura y guardado); sin cola persistente; verificación de huella no programada.
   - Comparativa: B/C/D sin adaptador de proveedor real (lo lleva quien lleva el harness); D sin índice histórico anotado; la variante A apenas extrae tableros en vistas montadas de PlankAssembly (tableros que se tocan se fusionan): requiere extractor en `geometria/`.
   - Dataset PlankAssembly no descargado en esta máquina: el corpus solo se ha probado con fixtures sintéticos.
+  - `tools/biblioteca_juicios.py` no extrae descriptores: no hay extractor desde vistas ortográficas montadas; el operador aporta `--descriptores`.
+- Revisión integrada (Opus) de la rama contra `main` y correcciones (Sonnet), commits `04bfd61`..`3cb05eb`:
+  - Alta corregida: el middleware de acceso público se saltaba con el prefijo `VEXPLORER_ROOT_PATH` (también en history/library, ya existía en `main`). Ahora normaliza el prefijo y los routers de precedentes llevan además una dependencia 403. Tests con prefijo vacío, simple y doble.
+  - Corregidas: lector `PlankAssemblyCorpusReader` (`--corpus plankassembly-corpus`) para que la comparativa lea el corpus; lista de rutas protegidas generada desde OpenAPI; `try/finally` en el `lifespan`; constante `NOMBRE_BD_ESPACIO`; documentado el cambio de umbral por defecto de `POST /library/groups` (0,8 → 0,85/0,92); herramienta `tools.biblioteca_juicios`.
+  - Batería afectada: 388 passed. Pendiente de coordinación: visto bueno de frontend (Persona C) a los cambios de Sergio en `frontend/`.
 
 - Pedido por el usuario: "Lanza lo que no esté hecho ya" de las opciones 3, 4, 6 y 7 tras comprobar que 2.4, 3.1, 2.5/2.6 y 2.7 ya existían. Subagentes Sonnet en worktrees propios + revisor Opus en solo lectura.
 - Rama de integración: `feat/similitud-evaluacion` (desde `embeddings`, con `main` fusionado). Ramas por agente: `feat/sim-nesting`, `feat/sim-mantenimiento`, `feat/sim-corpus`, `feat/sim-comparativa`.
