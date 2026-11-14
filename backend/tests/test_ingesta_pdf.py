@@ -78,7 +78,7 @@ def test_raster_pdf_is_previewed_without_fake_geometry(tmp_path: Path) -> None:
     assert page.image_count == 1
     assert page.preview_path.is_file()
     assert page.normalized_dxf_path is None
-    assert "raster_page_requires_manual_review:1" in result.warnings
+    assert "raster_page_has_no_vector_geometry:1" in result.warnings
 
 
 def test_invalid_pdf_and_page_overflow_are_rejected_before_rendering(tmp_path: Path) -> None:

@@ -433,8 +433,8 @@ class ProvisionalAssumption(StrictModel):
 class ProvisionalScenarioCondition(StrictModel):
     furniture_quantity: Literal[1] = 1
     family: str = Field(min_length=1, max_length=200)
-    material: str = Field(min_length=1, max_length=200)
-    finish: str = Field(min_length=1, max_length=200)
+    material: str | None = Field(default=None, min_length=1, max_length=200)
+    finish: str | None = Field(default=None, min_length=1, max_length=200)
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
     cost_scope: tuple[EconomicScope, ...]
     hours_scope: tuple[EconomicScope, ...]
@@ -443,8 +443,8 @@ class ProvisionalScenarioCondition(StrictModel):
 class ProvisionalScalingBasis(StrictModel):
     component_ids: tuple[str, ...] = Field(min_length=1)
     scenario_occurrence_ids: tuple[str, ...] = Field(min_length=1)
-    length_mm: float = Field(gt=0)
-    area_mm2: float = Field(gt=0)
+    length_mm: float | None = Field(default=None, gt=0)
+    area_mm2: float | None = Field(default=None, gt=0)
     volume_mm3: float | None = Field(default=None, gt=0)
     units: Literal["mm_mm2_mm3"] = "mm_mm2_mm3"
     source_refs: tuple[str, ...] = Field(min_length=1)

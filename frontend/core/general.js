@@ -64,8 +64,27 @@ function component(raw = {}) {
   };
 }
 
+const MACHINE_FIELDS=["length","width","thickness","quantity","material","finish"];
+
+function machineReviewMetadata(componentId,name,reviews,checks){
+  const targetRef=`component:${componentId}.${name}`,review=reviews.get(targetRef),status=review?.status??"unreviewed",checkIds=list(review?.check_ids),matched=checkIds.map((id)=>checks.get(id)).filter(Boolean),checkSummaries=matched.map((item)=>item.summary).filter(Boolean),sourceRefs=[...new Set(matched.flatMap((item)=>list(item.source_refs)))],fallback={rejected:"Valor rechazado por la revisión automática.",conflict:"La revisión automática detectó evidencia en conflicto.",abstained:"La revisión automática se abstuvo por falta de respaldo suficiente.",unreviewed:"Sin decisión de campo publicada por la revisión automática."}[status]??"Campo aceptado por la revisión automática.";
+  return{targetRef,status,checkIds,checkSummaries,sourceRefs,reason:checkSummaries.join(" · ")||fallback};
+}
+
+function maskMachineComponent(rawComponent,reviews,checks){
+  const masked={...rawComponent,dimensions:{...rawComponent.dimensions},rawHypothesis:rawComponent},unknown=new Set(rawComponent.unknownFields);
+  MACHINE_FIELDS.forEach((name)=>{
+    const metadata=machineReviewMetadata(rawComponent.id,name,reviews,checks),source=["length","width","thickness"].includes(name)?rawComponent.dimensions[name]:rawComponent[name],effective=metadata.status==="accepted"?{...source,machineReview:metadata}:{...source,value:null,state:"unknown",machineReview:metadata};
+    if(["length","width","thickness"].includes(name))masked.dimensions[name]=effective;else masked[name]=effective;
+    if(effective.value==null)unknown.add(name);else unknown.delete(name);
+  });
+  masked.unknownFields=MACHINE_FIELDS.filter((name)=>unknown.has(name));
+  return masked;
+}
+
 export function normaliseGeneralWorkspace(raw = {}) {
   const effective = raw.review?.components?.length ? raw.review : (raw.draft ?? raw.proposal ?? raw.snapshot ?? raw);
+  const reviewerKind=raw.review?.reviewer_kind ?? (raw.review ? "human" : null),rawComponents=list(effective.components).map(component),checks=new Map(list(raw.review?.machine_checks).map((item)=>[item.id,item])),reviews=new Map(list(raw.review?.machine_field_reviews).map((item)=>[item.target_ref,item])),components=reviewerKind==="machine"?rawComponents.map((item)=>maskMachineComponent(item,reviews,checks)):rawComponents;
   return {
     isGeneral: Boolean(raw.proposal || raw.draft || raw.review || raw.proposal_revision !== undefined),
     proposalRevision: raw.proposal_revision ?? raw.proposal?.proposal_revision ?? null,
@@ -73,7 +92,8 @@ export function normaliseGeneralWorkspace(raw = {}) {
     status: raw.status ?? effective.status ?? "unavailable",
     drawingId: raw.draft?.drawing_id ?? raw.proposal?.drawing_id ?? raw.drawing_id ?? null,
     ledgerRevision: raw.draft?.ledger_revision ?? raw.proposal?.ledger_revision ?? raw.ledger_revision ?? null,
-    components: list(effective.components).map(component),
+    components,
+    rawComponents,
     occurrences: list(raw.review?.occurrences ?? effective.occurrences).map((item) => ({ ...item, id: item.id ?? item.occurrence_id, componentId: item.component_id ?? item.componentId, state: item.state ?? "proposed" })),
     premises: list(raw.draft?.premises ?? raw.proposal?.premises),
     assumptions: list(raw.draft?.assumptions ?? raw.proposal?.assumptions),
@@ -82,7 +102,7 @@ export function normaliseGeneralWorkspace(raw = {}) {
     currency: raw.review?.currency ?? null,
     requiredCostScope: list(raw.review?.required_cost_scope),
     requiredHoursScope: list(raw.review?.required_hours_scope),
-    reviewerKind: raw.review?.reviewer_kind ?? (raw.review ? "human" : null),
+    reviewerKind,
     reviewerName: raw.review?.reviewer_name ?? null,
     machineProvenance: raw.review?.machine_provenance ?? null,
     autoChecks: list(raw.review?.machine_checks),
@@ -136,7 +156,7 @@ export function presentGeneralDerived(raw = {}) {
     proposalRevision: packageValue.proposal_revision ?? null,
     reviewRevision: packageValue.review_revision ?? null,
     status: packageValue.status ?? "unavailable",
-    bom: list(packageValue.bom_rows ?? packageValue.bom).map((row) => ({ ...row, componentId: row.component_id, occurrenceIds: list(row.occurrence_ids), scenarioOccurrenceIds:list(row.scenario_occurrence_ids), occurrenceStatus:row.occurrence_status??"unknown", quantity: field(row.quantity), length:field(row.length), width:field(row.width), thickness:field(row.thickness), material: field(row.material), finish: field(row.finish) })),
+    bom: list(packageValue.bom_rows ?? packageValue.bom).map((row) => ({ ...row, componentId: row.component_id, occurrenceIds: list(row.occurrence_ids), scenarioOccurrenceIds:list(row.scenario_occurrence_ids), occurrenceStatus:row.occurrence_status??"unknown", quantity: field(row.quantity), length:field(row.length), width:field(row.width), thickness:field(row.thickness), material: field(row.material), finish: field(row.finish), machineFieldReviews:list(row.machine_field_reviews).map((item)=>({...item,targetRef:item.target_ref,checkIds:list(item.check_ids),checkSummaries:list(item.check_summaries),sourceRefs:list(item.source_refs)})) })),
     artifacts: list(packageValue.artifacts).map((artifact) => ({ ...artifact, incompleteReasons: list(artifact.incomplete_reasons), downloads: artifact.downloads ?? {} })),
     scene: packageValue.scene ?? { status: "unavailable" },
     costBasis: { ...(packageValue.cost_basis ?? {}), missingData: list(packageValue.cost_basis?.missing_data), contributors: list(packageValue.cost_basis?.contributors) },

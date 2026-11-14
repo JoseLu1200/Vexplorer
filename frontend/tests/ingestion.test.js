@@ -4,16 +4,29 @@ import assert from "node:assert/strict";
 import { canStartDocumentAnalysis, presentDocumentIngestion } from "../core/ingestion.js";
 import { generalRunOptions } from "../core/general.js";
 
-test("PDF preview without scale is never presented as measured geometry", () => {
+test("vector PDF without scale offers automatic visual analysis while keeping metric measurements unknown", () => {
   const result = presentDocumentIngestion({
     source_name: "mueble.pdf", source_media_type: "application/pdf", source_size_bytes: 2048, status: "needs_review",
     source_unit: null, unit_scale_to_mm: null, scale_provenance: "unknown", warnings: ["unsupported_for_measurement"],
-    pages: [{ page: 1, content_kind: "vector", preview_path: "/preview/1", normalized_dxf_path: null, warnings: ["scale_missing"] }],
+    pages: [{ page: 1, content_kind: "vector", preview_path: "/preview/1", normalized_dxf_path: "/normalized/1.dxf", warnings: ["scale_missing"] }],
   });
   assert.equal(result.format, "PDF");
   assert.equal(result.measurementReady, false);
-  assert.match(result.summary, /revisión manual/i);
-  assert.equal(result.pages[0].previewOnly, true);
+  assert.equal(result.summary,"PDF disponible para análisis visual automático; las medidas métricas permanecen desconocidas sin escala o evidencia métrica");
+  assert.doesNotMatch(result.summary,/revisión manual|requiere.*humana/i);
+  assert.equal(result.pages[0].previewOnly, false);
+});
+
+test("raster PDF offers automatic visual analysis without inventing geometry or metric measurements",()=>{
+  const result=presentDocumentIngestion({
+    source:{filename:"scan.pdf",format:"pdf",unit:"unknown"},
+    ingestion:{state:"needs_review",warnings:["raster_or_unconverted_source_visual_review_only"]},
+    artifacts:{preview:{url:"/preview/scan.png"},normalized_dxf:null,pages:[{page_number:1,content_kind:"raster",preview:{url:"/preview/scan.png"},normalized_dxf:null,warnings:[]}]},
+  });
+  assert.equal(result.measurementReady,false);
+  assert.equal(result.pages[0].previewOnly,true);
+  assert.equal(result.summary,"PDF disponible para análisis visual automático; las medidas métricas permanecen desconocidas sin escala o evidencia métrica");
+  assert.doesNotMatch(result.summary,/revisión manual|lectura geométrica/i);
 });
 
 test("converted DWG names its converter and normalized DXF provenance", () => {

@@ -47,6 +47,22 @@ class GeneralFurnitureProvider(Protocol):
     ): ...
 
 
+class GeneralLiveError(RuntimeError):
+    def __init__(
+        self,
+        code: str,
+        *,
+        trace: tuple[dict[str, object], ...],
+        model_calls: int,
+        tool_calls: int,
+    ) -> None:
+        super().__init__(code)
+        self.code = code
+        self.trace = trace
+        self.model_calls = model_calls
+        self.tool_calls = tool_calls
+
+
 @dataclass(frozen=True)
 class GeneralFurnitureAgentOutcome:
     proposal: GeneralFurnitureProposal
@@ -68,6 +84,49 @@ class GeneralVisualPage:
     crop_bounds_source: tuple[float, float, float, float] | None = None
     marks: tuple[VisionMark, ...] = ()
     warnings: tuple[str, ...] = ()
+
+
+def _is_raster_without_metric_ledger(
+    extraction: DrawingExtraction,
+    measurements,
+    visual_pages: tuple[GeneralVisualPage, ...],
+) -> bool:
+    return (
+        bool(visual_pages)
+        and not extraction.views
+        and not any(item.value_mm is not None for item in extraction.dimensions)
+        and not any(item.value_mm is not None for item in measurements)
+    )
+
+
+def general_allowed_document_refs(
+    visual_pages: tuple[GeneralVisualPage, ...],
+    *,
+    include_announced_children: bool,
+) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            reference
+            for page in visual_pages
+            for reference in (
+                page.reference,
+                *(page.source_document_refs if include_announced_children else ()),
+            )
+        )
+    )
+
+
+def _safe_live_error_code(error: Exception) -> str:
+    candidate = getattr(error, "code", None)
+    if (
+        isinstance(candidate, str)
+        and 0 < len(candidate) <= 120
+        and all(character.isalnum() or character in "_:-" for character in candidate)
+    ):
+        return candidate
+    if isinstance(error, TimeoutError):
+        return "general_live_provider_timeout"
+    return "general_live_provider_error"
 
 
 def _safe_validation_details(error: Exception) -> list[dict[str, object]]:
@@ -117,7 +176,9 @@ def _compact_contour(item) -> dict[str, object]:
     }
 
 
-def general_furniture_tool_schemas() -> list[dict]:
+def general_furniture_tool_schemas(
+    *, raster_without_metric_ledger: bool = False
+) -> list[dict]:
     def schema(name: str, description: str, model) -> dict:
         return {
             "type": "function",
@@ -127,6 +188,14 @@ def general_furniture_tool_schemas() -> list[dict]:
             "strict": True,
         }
 
+    proposal_description = (
+        "Propone componentes visuales revisables usando exclusivamente las referencias exactas anunciadas. "
+        "Como el raster no tiene ledger métrico ni vistas autorizadas, usa bindings=[], "
+        "length_binding_id/width_binding_id/thickness_binding_id=null y source_view_ids=[]. "
+        "Cita source_document_refs solo desde allowed_source_document_refs; no midas píxeles."
+        if raster_without_metric_ledger
+        else "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings copy/add/subtract con operand_refs dimension:<id> o measurement:<id>; compact_geometry.measurements publica bases numéricas autorizadas aunque su asignación sea hipótesis. Una cantidad visual puede ser hypothesis solo con grupos de instancias distintos, fuentes y dependency_refs premise:<id> cerradas; nunca cuentes vistas como instancias."
+    )
     return [
         schema(
             "inspeccionar_evidencia_general",
@@ -135,7 +204,7 @@ def general_furniture_tool_schemas() -> list[dict]:
         ),
         schema(
             "proponer_mueble_general",
-            "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings copy/add/subtract con operand_refs dimension:<id> o measurement:<id>; compact_geometry.measurements publica bases numéricas autorizadas aunque su asignación sea hipótesis. Una cantidad visual puede ser hypothesis solo con grupos de instancias distintos, fuentes y dependency_refs premise:<id> cerradas; nunca cuentes vistas como instancias.",
+            proposal_description,
             ProposeGeneralFurnitureArgs,
         ),
     ]
@@ -162,6 +231,13 @@ def run_general_furniture_agent(
     evidence = {item.id: item for item in extraction.evidence}
     dimensions = {item.id: item for item in extraction.dimensions}
     general_measures = derive_geometry_measurements(extraction)
+    raster_without_metric_ledger = _is_raster_without_metric_ledger(
+        extraction, general_measures, visual_pages
+    )
+    allowed_document_refs = general_allowed_document_refs(
+        visual_pages,
+        include_announced_children=raster_without_metric_ledger,
+    )
     try:
         spatial_regions = derive_source_spatial_regions(extraction, general_measures)
         projection_hypotheses = derive_projection_hypotheses(
@@ -232,6 +308,17 @@ def run_general_furniture_agent(
             for item in visual_pages
         ],
     }
+    if raster_without_metric_ledger:
+        context["raster_authority"] = {
+            "allowed_source_view_ids": [],
+            "allowed_source_document_refs": list(allowed_document_refs),
+            "allowed_numeric_binding_refs": [],
+            "instruction": (
+                "No inventes IDs de vista para páginas PDF. Usa source_view_ids=[], "
+                "bindings=[] y ejes null; cita solo source_document_refs de esta lista. "
+                "La imagen autoriza interpretación visual, nunca medidas en píxeles."
+            ),
+        }
     content: list[dict[str, object]] = [
         {"type": "input_text", "text": json.dumps(context, ensure_ascii=False)}
     ]
@@ -247,14 +334,27 @@ def run_general_furniture_agent(
     while calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
-            raise TimeoutError("agent_deadline_exceeded")
+            raise GeneralLiveError(
+                "agent_deadline_exceeded", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         calls += 1
-        response = provider.create_response(
-            input_items=input_items,
-            tools=general_furniture_tool_schemas(),
-            previous_response_id=previous_response_id,
-            timeout_s=remaining,
-        )
+        try:
+            response = provider.create_response(
+                input_items=input_items,
+                tools=general_furniture_tool_schemas(
+                    raster_without_metric_ledger=raster_without_metric_ledger
+                ),
+                previous_response_id=previous_response_id,
+                timeout_s=remaining,
+            )
+        except GeneralLiveError:
+            raise
+        except Exception as exc:
+            raise GeneralLiveError(
+                _safe_live_error_code(exc), trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            ) from exc
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [
@@ -262,7 +362,10 @@ def run_general_furniture_agent(
             ]
             continue
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
-            raise RuntimeError("tool_call_budget_exhausted")
+            raise GeneralLiveError(
+                "tool_call_budget_exhausted", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         outputs = []
         for call in response.tool_calls:
             tool_calls += 1
@@ -395,9 +498,7 @@ def run_general_furniture_agent(
                     draft = materialize_general_proposal(
                         extraction,
                         proposal,
-                        allowed_document_refs=tuple(
-                            item.reference for item in visual_pages
-                        ),
+                        allowed_document_refs=allowed_document_refs,
                     )
                     trace.append(
                         {
@@ -427,21 +528,27 @@ def run_general_furniture_agent(
                 json.JSONDecodeError,
             ) as exc:
                 repairs += 1
-                if repairs > limits.max_validation_repairs:
-                    raise RuntimeError("validation_repair_budget_exhausted") from exc
-                data = {
-                    "ok": False,
-                    "error": "invalid_arguments",
-                    "details": _safe_validation_details(exc),
-                }
+                details = _safe_validation_details(exc)
                 trace.append(
                     {
                         "tool": call.name,
                         "ok": False,
                         "summary": "Invalid tool arguments rejected.",
+                        "details": details,
                         **metadata,
                     }
                 )
+                if repairs > limits.max_validation_repairs:
+                    raise GeneralLiveError(
+                        "validation_repair_budget_exhausted",
+                        trace=tuple(trace), model_calls=calls,
+                        tool_calls=tool_calls,
+                    ) from exc
+                data = {
+                    "ok": False,
+                    "error": "invalid_arguments",
+                    "details": details,
+                }
             outputs.append(
                 {
                     "type": "function_call_output",
@@ -450,4 +557,7 @@ def run_general_furniture_agent(
                 }
             )
         input_items = outputs
-    raise RuntimeError("model_call_budget_exhausted")
+    raise GeneralLiveError(
+        "model_call_budget_exhausted", trace=tuple(trace),
+        model_calls=calls, tool_calls=tool_calls,
+    )

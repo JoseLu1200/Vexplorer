@@ -28,6 +28,41 @@ test("machine review provenance stays distinct from optional human correction", 
   assert.equal(workspace.autoChecks[0].summary,"La silueta coincide.");
 });
 
+test("machine field decisions expose only accepted values while preserving the raw hypothesis",()=>{
+  const component={id:"panel-1",label:"Panel",kind:"panel",role:"side",length:{value_mm:800,state:"hypothesis"},width:{value_mm:600,state:"hypothesis"},thickness:{value_mm:18,state:"hypothesis"},quantity:{value:2,state:"hypothesis"},material:{value:"oak",state:"hypothesis"},finish:{value:"oil",state:"hypothesis"},unknown_fields:[]};
+  const workspace=normaliseGeneralWorkspace({proposal_revision:1,review_revision:1,status:"reviewed_incomplete",draft:{components:[component]},review:{reviewer_kind:"machine",reviewer_name:"Verifier",components:[component],machine_checks:[
+    {id:"accept-length",summary:"La cota longitudinal coincide."},
+    {id:"reject-width",summary:"La anchura contradice la vista lateral."},
+    {id:"abstain-thickness",summary:"El grosor no es legible."},
+    {id:"accept-material",summary:"La anotación identifica roble."},
+    {id:"conflict-finish",summary:"Dos vistas muestran acabados incompatibles."},
+  ],machine_field_reviews:[
+    {target_ref:"component:panel-1.length",status:"accepted",check_ids:["accept-length"]},
+    {target_ref:"component:panel-1.width",status:"rejected",check_ids:["reject-width"]},
+    {target_ref:"component:panel-1.thickness",status:"abstained",check_ids:["abstain-thickness"]},
+    {target_ref:"component:panel-1.material",status:"accepted",check_ids:["accept-material"]},
+    {target_ref:"component:panel-1.finish",status:"conflict",check_ids:["conflict-finish"]},
+  ],auto_review_status:"incomplete"}});
+  const effective=workspace.components[0],raw=workspace.rawComponents[0];
+  assert.equal(effective.dimensions.length.value,800);
+  assert.equal(effective.material.value,"oak");
+  assert.deepEqual([effective.dimensions.width.value,effective.dimensions.thickness.value,effective.quantity.value,effective.finish.value],[null,null,null,null]);
+  assert.deepEqual([effective.dimensions.width.state,effective.dimensions.thickness.state,effective.quantity.state,effective.finish.state],["unknown","unknown","unknown","unknown"]);
+  assert.equal(effective.dimensions.width.machineReview.status,"rejected");
+  assert.equal(effective.dimensions.width.machineReview.checkSummaries[0],"La anchura contradice la vista lateral.");
+  assert.equal(effective.quantity.machineReview.status,"unreviewed");
+  assert.match(effective.quantity.machineReview.reason,/sin decisión de campo/i);
+  assert.deepEqual(effective.unknownFields,["width","thickness","quantity","finish"]);
+  assert.deepEqual([raw.dimensions.width.value,raw.dimensions.thickness.value,raw.quantity.value,raw.finish.value],[600,18,2,"oil"]);
+});
+
+test("human reviews keep their effective component values without machine masking",()=>{
+  const workspace=normaliseGeneralWorkspace({proposal_revision:1,review_revision:1,status:"approved",review:{reviewer_kind:"human",reviewer_name:"Ana",components:[{id:"panel",length:{value_mm:800,state:"confirmed"},width:{value_mm:600,state:"confirmed"},thickness:{value_mm:18,state:"confirmed"},quantity:{value:2,state:"confirmed"},material:{value:"oak",state:"confirmed"},finish:{value:"oil",state:"confirmed"}}]}});
+  assert.equal(workspace.components[0].dimensions.width.value,600);
+  assert.equal(workspace.components[0].quantity.value,2);
+  assert.equal(workspace.components[0].dimensions.width.machineReview,undefined);
+});
+
 test("a stored machine review removes mandatory human-review copy from the run header",()=>{
   assert.deepEqual(generalMachineStatusPresentation({reviewerKind:"machine",autoReviewStatus:"accepted",status:"approved"}),{
     label:"Auto-revisión completada",
@@ -98,6 +133,22 @@ test("BOM exports preserve unknown values as empty cells", () => {
   const bom=[{component_id:"panel-1",occurrence_ids:["occ-1"],quantity:{value:1,state:"confirmed"},material:{value:null,state:"unknown"},dimensions:{length:{value:720},width:{value:null},thickness:{value:19}}}];
   assert.deepEqual(JSON.parse(serialiseGeneralBom(bom,"json")),bom);
   assert.equal(serialiseGeneralBom(bom,"csv"),"component_id,label,role,quantity,quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids,length_mm,width_mm,thickness_mm,material,finish\r\npanel-1,,,1,confirmed,unknown,occ-1,,720,,19,,");
+});
+
+test("machine BOM export uses the backend masked projection and retains decision reasons",()=>{
+  const derived=presentGeneralDerived({package:{bom_rows:[{component_id:"panel-1",label:"Panel",role:"side",quantity:{value:null,state:"unknown"},length:{value_mm:800,state:"hypothesis"},width:{value_mm:null,state:"unknown"},thickness:{value_mm:null,state:"unknown"},material:{value:"oak",state:"hypothesis"},finish:{value:null,state:"unknown"},machine_field_reviews:[
+    {field:"length",target_ref:"component:panel-1.length",status:"accepted",check_ids:["length-ok"],check_summaries:["La cota coincide."],source_refs:["dimension:d-1"]},
+    {field:"width",target_ref:"component:panel-1.width",status:"rejected",check_ids:["width-fail"],check_summaries:["La vista lateral contradice el valor."],source_refs:["view:side"]},
+    {field:"thickness",target_ref:"component:panel-1.thickness",status:"abstained",check_ids:["thickness-unknown"],check_summaries:["El grosor no es legible."],source_refs:["view:front"]},
+    {field:"quantity",target_ref:"component:panel-1.quantity",status:"unreviewed",check_ids:[],check_summaries:[],source_refs:[]},
+  ]}]}});
+  const row=derived.bom[0],csv=serialiseGeneralBom(derived.bom,"csv"),json=JSON.parse(serialiseGeneralBom(derived.bom,"json"));
+  assert.equal(row.machineFieldReviews[1].status,"rejected");
+  assert.equal(row.machineFieldReviews[1].checkSummaries[0],"La vista lateral contradice el valor.");
+  assert.match(csv,/panel-1,Panel,side,,unknown,unknown,,,800,,,oak,/);
+  assert.doesNotMatch(csv,/600|,18,|,2,/);
+  assert.equal(json[0].width.value,null);
+  assert.equal(json[0].machineFieldReviews[2].status,"abstained");
 });
 
 test("provisional BOM exports keep scenario occurrences distinct from confirmed physical ones",()=>{

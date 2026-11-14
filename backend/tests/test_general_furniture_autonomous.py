@@ -7,9 +7,11 @@ from pydantic import ValidationError
 
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.contratos.modelos import GeneralAutoReviewCheck, GeneralMachineFieldReview, GeneralMachineProvenance, GeneralScenarioOccurrence, GeneralValue
+from backend.app.general_furniture.autonomous import GeneralAutonomousError
 from backend.app.general_furniture.autonomous import run_general_autonomous
 from backend.app.general_furniture.autonomous import _reject_forged_machine_facts
 from backend.app.general_furniture.autonomous import _review_input
+from backend.app.general_furniture.autonomous import _materialize_repair
 from backend.app.general_furniture.autonomous import _scenario_occurrences
 from backend.app.general_furniture.autonomous import _tool_schemas
 from backend.app.general_furniture.autonomous import _validate_visual_checks
@@ -105,6 +107,8 @@ def test_critic_receives_projection_candidates_without_treating_them_as_facts() 
     assert "regions" in payload["compact_geometry"]
     assert "projection_hypotheses" in payload["compact_geometry"]
     assert payload["projection_authority"] == "ambiguous_hypotheses_not_physical_identity_or_quantity"
+    assert "raster_authority" not in payload
+    assert "allowed_document_refs" not in payload
 
 
 def test_critic_receives_exact_detail_for_segment_binding_omitted_from_initial_spans() -> None:
@@ -142,6 +146,52 @@ def test_critic_receives_exact_detail_for_segment_binding_omitted_from_initial_s
     assert detail["value_mm"] == 100
     assert detail["semantic"] == "contour_segment_length"
     assert "component:panel.length" in payload["allowed_target_refs"]
+
+
+def test_raster_document_references_are_closed_and_shared_by_critic_and_repair() -> None:
+    from backend.app.contratos.modelos import DrawingExtraction
+
+    extraction = DrawingExtraction(
+        drawing_id="raster-drawing", status="needs_review",
+        source_unit="unknown", unit_scale_to_mm=None, coordinate_unit="source",
+        entities=(), views=(), contours=(), dimensions=(), evidence=(), observations=(),
+    )
+    page = GeneralVisualPage(
+        reference="pdf-sha:pdf-page:0001", media_type="image/png",
+        sha256="b" * 64, content=b"png",
+        source_document_refs=("document:pdf-child",),
+    )
+    context = GeneralFurnitureContext(
+        run_id="run-raster", extraction=extraction,
+        ledger_revision="ledger-raster", visual_pages=(page,),
+    )
+    raw = {
+        "bindings": [],
+        "components": [{
+            "id": "visual-panel", "label": "Panel visual", "kind": "panel",
+            "role": "unknown", "length_binding_id": None,
+            "width_binding_id": None, "thickness_binding_id": None,
+            "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+            "premise_ids": ["p"], "source_view_ids": [],
+            "source_observation_ids": [], "source_contour_ids": [],
+            "source_evidence_ids": [], "source_dimension_ids": [],
+            "source_document_refs": ["document:pdf-child"],
+            "assumptions": ["Escenario visual sin escala."],
+            "unknown_fields": ["length", "width", "thickness", "quantity"],
+        }],
+        "premises": [{"id": "p", "description": "Hipótesis visual.", "required": True, "blocking": True}],
+        "assumptions": ["No se miden píxeles."],
+    }
+
+    repaired = _materialize_repair(context, raw)
+    payload = json.loads(_review_input(context, repaired)[0]["content"][0]["text"])
+
+    assert repaired.draft.components[0].source_document_refs == ("document:pdf-child",)
+    assert "pdf-sha:pdf-page:0001" in payload["allowed_source_refs"]
+    assert "document:pdf-child" in payload["allowed_source_refs"]
+    assert "pdf-sha:pdf-page:0001" in payload["allowed_document_refs"]
+    assert "document:pdf-child" in payload["allowed_document_refs"]
+    assert payload["raster_authority"]["allowed_source_view_ids"] == []
 
 
 def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof() -> None:
@@ -347,6 +397,59 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
     assert checkpoints[0].proposal_revision == 1
     assert checkpoints[1].proposal_revision == 2
     assert checkpoints[1].proposal_outcome.proposal.id == outcome.effective_proposal_outcome.proposal.id
+
+
+def test_autonomous_provider_failure_preserves_prior_safe_critique_trace() -> None:
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = _proposal()
+    draft = materialize_general_proposal(extraction, proposal)
+    original = draft.components[0]
+
+    class ProviderFailure(RuntimeError):
+        code = "provider_response_incomplete"
+
+    class Provider:
+        calls = 0
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            if self.calls == 2:
+                raise ProviderFailure("secret provider payload")
+            arguments = {
+                "scenario_id": "scenario-p1",
+                "checks": [{
+                    "id": "repairable", "kind": "visual_consistency",
+                    "outcome": "fail", "method": "model_visual",
+                    "target_refs": [f"component:{original.id}.length"],
+                    "source_refs": ["visual:page-1"],
+                    "summary": "La asignación visual es incoherente.",
+                }],
+                "field_reviews": [{
+                    "target_ref": f"component:{original.id}.length",
+                    "status": "rejected", "check_ids": ["repairable"],
+                }],
+                "unresolved": ["repairable:length_binding"],
+                "status": "conflict",
+            }
+            return ProviderResponse(
+                id="critic-response", model="reviewer-model",
+                tool_calls=(ToolCall(
+                    call_id="critic-call", name="entregar_revision_autonoma",
+                    arguments_json=json.dumps(arguments),
+                ),),
+            )
+
+    with pytest.raises(GeneralAutonomousError) as caught:
+        run_general_autonomous(
+            _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+            reviewer_provider=Provider(), proposer_model="proposer-model",
+        )
+
+    assert caught.value.code == "provider_response_incomplete"
+    assert caught.value.model_calls == 2
+    assert caught.value.tool_calls == 1
+    assert caught.value.trace[-1]["phase"] == "general_auto_critique"
+    assert "secret provider payload" not in json.dumps(caught.value.trace)
 
 
 def test_semantic_repair_rejects_numeric_binding_outside_ledger() -> None:
