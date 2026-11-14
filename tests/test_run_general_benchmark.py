@@ -337,4 +337,3 @@ def test_cli_freezes_scoreable_paired_manifests_before_final_manifest(
     assert "baseline-predictions.json" in frozen["files"]
     assert "final-predictions.json" in frozen["files"]
     assert "not-logged" not in json.dumps(frozen)
-

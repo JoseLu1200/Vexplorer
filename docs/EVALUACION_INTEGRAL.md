@@ -99,6 +99,26 @@ Los valores por defecto son proponente `gpt-6.1-sol`, crítico `gpt-6-astra`, 16
 
 En modo estricto cada ZIP debe contener exactamente `input.dxf` y `case.json`. Nombres, ID opaco, metadatos, tamaños declarados/comprimidos, ratio de compresión y SHA-256 se validan antes de descomprimir el DXF; no se extraen rutas ni se ejecuta contenido del bundle. Configuración, fuentes, PNG, código del runner/backend y dependencias declaradas quedan enlazados por SHA-256. El log y los timestamps locales documentan el orden operativo, pero no son una prueba criptográfica de cronología. Las pruebas offline no hacen llamadas a proveedores.
 
+Después del freeze, `tools.build_panel_evaluation_references` reproduce la agrupación y alineación privada sin contener rutas, hashes ni respuestas del dataset. Agrupa cuboides por tripleta redondeada, compara la tripleta predicha sin orientación y resuelve primero máxima cardinalidad y luego mínimo error. Una abstención dimensional nunca es alineable. El evaluador posterior conserva largo/ancho/espesor para medir intercambios de ejes. Comandos blind20 completos:
+
+```powershell
+.venv\Scripts\python.exe -m tools.build_panel_evaluation_references `
+  --predictions .runtime\transcript-qa\blind20-paired\baseline-predictions.json `
+  --raw-references ..\plankassembly_adapter_blind20_v2_private\references.json `
+  --output .runtime\transcript-qa\blind20-evaluation\private-baseline.json `
+  --effective-date 2026-11-14 --round-digits 1 --tolerance-mm 1 `
+  --acceptable-scenario-key private-reviewed-construction
+
+.venv\Scripts\python.exe -m tools.build_panel_evaluation_references `
+  --predictions .runtime\transcript-qa\blind20-paired\final-predictions.json `
+  --raw-references ..\plankassembly_adapter_blind20_v2_private\references.json `
+  --output .runtime\transcript-qa\blind20-evaluation\private-final.json `
+  --effective-date 2026-11-14 --round-digits 1 --tolerance-mm 1 `
+  --acceptable-scenario-key private-reviewed-construction
+```
+
+Para particiones, `--split development|holdout` se usa junto a `--filtered-predictions-output`; la referencia queda enlazada al SHA-256 de ese subconjunto exacto. Cada ruta de salida debe ser nueva y distinta de las entradas. La herramienta no puntúa ni abre referencias desde el runtime del producto.
+
 ```powershell
 python -m tools.evaluate_cases `
   --predictions .runtime/evaluation/frozen-predictions.json `
@@ -130,3 +150,7 @@ Después se ejecutó una pasada live real `v4` con `gpt-6.1-sol` sobre los seis 
 Todas las cantidades permanecieron desconocidas: cobertura de cantidad 0/36 y recobrado de ocurrencias 0/54. Las seis propuestas conservaron un escenario local, pero no hubo alineación evaluadora suficiente para afirmar que preservaran la construcción aceptable (0/6); se cuentan como escenarios no respaldados, no como falsedad demostrada. Coste, horas, recuperación histórica, tiempos y correcciones no tenían referencia/predicción compatible y quedan con denominador cero. No se afirma ahorro ni cumplimiento completo del objetivo de la transcripción. Artefactos agregados locales: `.runtime/transcript-qa/plank-v4-evaluation/report.json`; las referencias privadas no se versionan ni se sirven.
 
 Una segunda pasada preseleccionada antes de inferencia usó diez modelos distintos del split oficial `test` (nueve marcados development y un holdout por el adaptador). Las diez ejecuciones live se congelaron antes de abrir referencias. Agregado: 88 tipos propuestos, 77 tipos dimensionales de referencia y 77 alineados (P=0,875, R=1,000, F1=0,933); 11 hipótesis no alineadas. Los 231 campos comparados eran hipótesis, con MAE 0,719 mm y 229 dentro de 1 mm. Cantidades: cobertura 0/77 y recobrado 0/96 ocurrencias. Escenarios respaldados: 0/10. El único holdout no sostiene una afirmación de generalización, y las cohortes son estructurales, no tres familias semánticas de muebles. Costes, horas, comparables y tiempos permanecen sin evaluar.
+
+La cohorte pareada blind20 congeló 20 primeras pasadas y 19 salidas del crítico; un fallo de proveedor se conservó con final vacío y permaneció en el denominador. Baseline alineó 109/115 tipos (P=R=F1=0,948), comparó 327/345 campos y tuvo cobertura de cantidad 104/115=0,904, con 134/152 ocurrencias recuperadas (P=0,964/R=0,882/F1=0,921). El final alineó 99/115 tipos (P=0,908/R=0,861/F1=0,884), comparó 297/345 campos y tuvo cobertura de cantidad 98/115=0,852, con 127/152 ocurrencias (P=0,977/R=0,836/F1=0,901). Quedaron dentro de 1 mm 317/327 campos baseline y 287/297 finales; el MAE fue 6,331 y 6,970 mm. La elegibilidad del tipo usa la tripleta sin orientación, mientras el error conserva largo/ancho/espesor: un intercambio de ejes puede alinear el tipo y seguir revelando error de asignación.
+
+En alineación por caso, el crítico no aumentó ningún recuento: 16 quedaron iguales y 4 bajaron; los tipos no alineados pasaron de 6 a 10. Este resultado mezcla abstención honesta con fallo: los valores finales rechazados, abstendidos o no revisados se enmascaran a `null/unknown`; al faltar una dimensión el protocolo no puede alinear el tipo, aunque el crítico no haya negado su existencia. Baseline contenía 109 cantidades y 342 dimensiones numéricas frente a 101 y 309 finales. El fallo explica seis cantidades y 17 dimensiones; fuera de ese caso el crítico enmascaró otras dos cantidades y 16 dimensiones. Los 19 outcomes finales fueron `incomplete` y sumaron cero reparaciones semánticas: no hay evidencia de mejora por reparación de la propuesta/DXF. Por eso la caída de F1 no demuestra por sí sola peor despiece, pero tampoco permite atribuir mejora al crítico. La precisión de ocurrencias subió ligeramente y el recobrado/cobertura bajaron. Los 20 escenarios baseline y 19 finales carecen de juicio semántico de correspondencia y siguen sin respaldo medido. Development/holdout, agrupación por dimensiones y asignación óptima se reportan como diagnóstico de una sola fuente, no generalización ni benchmark industrial independiente.

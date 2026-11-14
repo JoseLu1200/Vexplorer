@@ -8,7 +8,7 @@ La única fuente local con vistas de mobiliario y referencia de componentes sufi
 
 Cadblock aporta familias visualmente diversas de mobiliario y pares DWG/DXF, pero carece de despiece/BOM emparejado. Se admite para robustez de ingesta y comportamiento conservador, nunca como oráculo BOM. El corpus `engineering_dataset` es mecánico: sirve para cotas, PDF y conjuntos auxiliares, no para generalizar a muebles.
 
-No hay en el workspace costes, horas, juicios de relevancia histórica ni tiempos observados de técnicos. Ningún dataset permite medir ahorro.
+El workspace ya contiene 19 registros `published`: cuatro presupuestos académicos con coste/horas y quince coeficientes de tiempo de producción. Permiten ejercitar recuperación y estimación con alcance publicado, pero no son ERP, órdenes ejecutadas propias, juicios de relevancia de técnicos ni sesiones pareadas observadas. Por ello no permiten afirmar ahorro empresarial.
 
 ## Inventario
 
@@ -21,6 +21,7 @@ No hay en el workspace costes, horas, juicios de relevancia histórica ni tiempo
 | `../engineering_evaluation_pilot_v3` | 17 casos: 14 extracciones CAD y 3 variantes PDF rasterizadas | Hereda fuentes anteriores | Referencia separada del evaluador | Desarrollo técnico, no 17 despieces ni test ciego |
 | `../engineering_evaluation_pilot` y `_v2` | Preparaciones anteriores | Hereda fuentes anteriores | Versiones superadas; v2 no conserva correctamente todos los objetivos de abstención/desconocidos | No seleccionar para nuevos resultados |
 | `../plankassembly_adapter_trial_v1{,_private}` | Seis casos del split oficial `valid` | Hereda CC BY-NC-ND 4.0 | Entrada pública y referencia físicamente separadas | Ya evaluado como diagnóstico de desarrollo v4; no benchmark ciego |
+| Histórico público documentado en `FUENTES_HISTORICO_PUBLICO.md` | 4 presupuestos de muebles y 15 coeficientes de tiempo publicados | Dos artículos académicos con procedencia y licencia registradas | Coste/horas de alcance publicado; no ERP propio | QA económica y escenarios condicionales, nunca ahorro empresarial medido |
 
 ## Ampliación preparada
 
@@ -33,7 +34,7 @@ Se generaron `../plankassembly_adapter_test_v1` y `../plankassembly_adapter_test
 - Se verificaron todos los hashes de ambos directorios: 0 discrepancias.
 - El manifiesto conserva `inference_evaluated: false` y `redistribution_authorized: false`.
 
-Estas cohortes son de complejidad estructural, no tres familias semánticas de producto. PlankAssembly no publica etiquetas fiables de armario/mesa/estantería por modelo; inventarlas contaminaría la evaluación. Las diez entradas pueden congelarse con inferencia nativa antes de que el evaluador abra sus referencias, replicando el protocolo v4.
+Estas cohortes son de complejidad estructural, no tres familias semánticas de producto. PlankAssembly no publica etiquetas fiables de armario/mesa/estantería por modelo; inventarlas contaminaría la evaluación. Las diez entradas se congelaron y puntuaron después sin realimentar sus referencias al agente.
 
 ## Tres familias visuales para robustez, sin oráculo BOM
 
@@ -55,13 +56,12 @@ Los tres se abrieron con `extract_drawing` sin avisos. El extractor actual los a
 - No se usarán nombres de fuente, programas JSON, sidecars, bounds privados o asociaciones como entrada al agente.
 - No se descargará otro corpus solo para aumentar recuentos mientras no aporte emparejamiento, licencia utilizable y referencia revisable superior a PlankAssembly.
 
-## Siguiente evaluación autorizable
+## Siguientes evaluaciones y límites
 
-1. Ejecutar y congelar las diez entradas públicas `test` con el mismo modelo/prompt/schema y guardar hashes antes de puntuarlas.
-2. Puntuar agregados por separado de los seis casos `valid`; no ajustar prompt o matching tras ver referencias.
-3. Informar por estado `hypothesis|observed|confirmed`, cantidad, abstención y cobertura; la alineación por dimensiones no certifica identidad semántica.
-4. Ejecutar los tres Cadblock solo como robustez de entrada/abstención. Sin oráculo, no calcular precision/recall BOM.
-5. Para cerrar la transcripción siguen siendo imprescindibles planos pobres reales de al menos tres familias empresariales, despieces revisados, histórico de comparables, costes/horas compatibles y sesiones de técnicos.
+1. Las diez entradas públicas `test` y la cohorte pareada blind20 ya se congelaron y puntuaron sin ajustar prompt o matching tras abrir referencias.
+2. Seguir informando por certeza factual, estado de revisión, cantidad, abstención y cobertura; la alineación por dimensiones no certifica identidad semántica.
+3. Ejecutar los tres Cadblock solo como robustez de entrada/abstención. Sin oráculo, no calcular precision/recall BOM.
+4. La operación automática no queda condicionada a revisión humana; debe conservar abstenciones, trazas y estados provisionales. Para medir ahorro empresarial sí hacen falta planos propios representativos, despieces o criterios de aceptación independientes, ERP compatible y sesiones pareadas observadas.
 
 ## Resultado live de los diez casos `test`
 
@@ -75,10 +75,25 @@ Por split, los nueve casos `development` obtuvieron tipos P=0,877/R=1,000/F1=0,9
 
 Informes agregados locales: `.runtime/transcript-qa/plank-test10-evaluation/report.json`, `report-development.json` y `report-holdout.json`. Las entradas privadas del evaluador permanecen fuera del producto y de Git.
 
-## Cohorte ciega para revisor automático
+## Cohorte pareada para revisor automático
 
-Se preparó una cohorte posterior, todavía sin inferencia ni puntuación, en `../plankassembly_adapter_blind20_v2` con referencia hermana privada. Usa el rango consecutivo 11–30 del split oficial `test`, por lo que no reutiliza los primeros diez casos ni los seis `valid`. Contiene 20 `family_hash` públicos distintos, 15 casos marcados development y 5 holdout. La dificultad visible oscila entre 36 y 192 entidades LINE por DXF (media 91,2) en las tres capas ortográficas.
+Se preparó y ejecutó una cohorte posterior en `../plankassembly_adapter_blind20_v2` con referencia hermana privada. Usa el rango consecutivo 11–30 del split oficial `test`, por lo que no reutiliza los primeros diez casos ni los seis `valid`. Contiene 20 `family_hash` públicos distintos, 15 casos marcados development y 5 holdout. La dificultad visible oscila entre 36 y 192 entidades LINE por DXF (media 91,2) en las tres capas ortográficas.
 
 Los ZIP que recibirá el harness contienen solo DXF y metadatos públicos acotados: ID opaco, formato, unidad, tipo de vista, instrucción y hash. Se eliminaron split y `family_hash` del ZIP individual; los 20 DXF carecen de TEXT/MTEXT, BOM, cantidades, IDs de pieza y rutas privadas. Los hashes públicos pasan y el directorio privado v2 no se abrió durante esta admisión. `blind20_v1` queda superado y no debe ejecutarse.
 
-El ensayo debe conservar el primer borrador y la salida del crítico de una misma ejecución, con idéntico input/modelo/configuración; no comparar dos reruns estocásticos. Ambos artefactos y sus SHA-256 se congelan antes de abrir referencias. La evaluación publicará reparaciones mejoradas/regresadas, abstenciones, componentes no respaldados, escenarios y cantidad/ocurrencias provisionales. `auto_reviewed` es estado de revisión, no verdad ni confirmación humana. El hash enlaza artefactos, pero la cronología sigue siendo una afirmación de proceso auditada por el manifiesto/log.
+El ensayo conservó el primer borrador y la salida del crítico de una misma ejecución, con idéntico input/modelo/configuración; no comparó dos reruns estocásticos. Los 20 baselines y 19 finales, más un fallo de proveedor, se congelaron antes de abrir referencias. El manifiesto final contiene 192 archivos sin discrepancias. `auto_reviewed` es estado de revisión, no verdad ni confirmación humana; el hash enlaza artefactos, pero la cronología sigue siendo una afirmación de proceso auditada por el manifiesto/log.
+
+Baseline: 115 tipos propuestos y 115 tipos dimensionales de referencia; 109 alineados (P=R=F1=0,948). Se compararon 327/345 campos (cobertura 0,948), 317 dentro de 1 mm, con MAE 6,331 mm. Cantidades provisionales: cobertura 104/115=0,904, 134/152 ocurrencias recuperadas, P=0,964/R=0,882/F1=0,921.
+
+Final automático: 109 tipos propuestos, 99 alineados (P=0,908/R=0,861/F1=0,884); los tipos no alineados pasan de 6 baseline a 10 finales. Se compararon 297/345 campos auto-revisados (cobertura 0,861), 287 dentro de 1 mm, con MAE 6,970 mm. Cantidades auto-revisadas: cobertura 98/115=0,852, 127/152 ocurrencias recuperadas, P=0,977/R=0,836/F1=0,901. El crítico subió ligeramente la precisión de ocurrencias a costa de cobertura y recobrado. Los manifests contienen 109 cantidades y 342 dimensiones numéricas baseline frente a 101 y 309 finales: el fallo explica seis cantidades y 17 dimensiones perdidas; el enmascarado de decisiones no aceptadas explica las dos cantidades y 16 dimensiones restantes. Frente al baseline, 16 casos conservaron el número de tipos alineados y 4 lo redujeron; ninguno lo aumentó. Parte de esa caída es una propiedad del protocolo: un campo dimensional abstendido pasa a `null/unknown` y ya no puede participar en la alineación geométrica, por lo que el componente queda no alineado aunque su existencia no haya sido rechazada. El fallo del proveedor cuenta con salida final vacía, no se elimina del denominador. Los 19 outcomes finales quedaron `incomplete`, con `semantic_repairs=0`; esta cohorte no aporta evidencia de mejora por reparación de la propuesta/DXF, solo de revisión y abstención.
+
+| Split / etapa | Tipos P/R/F1 | Dimensiones | Cantidad |
+|---|---|---|---|
+| Development baseline (15) | 0,950 / 0,927 / 0,938 | 228/246; 226 a 1 mm; MAE 0,158 mm | cobertura 72/82=0,878; F1 0,921 |
+| Development final (15) | 0,905 / 0,817 / 0,859 | 201/246; 199 a 1 mm; MAE 0,179 mm | cobertura 67/82=0,817; F1 0,899 |
+| Holdout baseline (5) | 0,943 / 1,000 / 0,971 | 99/99; 91 a 1 mm; MAE 20,547 mm | cobertura 32/33=0,970; F1 0,921 |
+| Holdout final (5) | 0,914 / 0,970 / 0,941 | 96/99; 88 a 1 mm; MAE 21,189 mm | cobertura 31/33=0,939; F1 0,907 |
+
+Los 20 escenarios baseline y 19 finales permanecen sin alineación semántica privada, por lo que se reportan como no respaldados y no como falsos demostrados. Para admitir un match se compara la tripleta dimensional sin orientación, como en test10; el error final sí conserva los campos largo/ancho/espesor. Por eso una asignación de ejes intercambiada puede contar como tipo alineado y a la vez elevar el MAE. Agrupar ocurrencias iguales y elegir una asignación óptima dentro de 1 mm puede inflar tipos frente a identidad semántica exacta; las abstenciones pueden reducirlos. Ni el subconjunto holdout de la misma fuente ni estos dibujos generados prueban generalización industrial. Costes, horas, retrieval y tiempos no forman parte de esta cohorte y conservan denominador cero; los 19 registros económicos publicados se evalúan por un protocolo separado y no convierten este resultado en ahorro medido.
+
+Informes agregados locales: `.runtime/transcript-qa/blind20-evaluation/report-baseline.json`, `report-final.json` y sus particiones development/holdout. La alineación se reproduce con el CLI versionado `tools.build_panel_evaluation_references`; sus salidas se compararon objeto a objeto con las alineaciones que produjeron estas cifras. Las referencias y alineaciones privadas permanecen fuera del producto y de Git.
