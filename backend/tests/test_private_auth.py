@@ -146,4 +146,3 @@ def test_concurrent_uploads_cannot_overbook_storage_quota(tmp_path: Path, monkey
 
     assert statuses == [201, 507]
     assert len(list((data / "documents").glob("*.dxf"))) == 1
-
