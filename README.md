@@ -1,10 +1,10 @@
 # Vexplorer — planos, piezas y reconstrucción revisable
 
-Vexplorer permite explorar **vistas DXF 2D de piezas separadas**, asociarlas mediante identificadores explícitos del plano, obtener dimensiones y cantidades trazables y proponer su montaje como **estantería rectangular**. La revisión humana permite completar datos desconocidos antes de reconstruir sus tableros en 3D. Una biblioteca local recupera y agrupa revisiones mediante atributos geométricos o embeddings semánticos reales; el cálculo económico usa tarifas sintéticas.
+Vexplorer convierte vistas DXF 2D en propuestas de piezas y medidas revisables. Admite dos recorridos acotados: **mesa rectangular desde alzado, planta y perfil del conjunto**, y **estantería desde vistas de piezas separadas con identificadores explícitos**. La geometría mide; el modelo propone asociaciones y operaciones; una revisión registra las premisas aceptadas y los datos aportados.
 
-Recorrido: **plano y cotas → piezas y explicación → revisión → reconstrucción 3D → similares y grupos → ficha, estimación y traza**. Los casos son propios y de desarrollo; no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
+Recorrido de mesa: **plano con cotas parciales → programa de componentes → revisión → planos acotados generales, por pieza y de despiece → reconstrucción esquemática → similares y costes por conceptos**. La biblioteca local usa atributos geométricos o embeddings reales; las tarifas económicas son sintéticas. Los casos propios de desarrollo no acreditan generalización, precisión industrial ni ahorro medido con técnicos.
 
-La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) recoge esta entrega. La [auditoría anterior](docs/AUDITORIA_APP_2026-11-14.md) conserva los resultados y fallos de `dab7ce5`; no describe el estado de las correcciones posteriores. La siguiente ampliación solicitada —mesa desde vistas montadas con cotas parciales y planos derivados acotados— se documentará por separado cuando esté implementada y comprobada.
+El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el nuevo recorrido; su integración y revisión están en curso. La [verificación de piezas separadas](docs/VERIFICACION_PIEZAS_SEPARADAS.md) conserva el cierre anterior. La [auditoría de `dab7ce5`](docs/AUDITORIA_APP_2026-11-14.md) es histórica. Las [adaptaciones de CAD/harness](docs/INTEGRACION_CAD_HARNESS.md) identifican los cambios de Pablo adoptados, sus correcciones y lo pendiente.
 
 ## Instalación y arranque (PowerShell)
 
@@ -27,7 +27,19 @@ Si ya existe una biblioteca antigua con descriptores v1, puede conservarse y abr
 .\.venv\Scripts\python.exe -c "from pathlib import Path; from dotenv import load_dotenv; load_dotenv(); import uvicorn; from backend.app.main import create_app; uvicorn.run(create_app(data_dir=Path('.runtime/demo-parts')),host='127.0.0.1',port=8765)"
 ```
 
-## Guion de demo
+## Guion de mesa desde vistas montadas
+
+1. Cargar [mesa_demo_001.dxf](data/planos_demo/mesa_demo_001.dxf), elegir **Mesa · vistas montadas**, **Solo geometría** y la plantilla explícita **2 soportes laterales**. Es una baseline de catálogo, no inferencia live. Con proveedor configurado, **Agente en vivo** genera su propio programa acotado de componentes y operaciones referenciadas.
+2. Inspeccionar cotas escritas y medidas de geometría CAD. Los offsets observados de 30 y 18 mm todavía requieren interpretar qué sección representan; esa asignación es una hipótesis, no una cota escrita de espesor. La tapa propuesta mide 1200 × 700 × 30 mm y los dos soportes 720 × 700 × 18 mm bajo las premisas del programa.
+3. En **Revisar**, aceptar o rechazar programa, componentes y premisas con motivo y nombre. La nueva revisión recalcula las dependencias y conserva las anteriores. Los campos desconocidos bloqueantes se pueden completar con una decisión registrada; no se sustituyen medidas observadas por números libres.
+4. Abrir **General acotado**, **Por pieza** y **Despiece**. Descargar SVG/DXF de cada lámina. Las cotas conservan estado y procedencia; el despiece representa ocurrencias físicas. **3D** muestra cajas esquemáticas tras una revisión suficiente, sin uniones ni mecanizados certificados.
+5. En **Coste**, elegir tarifas sintéticas de material, canteado y operaciones. Revisar cantidades, fórmulas y contribuciones por componente. Los conceptos no resueltos permanecen desconocidos: un subtotal conocido no se presenta como precio completo ni valor comercial del mueble. Exportar ficha JSON y lista de corte CSV genérica.
+6. Guardar revisiones en **Biblioteca** y compararlas con [mesa_demo_002.dxf](data/planos_demo/mesa_demo_002.dxf). El descriptor `furniture-v3` conserva estructura, cantidades y dimensiones de componentes y se consulta separado de las versiones anteriores. El parecido semántico no justifica por sí solo un coste.
+7. Probar [mesa_demo_003.dxf](data/planos_demo/mesa_demo_003.dxf), con información insuficiente, y [mesa_demo_004.dxf](data/planos_demo/mesa_demo_004.dxf), con conflicto dimensional. Conservar los pendientes y revisar la traza; no esperar un plano fabricable por defecto.
+
+El programa generativo está limitado a tapa más dos soportes laterales o cuatro patas de esquina, con operaciones `copy/add/subtract` sobre medidas del ledger y reglas versionadas. No genera muebles arbitrarios, piezas curvas, herrajes ocultos ni soluciones de unión. Una referencia reservada no determina por sí sola la única construcción compatible con un plano pobre.
+
+## Guion de piezas separadas
 
 1. Cargar [piezas_completo.dxf](data/planos_demo/piezas_completo.dxf), seleccionar **Piezas separadas** y **Solo geometría**, y pulsar **Abrir**. La entrada contiene nueve vistas de tres tipos de panel, sin montaje ni modelo 3D.
 2. Seleccionar **Pieza K2**: ver sus tres vistas, cotas y fuentes en el inspector. La cantidad `2` procede de `QTY K2 2`, no del número de vistas. Sus dimensiones son `864 × 300 × 18 mm`.
@@ -46,7 +58,7 @@ La entrada no contiene una BOM ni nombres de piezas. La referencia propia está 
 ## Modos
 
 - **geometry_only**: extracción y candidatos deterministas compatibles de la familia admitida; no llama a un proveedor.
-- **live**: OpenAI Responses con herramientas nativas, bucle propio y validación local. El modelo inspecciona evidencias estructuradas y propone un escenario disponible; las explicaciones conservan fuentes, fórmulas y premisas. **No recibe imágenes ni demuestra visión directa o descomposición libre de cualquier mueble.**
+- **live**: OpenAI Responses con herramientas nativas, bucle propio y validación local. En mesa genera bindings y componentes dentro del perfil acotado; en los otros recorridos inspecciona y elige hipótesis existentes. Las explicaciones conservan fuentes, fórmulas y premisas. El canal predeterminado es evidencia vectorial estructurada; no demuestra descomposición libre de cualquier mueble.
 - **recorded_replay**: no habilitado; el servidor lo rechaza porque no existe un mecanismo de replay admitido con grabaciones verificadas.
 
 Para live, configurar `OPENAI_API_KEY` en un `.env` local ignorado por Git. [`.env.example`](.env.example) muestra los nombres, sin credenciales. Con la clave ya configurada:
@@ -56,7 +68,7 @@ $env:OPENAI_MODEL="gpt-6.1-sol"
 .\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8765 --env-file .env
 ```
 
-Los errores de proveedor se muestran como tales; no se convierten en resultados geométricos etiquetados live. Límites: 15 llamadas de modelo, 30 herramientas, 2 reparaciones estructurales y 120 segundos para la fase del agente. Nunca incorporar `.env` a Git.
+Los errores de proveedor se muestran como tales; no se convierten en resultados geométricos etiquetados live. Límites: 15 llamadas de modelo, 30 herramientas, 2 reparaciones estructurales y 120 segundos para la fase del agente. `OPENAI_MAX_OUTPUT_TOKENS` vale 4096 por defecto y admite de 256 a 16384; una configuración inválida deshabilita el proveedor con motivo explícito. Nunca incorporar `.env` a Git.
 
 Los embeddings son independientes del modo de análisis del DXF. Usan `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small` y `OPENAI_EMBEDDING_DIMENSIONS=256` por defecto. Se generan mediante una acción explícita de guardado semántico. La caché distingue descriptor, modelo y dimensiones; se rechazan vectores corruptos o incompatibles. Los ejemplos de la misma familia tienen cosenos muy altos: la utilidad de esa agrupación sobre un histórico variado sigue pendiente de evaluación.
 
@@ -75,6 +87,7 @@ Los DXF propios se pueden regenerar con:
 ```powershell
 .\.venv\Scripts\python.exe -m tools.build_demo_fixture
 .\.venv\Scripts\python.exe -m tools.build_parts_fixture
+.\.venv\Scripts\python.exe -m tools.build_table_fixture
 ```
 
 Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas conflictivas, referencias aisladas, revisiones, geometría variable y cálculo económico independiente. Las pruebas del proveedor usan un doble de la frontera HTTP; no sustituyen el motor ni se presentan como inferencia live.
