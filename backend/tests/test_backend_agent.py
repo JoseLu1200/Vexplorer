@@ -12,6 +12,7 @@ from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.prompts import SYSTEM_PROMPT
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
 from backend.app.agente.tools import parts_tool_schemas, tool_schemas
+from backend.app.contratos.modelos import InspectEvidenceArgs
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
 from backend.app.servicios.decomposition import derive_decomposition_scenarios
@@ -41,6 +42,12 @@ def test_provider_uses_configured_output_budget_without_exposing_secrets() -> No
     provider.create_response(input_items=[], tools=[], previous_response_id=None, timeout_s=1)
     assert seen["max_output_tokens"] == 4096
     assert "secret-test-key" not in json.dumps(seen)
+    assert ProviderSettings(api_key="key", model="model", max_output_tokens=999999999).available is False
+
+
+def test_inspect_evidence_rejects_unbounded_id_batches() -> None:
+    with pytest.raises(ValueError):
+        InspectEvidenceArgs(evidence_ids=tuple(f"evidence-{index}" for index in range(51)))
 
 
 def test_agent_uses_native_tools_against_current_ledger_only() -> None:
