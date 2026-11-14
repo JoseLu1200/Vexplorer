@@ -23,11 +23,15 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
 const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, config: {}, session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
 let sceneViewer;
+let reconstructionPanel;
 const reconstructionButton=document.createElement('button');
-reconstructionButton.type='button';reconstructionButton.className='button';reconstructionButton.textContent='Construcción propuesta';
-reconstructionButton.addEventListener('click',()=>{
+reconstructionButton.type='button';reconstructionButton.className='button';reconstructionButton.textContent='Construcción 3D';
+reconstructionButton.disabled=true;
+reconstructionButton.title='Disponible al abrir un plano como Mueble general';
+reconstructionButton.addEventListener('click',async()=>{
   if(!state.runId||!state.generalWorkspace){setMessage('Abre primero un plano como Mueble general.',true);return;}
-  window.open(`./reconstruction.html?run=${encodeURIComponent(state.runId)}`,'_blank','noopener');
+  if(!reconstructionPanel){const {createReconstructionPanel}=await import('./components/ReconstructionPanel.js');reconstructionPanel=createReconstructionPanel();}
+  reconstructionPanel.open(state.runId,reconstructionButton);
 });
 document.querySelector('.navigator__head')?.append(reconstructionButton);
 const runFence=createRequestFence(), contextFence=createRequestFence(), sceneFence=createRequestFence(), artifactFence=createRequestFence(), uploadFence=createRequestFence(), actionFence=createRequestFence();
@@ -52,6 +56,7 @@ function resetEstimateUi() {
 function configureExportActions(){const table=state.tableWorkspace?.isTable===true; text($("#csv-export"),table?"Lista de corte CSV":"Ficha CSV"); if(table){const ready=state.snapshot?.result?.state==="completed"; $$('[data-export]').forEach((button)=>button.disabled=!ready);}}
 
 function resetRunUi() {
+  reconstructionButton.disabled=true;
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate();
   state.jobAbort?.abort();
   Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
@@ -507,6 +512,7 @@ function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-rev
 async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent;if(button){button.disabled=true;button.textContent="Iniciando nueva ejecución…";}try{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
 
 function renderGeneralFurniture() {
+  reconstructionButton.disabled=!state.runId;
   const workspace=state.generalWorkspace,derived=state.generalDerived,components=derived?.construction?.pieces.length?derived.construction.pieces.map((piece)=>({id:piece.componentId,pieceId:piece.pieceId,label:piece.label,kind:piece.role,role:piece.role,dimensions:{length:piece.length,width:piece.width,thickness:piece.thickness},quantity:piece.quantity,geometry:piece.geometry,details:derived.construction.details.filter((item)=>piece.detailIds.includes(item.id)),sourceRefs:piece.sourceRefs,sheetIds:piece.sheetIds,constructionPiece:true})):derived?.bom.length?derived.bom.map((row)=>({id:row.componentId,label:row.label??row.componentId,kind:row.role??"pieza",role:row.role,dimensions:{length:row.length,width:row.width,thickness:row.thickness},quantity:row.quantity,material:row.material,finish:row.finish,bomRow:row})):workspace.components;
   text($("#review-stage > .eyebrow"),workspace.reviewerKind==="machine"?"Revisión automática":"Edición humana opcional"); text($("#input-kind-label"),state.snapshot?.mode==="live"?"Entrada: mueble general · revisión visual automática":"Entrada: mueble general · propuesta revisable"); text($("#parts-title"),"Propuesta de construcción · lista de piezas"); text($("#parts-summary"),`${components.length} ${components.length===1?"pieza":"piezas"} · escenario ${workspace.constructionScenarioId??"base"}`); text($("#scenario-status"),workspace.reviewerKind==="machine"?`Coherencia ${({accepted:"aceptada",incomplete:"incompleta",conflict:"en conflicto",abstained:"no evaluada por abstención"})[workspace.autoReviewStatus]??"sin estado"}`:generalStatusLabel(workspace.status));
   const constructionSummary=$("#general-construction-summary"),estimated=components.flatMap((item)=>Object.values(item.dimensions??{})).filter((item)=>item?.state==="estimated"&&item?.value!=null).length;constructionSummary.hidden=!components.length;constructionSummary.replaceChildren();if(components.length){const line=document.createElement("p");line.textContent=`${derived?.construction?.summary.label??"Propuesta provisional"}: ${components.length} tipos de pieza · ${estimated} cotas estimadas aceptadas. Las cifras con ≈ incluyen rango y fundamento en el inspector.`;constructionSummary.append(line);}
