@@ -103,6 +103,48 @@ def _general_sheet(
         ))
     else:
         warnings.append("overall_top_dimensions_unknown")
+    if width is not None and height is not None and depth is not None:
+        top_y = height + VIEW_GAP_MM
+        side_x = width + VIEW_GAP_MM
+        for label, position in (
+            ("FRONT", Point2D(x=0.0, y=height + 25.0)),
+            ("TOP", Point2D(x=0.0, y=top_y + depth + 25.0)),
+            ("SIDE", Point2D(x=side_x, y=height + 25.0)),
+        ):
+            primitives.append(TableDrawingPrimitive(
+                id=f"general-view-label-{label.lower()}", kind="text",
+                points_mm=(position,), text=label, state="calculated",
+                dependency_refs=(),
+            ))
+        for placement in evaluated.placements:
+            if placement.position_mm is None or placement.dimensions_mm is None:
+                warnings.append(f"occurrence_projection_unknown:{placement.occurrence_id}")
+                continue
+            position = placement.position_mm
+            size = placement.dimensions_mm
+            primitive_state = "calculated" if placement.state == "pass" else "proposed"
+            projections = {
+                "front": (
+                    Point2D(x=position.x, y=position.y),
+                    Point2D(x=position.x + size.x, y=position.y + size.y),
+                ),
+                "top": (
+                    Point2D(x=position.x, y=top_y + position.z),
+                    Point2D(x=position.x + size.x, y=top_y + position.z + size.z),
+                ),
+                "side": (
+                    Point2D(x=side_x + position.z, y=position.y),
+                    Point2D(x=side_x + position.z + size.z, y=position.y + size.y),
+                ),
+            }
+            for projection, points in projections.items():
+                primitives.append(TableDrawingPrimitive(
+                    id=f"general-occurrence-{placement.occurrence_id}-{projection}",
+                    kind="rect", points_mm=points, state=primitive_state,
+                    dependency_refs=placement.dependency_refs,
+                ))
+    else:
+        warnings.append("occurrence_projections_unknown")
     if evaluated.state != "completed":
         warnings.append("program_not_fully_reviewed")
     return TableSheetPlan(
@@ -163,6 +205,13 @@ def _component_sheet(component: EvaluatedTableComponent, page: int) -> TableShee
                 ))
     if not component.accepted:
         warnings.append("component_not_accepted")
+    primitives.append(TableDrawingPrimitive(
+        id=f"{component.id}-quantity", kind="text",
+        points_mm=(Point2D(x=0.0, y=(float(values[1]) if values[1] is not None else 90.0) + 50.0),),
+        text=f"QTY={component.quantity}" if component.quantity is not None else "QTY=?",
+        state="calculated" if component.accepted and component.quantity is not None else "proposed",
+        dependency_refs=(f"quantity_rule:{component.quantity_rule_id}",),
+    ))
     return TableSheetPlan(
         sheet_id=f"table-component-{component.id}", kind="component",
         title=f"Detalle · {component.role}", component_id=component.id, page=page,
@@ -199,9 +248,24 @@ def _cut_sheet(evaluated: EvaluatedTableProgram, page: int) -> TableSheetPlan:
             TableDrawingPrimitive(
                 id=f"{occurrence.id}-label", kind="text",
                 points_mm=(Point2D(x=cursor_x, y=width + 25.0),),
-                text=f"{component.role} · {occurrence.occurrence_index}",
+                text=(
+                    f"{component.role} · {occurrence.occurrence_index} · "
+                    f"T={component.thickness.value_mm:g} mm"
+                    if component.thickness.value_mm is not None
+                    else f"{component.role} · {occurrence.occurrence_index} · T=?"
+                ),
                 state="calculated" if evaluated.state == "completed" else "proposed",
-                dependency_refs=(f"component:{component.id}",),
+                dependency_refs=(f"component:{component.id}", *component.thickness.dependency_refs),
+            ),
+            _dimension(
+                f"{occurrence.id}-length", (cursor_x, 0.0), (cursor_x + length, 0.0),
+                (cursor_x, -DIMENSION_OFFSET_MM), length, component.length.state,
+                component.length.dependency_refs,
+            ),
+            _dimension(
+                f"{occurrence.id}-width", (cursor_x, 0.0), (cursor_x, width),
+                (cursor_x - DIMENSION_OFFSET_MM, 0.0), width, component.width.state,
+                component.width.dependency_refs,
             ),
         ))
         cursor_x += length + VIEW_GAP_MM

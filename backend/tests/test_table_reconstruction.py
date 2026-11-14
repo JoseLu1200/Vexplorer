@@ -65,10 +65,32 @@ def test_reviewed_table_produces_traceable_sheets_and_three_physical_solids() ->
     assert [item.kind for item in plan.sheets] == [
         "general", "component", "component", "cut_sheet",
     ]
+    general = plan.sheets[0]
+    occurrence_projections = [
+        item for item in general.primitives
+        if item.kind == "rect" and item.id.startswith("general-occurrence-")
+    ]
+    assert len(occurrence_projections) == 3 * len(evaluated.occurrences)
+    assert {
+        item.text for item in general.primitives
+        if item.kind == "text" and item.id.startswith("general-view-label-")
+    } == {"FRONT", "TOP", "SIDE"}
     component_sheets = [item for item in plan.sheets if item.kind == "component"]
     assert all(sum(item.kind == "dimension" for item in sheet.primitives) == 3 for sheet in component_sheets)
+    assert {
+        item.component_id: next(
+            primitive.text for primitive in item.primitives
+            if primitive.kind == "text" and (primitive.text or "").startswith("QTY=")
+        )
+        for item in component_sheets
+    } == {
+        "component-tabletop": "QTY=1",
+        "component-side-support": "QTY=2",
+    }
     cut_sheet = next(item for item in plan.sheets if item.kind == "cut_sheet")
     assert sum(item.kind == "rect" for item in cut_sheet.primitives) == 3
+    assert sum(item.kind == "dimension" for item in cut_sheet.primitives) == 6
+    assert sum(item.kind == "text" and "T=" in (item.text or "") for item in cut_sheet.primitives) == 3
     assert scene.state == "ready"
     assert len(scene.objects) == 3
     assert [item.role for item in scene.objects] == ["tabletop", "side_support", "side_support"]
