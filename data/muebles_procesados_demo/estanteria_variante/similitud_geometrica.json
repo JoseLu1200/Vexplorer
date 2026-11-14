@@ -1,0 +1,106 @@
+{
+  "matches": [
+    {
+      "library_item_id": "library-run-37671509ad734b64ba80e0f5ae3b5d73",
+      "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+      "result_revision": 2,
+      "method": "geometric",
+      "score": 0.944135,
+      "score_kind": "geometric_similarity",
+      "score_components": {
+        "dimensions": 0.920192,
+        "roles": 1.0,
+        "dimensions_weight": 0.7,
+        "roles_weight": 0.3
+      },
+      "technical_score": 0.968077,
+      "technical_score_kind": "technical_similarity",
+      "technical_score_components": {
+        "dimensions": 0.920192,
+        "roles": 1.0,
+        "family_structure": 1.0,
+        "material_finish": 1.0,
+        "evidence_coverage": 1.0
+      },
+      "compatibility_warnings": [],
+      "equivalent_record_ids": [
+        "library-run-37671509ad734b64ba80e0f5ae3b5d73"
+      ],
+      "duplicate_record_count": 0,
+      "differences": [
+        {
+          "field": "dimensions.width_mm",
+          "query_value": "1000.0",
+          "candidate_value": "900.0"
+        },
+        {
+          "field": "dimensions.depth_mm",
+          "query_value": "320.0",
+          "candidate_value": "300.0"
+        },
+        {
+          "field": "dimensions.height_mm",
+          "query_value": "1300.0",
+          "candidate_value": "1200.0"
+        }
+      ],
+      "embedding": null
+    },
+    {
+      "library_item_id": "library-run-6c689b556df4484b9887436eafe7a7fa",
+      "run_id": "run-6c689b556df4484b9887436eafe7a7fa",
+      "result_revision": 2,
+      "method": "geometric",
+      "score": 0.77359,
+      "score_kind": "geometric_similarity",
+      "score_components": {
+        "dimensions": 0.730128,
+        "roles": 0.875,
+        "dimensions_weight": 0.7,
+        "roles_weight": 0.3
+      },
+      "technical_score": 0.867051,
+      "technical_score_kind": "technical_similarity",
+      "technical_score_components": {
+        "dimensions": 0.730128,
+        "roles": 0.875,
+        "family_structure": 1.0,
+        "material_finish": 1.0,
+        "evidence_coverage": 1.0
+      },
+      "compatibility_warnings": [],
+      "equivalent_record_ids": [
+        "library-run-6c689b556df4484b9887436eafe7a7fa"
+      ],
+      "duplicate_record_count": 0,
+      "differences": [
+        {
+          "field": "dimensions.width_mm",
+          "query_value": "1000.0",
+          "candidate_value": "700.0"
+        },
+        {
+          "field": "dimensions.depth_mm",
+          "query_value": "320.0",
+          "candidate_value": "280.0"
+        },
+        {
+          "field": "dimensions.height_mm",
+          "query_value": "1300.0",
+          "candidate_value": "800.0"
+        },
+        {
+          "field": "roles.shelf",
+          "query_value": "2",
+          "candidate_value": "1"
+        }
+      ],
+      "embedding": null
+    }
+  ],
+  "descriptor_version": "furniture-v1",
+  "excluded_count": 0,
+  "record_count": 2,
+  "design_count": 2,
+  "duplicate_record_count": 0
+}

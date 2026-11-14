@@ -1,0 +1,30 @@
+{
+  "source": "https://huggingface.co/datasets/manycore-research/PlankAssembly",
+  "revision": "d1d4308f0ee0aac2f9f407b3533ff83ecee22d34",
+  "license": "cc-by-nc-nd-4.0",
+  "archive_sha256": "3a7f6d0bb66ace28a3a05e286c127b5385954e29bfa7ed2e932121b2429a460c",
+  "archive_crc_ok": true,
+  "json_files": 27692,
+  "split_counts": {
+    "train": 24039,
+    "valid": 1329,
+    "test": 1339
+  },
+  "unique_split_models": 26707,
+  "unlisted_models": 985,
+  "missing_models": 0,
+  "units": "mm",
+  "note": "No DWG, DXF, PDF or SVG drawings in archive. Normal vectors absent in some JSONs; do not assume all documented fields exist. Keep official splits and exclude 985 unlisted models for benchmark comparisons.",
+  "validation_counts": {
+    "missing_normal": 6520,
+    "missing_normal_in_splits": 6427
+  },
+  "extraction_missing_or_wrong_size": 0,
+  "official_split_part_counts": {
+    "min": 3,
+    "median": 8,
+    "max": 19
+  },
+  "first_plank_row": "Global bounding box, excluded from physical parts by official dataset/data_utils.py build().",
+  "parser_reference": "https://github.com/manycore-research/PlankAssembly/blob/main/dataset/data_utils.py"
+}

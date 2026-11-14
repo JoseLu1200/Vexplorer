@@ -1,0 +1,5 @@
+id,result_revision,state,role,quantity,length_mm,width_mm,thickness_mm,material,finish,evidence_ids
+piece-proposal-between-sides-side_panel,2,completed,side_panel,2,1200.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-8D|evidence-contour-entity-93|evidence-contour-entity-97
+piece-proposal-between-sides-top_panel,2,completed,top_panel,1,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-8D|evidence-contour-entity-93|evidence-contour-entity-97
+piece-proposal-between-sides-base_panel,2,completed,base_panel,1,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-8D|evidence-contour-entity-93|evidence-contour-entity-97
+piece-proposal-between-sides-shelf,2,completed,shelf,2,864.0,300.0,18.0,tablero sintético,melamina sintética,evidence-contour-entity-8D|evidence-contour-entity-93|evidence-contour-entity-97

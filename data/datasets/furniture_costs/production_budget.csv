@@ -1,0 +1,5 @@
+record_id,product,family,width_mm,depth_mm,height_mm,wood_use_m2,post_production_residue_m3,material_cost_pln,personnel_cost_pln,direct_cost_pln,indirect_cost_pln,total_production_cost_pln,working_time_h,source_tables,cost_scope
+grotowska-2026-square-table,Square table,table,,,,1.64,0.25,50.00,143.00,193.00,57.90,250.90,3.5,"Tables 2, 6, 7","material, personnel and indirect production costs"
+grotowska-2026-childrens-chair,Children's chair,chair,300,350,580,0.36,0.12,20.00,63.00,83.00,24.90,107.90,2.5,"Tables 2, 6, 7 and section 3.3","material, personnel and indirect production costs"
+grotowska-2026-childrens-table,Children's table,table,500,500,580,0.78,0.25,11.00,75.00,86.00,25.80,111.80,3.0,"Tables 2, 6, 7 and section 3.3","material, personnel and indirect production costs"
+grotowska-2026-pouf,Pouf,seating,420,420,420,1.10,0.25,50.00,75.00,125.00,37.50,162.50,2.5,"Tables 2, 6, 7 and section 3.3","material, personnel and indirect production costs"

@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "mode": "geometry_only",
+  "requires_model_api": false,
+  "public_library_eligible": false,
+  "cases": [
+    {
+      "id": "estanteria_900",
+      "label": "Estantería de 900 mm",
+      "source": "data/planos_demo/estanteria_montada.dxf",
+      "source_sha256_lf": "53c0e876bf843ec509f73cf2962a60eac543ad425d747b78dda5076dfe38dc9c",
+      "run_id": "run-37671509ad734b64ba80e0f5ae3b5d73",
+      "url_query": "?run=run-37671509ad734b64ba80e0f5ae3b5d73",
+      "result_revision": 2,
+      "state": "completed",
+      "piece_rows": 4
+    },
+    {
+      "id": "estanteria_variante",
+      "label": "Estantería de otras dimensiones",
+      "source": "data/planos_demo/mueble_demo_002.dxf",
+      "source_sha256_lf": "32a4a0b31056d28b42409a3abdb1fb9658547165a4076ad7372a2ea2da7c418f",
+      "run_id": "run-939b010819244d97b40a4f806779b1c3",
+      "url_query": "?run=run-939b010819244d97b40a4f806779b1c3",
+      "result_revision": 2,
+      "state": "completed",
+      "piece_rows": 4
+    },
+    {
+      "id": "mueble_bajo",
+      "label": "Mueble bajo",
+      "source": "data/planos_demo/mueble_demo_003.dxf",
+      "source_sha256_lf": "4160b7cb7b50c1aed7777aecfc401b7036d09b9cde129f7ef533f228a678389a",
+      "run_id": "run-6c689b556df4484b9887436eafe7a7fa",
+      "url_query": "?run=run-6c689b556df4484b9887436eafe7a7fa",
+      "result_revision": 2,
+      "state": "completed",
+      "piece_rows": 4
+    },
+    {
+      "id": "espesor_desconocido",
+      "label": "Control con espesor desconocido",
+      "source": "data/planos_demo/estanteria_incompleta.dxf",
+      "source_sha256_lf": "a94a01bbc32e3c82f1d70b023003da500f67af58a700ee27936dd2b8cb78d63d",
+      "run_id": "run-4af4c91059af4e3fa05d3f08d3cd5df7",
+      "url_query": "?run=run-4af4c91059af4e3fa05d3f08d3cd5df7",
+      "result_revision": 1,
+      "state": "needs_review",
+      "piece_rows": 0
+    }
+  ],
+  "published_history": [
+    {
+      "dataset": "furniture_costs",
+      "records": 4
+    },
+    {
+      "dataset": "furniture_hours",
+      "records": 15
+    }
+  ],
+  "backup": {
+    "path": "demo-runtime.zip",
+    "format": "vexplorer-backup-v2",
+    "sha256": "d2ae8de912f8f5d594179610e21e41ce0bfcbd6a5f3bde944dbc4632d329fdfc"
+  }
+}
