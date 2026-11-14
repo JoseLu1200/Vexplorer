@@ -158,7 +158,7 @@ def _assert_occurrence_authority(review: dict[str, Any]) -> dict[str, int]:
     for component_id, occurrences in provisional_by_component.items():
         component = components.get(component_id)
         quantity = component.get("quantity", {}) if component else {}
-        if quantity.get("state") != "hypothesis":
+        if quantity.get("state") not in {"hypothesis", "deduced", "estimated"}:
             raise AcceptanceFailure("provisional_occurrence_without_hypothesis")
         if quantity.get("value") != len(occurrences):
             raise AcceptanceFailure("provisional_occurrence_quantity_mismatch")
@@ -191,14 +191,29 @@ def _validate_provisional_exports(
         raise AcceptanceFailure("provisional export contains forged confirmed label")
     if any(item not in {"provisional", "unknown"} for item in occurrence_states):
         raise AcceptanceFailure("invalid_provisional_occurrence_status")
-    if "schematic; not manufacturing-ready" not in svg_text:
+    svg_lower = svg_text.lower()
+    if not any(
+        marker in svg_lower
+        for marker in (
+            "schematic; not manufacturing-ready",
+            "schematic_unplaced_not_manufacturing_ready",
+            "esquema_sin_colocacion_no_fabricacion",
+            "no apto para fabricación",
+        )
+    ):
         raise AcceptanceFailure("schematic_warning_missing")
     if any(item == "provisional" for item in occurrence_states):
-        if "provisional scenario" not in svg_text:
+        if not any(
+            marker in svg_lower
+            for marker in ("provisional scenario", "escenario provisional")
+        ):
             raise AcceptanceFailure("provisional_svg_label_missing")
         svg_label = "provisional scenario"
     else:
-        if rows and "no physical occurrence" not in svg_text:
+        if rows and not any(
+            marker in svg_lower
+            for marker in ("no physical occurrence", "sin ocurrencia física")
+        ):
             raise AcceptanceFailure("unknown_occurrence_svg_label_missing")
         svg_label = "no physical occurrence" if rows else "empty"
     return {

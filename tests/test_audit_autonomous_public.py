@@ -121,3 +121,37 @@ def test_numeric_primary_pieces_require_downloaded_svg_and_dxf() -> None:
     assert evidence["numeric_dimension_count"] == 3
     with pytest.raises(module.AcceptanceFailure, match="construction_piece_formats_missing"):
         module._validate_construction_outputs(package, [(svg, b"<svg/>")])
+
+
+def test_estimated_quantity_keeps_occurrences_provisional() -> None:
+    review = {
+        "components": [
+            {"id": "piece-1", "quantity": {"value": 2, "state": "estimated"}}
+        ],
+        "occurrences": [],
+        "scenario_occurrences": [
+            {"component_id": "piece-1", "state": "provisional"},
+            {"component_id": "piece-1", "state": "provisional"},
+        ],
+    }
+
+    assert module._assert_occurrence_authority(review) == {
+        "physical": 0,
+        "provisional": 2,
+    }
+
+
+def test_spanish_provisional_svg_keeps_non_manufacturing_authority() -> None:
+    csv_payload = (
+        "quantity_state,occurrence_status,physical_occurrence_ids,scenario_occurrence_ids\n"
+        "estimated,provisional,,provisional:case:piece:1\n"
+    ).encode()
+    svg_payload = (
+        '<svg data-authority="esquema_sin_colocacion_no_fabricacion">'
+        "<text>ESQUEMA PROVISIONAL · NO APTO PARA FABRICACIÓN</text>"
+        "<text>Escenario provisional</text></svg>"
+    ).encode()
+
+    evidence = module._validate_provisional_exports(csv_payload, svg_payload)
+
+    assert evidence["svg_label"] == "provisional scenario"
