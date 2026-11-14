@@ -28,4 +28,12 @@ La revisión aislada del primer bloque (`2db9092`) reprodujo 140 pruebas Python 
 
 La geometría 0.5 ya distingue separaciones desde un borde y separaciones opuestas. El cálculo actual de cantos de mesa usa un alcance completo por ocurrencia, no la lista repetible del primer bloque. La integración debe conservar esas garantías y añadir regresiones donde se adopten las funciones nuevas.
 
-Las 166 pruebas comunicadas para el segundo bloque son un resultado de su autor, todavía no una verificación de esta integración. Una prueba simulada del adaptador tampoco acredita una llamada visual real. Los resultados finales y las exclusiones se actualizarán tras integrar y ejecutar las pruebas.
+La copia aislada del segundo bloque (`d29fec7`) también se verificó: 166 pruebas Python y 46 JavaScript pasan. La revisión adicional detectó límites tardíos de MINSERT, pérdida de plano Z/OCS, un falso `pass` de Sistema 32 y evidencia truncada sin acceso por páginas. Las adaptaciones se prueban sobre el contrato actual; el número de pruebas de origen no acredita su integración.
+
+## Primer checkpoint integrado
+
+Código `56f6f96`, 14 de noviembre de 2026: **287 pruebas Python y 81 JavaScript correctas**, `compileall` y `git diff --check` correctos. Auditoría HTTP de mesa: 26 comprobaciones correctas. GPT-6 Astra emite **SHIP incremental**, no cierre de toda la ampliación.
+
+Este checkpoint incluye vistas montadas inferidas por disposición suficiente, tipo de línea efectivo, bloques anidados con iteración acotada, atributos, círculos/arcos tipados, lista de corte adaptada a 0.5, errores de referencias reparables, listado paginado de evidencia, salida configurable de 4096 tokens y plausibilidad de taller conservadora. La tarifa fija está en el catálogo y todas sus dependencias tarifarias resuelven. La geometría y las fuentes derivadas se validan en servidor.
+
+El catálogo no confirmado produce `unknown`; no rellena dimensiones. El paquete wheel se construyó e instaló en un directorio aislado y se comprobó que carga su JSON de catálogo desde el paquete instalado. Siguen en preparación la ampliación restante de ingesta y el canal visual opcional; no se presentan como terminados en este checkpoint. Una prueba simulada del adaptador no acredita una llamada visual real.
