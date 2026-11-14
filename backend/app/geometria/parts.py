@@ -580,9 +580,17 @@ def recompute_reviewed_assembly_candidate(
         derived("height", height_value, height_constraint),
         derived("depth", common_depth, depth_constraint),
     )
+    resolved_quantity_fields = {
+        f"uses.{use.id}.quantity"
+        for use in candidate.uses
+        if (piece := pieces_by_use.get(use.id)) is not None
+        and piece.quantity is not None
+        and piece.field_states.get("quantity") == "confirmed"
+    }
     unknown_fields = [
         item for item in candidate.unknown_fields
         if not item.startswith("dimensions.")
+        and item not in resolved_quantity_fields
     ]
     unknown_fields.extend(
         f"dimensions.{item.axis}" for item in derived_dimensions if item.state != "derived"
