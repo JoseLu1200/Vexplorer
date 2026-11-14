@@ -51,8 +51,15 @@ class _GeneralLiveProvider:
             self.review_visual_page_count += sum(
                 item.get("type") == "input_image" for item in input_items[0]["content"]
             )
+            required_targets = list(context["required_dimension_field_review_targets"])
+            required_targets.extend(
+                context.get("required_existence_field_review_targets", [])
+            )
+            required_targets.extend(
+                context.get("required_evidence_disposition_review_targets", [])
+            )
             checks, field_reviews = _accepted_dimension_decisions(
-                context["required_dimension_field_review_targets"],
+                list(dict.fromkeys(required_targets)),
                 context["visual_artifacts"][0]["reference"],
             )
             arguments = {
@@ -74,18 +81,59 @@ class _GeneralLiveProvider:
         view = context["views"][0] if context["views"] else None
         observation = context["observations"][0] if context["observations"] else None
         visual_refs = [item["reference"] for item in context.get("visual_pages", [])]
+        candidate_regions = context.get("evidence_accounting", {}).get(
+            "candidate_regions", []
+        )
+        candidate_contour_ids = list(dict.fromkeys(
+            contour_id
+            for region in candidate_regions
+            for contour_id in region["contour_ids"]
+        ))
         arguments = {
-            "bindings": ([{"id": "length", "operation": "copy", "operand_refs": [f"dimension:{dimension['id']}"]}] if dimension else []),
+            "bindings": ([{"id": "length", "operation": "copy", "operand_refs": [f"dimension:{dimension['id']}"]}] if dimension else []) + [
+                {"id": "panel-width", "operation": "copy", "operand_refs": ["parameter:panel-width"]},
+                {"id": "panel-thickness", "operation": "copy", "operand_refs": ["parameter:panel-thickness"]},
+            ],
+            "construction_parameters": [
+                {
+                    "id": "panel-width", "label": "Fondo provisional",
+                    "basis": "estimated", "nominal_mm": 400,
+                    "range_mm": {"min_mm": 350, "max_mm": 450},
+                    "method": "construction_assumption", "binding_id": None,
+                    "source_refs": ["premise:premise"],
+                    "assumption_refs": ["premise:premise"],
+                    "rationale": "Estimación acotada del fixture para revisar el flujo.",
+                },
+                {
+                    "id": "panel-thickness", "label": "Espesor provisional",
+                    "basis": "estimated", "nominal_mm": 18,
+                    "range_mm": {"min_mm": 16, "max_mm": 20},
+                    "method": "construction_assumption", "binding_id": None,
+                    "source_refs": ["premise:premise"],
+                    "assumption_refs": ["premise:premise"],
+                    "rationale": "Estimación acotada del fixture para revisar el flujo.",
+                },
+            ],
             "components": [{
                 "id": "panel", "label": "Panel propuesto", "kind": "panel", "role": "unknown",
-                "length_binding_id": "length" if dimension else None, "width_binding_id": None, "thickness_binding_id": None,
+                "length_binding_id": "length" if dimension else None,
+                "width_binding_id": "panel-width", "thickness_binding_id": "panel-thickness",
                 "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
                 "premise_ids": ["premise"], "source_view_ids": [view["id"]] if view else [],
-                "source_observation_ids": [observation["id"]] if observation else [], "source_contour_ids": [],
+                "source_observation_ids": [observation["id"]] if observation else [], "source_contour_ids": candidate_contour_ids,
                 "source_evidence_ids": dimension["evidence_ids"] if dimension else [], "source_dimension_ids": [dimension["id"]] if dimension else [],
                 "source_document_refs": visual_refs, "assumptions": ["Rol pendiente de revisión."],
-                "unknown_fields": (["width", "thickness", "quantity", "material", "finish", "placement"] if dimension else ["length", "width", "thickness", "quantity", "material", "finish", "placement"]),
+                "unknown_fields": (["quantity", "material", "finish", "placement"] if dimension else ["length", "quantity", "material", "finish", "placement"]),
             }],
+            "evidence_dispositions": [
+                {
+                    "candidate_region_id": region["id"], "kind": "assigned",
+                    "component_id": "panel",
+                    "source_refs": [f"contour:{item}" for item in region["contour_ids"]],
+                    "rationale": "Asignación provisional del fixture, pendiente de crítica visual.",
+                }
+                for region in candidate_regions
+            ],
             "premises": [{"id": "premise", "description": "La vista puede corresponder a un panel.", "required": True, "blocking": True}],
             "assumptions": ["Propuesta revisable."],
         }

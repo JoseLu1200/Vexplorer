@@ -1,3 +1,5 @@
+import { formatMeasurement } from "./format.js";
+
 const list = (value) => Array.isArray(value) ? value : [];
 
 export function generalRunOptions(mode){return{proposal_mode:mode==="live"||mode==="recorded_replay"?"model_generated":"none"};}
@@ -8,6 +10,11 @@ export function generalMachineStatusPresentation(workspace){
   return incomplete
     ?{label:"Auto-revisión con incógnitas",message:"La revisión automática terminó con datos desconocidos. Los resultados siguen disponibles y conservan esas incógnitas; la corrección humana es opcional."}
     :{label:"Auto-revisión completada",message:"La revisión automática de coherencia terminó. Puedes consultar resultados, descargas y escenarios sin una aprobación humana obligatoria."};
+}
+
+export function presentJobRecovery(job={}){
+  const checkpoint=job.checkpoint??{},recovery=job.recovery??{},proposalSaved=checkpoint.proposal_saved===true,proposalRevision=checkpoint.proposal_revision,code=job.cause??job.error?.code,timeoutCodes=new Set(["provider_timeout","provider_request_timeout","agent_deadline_exceeded","general_auto_review_timeout"]),causeLabel=timeoutCodes.has(code)?"El análisis agotó el tiempo disponible durante la revisión automática":job.error?.message??"La ejecución se interrumpió antes de completar la revisión",phaseLabel=proposalSaved?`Propuesta ${Number.isInteger(proposalRevision)?proposalRevision:"guardada"} recuperada; revisión automática pendiente`:`No hay propuesta recuperable; repetir iniciará el análisis desde cero`,actionLabel=recovery.safe_action==="resume_review"?"Reanudar revisión sin repetir la propuesta":recovery.safe_action==="retry_from_start"?"Repetir desde el inicio":"Sin reanudación segura publicada";
+  return{phaseLabel,message:`${causeLabel}. ${phaseLabel}. Este checkpoint es provisional y no equivale a una revisión aprobada.`,actionLabel,safeAction:recovery.safe_action??null,endpoint:recovery.endpoint??null,proposalSaved,proposalId:checkpoint.proposal_id??null,proposalRevision:proposalRevision??null,reviewRevision:checkpoint.review_revision??0};
 }
 
 function field(value) {
@@ -31,9 +38,9 @@ export function presentGeneralConstructionDimension(raw = {}) {
     stateLabel:CONSTRUCTION_STATE_LABELS[state]??"Desconocida",
     reviewStatus:reviewStatus??"accepted",
     approximate,
-    display:value===null?"Desconocida":`${approximate?"≈ ":""}${value} mm`,
+    display:value===null?"Desconocida":`${approximate?"≈ ":""}${formatMeasurement(value,"mm")}`,
     range,
-    rangeDisplay:range?`${range.min}–${range.max} mm`:null,
+    rangeDisplay:range?`${formatMeasurement(range.min,"mm").replace(" mm","")}–${formatMeasurement(range.max,"mm")}`:null,
     method:raw.method??null,
     formula:raw.formula??null,
     operandRefs:list(raw.operand_refs??raw.operandRefs),
@@ -44,9 +51,11 @@ export function presentGeneralConstructionDimension(raw = {}) {
 }
 
 export function presentGeneralConstructionQuantity(raw = {}) {
-  const reviewStatus=raw.review_status??raw.reviewStatus??null,accepted=reviewStatus===null||reviewStatus==="accepted",numeric=Number(raw.value),value=accepted&&Number.isInteger(numeric)&&numeric>0?numeric:null,state=raw.state??"unknown",approximate=state==="estimated"&&value!==null,minValue=raw.min_value??raw.minValue??null,maxValue=raw.max_value??raw.maxValue??null,hasRange=Number.isInteger(Number(minValue))&&Number.isInteger(Number(maxValue));
-  return{...raw,value,state,reviewStatus:reviewStatus??"accepted",approximate,display:value===null?"Desconocida":`${approximate?"≈ ":""}${value} uds.`,minValue:hasRange?Number(minValue):null,maxValue:hasRange?Number(maxValue):null,rangeDisplay:hasRange?`${Number(minValue)}–${Number(maxValue)} uds.`:null,method:raw.method??null,sourceRefs:list(raw.source_refs??raw.sourceRefs),assumptionRefs:list(raw.assumption_refs??raw.assumptionRefs),explanation:raw.explanation??null};
+  const reviewStatus=raw.review_status??raw.reviewStatus??null,accepted=reviewStatus===null||reviewStatus==="accepted",numeric=Number(raw.value),value=accepted&&Number.isInteger(numeric)&&numeric>0?numeric:null,state=raw.state??"unknown",approximate=state==="estimated"&&value!==null,minValue=raw.min_value??raw.minValue??null,maxValue=raw.max_value??raw.maxValue??null,hasRange=Number.isInteger(Number(minValue))&&Number.isInteger(Number(maxValue)),scopeLabel=raw.component_kind==="hardware"?"Herrajes estimados":["panel","linear_member"].includes(raw.component_kind)?"Piezas para corte":"Cantidad sin clasificar";
+  return{...raw,value,state,reviewStatus:reviewStatus??"accepted",approximate,scopeLabel,display:value===null?"Desconocida":`${approximate?"≈ ":""}${value} uds.`,minValue:hasRange?Number(minValue):null,maxValue:hasRange?Number(maxValue):null,rangeDisplay:hasRange?`${Number(minValue)}–${Number(maxValue)} uds.`:null,method:raw.method??null,sourceRefs:list(raw.source_refs??raw.sourceRefs),assumptionRefs:list(raw.assumption_refs??raw.assumptionRefs),explanation:raw.explanation??null};
 }
+
+export function presentConstructionCounts(components=[]){return list(components).reduce((summary,item)=>{const quantity=Number(item.quantity?.value),known=Number.isInteger(quantity)&&quantity>0,kind=item.kind??item.quantity?.component_kind;summary.typeCount+=1;if(!known||!["panel","linear_member","hardware"].includes(kind))summary.unknownCount+=1;else if(kind==="hardware")summary.hardwareEstimated+=quantity;else summary.cutPieceCount+=quantity;return summary;},{typeCount:0,cutPieceCount:0,hardwareEstimated:0,unknownCount:0});}
 
 function reviewedValue(original, rawValue, { numeric=false, humanRef }) {
   const empty=rawValue===null||rawValue===undefined||String(rawValue).trim()==="";
@@ -190,7 +199,7 @@ export function presentGeneralDerived(raw = {}) {
   const constructionRaw=packageValue.construction,construction=constructionRaw?(()=>{const decisions=list(constructionRaw.decisions).map((item)=>({...item,targetRefs:list(item.target_refs),basisRefs:list(item.basis_refs),alternatives:list(item.alternatives)})),decisionById=new Map(decisions.map((item)=>[item.id,item]));return{
     runId:constructionRaw.run_id,proposalRevision:constructionRaw.proposal_revision,reviewRevision:constructionRaw.review_revision,basisRevision:constructionRaw.basis_revision,scenarioId:constructionRaw.scenario_id,authority:constructionRaw.authority,
     summary:{...(constructionRaw.summary??{}),componentCount:constructionRaw.summary?.component_count??0,occurrenceCount:constructionRaw.summary?.occurrence_count??0,sourceRefs:list(constructionRaw.summary?.source_refs),topDecisionIds:list(constructionRaw.summary?.top_decision_ids),warnings:list(constructionRaw.summary?.warnings)},
-    pieces:list(constructionRaw.pieces).map((item)=>({...item,pieceId:item.piece_id,componentId:item.component_id,scenarioId:item.scenario_id,occurrenceIds:list(item.occurrence_ids),scenarioOccurrenceIds:list(item.scenario_occurrence_ids),detailIds:list(item.detail_ids),sourceRefs:list(item.source_refs),sheetIds:list(item.sheet_ids),length:presentGeneralConstructionDimension(item.length),width:presentGeneralConstructionDimension(item.width),thickness:presentGeneralConstructionDimension(item.thickness),quantity:presentGeneralConstructionQuantity(item.quantity)})),
+    pieces:list(constructionRaw.pieces).map((item)=>({...item,pieceId:item.piece_id,componentId:item.component_id,scenarioId:item.scenario_id,occurrenceIds:list(item.occurrence_ids),scenarioOccurrenceIds:list(item.scenario_occurrence_ids),detailIds:list(item.detail_ids),sourceRefs:list(item.source_refs),sheetIds:list(item.sheet_ids),length:presentGeneralConstructionDimension(item.length),width:presentGeneralConstructionDimension(item.width),thickness:presentGeneralConstructionDimension(item.thickness),quantity:presentGeneralConstructionQuantity({...item.quantity,component_kind:item.kind??item.component_kind})})),
     placements:list(constructionRaw.placements),details:list(constructionRaw.details).map((item)=>({...item,componentIds:list(item.component_ids),parameterRefs:list(item.parameter_refs),sourceRefs:list(item.source_refs),assumptionRefs:list(item.assumption_refs)})),decisions,topDecisions:list(constructionRaw.summary?.top_decision_ids).map((id)=>decisionById.get(id)).filter(Boolean),warnings:list(constructionRaw.warnings),sheets:list(constructionRaw.sheets).map((item)=>({...item,sheetId:item.sheet_id,pieceId:item.piece_id??null,primitives:list(item.primitives),warnings:list(item.warnings)})),
   };})():null;
   return {

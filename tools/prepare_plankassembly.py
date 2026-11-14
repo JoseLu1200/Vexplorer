@@ -206,6 +206,7 @@ def prepare_plankassembly(
             )
             references.append({
                 "id": case_id,
+                "public_dxf_sha256": input_hash,
                 "source_file": filename,
                 "source_sha256": _digest(source_bytes),
                 "family_hash": family_hash,

@@ -281,4 +281,5 @@ def materialize_general_proposal(
         construction_details=proposal.construction_details,
         construction_decisions=proposal.construction_decisions,
         construction_placements=proposal.construction_placements,
+        evidence_dispositions=proposal.evidence_dispositions,
     )

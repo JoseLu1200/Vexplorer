@@ -60,12 +60,16 @@ export function tableResourcesReady(workspace, snapshot) {
 
 export function publicFeatureAvailability(config = {}) {
   const history = config.capabilities?.history?.available !== false;
-  const semantic = Boolean((config.semantic ?? config.capabilities?.semantic)?.available);
+  const library = config.capabilities?.library?.available !== false;
+  const costs = config.capabilities?.costs?.available ?? history;
+  const semanticCapability = config.semantic ?? config.capabilities?.semantic ?? {};
+  const semantic = Boolean(semanticCapability.available || semanticCapability.cached_search_available);
   const publicCad = config.environment === "production" && config.authenticated === false && !history;
   return {
     history,
-    library: history,
+    library,
     semantic,
+    costs,
     publicCad,
     sessionLabel: publicCad ? "Acceso público · CAD disponible" : null,
   };
@@ -123,7 +127,7 @@ export function presentLibraryDifferences(differences = []) {
     const label = LIBRARY_FIELD_LABELS[field];
     if (label) summary.push(`${label}: ${libraryValue(difference.query_value, true)} ↔ ${libraryValue(difference.candidate_value, true)} mm`);
     else if (field === "components") summary.push("Cambios en componentes");
-    else summary.push(`Cambio en ${field}`);
+    else if (!/^(part_features\[\d+\]|components\.)/.test(field)) summary.push(`Cambio en ${field}`);
     technical.push(`${field}: ${libraryValue(difference?.query_value)} ↔ ${libraryValue(difference?.candidate_value)}`);
   });
   if (technical.length && !summary.length) summary.push("Datos técnicos de comparación disponibles");

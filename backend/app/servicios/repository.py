@@ -90,6 +90,12 @@ class DemoRepository:
                     created_at TEXT NOT NULL,
                     PRIMARY KEY (source_job_id, actor)
                 );
+                CREATE TABLE IF NOT EXISTS job_resume_checkpoints (
+                    retry_job_id TEXT PRIMARY KEY,
+                    source_job_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS job_admission (
                     job_id TEXT PRIMARY KEY,
                     admitted_day TEXT NOT NULL,
@@ -452,6 +458,44 @@ class DemoRepository:
             raise KeyError(job_id)
         return row["request_json"]
 
+    def link_job_run(self, job_id: str, run_id: str) -> None:
+        """Durably link a running job to its run without permitting reassignment."""
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT state,run_id FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(job_id)
+            if row["state"] != "running":
+                raise ValueError("job_not_running")
+            if row["run_id"] == run_id:
+                return
+            if row["run_id"] is not None:
+                raise ValueError("job_run_already_linked")
+            db.execute(
+                "UPDATE jobs SET run_id=?,updated_at=? WHERE id=? AND state='running' AND run_id IS NULL",
+                (run_id, _now(), job_id),
+            )
+
+    def get_job_resume_checkpoint(self, retry_job_id: str) -> dict | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT payload_json FROM job_resume_checkpoints WHERE retry_job_id=?",
+                (retry_job_id,),
+            ).fetchone()
+        return json.loads(row["payload_json"]) if row is not None else None
+
+    def get_latest_job_for_run(self, run_id: str, *, actor: str | None) -> dict | None:
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT id FROM jobs WHERE run_id=? AND COALESCE(actor,'local-demo')=? "
+                "ORDER BY updated_at DESC,id DESC LIMIT 1",
+                (run_id, actor_key),
+            ).fetchone()
+            return self._get_job_in_transaction(db, row["id"]) if row else None
+
     def reserve_job_retry(
         self,
         source_job_id: str,
@@ -462,6 +506,7 @@ class DemoRepository:
         public_global_daily_limit: int = 10,
         public_client_daily_limit: int = 3,
         admission_callback: Callable[[sqlite3.Connection], None] | None = None,
+        resume_checkpoint: dict | None = None,
     ) -> tuple[dict, bool]:
         actor_key = actor or "local-demo"
         timestamp = _now()
@@ -512,6 +557,11 @@ class DemoRepository:
                 "INSERT INTO job_retries VALUES (?, ?, ?, ?)",
                 (source_job_id, actor_key, retry_job_id, timestamp),
             )
+            if resume_checkpoint is not None:
+                db.execute(
+                    "INSERT INTO job_resume_checkpoints VALUES (?, ?, ?, ?)",
+                    (retry_job_id, source_job_id, json.dumps(resume_checkpoint), timestamp),
+                )
             return self._get_job_in_transaction(db, retry_job_id), True
 
     @staticmethod
@@ -560,7 +610,7 @@ class DemoRepository:
             raise ValueError("successful_job_requires_run_id")
         with self._connect() as db:
             changed = db.execute(
-                "UPDATE jobs SET state=?,run_id=?,error_json=?,updated_at=? WHERE id=? AND state='running'",
+                "UPDATE jobs SET state=?,run_id=COALESCE(?,run_id),error_json=?,updated_at=? WHERE id=? AND state='running'",
                 (state, run_id, json.dumps(error) if error else None, _now(), job_id),
             )
             if changed.rowcount != 1:
