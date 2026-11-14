@@ -183,13 +183,77 @@ def test_unknown_view_gets_clean_overview_and_gap_based_marked_regions(
     assert all(item.marks[0].source_kind == "contour" for item in regions)
     assert all(item.marks[0].source_id in item.source_contour_ids for item in regions)
     assert len({(item.reference, item.marks[0].mark_id) for item in regions}) == 3
+    bounded = render_visual_evidence(
+        source,
+        extraction=extract_drawing(source, input_kind="general_furniture"),
+        max_dimension_px=300,
+        max_total_pixels=4 * 300 * 300,
+        max_artifacts=3,
+    )
+    assert len(bounded) == 3
+    assert "spatial_region_crops_truncated:2_of_3" in bounded[0].warnings
+    assert [item.reference.rsplit(":", 1)[-1] for item in bounded[1:]] == [
+        "region-001",
+        "region-002",
+    ]
+
+
+def test_many_optional_regions_are_prioritized_deterministically_under_budget(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "five-regions.dxf"
+    document = ezdxf.new("R2018")
+    document.units = ezdxf.units.MM
+    space = document.modelspace()
+    for index, x in enumerate((0, 100, 200, 300, 400), start=1):
+        for inset in range(index):
+            offset = inset * 2
+            space.add_lwpolyline(
+                [
+                    (x + offset, offset),
+                    (x + 40 - offset, offset),
+                    (x + 40 - offset, 40 - offset),
+                    (x + offset, 40 - offset),
+                ],
+                close=True,
+            )
+    document.saveas(source)
+    extraction = extract_drawing(source, input_kind="general_furniture")
+
+    first = render_visual_evidence(
+        source, extraction=extraction, max_dimension_px=256,
+        max_total_pixels=4 * 256 * 256, max_artifacts=4,
+    )
+    second = render_visual_evidence(
+        source, extraction=extraction, max_dimension_px=256,
+        max_total_pixels=4 * 256 * 256, max_artifacts=4,
+    )
+
+    assert len(first) == 4
+    assert [item.source_contour_ids for item in first] == [
+        item.source_contour_ids for item in second
+    ]
+    assert [len(item.source_contour_ids) for item in first[1:]] == [5, 4, 3]
+    assert "spatial_region_crops_truncated:3_of_5" in first[0].warnings
+
+
+def test_mandatory_overviews_still_fail_when_they_exceed_artifact_budget(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "three-views.dxf"
+    _dxf(source, width=100)
+    extraction = extract_drawing(source, input_kind="general_furniture")
+    original = extraction.views[0]
+    extraction = extraction.model_copy(update={
+        "views": tuple(
+            original.model_copy(update={"id": f"view-{index}"})
+            for index in range(3)
+        ),
+    })
+
     with pytest.raises(ValueError, match="visual_evidence_budget_exceeded"):
         render_visual_evidence(
-            source,
-            extraction=extract_drawing(source, input_kind="general_furniture"),
-            max_dimension_px=300,
-            max_total_pixels=4 * 300 * 300,
-            max_artifacts=3,
+            source, extraction=extraction, max_artifacts=2, max_views=4,
         )
 
 

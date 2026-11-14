@@ -8,13 +8,16 @@ from pydantic import ValidationError
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.contratos.modelos import GeneralAutoReviewCheck, GeneralMachineFieldReview, GeneralMachineProvenance, GeneralScenarioOccurrence, GeneralValue
 from backend.app.general_furniture.autonomous import run_general_autonomous
+from backend.app.general_furniture.autonomous import _effective_auto_status
 from backend.app.general_furniture.autonomous import _reject_forged_machine_facts
+from backend.app.general_furniture.autonomous import _recoverable_dimension_measurements
 from backend.app.general_furniture.autonomous import _review_input
 from backend.app.general_furniture.autonomous import _scenario_occurrences
 from backend.app.general_furniture.autonomous import _tool_schemas
 from backend.app.general_furniture.autonomous import _validate_visual_checks
 from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, GeneralVisualPage
 from backend.app.general_furniture.proposal import materialize_general_proposal
+from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.router import GeneralFurnitureContext
 from backend.tests.test_general_furniture_proposal import _extraction, _proposal
 
@@ -27,6 +30,155 @@ def test_machine_review_is_orthogonal_to_hypothesis_state() -> None:
     assert value.state == "hypothesis"
     assert provenance.review_relation == "separate_model"
     assert field_review.status == "accepted"
+
+
+def test_honest_material_abstention_does_not_erase_fully_reviewed_geometry() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralComponentReview,
+        GeneralModelVisualCheck,
+        GeneralQuantity,
+        GeneralReviewOperation,
+        GeneralTextValue,
+    )
+
+    component = GeneralComponentReview(
+        id="panel", label="Panel candidato", kind="panel", role="unknown",
+        length=GeneralValue(value_mm=800, state="hypothesis", dependency_refs=("binding:length",)),
+        width=GeneralValue(value_mm=400, state="hypothesis", dependency_refs=("binding:width",)),
+        thickness=GeneralValue(value_mm=18, state="hypothesis", dependency_refs=("binding:thickness",)),
+        quantity=GeneralQuantity(value=2, state="hypothesis", dependency_refs=("premise:two",)),
+        material=GeneralTextValue(value=None, state="unknown"),
+        finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=("panel",),
+        assumptions=("Asignación provisional respaldada por el ledger.",),
+        unknown_fields=("material", "acabado"),
+    )
+    check = GeneralModelVisualCheck(
+        id="visual", kind="visual_consistency", outcome="pass", method="model_visual",
+        target_refs=tuple(f"component:panel.{field}" for field in ("length", "width", "thickness", "quantity")),
+        source_refs=("visual:page-1",), summary="La geometría propuesta es coherente.",
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="scenario-panel",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=("panel",), result_component_ids=("panel",), reason="Continuidad."),),
+        components=(component,), checks=(check,),
+        field_reviews=tuple(
+            GeneralMachineFieldReview(target_ref=f"component:panel.{field}", status="accepted", check_ids=("visual",))
+            for field in ("length", "width", "thickness", "quantity")
+        ) + (
+            GeneralMachineFieldReview(target_ref="component:panel.material", status="abstained", check_ids=("visual",)),
+            GeneralMachineFieldReview(target_ref="component:panel.finish", status="abstained", check_ids=("visual",)),
+        ),
+        unresolved=("Material y acabado no aparecen en el plano.",),
+        status="incomplete",
+    )
+
+    assert _effective_auto_status(args) == "accepted"
+
+
+def test_unresolved_cross_view_identity_blocks_global_acceptance() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralComponentReview,
+        GeneralModelVisualCheck,
+        GeneralQuantity,
+        GeneralReviewOperation,
+        GeneralTextValue,
+    )
+
+    component = GeneralComponentReview(
+        id="panel", label="Panel candidato", kind="panel", role="unknown",
+        length=GeneralValue(value_mm=800, state="hypothesis", dependency_refs=("binding:length",)),
+        width=GeneralValue(value_mm=400, state="hypothesis", dependency_refs=("binding:width",)),
+        thickness=GeneralValue(value_mm=18, state="hypothesis", dependency_refs=("binding:thickness",)),
+        quantity=GeneralQuantity(value=1, state="hypothesis", dependency_refs=("premise:one",)),
+        material=GeneralTextValue(value=None, state="unknown"), finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=("panel",), unknown_fields=("cross_view_identity", "material", "finish"),
+    )
+    check = GeneralModelVisualCheck(
+        id="visual", kind="visual_consistency", outcome="pass", method="model_visual",
+        target_refs=tuple(f"component:panel.{field}" for field in ("length", "width", "thickness", "quantity")),
+        source_refs=("visual:page-1",), summary="Campos geométricos plausibles, identidad no resuelta.",
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="scenario-panel",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=("panel",), result_component_ids=("panel",), reason="Continuidad."),),
+        components=(component,), checks=(check,),
+        field_reviews=tuple(
+            GeneralMachineFieldReview(target_ref=f"component:panel.{field}", status="accepted", check_ids=("visual",))
+            for field in ("length", "width", "thickness", "quantity")
+        ) + (
+            GeneralMachineFieldReview(target_ref="component:panel.material", status="abstained", check_ids=("visual",)),
+            GeneralMachineFieldReview(target_ref="component:panel.finish", status="abstained", check_ids=("visual",)),
+        ),
+        unresolved=("La identidad entre proyecciones no está resuelta.",), status="incomplete",
+    )
+
+    assert _effective_auto_status(args) == "incomplete"
+    unstructured_args = args.model_copy(update={
+        "components": (component.model_copy(update={"unknown_fields": ("material", "finish")}),),
+    })
+    assert _effective_auto_status(unstructured_args) == "incomplete"
+
+
+def test_unknown_or_unreviewed_geometric_field_remains_incomplete() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralComponentReview,
+        GeneralModelVisualCheck,
+        GeneralQuantity,
+        GeneralReviewOperation,
+        GeneralTextValue,
+    )
+
+    component = GeneralComponentReview(
+        id="panel", label="Panel candidato", kind="panel", role="unknown",
+        length=GeneralValue(value_mm=800, state="hypothesis", dependency_refs=("binding:length",)),
+        width=GeneralValue(value_mm=400, state="hypothesis", dependency_refs=("binding:width",)),
+        thickness=GeneralValue(value_mm=None, state="unknown"),
+        quantity=GeneralQuantity(value=1, state="hypothesis", dependency_refs=("premise:one",)),
+        material=GeneralTextValue(value=None, state="unknown"),
+        finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=("panel",), unknown_fields=("thickness", "material", "finish"),
+    )
+    check = GeneralModelVisualCheck(
+        id="visual", kind="visual_consistency", outcome="pass", method="model_visual",
+        target_refs=("component:panel.length", "component:panel.width", "component:panel.quantity"),
+        source_refs=("visual:page-1",), summary="Solo hay cobertura parcial.",
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="scenario-panel",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=("panel",), result_component_ids=("panel",), reason="Continuidad."),),
+        components=(component,), checks=(check,),
+        field_reviews=tuple(
+            GeneralMachineFieldReview(target_ref=f"component:panel.{field}", status="accepted", check_ids=("visual",))
+            for field in ("length", "width", "quantity")
+        ) + tuple(
+            GeneralMachineFieldReview(target_ref=f"component:panel.{field}", status="abstained", check_ids=("visual",))
+            for field in ("thickness", "material", "finish")
+        ),
+        unresolved=("No hay evidencia del espesor.",), status="incomplete",
+    )
+
+    assert _effective_auto_status(args) == "incomplete"
+
+    from backend.tests.test_general_furniture_measurements import _extraction as geometry_extraction
+    candidates = _recoverable_dimension_measurements(
+        args, derive_geometry_measurements(geometry_extraction())
+    )
+    assert candidates
+    assert {item["semantic"] for item in candidates} == {"contour_segment_length"}
+
+    quantity_only = args.model_copy(update={
+        "components": (component.model_copy(update={
+            "thickness": GeneralValue(value_mm=18, state="hypothesis", dependency_refs=("binding:thickness",)),
+            "unknown_fields": ("quantity", "material", "finish"),
+        }),),
+    })
+    assert _recoverable_dimension_measurements(
+        quantity_only, derive_geometry_measurements(geometry_extraction())
+    ) == ()
 
 
 def test_critic_tool_only_accepts_checks_and_decisions_not_component_rewrites() -> None:
@@ -80,6 +232,39 @@ def test_hypothesis_quantity_with_visual_basis_creates_only_scenario_occurrences
 
     assert [item.occurrence_index for item in occurrences] == [1, 2]
     assert all(item.state == "provisional" for item in occurrences)
+
+
+def test_quantity_occurrence_rejects_checks_that_do_not_target_quantity() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralComponentReview,
+        GeneralModelVisualCheck,
+        GeneralQuantity,
+        GeneralReviewOperation,
+        GeneralTextValue,
+    )
+
+    source = materialize_general_proposal(_extraction(), _proposal()).components[0]
+    component = GeneralComponentReview(
+        id="two-sides", label=source.label, kind=source.kind, role=source.role,
+        length=source.length, width=source.width, thickness=source.thickness,
+        quantity=GeneralQuantity(value=2, state="hypothesis", dependency_refs=("premise:two-instances",)),
+        material=GeneralTextValue(value=None, state="unknown"), finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=(source.id,), unknown_fields=source.unknown_fields,
+    )
+    checks = (
+        GeneralModelVisualCheck(id="quantity-basis", kind="quantity_basis", outcome="pass", method="model_visual", target_refs=("component:two-sides.length",), source_refs=("visual:region-a",), summary="Este check no revisa la cantidad."),
+        GeneralModelVisualCheck(id="duplicate-scan", kind="duplicate_scan", outcome="pass", method="model_visual", target_refs=("component:two-sides.length",), source_refs=("visual:region-a",), summary="Este check tampoco revisa la cantidad."),
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="scenario-two-sides",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=(source.id,), result_component_ids=(component.id,), reason="Escenario visual."),),
+        components=(component,), checks=checks,
+        field_reviews=(GeneralMachineFieldReview(target_ref="component:two-sides.quantity", status="accepted", check_ids=("quantity-basis", "duplicate-scan")),),
+        unresolved=("dimensions",), status="incomplete",
+    )
+
+    assert _scenario_occurrences(args, checks) == ()
 
 
 def test_machine_provenance_can_record_bounded_three_phase_flow_with_repairs() -> None:
@@ -257,6 +442,35 @@ def test_visual_check_accepts_raw_contour_only_when_marked_in_visual_context() -
         _validate_visual_checks(args, {"contour-visible"}, {"visual:other"})
 
 
+def test_accepted_field_must_reference_a_passing_check_for_that_exact_field() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs, GeneralComponentReview, GeneralModelVisualCheck,
+        GeneralQuantity, GeneralReviewOperation, GeneralTextValue,
+    )
+    source = materialize_general_proposal(_extraction(), _proposal()).components[0]
+    component = GeneralComponentReview(
+        id="panel", label=source.label, kind=source.kind, role=source.role,
+        length=source.length, width=source.width, thickness=source.thickness,
+        quantity=GeneralQuantity(value=1, state="hypothesis", dependency_refs=("premise:one",)),
+        material=GeneralTextValue(value=None, state="unknown"), finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=(source.id,), unknown_fields=source.unknown_fields,
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="s",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=(source.id,), result_component_ids=(component.id,), reason="Continuidad."),),
+        components=(component,),
+        checks=(GeneralModelVisualCheck(
+            id="length-only", kind="visual_consistency", outcome="pass", method="model_visual",
+            target_refs=("component:panel.length",), source_refs=("visual:page-1",), summary="Solo revisa largo.",
+        ),),
+        field_reviews=(GeneralMachineFieldReview(target_ref="component:panel.quantity", status="accepted", check_ids=("length-only",)),),
+        unresolved=("other fields",), status="incomplete",
+    )
+
+    with pytest.raises(ValueError, match="accepted_machine_field_requires_targeted_visual_check"):
+        _validate_visual_checks(args, {"visual:page-1"}, {"visual:page-1"})
+
+
 def test_partial_machine_coverage_cannot_report_accepted() -> None:
     extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
     proposal = _proposal()
@@ -279,6 +493,62 @@ def test_partial_machine_coverage_cannot_report_accepted() -> None:
 
     assert outcome.status == "incomplete"
     assert outcome.review.auto_review_status == "incomplete"
+
+
+def test_provider_boundary_accepts_reviewed_geometry_but_keeps_package_incomplete() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralBinding, GeneralComponentProposal, GeneralFurnitureProposal,
+        GeneralPremise, GeneralQuantity,
+    )
+
+    extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
+    proposal = GeneralFurnitureProposal(
+        id="proposal-complete-geometry", drawing_id=extraction.drawing_id,
+        ledger_revision="ledger-1", proposal_origin="native_tool",
+        bindings=tuple(
+            GeneralBinding(id=field, operation="copy", operand_refs=("dimension:dim-width",))
+            for field in ("length", "width", "thickness")
+        ),
+        premises=(GeneralPremise(id="p1", description="Escenario geométrico provisional."),),
+        components=(GeneralComponentProposal(
+            id="panel", label="Panel candidato", kind="panel", role="unknown",
+            length_binding_id="length", width_binding_id="width", thickness_binding_id="thickness",
+            quantity=GeneralQuantity(value=1, state="hypothesis", dependency_refs=("premise:p1",)),
+            premise_ids=("p1",), source_view_ids=("view-front",),
+            source_observation_ids=("observation-front",), source_evidence_ids=("evidence-width",),
+            source_dimension_ids=("dim-width",), assumptions=("Asignación pendiente de técnico.",),
+            unknown_fields=("material", "finish"),
+        ),), assumptions=("No implica aptitud industrial.",),
+    )
+    draft = materialize_general_proposal(extraction, proposal)
+
+    class Provider:
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            core = ("length", "width", "thickness", "quantity")
+            arguments = {
+                "scenario_id": "scenario-reviewed-geometry",
+                "checks": [
+                    {"id": "geometry", "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:panel.{field}" for field in core], "source_refs": ["visual:page-1"], "summary": "La asignación geométrica es coherente con el escenario."},
+                    {"id": "descriptive-unknown", "kind": "visual_consistency", "outcome": "unknown", "method": "model_visual", "target_refs": ["component:panel.material", "component:panel.finish"], "source_refs": ["visual:page-1"], "summary": "El plano no identifica material ni acabado."},
+                ],
+                "field_reviews": [
+                    *({"target_ref": f"component:panel.{field}", "status": "accepted", "check_ids": ["geometry"]} for field in core),
+                    {"target_ref": "component:panel.material", "status": "abstained", "check_ids": ["descriptive-unknown"]},
+                    {"target_ref": "component:panel.finish", "status": "abstained", "check_ids": ["descriptive-unknown"]},
+                ],
+                "unresolved": ["Material y acabado no observados."], "status": "incomplete",
+            }
+            return ProviderResponse(id="review-complete-geometry", model="reviewer-model", tool_calls=(ToolCall(call_id="review-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
+
+    outcome = run_general_autonomous(
+        _context(extraction), GeneralFurnitureAgentOutcome(proposal, draft, 1, 1, ()),
+        reviewer_provider=Provider(), proposer_model="proposer-model",
+    )
+
+    assert outcome.status == "accepted"
+    assert outcome.review.auto_review_status == "accepted"
+    assert outcome.review.status == "reviewed_incomplete"
+    assert outcome.derived.status == "incomplete"
 
 
 def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_review_it() -> None:
@@ -315,9 +585,22 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
                         "source_evidence_ids": ["evidence-width"], "source_dimension_ids": ["dim-width"],
                         "source_document_refs": [], "assumptions": ["La cota parece corresponder al ancho."],
                         "unknown_fields": ["length", "thickness", "quantity"],
+                    }, {
+                        "id": "support-repaired", "label": "Soporte alternativo", "kind": "panel", "role": "support",
+                        "length_binding_id": None, "width_binding_id": None, "thickness_binding_id": None,
+                        "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
+                        "premise_ids": ["p-repair"], "source_view_ids": ["view-front"],
+                        "source_observation_ids": ["observation-front"], "source_contour_ids": [],
+                        "source_evidence_ids": ["evidence-width"], "source_dimension_ids": ["dim-width"],
+                        "source_document_refs": [], "assumptions": ["Soporte hipotético para comparar montaje."],
+                        "unknown_fields": ["length", "width", "thickness", "quantity"],
                     }],
                     "premises": [{"id": "p-repair", "description": "Reasignación semántica del eje.", "required": True, "blocking": True}],
                     "assumptions": ["Reparación provisional, no instrucción industrial."],
+                    "assembly_alternatives": [
+                        {"alternative_id": "mounted", "premise_ids": ["p-repair"], "relations": [{"subject_component_id": "panel-repaired", "relation": "supported_by", "object_component_id": "support-repaired", "state": "hypothesis", "premise_ids": ["p-repair"], "source_refs": ["view:view-front"]}]},
+                        {"alternative_id": "fixed", "premise_ids": ["p-repair"], "relations": [{"subject_component_id": "panel-repaired", "relation": "fixed_to", "object_component_id": "support-repaired", "state": "hypothesis", "premise_ids": ["p-repair"], "source_refs": ["view:view-front"]}]},
+                    ],
                 }
                 name = "proponer_mueble_general"
             else:
@@ -341,6 +624,9 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
     assert outcome.effective_proposal_outcome.proposal.id != proposal.id
     assert outcome.effective_proposal_outcome.draft.components[0].width.value_mm == 800
     assert outcome.effective_proposal_outcome.draft.components[0].length.value_mm is None
+    assert len(outcome.effective_proposal_outcome.proposal.assembly_alternatives) == 2
+    assert outcome.effective_proposal_outcome.draft.assembly_alternatives == outcome.effective_proposal_outcome.proposal.assembly_alternatives
+    assert outcome.original_proposal_outcome.proposal.assembly_alternatives == ()
     assert outcome.review.proposal_revision == 2
     assert len(outcome.critic_snapshots) == 2
     assert [item.phase for item in checkpoints] == ["critic", "semantic_repair"]

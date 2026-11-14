@@ -580,6 +580,29 @@ class GeneralComponentProposal(StrictModel):
     unknown_fields: tuple[str, ...] = ()
 
 
+class GeneralAssemblyRelation(StrictModel):
+    subject_component_id: str = Field(min_length=1, max_length=120)
+    relation: Literal["supported_by", "fixed_to", "attached_to", "contained_by", "aligned_with", "adjacent_to", "hinged_to", "unknown"]
+    object_component_id: str = Field(min_length=1, max_length=120)
+    state: Literal["hypothesis", "unknown", "conflict"]
+    premise_ids: tuple[str, ...] = ()
+    source_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def relation_is_bounded(self) -> "GeneralAssemblyRelation":
+        if self.subject_component_id == self.object_component_id:
+            raise ValueError("assembly relation cannot target the same component")
+        if self.state == "hypothesis" and (not self.premise_ids or not self.source_refs):
+            raise ValueError("hypothesis assembly relation requires premise and source references")
+        return self
+
+
+class GeneralAssemblyAlternative(StrictModel):
+    alternative_id: str = Field(min_length=1, max_length=120)
+    relations: tuple[GeneralAssemblyRelation, ...] = Field(min_length=1, max_length=256)
+    premise_ids: tuple[str, ...] = ()
+
+
 class GeneralFurnitureProposal(StrictModel):
     schema_version: Literal["0.6.0"] = "0.6.0"
     id: str = Field(min_length=1, max_length=120)
@@ -590,6 +613,8 @@ class GeneralFurnitureProposal(StrictModel):
     components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
     premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
     assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
     @model_validator(mode="after")
     def references_are_closed(self) -> "GeneralFurnitureProposal":
@@ -599,6 +624,7 @@ class GeneralFurnitureProposal(StrictModel):
         if len(binding_ids) != len(set(binding_ids)) or len(component_ids) != len(set(component_ids)) or len(premise_ids) != len(set(premise_ids)):
             raise ValueError("general proposal ids must be unique by kind")
         binding_set = set(binding_ids)
+        component_set = set(component_ids)
         premise_set = set(premise_ids)
         for component in self.components:
             refs = {value for value in (component.length_binding_id, component.width_binding_id, component.thickness_binding_id) if value is not None}
@@ -614,6 +640,30 @@ class GeneralFurnitureProposal(StrictModel):
                 }
                 if len(quantity_premise_ids) != len(component.quantity.dependency_refs) or not quantity_premise_ids <= set(component.premise_ids):
                     raise ValueError("component references an unknown quantity premise")
+        alternative_ids = [item.alternative_id for item in self.assembly_alternatives]
+        if self.assembly_alternatives and len(self.assembly_alternatives) < 2:
+            raise ValueError("assembly alternatives require at least two alternatives")
+        if len(alternative_ids) != len(set(alternative_ids)):
+            raise ValueError("duplicate assembly alternative ids")
+        relations = self.assembly_relations + tuple(relation for item in self.assembly_alternatives for relation in item.relations)
+        if any(
+            relation.subject_component_id not in component_set
+            or relation.object_component_id not in component_set
+            or not set(relation.premise_ids) <= premise_set
+            for relation in relations
+        ):
+            raise ValueError("assembly relation references an unknown component or premise")
+        if any(not set(item.premise_ids) <= premise_set for item in self.assembly_alternatives):
+            raise ValueError("assembly alternative references an unknown premise")
+        def relation_signature(relation: GeneralAssemblyRelation) -> tuple[str, str, str, str]:
+            return (relation.subject_component_id, relation.relation, relation.object_component_id, relation.state)
+
+        relation_groups = (self.assembly_relations,) + tuple(item.relations for item in self.assembly_alternatives)
+        if any(len(group) != len({relation_signature(relation) for relation in group}) for group in relation_groups):
+            raise ValueError("duplicate assembly relation")
+        signatures = [tuple(sorted(relation_signature(relation) for relation in item.relations)) for item in self.assembly_alternatives]
+        if len(signatures) != len(set(signatures)):
+            raise ValueError("assembly alternatives require distinct relation sets")
         return self
 
 
@@ -622,6 +672,8 @@ class ProposeGeneralFurnitureArgs(StrictModel):
     components: tuple[GeneralComponentProposal, ...] = Field(min_length=1, max_length=128)
     premises: tuple[GeneralPremise, ...] = Field(min_length=1, max_length=128)
     assumptions: tuple[str, ...] = Field(min_length=1, max_length=64)
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = Field(default=(), max_length=256)
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = Field(default=(), max_length=64)
 
 
 class InspectGeneralContextArgs(StrictModel):
@@ -928,6 +980,8 @@ class GeneralFurnitureDraft(StrictModel):
     components: tuple[GeneralDraftComponent, ...]
     premises: tuple[GeneralPremise, ...]
     assumptions: tuple[str, ...]
+    assembly_relations: tuple[GeneralAssemblyRelation, ...] = ()
+    assembly_alternatives: tuple[GeneralAssemblyAlternative, ...] = ()
     status: Literal["needs_review"] = "needs_review"
 
 

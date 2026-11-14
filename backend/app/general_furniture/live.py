@@ -40,11 +40,46 @@ Usa bindings copy/add/subtract con `dimension:<id>`, `measurement:<id>` o `bindi
 Un contorno cerrado puede ser una cara material, un hueco, un rebaje o un límite interior: contrástalo con las regiones visuales y no conviertas automáticamente cada rectángulo en panel. Las correspondencias entre proyecciones son candidatas ambiguas, no piezas adicionales.
 Una vista no es una ocurrencia física. Una instancia visible en varias proyecciones puede sostener cantidad hypothesis=1 con premisa explícita; repetición u ocultación ambigua permanece unknown o como alternativa. La salida es revisable, nunca documentación industrial lista para fabricar."""
 
+GENERAL_FURNITURE_SYSTEM_PROMPT += """
+No declares uniones como observadas. `assembly_relations` solo expresa relaciones estructuradas revisables entre IDs de componentes, con estado hypothesis, unknown o conflict, premisas y fuentes autorizadas; no añade geometría numérica. Examina cada par de componentes que la evidencia muestre interactuando y cita source_refs visibles. Si la evidencia no distingue supported_by de fixed_to, conserva unknown/conflict o formula al menos dos `assembly_alternatives` incompatibles, nunca elijas una unión por apariencia. No infieras hidden joinery ni números. Si no hay ningún par visible respaldado, los campos assembly pueden quedar vacíos y debes registrar `assembly_not_identifiable` en unknown_fields o en la razón pública.
+Prefiere exactamente estos roles canónicos cuando expresen la función: side_panel, top_panel, bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, leg_frame, stretcher, support, unknown. Usa un rol custom solo si ninguno expresa la función; conserva labels naturales separados del rol."""
+
+GENERAL_FURNITURE_SYSTEM_PROMPT += """
+En `assembly_relations` y `assembly_alternatives`, prefiere siempre source_refs canónicos con esta gramática exacta: `view:<id> | observation:<id> | contour:<id> | evidence:<id> | dimension:<id>`. Una referencia de documento/contexto debe copiar exactamente un valor anunciado. Un alias raw `<id>` es solo compatibilidad cerrada: se admite únicamente cuando coincide exactamente con un ID presente en una sola colección del ledger; no lo prefieras ni lo inventes."""
+
 
 class GeneralFurnitureProvider(Protocol):
     def create_response(
         self, *, input_items, tools, previous_response_id, timeout_s
     ): ...
+
+
+class GeneralLiveError(RuntimeError):
+    """Live failure that retains only prior safe trace entries and counters."""
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        trace: tuple[dict[str, object], ...],
+        model_calls: int,
+        tool_calls: int,
+        provider_status_code: int | None = None,
+        provider_code: str | None = None,
+        provider_request_id: str | None = None,
+        provider_response_id: str | None = None,
+        provider_incomplete_reason: str | None = None,
+    ) -> None:
+        super().__init__(code)
+        self.code = code
+        self.trace = trace
+        self.model_calls = model_calls
+        self.tool_calls = tool_calls
+        self.provider_status_code = provider_status_code
+        self.provider_code = provider_code
+        self.provider_request_id = provider_request_id
+        self.provider_response_id = provider_response_id
+        self.provider_incomplete_reason = provider_incomplete_reason
 
 
 @dataclass(frozen=True)
@@ -68,6 +103,49 @@ class GeneralVisualPage:
     crop_bounds_source: tuple[float, float, float, float] | None = None
     marks: tuple[VisionMark, ...] = ()
     warnings: tuple[str, ...] = ()
+
+
+def _is_raster_without_metric_ledger(
+    extraction: DrawingExtraction,
+    measurements,
+    visual_pages: tuple[GeneralVisualPage, ...],
+) -> bool:
+    return (
+        bool(visual_pages)
+        and not extraction.views
+        and not any(item.value_mm is not None for item in extraction.dimensions)
+        and not any(item.value_mm is not None for item in measurements)
+    )
+
+
+def general_allowed_document_refs(
+    visual_pages: tuple[GeneralVisualPage, ...],
+    *,
+    include_announced_children: bool,
+) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            reference
+            for page in visual_pages
+            for reference in (
+                page.reference,
+                *(page.source_document_refs if include_announced_children else ()),
+            )
+        )
+    )
+
+
+def _safe_live_error_code(error: Exception) -> str:
+    candidate = getattr(error, "code", None)
+    if (
+        isinstance(candidate, str)
+        and 0 < len(candidate) <= 120
+        and all(character.isalnum() or character in "_:-" for character in candidate)
+    ):
+        return candidate
+    if isinstance(error, TimeoutError):
+        return "general_live_provider_timeout"
+    return "general_live_provider_error"
 
 
 def _safe_validation_details(error: Exception) -> list[dict[str, object]]:
@@ -117,7 +195,9 @@ def _compact_contour(item) -> dict[str, object]:
     }
 
 
-def general_furniture_tool_schemas() -> list[dict]:
+def general_furniture_tool_schemas(
+    *, raster_without_metric_ledger: bool = False
+) -> list[dict]:
     def schema(name: str, description: str, model) -> dict:
         return {
             "type": "function",
@@ -127,6 +207,28 @@ def general_furniture_tool_schemas() -> list[dict]:
             "strict": True,
         }
 
+    proposal_description = (
+        "Propone componentes visuales revisables usando exclusivamente las referencias exactas anunciadas. "
+        "Como el raster no tiene ledger métrico ni vistas autorizadas, usa bindings=[], "
+        "length_binding_id/width_binding_id/thickness_binding_id=null y source_view_ids=[]. "
+        "Cita source_document_refs solo desde allowed_source_document_refs; no midas píxeles."
+        if raster_without_metric_ledger
+        else "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings copy/add/subtract con operand_refs dimension:<id> o measurement:<id>; compact_geometry.measurements publica bases numéricas autorizadas aunque su asignación sea hipótesis. Una cantidad visual puede ser hypothesis solo con grupos de instancias distintos, fuentes y dependency_refs premise:<id> cerradas; nunca cuentes vistas como instancias."
+    )
+    proposal_description += (
+        " Declara assembly_relations solo como hypothesis/unknown/conflict con IDs de "
+        "componentes, premise_ids y source_refs. Si supported_by y fixed_to no se "
+        "distinguen, usa unknown/conflict o assembly_alternatives incompatibles; no "
+        "inventes uniones observadas ni geometría numérica. Examina cada par visible; "
+        "si ninguno está respaldado, permite assembly vacío y registra "
+        "assembly_not_identifiable. Prefiere roles exactos: side_panel, top_panel, "
+        "bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, "
+        "leg_frame, stretcher, support, unknown; usa custom solo si ninguno aplica. "
+        "Prefiere source_refs canónicos: view:<id> | observation:<id> | contour:<id> | "
+        "evidence:<id> | dimension:<id>. Una ref documental debe copiar un valor exacto "
+        "anunciado. Un alias raw <id> es compatibilidad cerrada solo si coincide en una "
+        "sola colección del ledger; no lo recomiendes ni inventes."
+    )
     return [
         schema(
             "inspeccionar_evidencia_general",
@@ -135,7 +237,7 @@ def general_furniture_tool_schemas() -> list[dict]:
         ),
         schema(
             "proponer_mueble_general",
-            "Propone componentes nuevos y revisables usando IDs del ledger. Debe crear bindings copy/add/subtract con operand_refs dimension:<id> o measurement:<id>; compact_geometry.measurements publica bases numéricas autorizadas aunque su asignación sea hipótesis. Una cantidad visual puede ser hypothesis solo con grupos de instancias distintos, fuentes y dependency_refs premise:<id> cerradas; nunca cuentes vistas como instancias.",
+            proposal_description,
             ProposeGeneralFurnitureArgs,
         ),
     ]
@@ -162,6 +264,13 @@ def run_general_furniture_agent(
     evidence = {item.id: item for item in extraction.evidence}
     dimensions = {item.id: item for item in extraction.dimensions}
     general_measures = derive_geometry_measurements(extraction)
+    raster_without_metric_ledger = _is_raster_without_metric_ledger(
+        extraction, general_measures, visual_pages
+    )
+    allowed_document_refs = general_allowed_document_refs(
+        visual_pages,
+        include_announced_children=raster_without_metric_ledger,
+    )
     try:
         spatial_regions = derive_source_spatial_regions(extraction, general_measures)
         projection_hypotheses = derive_projection_hypotheses(
@@ -216,7 +325,7 @@ def run_general_furniture_agent(
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
         "evidence_ids": sorted(evidence),
-        "instruction": "Propón componentes, no una selección de plantilla. No escribas dimensiones libres: usa bindings anunciados en compact_geometry.measurements o dimension:<id>. Los spans con value_mm son observaciones autorizadas; su rol sigue siendo hipótesis. Consulta segmentos paginados solo si hacen falta. Puedes proponer quantity hypothesis con premisa y fuentes para grupos visuales de instancias físicas; nunca cuentes proyecciones como unidades.",
+        "instruction": "Propón componentes, no una selección de plantilla. No escribas dimensiones libres: usa bindings anunciados en compact_geometry.measurements o dimension:<id>. Los spans con value_mm son observaciones autorizadas; su rol sigue siendo hipótesis. Consulta segmentos paginados solo si hacen falta. Puedes proponer quantity hypothesis con premisa y fuentes para grupos visuales de instancias físicas; nunca cuentes proyecciones como unidades. Prefiere roles canónicos side_panel, top_panel, bottom_panel, shelf, divider, back_panel, door, tabletop, table_leg, leg_frame, stretcher, support, unknown. Examina pares visiblemente interactuantes y cita source_refs; si el tipo de unión no se distingue usa unknown/conflict o alternativas. Si no hay par respaldado permite assembly vacío y registra assembly_not_identifiable; no infieras hidden joinery ni números. Prefiere source_refs canónicos con gramática view:<id> | observation:<id> | contour:<id> | evidence:<id> | dimension:<id>; refs documentales copian valores anunciados exactos. Alias raw <id> solo por compatibilidad cerrada cuando coincide en una sola colección del ledger; no lo prefieras.",
         "visual_pages": [
             {
                 "reference": item.reference,
@@ -232,6 +341,17 @@ def run_general_furniture_agent(
             for item in visual_pages
         ],
     }
+    if raster_without_metric_ledger:
+        context["raster_authority"] = {
+            "allowed_source_view_ids": [],
+            "allowed_source_document_refs": list(allowed_document_refs),
+            "allowed_numeric_binding_refs": [],
+            "instruction": (
+                "No inventes IDs de vista para páginas PDF. Usa source_view_ids=[], "
+                "bindings=[] y ejes null; cita solo source_document_refs de esta lista. "
+                "La imagen autoriza interpretación visual, nunca medidas en píxeles."
+            ),
+        }
     content: list[dict[str, object]] = [
         {"type": "input_text", "text": json.dumps(context, ensure_ascii=False)}
     ]
@@ -247,14 +367,32 @@ def run_general_furniture_agent(
     while calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
-            raise TimeoutError("agent_deadline_exceeded")
+            raise GeneralLiveError(
+                "agent_deadline_exceeded", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         calls += 1
-        response = provider.create_response(
-            input_items=input_items,
-            tools=general_furniture_tool_schemas(),
-            previous_response_id=previous_response_id,
-            timeout_s=remaining,
-        )
+        try:
+            response = provider.create_response(
+                input_items=input_items,
+                tools=general_furniture_tool_schemas(
+                    raster_without_metric_ledger=raster_without_metric_ledger
+                ),
+                previous_response_id=previous_response_id,
+                timeout_s=remaining,
+            )
+        except GeneralLiveError:
+            raise
+        except Exception as exc:
+            raise GeneralLiveError(
+                _safe_live_error_code(exc), trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+                provider_status_code=getattr(exc, "status_code", None),
+                provider_code=getattr(exc, "provider_code", None),
+                provider_request_id=getattr(exc, "request_id", None),
+                provider_response_id=getattr(exc, "response_id", None),
+                provider_incomplete_reason=getattr(exc, "incomplete_reason", None),
+            ) from exc
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [
@@ -262,7 +400,10 @@ def run_general_furniture_agent(
             ]
             continue
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
-            raise RuntimeError("tool_call_budget_exhausted")
+            raise GeneralLiveError(
+                "tool_call_budget_exhausted", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         outputs = []
         for call in response.tool_calls:
             tool_calls += 1
@@ -395,9 +536,7 @@ def run_general_furniture_agent(
                     draft = materialize_general_proposal(
                         extraction,
                         proposal,
-                        allowed_document_refs=tuple(
-                            item.reference for item in visual_pages
-                        ),
+                        allowed_document_refs=allowed_document_refs,
                     )
                     trace.append(
                         {
@@ -427,21 +566,27 @@ def run_general_furniture_agent(
                 json.JSONDecodeError,
             ) as exc:
                 repairs += 1
-                if repairs > limits.max_validation_repairs:
-                    raise RuntimeError("validation_repair_budget_exhausted") from exc
-                data = {
-                    "ok": False,
-                    "error": "invalid_arguments",
-                    "details": _safe_validation_details(exc),
-                }
+                details = _safe_validation_details(exc)
                 trace.append(
                     {
                         "tool": call.name,
                         "ok": False,
                         "summary": "Invalid tool arguments rejected.",
+                        "details": details,
                         **metadata,
                     }
                 )
+                if repairs > limits.max_validation_repairs:
+                    raise GeneralLiveError(
+                        "validation_repair_budget_exhausted",
+                        trace=tuple(trace), model_calls=calls,
+                        tool_calls=tool_calls,
+                    ) from exc
+                data = {
+                    "ok": False,
+                    "error": "invalid_arguments",
+                    "details": details,
+                }
             outputs.append(
                 {
                     "type": "function_call_output",
@@ -450,4 +595,7 @@ def run_general_furniture_agent(
                 }
             )
         input_items = outputs
-    raise RuntimeError("model_call_budget_exhausted")
+    raise GeneralLiveError(
+        "model_call_budget_exhausted", trace=tuple(trace),
+        model_calls=calls, tool_calls=tool_calls,
+    )

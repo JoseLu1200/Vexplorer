@@ -1,6 +1,6 @@
-# Operación privada de Vexplorer
+# Operación de Vexplorer
 
-Vexplorer está desplegado como producto privado de un solo equipo en `https://gex-dashboard.hopto.org/vexplorer/`. No es un diseño SaaS multiempresa. El release activo es `cd57f4f4ac3dca81b82a2d520057dfe3261b07be`; incluye PR1, integrado previamente en `9a7aeac`, y la CI del release terminó correctamente en el run `43549417513`. En este host se usa un venv y un servicio `systemd --user` por su menor huella y porque `kripta` no accede al socket Docker.
+Vexplorer está desplegado para un solo equipo en `https://gex-dashboard.hopto.org/vexplorer/`; no es un diseño SaaS multiempresa. El release `cd57f4f4ac3dca81b82a2d520057dfe3261b07be` y la aceptación privada asociada son antecedentes históricos. El candidato UX posterior `a61f97a89a86-treec58bbe42140dd03c` también se verificó primero con autenticación. El estado operativo más reciente es `/home/kripta/apps/vexplorer/releases/public-access-20261114-071821`, con `VEXPLORER_AUTH_ENABLED=false` por solicitud explícita del propietario. En este host se usa un venv y un servicio `systemd --user` por su menor huella y porque `kripta` no accede al socket Docker.
 
 ### Nota sobre `gex-dashboard.hopto.org`
 
@@ -10,7 +10,7 @@ Frontend y backend admiten `VEXPLORER_ROOT_PATH=/vexplorer`: los assets son rela
 
 El snapshot posterior al release registró 8.179.417.088 bytes libres; el disco sigue cerca del 95% usado y debe vigilarse. `kripta` es propietario del Caddyfile, el admin Caddy local está accesible y `caddy reload` no requiere sudo. No se debe pedir ni registrar una contraseña sudo.
 
-Python 3.12.3, el venv y sus dependencias están instalados en `/home/kripta/apps/vexplorer`. `vexplorer.service` está activo y habilitado en el gestor de usuario; `Linger=yes` permite que persista tras logout y reinicio. Caddy 2.11.7 sirve la ruta pública con TLS. El snapshot observado muestra el listener loopback ocupado por la aplicación, health público `200` y la raíz privada `/vexplorer/` protegida con `401` sin credenciales.
+Python 3.12.3, el venv y sus dependencias están instalados en `/home/kripta/apps/vexplorer`. `vexplorer.service` está activo y habilitado en el gestor de usuario; `Linger=yes` permite que persista tras logout y reinicio. Caddy 2.11.7 sirve la ruta pública con TLS. En la comprobación más reciente, health y la raíz anónima devolvieron `200`. El `401` sin credenciales registrado en las aceptaciones anteriores describe aquellos releases autenticados, no el estado actual.
 
 ### Instalación venv observada en el VPS
 
@@ -36,7 +36,9 @@ La instalación usa esta estructura privada:
 ```dotenv
 VEXPLORER_ENV=production
 VEXPLORER_DATA_DIR=/home/kripta/apps/vexplorer/shared/data
-VEXPLORER_USERS_FILE=/home/kripta/apps/vexplorer/shared/secrets/users.json
+VEXPLORER_AUTH_ENABLED=false
+# Con VEXPLORER_AUTH_ENABLED=true:
+# VEXPLORER_USERS_FILE=/home/kripta/apps/vexplorer/shared/secrets/users.json
 VEXPLORER_COST_CATALOG=/home/kripta/apps/vexplorer/shared/config/cost-catalog.json
 VEXPLORER_ALLOWED_ORIGINS=https://gex-dashboard.hopto.org
 VEXPLORER_ROOT_PATH=/vexplorer
@@ -60,7 +62,7 @@ La clave de proveedor está en el env privado; no se pasa en argv ni se copia al
 
 El snippet `deploy/vps-vexplorer.caddy` quedó insertado dentro del bloque existente `gex-dashboard.hopto.org`, inmediatamente después del import estable `casinosantiago.caddy` y antes de los catch-all. El Caddyfile activo tiene SHA-256 `c297ea0be19686a5e0a0539e0a9220383f5170c7f4dfa086ddd14c37dab835d4`; la copia anterior recuperable está en `/home/kripta/apps/vexplorer/rollback/Caddyfile.before-vexplorer-06deea06fb25`. Los ocho endpoints preexistentes conservaron sus códigos tras la recarga. No se debe detener ni reiniciar otras aplicaciones al operar Vexplorer.
 
-### Aceptación observada
+### Aceptación privada histórica observada
 
 La aceptación remota guardada fuera de Git terminó con estado `passed`:
 
@@ -68,7 +70,7 @@ La aceptación remota guardada fuera de Git terminó con estado `passed`:
 - el coste se identifica como `synthetic:true` y `partial`: prueba la integración, no tarifas empresariales ni precisión industrial;
 - una ejecución real `live` con `gpt-6.1-sol` terminó correctamente;
 - el replay de su grabación terminó en modo `recorded_replay` y conserva procedencia, fingerprint y hash del transcript;
-- health público, autenticación, prefijo `/vexplorer`, persistencia y aislamiento de los endpoints existentes quedaron comprobados.
+- health público, autenticación, prefijo `/vexplorer`, persistencia y aislamiento de los endpoints existentes quedaron comprobados para aquel release autenticado;
 - se reinició únicamente `vexplorer.service`; continuó habilitado, con linger activo y bind `127.0.0.1:18792`;
 - 18 respuestas GET conservaron código y SHA-256 de cuerpo tras el reinicio y al abrir una restauración con la aplicación local;
 - live y replay devolvieron el mismo resultado salvo los campos esperados `run_id` y `created_at`.
@@ -82,8 +84,9 @@ Esta evidencia no sustituye revisión técnica de cada resultado. Las credencial
 - Caddy existente es el único servicio público; Uvicorn liga solo `127.0.0.1:18792`.
 - La unidad de usuario aplica `NoNewPrivileges`, filesystem protegido, tmp privado y escritura solo en `shared/data`.
 - Se usa un único worker Uvicorn hasta que trabajos y SQLite se rediseñen y prueben para multiproceso.
-- En producción, todas las rutas salvo `GET /health` y `GET /api/v1/health` requieren HTTP Basic. La identidad autenticada es el actor de auditoría; el nombre enviado por el navegador no la sustituye.
-- Las mutaciones con cabecera `Origin` solo aceptan los orígenes HTTPS declarados en `VEXPLORER_ALLOWED_ORIGINS`. Clientes de consola sin `Origin` siguen necesitando Basic Auth.
+- Con `VEXPLORER_AUTH_ENABLED=true` (valor por defecto), todas las rutas salvo `GET /health` y `GET /api/v1/health` requieren HTTP Basic. La identidad autenticada es el actor de auditoría; el nombre enviado por el navegador no la sustituye.
+- Con `VEXPLORER_AUTH_ENABLED=false`, no se carga el archivo de usuarios y el nombre revisor es manual. Este modo no aporta identidad autenticada ni aislamiento entre usuarios.
+- En ambos modos, las mutaciones que incluyen cabecera `Origin` solo aceptan los orígenes HTTPS declarados en `VEXPLORER_ALLOWED_ORIGINS`. Los clientes sin `Origin` no quedan cubiertos por esa comprobación; en modo público deben considerarse no autenticados.
 - El secreto de usuarios y el catálogo económico se montan como archivos de solo lectura; no se incluyen en la imagen ni en Git.
 - `OPENAI_API_KEY` es opcional. Sin ella se opera en `geometry_only`; no se simula un proveedor.
 
@@ -143,7 +146,7 @@ Antes de actualizar el host venv activo:
 
 1. Cree y verifique una copia según la sección siguiente; restaure esa copia a un destino nuevo.
 2. Instale la nueva versión en un directorio inmutable `releases/<revision>` y compruebe que el venv satisface sus dependencias. No sobrescriba el release actual.
-3. Ejecute la nueva versión contra los datos restaurados y compruebe compatibilidad de esquema, health, login, runs históricos, trabajos, exportaciones y artefactos.
+3. Ejecute la nueva versión contra los datos restaurados y compruebe compatibilidad de esquema, health, el modo de acceso configurado, runs históricos, trabajos, exportaciones y artefactos.
 4. Registre el destino anterior de `current`, cambie el enlace al release validado y reinicie únicamente `vexplorer.service`. No modifique ni recargue Caddy para una actualización ordinaria de la aplicación.
 5. Repita las comprobaciones externas. Si fallan y el esquema sigue siendo compatible con el release anterior, restaure `current` y reinicie solo el servicio propio. Si una migración rompió esa compatibilidad, conserve los datos actuales y restaure la copia en otra ruta antes de volver a la versión anterior; no ejecute código antiguo sobre un esquema incompatible. Conserve ambos releases y la copia hasta cerrar la aceptación.
 
@@ -225,9 +228,22 @@ En el host privado se preparó, sin activar el servicio, LibreDWG 0.14 bajo `/ho
 ## Comprobaciones periódicas
 
 - `systemctl --user is-active vexplorer.service` debe devolver `active`; `ss` debe mostrar `127.0.0.1:18792`, nunca un bind público.
-- `GET https://gex-dashboard.hopto.org/vexplorer/api/v1/health` debe devolver 200 y una ruta privada sin Basic debe devolver 401.
+- `GET https://gex-dashboard.hopto.org/vexplorer/api/v1/health` debe devolver 200. Con auth habilitada, la raíz sin Basic debe devolver 401; con el modo público activo debe devolver 200 sin `WWW-Authenticate`.
 - Ambos health checks son deliberadamente públicos y no deben revelar configuración.
-- Verifique login válido/inválido y que una mutación con `Origin` ajeno devuelve 403.
+- Verifique el modo de acceso esperado y que una mutación con `Origin` ajeno devuelve 403.
 - Revise espacio del volumen, cola (`VEXPLORER_JOB_MAX_PENDING`, por defecto 8), expiración TLS y fecha/procedencia del catálogo.
 - Ejecute copias manuales con retención externa y un ensayo periódico de restauración en una ruta nueva; compruebe runs, documentos, jobs y artefactos.
 - No interprete health como validación industrial de resultados CAD o costes.
+
+
+## Acceso público opcional (2026-11-14)
+
+Por petición del propietario, el VPS actual usa `VEXPLORER_AUTH_ENABLED=false`. Esto permite acceder a la interfaz y API sin usuario ni contraseña. `VEXPLORER_ENV=production` conserva las comprobaciones de origen HTTPS, límites y ejecución por jobs. La autenticación sigue activada por defecto en nuevos despliegues; un valor distinto de `true` o `false` impide arrancar. En modo público no se carga el archivo de usuarios y la revisión usa identidad manual. Localhost sigue sin autenticación y escucha solamente en loopback. La verificación read-only de cierre observó HTTP 200 en raíz y health; no realizó un nuevo despliegue.
+
+## Empaquetado reproducible local
+
+`python -m tools.build_release --output .runtime/release-build` genera un snapshot determinista del runtime allowlisted. Incluye backend, frontend servido, fuentes locales, `frontend/core/ui.js`, herramientas operativas y manifiestos de dependencias Python/Node; excluye secretos, env, bases de datos, datasets, referencias privadas, pruebas y `.runtime`. Falla si falta una entrada esencial. `RELEASE.json` identifica el commit base y el SHA-256 del árbol de payload; `MANIFEST.sha256` permite verificar cada entrada. El archivo no contiene una fecha variable y normaliza tiempos, propietarios y modos de tar/gzip.
+
+El comando no transfiere ni activa el resultado. Antes de promover un candidato, ejecútelo dos veces sobre el árbol integrado, compruebe igualdad de `candidate_id`, `payload_tree_sha256` y SHA-256 del archivo, y después siga el flujo de backup, restauración y smoke anterior. El `git_head` de un snapshot con cambios locales solo identifica su base; el hash de payload identifica los bytes empaquetados. Para un cierre completamente trazable, integre primero y vuelva a generar el candidato desde el commit definitivo.
+
+El trabajo de cierre de PoC en `.worktrees/poc-closure` no se ha activado en el VPS. El estado remoto documentado continúa siendo `public-access-20261114-071821`; los manifests de benchmarks, recuperaciones locales y candidatos provisionales no son releases operativos. Coordinación debe integrar el árbol aislado, verificarlo, generar dos paquetes idénticos y registrar commit/payload/archivo antes de plantear cualquier actualización. No se debe inferir despliegue por la existencia de un tar local o un informe de evaluación.

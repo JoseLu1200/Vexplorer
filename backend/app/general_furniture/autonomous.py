@@ -24,7 +24,13 @@ from backend.app.contratos.modelos import (
     ProposeGeneralFurnitureArgs,
 )
 from backend.app.general_furniture.derivations import derive_general_package
-from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, _safe_validation_details, _strictify
+from backend.app.general_furniture.live import (
+    GeneralFurnitureAgentOutcome,
+    _is_raster_without_metric_ledger,
+    _safe_validation_details,
+    _strictify,
+    general_allowed_document_refs,
+)
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
@@ -145,8 +151,13 @@ def _validate_visual_checks(args: GeneralAutoReviewArgs, allowed_refs: set[str],
     for field_review in args.field_reviews:
         if field_review.target_ref not in valid_targets:
             raise ValueError("machine_field_review_targets_unknown_field")
-        if field_review.status == "accepted" and not any(check_id in checks and checks[check_id].outcome == "pass" for check_id in field_review.check_ids):
-            raise ValueError("accepted_machine_field_requires_visual_check")
+        if field_review.status == "accepted" and not any(
+            check_id in checks
+            and checks[check_id].outcome == "pass"
+            and field_review.target_ref in checks[check_id].target_refs
+            for check_id in field_review.check_ids
+        ):
+            raise ValueError("accepted_machine_field_requires_targeted_visual_check")
 
 
 def _reject_forged_machine_facts(args: GeneralAutoReviewArgs) -> None:
@@ -216,18 +227,59 @@ def _effective_auto_status(args: GeneralAutoReviewArgs) -> str:
         return "conflict"
     if args.status == "abstained":
         return "abstained"
-    accepted = {item.target_ref for item in args.field_reviews if item.status == "accepted"}
-    for component in args.components:
-        if component.unknown_fields:
+    if not args.components:
+        return "incomplete"
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    nonblocking_unknowns = {"material", "finish", "acabado"}
+    blocking_unresolved_markers = {
+        "identidad", "correspondencia", "proyecci", "montaje", "unión", "union",
+        "mecanizado", "cantidad", "quantity", "dimensi", "espesor", "ancho", "largo",
+        "geometr", "cara material",
+    }
+    for unresolved in args.unresolved:
+        normalized = unresolved.casefold()
+        if (
+            not any(marker in normalized for marker in nonblocking_unknowns)
+            or any(marker in normalized for marker in blocking_unresolved_markers)
+        ):
             return "incomplete"
-        for field in ("length", "width", "thickness", "quantity", "material", "finish"):
-            if getattr(component, field).state in {"unknown", "conflict"} or f"component:{component.id}.{field}" not in accepted:
+    for component in args.components:
+        if any(field.strip().lower() not in nonblocking_unknowns for field in component.unknown_fields):
+            return "incomplete"
+        for field in ("length", "width", "thickness", "quantity"):
+            target = f"component:{component.id}.{field}"
+            if getattr(component, field).state in {"unknown", "conflict"} or field_status.get(target) != "accepted":
                 return "incomplete"
-    return "accepted" if args.status == "accepted" and not args.unresolved else "incomplete"
+        for field in ("material", "finish"):
+            target = f"component:{component.id}.{field}"
+            state = getattr(component, field).state
+            expected = "abstained" if state == "unknown" else "accepted"
+            if state == "conflict" or field_status.get(target) != expected:
+                return "incomplete"
+    return "accepted"
 
 
 def _repair_is_supported(args: GeneralAutoReviewArgs) -> bool:
     return any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+
+
+def _recoverable_dimension_measurements(args: GeneralAutoReviewArgs, measurements) -> tuple[dict[str, object], ...]:
+    field_status = {item.target_ref: item.status for item in args.field_reviews}
+    needs_dimension_evidence = any(
+        getattr(component, field).state == "unknown"
+        and field_status.get(f"component:{component.id}.{field}") == "abstained"
+        for component in args.components
+        for field in ("length", "width", "thickness")
+    )
+    if not needs_dimension_evidence:
+        return ()
+    candidates = tuple(
+        item for item in measurements
+        if item.semantic == "contour_segment_length" and item.value_mm is not None
+    )
+    if not candidates:
+        return ()
+    return tuple(query_compact_measurements(candidates, offset=0, limit=64).to_payload()["items"])
 
 
 def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAutoReviewCheck, ...]) -> tuple[GeneralScenarioOccurrence, ...]:
@@ -240,9 +292,14 @@ def _scenario_occurrences(args: GeneralAutoReviewArgs, checks: tuple[GeneralAuto
         if component.quantity.state != "hypothesis" or component.quantity.value is None or field_review is None:
             continue
         selected = [by_id.get(check_id) for check_id in field_review.check_ids]
-        if any(item is None or item.outcome != "pass" for item in selected) or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in selected if item is not None}:
+        targeted = [item for item in selected if item is not None and target in item.target_refs]
+        if (
+            len(targeted) != len(selected)
+            or any(item.outcome != "pass" for item in targeted)
+            or not {"quantity_basis", "duplicate_scan"} <= {item.kind for item in targeted}
+        ):
             continue
-        sources = tuple(dict.fromkeys(ref for item in selected if item is not None for ref in item.source_refs))
+        sources = tuple(dict.fromkeys(ref for item in targeted for ref in item.source_refs))
         result.extend(GeneralScenarioOccurrence(
             id=f"provisional:{args.scenario_id}:{component.id}:{index}", component_id=component.id, occurrence_index=index,
             scenario_id=args.scenario_id, quantity_target_ref=target, check_ids=field_review.check_ids,
@@ -313,6 +370,12 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         visible_source_refs.add(f"visual:{page.reference}")
         visible_source_refs.update(page.source_contour_ids)
         visible_source_refs.update(mark.source_id for mark in page.marks)
+    visible_source_refs.update(general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=_is_raster_without_metric_ledger(
+            context.extraction, measurements, context.visual_pages
+        ),
+    ))
     allowed_source_refs = sorted(
         visible_source_refs
         | {f"premise:{item.id}" for item in outcome.proposal.premises}
@@ -343,7 +406,18 @@ def _materialize_repair(context, raw: dict) -> GeneralFurnitureAgentOutcome:
         id=f"general-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:16]}", drawing_id=context.extraction.drawing_id,
         ledger_revision=context.ledger_revision, proposal_origin="native_tool", **args.model_dump(),
     )
-    draft = materialize_general_proposal(context.extraction, proposal, allowed_document_refs=tuple(item.reference for item in context.visual_pages))
+    draft = materialize_general_proposal(
+        context.extraction,
+        proposal,
+        allowed_document_refs=general_allowed_document_refs(
+            context.visual_pages,
+            include_announced_children=_is_raster_without_metric_ledger(
+                context.extraction,
+                derive_geometry_measurements(context.extraction),
+                context.visual_pages,
+            ),
+        ),
+    )
     return GeneralFurnitureAgentOutcome(proposal, draft, 0, 1, ())
 
 
@@ -366,12 +440,19 @@ def run_general_autonomous(
     trace: list[dict[str, object]] = []
     snapshots: list[GeneralAutoReviewArgs] = []
     validation_repairs = semantic_repairs = tool_calls = 0
+    evidence_reinspection_requested = False
     effective = proposal_outcome
+    measurements = derive_geometry_measurements(context.extraction)
     visual_refs = {f"visual:{item.reference}" for item in context.visual_pages}
     for page in context.visual_pages:
         visual_refs.update(page.source_contour_ids)
         visual_refs.update(mark.source_id for mark in page.marks)
-    measurements = derive_geometry_measurements(context.extraction)
+    visual_refs.update(general_allowed_document_refs(
+        context.visual_pages,
+        include_announced_children=_is_raster_without_metric_ledger(
+            context.extraction, measurements, context.visual_pages
+        ),
+    ))
     allowed_refs = set(visual_refs)
     allowed_refs.update(f"view:{item.id}" for item in context.extraction.views)
     allowed_refs.update(f"contour:{item.id}" for item in context.extraction.contours)
@@ -451,6 +532,31 @@ def run_general_autonomous(
             )
             snapshots.append(args)
             effective_status = _effective_auto_status(args)
+            recoverable_measurements = _recoverable_dimension_measurements(args, measurements)
+            if (
+                effective_status == "incomplete"
+                and semantic_repairs < limits.max_semantic_repairs
+                and not evidence_reinspection_requested
+                and recoverable_measurements
+            ):
+                evidence_reinspection_requested = True
+                trace.append({
+                    "tool": call.name,
+                    "ok": True,
+                    "summary": "Se aportó evidencia métrica acotada para una abstención dimensional reparable.",
+                    "phase": "general_auto_evidence_reinspection",
+                    "provider_response_id": response.id,
+                    "provider_model": getattr(response, "model", None),
+                    "provider_call_id": call.call_id,
+                    "status": effective_status,
+                })
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({
+                    "ok": True,
+                    "status": "repair_requested",
+                    "candidate_measurements": recoverable_measurements,
+                    "instruction": "Hay segmentos métricos del ledger que no se habían detallado. Si imagen y ledger sostienen una asignación, emite una propuesta completa corregida con bindings; si no, conserva la abstención. No midas píxeles ni inventes valores.",
+                }, ensure_ascii=False)}]
+                continue
             if effective_status in {"incomplete", "conflict"} and semantic_repairs < limits.max_semantic_repairs and _repair_is_supported(args):
                 event = {"tool": call.name, "ok": True, "summary": "Crítica detectó un error semántico reparable.", "phase": "general_auto_critique", "provider_response_id": response.id, "provider_model": getattr(response, "model", None), "provider_call_id": call.call_id, "status": effective_status}
                 trace.append(event)

@@ -4,13 +4,15 @@ Vexplorer convierte planos DXF, DWG y PDF en propuestas de piezas y medidas revi
 
 Recorrido general: **plano → propuesta visual → crítica y corrección automáticas → BOM, SVG/DXF y esquema 3D → comparables → estimación de costes y horas**. El histórico admite JSON/CSV con procedencia, fecha, moneda, materiales, acabado y alcance económico; recupera por atributos o embeddings reales y estima por conceptos compatibles. Distingue registros empresariales, fuentes publicadas y datos sintéticos. La evaluación técnica no acredita precisión industrial ni ahorro medido con técnicos.
 
-**Aplicación privada del equipo:** [abrir Vexplorer](https://gex-dashboard.hopto.org/vexplorer/). Requiere credenciales individuales. El despliegue del 2026-11-14 incluye API, almacenamiento persistente, inferencia live y replay verificado; se comprobaron reinicio y recuperación de copia. Las tarifas iniciales son demo. Evidencia y límites en la [verificación privada](docs/VERIFICACION_PRIVADA_2026-11-14.md).
+**Aplicación desplegada del equipo:** [abrir Vexplorer](https://gex-dashboard.hopto.org/vexplorer/). El acceso anónimo está habilitado de forma explícita en el VPS desde el release operativo `public-access-20261114-071821`; el 2026-11-14 se observaron HTTP 200 tanto en la raíz como en health. El perfil de producción sigue aplicando guard de origen a mutaciones, límites y jobs, pero **el acceso público no equivale a aislamiento entre usuarios**. La autenticación continúa siendo el valor seguro por defecto para despliegues nuevos. El candidato UX anterior `a61f97a89a86-treec58bbe42140dd03c` se aceptó con Basic Auth y 401 anónimo antes de este cambio posterior; ambas evidencias se conservan con su cronología. Las tarifas iniciales son demo. Operación y límites en [PRODUCCION](docs/PRODUCCION.md).
 
 El [contrato de mesa 0.5](docs/CONTRATO_MESA_0_5.md) define el recorrido. La [verificación de mesa y CAD](docs/VERIFICACION_MESA_CAD_2026-11-14.md) conserva el cierre anterior con API, navegador, inferencia y visión reales. La [integración de PR1](docs/INTEGRACION_PR1_2026-11-14.md) documenta los 14 commits revisados y sus adaptaciones. El incremento privado añade contratos económicos 0.6, jobs durables y replay verificado; las aceptaciones históricas no sustituyen su revisión actual.
 
 ## Auditoría e incremento privado
 
 La [verificación de esta ampliación](docs/VERIFICACION_TRANSCRIPCION_2026-11-14.md) registra integración, navegador, inferencia real y límites observados. El [diseño](docs/superpowers/specs/2026-11-14-transcript-completion-design.md) y el [plan](docs/superpowers/plans/2026-11-14-transcript-completion.md) describen el incremento implementado por agentes GPT-6.1 Sol y revisado por GPT-6 Astra. La guía [PRODUCCION](docs/PRODUCCION.md) incluye despliegue y copias. La [auditoría anterior](docs/AUDITORIA_COMPLETA_2026-11-14.md) y la [verificación privada anterior](docs/VERIFICACION_PRIVADA_2026-11-14.md) conservan sus resultados históricos; no sustituyen la aceptación actual.
+
+El cierre de PoC posterior se trabaja en la rama/worktree aislada `poc-closure`: integra las correcciones de abstención, PDF raster, semántica y corpus sin borrar los cambios concurrentes útiles de similitud que el usuario pidió conservar. La cohorte pareada inicial de seis casos se congeló antes de puntuación; tres casos terminaron y tres se detuvieron por el mismo presupuesto visual antes del proveedor. La recuperación se fijó de antemano solo para esos tres fallos y conserva denominador, bytes de los éxitos, fallos originales y procedencia por versión. Las métricas y límites consolidados pertenecen a [CIERRE_POC](docs/CIERRE_POC_2026-11-14.md); no se anticipan aquí. El commit y paquete definitivos se registrarán después de integrar y repetir la verificación, y este trabajo no implica un nuevo despliegue.
 
 ## Instalación y arranque local (PowerShell)
 
@@ -114,6 +116,18 @@ Los DXF propios se pueden regenerar con:
 ```
 
 Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas conflictivas, referencias aisladas, revisiones, geometría variable y cálculo económico independiente. Las pruebas del proveedor usan un doble de la frontera HTTP; no sustituyen el motor ni se presentan como inferencia live.
+
+### Snapshot reproducible del runtime
+
+El empaquetador local crea un `tar.gz` determinista a partir de una allowlist del runtime. Incluye los bytes actuales de `backend/app`, los helpers y assets del frontend —incluidos `frontend/core/ui.js` y las fuentes locales—, las tres herramientas operativas y los manifiestos de dependencias Python/Node. Excluye pruebas, secretos, `.env`, datos, referencias de evaluación, documentación y `.runtime`. Si falta una entrada esencial, el build falla en vez de producir un shell parcial.
+
+```powershell
+python -m tools.build_release --output .runtime/release-a
+python -m tools.build_release --output .runtime/release-b
+Get-FileHash .runtime/release-a/*.tar.gz, .runtime/release-b/*.tar.gz -Algorithm SHA256
+```
+
+Dos ejecuciones sobre los mismos bytes deben producir el mismo `candidate_id`, `payload_tree_sha256` y SHA-256 del archivo. `RELEASE.json` registra el commit base y declara que el snapshot puede incorporar contenido allowlisted aún no confirmado; por eso el identificador de cierre solo es definitivo después de integrar todos los cambios y repetir el comando. El empaquetado es local: no activa, transfiere ni publica ningún release.
 
 ## Alcance y trabajo pendiente
 

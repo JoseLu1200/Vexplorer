@@ -46,7 +46,7 @@ from backend.app.historico.service import find_comparables
 from backend.app.historico.real_service import HistoricalStore
 from backend.app.historico.models import ProvisionalDimension, ProvisionalQuantity, ProvisionalScenarioRow, ProvisionalScenarioSnapshot, ProvisionalText
 from backend.app.api.history import create_history_router
-from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralVisualPage, run_general_furniture_agent
+from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, GeneralLiveError, GeneralVisualPage, run_general_furniture_agent
 from backend.app.general_furniture.autonomous import AutoReviewLimits, GENERAL_AUTO_REVIEW_PROMPT, GeneralAutonomousError, run_general_autonomous
 from backend.app.general_furniture.repository import GeneralFurnitureRepository
 from backend.app.general_furniture.router import GeneralFurnitureContext, create_general_furniture_router
@@ -205,6 +205,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
+    auth_setting = os.getenv("VEXPLORER_AUTH_ENABLED", "true").strip().lower()
+    if auth_setting not in {"true", "false"}:
+        raise ValueError("invalid_auth_enabled")
+    auth_enabled = environment == "production" and auth_setting == "true"
     root_path = os.getenv("VEXPLORER_ROOT_PATH", "")
     if root_path and re.fullmatch(r"(?:/[A-Za-z0-9._~-]+)+", root_path) is None:
         raise ValueError("invalid_root_path")
@@ -215,10 +219,11 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     password_file = None
     allowed_origins: frozenset[str] = frozenset()
     if environment == "production":
-        users_path = os.getenv("VEXPLORER_USERS_FILE")
-        if not users_path:
-            raise ValueError("production_users_file_required")
-        password_file = PasswordFile.load(Path(users_path))
+        if auth_enabled:
+            users_path = os.getenv("VEXPLORER_USERS_FILE")
+            if not users_path:
+                raise ValueError("production_users_file_required")
+            password_file = PasswordFile.load(Path(users_path))
         origins = tuple(
             item.strip().rstrip("/")
             for item in os.getenv("VEXPLORER_ALLOWED_ORIGINS", "").split(",")
@@ -590,7 +595,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     @app.middleware("http")
     async def private_access(request: Request, call_next):
         request.state.actor = None
-        if environment == "production" and request.url.path not in {"/api/v1/health", "/health"}:
+        if auth_enabled and request.url.path not in {"/api/v1/health", "/health"}:
             client_key = request.client.host if request.client is not None else "unknown"
             now = time.monotonic()
             recent = [item for item in authentication_failures.get(client_key, ()) if now - item < 60]
@@ -606,10 +611,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 return response
             authentication_failures.pop(client_key, None)
             request.state.actor = actor
-            if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-                origin = request.headers.get("Origin")
-                if origin is not None and origin.rstrip("/") not in allowed_origins:
-                    return _error(403, "origin_not_allowed", "Origen no autorizado.")
+        if environment == "production" and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            origin = request.headers.get("Origin")
+            if origin is not None and origin.rstrip("/") not in allowed_origins:
+                return _error(403, "origin_not_allowed", "Origen no autorizado.")
         return await call_next(request)
 
     @app.get("/health")
@@ -667,7 +672,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "history": {"available": _module_available("backend.app.api.history")},
             "evaluation": {"available": False, "reason": "offline_private_reference"},
         }
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": environment == "production", "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -1232,6 +1237,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             )
             try:
                 general_outcome = execute_general_live(general_context)
+            except GeneralLiveError as exc:
+                return JSONResponse({
+                    "schema_version": "0.2.0",
+                    "error": {
+                        "code": "general_live_provider_failed",
+                        "reason_code": exc.code,
+                        "provider_status_code": exc.provider_status_code,
+                        "provider_code": exc.provider_code,
+                        "provider_incomplete_reason": exc.provider_incomplete_reason,
+                        "message": "La propuesta general live falló de forma acotada.",
+                        "retryable": True,
+                        "model_calls": exc.model_calls,
+                        "tool_calls": exc.tool_calls,
+                        "trace": list(exc.trace),
+                    },
+                }, status_code=502)
             except Exception as exc:
                 return _error(502, "general_live_provider_failed", f"La propuesta general live falló: {type(exc).__name__}.", True)
         try:

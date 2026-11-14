@@ -33,6 +33,7 @@ from backend.app.general_furniture.autonomous import (
 )
 from backend.app.general_furniture.live import (
     GENERAL_FURNITURE_SYSTEM_PROMPT,
+    GeneralLiveError,
     GeneralVisualPage,
     run_general_furniture_agent,
 )
@@ -100,7 +101,7 @@ def tracked_code_fingerprints() -> dict[str, str]:
 
 
 def _action_evidence(exc: Exception) -> dict[str, Any]:
-    if not isinstance(exc, GeneralAutonomousError):
+    if not isinstance(exc, (GeneralAutonomousError, GeneralLiveError)):
         return {}
     return {
         "action_evidence": {
@@ -130,6 +131,7 @@ def freeze_paired_outcome(
             "status": "failed_before_baseline",
             **metadata,
             **_safe_error(exc),
+            **_action_evidence(exc),
             "duration_s": round(time.monotonic() - started, 3),
         }
         _write_new(case_dir / "failure.json", failure)
