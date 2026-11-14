@@ -288,3 +288,43 @@ def test_retry_conflicts_when_resume_wins_after_precheck(tmp_path: Path, monkeyp
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "job_recovery_action_conflict"
     assert repository.get_job_retry(source_id, actor=None)["id"] == resume_id
+
+
+@pytest.mark.parametrize("legacy_missing_run_id", [False, True])
+def test_queued_resume_survives_restart_and_can_resume_again(tmp_path: Path, monkeypatch, legacy_missing_run_id) -> None:
+    monkeypatch.setenv("VEXPLORER_ENV", "local")
+    proposer, reviewer = _CountingProposer(), _TimeoutOnceReviewer()
+    options = dict(data_dir=tmp_path / "data", frontend_dir=tmp_path / "none",
+                   agent_provider=proposer, general_reviewer_provider=reviewer)
+    app = create_app(**options)
+    client = TestClient(app)
+    document = client.post("/api/v1/documents", files={
+        "file": ("cabinet.dxf", DXF_FIXTURE.read_bytes(), "application/dxf"),
+    }).json()["data"]["document_id"]
+    source = client.post("/api/v1/jobs", json={
+        "document_id": document, "mode": "live", "input_kind": "general_furniture",
+        "proposal_mode": "model_generated",
+    }).json()["data"]
+    failed = _wait_job(client, source["id"])
+    assert failed["recovery"]["safe_action"] == "resume_review"
+    monkeypatch.setattr(app.state.job_executor, "submit_reserved", lambda _process: app.state.job_executor.release())
+    queued = client.post(f"/api/v1/jobs/{source['id']}/resume").json()["data"]
+    assert queued["state"] == "queued"
+    assert queued["run_id"] == failed["run_id"]
+    if legacy_missing_run_id:
+        with app.state.repository._connect() as db:
+            db.execute("UPDATE jobs SET run_id=NULL WHERE id=?", (queued["id"],))
+    restarted = TestClient(create_app(**options))
+    restored = restarted.get(f"/api/v1/jobs/{queued['id']}").json()["data"]
+    assert restored["state"] == "interrupted"
+    assert restored["run_id"] == failed["run_id"]
+    assert restored["checkpoint"]["proposal_saved"] is True
+    assert restored["recovery"]["safe_action"] == "resume_review"
+    latest = restarted.get(f"/api/v1/runs/{failed['run_id']}").json()["data"]["latest_job"]
+    assert latest["id"] == queued["id"]
+    again = restarted.post(restored["recovery"]["endpoint"])
+    assert again.status_code == 202, again.text
+    complete = _wait_job(restarted, again.json()["data"]["id"])
+    assert complete["state"] == "succeeded", complete
+    assert complete["run_id"] == failed["run_id"]
+    assert proposer.proposal_calls == 1

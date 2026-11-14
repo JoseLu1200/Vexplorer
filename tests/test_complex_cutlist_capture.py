@@ -98,3 +98,26 @@ def test_capture_rejects_non_production_timeout_before_upload(tmp_path: Path) ->
         )
     assert client.uploads == 0
 
+
+
+def test_capture_preserves_interrupted_failure_diagnostics(tmp_path: Path) -> None:
+    class InterruptedClient(_Client):
+        def get(self, path):
+            if path == "/api/v1/jobs/job-1":
+                return _Response(200, {"data": {
+                    "id": "job-1", "state": "interrupted", "run_id": None,
+                    "error": {"code": "general_live_provider_failed", "reason_code": "provider_response_incomplete",
+                              "phase": "proposal", "model_calls": 11, "tool_calls": 10},
+                }})
+            return super().get(path)
+    source = tmp_path / "blind.dxf"
+    source.write_bytes(b"public-only")
+    output = tmp_path / "predictions.json"
+    capture_cases(InterruptedClient(), cases=[{
+        "case_id": "blind-001", "split": "holdout", "dxf_path": source,
+    }], output_path=output, poll_interval_s=0, evaluation_phase="holdout")
+    prediction = load_frozen_prediction_bundle(output)["cases"][0]["prediction"]
+    assert prediction["job_state"] == "interrupted"
+    assert prediction["failure_reason_code"] == "provider_response_incomplete"
+    assert prediction["failure_phase"] == "proposal"
+    assert (prediction["model_calls"], prediction["tool_calls"]) == (11, 10)

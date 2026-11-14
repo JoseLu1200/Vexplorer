@@ -342,6 +342,10 @@ def evaluate_case(
         "run_completed": run_completed,
         "job_state": prediction.get("job_state", "unknown"),
         "failure_code": prediction.get("failure_code"),
+        "failure_reason_code": prediction.get("failure_reason_code"),
+        "failure_phase": prediction.get("failure_phase"),
+        "model_calls": prediction.get("model_calls"),
+        "tool_calls": prediction.get("tool_calls"),
         "delivery_eligible": delivery_eligible,
         "delivery_blockers": delivery_blockers,
         "panel_occurrences": {
@@ -385,7 +389,8 @@ def summarize_cases(cases: Iterable[dict[str, Any]]) -> dict[str, Any]:
         },
         "per_case_target_required": True,
         "all_cases_pass": bool(values) and all(case["passes_90_percent_target"] for case in values),
-        "failed_case_ids": [case["case_id"] for case in values if not case["run_completed"]],
+        "failed_case_ids": [case["case_id"] for case in values if not case["passes_90_percent_target"]],
+        "incomplete_case_ids": [case["case_id"] for case in values if not case["run_completed"]],
     }
 
 
@@ -395,12 +400,7 @@ def _canonical_json(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def freeze_prediction_bundle(
-    path: Path,
-    *,
-    cases: list[dict[str, Any]],
-    runtime_config: dict[str, Any],
-) -> dict[str, Any]:
+def _validate_bundle_inputs(cases: list[dict[str, Any]], runtime_config: dict[str, Any]) -> None:
     case_ids = [str(item.get("case_id") or "") for item in cases]
     if not case_ids or any(not value for value in case_ids) or len(case_ids) != len(set(case_ids)):
         raise ValueError("prediction bundle requires unique non-empty case ids")
@@ -425,6 +425,18 @@ def freeze_prediction_bundle(
         not cases or any(item["split"] != "holdout" for item in cases)
     ):
         raise ValueError("holdout cohort requires at least one sealed holdout case")
+    evidence = runtime_config.get("config_evidence") or {}
+    if evidence.get("job_timeout_s") != 600 or evidence.get("reviewer_model") != "gpt-6-astra":
+        raise ValueError("evaluation requires config_evidence for job_timeout_s=600 and reviewer_model=gpt-6-astra")
+
+
+def freeze_prediction_bundle(
+    path: Path,
+    *,
+    cases: list[dict[str, Any]],
+    runtime_config: dict[str, Any],
+) -> dict[str, Any]:
+    _validate_bundle_inputs(cases, runtime_config)
     payload = {
         "protocol_version": "complex-cutlist-blind-v1",
         "frozen_at": datetime.now(timezone.utc).isoformat(),
@@ -446,6 +458,7 @@ def load_frozen_prediction_bundle(path: Path) -> dict[str, Any]:
         raise ValueError("prediction_bundle_sha256_mismatch")
     if payload.get("protocol_version") != "complex-cutlist-blind-v1":
         raise ValueError("prediction_bundle_protocol_mismatch")
+    _validate_bundle_inputs(payload["cases"], payload["runtime_config"])
     return payload
 
 

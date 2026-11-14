@@ -43,3 +43,12 @@
 | Integración producción general | `python -m pytest backend/tests/test_integral_api_integration.py::test_production_job_integrates_general_review_derived_and_history_persistently -q` | 1 passed | cubre persistencia y flujo integral |
 
 - Sin commits ni despliegue. No se usaron respuestas privadas/GT ni reglas específicas para 030/016.
+
+## Corrección de recuperación R1
+
+- El trace público de `plank-016` mostró una propuesta tipada y materializable que se descartó por accounting incompleto; después hubo ocho inspecciones y el proveedor terminó `provider_response_incomplete`. La recuperación anterior solo conservaba el borrador si llegaba otra propuesta una vez agotadas las reparaciones.
+- `live.py` retiene ahora el último par propuesta/borrador materializable antes de solicitar reparación. Si después termina el proveedor, vence un presupuesto o se agotan las reparaciones, devuelve ese par marcado en traza como incompleto junto con el informe de accounting; no lo acepta ni rellena piezas o cotas.
+- Las respuestas posteriores de inspección quedan acotadas por el presupuesto de reparación. Con el límite de producción observado se permiten dos respuestas tras el borrador y luego se conserva, evitando el bucle de ocho inspecciones de R1.
+- `evidence_accounting.py` asocia cada región inválida con un motivo estable (`missing_source`, conflicto de componente, proyección no respaldada, etc.) para reparación dirigida. Las regiones siguen siendo evidencia candidata, nunca ocurrencias ni recall físico.
+- TDD observado: tres pruebas nuevas fallaron antes de implementar (motivo regional ausente, pérdida ante proveedor incompleto y bucle de inspecciones) y pasaron tras el cambio.
+- Verificación focal: `python -m pytest backend/tests/test_job_recovery.py backend/tests/test_general_furniture_evidence_accounting.py backend/tests/test_general_furniture_live.py backend/tests/test_general_furniture_proposal.py -q` → 34 passed. `ruff check` de archivos propios y `git diff --check` sin errores.
