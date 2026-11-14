@@ -242,13 +242,24 @@ def reconstruct_parts_scene(
             run_id=result.run_id, result_revision=result.result_revision, state="unavailable",
             selected_scenario_id=candidate_id, warnings=("selected_assembly_candidate_missing",),
         )
-    uses = {item.id: item for item in candidate.uses}
     pieces = {item.proposal_id: item for item in result.pieces}
     warnings = []
+    occurrence_indices_by_use: dict[str, tuple[int, ...]] = {}
     for use in candidate.uses:
         piece = pieces.get(use.id)
         if piece is None or any(value is None for value in (piece.quantity, piece.length_mm, piece.width_mm, piece.thickness_mm)):
             warnings.append(f"incomplete_piece:{use.id}")
+            continue
+        assert piece.quantity is not None
+        if use.allocated_quantity is not None and use.occurrence_indices:
+            if len(use.occurrence_indices) != piece.quantity:
+                warnings.append(f"resolved_quantity_mismatch:{use.id}")
+                continue
+            occurrence_indices_by_use[use.id] = use.occurrence_indices
+        elif use.allocated_quantity is None and piece.field_states.get("quantity") == "confirmed":
+            occurrence_indices_by_use[use.id] = tuple(range(1, piece.quantity + 1))
+        else:
+            warnings.append(f"resolved_occurrences_missing:{use.id}")
     if result.state != "completed" or warnings:
         return ReconstructionScene(
             run_id=result.run_id, result_revision=result.result_revision, state="incomplete",
@@ -312,7 +323,7 @@ def reconstruct_parts_scene(
     for use in candidate.uses:
         piece = pieces[use.id]
         observation_id = use.part_observation_id
-        indices = use.occurrence_indices
+        indices = occurrence_indices_by_use[use.id]
         if piece.role == "side_panel":
             for occurrence_index, x in zip(indices, (0.0, width - thickness), strict=True):
                 objects.append(_scene_object(
