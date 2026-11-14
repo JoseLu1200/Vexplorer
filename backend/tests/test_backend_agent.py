@@ -11,7 +11,7 @@ from backend.app.agente.provider import OpenAIResponsesProvider
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.prompts import SYSTEM_PROMPT
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent
-from backend.app.agente.tools import parts_tool_schemas, tool_schemas
+from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
 from backend.app.contratos.modelos import InspectEvidenceArgs
 from backend.app.geometria import extract_drawing
 from backend.app.geometria.parts import derive_assembly_candidates, extract_separated_parts
@@ -85,6 +85,32 @@ def test_agent_enforces_call_budget_and_tool_schemas_have_no_filesystem_access()
     schemas = tool_schemas()
     assert all(tool["strict"] is True for tool in schemas)
     assert all("path" not in str(tool).lower() and "file" not in str(tool).lower() for tool in schemas)
+
+
+def test_all_native_tool_schemas_satisfy_recursive_strict_mode() -> None:
+    schemas = tool_schemas() + parts_tool_schemas() + table_tool_schemas()
+
+    def assert_strict(value) -> None:
+        if isinstance(value, dict):
+            assert "default" not in value
+            if value.get("type") == "object" or "properties" in value:
+                properties = value.get("properties", {})
+                assert value.get("additionalProperties") is False
+                assert set(value.get("required", ())) == set(properties)
+            for nested in value.values():
+                assert_strict(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                assert_strict(nested)
+
+    for schema in schemas:
+        assert schema["strict"] is True
+        assert_strict(schema["parameters"])
+
+    propose = next(schema for schema in schemas if schema["name"] == "proponer_descomposicion")
+    component_spec = propose["parameters"]["$defs"]["TableComponentSpec"]
+    assert "quantity_rule_version" in component_spec["required"]
+    assert "placement_rule_version" in component_spec["required"]
 
 
 def test_agent_returns_safe_tool_error_for_malformed_json_then_repairs() -> None:

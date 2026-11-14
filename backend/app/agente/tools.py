@@ -12,8 +12,21 @@ from backend.app.contratos.modelos import (
 )
 
 
+def _strictify_schema(value):
+    if isinstance(value, dict):
+        normalized = {key: _strictify_schema(item) for key, item in value.items() if key != "default"}
+        if normalized.get("type") == "object" or "properties" in normalized:
+            properties = normalized.get("properties", {})
+            normalized["additionalProperties"] = False
+            normalized["required"] = list(properties)
+        return normalized
+    if isinstance(value, list):
+        return [_strictify_schema(item) for item in value]
+    return value
+
+
 def _schema(name: str, description: str, model) -> dict:
-    return {"type": "function", "name": name, "description": description, "parameters": model.model_json_schema(), "strict": True}
+    return {"type": "function", "name": name, "description": description, "parameters": _strictify_schema(model.model_json_schema()), "strict": True}
 
 
 def tool_schemas() -> list[dict]:
