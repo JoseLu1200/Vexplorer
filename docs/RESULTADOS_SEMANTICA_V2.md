@@ -65,3 +65,10 @@ Se detectó que ezdxf ordenaba los registros CLASS según PYTHONHASHSEED. La gen
 ## Interpretación de las métricas
 
 Roles y ocurrencias evalúan etiquetas funcionales y cantidades agregadas por rol. El montaje principal evalúa relaciones requeridas entre roles; no certifica el encaje 3D de cada ocurrencia ni una unión de fabricación. Los métodos de fijación no observables se conservan aparte como opcionales. Un desconocido puede ser una abstención adecuada, pero sigue siendo información no recuperada en el F1 principal. Las predicciones correctas opcionales no elevan el recobrado de las relaciones obligatorias.
+
+
+## Corrección del adaptador durante la puntuación
+
+El primer intento de scoring rechazó las salidas corregidas porque varias relaciones entre ocurrencias distintas colapsaban a la misma tripleta al proyectar IDs a roles. El evaluador trabaja con un conjunto de tripletas por rol, por lo que el adaptador ahora elimina duplicados exactos después de esa proyección, también dentro de cada alternativa. No modifica cantidades físicas, predicados distintos ni direcciones. Una prueba independiente de dos patas del mismo rol reproduce el fallo y verifica la conversión.
+
+Los nativos estaban congelados antes de abrir referencias. Los manifiestos semánticos derivados se regeneran después de esa apertura con la transformación pública corregida; se conservan los anteriores, sus rechazos y los hashes de procedencia. No se repite inferencia ni se cambian respuestas nativas, scoring o referencia. Esta cronología distingue la congelación nativa original del re-freeze del formato de evaluación.

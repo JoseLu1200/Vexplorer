@@ -64,9 +64,9 @@ Owner: coordinator with Sol verification agent.
 - [x] Run combined regression and independent code review; fix findings.
 - [x] Run plank-030 from public DXF/BOM, freeze output before private scoring.
 - [x] Run unused furniture and insufficient-evidence control.
-- [ ] Final browser diagnostic candidate verification (service restarted; legacy regression passed).
+- [x] Final browser diagnostic candidate verification: 16 occurrences, explicit Z-up display, selection/orbit/zoom/explode/exit/reload, no JS/network errors.
 - [x] Report reproducible observed results and any remaining failure honestly.
 
 ## Observed result
 
-Software implemented and independently reviewed (793 Python / 191 frontend tests passing). The real plank-030 candidate matches all 16 reference instances under one proper global transform, but public validation still rejects 8 unresolved AABB penetrations and one shared contour. Completing implementation/check execution does not imply manufacturing acceptance. Unknown-scale and insufficient-quantity controls abstain. Evidence: docs/VERIFICACION_MONTAJE_GENERAL_2026-11-14.md.
+Software implemented and independently reviewed (793 Python / 192 frontend tests passing). The real plank-030 candidate matches all 16 reference instances under one proper global transform, but public validation still rejects 8 unresolved AABB penetrations and one shared contour. Completing implementation/check execution does not imply manufacturing acceptance. Unknown-scale and insufficient-quantity controls abstain. Evidence: docs/VERIFICACION_MONTAJE_GENERAL_2026-11-14.md.

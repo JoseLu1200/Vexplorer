@@ -76,7 +76,9 @@ El CLI abre y hashea primero la predicción; solo después abre la referencia ev
 - Ruff de evaluador, CLI y regresiones: limpio.
 - Suite completa final de backend/repositorio: 793 pruebas pasan en 138,82 s; 2 advertencias deprecadas ya existentes.
 - Diagnóstico focal del runtime tras el parche: 45 pruebas pasan. Servicio reiniciado con PID 13172.
-- Frontend: 191 pruebas pasan en la verificación fresca comunicada por el coordinador.
-- Pruebas finales de navegador: **pendientes de resultado final del coordinador/browser QA**.
+- Frontend: 192/192 pruebas pasan. El selector diagnóstico de eje vertical `Z` aplica en visualización `(x,y,z) -> (x,z,-y)`, una transformación global propia de determinante `+1` que no altera el payload evaluado. Para inspeccionar `plank-030` erguido se usa «Eje vertical de inspección Z».
+- Navegador final: pasa. Evidencia erguida en `.runtime/assembly-verification/browser-complex-rejected-16-world.png`; muestra 16 instancias diagnósticas y selección individual de `shelves:1` agrupada con «Baldas». Zoom, órbita, explotar/restaurar exactamente, salida a esquema y recarga funcionan sin errores JavaScript, de red ni HTTP.
+
+Al salir del diagnóstico, la etiqueta del selector puede conservar visualmente `Z` hasta la recarga aunque la escena ya se haya restablecido; recargar devuelve también el selector a `Y`. Es una discrepancia visual menor sin impacto geométrico ni sobre el payload congelado.
 
 No se ejecutaron llamadas adicionales al modelo para esta evaluación. Ninguna coordenada ni dimensión privada se trasladó al runtime o a sus implementadores.
