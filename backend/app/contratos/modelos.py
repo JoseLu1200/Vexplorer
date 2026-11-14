@@ -135,7 +135,7 @@ class DrawingObservation(StrictModel):
 class DrawingExtraction(StrictModel):
     schema_version: Literal["0.2.0"] = SCHEMA_VERSION
     drawing_id: str = Field(min_length=1)
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
     status: Literal["ready", "needs_review"]
     source_unit: Literal["mm", "cm", "m", "in", "unknown"]
     unit_scale_to_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
@@ -440,6 +440,281 @@ class DecompositionScenario(StrictModel):
     state: Literal["hypothesis"] = "hypothesis"
 
 
+TableValueState = Literal["observed", "calculated", "confirmed", "proposed", "unknown", "conflict"]
+
+
+class TableMeasure(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    semantic: Literal["overall_width", "overall_height", "overall_depth", "tabletop_thickness", "support_width", "support_depth", "support_thickness", "unknown"]
+    axis: Literal["width", "height", "depth", "section", "unknown"]
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    state: Literal["observed", "unknown", "conflict"]
+    measurement_ids: tuple[str, ...] = ()
+    view_ids: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    source_entity_ids: tuple[str, ...] = ()
+    slot_origin: Literal["drawing", "profile_required_slot"] = "drawing"
+
+    @model_validator(mode="after")
+    def value_matches_state(self) -> "TableMeasure":
+        if self.state == "observed" and (self.value_mm is None or not self.measurement_ids or not self.view_ids or not self.evidence_ids):
+            raise ValueError("observed table measure requires value and drawing provenance")
+        if self.state != "observed" and self.value_mm is not None:
+            raise ValueError("unknown or conflict table measure must have null value")
+        if self.state == "conflict" and len(self.evidence_ids) < 2:
+            raise ValueError("conflict table measure requires incompatible evidence")
+        if self.slot_origin == "profile_required_slot" and (self.state != "unknown" or self.measurement_ids or self.view_ids or self.evidence_ids or self.source_entity_ids):
+            raise ValueError("profile slot must be an unobserved unknown")
+        return self
+
+
+class MountedTableAnalysis(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    drawing_id: str = Field(min_length=1)
+    ledger_revision: str = Field(min_length=1)
+    input_kind: Literal["mounted_orthographic_views"] = "mounted_orthographic_views"
+    profile: Literal["rectangular_table_v1"] = "rectangular_table_v1"
+    measures: tuple[TableMeasure, ...]
+    admitted_measurement_ids: tuple[str, ...]
+    state: Literal["ready", "needs_review"]
+    warnings: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def measure_ids_are_exact(self) -> "MountedTableAnalysis":
+        ids = [item.id for item in self.measures]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate table measure ids")
+        if len(self.admitted_measurement_ids) != len(set(self.admitted_measurement_ids)) or set(ids) != set(self.admitted_measurement_ids):
+            raise ValueError("admitted measurement ids must exactly cover measures")
+        return self
+
+
+class TableOperandRef(StrictModel):
+    ref_type: Literal["measure", "binding"]
+    ref_id: str = Field(min_length=1, max_length=120)
+
+
+class TableBinding(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    operation: Literal["copy", "add", "subtract"]
+    operand_refs: tuple[TableOperandRef, ...] = Field(min_length=1, max_length=8)
+
+    @model_validator(mode="after")
+    def operation_arity(self) -> "TableBinding":
+        if self.operation == "copy" and len(self.operand_refs) != 1:
+            raise ValueError("copy requires exactly one operand")
+        if self.operation in ("add", "subtract") and len(self.operand_refs) < 2:
+            raise ValueError(f"{self.operation} requires at least two operands")
+        return self
+
+
+class TablePremise(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    kind: Literal["topology", "flush_placement", "rectangular_components", "section_assignment", "other"]
+    required: Literal[True] = True
+    description: str = Field(min_length=1, max_length=300)
+
+
+class TableComponentSpec(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    role: Literal["tabletop", "side_support", "corner_support"]
+    length_binding_id: str = Field(min_length=1)
+    width_binding_id: str = Field(min_length=1)
+    thickness_binding_id: str = Field(min_length=1)
+    quantity_rule_id: Literal["top_one", "two_side_supports", "four_corner_supports"]
+    quantity_rule_version: Literal["1"] = "1"
+    placement_rule_id: Literal["top_flush", "side_supports_flush", "corner_supports_flush"]
+    placement_rule_version: Literal["1"] = "1"
+    evidence_ids: tuple[str, ...] = ()
+    premise_ids: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def rules_match_role(self) -> "TableComponentSpec":
+        expected = {
+            "tabletop": ("top_one", "top_flush"),
+            "side_support": ("two_side_supports", "side_supports_flush"),
+            "corner_support": ("four_corner_supports", "corner_supports_flush"),
+        }[self.role]
+        if (self.quantity_rule_id, self.placement_rule_id) != expected:
+            raise ValueError("quantity and placement rules must match component role")
+        return self
+
+
+class TableProgramProposal(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    id: str = Field(min_length=1, max_length=120)
+    ledger_revision: str = Field(min_length=1)
+    profile: Literal["rectangular_table_v1"] = "rectangular_table_v1"
+    proposal_origin: Literal["model_generated", "catalog_baseline"]
+    table_template_id: Literal["side_supports_v1", "corner_supports_v1"] | None = None
+    bindings: tuple[TableBinding, ...] = Field(min_length=1, max_length=24)
+    components: tuple[TableComponentSpec, ...] = Field(min_length=2, max_length=2)
+    premises: tuple[TablePremise, ...] = Field(min_length=1, max_length=16)
+    assumptions: tuple[str, ...] = Field(min_length=1, max_length=16)
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_program_graph_and_topology(self) -> "TableProgramProposal":
+        binding_ids = [item.id for item in self.bindings]
+        if len(binding_ids) != len(set(binding_ids)):
+            raise ValueError("duplicate table binding ids")
+        seen: set[str] = set()
+        for binding in self.bindings:
+            for operand in binding.operand_refs:
+                if operand.ref_type == "binding" and operand.ref_id not in seen:
+                    raise ValueError("binding reference must target a previous binding")
+            seen.add(binding.id)
+        component_ids = [item.id for item in self.components]
+        if len(component_ids) != len(set(component_ids)):
+            raise ValueError("duplicate table component ids")
+        roles = [item.role for item in self.components]
+        if roles.count("tabletop") != 1 or sum(role in ("side_support", "corner_support") for role in roles) != 1:
+            raise ValueError("program requires exactly one tabletop and one support system")
+        binding_set = set(binding_ids)
+        used_bindings = {value for item in self.components for value in (item.length_binding_id, item.width_binding_id, item.thickness_binding_id)}
+        if not used_bindings <= binding_set:
+            raise ValueError("component references an unknown binding")
+        if used_bindings != binding_set:
+            raise ValueError("dead bindings are not allowed")
+        premise_ids = [item.id for item in self.premises]
+        if len(premise_ids) != len(set(premise_ids)):
+            raise ValueError("duplicate table premise ids")
+        if any(not set(item.premise_ids) <= set(premise_ids) for item in self.components):
+            raise ValueError("component references an unknown premise")
+        support_role = next(role for role in roles if role != "tabletop")
+        expected_template = "side_supports_v1" if support_role == "side_support" else "corner_supports_v1"
+        if self.proposal_origin == "catalog_baseline" and self.table_template_id != expected_template:
+            raise ValueError("catalog baseline requires the matching explicit template")
+        if self.proposal_origin == "model_generated" and self.table_template_id is not None:
+            raise ValueError("model generated program cannot claim a catalog template")
+        return self
+
+
+class ProposeTableProgramArgs(StrictModel):
+    bindings: tuple[TableBinding, ...] = Field(min_length=1, max_length=24)
+    components: tuple[TableComponentSpec, ...] = Field(min_length=2, max_length=2)
+    premises: tuple[TablePremise, ...] = Field(min_length=1, max_length=16)
+    assumptions: tuple[str, ...] = Field(min_length=1, max_length=16)
+    evidence_ids: tuple[str, ...] = ()
+
+
+class TableReviewDecision(StrictModel):
+    target_kind: Literal["program", "component", "premise"]
+    target_id: str = Field(min_length=1)
+    action: Literal["accept", "reject"]
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class TableConfirmedValue(StrictModel):
+    target_kind: Literal["measurement_slot"] = "measurement_slot"
+    target_id: str = Field(min_length=1)
+    value_mm: float = Field(gt=0, allow_inf_nan=False)
+    reason: str = Field(min_length=1, max_length=500)
+    source: Literal["human"] = "human"
+
+
+class TableMeasurementDisposition(StrictModel):
+    measurement_id: str = Field(min_length=1)
+    reason: str = Field(min_length=1, max_length=300)
+    blocking: bool
+
+
+class TableFieldValue(StrictModel):
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    state: TableValueState
+    dependency_refs: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def value_matches_state(self) -> "TableFieldValue":
+        if self.state in ("unknown", "conflict") and self.value_mm is not None:
+            raise ValueError("unknown or conflict field must have null value")
+        if self.state not in ("unknown", "conflict") and self.value_mm is None:
+            raise ValueError("resolved field requires a value")
+        return self
+
+
+class EvaluatedTableBinding(StrictModel):
+    id: str
+    operation: Literal["copy", "add", "subtract"]
+    operand_refs: tuple[TableOperandRef, ...]
+    result: TableFieldValue
+
+
+class EvaluatedTableComponent(StrictModel):
+    id: str
+    role: Literal["tabletop", "side_support", "corner_support"]
+    length: TableFieldValue
+    width: TableFieldValue
+    thickness: TableFieldValue
+    quantity: int | None = Field(default=None, gt=0)
+    quantity_rule_id: str
+    placement_rule_id: str
+    accepted: bool
+    premise_ids: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+
+
+class TableOccurrence(StrictModel):
+    id: str
+    component_id: str
+    occurrence_index: int = Field(gt=0)
+
+
+class TablePlacement(StrictModel):
+    occurrence_id: str
+    position_mm: Point3D | None = None
+    dimensions_mm: Size3D | None = None
+    rule_id: str
+    rule_version: str
+    state: Literal["pass", "proposed", "unknown", "conflict"]
+    dependency_refs: tuple[str, ...]
+
+
+class TableProgramIssue(StrictModel):
+    code: str = Field(min_length=1)
+    severity: Literal["error", "review", "warning"]
+    message: str = Field(min_length=1)
+    target_ids: tuple[str, ...] = ()
+
+
+class TableOverallDimensions(StrictModel):
+    width_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    depth_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    height_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+
+class EvaluatedTableProgram(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    raw_program: TableProgramProposal
+    normalized_program: TableProgramProposal
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    ledger_revision: str
+    registry_versions: dict[str, str]
+    bindings: tuple[EvaluatedTableBinding, ...]
+    components: tuple[EvaluatedTableComponent, ...]
+    occurrences: tuple[TableOccurrence, ...]
+    placements: tuple[TablePlacement, ...]
+    overall_dimensions: TableOverallDimensions
+    consumed_measurement_ids: tuple[str, ...]
+    measurement_dispositions: tuple[TableMeasurementDisposition, ...]
+    accepted_target_ids: tuple[str, ...] = ()
+    rejected_target_ids: tuple[str, ...] = ()
+    issues: tuple[TableProgramIssue, ...] = ()
+    state: Literal["hypothesis", "needs_review", "completed", "rejected"]
+
+    @model_validator(mode="after")
+    def decisions_and_coverage_are_unique(self) -> "EvaluatedTableProgram":
+        if set(self.accepted_target_ids) & set(self.rejected_target_ids):
+            raise ValueError("accepted and rejected targets must be disjoint")
+        disposed = [item.measurement_id for item in self.measurement_dispositions]
+        if len(disposed) != len(set(disposed)) or set(disposed) & set(self.consumed_measurement_ids):
+            raise ValueError("measurement coverage must be disjoint")
+        if self.state == "completed" and (any(item.blocking for item in self.measurement_dispositions) or any(item.severity != "warning" for item in self.issues)):
+            raise ValueError("completed program cannot contain blockers")
+        return self
+
+
 class ReviewDecision(StrictModel):
     proposal_id: str = Field(min_length=1)
     action: Literal["confirm", "reject"]
@@ -463,11 +738,19 @@ class ReviewRequest(StrictModel):
     finish: str | None = None
     notes: str | None = None
     assembly_candidate_id: str | None = None
+    table_program_id: str | None = None
+    table_decisions: tuple[TableReviewDecision, ...] = ()
+    table_confirmed_values: tuple[TableConfirmedValue, ...] = ()
 
     @model_validator(mode="after")
     def unique_proposals(self) -> "ReviewRequest":
-        if not self.decisions and self.scenario_id is None and self.assembly_candidate_id is None:
+        table_review = self.table_program_id is not None or bool(self.table_decisions) or bool(self.table_confirmed_values)
+        if not self.decisions and self.scenario_id is None and self.assembly_candidate_id is None and not table_review:
             raise ValueError("a scenario selection or explicit decisions are required")
+        if table_review and (self.decisions or self.scenario_id is not None or self.assembly_candidate_id is not None or self.confirmed_thickness_mm is not None):
+            raise ValueError("table review and legacy review fields are mutually exclusive")
+        if table_review and (self.table_program_id is None or not self.notes):
+            raise ValueError("table review requires program id and notes")
         if self.scenario_id is not None and (self.decisions or self.assembly_candidate_id is not None):
             raise ValueError("scenario selection and explicit decisions are mutually exclusive")
         if self.assembly_candidate_id is not None and self.scenario_id is not None:
@@ -479,6 +762,12 @@ class ReviewRequest(StrictModel):
         ids = [item.proposal_id for item in self.decisions]
         if len(ids) != len(set(ids)):
             raise ValueError("duplicate proposal decisions")
+        table_targets = [(item.target_kind, item.target_id) for item in self.table_decisions]
+        if len(table_targets) != len(set(table_targets)):
+            raise ValueError("duplicate table review targets")
+        confirmed_targets = [item.target_id for item in self.table_confirmed_values]
+        if len(confirmed_targets) != len(set(confirmed_targets)):
+            raise ValueError("duplicate table confirmed values")
         return self
 
 
@@ -520,10 +809,14 @@ class Result(StrictModel):
     created_at: str
     review: HumanReview | None = None
     agent_selected_scenario_id: str | None = None
-    input_semantics: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
+    input_semantics: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
     part_analysis: SeparatedPartsExtraction | None = None
     assembly_candidates: tuple[AssemblyCandidate, ...] = ()
     selected_assembly_candidate_id: str | None = None
+    table_analysis: MountedTableAnalysis | None = None
+    table_programs: tuple[TableProgramProposal, ...] = ()
+    selected_table_program_id: str | None = None
+    evaluated_table_program: EvaluatedTableProgram | None = None
 
     @model_validator(mode="after")
     def parts_payload_matches_semantics(self) -> "Result":
@@ -531,6 +824,13 @@ class Result(StrictModel):
             raise ValueError("separated part result requires part_analysis")
         if self.selected_assembly_candidate_id is not None and self.selected_assembly_candidate_id not in {item.id for item in self.assembly_candidates}:
             raise ValueError("selected assembly candidate is unknown")
+        if self.input_semantics == "mounted_orthographic_views" and self.table_analysis is None:
+            raise ValueError("mounted table result requires table analysis")
+        table_program_ids = {item.id for item in self.table_programs}
+        if self.selected_table_program_id is not None and self.selected_table_program_id not in table_program_ids:
+            raise ValueError("selected table program is unknown")
+        if self.evaluated_table_program is not None and self.evaluated_table_program.raw_program.id not in table_program_ids:
+            raise ValueError("evaluated table program is not in result programs")
         return self
 
 
@@ -563,6 +863,144 @@ class ReconstructionScene(StrictModel):
     warnings: tuple[str, ...] = ()
     assumptions: tuple[str, ...] = ()
     collision_status: Literal["not_evaluated"] = "not_evaluated"
+
+
+class TableDrawingPrimitive(StrictModel):
+    id: str = Field(min_length=1)
+    kind: Literal["line", "rect", "dimension", "text"]
+    points_mm: tuple[Point2D, ...]
+    text: str | None = None
+    value_mm: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    state: Literal["calculated", "confirmed", "proposed", "unknown", "conflict"]
+    dependency_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def numeric_dimension_is_honest(self) -> "TableDrawingPrimitive":
+        if self.kind == "dimension" and self.state in ("unknown", "conflict") and self.value_mm is not None:
+            raise ValueError("unknown drawing dimension cannot contain a numeric value")
+        return self
+
+
+class TableSheetPlan(StrictModel):
+    sheet_id: str = Field(min_length=1)
+    kind: Literal["general", "component", "cut_sheet"]
+    title: str = Field(min_length=1)
+    component_id: str | None = None
+    page: int = Field(gt=0)
+    status: Literal["ready", "incomplete"]
+    primitives: tuple[TableDrawingPrimitive, ...]
+    warnings: tuple[str, ...] = ()
+
+
+class TableDrawingPlan(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    drawing_id: str = Field(min_length=1)
+    result_revision: int = Field(gt=0)
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    coordinate_unit: Literal["mm"] = "mm"
+    registry_versions: dict[str, str]
+    overall_dimensions: TableOverallDimensions
+    components: tuple[EvaluatedTableComponent, ...]
+    occurrences: tuple[TableOccurrence, ...]
+    placements: tuple[TablePlacement, ...]
+    sheets: tuple[TableSheetPlan, ...]
+
+
+class TableDrawingArtifactData(StrictModel):
+    sheet_id: str
+    format: Literal["svg", "dxf"]
+    media_type: Literal["image/svg+xml", "application/dxf"]
+    filename: str = Field(min_length=1)
+    content: bytes
+
+
+class TableDrawingExports(StrictModel):
+    result_revision: int = Field(gt=0)
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    artifacts: tuple[TableDrawingArtifactData, ...]
+
+
+class TableDrawingFormatLink(StrictModel):
+    format: Literal["svg", "dxf"]
+    media_type: str
+    url: str = Field(min_length=1)
+
+
+class TableDrawingManifestSheet(StrictModel):
+    sheet_id: str
+    kind: Literal["general", "component", "cut_sheet"]
+    title: str
+    component_id: str | None = None
+    page: int = Field(gt=0)
+    result_revision: int = Field(gt=0)
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    status: Literal["ready", "incomplete"]
+    warnings: tuple[str, ...] = ()
+    formats: tuple[TableDrawingFormatLink, ...]
+
+
+class TableDrawingManifest(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    run_id: str
+    result_revision: int = Field(gt=0)
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sheets: tuple[TableDrawingManifestSheet, ...]
+
+
+class TableCostScope(StrictModel):
+    material_tariff_id: str | None = None
+    edge_scope: Literal["none", "all_exposed"] = "none"
+    operation_tariff_ids: tuple[str, ...] = ()
+
+
+class TableCostConcept(StrictModel):
+    id: str
+    label: str
+    concept_type: Literal["fixed", "material_area", "material_volume", "edge", "operation", "labor", "finish"]
+    component_id: str | None = None
+    occurrence_ids: tuple[str, ...] = ()
+    formula: str
+    quantity: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    quantity_unit: Literal["m2", "m3", "m", "unit", "h"]
+    rate_eur_per_unit: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    rate_unit: Literal["EUR/m2", "EUR/m3", "EUR/m", "EUR/unit", "EUR/h"]
+    amount_eur: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    state: Literal["resolved", "unknown", "not_applicable"]
+    required: bool
+    dependency_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def amount_matches_state(self) -> "TableCostConcept":
+        values = (self.quantity, self.rate_eur_per_unit, self.amount_eur)
+        if self.state == "resolved" and any(value is None for value in values):
+            raise ValueError("resolved cost concept requires quantity, rate and amount")
+        if self.state != "resolved" and self.amount_eur is not None:
+            raise ValueError("unresolved cost concept cannot contain an amount")
+        return self
+
+
+class TableCostEstimate(StrictModel):
+    schema_version: Literal["0.5.0"] = "0.5.0"
+    run_id: str | None = None
+    result_revision: int = Field(gt=0)
+    program_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    catalog_version: str
+    currency: Literal["EUR"] = "EUR"
+    scope: TableCostScope
+    concepts: tuple[TableCostConcept, ...]
+    known_subtotal_eur: float = Field(ge=0, allow_inf_nan=False)
+    grand_total_eur: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    total_state: Literal["partial", "complete"]
+    warnings: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def total_is_not_partial_subtotal(self) -> "TableCostEstimate":
+        required_unknown = any(item.required and item.state == "unknown" for item in self.concepts)
+        if self.total_state == "partial" and self.grand_total_eur is not None:
+            raise ValueError("partial estimate cannot expose a grand total")
+        if self.total_state == "complete" and (self.grand_total_eur is None or required_unknown):
+            raise ValueError("complete estimate requires all required concepts")
+        return self
 
 
 class FormulaExplanation(StrictModel):
@@ -650,11 +1088,41 @@ class FurnitureDescriptorV2(StrictModel):
     unknown_fields: tuple[str, ...]
 
 
+class TableDescriptorComponentFeature(StrictModel):
+    role: Literal["tabletop", "side_support", "corner_support"]
+    quantity: int = Field(gt=0)
+    length_mm: float = Field(gt=0, allow_inf_nan=False)
+    width_mm: float = Field(gt=0, allow_inf_nan=False)
+    thickness_mm: float = Field(gt=0, allow_inf_nan=False)
+    field_states: dict[
+        Literal["quantity", "length_mm", "width_mm", "thickness_mm"],
+        Literal["calculated", "confirmed"],
+    ]
+
+    @model_validator(mode="after")
+    def states_are_complete(self) -> "TableDescriptorComponentFeature":
+        if set(self.field_states) != {"quantity", "length_mm", "width_mm", "thickness_mm"}:
+            raise ValueError("table descriptor field states must be complete")
+        return self
+
+
+class FurnitureDescriptorV3(StrictModel):
+    descriptor_version: Literal["furniture-v3"] = "furniture-v3"
+    family: Literal["rectangular_table"] = "rectangular_table"
+    profile: Literal["rectangular_table_v1"] = "rectangular_table_v1"
+    dimensions: DescriptorDimensions
+    structure: Literal["side_support_table", "corner_support_table"]
+    components: tuple[TableDescriptorComponentFeature, ...]
+    material_tariff_id: str | None = None
+    classification_status: Literal["confirmed"] = "confirmed"
+    unknown_fields: tuple[str, ...] = ()
+
+
 class EmbeddingMetadata(StrictModel):
     provider: Literal["openai"] = "openai"
     model: str = Field(min_length=1)
     dimensions: int = Field(gt=0)
-    descriptor_version: Literal["furniture-v1", "furniture-v2"] = "furniture-v1"
+    descriptor_version: Literal["furniture-v1", "furniture-v2", "furniture-v3"] = "furniture-v1"
     cache_key: str = Field(min_length=1)
     status: Literal["generated", "cache"]
 
@@ -665,7 +1133,7 @@ class LibraryItem(StrictModel):
     run_id: str = Field(min_length=1)
     result_revision: int = Field(gt=0)
     label: str = Field(min_length=1)
-    descriptor: FurnitureDescriptor | FurnitureDescriptorV2
+    descriptor: FurnitureDescriptor | FurnitureDescriptorV2 | FurnitureDescriptorV3
     descriptor_fingerprint: str = Field(min_length=64, max_length=64)
     created_at: str = Field(min_length=1)
     embedding: EmbeddingMetadata | None = None
@@ -710,7 +1178,7 @@ class RunSnapshot(StrictModel):
     agent_selected_scenario_id: str | None = None
     agent_selected_assembly_candidate_id: str | None = None
     document_id: str | None = None
-    input_kind: Literal["mounted_views_legacy", "separated_part_views"] = "mounted_views_legacy"
+    input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy"
 
 
 class Comparable(StrictModel):
