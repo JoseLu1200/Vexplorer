@@ -4,6 +4,8 @@ Este informe corresponde al incremento 0.5 sobre la demo de piezas separadas. El
 
 Resultado final: **313 pruebas Python, 82 JavaScript, 26 comprobaciones HTTP de geometría/revisión/exportación y 20 peticiones HTTP del ensayo live**, todas correctas. `compileall`, `pip check` y `git diff --check` correctos. Se conserva un aviso conocido de deprecación TestClient/httpx. Astra reprodujo además 31 regresiones focales de visión, runner e ingesta y la suite de frontend.
 
+Merge fast-forward y push final confirmados en `443e9f1`. La demo local se actualizó y verificó en `http://127.0.0.1:8765`, con visión desactivada por defecto. El resultado live ya revisado puede abrirse con `?run=run-4cd41770b1254f2185f01f9a6430086a` en esta instancia; una instalación nueva debe cargar su propio DXF y crear su ejecución.
+
 Evidencias: [API](auditoria/2026-11-14/table-api.json), [programa y embeddings reales](auditoria/2026-11-14/table-live-vector.json), [visión nativa real](auditoria/2026-11-14/table-live-vision.json), [navegador](auditoria/2026-11-14/table-browser.json) y [captura del plano ampliado](auditoria/2026-11-14/table-general-browser.png).
 
 ## Recorrido implementado

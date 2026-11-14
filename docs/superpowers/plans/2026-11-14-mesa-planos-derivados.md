@@ -26,4 +26,4 @@ Todos conservan las lecturas obligatorias de AGENTS/CLAUDE/README/planes/team/tr
 - [x] API, UI, biblioteca/descriptor y exportación integrados.
 - [x] Pruebas, ejecución live real, navegador y correcciones.
 - [x] README/informe y revisión final Astra: SHIP sobre `5241a86`, 313 Python y 82 JS; API/visión real verificadas.
-- [ ] Push final a main (checkpoint `23b8e01` ya subido); sin despliegue ni datasets externos.
+- [x] Push final a main confirmado en `443e9f1`, tras el checkpoint `23b8e01`; sin despliegue ni datasets externos.
