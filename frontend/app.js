@@ -3,7 +3,7 @@ import { normaliseDrawing, selectionForComponent, svgPath } from "./core/drawing
 import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from "./core/events.js";
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, snapshotStatusPresentation } from "./core/presentation.js";
-import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, translateAssumption } from "./core/parts.js";
+import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, translateAssumption } from "./core/parts.js";
 import { buildAssemblyReviewPayload, buildScenarioReviewPayload } from "./core/review.js";
 import { clearRunSession, persistRunId, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
@@ -289,18 +289,19 @@ function renderPartDecisionFields(candidate) {
   const root=$("#part-decisions"); root.replaceChildren();
   const uncertain=candidate?.uses.filter((use)=>{const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId); return use.allocatedQuantity.value==null||Object.values(observation?.dimensions??{}).some((dimension)=>dimension.value==null);})??[];
   if(!uncertain.length)return;
-  const heading=document.createElement("p"); heading.className="eyebrow"; heading.textContent="Datos que requieren confirmación"; root.append(heading);
+  const unresolved=uncertain.some((use)=>{const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId); return (use.allocatedQuantity.value==null&&use.effective?.quantity.value==null)||Object.entries(observation?.dimensions??{}).some(([name,dimension])=>dimension.value==null&&use.effective?.dimensions?.[name]?.value==null);});
+  const heading=document.createElement("p"); heading.className="eyebrow"; heading.textContent=unresolved?"Datos que requieren confirmación":"Valores humanos vigentes"; root.append(heading);
   uncertain.forEach((use)=>{
     const observation=state.partsWorkspace.observations.find((item)=>item.id===use.partObservationId);
     const block=document.createElement("fieldset"); block.className="allocation-decision"; block.dataset.useId=use.id; block.dataset.role=use.role;
     const legend=document.createElement("legend"); legend.textContent=`${observation?.label??"Pieza"} como ${roleLabel(use.role).toLowerCase()}`;
-    const numericField=(labelText,field,step)=>{const label=document.createElement("label"); label.textContent=labelText; const input=document.createElement("input"); input.type="number"; input.min=step; input.step=step; input.dataset.decisionField=field; label.append(input); return label;};
+    const numericField=(labelText,field,step,effective)=>{const label=document.createElement("label"); label.textContent=effective?.value!=null?`${labelText.replace("confirmad", "vigente confirmad")}`:labelText; const input=document.createElement("input"); input.type="number"; input.min=step; input.step=step; input.dataset.decisionField=field; if(effective?.value!=null){input.value=effective.value; input.disabled=true; input.setAttribute("aria-label",`${labelText}: valor vigente`);} label.append(input); return label;};
     const fields=[];
-    if(use.allocatedQuantity.value==null)fields.push(numericField("Cantidad confirmada","quantity","1"));
-    if(observation?.dimensions.length.value==null)fields.push(numericField("Largo confirmado (mm)","length",".1"));
-    if(observation?.dimensions.width.value==null)fields.push(numericField("Ancho confirmado (mm)","width",".1"));
-    if(observation?.dimensions.thickness.value==null)fields.push(numericField("Grosor confirmado (mm)","thickness",".1"));
-    const note=document.createElement("small"); note.textContent="Déjalo vacío si no está comprobado; el sistema conservará el desconocido.";
+    if(use.allocatedQuantity.value==null)fields.push(numericField("Cantidad confirmada","quantity","1",use.effective?.quantity));
+    if(observation?.dimensions.length.value==null)fields.push(numericField("Largo confirmado (mm)","length",".1",use.effective?.dimensions.length));
+    if(observation?.dimensions.width.value==null)fields.push(numericField("Ancho confirmado (mm)","width",".1",use.effective?.dimensions.width));
+    if(observation?.dimensions.thickness.value==null)fields.push(numericField("Grosor confirmado (mm)","thickness",".1",use.effective?.dimensions.thickness));
+    const note=document.createElement("small"); note.textContent=fields.some((field)=>field.querySelector("input:not(:disabled)"))?"Deja vacío lo que no esté comprobado; el sistema conservará el desconocido.":"Estos valores ya constan en la revisión vigente y no se volverán a enviar.";
     block.append(legend,...fields,note); root.append(block);
   });
 }
@@ -329,7 +330,7 @@ function renderSeparatedPartsAndReview() {
   if(!workspace.candidates.length)options.append(emptyParagraph("No hay una clasificación o montaje respaldado para revisar."));
   const selected=workspace.candidates.find((item)=>item.id===selectedId);
   const summary=$("#classification-summary"); summary.replaceChildren();
-  if(selected){ const title=document.createElement("b"); title.textContent=`${selected.familyLabel} · ${selected.layoutLabel}`; const status=document.createElement("p"); const reviewed=workspace.selectedCandidateId===selected.id; status.textContent=reviewed?`Hipótesis seleccionada en revisión ${state.snapshot.result_revision}; reconstrucción condicionada a sus premisas.`:"Clasificación y roles: hipótesis pendientes de decisión humana."; summary.append(title,status); selected.uses.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId); const line=document.createElement("p"); const source=use.sourceQuantity.value??"desconocida", allocated=use.allocatedQuantity.value??"desconocida", occurrences=use.occurrenceIndices.length?` · ocurrencias ${use.occurrenceIndices.join(", ")}`:""; line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · fuente ${source} · asignadas ${allocated}${occurrences} · ${partStateLabel(use.roleState)}`; summary.append(line);}); renderDerivedDimensions(selected,summary); if(selected.unassignedObservationIds.length){const warning=document.createElement("p"); warning.className="unknown"; warning.textContent=`Sin asignar: ${selected.unassignedObservationIds.join(", ")}`; summary.append(warning);} }
+  if(selected){ const title=document.createElement("b"); title.textContent=`${selected.familyLabel} · ${selected.layoutLabel}`; const status=document.createElement("p"); const reviewed=workspace.selectedCandidateId===selected.id; status.textContent=reviewed?`Hipótesis seleccionada en revisión ${state.snapshot.result_revision}; reconstrucción condicionada a sus premisas.`:"Clasificación y roles: hipótesis pendientes de decisión humana."; summary.append(title,status); selected.uses.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId); const line=document.createElement("p"); const source=use.sourceQuantity.value??"desconocida", allocated=use.allocatedQuantity.value??"desconocida", occurrences=use.occurrenceIndices.length?` · ocurrencias ${use.occurrenceIndices.join(", ")}`:""; line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · fuente ${source} · asignadas ${allocated}${occurrences} · ${partStateLabel(use.roleState)}`; summary.append(line);}); const effective=selected.uses.filter((use)=>use.effective); if(effective.length){const reviewedValues=document.createElement("div"); reviewedValues.className="review-values"; const heading=document.createElement("b"); heading.textContent=`Valores de revisión ${workspace.revisionNumber}`; reviewedValues.append(heading); effective.forEach((use)=>{const observation=workspace.observations.find((item)=>item.id===use.partObservationId), values=presentReviewedUse(use); const line=document.createElement("p"); line.textContent=`${observation?.label??use.partObservationId} → ${roleLabel(use.role)} · Cantidad ${values.quantity} · Largo ${values.length} · Ancho ${values.width} · Grosor ${values.thickness}`; reviewedValues.append(line);}); summary.append(reviewedValues);} renderDerivedDimensions(selected,summary); if(selected.unassignedObservationIds.length){const warning=document.createElement("p"); warning.className="unknown"; warning.textContent=`Sin asignar: ${selected.unassignedObservationIds.join(", ")}`; summary.append(warning);} }
   else summary.append(emptyParagraph("Las observaciones siguen disponibles sin clasificación de montaje."));
   renderPartDecisionFields(selected);
   toggleHidden($("#legacy-review-fields"),true); $("#review-thickness").required=false; $("#review-submit").disabled=!workspace.candidates.length;
@@ -511,7 +512,7 @@ async function submitReview(event) {
   event.preventDefault(); const parts=state.partsWorkspace?.isPartsOnly; const scenario = $(parts?"input[name='assembly-candidate']:checked":"input[name='scenario']:checked"); if (!scenario) return;
   const identity=actionIdentity(), token=actionFence.issue(identity);
   try {
-    const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const value=(field)=>$("[data-decision-field='"+field+"']",block)?.value??""; const quantity=value("quantity"),length=value("length"),width=value("width"),thickness=value("thickness"); return quantity||length||width||thickness?[{use_id:block.dataset.useId,role:block.dataset.role,quantity,length_mm:length,width_mm:width,thickness_mm:thickness,material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}]:[];}):[];
+    const decisions=parts?$$(".allocation-decision").flatMap((block)=>{const value=(field)=>{const input=$("[data-decision-field='"+field+"']",block); return input&&!input.disabled?input.value:"";}; const quantity=value("quantity"),length=value("length"),width=value("width"),thickness=value("thickness"); return quantity||length||width||thickness?[{use_id:block.dataset.useId,role:block.dataset.role,quantity,length_mm:length,width_mm:width,thickness_mm:thickness,material:$("#review-material").value,finish:$("#review-finish").value,notes:$("#review-reason").value}]:[];}):[];
     const values = {
       scenario_id: scenario.value,
       assembly_candidate_id: scenario.value,
