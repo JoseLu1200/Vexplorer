@@ -764,6 +764,11 @@
   ],
   "files": [
     {
+      "path": ".gitattributes",
+      "bytes": 87,
+      "sha256": "d1afb5aa84ec06e07d50ed29a6f3fa3c5069a02ad091f3998ae3c06500f24206"
+    },
+    {
       "path": "catalog.json",
       "bytes": 1106,
       "sha256": "5c0ea524ada42916f4b263902324fdf1f9b9ff6891d02c186816e90c13aac878"
