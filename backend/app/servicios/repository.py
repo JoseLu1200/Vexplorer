@@ -17,6 +17,9 @@ from backend.app.contratos.modelos import (
     ReviewRequest,
     RunSnapshot,
     SeparatedPartsExtraction,
+    TableCostEstimate,
+    TableDrawingExports,
+    TableDrawingManifest,
 )
 from backend.app.geometria.parts import recompute_reviewed_assembly_candidate
 
@@ -58,6 +61,20 @@ class DemoRepository:
                 CREATE TABLE IF NOT EXISTS embedding_cache (
                     cache_key TEXT PRIMARY KEY, model TEXT NOT NULL, dimensions INTEGER NOT NULL,
                     descriptor_version TEXT NOT NULL, vector_json TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS table_cost_estimates (
+                    run_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL,
+                    PRIMARY KEY (run_id, revision)
+                );
+                CREATE TABLE IF NOT EXISTS table_drawing_manifests (
+                    run_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL,
+                    PRIMARY KEY (run_id, revision)
+                );
+                CREATE TABLE IF NOT EXISTS table_drawing_artifacts (
+                    run_id TEXT NOT NULL, revision INTEGER NOT NULL, sheet_id TEXT NOT NULL,
+                    format TEXT NOT NULL, program_hash TEXT NOT NULL, media_type TEXT NOT NULL,
+                    filename TEXT NOT NULL, content BLOB NOT NULL,
+                    PRIMARY KEY (run_id, revision, sheet_id, format)
                 );
                 """
             )
@@ -365,3 +382,59 @@ class DemoRepository:
         if row["model"] != model or row["dimensions"] != dimensions or row["descriptor_version"] != descriptor_version:
             raise ValueError("embedding_space_incompatible")
         return validate_embedding(json.loads(row["vector_json"]), dimensions)
+
+    def save_table_cost_estimate(self, run_id: str, estimate: TableCostEstimate) -> None:
+        result = self.get_result(run_id, estimate.result_revision)
+        evaluated = result.evaluated_table_program
+        if evaluated is None or evaluated.program_hash != estimate.program_hash:
+            raise ValueError("table_program_revision_mismatch")
+        with self._connect() as db:
+            db.execute("INSERT OR REPLACE INTO table_cost_estimates VALUES (?, ?, ?)", (run_id, estimate.result_revision, estimate.model_dump_json()))
+
+    def get_table_cost_estimate(self, run_id: str, revision: int) -> TableCostEstimate:
+        self.get_result(run_id, revision)
+        with self._connect() as db:
+            row = db.execute("SELECT payload FROM table_cost_estimates WHERE run_id=? AND revision=?", (run_id, revision)).fetchone()
+        if row is None:
+            raise KeyError((run_id, revision))
+        return TableCostEstimate.model_validate_json(row[0])
+
+    def save_table_drawings(self, run_id: str, manifest: TableDrawingManifest, exports: TableDrawingExports) -> None:
+        if manifest.result_revision != exports.result_revision or manifest.program_hash != exports.program_hash:
+            raise ValueError("table_drawing_bundle_mismatch")
+        result = self.get_result(run_id, manifest.result_revision)
+        evaluated = result.evaluated_table_program
+        if evaluated is None or evaluated.program_hash != manifest.program_hash or manifest.run_id != run_id:
+            raise ValueError("table_program_revision_mismatch")
+        links = {(sheet.sheet_id, link.format) for sheet in manifest.sheets for link in sheet.formats}
+        artifacts = {(item.sheet_id, item.format) for item in exports.artifacts}
+        if links != artifacts:
+            raise ValueError("table_drawing_manifest_mismatch")
+        with self._connect() as db:
+            db.execute("INSERT OR REPLACE INTO table_drawing_manifests VALUES (?, ?, ?)", (run_id, manifest.result_revision, manifest.model_dump_json()))
+            db.execute("DELETE FROM table_drawing_artifacts WHERE run_id=? AND revision=?", (run_id, manifest.result_revision))
+            db.executemany(
+                "INSERT INTO table_drawing_artifacts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                ((run_id, manifest.result_revision, item.sheet_id, item.format, manifest.program_hash, item.media_type, item.filename, item.content) for item in exports.artifacts),
+            )
+
+    def get_table_drawing_manifest(self, run_id: str, revision: int) -> TableDrawingManifest:
+        self.get_result(run_id, revision)
+        with self._connect() as db:
+            row = db.execute("SELECT payload FROM table_drawing_manifests WHERE run_id=? AND revision=?", (run_id, revision)).fetchone()
+        if row is None:
+            raise KeyError((run_id, revision))
+        return TableDrawingManifest.model_validate_json(row[0])
+
+    def get_table_drawing_artifact(self, run_id: str, revision: int, sheet_id: str, format: str, program_hash: str) -> tuple[bytes, str, str]:
+        self.get_result(run_id, revision)
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT content,media_type,filename,program_hash FROM table_drawing_artifacts WHERE run_id=? AND revision=? AND sheet_id=? AND format=?",
+                (run_id, revision, sheet_id, format),
+            ).fetchone()
+        if row is None:
+            raise KeyError((run_id, revision, sheet_id, format))
+        if row["program_hash"] != program_hash:
+            raise ValueError("table_program_revision_mismatch")
+        return bytes(row["content"]), row["media_type"], row["filename"]
