@@ -154,6 +154,38 @@ def test_invalid_dxf_is_not_persisted(tmp_path: Path, monkeypatch: pytest.Monkey
     assert list((data / "documents").iterdir()) == []
 
 
+def test_public_production_without_users_keeps_origin_guard_and_job_policy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _production_env(tmp_path, monkeypatch)
+    monkeypatch.setenv("VEXPLORER_ENV", "production")
+    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "false")
+    monkeypatch.delenv("VEXPLORER_USERS_FILE", raising=False)
+    monkeypatch.setenv("VEXPLORER_ALLOWED_ORIGINS", "https://vexplorer.example")
+    frontend = tmp_path / "frontend"
+    frontend.mkdir()
+    (frontend / "index.html").write_text("<h1>Vexplorer</h1>", encoding="utf-8")
+    with TestClient(create_app(data_dir=tmp_path / "data", frontend_dir=frontend)) as client:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "www-authenticate" not in response.headers
+        assert client.get("/api/v1/session").json()["data"] == {
+            "authenticated": False, "username": None, "environment": "production"
+        }
+        config = client.get("/api/v1/config").json()["data"]
+        assert config["authenticated"] is False
+        assert config["run_submission"]["legacy_sync"] is False
+        for origin, expected in [("https://evil.example", 403), ("https://vexplorer.example", 201)]:
+            response = client.post("/api/v1/documents", headers={"Origin": origin}, files={
+                "file": ("empty.dxf", b"0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n", "application/dxf")
+            })
+            assert response.status_code == expected
+
+
+def test_invalid_auth_configuration_fails_closed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VEXPLORER_AUTH_ENABLED", "typo")
+    with pytest.raises(ValueError, match="invalid_auth_enabled"):
+        create_app(data_dir=tmp_path / "data")
+
+
 def test_concurrent_uploads_cannot_overbook_storage_quota(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import backend.app.main as main_module
 
