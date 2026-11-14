@@ -115,3 +115,4 @@ Completado: demo local integrada y verificada; aceptación final GPT-6 Astra SHI
 - Evidencia y límites: `docs/VERIFICACION_PIEZAS_SEPARADAS.md` y `docs/auditoria/2026-11-14/parts-*`. Astra realiza revisión final del diff y reproduce los defectos corregidos.
 - La autorización de merge/push a main sigue vigente. No se solicita otra confirmación; el cierre requiere pruebas y revisión correctas. No se despliega al VPS.
 - Siguiente solicitud activa del usuario: acabar este hito y ampliar a planta/alzado/perfil del conjunto, caso mesa rectangular, propuesta generativa acotada, planos derivados y por pieza acotados y costes explicados. No se atribuye esa ampliación al hito 0.4.
+- Cierre: agente GPT-6 Astra emite SHIP sobre `cbc549a`; suites 188 Python/66 JS, auditoría HTTP 58/58 y proveedor real correctos. Merge fast-forward y push a main completados en `06cf51e`; `main...origin/main` devuelve `0 0`.

@@ -78,4 +78,4 @@ Archivos: este plan, diseño, `team/agente_coordinador.md`, README/informe nuevo
 - [x] Ejecutar suites finales y HTTP real; nueva instancia aislada y recorrido en Chrome con DXF de piezas separadas.
 - [x] Ejecución live y embedding reales si están configurados; registrar resultados sin secretos.
 - [x] GPT-6 Astra revisa diff final/evidencias; SHIP sobre `cbc549a`, con hallazgos corregidos y suite final verificada.
-- [ ] README con comandos/guion reales, capacidades verificadas y límites; integrar/push main conforme a autorización previa.
+- [x] README con comandos/guion reales, capacidades verificadas y límites; integrado y subido a main en `06cf51e`, remoto sincronizado.
