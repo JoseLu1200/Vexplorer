@@ -15,6 +15,16 @@ export function artifactRequestIdentity({ runId, revision, programHash, sheetId,
 }
 
 const ROLE_QUANTITY = Object.freeze({ tabletop: 1, side_support: 2, corner_support: 4 });
+const MEASURE_SOURCE_LABELS = Object.freeze({
+  dimension_annotation: "Cota escrita",
+  envelope_extent: "Medición CAD · envolvente",
+  offset_from_min_x: "Medición CAD · separación desde la izquierda",
+  offset_from_max_x: "Medición CAD · separación desde la derecha",
+  offset_from_min_y: "Medición CAD · separación inferior",
+  offset_from_max_y: "Medición CAD · separación superior",
+  opposite_offsets: "Medición CAD · separaciones opuestas",
+  profile_required_slot: "Dato requerido por el perfil",
+});
 
 function tableField(raw = {}) {
   return {
@@ -40,6 +50,8 @@ export function normaliseTableWorkspace(snapshot = {}) {
     informationClass: measure.state ?? "unknown",
     confirmable: ["unknown", "conflict"].includes(measure.state),
     slotOrigin: measure.slot_origin ?? "drawing",
+    geometryRelation: measure.geometry_relation ?? (measure.slot_origin === "profile_required_slot" ? "profile_required_slot" : "dimension_annotation"),
+    sourceLabel: MEASURE_SOURCE_LABELS[measure.geometry_relation ?? (measure.slot_origin === "profile_required_slot" ? "profile_required_slot" : "dimension_annotation")] ?? "Medición CAD",
     measurementIds: [...(measure.measurement_ids ?? [])],
     viewIds: [...(measure.view_ids ?? [])],
     evidenceIds: [...(measure.evidence_ids ?? [])],
