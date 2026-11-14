@@ -68,10 +68,10 @@ def test_capture_uses_only_public_dxf_and_freezes_terminal_prediction(tmp_path: 
 
     capture_cases(
         client,
-        cases=[{"case_id": "blind-001", "split": "development", "dxf_path": source}],
+        cases=[{"case_id": "blind-001", "split": "holdout", "dxf_path": source}],
         output_path=output,
         poll_interval_s=0,
-        evaluation_phase="unit",
+        evaluation_phase="holdout",
     )
 
     frozen = load_frozen_prediction_bundle(output)
@@ -79,7 +79,7 @@ def test_capture_uses_only_public_dxf_and_freezes_terminal_prediction(tmp_path: 
     assert frozen["runtime_config"]["config_evidence"]["job_timeout_s"] == 600
     assert frozen["runtime_config"]["config_evidence"]["reviewer_model"] == "gpt-6-astra"
     assert frozen["cases"][0]["prediction"]["job_state"] == "succeeded"
-    assert frozen["cases"][0]["split"] == "development"
+    assert frozen["cases"][0]["split"] == "holdout"
     assert frozen["cases"][0]["prediction"]["derived"]["bom_rows"] == []
 
 
@@ -94,7 +94,7 @@ def test_capture_rejects_non_production_timeout_before_upload(tmp_path: Path) ->
             cases=[{"case_id": "blind-001", "dxf_path": source}],
             output_path=tmp_path / "predictions.json",
             poll_interval_s=0,
-            evaluation_phase="unit",
+            evaluation_phase="holdout",
         )
     assert client.uploads == 0
 

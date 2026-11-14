@@ -21,6 +21,24 @@ ROOT = Path(__file__).resolve().parents[2]
 DXF_FIXTURE = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
 
 
+def _proposal_tool_arguments(proposal: dict) -> dict:
+    """Project a persisted proposal back to the strict proposal tool shape."""
+    fields = (
+        "bindings",
+        "components",
+        "premises",
+        "assumptions",
+        "construction_scenario_id",
+        "construction_parameters",
+        "construction_constraints",
+        "construction_details",
+        "construction_decisions",
+        "construction_placements",
+        "evidence_dispositions",
+    )
+    return {field: proposal[field] for field in fields}
+
+
 def _accepted_dimension_decisions(required_targets: list[str], visual_ref: str):
     checks = []
     field_reviews = []
@@ -43,6 +61,31 @@ def _accepted_dimension_decisions(required_targets: list[str], visual_ref: str):
         field_reviews.append({
             "target_ref": target, "status": "accepted", "check_ids": check_ids,
         })
+    return checks, field_reviews
+
+
+def _semantic_conflict_decisions(
+    required_targets: list[str], visual_ref: str, source_id: str, check_id: str
+):
+    rejected_target = f"component:{source_id}.length"
+    checks, field_reviews = _accepted_dimension_decisions(
+        [target for target in required_targets if target != rejected_target],
+        visual_ref,
+    )
+    checks.append({
+        "id": check_id,
+        "kind": "visual_consistency",
+        "outcome": "fail",
+        "method": "model_visual",
+        "target_refs": [rejected_target],
+        "source_refs": [visual_ref],
+        "summary": "La asignación semántica requiere reparación.",
+    })
+    field_reviews.append({
+        "target_ref": rejected_target,
+        "status": "rejected",
+        "check_ids": [check_id],
+    })
     return checks, field_reviews
 
 
@@ -219,21 +262,33 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
         if "content" in input_items[0]:
             context = json.loads(input_items[0]["content"][0]["text"])
             self.review_context = context
-            source = context["draft"]["components"][0]
+            source = context["components"][0]
             visual_ref = context["visual_artifacts"][0]["reference"]
+            checks, field_reviews = _semantic_conflict_decisions(
+                context["required_dimension_field_review_targets"],
+                visual_ref,
+                source["id"],
+                "semantic-conflict",
+            )
             arguments = {
                 "scenario_id": "scenario-repair-1",
-                "checks": [{"id": "semantic-conflict", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{source['id']}.length"], "source_refs": [visual_ref], "summary": "La asignación semántica requiere reparación."}],
-                "field_reviews": [{"target_ref": f"component:{source['id']}.length", "status": "rejected", "check_ids": ["semantic-conflict"]}],
+                "checks": checks,
+                "field_reviews": field_reviews,
                 "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
             }
             return ProviderResponse(id="critic-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-1", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
         output = json.loads(input_items[0]["output"])
         if output["status"] == "repair_requested":
-            proposal = self.review_context["proposal"]
+            proposal = output["proposal"]
             components = [dict(item) for item in proposal["components"]]
             components[0]["label"] = "Panel reparado semánticamente"
-            arguments = {"bindings": proposal["bindings"], "components": components, "premises": proposal["premises"], "assumptions": [*proposal["assumptions"], "Reparación automática trazable."]}
+            arguments = _proposal_tool_arguments(proposal) | {
+                "components": components,
+                "assumptions": [
+                    *proposal["assumptions"],
+                    "Reparación automática trazable.",
+                ],
+            }
             return ProviderResponse(id="repair-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="repair-call-1", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
         checks, field_reviews = _accepted_dimension_decisions(
             output["required_dimension_field_review_targets"],
@@ -275,29 +330,30 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
             )
         if "content" in input_items[0]:
             context = json.loads(input_items[0]["content"][0]["text"])
-            self.current_proposal = context["proposal"]
             self.visual_ref = context["visual_artifacts"][0]["reference"]
-            source_id = context["draft"]["components"][0]["id"]
-            return self._critic(source_id)
+            source_id = context["components"][0]["id"]
+            return self._critic(
+                source_id, context["required_dimension_field_review_targets"]
+            )
         output = json.loads(input_items[0]["output"])
         if output["status"] == "repair_requested":
             self.repair_count += 1
-            proposal = self.current_proposal
+            proposal = output["proposal"]
             components = [dict(item) for item in proposal["components"]]
             components[0]["label"] = f"Panel reparación {self.repair_count}"
-            arguments = {
-                "bindings": proposal["bindings"], "components": components,
-                "premises": proposal["premises"],
+            arguments = _proposal_tool_arguments(proposal) | {
+                "components": components,
                 "assumptions": [*proposal["assumptions"], f"Reparación {self.repair_count}."],
             }
             return ProviderResponse(
                 id=f"repair-response-{self.repair_count}", model="test-general-reviewer",
                 tool_calls=(ToolCall(call_id=f"repair-call-{self.repair_count}", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),),
             )
-        self.current_proposal = output["proposal"]
-        source_id = output["draft"]["components"][0]["id"]
+        source_id = output["components"][0]["id"]
         if self.repair_count < 2:
-            return self._critic(source_id)
+            return self._critic(
+                source_id, output["required_dimension_field_review_targets"]
+            )
         self.review_count += 1
         checks, field_reviews = _accepted_dimension_decisions(
             output["required_dimension_field_review_targets"], self.visual_ref,
@@ -312,20 +368,18 @@ class _TwoSemanticRepairProvider(_GeneralLiveProvider):
             tool_calls=(ToolCall(call_id="critic-final-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),),
         )
 
-    def _critic(self, source_id: str) -> ProviderResponse:
+    def _critic(
+        self, source_id: str, required_dimension_targets: list[str]
+    ) -> ProviderResponse:
         self.review_count += 1
         check_id = f"semantic-conflict-{self.review_count}"
+        checks, field_reviews = _semantic_conflict_decisions(
+            required_dimension_targets, self.visual_ref, source_id, check_id
+        )
         arguments = {
             "scenario_id": f"scenario-critic-{self.review_count}",
-            "checks": [{
-                "id": check_id, "kind": "visual_consistency", "outcome": "fail",
-                "method": "model_visual", "target_refs": [f"component:{source_id}.length"],
-                "source_refs": [self.visual_ref], "summary": "Requiere otra reparación semántica.",
-            }],
-            "field_reviews": [{
-                "target_ref": f"component:{source_id}.length", "status": "rejected",
-                "check_ids": [check_id],
-            }],
+            "checks": checks,
+            "field_reviews": field_reviews,
             "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
         }
         return ProviderResponse(
@@ -339,7 +393,7 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
         if tools[0]["name"] == "entregar_revision_autonoma" and "output" in input_items[0]:
             output = json.loads(input_items[0]["output"])
             if output.get("status") == "repair_requested":
-                proposal = self.review_context["proposal"]
+                proposal = output["proposal"]
                 component = dict(proposal["components"][0])
                 component.update({
                     "id": "scenario-panel", "label": "Panel provisional",
@@ -351,7 +405,7 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                     "source_evidence_ids": ["evidence-dimension-entity-9C", "evidence-dimension-entity-AC", "evidence-dimension-entity-CC"],
                     "unknown_fields": ["material", "finish"],
                 })
-                arguments = {
+                arguments = _proposal_tool_arguments(proposal) | {
                     "bindings": [
                         {"id": "scenario-length", "operation": "copy", "operand_refs": ["dimension:dimension-entity-9C"]},
                         {"id": "scenario-width", "operation": "copy", "operand_refs": ["dimension:dimension-entity-AC"]},
@@ -363,7 +417,7 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                 }
                 return ProviderResponse(id="scenario-repair", model="test-general-reviewer", tool_calls=(ToolCall(call_id="scenario-repair-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
             if output.get("status") == "proposal_repaired":
-                source = output["draft"]["components"][0]
+                source = output["components"][0]
                 component = {
                     **{key: value for key, value in source.items() if key != "premise_ids"},
                     "id": "scenario-reviewed-panel", "replaces_component_ids": [source["id"]],
@@ -431,6 +485,7 @@ def test_config_advertises_integral_capabilities_without_exposing_evaluation(
     assert capabilities["general_furniture"]["autonomous_review"]["limits"] == {
             "max_model_calls": 5, "max_validation_repairs": 2,
             "max_semantic_repairs": 2, "job_timeout_s": 300.0,
+                "review_attempt_timeout_s": 300.0,
     }
     assert capabilities["general_furniture"]["construction_completion"] == {
         "available": True,

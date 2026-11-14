@@ -154,6 +154,13 @@ def _safe_validation_details(error: Exception) -> list[dict[str, object]]:
             "type": "value_error",
             "unresolved_candidate_region_ids": list(report.unresolved_region_ids[:64]),
             "invalid_candidate_region_ids": list(report.invalid_region_ids[:64]),
+            "invalid_candidate_region_reasons": [
+                {
+                    "candidate_region_id": region_id,
+                    "reason_code": reason_code,
+                }
+                for region_id, reason_code in report.invalid_region_reasons[:64]
+            ],
             "missing_dimension_targets": list(report.missing_dimension_targets[:64]),
             "untraceable_dimension_targets": list(
                 report.untraceable_dimension_targets[:64]
@@ -266,6 +273,34 @@ def run_general_furniture_agent(
     tool_calls = 0
     repairs = 0
     trace: list[dict[str, object]] = []
+    last_incomplete: tuple[
+        GeneralFurnitureProposal,
+        GeneralFurnitureDraft,
+        EvidenceAccountingReport,
+    ] | None = None
+    incomplete_seen_at_call = 0
+    incomplete_followup_responses = 0
+
+    def preserve_incomplete(
+        reason_code: str, *, metadata: dict[str, object] | None = None
+    ) -> GeneralFurnitureAgentOutcome:
+        assert last_incomplete is not None
+        proposal, draft, accounting = last_incomplete
+        trace.append(
+            {
+                "tool": "proponer_mueble_general",
+                "ok": False,
+                "summary": (
+                    "Proposal preserved as incomplete after bounded recovery."
+                ),
+                "reason_code": reason_code,
+                "evidence_accounting": accounting.to_payload(),
+                **(metadata or {}),
+            }
+        )
+        return GeneralFurnitureAgentOutcome(
+            proposal, draft, calls, tool_calls, tuple(trace)
+        )
     evidence = {item.id: item for item in extraction.evidence}
     dimensions = {item.id: item for item in extraction.dimensions}
     general_measures = derive_geometry_measurements(extraction)
@@ -384,6 +419,8 @@ def run_general_furniture_agent(
     while calls < limits.max_model_calls:
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
+            if last_incomplete is not None:
+                return preserve_incomplete("agent_deadline_exceeded")
             raise GeneralLiveError(
                 "agent_deadline_exceeded", trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -401,6 +438,8 @@ def run_general_furniture_agent(
         except GeneralLiveError:
             raise
         except Exception as exc:
+            if last_incomplete is not None:
+                return preserve_incomplete(_safe_live_error_code(exc))
             raise GeneralLiveError(
                 _safe_live_error_code(exc), trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -410,8 +449,18 @@ def run_general_furniture_agent(
             input_items = [
                 {"role": "user", "content": "Debes usar una herramienta permitida."}
             ]
+            if last_incomplete is not None and calls > incomplete_seen_at_call:
+                incomplete_followup_responses += 1
+                if incomplete_followup_responses >= max(
+                    1, limits.max_validation_repairs
+                ):
+                    return preserve_incomplete(
+                        "post_proposal_inspection_budget_exhausted"
+                    )
             continue
         if tool_calls + len(response.tool_calls) > limits.max_tool_calls:
+            if last_incomplete is not None:
+                return preserve_incomplete("tool_call_budget_exhausted")
             raise GeneralLiveError(
                 "tool_call_budget_exhausted", trace=tuple(trace),
                 model_calls=calls, tool_calls=tool_calls,
@@ -557,6 +606,9 @@ def run_general_furniture_agent(
                         projection_hypotheses=projection_hypotheses,
                     )
                     if not accounting.reviewable:
+                        last_incomplete = (proposal, draft, accounting)
+                        incomplete_seen_at_call = calls
+                        incomplete_followup_responses = 0
                         if repairs < limits.max_validation_repairs:
                             raise ProposalEvidenceAccountingError(accounting)
                         trace.append(
@@ -613,6 +665,10 @@ def run_general_furniture_agent(
                     }
                 )
                 if repairs > limits.max_validation_repairs:
+                    if last_incomplete is not None:
+                        return preserve_incomplete(
+                            "validation_repair_budget_exhausted"
+                        )
                     raise GeneralLiveError(
                         "validation_repair_budget_exhausted",
                         trace=tuple(trace), model_calls=calls,
@@ -631,6 +687,16 @@ def run_general_furniture_agent(
                 }
             )
         input_items = outputs
+        if last_incomplete is not None and calls > incomplete_seen_at_call:
+            incomplete_followup_responses += 1
+            if incomplete_followup_responses >= max(
+                1, limits.max_validation_repairs
+            ):
+                return preserve_incomplete(
+                    "post_proposal_inspection_budget_exhausted"
+                )
+    if last_incomplete is not None:
+        return preserve_incomplete("model_call_budget_exhausted")
     raise GeneralLiveError(
         "model_call_budget_exhausted", trace=tuple(trace),
         model_calls=calls, tool_calls=tool_calls,

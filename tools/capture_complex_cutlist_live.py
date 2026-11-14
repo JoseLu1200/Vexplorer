@@ -14,7 +14,7 @@ import httpx
 from evaluation.complex_cutlist import freeze_prediction_bundle
 
 
-TERMINAL_JOB_STATES = {"succeeded", "failed", "cancelled"}
+TERMINAL_JOB_STATES = {"succeeded", "failed", "cancelled", "interrupted"}
 REQUIRED_JOB_TIMEOUT_S = 600
 
 

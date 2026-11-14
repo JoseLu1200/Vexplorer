@@ -176,6 +176,22 @@ def test_same_evidence_region_cannot_be_claimed_by_multiple_components() -> None
     assert report.reviewable is False
 
 
+def test_invalid_region_feedback_identifies_the_specific_accounting_failure() -> None:
+    extraction, proposal, draft, regions = _vector_case(assigned_count=10)
+    second = proposal.components[0].model_copy(
+        update={"id": "panel-copy", "source_contour_ids": (regions[0].contour_ids[0],)}
+    )
+    proposal = proposal.model_copy(update={"components": (*proposal.components, second)})
+    draft_second = draft.components[0].model_copy(update={"id": "panel-copy"})
+    draft = draft.model_copy(update={"components": (*draft.components, draft_second)})
+
+    report = build_evidence_accounting_report(extraction, proposal, draft)
+
+    assert report.invalid_region_reasons == (
+        (regions[0].id, "candidate_region_reused_by_components"),
+    )
+
+
 def test_many_regions_assigned_to_one_component_require_directed_review() -> None:
     extraction, proposal, draft, regions = _vector_case(assigned_count=10)
 
@@ -302,3 +318,86 @@ def test_live_preserves_last_incomplete_proposal_after_bounded_repair_budget() -
     assert outcome.proposal.evidence_dispositions[-1].candidate_region_id != regions[-1].id
     assert outcome.trace[-1]["ok"] is False
     assert "preserved as incomplete" in outcome.trace[-1]["summary"]
+
+
+def test_live_preserves_last_incomplete_proposal_when_provider_response_ends() -> None:
+    extraction, incomplete, _, _ = _vector_case(assigned_count=9)
+
+    class ProviderFailure(RuntimeError):
+        code = "provider_response_incomplete"
+
+    class Provider:
+        calls = 0
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            if self.calls == 2:
+                raise ProviderFailure("provider payload must not escape")
+            return ProviderResponse(
+                id="response-1",
+                model="fake",
+                tool_calls=(ToolCall(
+                    call_id="call-1",
+                    name="proponer_mueble_general",
+                    arguments_json=json.dumps(_proposal_arguments(incomplete)),
+                ),),
+            )
+
+    provider = Provider()
+    outcome = run_general_furniture_agent(
+        extraction,
+        ledger_revision="ledger-1",
+        provider=provider,
+        limits=AgentLimits(max_model_calls=3, max_validation_repairs=2),
+    )
+
+    assert provider.calls == 2
+    assert outcome.proposal.evidence_dispositions == incomplete.evidence_dispositions
+    assert outcome.trace[-1]["reason_code"] == "provider_response_incomplete"
+    assert outcome.trace[-1]["ok"] is False
+    assert "preserved as incomplete" in outcome.trace[-1]["summary"]
+
+
+def test_live_bounds_inspections_after_an_incomplete_proposal() -> None:
+    extraction, incomplete, _, _ = _vector_case(assigned_count=9)
+
+    class Provider:
+        calls = 0
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            if self.calls == 1:
+                call = ToolCall(
+                    call_id="proposal-call",
+                    name="proponer_mueble_general",
+                    arguments_json=json.dumps(_proposal_arguments(incomplete)),
+                )
+            else:
+                call = ToolCall(
+                    call_id=f"inspect-call-{self.calls}",
+                    name="inspeccionar_evidencia_general",
+                    arguments_json=json.dumps({
+                        "evidence_ids": [],
+                        "view_ids": ["view-front"],
+                        "measurement_ids": [],
+                        "query_measurements": False,
+                        "measurement_offset": 0,
+                        "measurement_limit": 64,
+                    }),
+                )
+            return ProviderResponse(
+                id=f"response-{self.calls}", model="fake", tool_calls=(call,)
+            )
+
+    provider = Provider()
+    outcome = run_general_furniture_agent(
+        extraction,
+        ledger_revision="ledger-1",
+        provider=provider,
+        limits=AgentLimits(max_model_calls=20, max_validation_repairs=2),
+    )
+
+    assert provider.calls == 3
+    assert outcome.proposal.evidence_dispositions == incomplete.evidence_dispositions
+    assert outcome.trace[-1]["reason_code"] == "post_proposal_inspection_budget_exhausted"
+    assert outcome.trace[-1]["ok"] is False

@@ -245,10 +245,10 @@ def test_prediction_bundle_is_hashed_before_scoring_and_tampering_is_rejected(tm
         cases=[{
             "case_id": "blind-001",
             "public_dxf_sha256": "a" * 64,
-            "split": "development",
+            "split": "holdout",
             "prediction": {"job_state": "failed", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"job_timeout_s": 600, "proposer_model": "gpt-6.1-sol", "reviewer_model": "gpt-6-astra"},
+        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600, "proposer_model": "gpt-6.1-sol", "reviewer_model": "gpt-6-astra"},
     )
 
     assert bundle["bundle_sha256"] == load_frozen_prediction_bundle(path)["bundle_sha256"]
@@ -268,7 +268,7 @@ def test_scoring_requires_exact_case_set_and_preserves_failure(tmp_path) -> None
             "split": "holdout",
             "prediction": {"job_state": "failed", "failure_code": "timeout", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"job_timeout_s": 600},
+        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600},
     )
     references.write_text(
         __import__("json").dumps([{
@@ -320,10 +320,10 @@ def test_reference_source_hash_and_split_must_match_frozen_case(tmp_path) -> Non
     freeze_prediction_bundle(
         predictions,
         cases=[{
-            "case_id": "blind-001", "split": "development", "public_dxf_sha256": "b" * 64,
+            "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "b" * 64,
             "prediction": {"job_state": "failed", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"job_timeout_s": 600},
+        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600},
     )
     references.write_text(__import__("json").dumps([{
         "id": "blind-001", "split": "holdout", "public_dxf_sha256": "c" * 64,
@@ -346,3 +346,38 @@ def test_development_bundle_rejects_incomplete_preregistered_cohort(tmp_path) ->
             runtime_config={"evaluation_phase": "development"},
         )
 
+
+
+def test_unknown_quantity_blocks_target_even_with_all_reference_pieces_matched() -> None:
+    prediction = _accepted_prediction(_panel(100, 50, 10), _panel(200, 50, 10, quantity=None))
+    report = evaluate_case("unknown-quantity", _reference((100, 50, 10)), prediction)
+    assert report["panel_occurrences"]["recall"] == 1.0
+    assert report["unknown_quantity_components"] == 1
+    assert report["passes_90_percent_target"] is False
+
+
+def test_hardware_exclusion_requires_accepted_quantity() -> None:
+    hardware = _panel(None, None, None, kind="hardware")
+    prediction = _accepted_prediction(_panel(100, 50, 10), hardware)
+    prediction["review"]["machine_field_reviews"] = [
+        item for item in prediction["review"]["machine_field_reviews"]
+        if item["target_ref"] != f"component:{hardware['id']}.quantity"
+    ]
+    report = evaluate_case("hardware-quantity", _reference((100, 50, 10)), prediction)
+    assert report["supported_hardware_occurrences"] == 0
+    assert report["unsupported_auxiliary_occurrences"] == 1
+    assert report["passes_90_percent_target"] is False
+
+
+@pytest.mark.parametrize("phase", [None, "unit", "", "production"])
+def test_freeze_rejects_unregistered_phase(tmp_path, phase) -> None:
+    with pytest.raises(ValueError, match="evaluation_phase"):
+        freeze_prediction_bundle(tmp_path / "invalid.json", cases=[{
+            "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "a" * 64,
+            "prediction": {"job_state": "failed"},
+        }], runtime_config={"evaluation_phase": phase})
+
+
+def test_interrupted_job_is_terminal_for_capture() -> None:
+    from tools.capture_complex_cutlist_live import TERMINAL_JOB_STATES
+    assert "interrupted" in TERMINAL_JOB_STATES

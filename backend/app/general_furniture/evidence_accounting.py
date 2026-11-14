@@ -31,6 +31,7 @@ class EvidenceAccountingReport:
     duplicate_projection_region_ids: tuple[str, ...]
     unresolved_region_ids: tuple[str, ...]
     invalid_region_ids: tuple[str, ...]
+    invalid_region_reasons: tuple[tuple[str, str], ...]
     panel_region_ids: tuple[str, ...]
     hardware_region_ids: tuple[str, ...]
     multi_region_component_ids: tuple[str, ...]
@@ -109,11 +110,18 @@ def build_evidence_accounting_report(
     duplicate: list[str] = []
     unresolved: list[str] = []
     invalid: list[str] = []
+    invalid_reasons: set[tuple[str, str]] = set()
     panel: list[str] = []
     hardware: list[str] = []
     disposition_targets: list[str] = []
     assigned_by_component: dict[str, list[str]] = {}
     warnings: set[str] = set()
+
+    def invalidate(region_id: str, reason_code: str) -> None:
+        invalid.append(region_id)
+        invalid_reasons.add((region_id, reason_code))
+        warnings.add(reason_code)
+
     allowed_nonmaterial_reasons = {
         "hole",
         "cutout",
@@ -133,8 +141,7 @@ def build_evidence_accounting_report(
             }
         )
         if len(claims) > 1:
-            invalid.append(region.id)
-            warnings.add("candidate_region_reused_by_components")
+            invalidate(region.id, "candidate_region_reused_by_components")
             continue
         if len(region_dispositions) != 1:
             unresolved.append(region.id)
@@ -147,14 +154,12 @@ def build_evidence_accounting_report(
         disposition = region_dispositions[0]
         exact_sources = {f"contour:{item}" for item in region.contour_ids}
         if not exact_sources <= set(disposition.source_refs):
-            invalid.append(region.id)
-            warnings.add("candidate_region_disposition_missing_source")
+            invalidate(region.id, "candidate_region_disposition_missing_source")
             continue
         if disposition.kind == "assigned":
             component = components.get(disposition.component_id or "")
             if component is None or claims != [component.id]:
-                invalid.append(region.id)
-                warnings.add("assigned_disposition_component_mismatch")
+                invalidate(region.id, "assigned_disposition_component_mismatch")
                 continue
             assigned.append(region.id)
             assigned_by_component.setdefault(component.id, []).append(region.id)
@@ -170,15 +175,17 @@ def build_evidence_accounting_report(
                     region, original, projection_hypotheses
                 )
             ):
-                invalid.append(region.id)
-                warnings.add("duplicate_projection_without_supported_identity")
+                invalidate(
+                    region.id, "duplicate_projection_without_supported_identity"
+                )
                 continue
             duplicate.append(region.id)
             disposition_targets.append(f"evidence_region:{region.id}")
         elif disposition.kind == "nonmaterial":
             if disposition.reason_code not in allowed_nonmaterial_reasons:
-                invalid.append(region.id)
-                warnings.add("nonmaterial_disposition_requires_typed_reason")
+                invalidate(
+                    region.id, "nonmaterial_disposition_requires_typed_reason"
+                )
                 continue
             nonmaterial.append(region.id)
             disposition_targets.append(f"evidence_region:{region.id}")
@@ -188,8 +195,8 @@ def build_evidence_accounting_report(
 
     unknown_region_ids = sorted(set(dispositions_by_region) - set(region_by_id))
     if unknown_region_ids:
-        invalid.extend(unknown_region_ids)
-        warnings.add("disposition_references_unknown_candidate_region")
+        for region_id in unknown_region_ids:
+            invalidate(region_id, "disposition_references_unknown_candidate_region")
 
     multi_region_component_ids = tuple(sorted(
         component_id
@@ -238,6 +245,7 @@ def build_evidence_accounting_report(
         duplicate_projection_region_ids=tuple(sorted(duplicate)),
         unresolved_region_ids=tuple(sorted(unresolved)),
         invalid_region_ids=tuple(sorted(set(invalid))),
+        invalid_region_reasons=tuple(sorted(invalid_reasons)),
         panel_region_ids=tuple(sorted(panel)),
         hardware_region_ids=tuple(sorted(hardware)),
         multi_region_component_ids=multi_region_component_ids,

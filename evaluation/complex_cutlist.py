@@ -104,7 +104,7 @@ def _expand_prediction(
         if component.get("kind") == "hardware":
             supported = all(
                 f"component:{component_id}.{field}" in accepted_fields
-                for field in ("kind", "existence")
+                for field in ("kind", "existence", "quantity")
             )
             if supported:
                 supported_hardware_occurrences += quantity
@@ -335,6 +335,7 @@ def evaluate_case(
         and dimensions["reference_dimension_coverage"] >= 0.9
         and dimensions["predicted_dimension_precision"] >= 0.9
         and unsupported_auxiliary == 0
+        and unknown_quantity == 0
     )
     return {
         "case_id": case_id,
@@ -413,6 +414,8 @@ def freeze_prediction_bundle(
         ):
             raise ValueError("prediction bundle requires split and sha256 source custody")
     phase = runtime_config.get("evaluation_phase")
+    if phase not in {"development", "holdout"}:
+        raise ValueError("evaluation_phase must be development or holdout")
     if phase == "development" and (
         set(case_ids) != {"plank-030", "plank-016"}
         or any(item["split"] != "development" for item in cases)
