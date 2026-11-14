@@ -154,3 +154,31 @@ def test_ordinate_dimension_preserves_observed_offset_without_fake_graphic(tmp_p
     assert extraction.dimensions[0].value_mm == 100.0
     assert extraction.dimensions[0].graphic_id is None
     assert not extraction.dimension_graphics
+
+
+def test_ellipse_is_bounded_visual_approximation_never_exact_contour(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    document.modelspace().add_ellipse((50, 50), major_axis=(20, 0), ratio=0.5)
+
+    extraction = extract_drawing(_save(document, tmp_path, "ellipse.dxf"))
+
+    ellipse = next(item for item in extraction.entities if item.kind == "ELLIPSE")
+    assert 4 < len(ellipse.source_points) <= 4096
+    assert "approximated_curve" in "|".join(extraction.warnings)
+    assert extraction.status == "needs_review"
+    assert not extraction.contours
+
+
+def test_tilted_circle_and_arc_ocs_are_rejected_before_xy_measurement(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    extrusion = (0.0, 1.0, 1.0)
+    modelspace.add_circle((0, 0, 0), 10, dxfattribs={"extrusion": extrusion})
+    modelspace.add_arc((30, 0, 0), 10, 0, 180, dxfattribs={"extrusion": extrusion})
+
+    extraction = extract_drawing(_save(document, tmp_path, "tilted-circular.dxf"))
+
+    assert not extraction.entities
+    assert sum(warning.startswith("unsupported_entity_plane:") for warning in extraction.warnings) == 2
