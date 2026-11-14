@@ -248,7 +248,7 @@ def test_prediction_bundle_is_hashed_before_scoring_and_tampering_is_rejected(tm
             "split": "holdout",
             "prediction": {"job_state": "failed", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600, "proposer_model": "gpt-6.1-sol", "reviewer_model": "gpt-6-astra"},
+        runtime_config={"config_evidence": {"job_timeout_s": 600, "reviewer_model": "gpt-6-astra"}, "evaluation_phase": "holdout", "job_timeout_s": 600, "proposer_model": "gpt-6.1-sol", "reviewer_model": "gpt-6-astra"},
     )
 
     assert bundle["bundle_sha256"] == load_frozen_prediction_bundle(path)["bundle_sha256"]
@@ -268,7 +268,7 @@ def test_scoring_requires_exact_case_set_and_preserves_failure(tmp_path) -> None
             "split": "holdout",
             "prediction": {"job_state": "failed", "failure_code": "timeout", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600},
+        runtime_config={"config_evidence": {"job_timeout_s": 600, "reviewer_model": "gpt-6-astra"}, "evaluation_phase": "holdout", "job_timeout_s": 600},
     )
     references.write_text(
         __import__("json").dumps([{
@@ -323,7 +323,7 @@ def test_reference_source_hash_and_split_must_match_frozen_case(tmp_path) -> Non
             "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "b" * 64,
             "prediction": {"job_state": "failed", "derived": {"bom_rows": []}},
         }],
-        runtime_config={"evaluation_phase": "holdout", "job_timeout_s": 600},
+        runtime_config={"config_evidence": {"job_timeout_s": 600, "reviewer_model": "gpt-6-astra"}, "evaluation_phase": "holdout", "job_timeout_s": 600},
     )
     references.write_text(__import__("json").dumps([{
         "id": "blind-001", "split": "holdout", "public_dxf_sha256": "c" * 64,
@@ -381,3 +381,19 @@ def test_freeze_rejects_unregistered_phase(tmp_path, phase) -> None:
 def test_interrupted_job_is_terminal_for_capture() -> None:
     from tools.capture_complex_cutlist_live import TERMINAL_JOB_STATES
     assert "interrupted" in TERMINAL_JOB_STATES
+
+
+def test_summary_includes_completed_cases_that_fail_quality() -> None:
+    report = evaluate_case("wrong", _reference((100, 50, 10)), _accepted_prediction(_panel(200, 50, 10)))
+    summary = summarize_cases([report])
+    assert summary["failed_case_ids"] == ["wrong"]
+    assert summary["incomplete_case_ids"] == []
+
+
+@pytest.mark.parametrize("evidence", [{}, {"job_timeout_s": 300, "reviewer_model": "gpt-6-astra"}, {"job_timeout_s": 600, "reviewer_model": "other"}])
+def test_freeze_requires_verified_runtime_configuration(tmp_path, evidence) -> None:
+    with pytest.raises(ValueError, match="config_evidence"):
+        freeze_prediction_bundle(tmp_path / "invalid.json", cases=[{
+            "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "a" * 64,
+            "prediction": {"job_state": "failed"},
+        }], runtime_config={"evaluation_phase": "holdout", "config_evidence": evidence})

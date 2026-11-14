@@ -490,10 +490,12 @@ class DemoRepository:
         actor_key = actor or "local-demo"
         with self._connect() as db:
             row = db.execute(
-                "SELECT id FROM jobs WHERE (run_id=? OR json_extract(error_json,'$.run_id')=?) "
+                "SELECT id FROM jobs WHERE (run_id=? OR json_extract(error_json,'$.run_id')=? "
+                "OR EXISTS (SELECT 1 FROM job_resume_checkpoints AS checkpoint "
+                "WHERE checkpoint.retry_job_id=jobs.id AND json_extract(checkpoint.payload_json,'$.run_id')=?)) "
                 "AND COALESCE(actor,'local-demo')=? "
                 "ORDER BY updated_at DESC,id DESC LIMIT 1",
-                (run_id, run_id, actor_key),
+                (run_id, run_id, run_id, actor_key),
             ).fetchone()
             return self._get_job_in_transaction(db, row["id"]) if row else None
 
@@ -559,6 +561,10 @@ class DemoRepository:
                 (source_job_id, actor_key, retry_job_id, timestamp),
             )
             if resume_checkpoint is not None:
+                db.execute(
+                    "UPDATE jobs SET run_id=? WHERE id=?",
+                    (resume_checkpoint.get("run_id"), retry_job_id),
+                )
                 db.execute(
                     "INSERT INTO job_resume_checkpoints VALUES (?, ?, ?, ?)",
                     (retry_job_id, source_job_id, json.dumps(resume_checkpoint), timestamp),

@@ -1583,7 +1583,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         """Expose persisted progress without presenting a proposal as approved."""
         result = dict(job)
         error = result.get("error") if isinstance(result.get("error"), dict) else {}
-        effective_run_id = result.get("run_id") or error.get("run_id")
+        saved_attempt = repository.get_job_resume_checkpoint(result["id"]) or {}
+        effective_run_id = result.get("run_id") or error.get("run_id") or saved_attempt.get("run_id")
         if effective_run_id and result.get("run_id") is None:
             result["run_id"] = effective_run_id
         record = general_furniture_repository.get(effective_run_id) if effective_run_id else None
@@ -1623,7 +1624,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         error = source.get("error")
         if source["state"] not in {"failed", "interrupted"} or not isinstance(error, dict) or error.get("retryable") is not True:
             raise ValueError("job_not_retryable")
-        run_id = source.get("run_id") or error.get("run_id")
+        saved_attempt = repository.get_job_resume_checkpoint(source_job_id) or {}
+        run_id = source.get("run_id") or error.get("run_id") or saved_attempt.get("run_id")
         if request.mode != "live" or request.input_kind != "general_furniture" or not run_id:
             raise ValueError("job_resume_checkpoint_unavailable")
         run = repository.get_run(run_id)

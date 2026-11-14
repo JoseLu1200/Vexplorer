@@ -5,6 +5,7 @@ infers a part outline, placement, dimension or construction detail.
 """
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import json
 from io import StringIO
 from math import hypot
@@ -40,6 +41,10 @@ _DXF_PRESENTATION = {
 }
 _APPID = "VEXPLORER"
 _SAFE_FILENAME = re.compile(r"[^A-Za-z0-9._-]+")
+_DISPLAY_NUMBER = re.compile(
+    r"(?<![\w.])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?![\w.])"
+)
+_DISPLAY_MM_QUANTUM = Decimal("0.01")
 
 
 def _tag(name: str) -> str:
@@ -48,6 +53,26 @@ def _tag(name: str) -> str:
 
 def _number(value: float) -> str:
     return f"{value:.6f}".rstrip("0").rstrip(".")
+
+
+def _dimension_label(text: str | None) -> str:
+    """Round only visible dimension values; source geometry and text stay untouched."""
+    if not text:
+        return "?"
+
+    def format_number(match: re.Match[str]) -> str:
+        try:
+            rounded = Decimal(match.group(1)).quantize(
+                _DISPLAY_MM_QUANTUM,
+                rounding=ROUND_HALF_UP,
+            )
+        except InvalidOperation:
+            return match.group(1)
+        if rounded == 0:
+            return "0"
+        return format(rounded, "f").rstrip("0").rstrip(".")
+
+    return _DISPLAY_NUMBER.sub(format_number, text)
 
 
 def _ascii_dxf(value: str) -> str:
@@ -72,7 +97,8 @@ def _bounds(sheet: Any) -> tuple[float, float, float, float]:
         if not primitive.text or not primitive.points_mm:
             continue
         font_size = 12.0
-        text_width = len(primitive.text) * font_size * 0.6
+        visible_text = _dimension_label(primitive.text) if primitive.kind == "dimension" else primitive.text
+        text_width = len(visible_text) * font_size * 0.6
         if primitive.kind == "dimension":
             _, _, dim1, dim2 = _dimension_geometry(primitive)
             anchor_x = (dim1[0] + dim2[0]) / 2
@@ -243,7 +269,7 @@ def render_construction_sheet_svg(sheet: "GeneralSheetPlan") -> bytes:
                     "stroke": "none",
                 },
             )
-            label.text = primitive.text
+            label.text = _dimension_label(primitive.text)
         elif primitive.kind == "detail_callout":
             target = points[0]
             label_point = points[-1] if len(points) > 1 else (target[0] + 60, target[1] + 40)
@@ -362,7 +388,7 @@ def render_construction_sheet_dxf(sheet: "GeneralSheetPlan") -> bytes:
                         dxfattribs={"layer": layer},
                     ),
                     space.add_text(
-                        _ascii_dxf(primitive.text or "?"),
+                        _ascii_dxf(_dimension_label(primitive.text)),
                         height=10,
                         dxfattribs={"layer": layer},
                     ).set_placement(((dim1[0] + dim2[0]) / 2, (dim1[1] + dim2[1]) / 2 + 5)),

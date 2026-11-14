@@ -405,6 +405,17 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                     "source_evidence_ids": ["evidence-dimension-entity-9C", "evidence-dimension-entity-AC", "evidence-dimension-entity-CC"],
                     "unknown_fields": ["material", "finish"],
                 })
+                evidence_dispositions = [
+                    {
+                        **item,
+                        "component_id": (
+                            "scenario-panel"
+                            if item.get("component_id") == proposal["components"][0]["id"]
+                            else item.get("component_id")
+                        ),
+                    }
+                    for item in proposal["evidence_dispositions"]
+                ]
                 arguments = _proposal_tool_arguments(proposal) | {
                     "bindings": [
                         {"id": "scenario-length", "operation": "copy", "operand_refs": ["dimension:dimension-entity-9C"]},
@@ -412,8 +423,12 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                         {"id": "scenario-thickness", "operation": "copy", "operand_refs": ["dimension:dimension-entity-CC"]},
                     ],
                     "components": [component],
-                    "premises": [{"id": "two-items", "description": "Dos grupos visuales distintos bajo el escenario provisional.", "required": True, "blocking": True}],
+                    "premises": [
+                        *proposal["premises"],
+                        {"id": "two-items", "description": "Dos grupos visuales distintos bajo el escenario provisional.", "required": True, "blocking": True},
+                    ],
                     "assumptions": ["Escenario provisional auto-revisado."],
+                    "evidence_dispositions": evidence_dispositions,
                 }
                 return ProviderResponse(id="scenario-repair", model="test-general-reviewer", tool_calls=(ToolCall(call_id="scenario-repair-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),))
             if output.get("status") == "proposal_repaired":

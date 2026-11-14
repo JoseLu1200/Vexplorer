@@ -101,6 +101,10 @@ def capture_cases(
             "prediction": {
                 "job_state": job.get("state"),
                 "failure_code": error.get("code"),
+                "failure_reason_code": error.get("reason_code"),
+                "failure_phase": error.get("phase"),
+                "model_calls": error.get("model_calls"),
+                "tool_calls": error.get("tool_calls"),
                 "job_id": job_id,
                 "run_id": job.get("run_id"),
                 "proposal_revision": general.get("proposal_revision"),
