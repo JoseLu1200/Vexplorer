@@ -1,0 +1,1094 @@
+{
+  "blind_test": false,
+  "comparison_context": {
+    "eg2_mixed768_knn5_test_macro_f1": {
+      "cad_extra": 0.777966477966478,
+      "core": 0.8261278195488722
+    },
+    "fairness": "Jev is zero-shot and receives taxonomy descriptions plus observation/render; EG2 kNN uses labeled train neighbors. Labels are noisy directory proxies. No global superiority is claimed."
+  },
+  "date": "2026-11-14",
+  "execution_provenance": {
+    "observed_batch": "320 unique request hashes; every successful record used one HTTP attempt; no retries",
+    "post_run_hardening": "Response whitelisting, in-flight deduplication, retry restriction to explicit 429/529, bounded Retry-After, and a shared HTTP-attempt cap were added after the observed batch. They protect future runs and are not claimed as controls of the historical execution."
+  },
+  "input_parity_audit": {
+    "aggregate_audit_sha256": "ac6335e8500a6796b97fb9b0a657687ee8eda47695c767a284097174d03dda89",
+    "input_hash_pairs_compared": 160,
+    "input_hash_pairs_matched": 160,
+    "interpretation": "Post-hoc integrity evidence only; input bytes were not hashed in the preregistration.",
+    "payload_hashes_compared": 320,
+    "payload_hashes_matched": 320,
+    "phase": "posthoc_integrity_audit_no_api_calls",
+    "sample_count": 160
+  },
+  "limitations": [
+    "All core and CAD-extra validation/test labels and results were previously inspected.",
+    "Directory labels are editorial proxies rather than human technical ground truth.",
+    "Image support is documented as experimental and may change between releases.",
+    "Noul is reported without a calibrated acceptance threshold.",
+    "Provider errors remain errors and are included in denominators."
+  ],
+  "metric_parity_recalculation": {
+    "change": "macro-F1 uses the union of truth and predictions; labels absent from both are excluded, while predicted zero-support labels are included; balanced accuracy uses truth-support labels",
+    "performed_without_api_calls": true,
+    "previous_summary": "external summary-before-metric-parity.json",
+    "source_records": 320
+  },
+  "model": "jev-1.14.0",
+  "operational": {
+    "ambiguous_delivery_errors": 0,
+    "api_errors": 0,
+    "cache_hits": 0,
+    "cost_scope": "successful uncached responses only; ambiguous delivery errors have unknown usage and cost",
+    "estimated_new_input_cost_usd": 0.019637562,
+    "median_uncached_latency_s": 0.2573588000013842,
+    "network_requests": 320,
+    "new_successful_uncached_input_tokens": 467561,
+    "new_successful_uncached_output_tokens": 96239,
+    "planned_requests": 320,
+    "price_basis": "official TypeSafe model page inspected 2026-11-14; estimate, not invoice",
+    "successful": 320,
+    "total_reported_input_tokens": 467561,
+    "total_reported_output_tokens": 96239
+  },
+  "protocol": "jev-zero-shot-posthoc-v1",
+  "results": {
+    "cad_extra": {
+      "mixed": {
+        "by_split": {
+          "test": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.5510416666666667,
+              "correct": 39,
+              "macro_f1": 0.5248917748917749,
+              "per_class": {
+                "bathroom-set": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "bathtubs": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "dining-sets": {
+                  "f1": 0.8,
+                  "precision": 1.0,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                },
+                "doors-elevation": {
+                  "f1": 0.9090909090909091,
+                  "precision": 1.0,
+                  "recall": 0.8333333333333334,
+                  "support": 6
+                },
+                "doors-plan": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "kitchen-appliances": {
+                  "f1": 0.7272727272727273,
+                  "precision": 0.5714285714285714,
+                  "recall": 1.0,
+                  "support": 4
+                },
+                "kitchen-sinks": {
+                  "f1": 0.8571428571428571,
+                  "precision": 0.75,
+                  "recall": 1.0,
+                  "support": 6
+                },
+                "living-room": {
+                  "f1": 0.75,
+                  "precision": 1.0,
+                  "recall": 0.6,
+                  "support": 5
+                },
+                "palm-trees": {
+                  "f1": 0.8,
+                  "precision": 1.0,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                },
+                "ranges": {
+                  "f1": 0.6,
+                  "precision": 0.5,
+                  "recall": 0.75,
+                  "support": 4
+                },
+                "restaurant-layouts": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "sanitary-ware": {
+                  "f1": 0.5714285714285714,
+                  "precision": 0.6666666666666666,
+                  "recall": 0.5,
+                  "support": 4
+                },
+                "toilets": {
+                  "f1": 0.8333333333333334,
+                  "precision": 0.7142857142857143,
+                  "recall": 1.0,
+                  "support": 5
+                },
+                "trees-3d": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "trees-elevation": {
+                  "f1": 0.8,
+                  "precision": 0.8,
+                  "recall": 0.8,
+                  "support": 5
+                },
+                "trees-plan": {
+                  "f1": 0.75,
+                  "precision": 0.6,
+                  "recall": 1.0,
+                  "support": 3
+                }
+              },
+              "total": 55
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": 0.782608695652174,
+              "correct": 36,
+              "coverage": 0.8363636363636363,
+              "covered": 46,
+              "exact_correct_all": 0.6545454545454545,
+              "total": 55
+            }
+          },
+          "validation": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.7244444444444444,
+              "correct": 41,
+              "macro_f1": 0.7012217412217413,
+              "per_class": {
+                "bathroom-set": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "bathtubs": {
+                  "f1": 0.8,
+                  "precision": 0.6666666666666666,
+                  "recall": 1.0,
+                  "support": 2
+                },
+                "dining-sets": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 3
+                },
+                "doors-elevation": {
+                  "f1": 0.7142857142857143,
+                  "precision": 0.5555555555555556,
+                  "recall": 1.0,
+                  "support": 5
+                },
+                "doors-plan": {
+                  "f1": 0.6666666666666666,
+                  "precision": 1.0,
+                  "recall": 0.5,
+                  "support": 2
+                },
+                "kitchen-appliances": {
+                  "f1": 0.5454545454545454,
+                  "precision": 0.5,
+                  "recall": 0.6,
+                  "support": 5
+                },
+                "kitchen-sinks": {
+                  "f1": 0.6666666666666666,
+                  "precision": 0.75,
+                  "recall": 0.6,
+                  "support": 5
+                },
+                "living-room": {
+                  "f1": 0.9090909090909091,
+                  "precision": 1.0,
+                  "recall": 0.8333333333333334,
+                  "support": 6
+                },
+                "palm-trees": {
+                  "f1": 0.8,
+                  "precision": 1.0,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                },
+                "ranges": {
+                  "f1": 0.7272727272727273,
+                  "precision": 0.8,
+                  "recall": 0.6666666666666666,
+                  "support": 6
+                },
+                "restaurant-layouts": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 1
+                },
+                "sanitary-ware": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "toilets": {
+                  "f1": 0.8,
+                  "precision": 0.6666666666666666,
+                  "recall": 1.0,
+                  "support": 4
+                },
+                "trees-3d": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 0
+                },
+                "trees-elevation": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 4
+                },
+                "trees-plan": {
+                  "f1": 0.8888888888888888,
+                  "precision": 0.8,
+                  "recall": 1.0,
+                  "support": 4
+                }
+              },
+              "total": 56
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": 0.78,
+              "correct": 39,
+              "coverage": 0.8928571428571429,
+              "covered": 50,
+              "exact_correct_all": 0.6964285714285714,
+              "total": 56
+            }
+          }
+        },
+        "closed": {
+          "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+          "api_errors": 0,
+          "balanced_accuracy": 0.6212662337662338,
+          "correct": 80,
+          "macro_f1": 0.6194924833881962,
+          "per_class": {
+            "bathroom-set": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 5
+            },
+            "bathtubs": {
+              "f1": 0.4444444444444444,
+              "precision": 0.4,
+              "recall": 0.5,
+              "support": 4
+            },
+            "dining-sets": {
+              "f1": 0.9090909090909091,
+              "precision": 1.0,
+              "recall": 0.8333333333333334,
+              "support": 6
+            },
+            "doors-elevation": {
+              "f1": 0.8,
+              "precision": 0.7142857142857143,
+              "recall": 0.9090909090909091,
+              "support": 11
+            },
+            "doors-plan": {
+              "f1": 0.5,
+              "precision": 1.0,
+              "recall": 0.3333333333333333,
+              "support": 3
+            },
+            "kitchen-appliances": {
+              "f1": 0.6363636363636364,
+              "precision": 0.5384615384615384,
+              "recall": 0.7777777777777778,
+              "support": 9
+            },
+            "kitchen-sinks": {
+              "f1": 0.782608695652174,
+              "precision": 0.75,
+              "recall": 0.8181818181818182,
+              "support": 11
+            },
+            "living-room": {
+              "f1": 0.8421052631578947,
+              "precision": 1.0,
+              "recall": 0.7272727272727273,
+              "support": 11
+            },
+            "palm-trees": {
+              "f1": 0.8,
+              "precision": 1.0,
+              "recall": 0.6666666666666666,
+              "support": 6
+            },
+            "ranges": {
+              "f1": 0.6666666666666666,
+              "precision": 0.6363636363636364,
+              "recall": 0.7,
+              "support": 10
+            },
+            "restaurant-layouts": {
+              "f1": 0.6666666666666666,
+              "precision": 1.0,
+              "recall": 0.5,
+              "support": 2
+            },
+            "sanitary-ware": {
+              "f1": 0.3333333333333333,
+              "precision": 0.4,
+              "recall": 0.2857142857142857,
+              "support": 7
+            },
+            "toilets": {
+              "f1": 0.8181818181818182,
+              "precision": 0.6923076923076923,
+              "recall": 1.0,
+              "support": 9
+            },
+            "trees-3d": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 1
+            },
+            "trees-elevation": {
+              "f1": 0.8888888888888888,
+              "precision": 0.8888888888888888,
+              "recall": 0.8888888888888888,
+              "support": 9
+            },
+            "trees-plan": {
+              "f1": 0.8235294117647058,
+              "precision": 0.7,
+              "recall": 1.0,
+              "support": 7
+            }
+          },
+          "total": 111
+        },
+        "noul": {
+          "count": 111,
+          "mean": 0.4454054054054054,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open": {
+          "api_errors": 0,
+          "conditional_accuracy": 0.78125,
+          "correct": 75,
+          "coverage": 0.8648648648648649,
+          "covered": 96,
+          "exact_correct_all": 0.6756756756756757,
+          "total": 111
+        }
+      },
+      "text": {
+        "by_split": {
+          "test": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.10416666666666666,
+              "correct": 7,
+              "macro_f1": 0.04326923076923077,
+              "per_class": {
+                "bathroom-set": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "bathtubs": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "dining-sets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "doors-elevation": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 6
+                },
+                "doors-plan": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "kitchen-appliances": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 4
+                },
+                "kitchen-sinks": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 6
+                },
+                "living-room": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 5
+                },
+                "palm-trees": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "ranges": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 4
+                },
+                "restaurant-layouts": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "sanitary-ware": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 4
+                },
+                "toilets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 5
+                },
+                "trees-3d": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "trees-elevation": {
+                  "f1": 0.19230769230769232,
+                  "precision": 0.10638297872340426,
+                  "recall": 1.0,
+                  "support": 5
+                },
+                "trees-plan": {
+                  "f1": 0.5,
+                  "precision": 0.4,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                }
+              },
+              "total": 55
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": null,
+              "correct": 0,
+              "coverage": 0.0,
+              "covered": 0,
+              "exact_correct_all": 0.0,
+              "total": 55
+            }
+          },
+          "validation": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.1,
+              "correct": 6,
+              "macro_f1": 0.029629629629629627,
+              "per_class": {
+                "bathroom-set": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "bathtubs": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "dining-sets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "doors-elevation": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 5
+                },
+                "doors-plan": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 2
+                },
+                "kitchen-appliances": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 5
+                },
+                "kitchen-sinks": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 5
+                },
+                "living-room": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 6
+                },
+                "palm-trees": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "ranges": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 6
+                },
+                "restaurant-layouts": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 1
+                },
+                "sanitary-ware": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "toilets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 4
+                },
+                "trees-3d": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 0
+                },
+                "trees-elevation": {
+                  "f1": 0.17777777777777778,
+                  "precision": 0.0975609756097561,
+                  "recall": 1.0,
+                  "support": 4
+                },
+                "trees-plan": {
+                  "f1": 0.26666666666666666,
+                  "precision": 0.18181818181818182,
+                  "recall": 0.5,
+                  "support": 4
+                }
+              },
+              "total": 56
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": null,
+              "correct": 0,
+              "coverage": 0.0,
+              "covered": 0,
+              "exact_correct_all": 0.0,
+              "total": 56
+            }
+          }
+        },
+        "closed": {
+          "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+          "api_errors": 0,
+          "balanced_accuracy": 0.09821428571428571,
+          "correct": 13,
+          "macro_f1": 0.033337068579112505,
+          "per_class": {
+            "bathroom-set": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 5
+            },
+            "bathtubs": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 4
+            },
+            "dining-sets": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 6
+            },
+            "doors-elevation": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 11
+            },
+            "doors-plan": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 3
+            },
+            "kitchen-appliances": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 9
+            },
+            "kitchen-sinks": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 11
+            },
+            "living-room": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 11
+            },
+            "palm-trees": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 6
+            },
+            "ranges": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 10
+            },
+            "restaurant-layouts": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 2
+            },
+            "sanitary-ware": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 7
+            },
+            "toilets": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 9
+            },
+            "trees-3d": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 1
+            },
+            "trees-elevation": {
+              "f1": 0.18556701030927836,
+              "precision": 0.10227272727272728,
+              "recall": 1.0,
+              "support": 9
+            },
+            "trees-plan": {
+              "f1": 0.34782608695652173,
+              "precision": 0.25,
+              "recall": 0.5714285714285714,
+              "support": 7
+            }
+          },
+          "total": 111
+        },
+        "noul": {
+          "count": 111,
+          "mean": 0.2299099099099099,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open": {
+          "api_errors": 0,
+          "conditional_accuracy": null,
+          "correct": 0,
+          "coverage": 0.0,
+          "covered": 0,
+          "exact_correct_all": 0.0,
+          "total": 111
+        }
+      }
+    },
+    "core": {
+      "mixed": {
+        "by_split": {
+          "test": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.9166666666666666,
+              "correct": 17,
+              "macro_f1": 0.9142857142857144,
+              "per_class": {
+                "beds": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 3
+                },
+                "buffets": {
+                  "f1": 0.8571428571428571,
+                  "precision": 0.75,
+                  "recall": 1.0,
+                  "support": 3
+                },
+                "simple-tables": {
+                  "f1": 0.8,
+                  "precision": 1.0,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                },
+                "sofas": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 9
+                }
+              },
+              "total": 18
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": 1.0,
+              "correct": 17,
+              "coverage": 0.9444444444444444,
+              "covered": 17,
+              "exact_correct_all": 0.9444444444444444,
+              "total": 18
+            }
+          },
+          "validation": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.9583333333333334,
+              "correct": 16,
+              "macro_f1": 0.9415584415584416,
+              "per_class": {
+                "beds": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 3
+                },
+                "buffets": {
+                  "f1": 0.8571428571428571,
+                  "precision": 0.75,
+                  "recall": 1.0,
+                  "support": 3
+                },
+                "simple-tables": {
+                  "f1": 1.0,
+                  "precision": 1.0,
+                  "recall": 1.0,
+                  "support": 5
+                },
+                "sofas": {
+                  "f1": 0.9090909090909091,
+                  "precision": 1.0,
+                  "recall": 0.8333333333333334,
+                  "support": 6
+                }
+              },
+              "total": 17
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": 1.0,
+              "correct": 16,
+              "coverage": 0.9411764705882353,
+              "covered": 16,
+              "exact_correct_all": 0.9411764705882353,
+              "total": 17
+            }
+          }
+        },
+        "closed": {
+          "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+          "api_errors": 0,
+          "balanced_accuracy": 0.9520833333333334,
+          "correct": 33,
+          "macro_f1": 0.9389983579638752,
+          "per_class": {
+            "beds": {
+              "f1": 1.0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "support": 6
+            },
+            "buffets": {
+              "f1": 0.8571428571428571,
+              "precision": 0.75,
+              "recall": 1.0,
+              "support": 6
+            },
+            "simple-tables": {
+              "f1": 0.9333333333333333,
+              "precision": 1.0,
+              "recall": 0.875,
+              "support": 8
+            },
+            "sofas": {
+              "f1": 0.9655172413793104,
+              "precision": 1.0,
+              "recall": 0.9333333333333333,
+              "support": 15
+            }
+          },
+          "total": 35
+        },
+        "noul": {
+          "count": 35,
+          "mean": 0.4268571428571428,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open": {
+          "api_errors": 0,
+          "conditional_accuracy": 1.0,
+          "correct": 33,
+          "coverage": 0.9428571428571428,
+          "covered": 33,
+          "exact_correct_all": 0.9428571428571428,
+          "total": 35
+        }
+      },
+      "text": {
+        "by_split": {
+          "test": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.16666666666666666,
+              "correct": 2,
+              "macro_f1": 0.05555555555555555,
+              "per_class": {
+                "beds": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "buffets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "simple-tables": {
+                  "f1": 0.2222222222222222,
+                  "precision": 0.13333333333333333,
+                  "recall": 0.6666666666666666,
+                  "support": 3
+                },
+                "sofas": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 9
+                }
+              },
+              "total": 18
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": null,
+              "correct": 0,
+              "coverage": 0.0,
+              "covered": 0,
+              "exact_correct_all": 0.0,
+              "total": 18
+            }
+          },
+          "validation": {
+            "closed": {
+              "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+              "api_errors": 0,
+              "balanced_accuracy": 0.25,
+              "correct": 5,
+              "macro_f1": 0.125,
+              "per_class": {
+                "beds": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "buffets": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 3
+                },
+                "simple-tables": {
+                  "f1": 0.5,
+                  "precision": 0.3333333333333333,
+                  "recall": 1.0,
+                  "support": 5
+                },
+                "sofas": {
+                  "f1": 0.0,
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "support": 6
+                }
+              },
+              "total": 17
+            },
+            "open": {
+              "api_errors": 0,
+              "conditional_accuracy": null,
+              "correct": 0,
+              "coverage": 0.0,
+              "covered": 0,
+              "exact_correct_all": 0.0,
+              "total": 17
+            }
+          }
+        },
+        "closed": {
+          "aggregate_label_semantics": "union_of_truth_and_predictions; taxonomy classes with zero support remain per-class only",
+          "api_errors": 0,
+          "balanced_accuracy": 0.21875,
+          "correct": 7,
+          "macro_f1": 0.09210526315789473,
+          "per_class": {
+            "beds": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 6
+            },
+            "buffets": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 6
+            },
+            "simple-tables": {
+              "f1": 0.3684210526315789,
+              "precision": 0.23333333333333334,
+              "recall": 0.875,
+              "support": 8
+            },
+            "sofas": {
+              "f1": 0.0,
+              "precision": 0.0,
+              "recall": 0.0,
+              "support": 15
+            }
+          },
+          "total": 35
+        },
+        "noul": {
+          "count": 35,
+          "mean": 0.22571428571428573,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open": {
+          "api_errors": 0,
+          "conditional_accuracy": null,
+          "correct": 0,
+          "coverage": 0.0,
+          "covered": 0,
+          "exact_correct_all": 0.0,
+          "total": 35
+        }
+      }
+    },
+    "engineering_ood": {
+      "mixed": {
+        "noul": {
+          "count": 14,
+          "mean": 0.415,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open_ood": {
+          "abstention_rate_all": 0.9285714285714286,
+          "abstention_rate_successful": 0.9285714285714286,
+          "abstentions": 13,
+          "api_errors": 0,
+          "total": 14
+        }
+      },
+      "text": {
+        "noul": {
+          "count": 14,
+          "mean": 0.215,
+          "note": "diagnostic only; no threshold was calibrated"
+        },
+        "open_ood": {
+          "abstention_rate_all": 1.0,
+          "abstention_rate_successful": 1.0,
+          "abstentions": 14,
+          "api_errors": 0,
+          "total": 14
+        }
+      }
+    }
+  },
+  "retrospective_posthoc": true,
+  "schema_version": 1
+}

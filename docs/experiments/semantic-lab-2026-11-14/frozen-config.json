@@ -1,0 +1,19 @@
+{
+  "classifier": "knn",
+  "cluster": {
+    "name": "kmeans",
+    "parameter": 5
+  },
+  "embedding_name": "eg2-mixed768",
+  "embedding_sha256": "e7b31ec8580972999525f367934a0a85550bd7c503df65dfc7c363edae8ba4a5",
+  "manifest_sha256": "15f2448895806c85c0647da72413bfc8de39f5a6fe71d535121303f1d03f00fe",
+  "modalities": [
+    "embeddings"
+  ],
+  "neighbors": 5,
+  "pca_components": null,
+  "retrieval_k": 5,
+  "schema_version": 1,
+  "seed": 0,
+  "selection_phase": "validation_only"
+}

@@ -127,6 +127,8 @@ Las pruebas cubren unidades, vistas frente a cantidades, espesor ausente, cotas 
 
 ## Documentación y coordinación
 
+El [laboratorio semántico de mobiliario](docs/semantic-lab/README.md) reúne la auditoría de embeddings/harness, investigación de modelos, experimentos locales con EmbeddingGemma 2/DINOv3/MiniLM, comparación con geometría/PCA, resultados, reproducción y límites para clasificación y precios. Es un laboratorio aislado del runtime; consultar su versión de app/datasets antes de trasladar sus conclusiones al producto.
+
 [Diseño inicial](docs/DEMO_IMPLEMENTACION.md), [ampliación del visor](docs/VISOR_RECONSTRUCCION_SIMILITUD.md), [proyectos open source evaluados](docs/OPEN_SOURCE.md), [coordinación](team/agente_coordinador.md), [A geometría](team/agente_geometria.md), [B backend](team/agente_backend.md), [C frontend](team/agente_frontend.md), [D evaluación](team/agente_evaluacion.md).
 
 Los documentos [initial-plan.md](initial-plan.md), [PLAN.md](PLAN.md), [ARQUITECTURA](docs/ARQUITECTURA.md) y [CONTRATOS_DATOS](docs/CONTRATOS_DATOS.md) conservan el diseño amplio y sus pendientes. Los acuerdos [0.4 de piezas](docs/CONTRATO_PARTS_ONLY_0_4.md) y [0.5 de mesa](docs/CONTRATO_MESA_0_5.md) añaden sus recorridos; el envelope HTTP sigue en **0.2.0**, el export de mesa en **0.5.0** y sus descriptores son **furniture-v2/v3**. A/B acordaron los cambios y avisaron a C; [modelos.py](backend/app/contratos/modelos.py) es la fuente contractual. No todas las tareas T1–T13 están terminadas.
