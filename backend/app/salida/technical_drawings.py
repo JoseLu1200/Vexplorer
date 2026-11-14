@@ -87,18 +87,26 @@ def _dimension_points(primitive: TableDrawingPrimitive) -> tuple[Point2D, Point2
     return p1, p2, project(p1), project(p2)
 
 
-def _svg_line(parent: ET.Element, start: tuple[float, float], end: tuple[float, float], color: str, *, dashed: bool = False) -> None:
+def _svg_line(
+    parent: ET.Element,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    color: str,
+    *,
+    stroke_width: float,
+    dash_pattern: str,
+    dashed: bool = False,
+) -> None:
     attributes = {
         "x1": _format_mm(start[0]),
         "y1": _format_mm(start[1]),
         "x2": _format_mm(end[0]),
         "y2": _format_mm(end[1]),
         "stroke": color,
-        "stroke-width": "1.5",
-        "vector-effect": "non-scaling-stroke",
+        "stroke-width": _format_mm(stroke_width),
     }
     if dashed:
-        attributes["stroke-dasharray"] = "6 4"
+        attributes["stroke-dasharray"] = dash_pattern
     ET.SubElement(parent, _svg_tag("line"), attributes)
 
 
@@ -108,16 +116,23 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
     span_y = max_y - min_y
     drawing_span = max(span_x, span_y)
     font_scale = max(1.0, drawing_span / 900.0)
+    stroke_width = 1.5 * font_scale
+    dash_pattern = f"{_format_mm(6 * font_scale)} {_format_mm(4 * font_scale)}"
     margin = max(20.0 * font_scale, drawing_span * 0.05)
     header = 60.0 * font_scale
     footer = (90.0 + len(sheet.warnings) * 14.0) * font_scale
     width = span_x + margin * 2
     height = span_y + margin * 2 + header + footer
+    intrinsic_width = 1600
+    intrinsic_height = max(1, round(intrinsic_width * height / width))
 
     root = ET.Element(
         _svg_tag("svg"),
         {
             "viewBox": f"0 0 {_format_mm(width)} {_format_mm(height)}",
+            "width": str(intrinsic_width),
+            "height": str(intrinsic_height),
+            "preserveAspectRatio": "xMidYMid meet",
             "role": "img",
             "aria-label": sheet.title,
             "data-sheet-id": sheet.sheet_id,
@@ -191,9 +206,8 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                     "points": " ".join(f"{_format_mm(x)},{_format_mm(y)}" for x, y in mapped),
                     "fill": "none",
                     "stroke": color,
-                    "stroke-width": "1.5",
-                    "vector-effect": "non-scaling-stroke",
-                    **({"stroke-dasharray": "6 4"} if dashed else {}),
+                    "stroke-width": _format_mm(stroke_width),
+                    **({"stroke-dasharray": dash_pattern} if dashed else {}),
                 },
             )
         elif primitive.kind == "rect":
@@ -208,17 +222,40 @@ def _render_svg(plan: TableDrawingPlan, sheet: TableSheetPlan) -> bytes:
                     "height": _format_mm(abs(y2 - y1)),
                     "fill": "none",
                     "stroke": color,
-                    "stroke-width": "1.5",
-                    "vector-effect": "non-scaling-stroke",
-                    **({"stroke-dasharray": "6 4"} if dashed else {}),
+                    "stroke-width": _format_mm(stroke_width),
+                    **({"stroke-dasharray": dash_pattern} if dashed else {}),
                 },
             )
         elif primitive.kind == "dimension":
             p1, p2, dim1, dim2 = _dimension_points(primitive)
             mp1, mp2, md1, md2 = map_point(p1), map_point(p2), map_point(dim1), map_point(dim2)
-            _svg_line(group, mp1, md1, color, dashed=dashed)
-            _svg_line(group, mp2, md2, color, dashed=dashed)
-            _svg_line(group, md1, md2, color, dashed=dashed)
+            _svg_line(
+                group,
+                mp1,
+                md1,
+                color,
+                stroke_width=stroke_width,
+                dash_pattern=dash_pattern,
+                dashed=dashed,
+            )
+            _svg_line(
+                group,
+                mp2,
+                md2,
+                color,
+                stroke_width=stroke_width,
+                dash_pattern=dash_pattern,
+                dashed=dashed,
+            )
+            _svg_line(
+                group,
+                md1,
+                md2,
+                color,
+                stroke_width=stroke_width,
+                dash_pattern=dash_pattern,
+                dashed=dashed,
+            )
             label = primitive.text or (f"{_format_mm(primitive.value_mm)} mm" if primitive.value_mm is not None else "?")
             text = ET.SubElement(
                 group,
