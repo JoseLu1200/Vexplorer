@@ -28,3 +28,7 @@ Entrega final:30/30 ejecuciones porversión; 0/30 casoscompletos contra referenc
 
 ## Integración y producción autorizadas (2026-11-14)
 El usuario solicita explícitamente git add, commit, push, integración en main y despliegue en producción. Se coordina con la sesión de integración general y montaje para mantener un único integrador y preservar CAD, semántica y montaje. Se incluyen los cuatro documentos finales pendientes; el código ya está registrado en 48dac99 y sucesores.
+
+## Cierre de producción
+
+Integración publicada en main y desplegada desde fdb94dc8eac266136971aa80dea36a4e9ba05c83. CI verde: 1387 Python y 253 frontend; build reproducible, ensayo con restauración, backup quiescente y comprobaciones públicas correctos. Servicio activo. Recibo: docs/RECIBO_DESPLIEGUE_SEMANTICA_2026-11-14.md. Se conservan los límites semánticos documentados; no se aprueba fabricación automáticamente. Esta actualización solo registra el despliegue y no cambia el payload del runtime.
