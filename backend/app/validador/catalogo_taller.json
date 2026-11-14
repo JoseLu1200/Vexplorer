@@ -1,0 +1,20 @@
+{
+  "source": "Valores públicos verificados del sistema 32 mm. Espesores de tablero y de canto pendientes del catálogo de compras: mientras estén vacíos, sus comprobaciones devuelven unknown.",
+  "confirmed_by_workshop": false,
+  "drilling_systems": [
+    {
+      "id": "system32",
+      "label": "Sistema 32 mm",
+      "pitch_mm": 32.0,
+      "hole_diameter_mm": 5.0,
+      "setback_mm": 37.0,
+      "sources": [
+        "https://en.wikipedia.org/wiki/32_mm_cabinetmaking_system",
+        "https://www.woodweb.com/knowledge_base_images/zp/kiss_2_system.pdf"
+      ]
+    }
+  ],
+  "board_thicknesses_mm": [],
+  "thickness_tolerance_mm": 0.5,
+  "edge_banding_thicknesses_mm": []
+}
