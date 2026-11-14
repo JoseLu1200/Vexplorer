@@ -44,12 +44,7 @@ class _GeneralLiveProvider:
             }
             arguments = {
                 "scenario_id": "scenario-autonomous-1",
-                "operations": [{
-                    "kind": "replace", "source_component_ids": [source["id"]],
-                    "result_component_ids": [component["id"]],
-                    "reason": "Verificación autónoma sin afirmar hechos nuevos.",
-                }],
-                "components": [component], "checks": [], "field_reviews": [],
+                "checks": [], "field_reviews": [],
                 "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
             }
             return ProviderResponse(
@@ -114,10 +109,8 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
             visual_ref = context["visual_artifacts"][0]["reference"]
             arguments = {
                 "scenario_id": "scenario-repair-1",
-                "operations": [{"kind": "replace", "source_component_ids": [source["id"]], "result_component_ids": [component["id"]], "reason": "Asignación visual incoherente."}],
-                "components": [component],
-                "checks": [{"id": "semantic-conflict", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{component['id']}.length"], "source_refs": [visual_ref], "summary": "La asignación semántica requiere reparación."}],
-                "field_reviews": [{"target_ref": f"component:{component['id']}.length", "status": "rejected", "check_ids": ["semantic-conflict"]}],
+                "checks": [{"id": "semantic-conflict", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{source['id']}.length"], "source_refs": [visual_ref], "summary": "La asignación semántica requiere reparación."}],
+                "field_reviews": [{"target_ref": f"component:{source['id']}.length", "status": "rejected", "check_ids": ["semantic-conflict"]}],
                 "unresolved": ["repairable:semantic_assignment"], "status": "conflict",
             }
             return ProviderResponse(id="critic-response-1", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-1", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
@@ -138,8 +131,7 @@ class _SemanticRepairProvider(_GeneralLiveProvider):
         }
         arguments = {
             "scenario_id": "scenario-repair-2",
-            "operations": [{"kind": "replace", "source_component_ids": [source["id"]], "result_component_ids": [component["id"]], "reason": "Revisión de la propuesta reparada."}],
-            "components": [component], "checks": [], "field_reviews": [],
+            "checks": [], "field_reviews": [],
             "unresolved": ["quantity", "material", "finish"], "status": "incomplete",
         }
         return ProviderResponse(id="critic-response-2", model="test-general-reviewer", tool_calls=(ToolCall(call_id="critic-call-2", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
@@ -195,18 +187,17 @@ class _ProvisionalScenarioProvider(_SemanticRepairProvider):
                 }
                 visual_ref = self.review_context["visual_artifacts"][0]["reference"]
                 checks = [
-                    {"id": "quantity-basis", "kind": "quantity_basis", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-reviewed-panel.quantity"], "source_refs": [visual_ref], "summary": "Dos grupos visuales distintos."},
-                    {"id": "duplicate-scan", "kind": "duplicate_scan", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-reviewed-panel.quantity"], "source_refs": [visual_ref], "summary": "No se tratan como vistas duplicadas."},
+                    {"id": "quantity-basis", "kind": "quantity_basis", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-panel.quantity"], "source_refs": [visual_ref], "summary": "Dos grupos visuales distintos."},
+                    {"id": "duplicate-scan", "kind": "duplicate_scan", "outcome": "pass", "method": "model_visual", "target_refs": ["component:scenario-panel.quantity"], "source_refs": [visual_ref], "summary": "No se tratan como vistas duplicadas."},
                 ]
-                field_reviews = [{"target_ref": "component:scenario-reviewed-panel.quantity", "status": "accepted", "check_ids": ["quantity-basis", "duplicate-scan"]}]
+                field_reviews = [{"target_ref": "component:scenario-panel.quantity", "status": "accepted", "check_ids": ["quantity-basis", "duplicate-scan"]}]
                 for name in ("length", "width", "thickness"):
                     check_id = f"visual-{name}"
-                    checks.append({"id": check_id, "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:scenario-reviewed-panel.{name}"], "source_refs": [visual_ref], "summary": "Asignación dimensional coherente con el escenario."})
-                    field_reviews.append({"target_ref": f"component:scenario-reviewed-panel.{name}", "status": "accepted", "check_ids": [check_id]})
+                    checks.append({"id": check_id, "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:scenario-panel.{name}"], "source_refs": [visual_ref], "summary": "Asignación dimensional coherente con el escenario."})
+                    field_reviews.append({"target_ref": f"component:scenario-panel.{name}", "status": "accepted", "check_ids": [check_id]})
                 arguments = {
                     "scenario_id": "scenario-two-items",
-                    "operations": [{"kind": "replace", "source_component_ids": [source["id"]], "result_component_ids": [component["id"]], "reason": "Revisión provisional del escenario."}],
-                    "components": [component], "checks": checks, "field_reviews": field_reviews,
+                    "checks": checks, "field_reviews": field_reviews,
                     "unresolved": ["material", "finish"], "status": "incomplete",
                 }
                 return ProviderResponse(id="scenario-review", model="test-general-reviewer", tool_calls=(ToolCall(call_id="scenario-review-call", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))

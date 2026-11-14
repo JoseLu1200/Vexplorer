@@ -102,5 +102,14 @@ test("Pydantic provisional scenarios remain conditional cards and never become q
   assert.match(scenario.provenanceLabel,/Fuente pública publicada · presupuesto/);
   assert.match(scenario.conditionLabel,/1 mueble · material oak veneer/);
   assert.equal(scenario.assumptions[0].state,"provisional");
+  assert.equal(scenario.assumptions[0].displayLabel,"BOM auto-revisada provisional");
+  assert.equal(scenario.assumptions[0].code,"provisional_bom");
   assert.match(scenario.contributors[0].formula,/target_finished_item_quantity/);
+});
+
+test("provisional scenario abstention names geometry rather than blaming the historical dataset",()=>{
+  const result=presentProvisionalScenarios({status:"not_estimable",assumptions:[{code:"one_finished_item",label:"One conditional finished item",detail:"raw",state:"conditional"}],scenarios:[],missing_data:["provisional_geometry_evidence"]});
+  assert.equal(result.missingData[0].code,"provisional_geometry_evidence");
+  assert.equal(result.missingData[0].label,"La geometría provisional no tiene evidencia suficiente");
+  assert.equal(result.assumptions[0].displayLabel,"Un mueble terminado condicional");
 });

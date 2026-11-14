@@ -2,6 +2,14 @@ const list = (value) => Array.isArray(value) ? value : [];
 
 export function generalRunOptions(mode){return{proposal_mode:mode==="live"||mode==="recorded_replay"?"model_generated":"none"};}
 
+export function generalMachineStatusPresentation(workspace){
+  if(workspace?.reviewerKind!=="machine")return null;
+  const incomplete=workspace.autoReviewStatus!=="accepted"||workspace.status!=="approved";
+  return incomplete
+    ?{label:"Auto-revisión con incógnitas",message:"La revisión automática terminó con datos desconocidos. Los resultados siguen disponibles y conservan esas incógnitas; la corrección humana es opcional."}
+    :{label:"Auto-revisión completada",message:"La revisión automática de coherencia terminó. Puedes consultar resultados, descargas y escenarios sin una aprobación humana obligatoria."};
+}
+
 function field(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return { value: value.value ?? value.value_mm ?? null, unit: value.unit ?? ("value_mm" in value ? "mm" : null), state: value.state ?? value.origin ?? "unknown", provenance: value.provenance ?? null, formula: value.formula ?? null, dependencyRefs:list(value.dependency_refs), evidenceIds:list(value.evidence_ids), dimensionIds:list(value.dimension_ids) };

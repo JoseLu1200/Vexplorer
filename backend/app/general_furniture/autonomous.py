@@ -11,12 +11,16 @@ from pydantic import ValidationError
 
 from backend.app.contratos.modelos import (
     GeneralAutoReviewArgs,
+    GeneralAutoReviewDecisionArgs,
     GeneralAutoReviewCheck,
+    GeneralComponentReview,
     GeneralFurnitureProposal,
     GeneralFurnitureReview,
     GeneralFurnitureReviewRequest,
     GeneralMachineProvenance,
+    GeneralReviewOperation,
     GeneralScenarioOccurrence,
+    GeneralTextValue,
     ProposeGeneralFurnitureArgs,
 )
 from backend.app.general_furniture.derivations import derive_general_package
@@ -109,7 +113,7 @@ def _tool_schemas() -> list[dict]:
         return {"type": "function", "name": name, "description": description, "parameters": _strictify(model.model_json_schema()), "strict": True}
 
     return [
-        schema("entregar_revision_autonoma", "Entrega una crítica visual provisional sin confirmar hechos ni introducir cifras nuevas.", GeneralAutoReviewArgs),
+        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
         schema("proponer_mueble_general", "Repara una propuesta rechazada. Las dimensiones usan solo bindings del ledger; cantidades visuales siguen hypothesis con premisas cerradas.", ProposeGeneralFurnitureArgs),
     ]
 
@@ -150,6 +154,61 @@ def _reject_forged_machine_facts(args: GeneralAutoReviewArgs) -> None:
         for value in (component.length, component.width, component.thickness, component.quantity, component.material, component.finish):
             if value.state == "confirmed" or any(ref.startswith("human:") for ref in value.dependency_refs):
                 raise ValueError("machine_review_cannot_confirm_fields")
+
+
+def _server_review_args(
+    decision: GeneralAutoReviewDecisionArgs,
+    draft,
+    previous_review: GeneralFurnitureReview | None,
+) -> GeneralAutoReviewArgs:
+    if previous_review is not None:
+        components = tuple(
+            item.model_copy(update={"replaces_component_ids": (item.id,)})
+            for item in previous_review.components
+        )
+    else:
+        components = tuple(
+            GeneralComponentReview(
+                id=item.id,
+                label=item.label,
+                kind=item.kind,
+                role=item.role,
+                length=item.length,
+                width=item.width,
+                thickness=item.thickness,
+                quantity=item.quantity,
+                material=GeneralTextValue(value=None, state="unknown"),
+                finish=GeneralTextValue(value=None, state="unknown"),
+                replaces_component_ids=(item.id,),
+                source_view_ids=item.source_view_ids,
+                source_observation_ids=item.source_observation_ids,
+                source_contour_ids=item.source_contour_ids,
+                source_evidence_ids=item.source_evidence_ids,
+                source_dimension_ids=item.source_dimension_ids,
+                source_document_refs=item.source_document_refs,
+                assumptions=item.assumptions,
+                unknown_fields=item.unknown_fields,
+            )
+            for item in draft.components
+        )
+    operations = tuple(
+        GeneralReviewOperation(
+            kind="replace",
+            source_component_ids=(item.id,),
+            result_component_ids=(item.id,),
+            reason="Continuidad del snapshot; el crítico no reescribe componentes.",
+        )
+        for item in components
+    )
+    return GeneralAutoReviewArgs(
+        scenario_id=decision.scenario_id,
+        operations=operations,
+        components=components,
+        checks=decision.checks,
+        field_reviews=decision.field_reviews,
+        unresolved=decision.unresolved,
+        status=decision.status,
+    )
 
 
 def _effective_auto_status(args: GeneralAutoReviewArgs) -> str:
@@ -249,6 +308,15 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         for component in outcome.draft.components
         for field in ("length", "width", "thickness", "quantity", "material", "finish")
     ]
+    visible_source_refs = set()
+    for page in context.visual_pages:
+        visible_source_refs.add(f"visual:{page.reference}")
+        visible_source_refs.update(page.source_contour_ids)
+        visible_source_refs.update(mark.source_id for mark in page.marks)
+    allowed_source_refs = sorted(
+        visible_source_refs
+        | {f"premise:{item.id}" for item in outcome.proposal.premises}
+    )
     payload = {
         "proposal": outcome.proposal.model_dump(mode="json"), "draft": outcome.draft.model_dump(mode="json"),
         "compact_geometry": build_compact_geometry_context(
@@ -256,11 +324,12 @@ def _review_input(context, outcome: GeneralFurnitureAgentOutcome) -> list[dict]:
         ).to_payload(),
         "referenced_segment_measurements": referenced_measurements,
         "allowed_target_refs": allowed_target_refs,
+        "allowed_source_refs": allowed_source_refs,
         "target_ref_format": "component:<component_id>.<length|width|thickness|quantity|material|finish>; use a dot before the field, never a colon",
         "projection_warnings": projection_warnings,
         "projection_authority": "ambiguous_hypotheses_not_physical_identity_or_quantity",
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Revisa todos los campos. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status; no reescribas components ni operations. Usa target/source refs exactos de las listas permitidas. Rechaza con checks solo errores corregibles; ausencia irreducible permanece unknown/incomplete.",
     }
     content = [{"type": "input_text", "text": json.dumps(payload, ensure_ascii=False)}]
     content.extend({"type": "input_image", "image_url": f"data:{item.media_type};base64,{b64encode(item.content).decode('ascii')}", "detail": "high"} for item in context.visual_pages)
@@ -299,6 +368,9 @@ def run_general_autonomous(
     validation_repairs = semantic_repairs = tool_calls = 0
     effective = proposal_outcome
     visual_refs = {f"visual:{item.reference}" for item in context.visual_pages}
+    for page in context.visual_pages:
+        visual_refs.update(page.source_contour_ids)
+        visual_refs.update(mark.source_id for mark in page.marks)
     measurements = derive_geometry_measurements(context.extraction)
     allowed_refs = set(visual_refs)
     allowed_refs.update(f"view:{item.id}" for item in context.extraction.views)
@@ -347,15 +419,26 @@ def run_general_autonomous(
                         critic_snapshot=None,
                         trace_event=event,
                     ))
-                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "instruction": "Revisa ahora la propuesta reparada completa."}, ensure_ascii=False)}]
+                repaired_targets = [
+                    f"component:{component.id}.{field}"
+                    for component in effective.draft.components
+                    for field in ("length", "width", "thickness", "quantity", "material", "finish")
+                ]
+                input_items = [{"type": "function_call_output", "call_id": call.call_id, "output": json.dumps({"ok": True, "status": "proposal_repaired", "proposal": effective.proposal.model_dump(mode="json"), "draft": effective.draft.model_dump(mode="json"), "allowed_target_refs": repaired_targets, "instruction": "Revisa ahora la propuesta reparada. Entrega solo checks/decisiones; no components/operations."}, ensure_ascii=False)}]
                 continue
             if call.name != "entregar_revision_autonoma":
                 raise ValueError("unknown_tool")
-            args = GeneralAutoReviewArgs.model_validate_json(json.dumps(raw), strict=True)
-            _validate_visual_checks(args, allowed_refs, visual_refs)
-            _reject_forged_machine_facts(args)
             current_revision = proposal_revision + semantic_repairs
             current_previous = previous_review if semantic_repairs == 0 else None
+            decision = GeneralAutoReviewDecisionArgs.model_validate_json(
+                json.dumps(raw), strict=True
+            )
+            args = _server_review_args(decision, effective.draft, current_previous)
+            current_allowed_refs = allowed_refs | {
+                f"premise:{item.id}" for item in effective.proposal.premises
+            }
+            _validate_visual_checks(args, current_allowed_refs, visual_refs)
+            _reject_forged_machine_facts(args)
             request = GeneralFurnitureReviewRequest(
                 base_proposal_revision=current_revision,
                 base_review_revision=current_previous.review_revision if current_previous else 0,

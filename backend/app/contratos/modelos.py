@@ -798,6 +798,30 @@ class GeneralAutoReviewArgs(StrictModel):
         return self
 
 
+class GeneralAutoReviewDecisionArgs(StrictModel):
+    scenario_id: str = Field(min_length=1, max_length=120)
+    checks: tuple[GeneralModelVisualCheck, ...] = Field(max_length=512)
+    field_reviews: tuple[GeneralMachineFieldReview, ...] = Field(max_length=1024)
+    unresolved: tuple[str, ...] = Field(max_length=256)
+    status: Literal["accepted", "incomplete", "conflict", "abstained"]
+
+    @model_validator(mode="after")
+    def status_matches_findings(self) -> "GeneralAutoReviewDecisionArgs":
+        if self.status == "accepted" and (
+            self.unresolved
+            or not self.field_reviews
+            or any(item.outcome != "pass" for item in self.checks)
+            or any(item.status != "accepted" for item in self.field_reviews)
+        ):
+            raise ValueError("accepted auto review requires complete passing coverage")
+        if self.status == "conflict" and not (
+            any(item.outcome == "fail" for item in self.checks)
+            or any(item.status == "conflict" for item in self.field_reviews)
+        ):
+            raise ValueError("conflict auto review requires a conflicting finding")
+        return self
+
+
 class GeneralScenarioOccurrence(StrictModel):
     id: str = Field(min_length=1)
     component_id: str = Field(min_length=1)

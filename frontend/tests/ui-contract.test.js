@@ -136,6 +136,10 @@ test("automatic general review exposes conditional historical scenarios separate
   assert.match(app,/historical-scenarios-button/);
   assert.match(app,/no son cotizaciones ni hechos confirmados/);
   assert.match(app,/Estimar desde histórico confirmado/);
+  assert.match(app,/Histórico confirmado \(avanzado\)/);
+  assert.match(app,/missing\.label/);
+  assert.match(app,/\[\$\{missing\.code\}\]/);
+  assert.match(app,/\["bom_csv","bom_json"\]/);
 });
 
 test("PDF pages require an explicit page and optional confirmed scale before analysis", () => {

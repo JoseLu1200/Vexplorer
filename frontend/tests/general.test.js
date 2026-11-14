@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalRunOptions, normaliseGeneralWorkspace, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalMachineStatusPresentation, generalRunOptions, normaliseGeneralWorkspace, presentGeneralDerived, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -26,6 +26,18 @@ test("machine review provenance stays distinct from optional human correction", 
   assert.equal(workspace.machineProvenance.model,"gpt-6");
   assert.equal(workspace.autoReviewStatus,"incomplete");
   assert.equal(workspace.autoChecks[0].summary,"La silueta coincide.");
+});
+
+test("a stored machine review removes mandatory human-review copy from the run header",()=>{
+  assert.deepEqual(generalMachineStatusPresentation({reviewerKind:"machine",autoReviewStatus:"accepted",status:"approved"}),{
+    label:"Auto-revisión completada",
+    message:"La revisión automática de coherencia terminó. Puedes consultar resultados, descargas y escenarios sin una aprobación humana obligatoria.",
+  });
+  assert.deepEqual(generalMachineStatusPresentation({reviewerKind:"machine",autoReviewStatus:"incomplete",status:"reviewed_incomplete"}),{
+    label:"Auto-revisión con incógnitas",
+    message:"La revisión automática terminó con datos desconocidos. Los resultados siguen disponibles y conservan esas incógnitas; la corrección humana es opcional.",
+  });
+  assert.equal(generalMachineStatusPresentation({reviewerKind:"human",status:"approved"}),null);
 });
 
 test("general components preserve evidence, unknowns and physical occurrences", () => {

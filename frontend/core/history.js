@@ -9,6 +9,24 @@ const provenanceSummary=(items,prefix)=>{const counts=items.reduce((result,item)
 const datesSummary=(items,prefix)=>{const dates=[...new Set(items.map((item)=>item.source_date).filter(Boolean))].sort();return dates.length?`${prefix}: ${dates.map(sourceDate).join(" · ")}; no implican actualización a hoy`:`${prefix}: no disponibles`;};
 const scopeSummary=(items,key,prefix)=>{const scopes=[...new Set(items.flatMap((item)=>list(item[key])))];return scopes.length?`${prefix}: ${scopes.join(" · ")}`:`${prefix}: no indicado`;};
 const costBasisSummary=(items,prefix="Bases de coste")=>{const counts=items.reduce((result,item)=>{const key=item.cost_basis??"unspecified";result[key]=(result[key]??0)+1;return result;},{}),parts=[["actual","coste ejecutado real"],["quote","cotización"],["budget","presupuesto"],["unspecified","base no indicada"]].flatMap(([key,label])=>counts[key]?[`${counts[key]} ${label}${counts[key]===1?"":"s"}`]:[]);return parts.length?`${prefix}: ${parts.join(" · ")}`:`${prefix}: no disponibles`;};
+const PROVISIONAL_ASSUMPTIONS={
+  provisional_bom:["BOM auto-revisada provisional","La geometría y las cantidades siguen siendo hipótesis revisadas por máquina; no se convierten en hechos confirmados del plano."],
+  one_finished_item:["Un mueble terminado condicional","Cada escenario calcula un mueble terminado como condición económica, no como una ocurrencia física inferida del plano."],
+  reference_family:["Condición de familia de referencia","El escenario solo aplica si el mueble pertenece a la familia del registro histórico citado."],
+  reference_material:["Condición de material de referencia","El escenario adopta de forma condicional el material del registro histórico citado."],
+  reference_finish:["Condición de acabado de referencia","El escenario adopta de forma condicional el acabado del registro histórico citado."],
+  reference_economic_context:["Contexto económico de referencia","La moneda y los alcances proceden solo del registro citado; el resultado no es una cotización."],
+};
+const PROVISIONAL_MISSING={
+  auto_review_status:"La auto-revisión no produjo un estado utilizable",
+  provisional_bom_rows:"La BOM auto-revisada no contiene filas provisionales utilizables",
+  provisional_quantity_evidence:"Las cantidades provisionales no tienen evidencia suficiente",
+  provisional_geometry_evidence:"La geometría provisional no tiene evidencia suficiente",
+  provisional_material_finish_evidence:"Material o acabado provisionales no tienen evidencia suficiente",
+  heterogeneous_material_finish:"Los componentes provisionales mezclan materiales o acabados incompatibles",
+};
+const provisionalAssumption=(item)=>{const translated=PROVISIONAL_ASSUMPTIONS[item.code];return{...item,displayLabel:translated?.[0]??item.label,displayDetail:translated?.[1]??item.detail};};
+const provisionalMissing=(code)=>({code,label:PROVISIONAL_MISSING[code]??String(code).replaceAll("_"," ")});
 
 export function presentHistoricalRecord(record={}){
   const originLabel=ORIGIN_LABELS[record.origin]??"Procedencia no indicada",costBasisLabel=COST_BASIS_LABELS[record.cost_basis]??null;
@@ -96,10 +114,10 @@ export function presentProvisionalScenarios(raw={}){
       conditionLabel:`1 mueble · material ${condition.material??"desconocido"} · acabado ${condition.finish??"desconocido"} · moneda ${currency??"desconocida"}`,
       scopeLabel:`Coste: ${list(condition.cost_scope).join(", ")||"sin alcance"} · Horas: ${list(condition.hours_scope).join(", ")||"sin alcance"}`,
       provenanceLabel:[record.provenanceLabel,source.source,source.source_date?sourceDate(source.source_date):null].filter(Boolean).join(" · "),
-      assumptions:list(item.assumptions),
-      missingData:list(item.missing_data),
+      assumptions:list(item.assumptions).map(provisionalAssumption),
+      missingData:list(item.missing_data).map(provisionalMissing),
       contributors:list(item.contributors),
     };
   });
-  return{...raw,statusLabel:raw.status==="provisional"?"Escenarios provisionales":"No estimable",labelText:"Estimaciones condicionales; no son cotizaciones ni hechos confirmados",assumptions:list(raw.assumptions),missingData:list(raw.missing_data),scenarios};
+  return{...raw,statusLabel:raw.status==="provisional"?"Escenarios provisionales":"No estimable",labelText:"Estimaciones condicionales; no son cotizaciones ni hechos confirmados",assumptions:list(raw.assumptions).map(provisionalAssumption),missingData:list(raw.missing_data).map(provisionalMissing),scenarios};
 }

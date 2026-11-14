@@ -11,6 +11,8 @@ from backend.app.general_furniture.autonomous import run_general_autonomous
 from backend.app.general_furniture.autonomous import _reject_forged_machine_facts
 from backend.app.general_furniture.autonomous import _review_input
 from backend.app.general_furniture.autonomous import _scenario_occurrences
+from backend.app.general_furniture.autonomous import _tool_schemas
+from backend.app.general_furniture.autonomous import _validate_visual_checks
 from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, GeneralVisualPage
 from backend.app.general_furniture.proposal import materialize_general_proposal
 from backend.app.general_furniture.router import GeneralFurnitureContext
@@ -25,6 +27,15 @@ def test_machine_review_is_orthogonal_to_hypothesis_state() -> None:
     assert value.state == "hypothesis"
     assert provenance.review_relation == "separate_model"
     assert field_review.status == "accepted"
+
+
+def test_critic_tool_only_accepts_checks_and_decisions_not_component_rewrites() -> None:
+    schema = next(item for item in _tool_schemas() if item["name"] == "entregar_revision_autonoma")
+    properties = schema["parameters"]["properties"]
+
+    assert "components" not in properties
+    assert "operations" not in properties
+    assert {"scenario_id", "checks", "field_reviews", "unresolved", "status"} <= set(properties)
 
 
 def test_provisional_occurrence_is_not_a_confirmed_physical_occurrence() -> None:
@@ -155,10 +166,8 @@ def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof(
             }
             arguments = {
                 "scenario_id": "scenario-auto-1",
-                "operations": [{"kind": "replace", "source_component_ids": [source.id], "result_component_ids": [component["id"]], "reason": "Revisión visual independiente."}],
-                "components": [component],
-                "checks": [{"id": "visual-length", "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:{component['id']}.length"], "source_refs": ["visual:page-1"], "summary": "La vista es coherente con la asignación propuesta."}],
-                "field_reviews": [{"target_ref": f"component:{component['id']}.length", "status": "accepted", "check_ids": [f"det:{component['id']}.length", "visual-length"]}],
+                "checks": [{"id": "visual-length", "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:{source.id}.length"], "source_refs": ["visual:page-1"], "summary": "La vista es coherente con la asignación propuesta."}],
+                "field_reviews": [{"target_ref": f"component:{source.id}.length", "status": "accepted", "check_ids": ["visual-length"]}],
                 "unresolved": ["quantity", "thickness"], "status": "incomplete",
             }
             return ProviderResponse(id="review-response-1", model="reviewer-model", tool_calls=(ToolCall(call_id="review-call-1", name="entregar_revision_autonoma", arguments_json=json.dumps(arguments)),))
@@ -217,6 +226,37 @@ def test_auto_review_input_schema_rejects_colon_before_field_from_real_failure()
         )
 
 
+def test_visual_check_accepts_raw_contour_only_when_marked_in_visual_context() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs, GeneralComponentReview, GeneralModelVisualCheck,
+        GeneralQuantity, GeneralReviewOperation, GeneralTextValue,
+    )
+    source = materialize_general_proposal(_extraction(), _proposal()).components[0]
+    component = GeneralComponentReview(
+        id="panel", label=source.label, kind=source.kind, role=source.role,
+        length=source.length, width=source.width, thickness=source.thickness,
+        quantity=GeneralQuantity(value=None, state="unknown"),
+        material=GeneralTextValue(value=None, state="unknown"), finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=(source.id,), assumptions=(), unknown_fields=("quantity",),
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="s",
+        operations=(GeneralReviewOperation(kind="replace", source_component_ids=(source.id,), result_component_ids=(component.id,), reason="Continuidad."),),
+        components=(component,),
+        checks=(GeneralModelVisualCheck(
+            id="marked", kind="visual_consistency", outcome="pass", method="model_visual",
+            target_refs=("component:panel.length",), source_refs=("contour-visible",), summary="M001 corresponde al contorno.",
+        ),),
+        field_reviews=(GeneralMachineFieldReview(target_ref="component:panel.length", status="accepted", check_ids=("marked",)),),
+        unresolved=("quantity",), status="incomplete",
+    )
+
+    _validate_visual_checks(args, {"contour-visible"}, {"contour-visible"})
+
+    with pytest.raises(ValueError, match="visual_check_reference_outside_context"):
+        _validate_visual_checks(args, {"contour-visible"}, {"visual:other"})
+
+
 def test_partial_machine_coverage_cannot_report_accepted() -> None:
     extraction = _extraction().model_copy(update={"input_kind": "general_furniture"})
     proposal = _proposal()
@@ -228,10 +268,8 @@ def test_partial_machine_coverage_cannot_report_accepted() -> None:
             component = _review_component(source, component_id="partial")
             arguments = {
                 "scenario_id": "scenario-partial",
-                "operations": [_replace(source.id, "partial")],
-                "components": [component],
-                "checks": [_visual_check("only-length", "partial", "length")],
-                "field_reviews": [{"target_ref": "component:partial.length", "status": "accepted", "check_ids": ["only-length"]}],
+                "checks": [_visual_check("only-length", source.id, "length")],
+                "field_reviews": [{"target_ref": f"component:{source.id}.length", "status": "accepted", "check_ids": ["only-length"]}],
                 "unresolved": [],
                 "status": "accepted",
             }
@@ -259,10 +297,8 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
                 component = _review_component(original, component_id="critic-p1")
                 arguments = {
                     "scenario_id": "scenario-p1",
-                    "operations": [_replace(original.id, "critic-p1")],
-                    "components": [component],
-                    "checks": [{"id": "wrong-role", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": ["component:critic-p1.length"], "source_refs": ["visual:page-1"], "summary": "La cota fue asignada al eje semántico equivocado."}],
-                    "field_reviews": [{"target_ref": "component:critic-p1.length", "status": "rejected", "check_ids": ["wrong-role"]}],
+                    "checks": [{"id": "wrong-role", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{original.id}.length"], "source_refs": ["visual:page-1"], "summary": "La cota fue asignada al eje semántico equivocado."}],
+                    "field_reviews": [{"target_ref": f"component:{original.id}.length", "status": "rejected", "check_ids": ["wrong-role"]}],
                     "unresolved": ["repairable:length_binding"],
                     "status": "conflict",
                 }
@@ -285,19 +321,10 @@ def test_autonomous_critic_can_repair_proposal_with_new_ledger_binding_then_revi
                 }
                 name = "proponer_mueble_general"
             else:
-                repaired = {
-                    **_review_component(original, component_id="critic-p1"),
-                    "id": "critic-p2", "label": "Panel reparado",
-                    "length": {"value_mm": None, "unit": "mm", "state": "unknown", "dependency_refs": [], "evidence_ids": [], "dimension_ids": []},
-                    "width": {"value_mm": 800.0, "unit": "mm", "state": "hypothesis", "dependency_refs": ["binding:corrected-width"], "evidence_ids": ["evidence-width"], "dimension_ids": ["dim-width"]},
-                    "replaces_component_ids": ["panel-repaired"],
-                    "unknown_fields": ["length", "thickness", "quantity"],
-                }
                 arguments = {
-                    "scenario_id": "scenario-p2", "operations": [_replace("panel-repaired", "critic-p2")],
-                    "components": [repaired],
-                    "checks": [_visual_check("width-consistent", "critic-p2", "width")],
-                    "field_reviews": [{"target_ref": "component:critic-p2.width", "status": "accepted", "check_ids": ["width-consistent"]}],
+                    "scenario_id": "scenario-p2",
+                    "checks": [_visual_check("width-consistent", "panel-repaired", "width")],
+                    "field_reviews": [{"target_ref": "component:panel-repaired.width", "status": "accepted", "check_ids": ["width-consistent"]}],
                     "unresolved": ["length", "thickness", "quantity"], "status": "incomplete",
                 }
                 name = "entregar_revision_autonoma"
@@ -335,7 +362,7 @@ def test_semantic_repair_rejects_numeric_binding_outside_ledger() -> None:
             calls += 1
             if calls == 1:
                 component = _review_component(original, component_id="critic-p1")
-                args = {"scenario_id": "scenario-p1", "operations": [_replace(original.id, "critic-p1")], "components": [component], "checks": [{"id": "bad", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": ["component:critic-p1.length"], "source_refs": ["visual:page-1"], "summary": "Binding incorrecto."}], "field_reviews": [{"target_ref": "component:critic-p1.length", "status": "rejected", "check_ids": ["bad"]}], "unresolved": ["repairable:length_binding"], "status": "conflict"}
+                args = {"scenario_id": "scenario-p1", "checks": [{"id": "bad", "kind": "visual_consistency", "outcome": "fail", "method": "model_visual", "target_refs": [f"component:{original.id}.length"], "source_refs": ["visual:page-1"], "summary": "Binding incorrecto."}], "field_reviews": [{"target_ref": f"component:{original.id}.length", "status": "rejected", "check_ids": ["bad"]}], "unresolved": ["repairable:length_binding"], "status": "conflict"}
                 name = "entregar_revision_autonoma"
             else:
                 args = {"bindings": [{"id": "fabricated", "operation": "copy", "operand_refs": ["measurement:not-in-ledger"]}], "components": [{"id": "fabricated", "label": "Fabricado", "kind": "panel", "role": "unknown", "length_binding_id": "fabricated", "width_binding_id": None, "thickness_binding_id": None, "quantity": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []}, "premise_ids": ["p"], "source_view_ids": ["view-front"], "source_observation_ids": ["observation-front"], "source_contour_ids": [], "source_evidence_ids": [], "source_dimension_ids": [], "source_document_refs": [], "assumptions": ["Ataque."], "unknown_fields": ["width", "thickness", "quantity"]}], "premises": [{"id": "p", "description": "Intento fabricado.", "required": True, "blocking": True}], "assumptions": ["Ataque."]}
