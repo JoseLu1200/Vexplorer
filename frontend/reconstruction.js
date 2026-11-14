@@ -77,4 +77,12 @@ $('refine').addEventListener('submit', async e => {
   }
 });
 window.addEventListener('pagehide',()=>{active=false;viewer?.dispose();});
+if(params.has('embedded')){
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')parent.postMessage({type:'reconstruction-close'},location.origin);});
+  window.addEventListener('message',event=>{
+    if(event.origin===location.origin && event.source===parent && event.data?.type==='reconstruction-theme'){
+      document.documentElement.dataset.theme=event.data.theme==='dark'?'dark':'light';
+    }
+  });
+}
 if(jobId)poll();else if(!params.get('run')){$('status').textContent='Abre un plano de mueble general en Vexplorer y selecciona Construcción propuesta.';$('generate-button').disabled=true;}
