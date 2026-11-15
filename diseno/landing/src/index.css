@@ -1179,11 +1179,11 @@ html[data-hero="1"] .logo-word {
 .rec-cota-txt {
   font-family: var(--f-mono);
   font-variation-settings: "wdth" 87.5;
-  font-size: 12px;
+  font-size: 13px;
   fill: var(--draw);
   paint-order: stroke;
   stroke: var(--bg);
-  stroke-width: 5px;
+  stroke-width: 3px;
   stroke-linejoin: round;
 }
 .rec-cad { font-family: var(--f-mono); }
@@ -1211,8 +1211,8 @@ html[data-hero="1"] .logo-word {
   font-variant-numeric: tabular-nums;
 }
 .rec-dim,
-.rec-m2 { font-size: 12px; fill: var(--ink-2); }
-.rec-price { font-size: 13px; fill: var(--ink); }
+.rec-m2 { font-size: 14px; fill: var(--ink); }
+.rec-price { font-size: 15px; fill: var(--ink); }
 .rec-pend { fill: var(--ink-2); }
 .rec-legend text,
 .rec-note { font-size: 11px; fill: var(--ink-2); }
@@ -1246,19 +1246,9 @@ html[data-hero="1"] .logo-word {
 @media (max-width: 760px) {
   .paso-frase { font-size: 1.9rem; max-width: none; }
   .rec-name { font-size: 14px; }
-  .rec-dim, .rec-m2 { font-size: 11px; }
-  .rec-price { font-size: 12px; }
+  .rec-dim, .rec-m2 { font-size: 13px; }
+  .rec-price { font-size: 14px; }
   .rec-legend text, .rec-note { font-size: 10.5px; }
-}
-
-/* Cifras de la demo en abstracto: se ve que hay un número, no cuál. */
-.rec-dim:not(.rec-pend),
-.rec-m2:not(.rec-pend),
-.rec-price:not(.rec-pend),
-.rec-total-num,
-.rec-cota-txt {
-  filter: blur(2.6px);
-  opacity: 0.75;
 }
 .paso-apoyo {
   margin: var(--s-4) 0 0;
@@ -1308,6 +1298,7 @@ html[data-hero="1"] .logo-word {
   font-weight: 600;
   font-size: 16px;
 }
+.qr-veta a { color: inherit; text-decoration: none; }
 .qr-veta img { display: block; width: clamp(72px, 9vh, 104px); height: auto; }
 @media (max-width: 760px) {
   .qr-veta { display: none; }

@@ -51,8 +51,8 @@ export function PortalBar() {
         </nav>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-s2">
-        {api.isMock && (
-          <span className="inline-flex h-7 items-center whitespace-nowrap border border-line-strong px-s2 text-xs font-semibold text-ink" title="Respuestas grabadas del backend sobre planos públicos de ejemplo">
+        {api.isMock && COPY.mockBadge && (
+          <span className="inline-flex h-7 items-center whitespace-nowrap border border-line-strong px-s2 text-xs font-semibold text-ink" title="Resultados guardados">
             {COPY.mockBadge}
           </span>
         )}

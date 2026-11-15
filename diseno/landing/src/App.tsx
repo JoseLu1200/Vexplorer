@@ -4,7 +4,7 @@ import Topography from './components/rb/Topography'
 import Recorrido from './Recorrido'
 import Schema3D from './Schema3D'
 import { W } from './lib/pieces'
-import { PIEZAS, RESUMEN } from './lib/caso'
+import { PIEZAS, RESUMEN } from './lib/caso-presentacion'
 import { useTheme, useTrackProgress, useMode, prefersReduced, smooth } from './lib/scroll'
 // Veta de tablero de Wikimedia Commons, de Kurt Kaiser, CC0. Créditos en src/assets/CREDITOS.md.
 import tallerImg from './assets/workshop-machines.webp'
@@ -66,7 +66,7 @@ function Logo({ size = 30, stroke = 5 }: { size?: number; stroke?: number }) {
 
 /** Sin cabecera: logo pequeño arriba a la izquierda y menú de tres líneas a la derecha, en modo diferencia para no chocar con lo que pase por debajo. */
 // Puente a la demo: el portal de Vexplorer. En local, el servidor del portal; publicado, su artifact.
-const PORTAL_URL = 'https://vexplorer-portal.vercel.app'
+const PORTAL_URL = 'https://gex-dashboard.hopto.org/vexplorer/demo/'
 
 function Nav() {
   const [open, setOpen] = useState(false)
@@ -303,7 +303,8 @@ function PlanoTrack() {
   return (
     <div id="track" className="plano-track">
       <span id="top" className="anchor" style={{ top: 0 }} />
-      <span id="desglose" className="anchor" style={{ top: '40svh' }} />
+      <span id="desglose" className="anchor" style={{ top: '300svh' }} />
+      <span id="coste" className="anchor" style={{ top: '404svh' }} />
       <div className="plano-stage">
         <Relieve o={heroO} />
         <div className="plano-box" ref={box} style={{ top: boxTop, bottom: boxBottom, opacity: boxO, visibility: boxO < 0.02 ? 'hidden' : 'visible' }}>
@@ -313,10 +314,12 @@ function PlanoTrack() {
 
         <figure className="veta" style={{ transform: `translateY(${(t * 105).toFixed(1)}%)` }} aria-hidden={t > 0.98}>
           <img src={vetaImg} alt="Veta de un tablero de madera con una fila de nudos" />
-          <a className="qr-veta" href={PORTAL_URL} target="_blank" rel="noopener" style={{ opacity: heroO }}>
-            <img src={qrPortal} alt="Código QR para probar Vexplorer" />
-            <span>Pruébalo</span>
-          </a>
+          <div className="qr-veta" style={{ opacity: heroO }}>
+            <a href="https://gex-dashboard.hopto.org/vexplorer/" target="_blank" rel="noopener">
+              <img src={qrPortal} alt="Código QR de la landing de Vexplorer" />
+            </a>
+            <a href={PORTAL_URL} target="_blank" rel="noopener">Pruébalo</a>
+          </div>
           <p className="lede lede-veta" style={{ opacity: heroO }}>Sacamos de cada plano DXF el despiece y el coste de material, listos para que tu oficina técnica los revise.</p>
         </figure>
 
@@ -333,7 +336,6 @@ function PlanoTrack() {
         ))}
 
         <table className="sr-only">
-          <caption>Despiece y presupuesto de la cajonera de ejemplo, con tarifas de ejemplo</caption>
           <thead>
             <tr>
               <th scope="col">Pieza</th>
@@ -357,8 +359,10 @@ function PlanoTrack() {
               <td></td>
               <td>{RESUMEN.preparacion.toFixed(2)} €</td>
             </tr>
+            <tr><th scope="row">Mano de obra</th><td>3 h</td><td>28 €/h</td><td>{RESUMEN.manoObra.toFixed(2)} €</td></tr>
+            <tr><th scope="row">Acabado</th><td>3,20 m²</td><td>12 €/m²</td><td>{RESUMEN.acabado.toFixed(2)} €</td></tr>
             <tr>
-              <th scope="row">Subtotal conocido, sin mano de obra ni acabado</th>
+              <th scope="row">Total estimado, sin impuestos</th>
               <td></td>
               <td></td>
               <td>aprox. {RESUMEN.subtotal.toFixed(2)} €</td>

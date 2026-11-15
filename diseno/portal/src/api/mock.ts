@@ -234,7 +234,7 @@ export function createMockClient(): VexplorerApi {
       }
       const recorded = state.fixture === "principal" ? principal.review_r2 : FIXTURES[state.fixture].review_r2;
       if (!recorded || candidate.id !== recorded.selected_assembly_candidate_id) {
-        throw new ApiError("Los datos de ejemplo solo incluyen la revisión grabada del primer candidato de montaje.", 422, "mock_review_unavailable");
+        throw new ApiError("Solo está disponible la revisión guardada del primer candidato de montaje.", 422, "mock_review_unavailable");
       }
       const thickness = (body.decisions ?? []).find((item) => item.thickness_mm != null)?.thickness_mm;
       const useConflict = state.fixture === "principal" && thickness != null && Math.abs(thickness - 18) > 0.1;

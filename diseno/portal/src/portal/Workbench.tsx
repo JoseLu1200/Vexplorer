@@ -242,7 +242,7 @@ export function Workbench({ plan, screen, library }: { plan: PlanRecord; screen:
                       <Dims row={selected} />
                     </span>
                   ) : <span className="truncate text-sm text-ink">{library ? library.item.label : COPY.portal.peek(rows.length)}</span>}
-                  {api.isMock && <span className="inline-flex h-6 shrink-0 items-center border border-line-strong px-s2 text-2xs font-semibold text-ink">{COPY.mockBadge}</span>}
+                  {api.isMock && COPY.mockBadge && <span className="inline-flex h-6 shrink-0 items-center border border-line-strong px-s2 text-2xs font-semibold text-ink">{COPY.mockBadge}</span>}
                 </span>
                 <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className={`shrink-0 ${mobileUp ? "" : "rotate-180"}`}><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>

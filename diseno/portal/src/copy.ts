@@ -1,7 +1,7 @@
 /** Toda la microcopy de la interfaz en un único sitio. Español, registro cuidado, literal y corto. */
 export const COPY = {
   product: "Vexplorer",
-  mockBadge: "Datos de ejemplo",
+  mockBadge: "",
   nav: {
     home: "Planos",
     analysis: "Análisis",
@@ -108,7 +108,7 @@ export const COPY = {
     reanalyzing: "Repitiendo el análisis con el DXF guardado",
     backHome: "Volver a Planos",
     analyzingLocked: "Disponible al terminar el análisis",
-    libraryLocked: "Sin análisis completo en los datos de ejemplo",
+    libraryLocked: "Sin análisis completo disponible",
   },
 
   tools: {
@@ -130,7 +130,7 @@ export const COPY = {
     viewSwitch: "Vista del lienzo",
     views: { original: "Original", plano: "Limpio", piezas: "Piezas", esquema: "3D" } as Record<string, string>,
     viewTitles: { original: "Plano original", plano: "Plano limpio", piezas: "Piezas separadas", esquema: "Reconstrucción 3D" } as Record<string, string>,
-    viewOff: "Sin despiece en los datos de ejemplo de este plano",
+    viewOff: "Sin despiece para este plano",
     steps: { original: "Plano", plano: "Limpieza y cotas", piezas: "Piezas", compras: "Coste", presupuesto: "Presupuesto" } as Record<string, string>,
     stepsShort: { original: "Plano", plano: "Limpieza", piezas: "Piezas", compras: "Coste", presupuesto: "Presupuesto" } as Record<string, string>,
     stepsLabel: "Pasos",
@@ -190,7 +190,7 @@ export const COPY = {
       trace: "Traza del análisis",
       shortcuts: "Atajos de teclado",
     },
-    off: "Sin análisis completo en los datos de ejemplo",
+    off: "Sin análisis completo disponible",
     /** Vía de muebles generales y casos congelados. */
     general: {
       folder: "Muebles procesados",
@@ -268,7 +268,7 @@ export const COPY = {
   },
 
   libraryPlan: {
-    note: "Los datos de ejemplo de este plano incluyen solo su ficha de la biblioteca y sus contornos.",
+    note: "Este plano incluye solo su ficha de la biblioteca y sus contornos.",
     overall: "Medidas exteriores",
     parts: "Piezas",
     roles: "Funciones",
@@ -320,7 +320,7 @@ export const COPY = {
       live: { label: "Medidas y asistente IA", off: "Asistente IA no activado" },
       recorded_replay: { label: "Repetir un análisis guardado", off: "Sin análisis guardados" },
     },
-    samples: "Planos de ejemplo",
+    samples: "Planos disponibles",
     analyze: "Analizar DXF",
     preparing: "Preparando el análisis",
     stages: {
@@ -432,7 +432,7 @@ export const COPY = {
 
   purchase: {
     title: "Ficha para compras",
-    synthetic: "Histórico y tarifas sintéticos. Estimación provisional, no apta para compra.",
+    synthetic: "Estimación provisional, no apta para compra.",
     estimate: "Estimación",
     calculate: "Calcular estimación",
     calculating: "Calculando",

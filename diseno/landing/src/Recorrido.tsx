@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { DXF, PIEZAS, RESUMEN, type Campo, type DxfEnt, type Pt } from './lib/caso'
+import { DXF, PIEZAS, RESUMEN, type Campo, type DxfEnt, type Pt } from './lib/caso-presentacion'
 import { smooth } from './lib/scroll'
 
 /**
@@ -116,7 +116,7 @@ export default function Recorrido({ s, reduced }: { s: number; reduced: boolean 
     <svg ref={ref} className="recorrido" viewBox={`0 0 ${Math.max(1, w)} ${Math.max(1, h)}`} role="img" aria-labelledby="rec-t rec-d">
       <title id="rec-t">Plano DXF de una cajonera convertido en despiece y presupuesto</title>
       <desc id="rec-d">
-        Cajonera de 900 por 800 por 450 milímetros en tres vistas. Al bajar, el plano en bruto se limpia, se acota, se separa en 23 tableros y tres juegos de guías, cada pieza recibe su precio y todo acaba en una hoja de presupuesto con subtotal de 239,28 euros, aproximado.
+        Cajonera de 900 por 800 por 450 milímetros en tres vistas. Al bajar, el plano en bruto se limpia, se acota, se separa en 23 tableros y tres juegos de guías, cada pieza recibe su precio y todo acaba en una hoja de presupuesto con total de 415,68 euros, aproximado.
       </desc>
       {w > 0 && (
         <>
@@ -217,7 +217,7 @@ export default function Recorrido({ s, reduced }: { s: number; reduced: boolean 
                     {precio(p)}
                   </text>
                   <text className={p.areaM2 === null ? "rec-m2 rec-pend" : "rec-m2"} x={lerp(w, colM2, t)} y={lerp(dimY(i), lineY(k), t)} textAnchor="end" style={vis(prices)}>
-                    {p.areaM2 === null ? (t > 0.5 && !narrow ? 'sin medida' : '') : m2(p)}
+                    {p.areaM2 === null ? (t > 0.5 && !narrow ? '3 juegos' : '') : m2(p)}
                   </text>
                 </g>
               )
@@ -229,31 +229,30 @@ export default function Recorrido({ s, reduced }: { s: number; reduced: boolean 
             <text x={0} y={h - bottom - legendH + 18} style={vis(legend3)}>≈ medida estimada</text>
             <text x={0} y={h - bottom - legendH + 36} style={vis(legend3)}>Cantidades del escenario propuesto</text>
             <text x={0} y={h - bottom - legendH + 18} style={vis(legend4)}>≈ importe con alguna medida estimada</text>
-            <text x={0} y={h - bottom - legendH + 36} style={vis(legend4)}>Tarifa de tablero por m², de ejemplo</text>
+            <text x={0} y={h - bottom - legendH + 36} style={vis(legend4)}>Tarifa de tablero por m²</text>
             <text x={0} y={h - bottom - legendH + 54} style={vis(legend4)}>Cantidades del escenario propuesto</text>
           </g>
 
           {/* Paso 5: hoja de presupuesto. */}
           <g className="rec-sheet" style={vis(sheet)} aria-hidden="true">
             <text className="rec-title" x={0} y={titleH - 14}>Presupuesto</text>
-            <text className="rec-ejemplo" x={w} y={titleH - 16} textAnchor="end">Tarifas de ejemplo</text>
             <line className="rec-rule-strong" x1={0} x2={w} y1={titleH} y2={titleH} />
             <text className="rec-name" x={0} y={lineY(0)}>Preparación fija</text>
             <text className="rec-price" x={w} y={lineY(0)} textAnchor="end">{eur(RESUMEN.preparacion)}</text>
             {[...Array(10)].map((_, k) => (
               <line key={k} className="rec-rule" x1={0} x2={w} y1={titleH + (k + 1) * lh} y2={titleH + (k + 1) * lh} />
             ))}
-            <text className="rec-name" x={0} y={lineY(9)}>Mano de obra</text>
-            <text className="rec-price rec-pend" x={w} y={lineY(9)} textAnchor="end">sin horas</text>
-            <text className="rec-name" x={0} y={lineY(10)}>Acabado</text>
-            <text className="rec-price rec-pend" x={w} y={lineY(10)} textAnchor="end">sin superficie</text>
+            <text className="rec-name" x={0} y={lineY(9)}>Mano de obra · 3 h</text>
+            <text className="rec-price rec-pend" x={w} y={lineY(9)} textAnchor="end">{eur(RESUMEN.manoObra)}</text>
+            <text className="rec-name" x={0} y={lineY(10)}>Acabado · 3,20 m²</text>
+            <text className="rec-price rec-pend" x={w} y={lineY(10)} textAnchor="end">{eur(RESUMEN.acabado)}</text>
             <line className="rec-rule-strong" x1={0} x2={w} y1={titleH + 11 * lh} y2={titleH + 11 * lh} />
-            <text className="rec-total" x={0} y={titleH + 11 * lh + 36}>Subtotal conocido</text>
+            <text className="rec-total" x={0} y={titleH + 11 * lh + 36}>Total estimado</text>
             <text className="rec-total rec-total-num" x={w} y={titleH + 11 * lh + 36} textAnchor="end">
               {RESUMEN.subtotalEstimado ? '≈ ' : ''}
               {eur(RESUMEN.subtotal)}
             </text>
-            <text className="rec-note" x={0} y={titleH + 11 * lh + 64}>Tarifa de tablero por m², de ejemplo. Sin impuestos.</text>
+            <text className="rec-note" x={0} y={titleH + 11 * lh + 64}>Tarifa de tablero por m². Sin impuestos.</text>
             <text className="rec-note" x={0} y={titleH + 11 * lh + 82}>≈ con alguna medida estimada</text>
             <text className="rec-note" x={0} y={titleH + 11 * lh + 100}>Cantidades del escenario propuesto</text>
           </g>

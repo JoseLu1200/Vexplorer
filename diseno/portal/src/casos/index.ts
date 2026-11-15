@@ -46,7 +46,7 @@ export const CASOS: readonly CasoMeta[] = [
   { id: "recon_mesa", titulo: "Mesa de trabajo", via: "reconstruccion", conModelo: true, montaje: true, piezas: 4,
     resumen: "Construcción 3D con GLB, versión inicial y refinamiento." },
   { id: "mesa_coste", titulo: "Mesa con revisión y coste", via: "tabla", conModelo: false, montaje: true, piezas: 2,
-    resumen: "Mesa de catálogo revisada, con 4 láminas, montaje 3D y coste sintético." },
+    resumen: "Mesa de catálogo revisada, con 4 láminas, montaje 3D y estimación de coste." },
   { id: "mesa_002", titulo: "Mesa de dimensiones distintas", via: "tabla", conModelo: false, montaje: true, piezas: 2,
     resumen: "Mesa de catálogo revisada, con montaje 3D, sin láminas ni coste guardados." },
   { id: "estanteria_900", titulo: "Estantería de 900 mm", via: "legacy", conModelo: false, montaje: true, piezas: 4,

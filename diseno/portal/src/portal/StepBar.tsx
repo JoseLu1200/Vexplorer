@@ -56,8 +56,8 @@ export function StepBar({ active, states, onStep, current, wide, extra = null, o
               {RESULT_STATE_LABELS[current.state]}
             </span>
           )}
-          {api.isMock && (
-            <span className="inline-flex h-7 items-center whitespace-nowrap border border-line-strong px-s2 text-xs font-semibold text-ink" title="Respuestas grabadas del backend sobre planos públicos de ejemplo">{COPY.mockBadge}</span>
+          {api.isMock && COPY.mockBadge && (
+            <span className="inline-flex h-7 items-center whitespace-nowrap border border-line-strong px-s2 text-xs font-semibold text-ink" title="Resultados guardados">{COPY.mockBadge}</span>
           )}
         </div>
       )}

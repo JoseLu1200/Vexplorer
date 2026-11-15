@@ -16,7 +16,7 @@ import { Proceso } from "./portal/Proceso";
 import { pasosEnCurso } from "./general/proceso";
 import type { MesaTrabajo } from "./general";
 import type { PlanRecord } from "./workspace/types";
-import { useRouter, VIEWS, type Screen } from "./router";
+import { useRouter, VIEWS, SCREENS, type Screen } from "./router";
 import { AnalysisScreen } from "./screens/Analysis";
 import { DRAG_FOLDER, DRAG_PLAN, ProjectsScreen } from "./screens/Projects";
 import { toAppError, useStore, type AppError } from "./state";
@@ -32,6 +32,7 @@ export function App() {
   const [library, setLibrary] = useState<{ planId: string; item: LibraryItem; drawing: DrawingExtraction } | null>(null);
   const libraryOnly = route.kind === "plan" && library?.planId === route.planId;
   useCaptureAutopilot();
+  useCaseLink();
   useShortcuts();
   if (location.hash.startsWith("#mapa")) return <PaginaMapa />;
   return (
@@ -472,4 +473,23 @@ function useCaptureAutopilot() {
       if (row) store.select(row.id);
     }
   });
+}
+
+/** Share a saved case without exposing browser-local workspace IDs. */
+function useCaseLink() {
+  const ws = useWorkspace();
+  const { navigate } = useRouter();
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current || !ws.ready) return;
+    const query = new URLSearchParams(location.search);
+    const caseId = query.get("ejemplo");
+    if (!caseId) return;
+    const plan = ws.plans.find(p => p.source === "caso" && p.asset === caseId);
+    if (!plan) return;
+    const requested = query.get("vista") as Screen;
+    const screen = SCREENS.includes(requested) ? requested : "esquema";
+    opened.current = true;
+    navigate({ kind: "plan", planId: plan.id, screen }, { replace: true });
+  }, [ws.ready, ws.plans, navigate]);
 }
