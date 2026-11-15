@@ -31,3 +31,7 @@ En curso. Detectados conflictos API/regeneración, caché antigua en PR3/7, carr
 - Build portal RED: TS2591 en vite.config.ts por falta de tipos Node. Se añade @types/node dev fijado y types node en tsconfig, sin tocar lógica ni presentación. Build portal y landing GREEN.
 - Se ignoran node_modules/dist/tsbuildinfo del portal y se incorpora matriz CI design-build portal/landing.
 - Segunda revisión independiente: READY tras corregir los casos de CAS/replay e identidad persistida. Suite focal final: 64 passed. Full Python final y CI remoto pendientes al publicar la rama para validación.
+
+
+## Entrega de la implementación
+Estado: implementación y revisión terminadas. Se preservan también las exclusiones originales dist-real y public/local del portal. Verificación de arranque portal/landing: HTTP 200, cero pageerror, capturas inspeccionadas. Fuentes visuales y frontend sin delta frente al diseño a467280. Builds de ambos diseños y regresiones de navegador ya aprobados remotamente en la rama; Python/empaquetado y Docker se verifican en los checks publicados de https://github.com/JoseLu1200/Vexplorer/pull/7 antes de fusionar. Esa PR mantiene el resultado final actualizado sin copiar estados transitorios del CI en este registro. La publicación no implica despliegue del servidor.
