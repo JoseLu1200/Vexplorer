@@ -248,17 +248,34 @@ def test_variant_a_on_plank_fixture_reports_what_the_engine_actually_returns(tmp
     outputs = [json.loads(p.read_text(encoding="utf-8")) for p in sorted((tmp_path / "run" / "outputs" / "A").glob("*.json"))]
     assert [o["status"] for o in outputs] == ["ok", "ok"]
     for output in outputs:
-        # touching plank outlines merge into one line component: at most one rectangle survives,
-        # thickness and quantity stay unknown.
-        assert len(output["components"]) <= 1
+        # The exact-line pass preserves all distinct orthographic rectangles even
+        # when plank outlines share corners. These are projection hypotheses, not
+        # physical occurrences, so thickness and quantity must stay unknown.
+        assert {
+            (component["dimensions_mm"]["length"], component["dimensions_mm"]["width"])
+            for component in output["components"]
+        } == {
+            (960.0, 500.0),
+            (960.0, 20.0),
+            (700.0, 500.0),
+            (700.0, 20.0),
+            (500.0, 20.0),
+        }
         for component in output["components"]:
             assert component["dimensions_mm"]["thickness"] is None
             assert component["quantity"] is None
     report = score_run(reader, tmp_path / "run")
     (family,) = [s for fam in report["variants"]["A"]["families"].values() for s in fam.values()][:1]
     assert family["identity"]["reference_types"] == 4  # 2 cases x (20x500x700 twice-counted type, 960x500x20)
-    assert family["identity"]["omissions"] >= 1
-    assert family["dimensions"]["coverage"] is not None and family["dimensions"]["coverage"] < 1.0
+    assert family["identity"]["predicted_types"] == 10
+    assert family["identity"]["matched"] == 4
+    assert family["identity"]["false_positives"] == 6
+    assert family["identity"]["omissions"] == 0
+    assert family["identity"]["precision"] == 0.4
+    assert family["identity"]["recall"] == 1.0
+    assert family["dimensions"]["coverage"] == pytest.approx(2 / 3)
+    assert family["abstention"]["correct_abstentions"] == 4
+    assert family["abstention"]["asserted_unidentifiable"] == 0
 
 
 # --------------------------------------------------------- B / C / D with doubles
