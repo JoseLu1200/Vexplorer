@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const ui = await import("../core/ui.js").catch(() => ({}));
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 const reviewSource = await readFile(new URL("../core/review.js", import.meta.url), "utf8");
 
 function element(dataset = {}) {
@@ -105,6 +106,32 @@ test("restored runs replace the pending source badge with honest recovered metad
   assert.equal(ui.restoredSourceLabel({ source_unit: "unknown" }), "Plano restaurado · unidad sin resolver");
 });
 
+test("restoring a run never posts historical calculations until the user asks",()=>{
+  const refreshRun=app.slice(app.indexOf("async function refreshRun()"),app.indexOf("async function loadRevisionContext()"));
+  assert.doesNotMatch(refreshRun,/await loadHistoricalScenarios\(\)/);
+  assert.doesNotMatch(refreshRun,/await loadHistoricalComparables\(\)/);
+  assert.match(app,/#historical-scenarios-button"\)\.addEventListener\("click",loadHistoricalScenarios\)/);
+});
+
+test("derived drawings expose separate reading controls and fullscreen semantics",()=>{
+  assert.match(html,/id="derived-drawing-zoom-out"[^>]*aria-label="Reducir plano"/);
+  assert.match(html,/id="derived-drawing-zoom-in"[^>]*aria-label="Ampliar plano"/);
+  assert.match(html,/id="derived-drawing-fit"[^>]*>Encajar</);
+  assert.match(html,/id="derived-drawing-pan-left"[^>]*aria-label="Ver zona izquierda del plano"/);
+  assert.match(html,/id="derived-drawing-pan-right"[^>]*aria-label="Ver zona derecha del plano"/);
+  assert.match(html,/id="derived-drawing-expand"[^>]*>Pantalla completa</);
+  assert.match(app,/derived-drawing-zoom-in/);
+  assert.match(app,/derived-drawing-fit/);
+  assert.match(app,/panDerivedDrawing\("left"\)/);
+  assert.match(app,/panImageViewportByDirection/);
+});
+
+test("recovery action keeps a readable flex size instead of collapsing word by word",()=>{
+  assert.match(html,/class="button"[^>]*id="job-retry"/);
+  assert.match(css,/\.navigator__head>\.button\{[^}]*flex\s*:\s*0 0 auto[^}]*white-space\s*:\s*normal/s);
+  assert.match(css,/\.navigator\{[^}]*display\s*:\s*grid[^}]*grid-template-columns\s*:\s*minmax\(0,1fr\)/s);
+});
+
 test("restored interrupted runs expose checkpoint phase and only the server safe recovery action",()=>{
   assert.match(app,/runRecord\.latest_job/);
   assert.match(app,/presentJobRecovery\(latestJob\)/);
@@ -115,6 +142,7 @@ test("restored interrupted runs expose checkpoint phase and only the server safe
 test("general review panel reuses resume review instead of proposing a new provider run",()=>{
   assert.match(app,/state\.jobRecovery\?\.safeAction==="resume_review"/);
   assert.match(app,/Reanudar revisión guardada/);
+  assert.match(app,/failureReasonCode==="provider_credit_balance_exhausted"\?state\.jobRecovery\.actionLabel:"Reanudar revisión guardada"/);
   assert.match(app,/retryCurrentJob\(\)/);
 });
 

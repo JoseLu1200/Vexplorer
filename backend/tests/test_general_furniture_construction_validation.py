@@ -216,6 +216,87 @@ def test_observed_width_rejects_a_604_mm_construction_closure() -> None:
     assert any(issue.code == "construction_constraint_failed" for issue in result.issues)
 
 
+def _validation_at_constraint_boundary(
+    *, width_range: tuple[float, float], constraint_kind: str
+):
+    proposal, draft = _proposal_and_draft(
+        thickness_mm=18,
+        thickness_range=(18, 18),
+        opening_basis="estimated",
+        opening_mm=564.5,
+    )
+    constraint = proposal.construction_constraints[0].model_copy(
+        update={"kind": constraint_kind, "tolerance_mm": 1.0}
+    )
+    width = draft.construction_parameters[0].model_copy(
+        update={
+            "nominal_mm": sum(width_range) / 2,
+            "range_mm": GeneralDimensionRange(
+                min_mm=width_range[0], max_mm=width_range[1]
+            ),
+        }
+    )
+    proposal = proposal.model_copy(
+        update={"construction_constraints": (constraint,)}
+    )
+    draft = draft.model_copy(
+        update={
+            "construction_parameters": (
+                width,
+                *draft.construction_parameters[1:],
+            ),
+            "construction_constraints": (constraint,),
+        }
+    )
+    return validate_construction_scenario(proposal, draft)
+
+
+def test_equality_tolerance_includes_both_float_noise_boundaries() -> None:
+    result = _validation_at_constraint_boundary(
+        width_range=(599.4999999999999, 601.5000000000001),
+        constraint_kind="sum_equals",
+    )
+
+    assert result.status == "valid"
+    assert result.constraint_results[0].status == "pass"
+
+
+def test_greater_equal_tolerance_includes_negative_float_noise_boundary() -> None:
+    result = _validation_at_constraint_boundary(
+        width_range=(599.4999999999999, 599.4999999999999),
+        constraint_kind="greater_equal",
+    )
+
+    assert result.status == "valid"
+    assert result.constraint_results[0].status == "pass"
+
+
+@pytest.mark.parametrize("constraint_kind", ("sum_equals", "greater_equal"))
+def test_constraint_rejects_a_real_excess_beyond_numeric_epsilon(
+    constraint_kind: str,
+) -> None:
+    result = _validation_at_constraint_boundary(
+        width_range=(599.49999, 599.49999),
+        constraint_kind=constraint_kind,
+    )
+
+    assert result.status == "invalid"
+    assert result.constraint_results[0].status == "fail"
+
+
+@pytest.mark.parametrize("constraint_kind", ("sum_equals", "greater_equal"))
+def test_constraint_keeps_a_wide_interval_crossing_tolerance_unknown(
+    constraint_kind: str,
+) -> None:
+    result = _validation_at_constraint_boundary(
+        width_range=(599.49, 600.5),
+        constraint_kind=constraint_kind,
+    )
+
+    assert result.status == "incomplete"
+    assert result.constraint_results[0].status == "unknown"
+
+
 def test_recalculation_rejects_a_tampered_materialized_parameter() -> None:
     proposal, draft = _proposal_and_draft()
     opening = draft.construction_parameters[2].model_copy(
@@ -467,6 +548,118 @@ def test_circle_detail_crossing_a_rectangular_piece_edge_is_rejected() -> None:
         and issue.target_refs == ("detail:bore-outside", "component:sides.geometry")
         for issue in result.issues
     )
+
+
+@pytest.mark.parametrize(
+    ("points", "expected_status"),
+    (
+        ((Point2D(x=550, y=250), Point2D(x=590, y=250)), "valid"),
+        ((Point2D(x=250, y=550), Point2D(x=250, y=590)), "invalid"),
+    ),
+)
+def test_detail_local_axes_use_x_length_and_y_width(points, expected_status) -> None:
+    proposal, draft = _proposal_and_draft()
+    detail = GeneralConstructionDetail(
+        id="local-axis-detail", kind="fastener", component_ids=("sides",),
+        parameter_refs=(), quantity=2, state="estimated",
+        source_refs=("contour:side",), assumption_refs=("premise:thickness",),
+        rationale="Detalle local sobre un panel no cuadrado.",
+        geometry=GeneralConstructionDetailGeometry(
+            kind="line", points_mm=points, dimension_refs=(),
+        ),
+    )
+    component = proposal.components[0].model_copy(
+        update={"detail_ids": (detail.id,)}
+    )
+    proposal = proposal.model_copy(update={
+        "components": (component,), "construction_details": (detail,),
+    })
+    draft_component = draft.components[0].model_copy(update={
+        "length": GeneralValue(value_mm=600, state="hypothesis"),
+        "width": GeneralValue(value_mm=300, state="hypothesis"),
+        "detail_ids": (detail.id,),
+    })
+    draft = draft.model_copy(update={
+        "components": (draft_component,), "construction_details": (detail,),
+    })
+
+    result = validate_construction_scenario(proposal, draft)
+
+    assert result.status == expected_status
+
+
+def _proposal_with_polyline_detail(
+    dimension_refs: tuple[str, ...],
+) -> tuple[GeneralFurnitureProposal, GeneralFurnitureDraft]:
+    proposal, draft = _proposal_and_draft()
+    measurement_refs = (
+        "measurement:contour:side:span-x",
+        "measurement:contour:side:span-y",
+    )
+    detail = GeneralConstructionDetail(
+        id="perimeter-joint", kind="joint", component_ids=("sides",),
+        parameter_refs=(), quantity=1, state="estimated",
+        source_refs=measurement_refs,
+        assumption_refs=("premise:thickness",),
+        rationale="Unión perimetral provisional dentro de la cara del panel.",
+        geometry=GeneralConstructionDetailGeometry(
+            kind="polyline",
+            points_mm=(
+                Point2D(x=0, y=0), Point2D(x=600, y=0),
+                Point2D(x=600, y=300), Point2D(x=0, y=300),
+                Point2D(x=0, y=0),
+            ),
+            dimension_refs=dimension_refs,
+        ),
+    )
+    component = proposal.components[0].model_copy(
+        update={"detail_ids": (detail.id,)}
+    )
+    proposal = proposal.model_copy(update={
+        "components": (component,), "construction_details": (detail,),
+    })
+    draft_component = draft.components[0].model_copy(update={
+        "length": GeneralValue(value_mm=600, state="hypothesis"),
+        "width": GeneralValue(value_mm=300, state="hypothesis"),
+        "detail_ids": (detail.id,),
+    })
+    draft = draft.model_copy(update={
+        "components": (draft_component,), "construction_details": (detail,),
+    })
+    return proposal, draft
+
+
+def test_polyline_detail_raw_measurement_dimension_refs_stay_incomplete() -> None:
+    measurement_refs = (
+        "measurement:contour:side:span-x",
+        "measurement:contour:side:span-y",
+    )
+    proposal, draft = _proposal_with_polyline_detail(measurement_refs)
+
+    result = validate_construction_scenario(proposal, draft)
+
+    assert result.status == "incomplete"
+    assert [issue.code for issue in result.issues] == [
+        "construction_detail_dimension_unresolved",
+        "construction_detail_dimension_unresolved",
+    ]
+    assert [issue.target_refs for issue in result.issues] == [
+        ("detail:perimeter-joint", measurement_refs[0]),
+        ("detail:perimeter-joint", measurement_refs[1]),
+    ]
+
+
+def test_polyline_detail_keeps_measurement_provenance_out_of_dimension_refs() -> None:
+    proposal, draft = _proposal_with_polyline_detail(())
+
+    result = validate_construction_scenario(proposal, draft)
+
+    assert proposal.construction_details[0].source_refs == (
+        "measurement:contour:side:span-x",
+        "measurement:contour:side:span-y",
+    )
+    assert result.status == "valid"
+    assert result.issues == ()
 
 
 @pytest.mark.parametrize(

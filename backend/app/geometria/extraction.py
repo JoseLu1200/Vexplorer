@@ -14,8 +14,13 @@ REGION_KINDS = {"DIMENSION", "LINE", "CIRCLE", "ARC", "ELLIPSE", "SPLINE"}
 PLANAR_POLYLINE_KINDS = {"LWPOLYLINE", "POLYLINE"}
 HIDDEN_LINETYPE_MARKERS = ("HIDDEN", "DASHED", "ACAD_ISO02", "ACAD_ISO03")
 HIDDEN_MIN_SPAN = 0.8
+MAX_EXACT_RECTANGLE_PAIR_CHECKS = 50_000
 PART_VIEW_LABEL = re.compile(
     r"^PART\s+(?P<key>[A-Za-z0-9_-]+)\s+(?P<role>FRONT|TOP|SIDE)(?:\s+QTY\s+[1-9]\d*)?$",
+    re.IGNORECASE,
+)
+ORTHOGRAPHIC_LAYER_LABEL = re.compile(
+    r"^(?:(?:ORTHO|VIEW)[ _-])?(?P<role>FRONT|TOP|SIDE|RIGHT)$",
     re.IGNORECASE,
 )
 
@@ -31,6 +36,12 @@ class GeometryHypothesis:
     thickness_mm: float | None
     assumptions: tuple[str, ...]
     needs_review: bool = True
+
+
+@dataclass(frozen=True)
+class _ExactLineRectangle:
+    points: tuple[tuple[float, float], ...]
+    source_lines: tuple[ParsedEntity, ...]
 
 
 def _scaled(points: tuple[tuple[float, float], ...], scale: float | None) -> list[dict[str, float]] | None:
@@ -67,8 +78,61 @@ def _view_labels(
         else:
             normalized = text.upper()
             if normalized in VIEW_LABELS:
-                labels.append((VIEW_LABELS[normalized], entity.points[0]))
+                text_role = VIEW_LABELS[normalized]
+                layer_role = _orthographic_layer_role(entity.layer)
+                if layer_role is None or layer_role == text_role:
+                    labels.append((text_role, entity.points[0]))
     return labels
+
+
+def _orthographic_layer_role(layer: str) -> str | None:
+    """Return a role only for exact, explicitly named orthographic layers."""
+    match = ORTHOGRAPHIC_LAYER_LABEL.fullmatch(layer.strip())
+    if match is None:
+        return None
+    return VIEW_LABELS[match.group("role").upper()]
+
+
+def _orthographic_layer_views(
+    drawing: ParsedDrawing,
+    input_kind: Literal[
+        "mounted_views_legacy",
+        "separated_part_views",
+        "mounted_orthographic_views",
+    ],
+) -> dict[str, str]:
+    if input_kind == "separated_part_views":
+        return {}
+    return {
+        entity.id: role
+        for entity in drawing.entities
+        if (role := _orthographic_layer_role(entity.layer)) is not None
+    }
+
+
+def _orthographic_layer_text_conflicts(
+    drawing: ParsedDrawing,
+    input_kind: Literal[
+        "mounted_views_legacy",
+        "separated_part_views",
+        "mounted_orthographic_views",
+    ],
+) -> tuple[str, ...]:
+    if input_kind == "separated_part_views":
+        return ()
+    conflicts = []
+    for entity in drawing.entities:
+        normalized = (entity.text or "").strip().upper()
+        if normalized not in VIEW_LABELS:
+            continue
+        layer_role = _orthographic_layer_role(entity.layer)
+        text_role = VIEW_LABELS[normalized]
+        if layer_role is not None and layer_role != text_role:
+            conflicts.append(
+                f"view_role_layer_text_conflict:{entity.id}:"
+                f"layer={layer_role}:text={text_role}"
+            )
+    return tuple(conflicts)
 
 
 def _infer_mounted_view_labels(
@@ -258,6 +322,135 @@ def _rectangular_line_contour(component: list[ParsedEntity], tolerance: float = 
     return ((min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y))
 
 
+def _coordinate_clusters(values: list[float], tolerance: float) -> dict[float, float]:
+    """Snap only coordinates whose full cluster span is within tolerance."""
+    result: dict[float, float] = {}
+    ordered = sorted(set(values))
+    start = 0
+    while start < len(ordered):
+        end = start + 1
+        while end < len(ordered) and ordered[end] - ordered[start] <= tolerance:
+            end += 1
+        cluster = ordered[start:end]
+        representative = (cluster[0] + cluster[-1]) / 2.0
+        for value in cluster:
+            result[value] = representative
+        start = end
+    return result
+
+
+def _line_matches_exact_edge(
+    line: ParsedEntity,
+    edge: tuple[tuple[float, float], tuple[float, float]],
+    tolerance: float,
+) -> bool:
+    if len(line.points) != 2:
+        return False
+    start, end = line.points
+    (ax, ay), (bx, by) = edge
+    if abs(ay - by) <= tolerance:
+        return (
+            abs(start[1] - ay) <= tolerance
+            and abs(end[1] - ay) <= tolerance
+            and abs(min(start[0], end[0]) - min(ax, bx)) <= tolerance
+            and abs(max(start[0], end[0]) - max(ax, bx)) <= tolerance
+        )
+    if abs(ax - bx) <= tolerance:
+        return (
+            abs(start[0] - ax) <= tolerance
+            and abs(end[0] - ax) <= tolerance
+            and abs(min(start[1], end[1]) - min(ay, by)) <= tolerance
+            and abs(max(start[1], end[1]) - max(ay, by)) <= tolerance
+        )
+    return False
+
+
+def _exact_rectangular_line_contours(
+    lines: list[ParsedEntity],
+    *,
+    tolerance: float = 1e-6,
+    max_pair_checks: int | None = None,
+) -> tuple[tuple[_ExactLineRectangle, ...], int | None]:
+    """Find rectangles supported by four complete original LINE entities."""
+    if max_pair_checks is None:
+        max_pair_checks = MAX_EXACT_RECTANGLE_PAIR_CHECKS
+    x_coordinates = [point[0] for line in lines for point in line.points]
+    y_coordinates = [point[1] for line in lines for point in line.points]
+    x_snap = _coordinate_clusters(x_coordinates, tolerance)
+    y_snap = _coordinate_clusters(y_coordinates, tolerance)
+    horizontal: dict[tuple[float, float], dict[float, list[ParsedEntity]]] = {}
+    vertical: dict[tuple[float, float], dict[float, list[ParsedEntity]]] = {}
+    for line in lines:
+        if len(line.points) != 2:
+            continue
+        start, end = line.points
+        dx = abs(end[0] - start[0])
+        dy = abs(end[1] - start[1])
+        if dx <= tolerance and dy <= tolerance:
+            continue
+        if dy <= tolerance:
+            x0, x1 = sorted((x_snap[start[0]], x_snap[end[0]]))
+            y0, y1 = y_snap[start[1]], y_snap[end[1]]
+            if abs(y1 - y0) > tolerance or x1 - x0 <= tolerance:
+                continue
+            horizontal.setdefault((x0, x1), {}).setdefault((y0 + y1) / 2.0, []).append(line)
+        elif dx <= tolerance:
+            y0, y1 = sorted((y_snap[start[1]], y_snap[end[1]]))
+            x0, x1 = x_snap[start[0]], x_snap[end[0]]
+            if abs(x1 - x0) > tolerance or y1 - y0 <= tolerance:
+                continue
+            vertical.setdefault((y0, y1), {}).setdefault((x0 + x1) / 2.0, []).append(line)
+
+    pair_checks = sum(
+        len(levels) * (len(levels) - 1) // 2
+        for levels in horizontal.values()
+    )
+    if pair_checks > max_pair_checks:
+        return (), pair_checks
+
+    rectangles: dict[tuple[float, float, float, float], _ExactLineRectangle] = {}
+    for (x0, x1), levels in sorted(horizontal.items()):
+        y_values = sorted(levels)
+        for lower_index, y0 in enumerate(y_values):
+            for y1 in y_values[lower_index + 1:]:
+                side_levels = vertical.get((y0, y1))
+                if side_levels is None or x0 not in side_levels or x1 not in side_levels:
+                    continue
+                points = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
+                edges = tuple(zip(points, points[1:] + points[:1], strict=True))
+                side_groups = (
+                    levels[y0], side_levels[x1], levels[y1], side_levels[x0],
+                )
+                matched_groups = [
+                    [line for line in group if _line_matches_exact_edge(line, edge, tolerance)]
+                    for group, edge in zip(side_groups, edges, strict=True)
+                ]
+                if any(not group for group in matched_groups):
+                    continue
+                witnesses = {group[0].id for group in matched_groups}
+                if len(witnesses) != 4:
+                    continue
+                source_lines = tuple(sorted(
+                    {line.id: line for group in matched_groups for line in group}.values(),
+                    key=lambda line: line.id,
+                ))
+                rectangles[(x0, y0, x1, y1)] = _ExactLineRectangle(
+                    points=points,
+                    source_lines=source_lines,
+                )
+    return tuple(rectangles[key] for key in sorted(rectangles)), None
+
+
+def _same_rectangle(
+    left: tuple[tuple[float, float], ...],
+    right: tuple[tuple[float, float], ...],
+    tolerance: float = 1e-6,
+) -> bool:
+    left_bounds = _bounds(list(left))
+    right_bounds = _bounds(list(right))
+    return all(abs(left_bounds[key] - right_bounds[key]) <= tolerance for key in left_bounds)
+
+
 def _rectangle_dimensions(points: Any, tolerance: float = 1e-6) -> tuple[float, float] | None:
     if len(points) != 4:
         return None
@@ -362,9 +555,15 @@ def extraction_payload(
     input_kind: Literal["mounted_views_legacy", "separated_part_views", "mounted_orthographic_views"] = "mounted_views_legacy",
 ) -> dict[str, Any]:
     drawing = parse_dxf(path)
+    layer_views = _orthographic_layer_views(drawing, input_kind)
+    layer_text_conflicts = _orthographic_layer_text_conflicts(drawing, input_kind)
     labels = _view_labels(drawing, input_kind)
     inferred_labels: list[tuple[str, tuple[float, float], str]] = []
-    if not labels and input_kind in {"mounted_views_legacy", "mounted_orthographic_views"}:
+    if (
+        not labels
+        and not layer_views
+        and input_kind in {"mounted_views_legacy", "mounted_orthographic_views"}
+    ):
         inferred_labels = _infer_mounted_view_labels(drawing)
         labels = [(role, center) for role, center, _ in inferred_labels]
     regions = _view_regions(drawing, labels)
@@ -374,7 +573,10 @@ def extraction_payload(
     dimensions: list[dict[str, Any]] = []
     texts: list[dict[str, Any]] = []
     dimension_graphics: list[dict[str, Any]] = []
+    geometry_warnings: list[str] = []
     by_view: dict[str, list[str]] = {label: [] for label, _ in labels}
+    for role in layer_views.values():
+        by_view.setdefault(role, [])
     by_view.setdefault("UNKNOWN", [])
 
     for role, _, entity_id in inferred_labels:
@@ -386,7 +588,7 @@ def extraction_payload(
         })
 
     for entity in drawing.entities:
-        view_label = _assign_view(entity, labels, regions)
+        view_label = layer_views.get(entity.id) or _assign_view(entity, labels, regions)
         points_source = [{"x": x, "y": y} for x, y in entity.points]
         points_mm = _scaled(entity.points, drawing.unit_scale_to_mm)
         circular = None
@@ -505,12 +707,30 @@ def extraction_payload(
             for entity in drawing.entities
             if entity.kind == "LINE" and entity.id in view_entity_ids
         ]
+        exact_rectangles, required_checks = _exact_rectangular_line_contours(view_lines)
+        if required_checks is not None:
+            geometry_warnings.append(
+                f"exact_rectangle_enumeration_limit:{_view_id(view_label)}:"
+                f"checks={required_checks}:limit={MAX_EXACT_RECTANGLE_PAIR_CHECKS}"
+            )
+        unmatched_exact = list(exact_rectangles)
         for index, component in enumerate(_line_components(view_lines), start=1):
             rectangle = _rectangular_line_contour(component)
             if rectangle is None:
                 continue
+            exact_match = next(
+                (candidate for candidate in unmatched_exact if _same_rectangle(candidate.points, rectangle)),
+                None,
+            )
+            if exact_match is not None:
+                unmatched_exact.remove(exact_match)
+                rectangle = exact_match.points
+                source_ids = [line.id for line in exact_match.source_lines]
+                description = "Axis-aligned closed contour supported by four exact source lines"
+            else:
+                source_ids = [line.id for line in component]
+                description = "Axis-aligned closed contour derived from connected source lines"
             contour_id = f"contour-lines-{view_label.lower()}-{index}"
-            source_ids = [line.id for line in component]
             contours.append({
                 "id": contour_id, "view_id": _view_id(view_label), "source_entity_ids": source_ids,
                 "points_source": [{"x": x, "y": y} for x, y in rectangle],
@@ -518,7 +738,24 @@ def extraction_payload(
             })
             evidence.append({
                 "id": f"evidence-{contour_id}", "kind": "geometry", "source_entity_ids": source_ids,
-                "description": "Axis-aligned closed contour derived from connected source lines",
+                "description": description,
+            })
+        for exact_index, candidate in enumerate(unmatched_exact, start=1):
+            contour_id = f"contour-lines-{view_label.lower()}-exact-{exact_index}"
+            source_ids = [line.id for line in candidate.source_lines]
+            contours.append({
+                "id": contour_id,
+                "view_id": _view_id(view_label),
+                "source_entity_ids": source_ids,
+                "points_source": [{"x": x, "y": y} for x, y in candidate.points],
+                "points_mm": _scaled(candidate.points, drawing.unit_scale_to_mm),
+                "closed": True,
+            })
+            evidence.append({
+                "id": f"evidence-{contour_id}",
+                "kind": "geometry",
+                "source_entity_ids": source_ids,
+                "description": "Axis-aligned closed contour supported by four exact source lines",
             })
 
     view_of = {entity_id: label for label, ids in by_view.items() for entity_id in ids}
@@ -535,7 +772,7 @@ def extraction_payload(
         bounds_mm = {key: value * drawing.unit_scale_to_mm for key, value in bounds_source.items()} if drawing.unit_scale_to_mm is not None else None
         views.append({"id": _view_id(label), "label": _view_role(label), "entity_ids": ids, "bounds_source": bounds_source, "bounds_mm": bounds_mm})
 
-    status = "needs_review" if inferred_labels or drawing.unit_scale_to_mm is None or any(
+    status = "needs_review" if inferred_labels or layer_text_conflicts or geometry_warnings or drawing.unit_scale_to_mm is None or any(
         warning.startswith(("unsupported_", "recovered_dxf", "approximated_", "curve_point_limit"))
         or warning.startswith("paperspace_dimensions")
         or "conflict" in warning or "override" in warning
@@ -559,7 +796,12 @@ def extraction_payload(
         "unit_scale_to_mm": drawing.unit_scale_to_mm,
         "coordinate_unit": "mm" if drawing.unit_scale_to_mm is not None else "source",
         "synthetic": "planos_demo" in path.parts,
-        "warnings": [*drawing.warnings, *(["view_labels_inferred_from_alignment"] if inferred_labels else [])],
+        "warnings": [
+            *drawing.warnings,
+            *layer_text_conflicts,
+            *geometry_warnings,
+            *(["view_labels_inferred_from_alignment"] if inferred_labels else []),
+        ],
         "entities": entities,
         "views": views, "contours": contours, "dimensions": dimensions, "evidence": evidence,
         "observations": observations, "texts": texts, "dimension_graphics": dimension_graphics,

@@ -680,20 +680,31 @@ def test_general_live_durable_failure_preserves_safe_trace_and_counters(
     assert job["error"]["reason_code"] == "provider_response_incomplete"
     assert job["error"]["model_calls"] == 2
     assert job["error"]["tool_calls"] == 1
-    assert job["error"]["trace"] == [{
-        "tool": "inspeccionar_evidencia_general",
-        "ok": True,
-        "summary": "Ledger evidence inspected.",
-        "provider_response_id": "general-inspection-response",
-        "provider_model": "test-general-live",
-        "provider_call_id": "general-inspection-call",
-        "provider_duration_ms": None,
-        "provider_input_tokens": 15,
-        "provider_output_tokens": 5,
-        "provider_total_tokens": 20,
-    }]
+    assert job["error"]["trace"] == [
+        {
+            "tool": "inspeccionar_evidencia_general",
+            "ok": True,
+            "summary": "Ledger evidence inspected.",
+            "provider_response_id": "general-inspection-response",
+            "provider_model": "test-general-live",
+            "provider_call_id": "general-inspection-call",
+            "provider_duration_ms": None,
+            "provider_input_tokens": 15,
+            "provider_output_tokens": 5,
+            "provider_total_tokens": 20,
+        },
+        {
+            "tool": "provider_response",
+            "ok": False,
+            "summary": "Provider response ended before a proposal was available.",
+            "reason_code": "provider_response_incomplete",
+            "provider_incomplete_reason": "max_output_tokens",
+        },
+    ]
     assert "request_id" not in job["error"]
     assert "response_id" not in job["error"]
+    assert "req-must-not-be-public" not in json.dumps(job)
+    assert "resp-must-not-be-public" not in json.dumps(job)
     with sqlite3.connect(data / "vexplorer.sqlite3") as database:
         assert database.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
 

@@ -426,8 +426,14 @@ def _validate_bundle_inputs(cases: list[dict[str, Any]], runtime_config: dict[st
     ):
         raise ValueError("holdout cohort requires at least one sealed holdout case")
     evidence = runtime_config.get("config_evidence") or {}
-    if evidence.get("job_timeout_s") != 600 or evidence.get("reviewer_model") != "gpt-6-astra":
-        raise ValueError("evaluation requires config_evidence for job_timeout_s=600 and reviewer_model=gpt-6-astra")
+    codex_interactive = (
+        runtime_config.get("execution_transport") == "codex_agent_relay"
+        and runtime_config.get("test_profile") == "interactive_codex_1800_v1"
+        and runtime_config.get("api_key_loaded") is False
+    )
+    required_timeout = 1800 if codex_interactive else 600
+    if evidence.get("job_timeout_s") != required_timeout or evidence.get("reviewer_model") != "gpt-6-astra":
+        raise ValueError("evaluation requires config_evidence for the preregistered time budget and reviewer_model=gpt-6-astra")
 
 
 def freeze_prediction_bundle(

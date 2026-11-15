@@ -11,6 +11,48 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 SCHEMA_VERSION = "0.2.0"
 
 
+class ReferentialValidationError(ValueError):
+    """Controlled, bounded diagnostics for proposal reference failures."""
+
+    def __init__(
+        self,
+        code: str,
+        details: list[dict[str, object]],
+        *,
+        total_count: int | None = None,
+    ) -> None:
+        self.code = code
+        self.details = tuple(details[:20])
+        self.total_count = total_count if total_count is not None else len(details)
+        summaries = []
+        for item in self.details:
+            refs = item.get("invalid_refs", ())
+            summaries.append(
+                f"{item['msg']} at {item['path']}; "
+                f"invalid=[{','.join(str(ref) for ref in refs)}]; "
+                f"expected={item['expected']}"
+            )
+        super().__init__(
+            f"{code} count={self.total_count} shown={len(self.details)}; "
+            + " | ".join(summaries)
+        )
+
+    def safe_details(self) -> list[dict[str, object]]:
+        return [
+            {
+                "loc": [str(item["path"])[:200]],
+                "msg": str(item["msg"])[:200],
+                "type": "value_error.referential",
+                "invalid_refs": [str(ref)[:200] for ref in item.get("invalid_refs", ())[:10]],
+                "expected": str(item["expected"])[:200],
+                "truncated": self.total_count > len(self.details)
+                or int(item.get("invalid_ref_count", len(item.get("invalid_refs", ()))))
+                > 10,
+            }
+            for item in self.details
+        ]
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -636,7 +678,17 @@ class GeneralConstructionConstraint(StrictModel):
 class GeneralConstructionDetailGeometry(StrictModel):
     kind: Literal["point", "line", "polyline", "circle"]
     points_mm: tuple[Point2D, ...] = Field(min_length=1, max_length=64)
-    dimension_refs: tuple[str, ...] = Field(default=(), max_length=8)
+    dimension_refs: tuple[str, ...] = Field(
+        default=(),
+        max_length=8,
+        description=(
+            "Optional numeric references resolvable through the construction "
+            "parameter graph, preferably parameter:<id>; a binding:<id> is valid "
+            "only when its graph resolves through parameters. Raw ledger dimension: "
+            "or measurement: references belong in the detail source_refs. This list "
+            "may be empty when explicit points and component bounds define geometry."
+        ),
+    )
 
     @model_validator(mode="after")
     def geometry_arity(self) -> "GeneralConstructionDetailGeometry":
@@ -780,7 +832,16 @@ class GeneralComponentProposal(StrictModel):
     premise_ids: tuple[str, ...] = Field(min_length=1)
     source_view_ids: tuple[str, ...] = ()
     source_observation_ids: tuple[str, ...] = ()
-    source_contour_ids: tuple[str, ...] = ()
+    source_contour_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Physical evidence claims used by evidence accounting: each listed "
+            "contour is claimed by this component, not merely cited as a possible "
+            "cross-view projection. Shared ambiguous contour support belongs in "
+            "typed geometry basis_refs, construction parameter source_refs, or "
+            "measurement bindings; those citations do not create a claim or quantity."
+        ),
+    )
     source_evidence_ids: tuple[str, ...] = ()
     source_dimension_ids: tuple[str, ...] = ()
     source_document_refs: tuple[str, ...] = ()
@@ -791,20 +852,97 @@ class GeneralComponentProposal(StrictModel):
     geometry: GeneralPieceGeometry = GeneralPieceGeometry(shape_kind="unknown", source_contour_ids=(), basis_refs=(), rationale="geometry not declared")
     construction_parameter_ids: tuple[str, ...] = Field(default=(), max_length=32)
     detail_ids: tuple[str, ...] = Field(default=(), max_length=128)
-    quantity_basis_refs: tuple[str, ...] = Field(default=(), max_length=32, description="Must include at least one closed premise:<id>; may also cite exact ledger refs such as contour:<id>, observation:<id>, evidence:<id>, view:<id>, document:<id>, or visual:<id>.")
+    quantity_basis_refs: tuple[str, ...] = Field(
+        default=(),
+        max_length=32,
+        description=(
+            "Must include at least one closed premise:<id>; contour:<id>, "
+            "observation:<id>, and evidence:<id> may support occurrence but their "
+            "cardinality never proves quantity or physical identity. Document and "
+            "visual references belong in reviewer machine checks."
+        ),
+    )
 
 
 class GeneralEvidenceDisposition(StrictModel):
-    candidate_region_id: str = Field(min_length=1, max_length=200)
-    kind: Literal["assigned", "duplicate_projection", "nonmaterial", "unresolved"]
-    component_id: str | None = Field(default=None, min_length=1, max_length=120)
-    duplicate_of_region_id: str | None = Field(default=None, min_length=1, max_length=200)
+    candidate_region_id: str = Field(
+        min_length=1,
+        max_length=200,
+        description=(
+            "Exact id from evidence_accounting.candidate_regions only; never use "
+            "compact_geometry spatial or projection region ids."
+        ),
+    )
+    kind: Literal[
+        "assigned", "duplicate_projection", "shared_projection_support",
+        "nonmaterial", "unresolved",
+    ]
+    component_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=120,
+        description=(
+            "Required for assigned and duplicate_projection and must name the "
+            "matching proposal component; null for shared_projection_support, "
+            "nonmaterial, and unresolved."
+        ),
+    )
+    support_component_ids: tuple[str, ...] = Field(
+        default=(),
+        max_length=64,
+        description=(
+            "Only for shared_projection_support: at least two distinct proposal "
+            "components that each have a separate exclusive assigned anchor region. "
+            "This list records ambiguous orthographic support, never contour ownership "
+            "or physical quantity. Empty for every other disposition kind."
+        ),
+    )
+    duplicate_of_region_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description=(
+            "For duplicate_projection, exact evidence candidate whose contour is "
+            "claimed by the same component; null for other kinds."
+        ),
+    )
     reason_code: Literal[
         "hole", "cutout", "rabbet", "groove", "annotation", "drawing_frame",
         "void", "other_unresolved",
     ] | None = None
-    source_refs: tuple[str, ...] = Field(default=(), max_length=32)
+    source_refs: tuple[str, ...] = Field(
+        default=(),
+        max_length=32,
+        description=(
+            "Must include the exact contour:<id> reference announced by the selected "
+            "evidence candidate."
+        ),
+    )
     rationale: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def shared_support_has_no_owner(self) -> "GeneralEvidenceDisposition":
+        if self.kind == "shared_projection_support":
+            if (
+                len(self.support_component_ids) < 2
+                or len(set(self.support_component_ids)) != len(self.support_component_ids)
+            ):
+                raise ValueError(
+                    "shared_projection_support requires at least two distinct support components"
+                )
+            if (
+                self.component_id is not None
+                or self.duplicate_of_region_id is not None
+                or self.reason_code is not None
+            ):
+                raise ValueError(
+                    "shared_projection_support cannot declare owner, duplicate, or reason"
+                )
+        elif self.support_component_ids:
+            raise ValueError(
+                "support_component_ids is only valid for shared_projection_support"
+            )
+        return self
 
 
 class GeneralAssemblyRelation(StrictModel):
@@ -869,36 +1007,81 @@ class GeneralFurnitureProposal(StrictModel):
         premise_set = set(premise_ids)
         parameter_set = set(parameter_ids)
         detail_set = set(detail_ids)
+        component_set = set(component_ids)
+        binding_by_id = {item.id: item for item in self.bindings}
+        reference_errors: list[dict[str, object]] = []
+        reference_error_count = 0
+
+        def add_reference_error(
+            message: str,
+            path: str,
+            invalid_refs: set[str] | tuple[str, ...] | list[str],
+            expected: str,
+        ) -> None:
+            nonlocal reference_error_count
+            invalid = sorted(set(invalid_refs))
+            if not invalid:
+                return
+            reference_error_count += 1
+            if len(reference_errors) < 20:
+                reference_errors.append({
+                    "path": path,
+                    "msg": message,
+                    "invalid_refs": tuple(invalid[:10]),
+                    "invalid_ref_count": len(invalid),
+                    "expected": expected,
+                })
+
         parameter_binding_ids = [item.binding_id for item in self.construction_parameters if item.binding_id is not None]
         if len(parameter_binding_ids) != len(set(parameter_binding_ids)):
             raise ValueError("construction parameters cannot share a binding")
         if {item.scenario_id for item in self.components} != {self.construction_scenario_id}:
             raise ValueError("proposal components must belong to its construction scenario")
-        for parameter in self.construction_parameters:
+        for index, parameter in enumerate(self.construction_parameters):
             if parameter.binding_id is not None and parameter.binding_id not in binding_set:
-                raise ValueError("construction parameter references an unknown binding")
-            if parameter.basis == "observed" and next(item for item in self.bindings if item.id == parameter.binding_id).operation != "copy":
+                add_reference_error(
+                    "construction parameter references an unknown binding",
+                    f"construction_parameters[{index}].binding_id",
+                    {parameter.binding_id},
+                    "binding id declared in bindings",
+                )
+            if parameter.basis == "observed" and parameter.binding_id in binding_by_id and binding_by_id[parameter.binding_id].operation != "copy":
                 raise ValueError("observed construction parameter requires a copy binding")
             premise_refs = {ref.removeprefix("premise:") for ref in parameter.assumption_refs if ref.startswith("premise:")}
             if len(premise_refs) != len(parameter.assumption_refs) or not premise_refs <= premise_set:
-                raise ValueError("construction parameter references an unknown assumption premise")
+                add_reference_error(
+                    "construction parameter references an unknown assumption premise",
+                    f"construction_parameters[{index}].assumption_refs",
+                    set(parameter.assumption_refs) - {f"premise:{item}" for item in premise_set},
+                    "premise:<id>",
+                )
         allowed_expression_refs = {
             *(f"parameter:{item}" for item in parameter_set),
             *(f"binding:{item}" for item in binding_set),
         }
-        for constraint in self.construction_constraints:
-            if not set(constraint.left_refs + constraint.right_refs) <= allowed_expression_refs:
-                raise ValueError("construction constraint references an unknown parameter or binding")
-        for binding in self.bindings:
+        for index, constraint in enumerate(self.construction_constraints):
+            for field_name, refs in (("left_refs", constraint.left_refs), ("right_refs", constraint.right_refs)):
+                add_reference_error(
+                    "construction constraint references an unknown parameter or binding",
+                    f"construction_constraints[{index}].{field_name}",
+                    set(refs) - allowed_expression_refs,
+                    "parameter:<id>|binding:<id>",
+                )
+        for index, binding in enumerate(self.bindings):
             for reference in binding.operand_refs:
                 if reference.startswith("parameter:") and reference.removeprefix("parameter:") not in parameter_set:
-                    raise ValueError("binding references an unknown construction parameter")
-        for component in self.components:
+                    add_reference_error(
+                        "binding references an unknown construction parameter",
+                        f"bindings[{index}].operand_refs",
+                        {reference},
+                        "parameter:<id>",
+                    )
+        for index, component in enumerate(self.components):
             refs = {value for value in (component.length_binding_id, component.width_binding_id, component.thickness_binding_id) if value is not None}
             if not refs <= binding_set:
-                raise ValueError("component references an unknown binding")
+                add_reference_error("component references an unknown binding", f"components[{index}].*_binding_id", refs - binding_set, "binding id declared in bindings")
             if not set(component.premise_ids) <= premise_set:
-                raise ValueError("component references an unknown premise")
+                add_reference_error("component references an unknown premise", f"components[{index}].premise_ids", set(component.premise_ids) - premise_set, "premise id declared in premises")
             if component.quantity.state in {"hypothesis", "estimated"}:
                 quantity_premise_ids = {
                     reference.removeprefix("premise:")
@@ -906,7 +1089,7 @@ class GeneralFurnitureProposal(StrictModel):
                     if reference.startswith("premise:")
                 }
                 if len(quantity_premise_ids) != len(component.quantity.dependency_refs) or not quantity_premise_ids <= set(component.premise_ids):
-                    raise ValueError("component references an unknown quantity premise")
+                    add_reference_error("component references an unknown quantity premise", f"components[{index}].quantity.dependency_refs", set(component.quantity.dependency_refs) - {f"premise:{item}" for item in component.premise_ids}, "premise:<id> declared by the component")
             quantity_basis_premises = {
                 reference.removeprefix("premise:")
                 for reference in component.quantity_basis_refs + component.quantity.dependency_refs
@@ -915,23 +1098,24 @@ class GeneralFurnitureProposal(StrictModel):
             if component.quantity.state in {"hypothesis", "estimated"} and not quantity_basis_premises:
                 raise ValueError("provisional quantity basis requires a premise:<id>")
             if not quantity_basis_premises <= premise_set:
-                raise ValueError("component quantity basis references an unknown premise")
+                add_reference_error("component quantity basis references an unknown premise", f"components[{index}].quantity_basis_refs", {f"premise:{item}" for item in quantity_basis_premises - premise_set}, "premise:<id>")
             if not set(component.construction_parameter_ids) <= parameter_set:
-                raise ValueError("component references an unknown construction parameter")
+                add_reference_error("component references an unknown construction parameter", f"components[{index}].construction_parameter_ids", set(component.construction_parameter_ids) - parameter_set, "parameter id declared in construction_parameters")
             if not set(component.detail_ids) <= detail_set:
-                raise ValueError("component references an unknown construction detail")
-        for detail in self.construction_details:
-            if not set(detail.component_ids) <= set(component_ids):
-                raise ValueError("construction detail references an unknown component")
-            if not set(detail.parameter_refs) <= {f"parameter:{item}" for item in parameter_set}:
-                raise ValueError("construction detail references an unknown parameter")
+                add_reference_error("component references an unknown construction detail", f"components[{index}].detail_ids", set(component.detail_ids) - detail_set, "detail id declared in construction_details")
+        for index, detail in enumerate(self.construction_details):
+            if not set(detail.component_ids) <= component_set:
+                add_reference_error("construction detail references an unknown component", f"construction_details[{index}].component_ids", set(detail.component_ids) - component_set, "component id declared in components")
+            allowed_parameter_refs = {f"parameter:{item}" for item in parameter_set}
+            if not set(detail.parameter_refs) <= allowed_parameter_refs:
+                add_reference_error("construction detail references an unknown parameter", f"construction_details[{index}].parameter_refs", set(detail.parameter_refs) - allowed_parameter_refs, "parameter:<id>")
             detail_premises = {
                 reference.removeprefix("premise:")
                 for reference in detail.assumption_refs
                 if reference.startswith("premise:")
             }
             if len(detail_premises) != len(detail.assumption_refs) or not detail_premises <= premise_set:
-                raise ValueError("construction detail references an unknown premise")
+                add_reference_error("construction detail references an unknown premise", f"construction_details[{index}].assumption_refs", set(detail.assumption_refs) - {f"premise:{item}" for item in premise_set}, "premise:<id>")
         allowed_decision_targets = {
             *(f"component:{item}" for item in component_ids),
             *(
@@ -949,44 +1133,50 @@ class GeneralFurnitureProposal(StrictModel):
             *(f"decision:{item}" for item in decision_ids),
         }
 
-        def internal_refs_are_closed(refs: tuple[str, ...]) -> bool:
+        def invalid_internal_refs(refs: tuple[str, ...]) -> set[str]:
             internal_prefixes = ("component:", "parameter:", "binding:", "premise:", "constraint:", "detail:", "decision:")
-            return all(not ref.startswith(internal_prefixes) or ref in allowed_internal_refs for ref in refs)
+            return {
+                ref for ref in refs
+                if ref.startswith(internal_prefixes) and ref not in allowed_internal_refs
+            }
 
-        for decision in self.construction_decisions:
-            invalid_targets = sorted(set(decision.target_refs) - allowed_decision_targets)
+        for index, decision in enumerate(self.construction_decisions):
+            invalid_targets = set(decision.target_refs) - allowed_decision_targets
             if invalid_targets:
-                raise ValueError(
-                    "construction decision target_refs require component:<id>[.<field>], parameter:<id>, constraint:<id>, or detail:<id>; invalid="
-                    + ",".join(invalid_targets[:8])
+                add_reference_error(
+                    "construction decision target_refs require component:<id>[.<field>], parameter:<id>, constraint:<id>, or detail:<id>",
+                    f"construction_decisions[{index}].target_refs",
+                    invalid_targets,
+                    "component:<id>[.<field>]|parameter:<id>|constraint:<id>|detail:<id>",
                 )
-            if not internal_refs_are_closed(decision.basis_refs):
-                raise ValueError("construction decision has an unknown basis reference")
-        for constraint in self.construction_constraints:
-            if not internal_refs_are_closed(constraint.source_refs):
-                raise ValueError("construction constraint has an unknown source reference")
-        for detail in self.construction_details:
-            if not internal_refs_are_closed(detail.source_refs):
-                raise ValueError("construction detail has an unknown source reference")
-            if detail.geometry is not None and not internal_refs_are_closed(detail.geometry.dimension_refs):
-                raise ValueError("construction detail geometry has an unknown dimension reference")
-        for component in self.components:
+            add_reference_error("construction decision has an unknown basis reference", f"construction_decisions[{index}].basis_refs", invalid_internal_refs(decision.basis_refs), "declared internal reference or external evidence reference")
+        for index, constraint in enumerate(self.construction_constraints):
+            add_reference_error("construction constraint has an unknown source reference", f"construction_constraints[{index}].source_refs", invalid_internal_refs(constraint.source_refs), "declared internal reference or external evidence reference")
+        for index, detail in enumerate(self.construction_details):
+            add_reference_error("construction detail has an unknown source reference", f"construction_details[{index}].source_refs", invalid_internal_refs(detail.source_refs), "declared internal reference or external evidence reference")
+            if detail.geometry is not None:
+                add_reference_error("construction detail geometry has an unknown dimension reference", f"construction_details[{index}].geometry.dimension_refs", invalid_internal_refs(detail.geometry.dimension_refs), "declared internal reference or external evidence reference")
+        for index, component in enumerate(self.components):
             if not set(component.geometry.source_contour_ids) <= set(component.source_contour_ids):
-                raise ValueError("component geometry references an undeclared contour")
-            if not internal_refs_are_closed(component.geometry.basis_refs):
-                raise ValueError("component geometry has an unknown basis reference")
-        for placement in self.construction_placements:
-            if placement.piece_id not in set(component_ids):
-                raise ValueError("construction placement references an unknown component")
+                add_reference_error("component geometry references an undeclared contour", f"components[{index}].geometry.source_contour_ids", set(component.geometry.source_contour_ids) - set(component.source_contour_ids), "contour id declared in component.source_contour_ids")
+            add_reference_error("component geometry has an unknown basis reference", f"components[{index}].geometry.basis_refs", invalid_internal_refs(component.geometry.basis_refs), "declared internal reference or external evidence reference")
+        for index, placement in enumerate(self.construction_placements):
+            if placement.piece_id not in component_set:
+                add_reference_error("construction placement references an unknown component", f"construction_placements[{index}].piece_id", {placement.piece_id}, "component id declared in components")
             placement_premises = {
                 reference.removeprefix("premise:")
                 for reference in placement.assumption_refs
                 if reference.startswith("premise:")
             }
             if len(placement_premises) != len(placement.assumption_refs) or not placement_premises <= premise_set:
-                raise ValueError("construction placement references an unknown premise")
-            if not internal_refs_are_closed(placement.source_refs):
-                raise ValueError("construction placement has an unknown source reference")
+                add_reference_error("construction placement references an unknown premise", f"construction_placements[{index}].assumption_refs", set(placement.assumption_refs) - {f"premise:{item}" for item in premise_set}, "premise:<id>")
+            add_reference_error("construction placement has an unknown source reference", f"construction_placements[{index}].source_refs", invalid_internal_refs(placement.source_refs), "declared internal reference or external evidence reference")
+        if reference_errors:
+            raise ReferentialValidationError(
+                "construction_referential_validation_failed",
+                reference_errors,
+                total_count=reference_error_count,
+            )
         alternative_ids = [item.alternative_id for item in self.assembly_alternatives]
         if self.assembly_alternatives and len(self.assembly_alternatives) < 2:
             raise ValueError("assembly alternatives require at least two alternatives")
@@ -1165,7 +1355,11 @@ class GeneralMachineProvenance(StrictModel):
 
 class GeneralAutoReviewCheck(StrictModel):
     id: str = Field(min_length=1, max_length=120)
-    kind: Literal["geometry_match", "cross_view_identity", "duplicate_scan", "quantity_basis", "dimension_binding", "visual_consistency"]
+    kind: Literal[
+        "geometry_match", "cross_view_identity", "duplicate_scan",
+        "shared_projection_support", "quantity_basis", "dimension_binding",
+        "visual_consistency",
+    ]
     outcome: Literal["pass", "fail", "unknown"]
     method: Literal["deterministic", "model_visual"]
     target_refs: tuple[GeneralMachineTargetRef, ...] = Field(min_length=1, max_length=32)
@@ -1174,14 +1368,25 @@ class GeneralAutoReviewCheck(StrictModel):
 
 
 class GeneralModelVisualCheck(GeneralAutoReviewCheck):
-    kind: Literal["cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"]
+    kind: Literal[
+        "cross_view_identity", "duplicate_scan", "shared_projection_support",
+        "quantity_basis", "visual_consistency",
+    ]
     method: Literal["model_visual"] = "model_visual"
 
 
 class GeneralMachineFieldReview(StrictModel):
     target_ref: GeneralMachineTargetRef
     status: Literal["accepted", "rejected", "conflict", "abstained"]
-    check_ids: tuple[str, ...] = Field(min_length=1, max_length=16)
+    check_ids: tuple[str, ...] = Field(
+        min_length=1,
+        max_length=16,
+        description=(
+            "Every id must exist in checks. An accepted review requires at least "
+            "one pass check that targets this exact target_ref; provisional quantity "
+            "also requires pass quantity_basis and duplicate_scan checks."
+        ),
+    )
 
 
 class GeneralAutoReviewArgs(StrictModel):
@@ -1190,8 +1395,16 @@ class GeneralAutoReviewArgs(StrictModel):
     components: tuple[GeneralComponentReview, ...] = Field(max_length=256)
     checks: tuple[GeneralModelVisualCheck, ...] = Field(max_length=512)
     field_reviews: tuple[GeneralMachineFieldReview, ...] = Field(max_length=1024)
-    unresolved: tuple[str, ...] = Field(max_length=256)
-    status: Literal["accepted", "incomplete", "conflict", "abstained"]
+    unresolved: tuple[str, ...] = Field(
+        max_length=256,
+        description="Must be empty when status is accepted.",
+    )
+    status: Literal["accepted", "incomplete", "conflict", "abstained"] = Field(
+        description=(
+            "accepted requires unresolved empty, at least one field review, all "
+            "checks pass, and all field reviews accepted."
+        )
+    )
 
     @model_validator(mode="after")
     def status_matches_findings(self) -> "GeneralAutoReviewArgs":
@@ -1214,8 +1427,16 @@ class GeneralAutoReviewDecisionArgs(StrictModel):
     scenario_id: str = Field(min_length=1, max_length=120)
     checks: tuple[GeneralModelVisualCheck, ...] = Field(max_length=512)
     field_reviews: tuple[GeneralMachineFieldReview, ...] = Field(max_length=1024)
-    unresolved: tuple[str, ...] = Field(max_length=256)
-    status: Literal["accepted", "incomplete", "conflict", "abstained"]
+    unresolved: tuple[str, ...] = Field(
+        max_length=256,
+        description="Must be empty when status is accepted.",
+    )
+    status: Literal["accepted", "incomplete", "conflict", "abstained"] = Field(
+        description=(
+            "accepted requires unresolved empty, at least one field review, all "
+            "checks pass, and all field reviews accepted."
+        )
+    )
 
     @model_validator(mode="after")
     def status_matches_findings(self) -> "GeneralAutoReviewDecisionArgs":

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 from xml.etree import ElementTree as ET
 
 import ezdxf
+from ezdxf.enums import TextEntityAlignment
 
 from backend.app.contratos.modelos import GeneralDerivedArtifact
 
@@ -41,6 +42,7 @@ _DXF_PRESENTATION = {
 }
 _APPID = "VEXPLORER"
 _SAFE_FILENAME = re.compile(r"[^A-Za-z0-9._-]+")
+_INCOMPLETE_SHEET_WARNING_CODES = {"piece_geometry_incomplete"}
 _DISPLAY_NUMBER = re.compile(
     r"(?<![\w.])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?![\w.])"
 )
@@ -100,11 +102,15 @@ def _bounds(sheet: Any) -> tuple[float, float, float, float]:
         visible_text = _dimension_label(primitive.text) if primitive.kind == "dimension" else primitive.text
         text_width = len(visible_text) * font_size * 0.6
         if primitive.kind == "dimension":
-            _, _, dim1, dim2 = _dimension_geometry(primitive)
-            anchor_x = (dim1[0] + dim2[0]) / 2
-            anchor_y = (dim1[1] + dim2[1]) / 2 - 6
-            min_x = min(min_x, anchor_x - text_width / 2)
-            max_x = max(max_x, anchor_x + text_width / 2)
+            _, anchor_x, anchor_y, label_bounds = _dimension_label_layout(
+                primitive,
+                font_size=font_size,
+            )
+            min_x = min(min_x, label_bounds[0])
+            max_x = max(max_x, label_bounds[2])
+            min_y = min(min_y, label_bounds[1])
+            max_y = max(max_y, label_bounds[3])
+            continue
         else:
             anchor = primitive.points_mm[-1] if primitive.kind == "detail_callout" else primitive.points_mm[0]
             anchor_x, anchor_y = anchor.x, anchor.y - 5 if primitive.kind == "detail_callout" else anchor.y
@@ -136,6 +142,54 @@ def _dimension_geometry(primitive: Any) -> tuple[Any, Any, tuple[float, float], 
         return anchor.x + distance * ux, anchor.y + distance * uy
 
     return p1, p2, project(p1), project(p2)
+
+
+def _dimension_label_layout(
+    primitive: Any,
+    *,
+    font_size: float,
+) -> tuple[str, float, float, tuple[float, float, float, float]]:
+    """Place a horizontal label beyond the exterior side of its dimension line."""
+    p1, p2, dim1, dim2 = _dimension_geometry(primitive)
+    line_mid_x = (dim1[0] + dim2[0]) / 2
+    line_mid_y = (dim1[1] + dim2[1]) / 2
+    source_mid_x = (p1.x + p2.x) / 2
+    source_mid_y = (p1.y + p2.y) / 2
+    outward_x = line_mid_x - source_mid_x
+    outward_y = line_mid_y - source_mid_y
+    outward_length = hypot(outward_x, outward_y)
+    if outward_length <= 1e-9:
+        dx, dy = dim2[0] - dim1[0], dim2[1] - dim1[1]
+        line_length = hypot(dx, dy)
+        outward_x, outward_y = -dy / line_length, dx / line_length
+        if outward_y > 1e-9 or (abs(outward_y) <= 1e-9 and outward_x > 0):
+            outward_x, outward_y = -outward_x, -outward_y
+    else:
+        outward_x /= outward_length
+        outward_y /= outward_length
+
+    visible_text = _dimension_label(primitive.text)
+    text_width = len(visible_text) * font_size * 0.6
+    half_height = font_size * 0.65
+    clearance = 4.0
+    projected_half_extent = (
+        abs(outward_x) * text_width / 2
+        + abs(outward_y) * half_height
+    )
+    label_center_x = line_mid_x + outward_x * (projected_half_extent + clearance)
+    label_center_y = line_mid_y + outward_y * (projected_half_extent + clearance)
+    baseline_y = label_center_y + font_size * 0.35
+    return (
+        visible_text,
+        label_center_x,
+        baseline_y,
+        (
+            label_center_x - text_width / 2,
+            label_center_y - half_height,
+            label_center_x + text_width / 2,
+            label_center_y + half_height,
+        ),
+    )
 
 
 def _svg_line(parent: ET.Element, start: tuple[float, float], end: tuple[float, float], **extra: str) -> None:
@@ -257,19 +311,23 @@ def render_construction_sheet_svg(sheet: "GeneralSheetPlan") -> bytes:
                     (point[0] + tick_x, point[1] + tick_y),
                     **(common | {"data-role": "dimension-terminator"}),
                 )
+            visible_text, label_x, label_y, _ = _dimension_label_layout(
+                primitive,
+                font_size=12.0,
+            )
             label = ET.SubElement(
                 group,
                 _tag("text"),
                 {
-                    "x": _number((dim1[0] + dim2[0]) / 2),
-                    "y": _number((dim1[1] + dim2[1]) / 2 - 6),
+                    "x": _number(label_x),
+                    "y": _number(label_y),
                     "font-size": "12",
                     "text-anchor": "middle",
                     "fill": color,
                     "stroke": "none",
                 },
             )
-            label.text = _dimension_label(primitive.text)
+            label.text = visible_text
         elif primitive.kind == "detail_callout":
             target = points[0]
             label_point = points[-1] if len(points) > 1 else (target[0] + 60, target[1] + 40)
@@ -372,6 +430,11 @@ def render_construction_sheet_dxf(sheet: "GeneralSheetPlan") -> bytes:
             dx, dy = dim2[0] - dim1[0], dim2[1] - dim1[1]
             dimension_length = hypot(dx, dy)
             tick_x, tick_y = -dy / dimension_length * 5, dx / dimension_length * 5
+            visible_text, label_x, label_baseline_y, _ = _dimension_label_layout(
+                primitive,
+                font_size=10.0,
+            )
+            label_center = (label_x, label_baseline_y - 10.0 * 0.35)
             entities.extend(
                 (
                     space.add_line((p1.x, p1.y), dim1, dxfattribs={"layer": layer}),
@@ -388,10 +451,10 @@ def render_construction_sheet_dxf(sheet: "GeneralSheetPlan") -> bytes:
                         dxfattribs={"layer": layer},
                     ),
                     space.add_text(
-                        _ascii_dxf(_dimension_label(primitive.text)),
+                        _ascii_dxf(visible_text),
                         height=10,
                         dxfattribs={"layer": layer},
-                    ).set_placement(((dim1[0] + dim2[0]) / 2, (dim1[1] + dim2[1]) / 2 + 5)),
+                    ).set_placement(label_center, align=TextEntityAlignment.MIDDLE_CENTER),
                 )
             )
         elif primitive.kind == "detail_callout":
@@ -470,7 +533,11 @@ def render_construction_artifacts(plan: Any) -> tuple[GeneralDerivedArtifact, ..
         blocking_reasons = tuple(
             warning.code
             for warning in sheet.warnings
-            if warning.severity == "error" or warning.consequence == "blocks_fabrication"
+            if (
+                warning.severity == "error"
+                or warning.consequence == "blocks_fabrication"
+                or warning.code in _INCOMPLETE_SHEET_WARNING_CODES
+            )
         )
         status = "incomplete" if blocking_reasons else "ready"
         for extension, media_type, content in (

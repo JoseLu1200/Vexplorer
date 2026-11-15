@@ -6,6 +6,9 @@ from pydantic import ValidationError
 from backend.app.contratos.modelos import (
     GeneralBinding,
     GeneralComponentProposal,
+    GeneralConstructionConstraint,
+    GeneralConstructionDetail,
+    GeneralEvidenceDisposition,
     GeneralFurnitureProposal,
     GeneralPremise,
     GeneralQuantity,
@@ -14,6 +17,41 @@ from backend.app.contratos.modelos import (
     GeneralReviewOperation,
     RunRequest,
 )
+
+
+def test_shared_projection_support_requires_distinct_support_components_without_owner() -> None:
+    disposition = GeneralEvidenceDisposition(
+        candidate_region_id="evidence-candidate:shared-side",
+        kind="shared_projection_support",
+        support_component_ids=("left-panel", "right-panel"),
+        source_refs=("contour:side-shared",),
+        rationale="El contorno lateral apoya dos candidatos ortogonales anclados por separado.",
+    )
+
+    assert disposition.component_id is None
+    assert disposition.support_component_ids == ("left-panel", "right-panel")
+
+    for support_component_ids in ((), ("left-panel",), ("left-panel", "left-panel")):
+        with pytest.raises(ValidationError, match="distinct support components"):
+            GeneralEvidenceDisposition(
+                candidate_region_id="evidence-candidate:shared-side",
+                kind="shared_projection_support",
+                support_component_ids=support_component_ids,
+                source_refs=("contour:side-shared",),
+                rationale="Fixture inválido.",
+            )
+
+
+def test_evidence_disposition_rejects_support_components_for_other_kinds() -> None:
+    with pytest.raises(ValidationError, match="support_component_ids is only valid"):
+        GeneralEvidenceDisposition(
+            candidate_region_id="evidence-candidate:owned-front",
+            kind="assigned",
+            component_id="left-panel",
+            support_component_ids=("left-panel", "right-panel"),
+            source_refs=("contour:front-left",),
+            rationale="Fixture inválido.",
+        )
 
 
 def _proposal() -> GeneralFurnitureProposal:
@@ -52,6 +90,41 @@ def test_general_proposal_rejects_unknown_binding_reference() -> None:
     component = _proposal().components[0].model_copy(update={"length_binding_id": "missing-binding"})
     with pytest.raises(ValidationError, match="unknown binding"):
         GeneralFurnitureProposal(**(_proposal().model_dump() | {"components": (component,)}))
+
+
+def test_general_proposal_reports_all_unknown_constraint_and_detail_references() -> None:
+    proposal = _proposal()
+    constraint = GeneralConstructionConstraint(
+        id="bad-closure", kind="sum_equals",
+        left_refs=("parameter:missing-constraint",),
+        right_refs=("binding:copy-width",), tolerance_mm=0.1,
+        severity="error", source_refs=("dimension:dim-width",),
+        rationale="Fixture referencial inválido.",
+    )
+    detail = GeneralConstructionDetail(
+        id="bad-detail", kind="other", component_ids=("component-1",),
+        parameter_refs=("parameter:missing-detail",), state="deduced",
+        source_refs=("dimension:dim-width",), assumption_refs=(),
+        rationale="Fixture referencial inválido.",
+    )
+
+    with pytest.raises(ValidationError) as caught:
+        GeneralFurnitureProposal(**(
+            proposal.model_dump()
+            | {
+                "construction_constraints": (constraint,),
+                "construction_details": (detail,),
+            }
+        ))
+
+    message = str(caught.value)
+    assert "construction constraint references an unknown parameter or binding" in message
+    assert "construction_constraints[0].left_refs" in message
+    assert "parameter:missing-constraint" in message
+    assert "construction detail references an unknown parameter" in message
+    assert "construction_details[0].parameter_refs" in message
+    assert "parameter:missing-detail" in message
+    assert "expected=parameter:<id>|binding:<id>" in message
 
 
 def test_general_binding_enforces_operation_arity() -> None:

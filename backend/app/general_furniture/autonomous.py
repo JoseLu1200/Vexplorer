@@ -36,6 +36,9 @@ from backend.app.general_furniture.live import (
     general_allowed_document_refs,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
+from backend.app.general_furniture.orthographic_hypotheses import (
+    derive_orthographic_hypotheses,
+)
 from backend.app.general_furniture.context_payload import (
     build_compact_geometry_context,
     build_compact_review_context,
@@ -62,12 +65,19 @@ GENERAL_AUTO_REVIEW_PROMPT = """Actúas como crítico multimodal separado del pr
 Primero llama entregar_revision_autonoma. Si el servidor responde repair_requested, llama una sola vez proponer_mueble_general con una propuesta completa corregida; después vuelve a llamar entregar_revision_autonoma sobre esa propuesta.
 No midas píxeles ni inventes valores. Las dimensiones observadas solo proceden del ledger. Las dimensiones deduced/estimated pueden proceder de parámetros constructivos declarados, con nominal, rango, método, dependencias y supuestos explícitos; no las rechaces solo por no ser observadas. Una cantidad provisional hypothesis/deduced/estimated requiere premisa declarada y checks quantity_basis+duplicate_scan; nunca cuentes vistas como instancias.
 Una cota observed solo puede sostener la dimensión de la misma geometría visible. Si se copió a una pieza oculta o a otro componente por mera semejanza constructiva, rechaza esa transferencia y solicita un parámetro estimated separado con rango y premisa; sus dependientes permanecen estimated.
+Un componente fabricado debe representar un tipo de pieza física cortable, no un subensamblaje funcional agregado. Cuando existencia y cantidad de un conjunto oculto necesario estén aceptadas y haya una premisa funcional cerrada, solicita descomponer el mínimo coherente de piezas fabricadas con kind, geometry y length/width/thickness estimated, cada valor con nominal, rango y premisa. No conviertas por ello campos ocultos en observed; si falta esa premisa, abstente y conserva unknown.
 Aceptar significa que una hipótesis es coherente, no que sea un hecho observado. Contrasta cada candidato en sus regiones: un contorno cerrado puede ser cara material, hueco, rebaje o límite interior. Busca duplicados entre proyecciones, incoherencias dimensionales y bases de cantidad antes de aceptar.
+Los IDs internos y el orden serializado de entidades sirven para trazabilidad, pero no prueban por sí solos identidad, cantidad ni correspondencias entre proyecciones. Decide esas relaciones mediante geometría, capas declaradas, anotaciones explícitas (incluidas etiquetas PART cuando existan) y contraste entre fuentes; conserva los IDs al citar la evidencia.
+`compact_geometry.orthographic_hypotheses` solo facilita el contraste provisional de ejes, intervalos y alineaciones mediante sus refs `contour:` y `measurement:` anunciadas. El id de la hipótesis no es una referencia citable y la hipótesis no prueba identidad, ownership, cantidad ni material; tampoco clasifica un hueco ni contorno interior como pieza. Conserva alternativas many-to-many y la incertidumbre indicada por warnings/authority.
+Para piezas de las mismas vistas, exige una sola alternativa de `orthographic_frame_alternatives` como alineación global; no mezcles direct y mirrored ni grupos incompatibles. Sus hypothesis_ids solo agrupan contexto, no son refs. El contexto ortográfico no define por sí solo un marco 2D de montaje: si x/y/rotation y todas las ocurrencias no tienen base cerrada, conserva `construction_placements=[]` y exige una decision category=assembly que explique ausencia y alternativas; rechaza coordenadas inventadas o autoridad observed.
 Contrasta también la estabilidad global: vuelco, descuadre y arriostramiento. Cuando el escenario lo requiera, exige un detalle estimated explícito de estabilización o anclaje con premisa, ubicación y referencias; una simple nota pendiente no resuelve el escenario.
 Cada check model_visual debe citar en source_refs al menos una referencia visual exacta del contexto, también los checks de cantidad y duplicados de detalles estimados. Las premisas por sí solas no constituyen evidencia visual; no inventes referencias para completar un check.
 Decide explícitamente cada cota numérica anunciada en `required_dimension_field_review_targets`. Aceptar un parámetro no acepta automáticamente su asignación a length/width/thickness del componente: cada aceptación de campo cita un check model_visual pass dirigido a ese target exacto; cuando no puedas contrastarlo usa abstained, rejected o conflict. Para cada grupo `required_hardware_classification_field_review_targets`, decide al menos kind o geometry. Aceptar `kind=hardware` es una clasificación constructiva provisional del elemento propuesto como comprado/no fabricado: no identifica ni certifica un modelo comercial, fabricante, medidas de catálogo, capacidad o presencia observada. Puedes aceptar kind cuando función, detalle, cantidad, encaje, premisas y contexto visual sostienen su necesidad en el escenario aunque el herraje quede oculto; no exijas una ficha comercial. Mantén geometry específica, modelo, carga, fijación y cotas desconocidas o abstained cuando no estén justificadas.
-Decide también cada `required_existence_field_review_target` y cada `required_evidence_disposition_review_target`. La cobertura contable no confirma existencia, identidad física, cantidad ni fabricabilidad. Un descarte nonmaterial requiere contraste dirigido; una duplicate_projection aceptada requiere duplicate_scan o cross_view_identity dirigido al target exacto. Un check puede cubrir varios targets contrastados, pero cada target conserva su field_review individual.
-La geometry de un detalle usa coordenadas locales de la cara de cada pieza asociada, nunca coordenadas del mueble completo. Divide los detalles por pieza cuando tengan orígenes o dimensiones diferentes; comprueba sus límites antes de proponerlos.
+Decide también cada `required_existence_field_review_target` y cada `required_evidence_disposition_review_target`. La cobertura contable no confirma existencia, identidad física, cantidad ni fabricabilidad. Un descarte nonmaterial requiere contraste dirigido; una duplicate_projection aceptada requiere duplicate_scan o cross_view_identity dirigido al target exacto. shared_projection_support requiere ambos checks pass, duplicate_scan y shared_projection_support, dirigidos al target exacto: verifica anclas assigned exclusivas, relación ortográfica global compatible y ausencia de ownership/cantidad. Un check puede cubrir varios targets contrastados, pero cada target conserva su field_review individual.
+material/finish desconocidos permanecen visibles como unknown en el componente y en la base de coste; no son campos críticos de corte. No los aceptes sin evidencia, pero puedes omitir sus field_reviews y no los repitas en unresolved terminal cuando kind, existence, geometry, length, width, thickness y quantity ya cierran la pieza fabricada.
+Los elementos de `evidence_accounting.invalid_region_reasons` son diagnósticos deterministas para reparar la propuesta y no son review targets salvo que su `evidence_region:*` aparezca literalmente en `allowed_target_refs`. Nunca dirijas checks ni field_reviews a un target omitido. Para aceptar cualquier quantity provisional, su field_review debe citar checks pass separados o combinados de `quantity_basis y duplicate_scan`, ambos dirigidos a esa quantity exacta.
+La geometry de un detalle usa coordenadas locales de la cara de cada pieza asociada, nunca coordenadas del mueble completo: x recorre length e y recorre width. Divide los detalles por pieza cuando tengan orígenes o dimensiones diferentes; comprueba sus límites antes de proponerlos.
+Las dimension_refs del detalle son opcionales y deben resolverse por el grafo constructivo, preferentemente parameter:<id>; un binding solo sirve si termina en parámetros resolubles. Las mediciones ledger van en source_refs, no directamente en dimension_refs. Si los puntos explícitos y los bounds de la pieza bastan, dimension_refs puede quedar vacío.
 Usa solo checks method=model_visual y los `allowed_target_refs` exactos del input. Pueden ser campos `component:<id>.<campo>` o `parameter:`, `constraint:`, `detail:` y `decision:` anunciados. Rechaza geometría, identidad, existencia, parámetros o restricciones contradictorias; acepta estimaciones plausibles con base cerrada. El servidor recalcula bindings y restricciones deterministas. Si la evidencia no basta, abstente o marca incomplete/conflict sin pedir revisión humana. Nunca te declares independiente ni confirmado."""
 
 
@@ -334,6 +344,18 @@ class _MissingRequiredFieldReviews(ValueError):
         self.targets = targets
 
 
+class _DirectedDispositionCheckError(ValueError):
+    def __init__(self, failures: tuple[dict[str, object], ...]) -> None:
+        super().__init__("duplicate_projection_requires_directed_duplicate_check")
+        self.failures = failures
+
+
+class _AcceptedFieldCheckError(ValueError):
+    def __init__(self, failures: tuple[dict[str, object], ...]) -> None:
+        super().__init__("accepted_machine_field_requires_targeted_visual_check")
+        self.failures = failures
+
+
 def _safe_autonomous_validation_details(
     error: Exception,
 ) -> list[dict[str, object]]:
@@ -370,6 +392,48 @@ def _safe_autonomous_validation_details(
             "missing_targets": list(error.targets[:64]),
             "truncated": len(error.targets) > 64,
         }]
+    if isinstance(error, _DirectedDispositionCheckError):
+        truncated = len(error.failures) > 64
+        return [
+            {
+                "loc": ["field_reviews", str(item["target_ref"])[:200]],
+                "msg": "duplicate_projection_requires_directed_duplicate_check",
+                "type": "value_error",
+                "target_ref": str(item["target_ref"])[:200],
+                "disposition_kind": str(item["disposition_kind"])[:80],
+                "check_ids": [
+                    str(check_id)[:120]
+                    for check_id in item["check_ids"][:16]
+                ],
+                "selected_checks": list(item["selected_checks"][:16]),
+                "expected_kinds": list(item["expected_kinds"]),
+                "check_kind_rule": str(item["check_kind_rule"]),
+                "required_outcome": "pass",
+                "requires_exact_target": True,
+                "truncated": truncated or len(item["check_ids"]) > 16,
+            }
+            for item in error.failures[:64]
+        ]
+    if isinstance(error, _AcceptedFieldCheckError):
+        truncated = len(error.failures) > 64
+        return [
+            {
+                "loc": ["field_reviews", str(item["target_ref"])[:200]],
+                "msg": "accepted_machine_field_requires_targeted_visual_check",
+                "type": "value_error",
+                "target_ref": str(item["target_ref"])[:200],
+                "check_ids": [
+                    str(check_id)[:120]
+                    for check_id in item["check_ids"][:16]
+                ],
+                "selected_checks": list(item["selected_checks"][:16]),
+                "failure_reasons": list(item["failure_reasons"]),
+                "required_outcome": "pass",
+                "requires_exact_target": True,
+                "truncated": truncated or len(item["check_ids"]) > 16,
+            }
+            for item in error.failures[:64]
+        ]
     return _safe_validation_details(error)
 
 
@@ -394,6 +458,7 @@ class AutoReviewLimits:
     max_semantic_repairs: int = 2
     max_derivation_repairs: int = 1
     timeout_s: float = 120.0
+    allow_extended_test_timeout: bool = False
 
     def __post_init__(self) -> None:
         if not 1 <= self.max_model_calls <= 5 or not 1 <= self.max_tool_calls <= 5:
@@ -404,7 +469,8 @@ class AutoReviewLimits:
             raise ValueError("general_auto_review_semantic_budget_invalid")
         if self.max_derivation_repairs not in (0, 1):
             raise ValueError("general_auto_review_derivation_budget_invalid")
-        if self.timeout_s <= 0 or self.timeout_s > 300:
+        timeout_ceiling = 900 if self.allow_extended_test_timeout else 300
+        if self.timeout_s <= 0 or self.timeout_s > timeout_ceiling:
             raise ValueError("general_auto_review_timeout_budget_invalid")
 
 
@@ -466,11 +532,15 @@ def _tool_schemas(*, raster_without_metric_ledger: bool = False) -> list[dict]:
             "y toda dimensión dependiente conserva estado estimated. Las cantidades "
             "provisionales requieren premisas cerradas. No transfieras una cota observed "
             "a piezas ocultas u otros componentes: crea allí un parámetro estimated separado. "
+            "Si un subensamblaje funcional oculto es necesario por una premisa cerrada, "
+            "descompónlo en tipos de pieza física fabricada con kind, geometry y tres "
+            "dimensiones estimated acotadas; sin esa premisa conserva unknown. "
+            "En detalles locales x recorre length e y recorre width; sepáralos por pieza. "
             "Resuelve estabilidad necesaria con un detalle estimated explícito, no una nota pendiente."
         )
     )
     return [
-        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo. Incluye un field_review individual para cada target requerido de dimensiones, existencia y disposición de evidencia, y al menos un any_of por hardware. accepted kind=hardware es clasificación constructiva provisional, no certificación ni identificación comercial. Un mismo check multitarjeta puede respaldar varios targets contrastados, pero accepted exige que incluya cada target exacto. duplicate_projection exige duplicate_scan o cross_view_identity dirigido; no acredita identidad física. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
+        schema("entregar_revision_autonoma", "Entrega solo checks y decisiones por campo usando exclusivamente allowed_target_refs. Incluye un field_review individual para cada target requerido de dimensiones, existencia y disposición de evidencia, y al menos un any_of por hardware. No revises invalid_region_reasons salvo que su target esté permitido. Cada quantity accepted exige checks pass quantity_basis y duplicate_scan dirigidos a esa quantity. accepted kind=hardware es clasificación constructiva provisional, no certificación ni identificación comercial. Un mismo check multitarjeta puede respaldar varios targets contrastados, pero accepted exige que incluya cada target exacto. duplicate_projection exige duplicate_scan o cross_view_identity dirigido; shared_projection_support exige ambos duplicate_scan y shared_projection_support pass sobre el target exacto y nunca acredita ownership o cantidad. El servidor conserva componentes y operaciones; cualquier corrección estructural usa proponer_mueble_general.", GeneralAutoReviewDecisionArgs),
         schema("proponer_mueble_general", repair_description, ProposeGeneralFurnitureArgs),
     ]
 
@@ -592,24 +662,57 @@ def _validate_evidence_disposition_checks(
     disposition_kinds: dict[str, str],
 ) -> None:
     checks = {item.id: item for item in args.checks}
+    failures: list[dict[str, object]] = []
     for review in args.field_reviews:
-        if (
-            review.status != "accepted"
-            or disposition_kinds.get(review.target_ref)
-            not in {"duplicate_projection", "multi_region_assigned"}
-        ):
+        disposition_kind = disposition_kinds.get(review.target_ref)
+        if review.status != "accepted" or disposition_kind not in {
+            "duplicate_projection", "multi_region_assigned",
+            "shared_projection_support",
+        }:
             continue
         selected = tuple(checks.get(check_id) for check_id in review.check_ids)
-        if not any(
-            check is not None
-            and check.outcome == "pass"
-            and check.kind in {"duplicate_scan", "cross_view_identity"}
-            and review.target_ref in check.target_refs
+        expected_kinds = (
+            ("duplicate_scan", "shared_projection_support")
+            if disposition_kind == "shared_projection_support"
+            else ("duplicate_scan", "cross_view_identity")
+        )
+        passing_kinds = {
+            check.kind
             for check in selected
-        ):
-            raise ValueError(
-                "duplicate_projection_requires_directed_duplicate_check"
-            )
+            if check is not None
+            and check.outcome == "pass"
+            and review.target_ref in check.target_refs
+        }
+        check_kind_rule = (
+            "all_of" if disposition_kind == "shared_projection_support" else "any_of"
+        )
+        supported = (
+            set(expected_kinds) <= passing_kinds
+            if check_kind_rule == "all_of"
+            else bool(set(expected_kinds) & passing_kinds)
+        )
+        if not supported:
+            failures.append({
+                "target_ref": review.target_ref,
+                "disposition_kind": disposition_kind,
+                "check_ids": review.check_ids,
+                "expected_kinds": expected_kinds,
+                "check_kind_rule": check_kind_rule,
+                "selected_checks": tuple(
+                    {
+                        "id": check_id,
+                        "kind": check.kind if check is not None else "missing",
+                        "outcome": check.outcome if check is not None else "missing",
+                        "targets_exact": (
+                            review.target_ref in check.target_refs
+                            if check is not None else False
+                        ),
+                    }
+                    for check_id, check in zip(review.check_ids, selected)
+                ),
+            })
+    if failures:
+        raise _DirectedDispositionCheckError(tuple(failures))
 
 
 def _validate_visual_checks(
@@ -634,24 +737,58 @@ def _validate_visual_checks(
             raise ValueError("machine_check_targets_unknown_field")
         if not set(check.source_refs) <= allowed_source_refs or not set(check.source_refs) & visual_refs:
             raise ValueError("visual_check_reference_outside_context")
+    accepted_failures: list[dict[str, object]] = []
+    accepted_quantities = []
     for field_review in args.field_reviews:
         if field_review.target_ref not in valid_targets:
             raise ValueError("machine_field_review_targets_unknown_field")
-        if field_review.status == "accepted" and not any(
-            check_id in checks
-            and checks[check_id].outcome == "pass"
-            and field_review.target_ref in checks[check_id].target_refs
-            for check_id in field_review.check_ids
+        if field_review.status != "accepted":
+            continue
+        selected = tuple(checks.get(check_id) for check_id in field_review.check_ids)
+        if not any(
+            check is not None
+            and check.outcome == "pass"
+            and field_review.target_ref in check.target_refs
+            for check in selected
         ):
-            raise ValueError("accepted_machine_field_requires_targeted_visual_check")
-        if field_review.status == "accepted" and field_review.target_ref.endswith(".quantity"):
-            selected = [checks.get(check_id) for check_id in field_review.check_ids]
-            if (
-                any(item is None or item.outcome != "pass" for item in selected)
-                or not {"quantity_basis", "duplicate_scan"}
-                <= {item.kind for item in selected if item is not None}
-            ):
-                raise ValueError("accepted_provisional_quantity_requires_closed_checks")
+            selected_checks = tuple(
+                {
+                    "id": check_id,
+                    "kind": check.kind if check is not None else "missing",
+                    "outcome": check.outcome if check is not None else "missing",
+                    "targets_exact": (
+                        field_review.target_ref in check.target_refs
+                        if check is not None else False
+                    ),
+                }
+                for check_id, check in zip(field_review.check_ids, selected)
+            )
+            accepted_failures.append({
+                "target_ref": field_review.target_ref,
+                "check_ids": field_review.check_ids,
+                "selected_checks": selected_checks,
+                "failure_reasons": tuple(dict.fromkeys(
+                    "missing_check"
+                    if check is None else
+                    "nonpass_check"
+                    if check.outcome != "pass" else
+                    "wrong_target"
+                    for check in selected
+                )),
+            })
+            continue
+        if field_review.target_ref.endswith(".quantity"):
+            accepted_quantities.append(field_review)
+    if accepted_failures:
+        raise _AcceptedFieldCheckError(tuple(accepted_failures))
+    for field_review in accepted_quantities:
+        selected = [checks.get(check_id) for check_id in field_review.check_ids]
+        if (
+            any(item is None or item.outcome != "pass" for item in selected)
+            or not {"quantity_basis", "duplicate_scan"}
+            <= {item.kind for item in selected if item is not None}
+        ):
+            raise ValueError("accepted_provisional_quantity_requires_closed_checks")
 
 
 def _reject_forged_machine_facts(args: GeneralAutoReviewArgs) -> None:
@@ -786,7 +923,48 @@ def _repair_is_supported(
         and construction_validation.status == "invalid"
     ) or (
         accounting_report is not None and not accounting_report.reviewable
-    ) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews)
+    ) or any(item.outcome == "fail" and item.kind in {"cross_view_identity", "duplicate_scan", "quantity_basis", "visual_consistency"} for item in args.checks) or any(item.status in {"rejected", "conflict"} for item in args.field_reviews) or _necessary_aggregate_needs_structural_repair(args)
+
+
+def _necessary_aggregate_needs_structural_repair(
+    args: GeneralAutoReviewArgs,
+) -> bool:
+    accepted = {
+        item.target_ref for item in args.field_reviews if item.status == "accepted"
+    }
+    abstained = {
+        item.target_ref for item in args.field_reviews if item.status == "abstained"
+    }
+    for component in args.components:
+        if component.kind == "hardware" or component.necessity not in {
+            "deduced_required", "estimated_required",
+        }:
+            continue
+        prefix = f"component:{component.id}"
+        if not {f"{prefix}.existence", f"{prefix}.quantity"} <= accepted:
+            continue
+        if (
+            component.quantity.value is None
+            or component.quantity.state in {"unknown", "conflict"}
+        ):
+            continue
+        structurally_unknown = set()
+        if component.kind == "unknown":
+            structurally_unknown.add(f"{prefix}.kind")
+        if component.geometry.shape_kind == "unknown":
+            structurally_unknown.add(f"{prefix}.geometry")
+        critical_targets = {
+            f"{prefix}.kind", f"{prefix}.geometry", f"{prefix}.length",
+            f"{prefix}.width", f"{prefix}.thickness",
+        }
+        structurally_unknown.update(
+            f"{prefix}.{field}"
+            for field in ("length", "width", "thickness")
+            if getattr(component, field).state in {"unknown", "conflict"}
+        )
+        if (critical_targets & abstained) or structurally_unknown:
+            return True
+    return False
 
 
 def _recoverable_dimension_measurements(args: GeneralAutoReviewArgs, measurements) -> tuple[dict[str, object], ...]:
@@ -867,7 +1045,57 @@ def _accounting_report(
         outcome.proposal,
         outcome.draft,
         projection_hypotheses=projections,
+        orthographic_hypotheses=derive_orthographic_hypotheses(
+            context.extraction, measurements
+        ).hypotheses,
     )
+
+
+def _disposition_review_kinds(
+    proposal: GeneralFurnitureProposal,
+    accounting: EvidenceAccountingReport,
+) -> dict[str, str]:
+    multi_region_components = set(accounting.multi_region_component_ids)
+    return {
+        f"evidence_region:{item.candidate_region_id}": (
+            "multi_region_assigned"
+            if item.kind == "assigned"
+            and item.component_id in multi_region_components
+            else item.kind
+        )
+        for item in proposal.evidence_dispositions
+    }
+
+
+def _disposition_review_requirements(
+    proposal: GeneralFurnitureProposal,
+    accounting: EvidenceAccountingReport,
+) -> list[dict[str, object]]:
+    kinds = _disposition_review_kinds(proposal, accounting)
+    requirements = []
+    for target_ref in accounting.required_disposition_review_targets:
+        disposition_kind = kinds.get(target_ref, "unknown")
+        directed = disposition_kind in {
+            "duplicate_projection",
+            "multi_region_assigned",
+            "shared_projection_support",
+        }
+        shared_support = disposition_kind == "shared_projection_support"
+        requirements.append({
+            "target_ref": target_ref,
+            "disposition_kind": disposition_kind,
+            "required_pass_check_kinds": (
+                ["duplicate_scan", "shared_projection_support"]
+                if shared_support
+                else ["duplicate_scan", "cross_view_identity"] if directed else []
+            ),
+            "check_kind_rule": (
+                "all_of" if shared_support
+                else "any_of" if directed
+                else "exact_target_pass"
+            ),
+        })
+    return requirements
 
 
 def _review_payload(
@@ -924,6 +1152,9 @@ def _review_payload(
         outcome.proposal,
         outcome.draft,
         projection_hypotheses=projections,
+        orthographic_hypotheses=derive_orthographic_hypotheses(
+            context.extraction, measurements
+        ).hypotheses,
     )
     allowed_target_refs = sorted(
         _review_target_refs(outcome.proposal, outcome.draft)
@@ -991,6 +1222,19 @@ def _review_payload(
             required_hardware_field_review_targets
         ),
         "evidence_accounting": accounting.to_payload(),
+        "required_evidence_disposition_review_requirements": (
+            _disposition_review_requirements(outcome.proposal, accounting)
+        ),
+        "review_target_authority": {
+            "allowed_targets": "allowed_target_refs_only",
+            "invalid_accounting_regions": (
+                "diagnostics_not_review_targets_unless_explicitly_allowed"
+            ),
+            "accepted_quantity_requires": [
+                "quantity_basis:pass",
+                "duplicate_scan:pass",
+            ],
+        },
         "region_visual_links": [
             item.to_payload()
             for item in build_region_visual_links(
@@ -1015,7 +1259,7 @@ def _review_payload(
             "authority": "repair_request_only_not_acceptance_or_confirmation",
         },
         "visual_artifacts": [_visual_metadata(item) for item in context.visual_pages],
-        "instruction": "Entrega solo checks, field_reviews, unresolved y status. Para cada pieza de corte decide kind, existence, geometry, length, width, thickness y quantity anunciados; material/finish no bloquean coherencia geométrica. Para hardware decide existence, quantity y al menos kind o geometry sin inventar cotas de catálogo. Decide también cada disposición. accepted kind=hardware es clasificación constructiva provisional, no una certificación comercial. Cada field_review es individual aunque un check contrastado cubra varios targets exactos. La cobertura contable no confirma piezas, cantidades, identidad ni fabricabilidad. duplicate_projection y asignaciones multi-región requieren duplicate_scan o cross_view_identity dirigido; nonmaterial requiere contraste dirigido. accepted exige check model_visual pass con el mismo target; evidencia insuficiente queda abstained/incomplete.",
+        "instruction": "Entrega solo checks, field_reviews, unresolved y status. Para cada pieza de corte decide kind, existence, geometry, length, width, thickness y quantity anunciados; material/finish unknown permanece visible y puede omitirse de reviews/unresolved terminal sin aceptarlo. Para hardware decide existence, quantity y al menos kind o geometry sin inventar cotas de catálogo. Decide también cada disposición. accepted kind=hardware es clasificación constructiva provisional, no una certificación comercial. Cada field_review es individual aunque un check contrastado cubra varios targets exactos. La cobertura contable no confirma piezas, cantidades, identidad ni fabricabilidad. duplicate_projection y asignaciones multi-región requieren duplicate_scan o cross_view_identity dirigido; shared_projection_support requiere ALL_OF duplicate_scan y shared_projection_support pass sobre el target exacto; nonmaterial requiere contraste dirigido. accepted exige check model_visual pass con el mismo target; evidencia insuficiente queda abstained/incomplete.",
     })
     if raster_without_metric_ledger:
         payload["allowed_document_refs"] = list(allowed_document_refs)
@@ -1253,16 +1497,9 @@ def run_general_autonomous(
             )
             _validate_evidence_disposition_checks(
                 args,
-                {
-                    f"evidence_region:{item.candidate_region_id}": (
-                        "multi_region_assigned"
-                        if item.kind == "assigned"
-                        and item.component_id
-                        in set(accounting_report.multi_region_component_ids)
-                        else item.kind
-                    )
-                    for item in effective.proposal.evidence_dispositions
-                },
+                _disposition_review_kinds(
+                    effective.proposal, accounting_report
+                ),
             )
             _reject_forged_machine_facts(args)
             request = GeneralFurnitureReviewRequest(
@@ -1337,7 +1574,7 @@ def run_general_autonomous(
                         "semantic_repair_directives": _semantic_repair_directives(args.unresolved, component_ids={item.id for item in args.components}),
                         "evidence_accounting": accounting_report.to_payload(),
                         "construction_validation": construction_validation.model_dump(mode="json"),
-                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Resuelve regiones unresolved/invalid y cotas ausentes o sin traza sin inventar piezas, identidad ni cantidad. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
+                        "instruction": "Emite una propuesta completa corregida mediante proponer_mueble_general. Resuelve regiones unresolved/invalid y cotas ausentes o sin traza sin inventar piezas, identidad ni cantidad. Una cota observed solo sirve para la misma geometría visible; en piezas ocultas u otros componentes usa un parámetro estimated separado con rango y premisa. Si existencia y cantidad aceptadas de un subensamblaje funcional necesario tienen premisa cerrada, descompón el mínimo coherente de tipos de pieza física fabricada con kind, geometry y tres dimensiones estimated acotadas; sin premisa conserva unknown. En detalles locales x recorre length e y recorre width y cada pieza usa su propio marco. Resuelve estabilidad necesaria con detalle estimated explícito, no solo pendiente.",
                     }
                     if construction_validation.status == "invalid":
                         repair_output["instruction"] = (
@@ -1345,7 +1582,11 @@ def run_general_autonomous(
                             "una propuesta completa; conserva observaciones y no inventes cifras. "
                             "Las estimaciones válidas declaran nominal, rango, método y supuestos. "
                             "No transfieras cotas observed entre geometrías: piezas ocultas u otros "
-                            "componentes requieren parámetro estimated separado. Resuelve estabilidad "
+                            "componentes requieren parámetro estimated separado. Un subensamblaje "
+                            "funcional necesario con premisa cerrada se descompone en tipos de pieza "
+                            "física fabricada con geometría y tres dimensiones estimated acotadas; "
+                            "sin premisa conserva unknown. En detalles locales x recorre length e y "
+                            "recorre width, con marco separado por pieza. Resuelve estabilidad "
                             "necesaria con detalle estimated explícito."
                         )
                     if raster_without_metric_ledger:

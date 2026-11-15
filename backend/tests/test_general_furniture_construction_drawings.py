@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from io import StringIO
+import json
 from types import SimpleNamespace
 from xml.etree import ElementTree as ET
 
 import ezdxf
 
 from backend.app.general_furniture.construction_drawings import (
+    render_construction_artifacts,
     render_construction_sheet_dxf,
     render_construction_sheet_svg,
 )
@@ -235,6 +237,48 @@ def test_visible_dimension_labels_use_hundredth_mm_without_changing_geometry() -
     assert sheet.primitives[0].text == "4.999943339249739 mm"
 
 
+def test_piece_sheet_without_explicit_geometry_is_available_but_incomplete() -> None:
+    sheet = SimpleNamespace(
+        sheet_id="construction:piece:hinge-kit",
+        kind="piece",
+        piece_id="hinge-kit",
+        title="Juego de herrajes",
+        warnings=(SimpleNamespace(
+            code="piece_geometry_incomplete",
+            message="La pieza no tiene forma explícita y tres dimensiones aceptadas.",
+            severity="warning",
+            consequence="provisional_only",
+        ),),
+        primitives=(
+            _primitive(
+                "quantity", "text", ((0, 0),), state="estimated",
+                text="Cantidad propuesta: ≈ 2 uds.",
+            ),
+        ),
+    )
+    plan = SimpleNamespace(
+        proposal_revision=1,
+        review_revision=1,
+        pieces=(SimpleNamespace(piece_id="hinge-kit", component_id="hinge-kit"),),
+        sheets=(sheet,),
+    )
+
+    artifacts = render_construction_artifacts(plan)
+
+    assert {artifact.status for artifact in artifacts} == {"incomplete"}
+    assert {
+        artifact.incomplete_reasons for artifact in artifacts
+    } == {("piece_geometry_incomplete",)}
+    assert {artifact.kind for artifact in artifacts} == {
+        "piece_sheet_svg", "piece_sheet_dxf",
+    }
+    svg = next(artifact for artifact in artifacts if artifact.kind == "piece_sheet_svg")
+    root = ET.fromstring(svg.content)
+    assert json.loads(root.find("{http://www.w3.org/2000/svg}metadata").text)[
+        "authority"
+    ] == "provisional_not_manufacturing"
+
+
 def _assert_svg_text_inside_viewbox(root: ET.Element) -> None:
     view_x, view_y, view_width, view_height = (
         float(value) for value in root.attrib["viewBox"].split()
@@ -285,6 +329,90 @@ def test_svg_bounds_include_long_estimated_vertical_dimension_label_to_the_left(
     )
     assert label.attrib["text-anchor"] == "middle"
     _assert_svg_text_inside_viewbox(root)
+
+
+def test_dimension_labels_clear_exterior_lines_for_vertical_reversed_and_diagonal_dimensions() -> None:
+    sheet = SimpleNamespace(
+        sheet_id="piece:label-clearance",
+        kind="piece",
+        piece_id="label-clearance",
+        title="Separación de etiquetas",
+        warnings=(),
+        primitives=(
+            _primitive(
+                "outline", "polyline",
+                ((0, 0), (400, 0), (400, 180), (0, 180), (0, 0)),
+                state="observed",
+            ),
+            _primitive(
+                "vertical", "dimension",
+                ((0, 0), (0, 180), (-45, 0)),
+                state="deduced", text="≈ 180 mm [160–200]",
+            ),
+            _primitive(
+                "horizontal-reversed", "dimension",
+                ((400, 0), (0, 0), (400, -45)),
+                state="deduced", text="400 mm",
+            ),
+            _primitive(
+                "diagonal", "dimension",
+                ((0, 0), (100, 100), (-20, 20)),
+                state="estimated", text="141.42 mm",
+            ),
+        ),
+    )
+
+    root = ET.fromstring(render_construction_sheet_svg(sheet))
+    cases = {
+        "vertical": ((-45.0, 90.0), (-1.0, 0.0)),
+        "horizontal-reversed": ((200.0, -45.0), (0.0, -1.0)),
+        "diagonal": ((30.0, 70.0), (-2 ** -0.5, 2 ** -0.5)),
+    }
+    for primitive_id, (line_midpoint, outward) in cases.items():
+        group = root.find(f".//*[@data-primitive-id='{primitive_id}']")
+        assert group is not None
+        label = group.find(".//{http://www.w3.org/2000/svg}text")
+        assert label is not None and label.text
+        x = float(label.attrib["x"])
+        baseline_y = float(label.attrib["y"])
+        font_size = float(label.attrib["font-size"])
+        half_width = len(label.text) * font_size * 0.6 / 2
+        corners = (
+            (x - half_width, baseline_y - font_size),
+            (x + half_width, baseline_y - font_size),
+            (x - half_width, baseline_y + font_size * 0.3),
+            (x + half_width, baseline_y + font_size * 0.3),
+        )
+        line_projection = line_midpoint[0] * outward[0] + line_midpoint[1] * outward[1]
+        assert min(px * outward[0] + py * outward[1] for px, py in corners) > line_projection
+
+    _assert_svg_text_inside_viewbox(root)
+
+
+def test_dxf_vertical_dimension_label_is_centered_clear_of_exterior_line() -> None:
+    sheet = SimpleNamespace(
+        sheet_id="piece:dxf-label-clearance",
+        kind="piece",
+        piece_id="dxf-label-clearance",
+        title="Separación DXF",
+        warnings=(),
+        primitives=(
+            _primitive(
+                "vertical", "dimension",
+                ((0, 0), (0, 180), (-45, 0)),
+                state="deduced", text="180 mm",
+            ),
+        ),
+    )
+
+    document = ezdxf.read(StringIO(render_construction_sheet_dxf(sheet).decode("utf-8")))
+    label = next(
+        entity for entity in document.modelspace().query('TEXT[layer=="VX_DEDUCED"]')
+        if entity.dxf.text == "180 mm"
+    )
+
+    assert label.dxf.halign == 1
+    assert label.dxf.insert.x < -45
 
 
 def test_svg_bounds_include_all_labels_when_sheet_has_no_geometry() -> None:

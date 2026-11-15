@@ -298,6 +298,55 @@ def test_planner_omits_assembly_when_placement_coverage_is_not_exact() -> None:
     assert any(warning.code == "assembly_placement_coverage_mismatch" for warning in plan.warnings)
 
 
+def test_planner_bounds_aggregate_summary_refs_without_losing_piece_provenance() -> None:
+    review = _review(placements=False)
+    components = tuple(
+        review.components[0].model_copy(update={
+            "id": component_id,
+            "label": f"Panel {component_id}",
+            "source_view_ids": (),
+            "source_contour_ids": tuple(
+                f"contour:{component_id}:{index:02d}" for index in range(30)
+            ),
+            "source_evidence_ids": (),
+            "detail_ids": (),
+            "geometry": review.components[0].geometry.model_copy(update={
+                "source_contour_ids": (f"contour:{component_id}:00",),
+                "basis_refs": (f"contour:{component_id}:00",),
+            }),
+        })
+        for component_id in ("alpha", "beta", "gamma")
+    )
+    review = review.model_copy(update={
+        "components": components,
+        "construction_details": (),
+        "construction_decisions": (),
+    })
+
+    first = plan_general_construction(review, _validation())
+    permuted = plan_general_construction(
+        review.model_copy(update={"components": tuple(reversed(components))}),
+        _validation(),
+    )
+
+    assert len(first.summary.source_refs) == 64
+    assert first.summary.source_refs == permuted.summary.source_refs
+    assert [len(piece.source_refs) for piece in first.pieces] == [30, 30, 30]
+    assert set(first.pieces[0].source_refs) == set(components[0].source_contour_ids)
+    assert set(first.pieces[1].source_refs) == set(components[1].source_contour_ids)
+    assert set(first.pieces[2].source_refs) == set(components[2].source_contour_ids)
+    warning = next(
+        item for item in first.warnings
+        if item.code == "summary_source_refs_truncated"
+    )
+    assert warning.severity == "warning"
+    assert warning.consequence == "provisional_only"
+    assert "total=90" in warning.message
+    assert "retained=64" in warning.message
+    assert "truncated=26" in warning.message
+    assert first.authority == "provisional_not_manufacturing"
+
+
 def test_planner_emits_assembly_for_unique_exact_occurrence_coverage() -> None:
     plan = plan_general_construction(_review_with_complete_assembly(), _validation())
 

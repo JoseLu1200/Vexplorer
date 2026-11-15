@@ -42,6 +42,28 @@ def test_critic_receives_compact_accounting_targets_without_duplicate_full_snaps
     assert payload["required_evidence_disposition_review_targets"] == list(report.required_disposition_review_targets)
     assert payload["evidence_accounting"]["claims_physical_piece_recall"] is False
     assert payload["evidence_accounting"]["evidence_coverage"] == 1.0
+    authority = payload["review_target_authority"]
+    assert authority["allowed_targets"] == "allowed_target_refs_only"
+    assert authority["invalid_accounting_regions"] == (
+        "diagnostics_not_review_targets_unless_explicitly_allowed"
+    )
+    assert authority["accepted_quantity_requires"] == [
+        "quantity_basis:pass",
+        "duplicate_scan:pass",
+    ]
+    requirements = payload[
+        "required_evidence_disposition_review_requirements"
+    ]
+    assert {item["target_ref"] for item in requirements} == set(
+        report.required_disposition_review_targets
+    )
+    assert {item["disposition_kind"] for item in requirements} == {
+        "multi_region_assigned"
+    }
+    assert all(item["check_kind_rule"] == "any_of" for item in requirements)
+    assert all(item["required_pass_check_kinds"] == [
+        "duplicate_scan", "cross_view_identity",
+    ] for item in requirements)
     assert set(report.required_disposition_review_targets) <= set(payload["allowed_target_refs"])
     assert set(report.required_disposition_review_targets) <= set(payload["allowed_source_refs"])
     assert all(item["authority"].endswith("not_semantic_view_or_physical_identity_or_quantity") for item in payload["region_visual_links"])
@@ -71,6 +93,189 @@ def test_duplicate_projection_disposition_needs_identity_or_duplicate_check(disp
 
     with pytest.raises(ValueError, match="duplicate_projection_requires_directed_duplicate_check"):
         autonomous._validate_evidence_disposition_checks(weak, {target: disposition_kind})
+
+
+def test_shared_projection_support_requires_both_directed_checks_on_exact_target() -> None:
+    target = "evidence_region:evidence-candidate:shared-side"
+    wrong_target = "evidence_region:evidence-candidate:other"
+    args = GeneralAutoReviewArgs(
+        scenario_id="base",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=("panel",),
+            result_component_ids=("panel",), reason="Continuidad.",
+        ),),
+        components=(),
+        checks=(
+            GeneralModelVisualCheck(
+                id="duplicate", kind="duplicate_scan", outcome="pass",
+                target_refs=(target,), source_refs=("visual:accounting-page",),
+                summary="No se contó el apoyo compartido como otra pieza.",
+            ),
+            GeneralModelVisualCheck(
+                id="shared-wrong-target", kind="shared_projection_support",
+                outcome="pass", target_refs=(wrong_target,),
+                source_refs=("visual:accounting-page",),
+                summary="Contraste dirigido a otra región.",
+            ),
+        ),
+        field_reviews=(GeneralMachineFieldReview(
+            target_ref=target, status="accepted",
+            check_ids=("duplicate", "shared-wrong-target"),
+        ),),
+        unresolved=("fixture incomplete",), status="incomplete",
+    )
+
+    with pytest.raises(ValueError) as caught:
+        autonomous._validate_evidence_disposition_checks(
+            args, {target: "shared_projection_support"},
+        )
+
+    details = autonomous._safe_autonomous_validation_details(caught.value)
+    assert details[0]["expected_kinds"] == [
+        "duplicate_scan", "shared_projection_support",
+    ]
+    assert details[0]["check_kind_rule"] == "all_of"
+    assert details[0]["requires_exact_target"] is True
+
+
+def test_shared_projection_support_accepts_both_directed_checks_on_exact_target() -> None:
+    target = "evidence_region:evidence-candidate:shared-side"
+    args = GeneralAutoReviewArgs(
+        scenario_id="base",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=("panel",),
+            result_component_ids=("panel",), reason="Continuidad.",
+        ),),
+        components=(),
+        checks=tuple(
+            GeneralModelVisualCheck(
+                id=kind, kind=kind, outcome="pass", target_refs=(target,),
+                source_refs=("visual:accounting-page",), summary="Contraste dirigido.",
+            )
+            for kind in ("duplicate_scan", "shared_projection_support")
+        ),
+        field_reviews=(GeneralMachineFieldReview(
+            target_ref=target, status="accepted",
+            check_ids=("duplicate_scan", "shared_projection_support"),
+        ),),
+        unresolved=(), status="accepted",
+    )
+
+    autonomous._validate_evidence_disposition_checks(
+        args, {target: "shared_projection_support"},
+    )
+
+
+def test_shared_projection_support_context_announces_all_of_requirement() -> None:
+    extraction, proposal, draft, _ = _vector_case(assigned_count=2)
+    accounting = build_evidence_accounting_report(extraction, proposal, draft)
+    first = proposal.evidence_dispositions[0].model_copy(update={
+        "kind": "shared_projection_support",
+        "component_id": None,
+        "support_component_ids": ("panel", "panel-second"),
+    })
+    proposal = proposal.model_copy(update={
+        "evidence_dispositions": (first, *proposal.evidence_dispositions[1:]),
+    })
+
+    requirements = autonomous._disposition_review_requirements(
+        proposal, accounting,
+    )
+    shared = next(
+        item for item in requirements
+        if item["target_ref"] == f"evidence_region:{first.candidate_region_id}"
+    )
+
+    assert shared["disposition_kind"] == "shared_projection_support"
+    assert shared["required_pass_check_kinds"] == [
+        "duplicate_scan", "shared_projection_support",
+    ]
+    assert shared["check_kind_rule"] == "all_of"
+
+
+def test_directed_disposition_feedback_reports_all_targets_and_requirements() -> None:
+    duplicate_target = "evidence_region:evidence-candidate:duplicate"
+    multi_region_target = "evidence_region:evidence-candidate:multi"
+    weak = GeneralAutoReviewArgs(
+        scenario_id="base",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=("panel",),
+            result_component_ids=("panel",), reason="Continuidad.",
+        ),),
+        components=(),
+        checks=(GeneralModelVisualCheck(
+            id="weak", kind="visual_consistency", outcome="pass",
+            target_refs=(duplicate_target, multi_region_target),
+            source_refs=("visual:accounting-page",),
+            summary="Coincidencia visual genérica.",
+        ),),
+        field_reviews=(
+            GeneralMachineFieldReview(
+                target_ref=duplicate_target, status="accepted",
+                check_ids=("weak",),
+            ),
+            GeneralMachineFieldReview(
+                target_ref=multi_region_target, status="accepted",
+                check_ids=("weak",),
+            ),
+        ),
+        unresolved=("diagnostic fixture",), status="incomplete",
+    )
+
+    with pytest.raises(ValueError) as caught:
+        autonomous._validate_evidence_disposition_checks(
+            weak,
+            {
+                duplicate_target: "duplicate_projection",
+                multi_region_target: "multi_region_assigned",
+            },
+        )
+
+    details = autonomous._safe_autonomous_validation_details(caught.value)
+    assert details == [
+        {
+            "loc": ["field_reviews", duplicate_target],
+            "msg": "duplicate_projection_requires_directed_duplicate_check",
+            "type": "value_error",
+            "target_ref": duplicate_target,
+            "disposition_kind": "duplicate_projection",
+            "check_ids": ["weak"],
+            "selected_checks": [{
+                "id": "weak", "kind": "visual_consistency",
+                "outcome": "pass", "targets_exact": True,
+            }],
+            "expected_kinds": ["duplicate_scan", "cross_view_identity"],
+            "check_kind_rule": "any_of",
+            "required_outcome": "pass",
+            "requires_exact_target": True,
+            "truncated": False,
+        },
+        {
+            "loc": ["field_reviews", multi_region_target],
+            "msg": "duplicate_projection_requires_directed_duplicate_check",
+            "type": "value_error",
+            "target_ref": multi_region_target,
+            "disposition_kind": "multi_region_assigned",
+            "check_ids": ["weak"],
+            "selected_checks": [{
+                "id": "weak", "kind": "visual_consistency",
+                "outcome": "pass", "targets_exact": True,
+            }],
+            "expected_kinds": ["duplicate_scan", "cross_view_identity"],
+            "check_kind_rule": "any_of",
+            "required_outcome": "pass",
+            "requires_exact_target": True,
+            "truncated": False,
+        },
+    ]
+
+
+def test_autonomous_validation_feedback_still_sanitizes_arbitrary_value_errors() -> None:
+    details = autonomous._safe_autonomous_validation_details(
+        ValueError("secret-reviewer-body=" + "x" * 200)
+    )
+
+    assert details == [{"loc": [], "msg": "invalid_value", "type": "value_error"}]
 
 
 def test_complete_accounting_never_promotes_and_unreviewable_accounting_blocks_acceptance() -> None:

@@ -206,6 +206,43 @@ def test_provider_http_error_exposes_only_safe_bounded_operational_metadata() ->
     assert "remote" not in repr(caught.value).lower()
 
 
+def test_provider_maps_exhausted_credit_balance_without_leaking_remote_body() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            429,
+            headers={"x-request-id": "req-quota-123"},
+            json={
+                "error": {
+                    "type": "insufficient_quota",
+                    "code": "credit_balance_exhausted",
+                    "message": "remote leaked super-secret billing details",
+                },
+                "private_debug": "must-not-propagate",
+            },
+        )
+
+    provider = OpenAIResponsesProvider(
+        ProviderSettings(
+            api_key="super-secret",
+            model="gpt-test",
+            base_url="https://example.test/v1",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(ProviderError) as caught:
+        provider.create_response(
+            input_items=[], tools=[], previous_response_id=None, timeout_s=0.25
+        )
+
+    assert caught.value.code == "provider_credit_balance_exhausted"
+    assert caught.value.status_code == 429
+    assert caught.value.provider_code == "credit_balance_exhausted"
+    assert caught.value.request_id == "req-quota-123"
+    assert "secret" not in repr(caught.value).lower()
+    assert "billing" not in repr(caught.value).lower()
+
+
 def test_provider_incomplete_error_preserves_safe_response_identity_and_reason() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

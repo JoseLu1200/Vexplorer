@@ -13,10 +13,17 @@ from backend.app.general_furniture.autonomous import run_general_autonomous
 from backend.app.general_furniture.autonomous import _reject_forged_machine_facts
 from backend.app.general_furniture.autonomous import _review_input
 from backend.app.general_furniture.autonomous import _materialize_repair
+from backend.app.general_furniture.autonomous import _repair_is_supported
 from backend.app.general_furniture.autonomous import _scenario_occurrences
+from backend.app.general_furniture.autonomous import _safe_autonomous_validation_details
 from backend.app.general_furniture.autonomous import _tool_schemas
 from backend.app.general_furniture.autonomous import _validate_visual_checks
+from backend.app.general_furniture.autonomous import _effective_auto_status
+from backend.app.general_furniture.autonomous import _recoverable_dimension_measurements
+from backend.app.general_furniture.autonomous import _semantic_repair_directives
+from backend.app.general_furniture.autonomous import _validate_semantic_repair_delta
 from backend.app.general_furniture.live import GeneralFurnitureAgentOutcome, GeneralVisualPage
+from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.proposal import materialize_general_proposal
 from backend.app.general_furniture.router import GeneralFurnitureContext
 from backend.tests.test_general_furniture_proposal import _extraction, _proposal
@@ -53,6 +60,216 @@ def test_critic_and_repair_reject_cross_geometry_observed_dimension_transfer() -
     assert "parámetro estimated separado" in repair
     assert "estabilidad" in GENERAL_AUTO_REVIEW_PROMPT
     assert "detalle estimated explícito" in repair
+    assert "subensamblaje funcional" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "tipos de pieza física fabricada" in repair
+    assert "x recorre length" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "y recorre width" in repair
+    assert "orden serializado" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no prueban por sí solos identidad" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "anotaciones explícitas" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "invalid_region_reasons" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no son review targets" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "quantity_basis y duplicate_scan" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "orthographic_hypotheses" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no es una referencia citable" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no prueba identidad, ownership, cantidad ni material" in (
+        GENERAL_AUTO_REVIEW_PROMPT
+    )
+    assert "alineación global" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no mezcles direct y mirrored" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "construction_placements=[]" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "decision category=assembly" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "dimension_refs del detalle" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "mediciones ledger van en source_refs" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "shared_projection_support" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "duplicate_scan" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "ambos" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "material/finish" in GENERAL_AUTO_REVIEW_PROMPT
+    assert "no los repitas en unresolved" in GENERAL_AUTO_REVIEW_PROMPT
+
+    critic_schema = next(
+        item for item in _tool_schemas()
+        if item["name"] == "entregar_revision_autonoma"
+    )["parameters"]
+    review_properties = critic_schema["$defs"]["GeneralMachineFieldReview"][
+        "properties"
+    ]
+    decision_properties = critic_schema["properties"]
+    assert "must exist in checks" in review_properties["check_ids"]["description"]
+    assert "all checks pass" in decision_properties["status"]["description"]
+    assert "Must be empty" in decision_properties["unresolved"]["description"]
+
+
+def test_accepted_field_check_failure_reports_missing_nonpass_and_wrong_target() -> None:
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralModelVisualCheck,
+        GeneralReviewOperation,
+    )
+
+    targets = tuple(
+        f"component:panel.{field}" for field in ("length", "width", "thickness")
+    )
+    args = GeneralAutoReviewArgs(
+        scenario_id="diagnostic",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=("panel",),
+            result_component_ids=("panel",), reason="Diagnóstico acotado.",
+        ),),
+        components=(),
+        checks=(
+            GeneralModelVisualCheck(
+                id="nonpass", kind="visual_consistency", outcome="unknown",
+                target_refs=(targets[1],), source_refs=("visual:page",),
+                summary="No se pudo cerrar.",
+            ),
+            GeneralModelVisualCheck(
+                id="wrong-target", kind="visual_consistency", outcome="pass",
+                target_refs=(targets[1],), source_refs=("visual:page",),
+                summary="Contraste dirigido a otro campo.",
+            ),
+        ),
+        field_reviews=(
+            GeneralMachineFieldReview(
+                target_ref=targets[0], status="accepted", check_ids=("missing",),
+            ),
+            GeneralMachineFieldReview(
+                target_ref=targets[1], status="accepted", check_ids=("nonpass",),
+            ),
+            GeneralMachineFieldReview(
+                target_ref=targets[2], status="accepted",
+                check_ids=("wrong-target",),
+            ),
+        ),
+        unresolved=("diagnostic",), status="incomplete",
+    )
+
+    with pytest.raises(ValueError) as caught:
+        _validate_visual_checks(
+            args, {"visual:page"}, {"visual:page"}, set(targets)
+        )
+
+    details = _safe_autonomous_validation_details(caught.value)
+    assert [item["target_ref"] for item in details] == list(targets)
+    assert [item["failure_reasons"] for item in details] == [
+        ["missing_check"], ["nonpass_check"], ["wrong_target"],
+    ]
+    assert details[0]["selected_checks"][0]["id"] == "missing"
+    assert details[0]["selected_checks"][0]["outcome"] == "missing"
+    assert all(item["required_outcome"] == "pass" for item in details)
+    assert all(item["requires_exact_target"] is True for item in details)
+
+
+def _necessary_hidden_aggregate_review(
+    *,
+    necessity="estimated_required",
+    kind="panel",
+    existence_status="accepted",
+    quantity_status="accepted",
+    quantity_state="estimated",
+    quantity_value=2,
+    abstained_field="thickness",
+    structural_status="abstained",
+    thickness_state="unknown",
+):
+    from backend.app.contratos.modelos import (
+        GeneralAutoReviewArgs,
+        GeneralComponentReview,
+        GeneralDimensionRange,
+        GeneralPieceGeometry,
+        GeneralQuantity,
+        GeneralReviewOperation,
+        GeneralTextValue,
+    )
+
+    component = GeneralComponentReview(
+        id="hidden-assembly", label="Conjunto funcional oculto", kind=kind,
+        role="contenedor funcional", length=GeneralValue(
+            value_mm=500, state="estimated", dependency_refs=("premise:hidden",),
+            range_mm=GeneralDimensionRange(min_mm=450, max_mm=550),
+            assumption_refs=("premise:hidden",), method="construction_assumption",
+        ), width=GeneralValue(
+            value_mm=400, state="estimated", dependency_refs=("premise:hidden",),
+            range_mm=GeneralDimensionRange(min_mm=350, max_mm=450),
+            assumption_refs=("premise:hidden",), method="construction_assumption",
+        ), thickness=(
+            GeneralValue(value_mm=None, state="unknown")
+            if thickness_state == "unknown"
+            else GeneralValue(
+                value_mm=18,
+                state="estimated",
+                dependency_refs=("premise:hidden",),
+                range_mm=GeneralDimensionRange(min_mm=16, max_mm=20),
+                assumption_refs=("premise:hidden",),
+                method="construction_assumption",
+            )
+        ),
+        quantity=GeneralQuantity(
+            value=quantity_value,
+            state=quantity_state,
+            dependency_refs=(
+                ("premise:hidden",) if quantity_state == "estimated" else ()
+            ),
+        ), material=GeneralTextValue(value=None, state="unknown"),
+        finish=GeneralTextValue(value=None, state="unknown"),
+        replaces_component_ids=("hidden-assembly",), assumptions=("Premisa funcional.",),
+        unknown_fields=("kind", "geometry", "thickness"), necessity=necessity,
+        geometry=GeneralPieceGeometry(
+            shape_kind="hardware" if kind == "hardware" else "rectangle",
+            source_contour_ids=(), basis_refs=("premise:hidden",),
+            rationale="Agregado todavía no descompuesto.",
+        ),
+    )
+    field_reviews = (
+        GeneralMachineFieldReview(
+            target_ref="component:hidden-assembly.existence",
+            status=existence_status, check_ids=("existence",),
+        ),
+        GeneralMachineFieldReview(
+            target_ref="component:hidden-assembly.quantity",
+            status=quantity_status, check_ids=("quantity",),
+        ),
+        GeneralMachineFieldReview(
+            target_ref=f"component:hidden-assembly.{abstained_field}",
+            status=structural_status, check_ids=(abstained_field,),
+        ),
+    )
+    return GeneralAutoReviewArgs(
+        scenario_id="hidden-scenario",
+        operations=(GeneralReviewOperation(
+            kind="replace", source_component_ids=("hidden-assembly",),
+            result_component_ids=("hidden-assembly",), reason="Revisión provisional.",
+        ),),
+        components=(component,), checks=(), field_reviews=field_reviews,
+        unresolved=("physical_cut_parts",), status="incomplete",
+    )
+
+
+def test_abstained_structure_of_necessary_accepted_aggregate_supports_bounded_repair() -> None:
+    args = _necessary_hidden_aggregate_review(thickness_state="estimated")
+
+    assert _repair_is_supported(args) is True
+
+
+def test_unknown_structure_of_necessary_accepted_aggregate_supports_bounded_repair() -> None:
+    args = _necessary_hidden_aggregate_review(structural_status="accepted")
+
+    assert _repair_is_supported(args) is True
+
+
+@pytest.mark.parametrize("overrides", (
+    {"existence_status": "abstained"},
+    {"quantity_status": "abstained"},
+    {"necessity": "visible"},
+    {"kind": "hardware"},
+    {"thickness_state": "estimated", "structural_status": "accepted"},
+    {"quantity_state": "unknown", "quantity_value": None},
+    {"thickness_state": "estimated", "abstained_field": "material"},
+))
+def test_incomplete_aggregate_repair_guard_does_not_infer_without_closed_need(overrides) -> None:
+    args = _necessary_hidden_aggregate_review(**overrides)
+
+    assert _repair_is_supported(args) is False
 
 
 def test_hardware_review_is_provisional_construction_classification_not_commercial_certification() -> None:
@@ -935,16 +1152,6 @@ def _review_component(source, *, component_id: str) -> dict:
     }
 
 
-from backend.app.general_furniture.autonomous import _effective_auto_status
-
-from backend.app.general_furniture.autonomous import _recoverable_dimension_measurements
-
-from backend.app.general_furniture.autonomous import _semantic_repair_directives
-
-from backend.app.general_furniture.autonomous import _validate_semantic_repair_delta
-
-from backend.app.general_furniture.measurements import derive_geometry_measurements
-
 def test_structured_semantic_directives_authorize_one_bounded_repair() -> None:
     directives = _semantic_repair_directives(
         (
@@ -1268,18 +1475,6 @@ def test_autonomous_reviewer_keeps_value_hypothetical_and_records_machine_proof(
 
     class Provider:
         def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
-            component = {
-                "id": "auto-component-1", "label": source.label, "kind": source.kind, "role": source.role,
-                "length": source.length.model_dump(mode="json"), "width": source.width.model_dump(mode="json"),
-                "thickness": source.thickness.model_dump(mode="json"), "quantity": source.quantity.model_dump(mode="json"),
-                "material": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "finish": {"value": None, "state": "unknown", "dependency_refs": [], "evidence_ids": []},
-                "replaces_component_ids": [source.id], "source_view_ids": list(source.source_view_ids),
-                "source_observation_ids": list(source.source_observation_ids), "source_contour_ids": list(source.source_contour_ids),
-                "source_evidence_ids": list(source.source_evidence_ids), "source_dimension_ids": list(source.source_dimension_ids),
-                "source_document_refs": list(source.source_document_refs), "assumptions": list(source.assumptions),
-                "unknown_fields": list(source.unknown_fields),
-            }
             arguments = {
                 "scenario_id": "scenario-auto-1",
                 "checks": [{"id": "visual-length", "kind": "visual_consistency", "outcome": "pass", "method": "model_visual", "target_refs": [f"component:{source.id}.length"], "source_refs": ["visual:page-1"], "summary": "La vista es coherente con la asignación propuesta."}],

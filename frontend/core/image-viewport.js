@@ -20,6 +20,12 @@ export function panImageViewport(viewport, dx, dy) {
   return { ...viewport, x: viewport.x + dx, y: viewport.y + dy };
 }
 
+export function panImageViewportByDirection(viewport,direction,step=48){
+  const deltas={left:[step,0],right:[-step,0],up:[0,step],down:[0,-step]};
+  const [dx,dy]=deltas[direction]??[0,0];
+  return panImageViewport(viewport,dx,dy);
+}
+
 export function imageViewportStyle(viewport) {
   return {
     width: `${viewport.scale * 100}%`,

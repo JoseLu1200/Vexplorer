@@ -13,13 +13,15 @@ export function generalMachineStatusPresentation(workspace){
 }
 
 export function generalReviewMessage(workspace={},recovery=null){
+  if(recovery?.failureReasonCode==="provider_credit_balance_exhausted"&&recovery.message)return recovery.message;
   if(!(workspace.reviewRevision>0))return recovery?.proposalSaved?"Borrador guardado recuperado; la revisión automática sigue pendiente. Puedes reanudarla sin repetir la propuesta.":"La propuesta está disponible, pero la revisión automática sigue pendiente.";
   return workspace.status==="reviewed_incomplete"?"El modelo se abstuvo en los campos sin respaldo suficiente. BOM, esquema y descargas conservan esas incógnitas; la corrección humana es opcional.":"La revisión automática publicó el resultado de coherencia actual. La corrección humana sigue disponible como opción avanzada.";
 }
 
 export function presentJobRecovery(job={}){
-  const checkpoint=job.checkpoint??{},recovery=job.recovery??{},proposalSaved=checkpoint.proposal_saved===true,proposalRevision=checkpoint.proposal_revision,code=job.cause??job.error?.code,timeoutCodes=new Set(["provider_timeout","provider_request_timeout","agent_deadline_exceeded","general_auto_review_timeout"]),causeLabel=timeoutCodes.has(code)?"El análisis agotó el tiempo disponible durante la revisión automática":job.error?.message??"La ejecución se interrumpió antes de completar la revisión",phaseLabel=proposalSaved?`Propuesta ${Number.isInteger(proposalRevision)?proposalRevision:"guardada"} recuperada; revisión automática pendiente`:`No hay propuesta recuperable; repetir iniciará el análisis desde cero`,actionLabel=recovery.safe_action==="resume_review"?"Reanudar revisión sin repetir la propuesta":recovery.safe_action==="retry_from_start"?"Repetir desde el inicio":"Sin reanudación segura publicada";
-  return{phaseLabel,message:`${causeLabel}. ${phaseLabel}. Este borrador guardado es provisional y no equivale a una revisión aprobada.`,actionLabel,safeAction:recovery.safe_action??null,endpoint:recovery.endpoint??null,proposalSaved,proposalId:checkpoint.proposal_id??null,proposalRevision:proposalRevision??null,reviewRevision:checkpoint.review_revision??0};
+  const checkpoint=job.checkpoint??{},recovery=job.recovery??{},safeAction=["resume_review","retry_from_start"].includes(recovery.safe_action)?recovery.safe_action:null,proposalSaved=checkpoint.proposal_saved===true,proposalRevision=checkpoint.proposal_revision,code=job.cause??job.error?.reason_code??job.error?.code,creditExhausted=code==="provider_credit_balance_exhausted",timeoutCodes=new Set(["provider_timeout","provider_request_timeout","agent_deadline_exceeded","general_auto_review_timeout"]),causeLabel=timeoutCodes.has(code)?"El análisis agotó el tiempo disponible durante la revisión automática":job.error?.message??"La ejecución se interrumpió antes de completar la revisión",phaseLabel=proposalSaved?`Propuesta ${Number.isInteger(proposalRevision)?proposalRevision:"guardada"} recuperada; revisión automática pendiente`:`No hay propuesta recuperable; repetir iniciará el análisis desde cero`,actionLabel=creditExhausted?(safeAction==="resume_review"?"Reanudar revisión cuando haya saldo o cuota":safeAction==="retry_from_start"?"Repetir desde el inicio cuando haya saldo o cuota":"Sin reanudación segura publicada"):safeAction==="resume_review"?"Reanudar revisión sin repetir la propuesta":safeAction==="retry_from_start"?"Repetir desde el inicio":"Sin reanudación segura publicada";
+  const proposalLabel=Number.isInteger(proposalRevision)?`La propuesta ${proposalRevision}`:"La propuesta",message=creditExhausted?(proposalSaved?`El proveedor no tiene saldo o cuota disponible. ${proposalLabel} quedó guardada; puedes reanudar la revisión cuando se restablezca el saldo o la cuota. Este borrador guardado es provisional y no equivale a una revisión aprobada.`:`El proveedor no tiene saldo o cuota disponible. ${phaseLabel}; vuelve a intentarlo cuando se restablezca el saldo o la cuota.`):`${causeLabel}. ${phaseLabel}. Este borrador guardado es provisional y no equivale a una revisión aprobada.`;
+  return{phaseLabel,message,actionLabel,safeAction,endpoint:safeAction?recovery.endpoint??null:null,failureReasonCode:code??null,proposalSaved,proposalId:checkpoint.proposal_id??null,proposalRevision:proposalRevision??null,reviewRevision:checkpoint.review_revision??0};
 }
 
 function field(value) {
@@ -61,6 +63,34 @@ export function presentGeneralConstructionQuantity(raw = {}) {
 }
 
 export function presentConstructionCounts(components=[]){return list(components).reduce((summary,item)=>{const quantity=Number(item.quantity?.value),known=Number.isInteger(quantity)&&quantity>0,kind=item.kind??item.quantity?.component_kind;summary.typeCount+=1;if(!known||!["panel","linear_member","hardware"].includes(kind))summary.unknownCount+=1;else if(kind==="hardware")summary.hardwareEstimated+=quantity;else summary.cutPieceCount+=quantity;return summary;},{typeCount:0,cutPieceCount:0,hardwareEstimated:0,unknownCount:0});}
+
+const GENERAL_ARTIFACT_WARNING_LABELS={
+  assembly_placements_unavailable:"La colocación del conjunto no está disponible",
+  assembly_sheet_unavailable:"La lámina de conjunto no está disponible",
+};
+
+function generalArtifactWarning(value){
+  const raw=typeof value==="string"?value:value?.message??value?.code??"";
+  return GENERAL_ARTIFACT_WARNING_LABELS[raw]??raw;
+}
+
+export function presentGeneralArtifactAvailability({kind="assembly",artifact={},sheet=null,construction=null}={}){
+  const assembly=kind==="assembly",warnings=[
+    ...list(artifact.incompleteReasons??artifact.incomplete_reasons),
+    ...list(sheet?.warnings),
+    ...(assembly?list(construction?.warnings):[]),
+  ].map(generalArtifactWarning).filter(Boolean);
+  if(assembly&&!sheet)warnings.unshift("No se publicó una lámina de colocación del conjunto");
+  if(assembly&&!list(construction?.placements).length)warnings.unshift("La propuesta no publicó datos de colocación del conjunto");
+  const unique=[...new Set(warnings)],fileReady=artifact.status==="ready",complete=fileReady&&sheet?.status!=="incomplete"&&unique.length===0;
+  const subject=assembly?"construcción provisional":"plano provisional";
+  return{
+    fileReady,
+    complete,
+    label:(fileReady?"archivo disponible":"archivo incompleto")+" · "+subject+(complete?"":assembly?" incompleta":" incompleto"),
+    detail:unique.join(" · ")||"Plano provisional con cotas observadas, deducidas y estimadas diferenciadas; no certifica fabricación.",
+  };
+}
 
 function reviewedValue(original, rawValue, { numeric=false, humanRef }) {
   const empty=rawValue===null||rawValue===undefined||String(rawValue).trim()==="";

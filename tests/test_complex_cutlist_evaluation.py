@@ -397,3 +397,27 @@ def test_freeze_requires_verified_runtime_configuration(tmp_path, evidence) -> N
             "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "a" * 64,
             "prediction": {"job_state": "failed"},
         }], runtime_config={"evaluation_phase": "holdout", "config_evidence": evidence})
+
+
+@pytest.mark.parametrize("transport,profile,key_loaded,allowed", [
+    ("codex_agent_relay", "interactive_codex_1800_v1", False, True),
+    ("openai_responses", "interactive_codex_1800_v1", False, False),
+    ("codex_agent_relay", None, False, False),
+    ("codex_agent_relay", "interactive_codex_1800_v1", True, False),
+])
+def test_codex_interactive_budget_is_explicit_and_not_an_api_budget(tmp_path, transport, profile, key_loaded, allowed) -> None:
+    kwargs = dict(cases=[{
+        "case_id": "blind-001", "split": "holdout", "public_dxf_sha256": "a" * 64,
+        "prediction": {"job_state": "failed"},
+    }], runtime_config={
+        "evaluation_phase": "holdout", "execution_transport": transport,
+        "test_profile": profile, "api_key_loaded": key_loaded,
+        "config_evidence": {"job_timeout_s": 1800, "reviewer_model": "gpt-6-astra"},
+    })
+    if allowed:
+        path = tmp_path / "codex.json"
+        freeze_prediction_bundle(path, **kwargs)
+        assert load_frozen_prediction_bundle(path)["runtime_config"]["test_profile"] == profile
+    else:
+        with pytest.raises(ValueError, match="config_evidence"):
+            freeze_prediction_bundle(tmp_path / "invalid.json", **kwargs)

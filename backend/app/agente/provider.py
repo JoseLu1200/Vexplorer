@@ -84,7 +84,9 @@ def _request_id(headers: httpx.Headers) -> str | None:
     )
 
 
-def _http_error_code(response: httpx.Response, *, deadline: float) -> str | None:
+def _http_error_metadata(
+    response: httpx.Response, *, deadline: float
+) -> tuple[str | None, str | None]:
     raw_body = bytearray()
     try:
         for chunk in response.iter_bytes(chunk_size=_PROVIDER_RESPONSE_CHUNK_BYTES):
@@ -92,16 +94,17 @@ def _http_error_code(response: httpx.Response, *, deadline: float) -> str | None
                 time.monotonic() >= deadline
                 or len(raw_body) + len(chunk) > _MAX_PROVIDER_ERROR_BYTES
             ):
-                return None
+                return None, None
             raw_body.extend(chunk)
         body = json.loads(raw_body)
     except (httpx.HTTPError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
-        return None
+        return None, None
     error = body.get("error") if isinstance(body, dict) else None
+    if not isinstance(error, dict):
+        return None, None
     return (
-        _bounded_operational_text(error.get("code"))
-        if isinstance(error, dict)
-        else None
+        _bounded_operational_text(error.get("type")),
+        _bounded_operational_text(error.get("code")),
     )
 
 
@@ -138,10 +141,19 @@ class OpenAIResponsesProvider:
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError:
+                    provider_type, provider_code = _http_error_metadata(
+                        response, deadline=deadline
+                    )
+                    error_code = "provider_request_failed"
+                    if response.status_code == 429 and (
+                        provider_type == "insufficient_quota"
+                        or provider_code == "credit_balance_exhausted"
+                    ):
+                        error_code = "provider_credit_balance_exhausted"
                     raise ProviderError(
-                        "provider_request_failed",
+                        error_code,
                         status_code=response.status_code,
-                        provider_code=_http_error_code(response, deadline=deadline),
+                        provider_code=provider_code,
                         request_id=_request_id(response.headers),
                     ) from None
                 content_length = response.headers.get("Content-Length")

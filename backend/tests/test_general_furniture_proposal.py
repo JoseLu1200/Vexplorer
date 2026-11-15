@@ -11,11 +11,15 @@ from backend.app.contratos.modelos import (
     Evidence,
     GeneralBinding,
     GeneralComponentProposal,
+    GeneralConstructionDetail,
+    GeneralConstructionParameter,
+    GeneralDimensionRange,
     GeneralFurnitureProposal,
     GeneralPremise,
     GeneralQuantity,
     ObservedDimension,
     Point2D,
+    ReferentialValidationError,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.proposal import materialize_general_proposal
@@ -65,6 +69,44 @@ def test_materialize_rejects_reference_outside_drawing_ledger() -> None:
 
     with pytest.raises(ValueError, match="proposal_reference_outside_ledger"):
         materialize_general_proposal(_extraction(), proposal)
+
+
+def test_materialize_reports_all_source_references_outside_authority() -> None:
+    proposal = _proposal()
+    parameter = GeneralConstructionParameter(
+        id="estimated-depth", label="Fondo estimado", basis="estimated",
+        nominal_mm=400, range_mm=GeneralDimensionRange(min_mm=350, max_mm=450),
+        method="construction_assumption", binding_id=None,
+        source_refs=("dimension:missing-depth",),
+        assumption_refs=("premise:p1",), rationale="Fixture inválido.",
+    )
+    detail = GeneralConstructionDetail(
+        id="edge-detail", kind="other", component_ids=("panel",),
+        parameter_refs=("parameter:estimated-depth",), state="deduced",
+        source_refs=("evidence:missing-edge",), assumption_refs=(),
+        rationale="Fixture inválido.",
+    )
+    proposal = GeneralFurnitureProposal(**(
+        proposal.model_dump()
+        | {
+            "construction_parameters": (parameter,),
+            "construction_details": (detail,),
+        }
+    ))
+
+    with pytest.raises(ReferentialValidationError) as caught:
+        materialize_general_proposal(_extraction(), proposal)
+
+    details = {item["loc"][0]: item for item in caught.value.safe_details()}
+    assert details["construction_parameters[0].source_refs"]["invalid_refs"] == [
+        "dimension:missing-depth"
+    ]
+    assert details["construction_details[0].source_refs"]["invalid_refs"] == [
+        "evidence:missing-edge"
+    ]
+    assert details["construction_parameters[0].source_refs"]["expected"] == (
+        "dimension|measurement|view|observation|contour|evidence|document|visual|internal"
+    )
 
 
 def test_contour_extents_become_deterministic_bindable_measures_with_provenance() -> None:

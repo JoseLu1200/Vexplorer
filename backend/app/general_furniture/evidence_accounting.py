@@ -6,10 +6,14 @@ from typing import Literal
 
 from backend.app.contratos.modelos import (
     DrawingExtraction,
+    GeneralEvidenceDisposition,
     GeneralFurnitureDraft,
     GeneralFurnitureProposal,
 )
 from backend.app.general_furniture.projection_hypotheses import ProjectionHypothesis
+from backend.app.general_furniture.orthographic_hypotheses import (
+    OrthographicHypothesis,
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +33,7 @@ class EvidenceAccountingReport:
     assigned_region_ids: tuple[str, ...]
     nonmaterial_region_ids: tuple[str, ...]
     duplicate_projection_region_ids: tuple[str, ...]
+    shared_projection_support_region_ids: tuple[str, ...]
     unresolved_region_ids: tuple[str, ...]
     invalid_region_ids: tuple[str, ...]
     invalid_region_reasons: tuple[tuple[str, str], ...]
@@ -84,12 +89,41 @@ def _projection_supports_duplicate(
     return any(required <= set(item.source_contour_ids) for item in hypotheses)
 
 
+def _shared_support_alignments(
+    shared_region: RelevantCandidateRegion,
+    anchor_regions: tuple[RelevantCandidateRegion, ...],
+    hypotheses: tuple[OrthographicHypothesis, ...],
+) -> set[str]:
+    shared_contours = set(shared_region.contour_ids)
+    anchor_contours = {
+        contour_id
+        for region in anchor_regions
+        for contour_id in region.contour_ids
+    }
+    alignments: set[str] = set()
+    for hypothesis in hypotheses:
+        hypothesis_contours = {
+            hypothesis.front_contour_id,
+            hypothesis.top_contour_id,
+            hypothesis.side_contour_id,
+        }
+        if not (
+            shared_contours & set(hypothesis.shared_support_contour_ids)
+            and shared_contours & hypothesis_contours
+            and anchor_contours & hypothesis_contours
+        ):
+            continue
+        alignments.update(hypothesis.alignment_alternatives)
+    return alignments
+
+
 def build_evidence_accounting_report(
     extraction: DrawingExtraction,
     proposal: GeneralFurnitureProposal,
     draft: GeneralFurnitureDraft,
     *,
     projection_hypotheses: tuple[ProjectionHypothesis, ...] = (),
+    orthographic_hypotheses: tuple[OrthographicHypothesis, ...] = (),
 ) -> EvidenceAccountingReport:
     regions = derive_relevant_candidate_regions(extraction)
     region_by_id = {item.id: item for item in regions}
@@ -108,6 +142,7 @@ def build_evidence_accounting_report(
     assigned: list[str] = []
     nonmaterial: list[str] = []
     duplicate: list[str] = []
+    shared_support: list[str] = []
     unresolved: list[str] = []
     invalid: list[str] = []
     invalid_reasons: set[tuple[str, str]] = set()
@@ -115,6 +150,9 @@ def build_evidence_accounting_report(
     hardware: list[str] = []
     disposition_targets: list[str] = []
     assigned_by_component: dict[str, list[str]] = {}
+    pending_shared_support: list[
+        tuple[RelevantCandidateRegion, GeneralEvidenceDisposition]
+    ] = []
     warnings: set[str] = set()
 
     def invalidate(region_id: str, reason_code: str) -> None:
@@ -167,9 +205,11 @@ def build_evidence_accounting_report(
         elif disposition.kind == "duplicate_projection":
             component = components.get(disposition.component_id or "")
             original = region_by_id.get(disposition.duplicate_of_region_id or "")
+            if component is None or claims not in ([], [component.id]):
+                invalidate(region.id, "duplicate_projection_component_mismatch")
+                continue
             if (
-                component is None
-                or original is None
+                original is None
                 or not set(original.contour_ids) <= set(component.source_contour_ids)
                 or not _projection_supports_duplicate(
                     region, original, projection_hypotheses
@@ -182,6 +222,9 @@ def build_evidence_accounting_report(
             duplicate.append(region.id)
             disposition_targets.append(f"evidence_region:{region.id}")
         elif disposition.kind == "nonmaterial":
+            if claims:
+                invalidate(region.id, "nonmaterial_region_claimed_by_component")
+                continue
             if disposition.reason_code not in allowed_nonmaterial_reasons:
                 invalidate(
                     region.id, "nonmaterial_disposition_requires_typed_reason"
@@ -189,6 +232,14 @@ def build_evidence_accounting_report(
                 continue
             nonmaterial.append(region.id)
             disposition_targets.append(f"evidence_region:{region.id}")
+        elif disposition.kind == "shared_projection_support":
+            if claims:
+                invalidate(
+                    region.id,
+                    "shared_projection_support_region_claimed_by_component",
+                )
+                continue
+            pending_shared_support.append((region, disposition))
         else:
             unresolved.append(region.id)
             warnings.add("candidate_region_explicitly_unresolved")
@@ -197,6 +248,68 @@ def build_evidence_accounting_report(
     if unknown_region_ids:
         for region_id in unknown_region_ids:
             invalidate(region_id, "disposition_references_unknown_candidate_region")
+
+    compatible_shared_support: list[
+        tuple[RelevantCandidateRegion, set[str]]
+    ] = []
+    for region, disposition in pending_shared_support:
+        support_component_ids = tuple(
+            getattr(disposition, "support_component_ids", ())
+        )
+        if any(component_id not in components for component_id in support_component_ids):
+            invalidate(region.id, "shared_projection_support_component_unknown")
+            continue
+        if any(
+            not assigned_by_component.get(component_id)
+            for component_id in support_component_ids
+        ):
+            invalidate(
+                region.id,
+                "shared_projection_support_without_assigned_anchor",
+            )
+            continue
+        alignments_by_component: list[set[str]] = []
+        for component_id in support_component_ids:
+            anchor_regions = tuple(
+                region_by_id[region_id]
+                for region_id in assigned_by_component[component_id]
+            )
+            alignments = _shared_support_alignments(
+                region,
+                anchor_regions,
+                orthographic_hypotheses,
+            )
+            if not alignments:
+                invalidate(
+                    region.id,
+                    "shared_projection_support_without_supported_projection",
+                )
+                break
+            alignments_by_component.append(alignments)
+        else:
+            region_alignments = set.intersection(*alignments_by_component)
+            if not region_alignments:
+                invalidate(
+                    region.id,
+                    "shared_projection_support_without_global_alignment",
+                )
+                continue
+            compatible_shared_support.append((region, region_alignments))
+
+    if compatible_shared_support:
+        proposal_alignments = set.intersection(
+            *(alignments for _, alignments in compatible_shared_support)
+        )
+        if not proposal_alignments:
+            for region, _ in compatible_shared_support:
+                invalidate(
+                    region.id,
+                    "shared_projection_support_without_global_alignment",
+                )
+        else:
+            for region, _ in compatible_shared_support:
+                shared_support.append(region.id)
+                disposition_targets.append(f"evidence_region:{region.id}")
 
     multi_region_component_ids = tuple(sorted(
         component_id
@@ -228,7 +341,9 @@ def build_evidence_accounting_report(
             ):
                 untraceable_dimensions.append(target)
 
-    settled_count = len(assigned) + len(nonmaterial) + len(duplicate)
+    settled_count = (
+        len(assigned) + len(nonmaterial) + len(duplicate) + len(shared_support)
+    )
     coverage = round(settled_count / len(regions), 6) if regions else 0.0
     reviewable = not invalid and (
         not regions
@@ -243,6 +358,7 @@ def build_evidence_accounting_report(
         assigned_region_ids=tuple(sorted(assigned)),
         nonmaterial_region_ids=tuple(sorted(nonmaterial)),
         duplicate_projection_region_ids=tuple(sorted(duplicate)),
+        shared_projection_support_region_ids=tuple(sorted(shared_support)),
         unresolved_region_ids=tuple(sorted(unresolved)),
         invalid_region_ids=tuple(sorted(set(invalid))),
         invalid_region_reasons=tuple(sorted(invalid_reasons)),

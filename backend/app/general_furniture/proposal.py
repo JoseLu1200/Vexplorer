@@ -6,6 +6,7 @@ from backend.app.contratos.modelos import (
     GeneralFurnitureDraft,
     GeneralFurnitureProposal,
     GeneralValue,
+    ReferentialValidationError,
 )
 from backend.app.general_furniture.measurements import derive_geometry_measurements
 from backend.app.general_furniture.inference import resolve_construction_graph
@@ -60,23 +61,58 @@ def materialize_general_proposal(
             return reference in allowed_document_refs or ref_id in allowed_document_refs
         return False
 
-    nested_source_refs = [
-        *(reference for item in proposal.construction_parameters for reference in item.source_refs),
-        *(reference for item in proposal.components for reference in item.geometry.basis_refs),
-        *(reference for item in proposal.components for reference in item.quantity_basis_refs),
-        *(reference for item in proposal.construction_constraints for reference in item.source_refs),
-        *(reference for item in proposal.construction_details for reference in item.source_refs),
+    nested_reference_fields = [
+        *((f"construction_parameters[{index}].source_refs", item.source_refs) for index, item in enumerate(proposal.construction_parameters)),
+        *((f"components[{index}].geometry.basis_refs", item.geometry.basis_refs) for index, item in enumerate(proposal.components)),
+        *((f"components[{index}].quantity_basis_refs", item.quantity_basis_refs) for index, item in enumerate(proposal.components)),
+        *((f"construction_constraints[{index}].source_refs", item.source_refs) for index, item in enumerate(proposal.construction_constraints)),
+        *((f"construction_details[{index}].source_refs", item.source_refs) for index, item in enumerate(proposal.construction_details)),
         *(
-            reference
-            for item in proposal.construction_details
+            (f"construction_details[{index}].geometry.dimension_refs", item.geometry.dimension_refs)
+            for index, item in enumerate(proposal.construction_details)
             if item.geometry is not None
-            for reference in item.geometry.dimension_refs
         ),
-        *(reference for item in proposal.construction_decisions for reference in item.basis_refs),
-        *(reference for item in proposal.construction_placements for reference in item.source_refs),
+        *((f"construction_decisions[{index}].basis_refs", item.basis_refs) for index, item in enumerate(proposal.construction_decisions)),
+        *((f"construction_placements[{index}].source_refs", item.source_refs) for index, item in enumerate(proposal.construction_placements)),
     ]
-    if any(not external_ref_is_allowed(reference) for reference in nested_source_refs):
-        raise ValueError("construction_reference_outside_authority")
+    invalid_authority_fields = [
+        (path, sorted({ref for ref in refs if not external_ref_is_allowed(ref)}))
+        for path, refs in nested_reference_fields
+        if any(not external_ref_is_allowed(ref) for ref in refs)
+    ]
+    allowed_documents = set(allowed_document_refs)
+    invalid_document_fields = [
+        (f"components[{index}].source_document_refs", sorted(invalid))
+        for index, component in enumerate(proposal.components)
+        if (invalid := set(component.source_document_refs) - allowed_documents)
+    ]
+    authority_details = [
+        {
+            "path": path,
+            "msg": "construction_reference_outside_authority",
+            "invalid_refs": tuple(refs[:10]),
+            "invalid_ref_count": len(refs),
+            "expected": "dimension|measurement|view|observation|contour|evidence|document|visual|internal",
+        }
+        for path, refs in invalid_authority_fields
+    ]
+    document_details = [
+        {
+            "path": path,
+            "msg": "proposal_reference_outside_document_context",
+            "invalid_refs": tuple(refs[:10]),
+            "invalid_ref_count": len(refs),
+            "expected": "document or visual reference announced by the current context",
+        }
+        for path, refs in invalid_document_fields
+    ]
+    reference_details = authority_details + document_details
+    if reference_details:
+        raise ReferentialValidationError(
+            "construction_reference_outside_authority" if authority_details else "proposal_reference_outside_document_context",
+            reference_details,
+            total_count=len(reference_details),
+        )
     validate_assembly_source_references(
         extraction,
         proposal,
@@ -92,8 +128,6 @@ def materialize_general_proposal(
         )
         if any(not set(values) <= allowed for values, allowed in checks):
             raise ValueError("proposal_reference_outside_ledger")
-        if not set(component.source_document_refs) <= set(allowed_document_refs):
-            raise ValueError("proposal_reference_outside_document_context")
         if proposal.proposal_origin == "native_tool" and not (
             component.source_view_ids
             or component.source_observation_ids

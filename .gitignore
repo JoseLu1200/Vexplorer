@@ -17,6 +17,11 @@ __pycache__/
 /dist/
 /frontend/playwright-report/
 /frontend/test-results/
+/diseno/portal/node_modules/
+/diseno/portal/dist/
+/diseno/landing/node_modules/
+/diseno/portal/*.tsbuildinfo
+/diseno/landing/*.tsbuildinfo
 
 .worktrees/
 .runtime/

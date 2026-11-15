@@ -5,6 +5,7 @@ from pathlib import Path
 import ezdxf
 import pytest
 
+from backend.app.agente.vision import render_view
 from backend.app.geometria.extraction import derive_rectangular_hypotheses, extract_drawing
 from backend.app.ingesta.dxf_reader import MAX_ENTITIES, parse_dxf
 
@@ -52,6 +53,100 @@ def test_three_views_do_not_become_a_quantity(tmp_path):
     assert len(hypotheses) == 3
     assert all(hypothesis.quantity is None for hypothesis in hypotheses)
     assert all(hypothesis.thickness_mm is None for hypothesis in hypotheses)
+
+
+def test_explicit_orthographic_layers_isolate_overlapping_views_and_renders(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    layer_roles = {
+        "ORTHO_FRONT": "view-front",
+        "VIEW_TOP": "view-top",
+        "ORTHO_RIGHT": "view-side",
+    }
+    entity_ids_by_view = {}
+    for layer, view_id in layer_roles.items():
+        document.layers.add(layer)
+        lines = tuple(
+            modelspace.add_line(start, end, dxfattribs={"layer": layer})
+            for start, end in (
+                ((0, 0), (100, 0)), ((100, 0), (100, 50)),
+                ((100, 50), (0, 50)), ((0, 50), (0, 0)),
+            )
+        )
+        entity_ids_by_view[view_id] = {
+            f"entity-{line.dxf.handle}" for line in lines
+        }
+    path = tmp_path / "overlapping-layer-views.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert {(view.id, view.label) for view in extraction.views} == {
+        ("view-front", "FRONT"), ("view-top", "TOP"), ("view-side", "SIDE"),
+    }
+    assert extraction.warnings == ()
+    assert extraction.status == "ready"
+    assert {contour.view_id for contour in extraction.contours} == set(layer_roles.values())
+    for view in extraction.views:
+        assert set(view.entity_ids) == entity_ids_by_view[view.id]
+        contours = [item for item in extraction.contours if item.view_id == view.id]
+        assert len(contours) == 1
+        assert set(contours[0].source_entity_ids) == entity_ids_by_view[view.id]
+        rendered = render_view(extraction, view.id)
+        assert rendered.png.startswith(b"\x89PNG")
+        assert {
+            mark.source_id for mark in rendered.marks if mark.source_kind == "entity"
+        } == entity_ids_by_view[view.id]
+
+
+def test_orthographic_layer_names_require_exact_safe_tokens(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    modelspace = document.modelspace()
+    for index, layer in enumerate(("ORTHO_FRONT_DETAIL", "NOT_ORTHO_TOP", "SIDEBOARD")):
+        document.layers.add(layer)
+        x = index * 20
+        modelspace.add_lwpolyline(
+            [(x, 0), (x + 10, 0), (x + 10, 10), (x, 10)],
+            close=True, dxfattribs={"layer": layer},
+        )
+    path = tmp_path / "unsafe-layer-names.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert {(view.id, view.label) for view in extraction.views} == {
+        ("view-unknown", "UNKNOWN")
+    }
+
+
+def test_explicit_layer_role_wins_over_conflicting_text_without_false_view(tmp_path):
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    document.layers.add("ORTHO_FRONT")
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline(
+        [(0, 0), (100, 0), (100, 50), (0, 50)], close=True,
+        dxfattribs={"layer": "ORTHO_FRONT"},
+    )
+    modelspace.add_text(
+        "TOP", dxfattribs={"layer": "ORTHO_FRONT"}
+    ).set_placement((0, -20))
+    path = tmp_path / "conflicting-layer-text.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path)
+
+    assert {(view.id, view.label) for view in extraction.views} == {
+        ("view-front", "FRONT")
+    }
+    assert all(item.view_id == "view-front" for item in extraction.contours)
+    text = next(item for item in extraction.texts if item.text == "TOP")
+    assert extraction.warnings == (
+        f"view_role_layer_text_conflict:{text.source_entity_id}:layer=FRONT:text=TOP",
+    )
+    assert extraction.status == "needs_review"
 
 
 def test_geometry_changes_with_input_dimensions_without_fixture_constants(tmp_path):

@@ -495,13 +495,14 @@ def _cad_artifacts(
         if len(selected_regions) < len(region_candidates)
         else None
     )
+    omitted_region_count = len(region_candidates) - len(selected_regions)
     # Worst-case allocation is checked before render_view allocates any image.
     if artifact_count * max_dimension_px * max_dimension_px > max_total_pixels:
         raise ValueError("visual_evidence_budget_exceeded")
 
     artifacts: list[VisualEvidenceArtifact] = []
     used_png_bytes = 0
-    for view in views:
+    for view_index, view in enumerate(views):
         rendered = _clean_view(extraction, view.id, max_dimension_px)
         content, warnings = _cad_annotation_layer(rendered, extraction, view.id)
         content, overview_marks = _contour_marks(
@@ -560,6 +561,11 @@ def _cad_artifacts(
                     ),
                     *warnings,
                     *((truncation_warning,) if truncation_warning else ()),
+                    *(
+                        (f"optional_region_crops_omitted:{omitted_region_count}",)
+                        if view_index == 0 and omitted_region_count
+                        else ()
+                    ),
                 ),
             )
         )

@@ -126,6 +126,12 @@ def test_rejects_budget_before_raster_and_requires_normalized_cad(
             extraction=extraction,
             max_dimension_px=48,
         )
+    with pytest.raises(ValueError, match="visual_evidence_budget_exceeded"):
+        render_visual_evidence(
+            source,
+            extraction=extraction,
+            max_total_png_bytes=1,
+        )
     with pytest.raises(ValueError, match="normalized_dxf_required_for_dwg"):
         render_visual_evidence(tmp_path / "source.dwg", extraction=extraction)
     with pytest.raises(ValueError, match="selected_pdf_page_required"):
@@ -194,6 +200,7 @@ def test_unknown_view_gets_clean_overview_and_gap_based_marked_regions(
     )
     assert len(bounded) == 3
     assert "spatial_region_crops_truncated:2_of_3" in bounded[0].warnings
+    assert "optional_region_crops_omitted:1" in bounded[0].warnings
     assert {item.source_id for item in bounded[0].marks} == set(
         bounded[0].source_contour_ids
     )
@@ -240,6 +247,60 @@ def test_many_optional_regions_are_prioritized_deterministically_under_budget(
     ]
     assert [len(item.source_contour_ids) for item in first[1:]] == [5, 4, 3]
     assert "spatial_region_crops_truncated:3_of_5" in first[0].warnings
+
+
+def test_all_layer_view_overviews_precede_optional_crop_selected_by_complexity(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "layered-three-views.dxf"
+    document = ezdxf.new("R2018")
+    document.units = ezdxf.units.MM
+    space = document.modelspace()
+    for layer in ("ORTHO_FRONT", "ORTHO_TOP", "ORTHO_SIDE"):
+        document.layers.add(layer)
+        rectangles = [
+            ((0, 0), (40, 20)),
+            ((100, 0), (140, 20)),
+        ]
+        if layer == "ORTHO_FRONT":
+            rectangles.append(((2, 2), (38, 18)))
+        for (min_x, min_y), (max_x, max_y) in rectangles:
+            space.add_lwpolyline(
+                [
+                    (min_x, min_y),
+                    (max_x, min_y),
+                    (max_x, max_y),
+                    (min_x, max_y),
+                ],
+                close=True,
+                dxfattribs={"layer": layer},
+            )
+    document.saveas(source)
+    extraction = extract_drawing(source)
+
+    artifacts = render_visual_evidence(
+        source,
+        extraction=extraction,
+        max_artifacts=4,
+        max_dimension_px=256,
+        max_total_pixels=4 * 256 * 256,
+    )
+
+    assert len(artifacts) == 4
+    assert [item.reference.rsplit(":", 1)[-1] for item in artifacts[:3]] == [
+        "overview",
+        "overview",
+        "overview",
+    ]
+    assert [item.source_view_ids for item in artifacts[:3]] == [
+        ("view-front",),
+        ("view-side",),
+        ("view-top",),
+    ]
+    crop = artifacts[3]
+    assert crop.source_view_ids == ("view-front",)
+    assert len(crop.source_contour_ids) == 2
+    assert "optional_region_crops_omitted:5" in artifacts[0].warnings
 
 
 def test_mandatory_overviews_still_fail_when_they_exceed_artifact_budget(

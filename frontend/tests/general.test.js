@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalReviewMessage, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery, serialiseGeneralBom } from "../core/general.js";
+import { buildGeneralReviewPayload, buildGeneralReviewedComponent, buildManualGeneralProposal, completeGeneralReviewSnapshot, generalBomArtifact, generalDerivedLoadFailure, generalMachineStatusPresentation, generalReviewMessage, generalRunOptions, normaliseGeneralWorkspace, presentConstructionCounts, presentGeneralArtifactAvailability, presentGeneralConstructionDimension, presentGeneralConstructionQuantity, presentGeneralDerived, presentJobRecovery, serialiseGeneralBom } from "../core/general.js";
 
 const pydanticRecord=JSON.parse(readFileSync(new URL("./fixtures/general-record.json",import.meta.url),"utf8"));
 
@@ -184,6 +184,33 @@ test("derived construction keeps hardware quantity scope separate",()=>{
   assert.equal(derived.construction.pieces[0].quantity.scopeLabel,"Herrajes estimados");
 });
 
+test("a downloadable fallback schematic is not presented as a complete construction",()=>{
+  const presentation=presentGeneralArtifactAvailability({
+    kind:"assembly",
+    artifact:{status:"ready",incompleteReasons:[]},
+    sheet:null,
+    construction:{authority:"provisional_not_manufacturing",placements:[],warnings:["assembly_placements_unavailable"]},
+  });
+
+  assert.equal(presentation.label,"archivo disponible · construcción provisional incompleta");
+  assert.equal(presentation.complete,false);
+  assert.match(presentation.detail,/colocación|assembly_placements_unavailable/i);
+  assert.doesNotMatch(presentation.detail,/validada/i);
+  assert.doesNotMatch(presentation.label,/lista|validada/i);
+});
+
+test("a piece sheet remains explicitly provisional even when its file is ready",()=>{
+  const presentation=presentGeneralArtifactAvailability({
+    kind:"piece",
+    artifact:{status:"ready",incompleteReasons:[]},
+    sheet:{status:"ready",warnings:[]},
+    construction:{authority:"provisional_not_manufacturing",placements:[{}],warnings:[]},
+  });
+
+  assert.equal(presentation.label,"archivo disponible · plano provisional");
+  assert.equal(presentation.complete,true);
+});
+
 test("construction summary separates component types cut quantities hardware and unknowns",()=>{
   assert.deepEqual(presentConstructionCounts([{kind:"panel",quantity:{value:2}},{kind:"linear_member",quantity:{value:3}},{kind:"hardware",quantity:{value:4,state:"estimated"}},{kind:"unknown",quantity:{value:1}},{kind:"panel",quantity:{value:null}}]),{typeCount:5,cutPieceCount:5,hardwareEstimated:4,unknownCount:2});
   assert.equal(presentGeneralConstructionQuantity({value:1,component_kind:"unknown"}).scopeLabel,"Cantidad sin clasificar");
@@ -217,6 +244,36 @@ test("recovery translates real timeout codes and autonomous review phase",()=>{
     assert.doesNotMatch(recovery.message,new RegExp(code));
     assert.match(recovery.phaseLabel,/revisión automática pendiente/i);
   }
+});
+
+test("recovery explains exhausted provider credit without discarding the saved proposal",()=>{
+  const recovery=presentJobRecovery({state:"failed",error:{code:"general_live_provider_failed",reason_code:"provider_credit_balance_exhausted"},checkpoint:{phase:"autonomous_review",proposal_saved:true,proposal_id:"proposal-credit",proposal_revision:3,review_revision:0},recovery:{safe_action:"resume_review",endpoint:"/api/v1/jobs/job-credit/resume"}});
+
+  assert.match(recovery.message,/proveedor no tiene saldo o cuota disponible/i);
+  assert.match(recovery.message,/propuesta 3 quedó guardada/i);
+  assert.match(recovery.message,/reanudar la revisión cuando se restablezca el saldo o la cuota/i);
+  assert.match(recovery.message,/no equivale a una revisión aprobada/i);
+  assert.equal(recovery.actionLabel,"Reanudar revisión cuando haya saldo o cuota");
+  assert.equal(recovery.safeAction,"resume_review");
+  assert.equal(recovery.failureReasonCode,"provider_credit_balance_exhausted");
+  assert.equal(generalReviewMessage({reviewRevision:0,status:"reviewed_incomplete"},recovery),recovery.message);
+  assert.doesNotMatch(recovery.message,/general_live_provider_failed|provider_credit_balance_exhausted/);
+});
+
+test("generic provider rate limits keep the server explanation and recovery action",()=>{
+  const recovery=presentJobRecovery({state:"failed",error:{code:"general_live_provider_failed",reason_code:"provider_rate_limited",message:"El proveedor limitó temporalmente las solicitudes"},checkpoint:{phase:"proposal",proposal_saved:true,proposal_id:"proposal-rate",proposal_revision:1,review_revision:0},recovery:{safe_action:"resume_review",endpoint:"/api/v1/jobs/job-rate/resume"}});
+
+  assert.match(recovery.message,/limitó temporalmente las solicitudes/i);
+  assert.doesNotMatch(recovery.message,/no tiene saldo o cuota/i);
+  assert.equal(recovery.actionLabel,"Reanudar revisión sin repetir la propuesta");
+});
+
+test("unknown recovery actions never expose an endpoint or enable a retry",()=>{
+  const recovery=presentJobRecovery({state:"failed",error:{code:"worker_interrupted"},checkpoint:{phase:"proposal",proposal_saved:true,proposal_id:"proposal-unknown",proposal_revision:1,review_revision:0},recovery:{safe_action:"future_destructive_action",endpoint:"/api/v1/jobs/job-unknown/future"}});
+
+  assert.equal(recovery.safeAction,null);
+  assert.equal(recovery.endpoint,null);
+  assert.equal(recovery.actionLabel,"Sin reanudación segura publicada");
 });
 
 test("derived BOM and CSV retain construction basis, range and references",()=>{

@@ -56,6 +56,27 @@ def test_parts_mode_exposes_distinct_explicitly_keyed_views(tmp_path: Path) -> N
     ]
 
 
+def test_parts_mode_keeps_explicit_part_label_over_orthographic_layer(tmp_path: Path) -> None:
+    document = ezdxf.new("R2010")
+    document.header["$INSUNITS"] = 4
+    document.layers.add("ORTHO_FRONT")
+    modelspace = document.modelspace()
+    modelspace.add_lwpolyline(
+        [(0, 0), (100, 0), (100, 50), (0, 50)], close=True,
+        dxfattribs={"layer": "ORTHO_FRONT"},
+    )
+    modelspace.add_text("PART P01 TOP").set_placement((50, 25))
+    path = tmp_path / "part-label-over-layer.dxf"
+    document.saveas(path)
+
+    extraction = extract_drawing(path, input_kind="separated_part_views")
+
+    assert {(view.id, view.label) for view in extraction.views} == {
+        ("view-part-p01-top", "TOP")
+    }
+    assert all(item.view_id == "view-part-p01-top" for item in extraction.contours)
+
+
 def test_separated_part_views_resolve_local_axes_and_explicit_quantity(tmp_path: Path) -> None:
     extraction = extract_drawing(
         _parts_drawing(tmp_path), input_kind="separated_part_views",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -264,10 +265,31 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
 
 
-def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, embedding_provider=None, agent_provider=None, general_reviewer_provider=None, general_assembly_provider=None) -> FastAPI:
+def create_app(
+    data_dir: Path | None = None,
+    frontend_dir: Path | None = None,
+    embedding_provider=None,
+    agent_provider=None,
+    general_reviewer_provider=None,
+    general_assembly_provider=None,
+    *,
+    general_test_job_timeout_s: float | None = None,
+) -> FastAPI:
     environment = os.getenv("VEXPLORER_ENV", "local")
     if environment not in {"local", "production"}:
         raise ValueError("invalid_vexplorer_environment")
+    if general_test_job_timeout_s is not None:
+        if environment != "local":
+            raise ValueError("general_test_job_timeout_local_only")
+        if (
+            isinstance(general_test_job_timeout_s, bool)
+            or not isinstance(general_test_job_timeout_s, (int, float))
+            or not math.isfinite(general_test_job_timeout_s)
+            or not 600 <= general_test_job_timeout_s <= 3600
+        ):
+            raise ValueError("invalid_general_test_job_timeout")
+        if agent_provider is None or general_reviewer_provider is None:
+            raise ValueError("general_test_job_timeout_requires_injected_providers")
     auth_setting = os.getenv("VEXPLORER_AUTH_ENABLED", "true").strip().lower()
     if auth_setting not in {"true", "false"}:
         raise ValueError("invalid_auth_enabled")
@@ -304,10 +326,14 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
         recording_max_count = int(os.getenv("VEXPLORER_RECORDING_MAX_COUNT", str(DEFAULT_RECORDING_MAX_COUNT)))
         recording_max_bytes = int(os.getenv("VEXPLORER_RECORDING_MAX_BYTES", str(DEFAULT_RECORDING_MAX_BYTES)))
-        general_job_timeout_s = float(os.getenv(
-            "VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS",
-            "600" if environment == "production" else "300",
-        ))
+        general_job_timeout_s = (
+            float(general_test_job_timeout_s)
+            if general_test_job_timeout_s is not None
+            else float(os.getenv(
+                "VEXPLORER_GENERAL_JOB_TIMEOUT_SECONDS",
+                "600" if environment == "production" else "300",
+            ))
+        )
         general_review_max_calls = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_CALLS", "5"))
         general_review_max_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_REPAIRS", "2"))
         general_review_max_semantic_repairs = int(os.getenv("VEXPLORER_GENERAL_REVIEW_MAX_SEMANTIC_REPAIRS", "2"))
@@ -324,10 +350,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         raise ValueError("invalid_recording_storage_policy")
     if not 1 <= public_live_client_daily_limit <= public_live_daily_limit <= 10000:
         raise ValueError("invalid_public_live_quota")
-    if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 0 <= general_review_max_semantic_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= 600:
+    timeout_ceiling = 3600 if general_test_job_timeout_s is not None else 600
+    if not 1 <= general_review_max_calls <= 5 or not 0 <= general_review_max_repairs <= 2 or not 0 <= general_review_max_semantic_repairs <= 2 or not 256 <= general_review_max_output_tokens <= 16384 or not 30 <= general_job_timeout_s <= timeout_ceiling:
         raise ValueError("invalid_general_review_policy")
     if not 1 <= general_assembly_max_calls <= 5 or not 1 <= general_assembly_timeout_s <= 180:
         raise ValueError("invalid_general_assembly_policy")
+    if general_test_job_timeout_s is not None:
+        general_proposal_timeout_s = min(900.0, general_job_timeout_s * 0.5)
+        general_review_timeout_s = general_proposal_timeout_s
+    else:
+        general_proposal_timeout_s = min(300.0, general_job_timeout_s * 0.6)
+        general_review_timeout_s = min(300.0, general_job_timeout_s)
     documents_dir = root / "documents"
     documents_dir.mkdir(parents=True, exist_ok=True)
     staging_dir = root / ".document-staging"
@@ -530,7 +563,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return run_general_furniture_agent(
             context.extraction, ledger_revision=context.ledger_revision,
             provider=general_agent_provider, visual_pages=context.visual_pages,
-            limits=AgentLimits(timeout_s=min(300.0, general_job_timeout_s * 0.6)),
+            limits=AgentLimits(timeout_s=general_proposal_timeout_s),
             cancelled=cancelled,
         )
 
@@ -539,7 +572,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         proposal_revision: int = 1, previous_review=None, checkpoint_sink=None,
         cancelled=None,
     ):
-        timeout_s = min(timeout_s, 300.0)
+        timeout_s = min(timeout_s, general_review_timeout_s)
         if general_review_provider is None:
             raise RuntimeError("general_auto_review_unavailable")
         proposer_model = next(
@@ -555,6 +588,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 max_validation_repairs=general_review_max_repairs,
                 max_semantic_repairs=general_review_max_semantic_repairs,
                 timeout_s=timeout_s,
+                allow_extended_test_timeout=general_test_job_timeout_s is not None,
             ),
             proposal_revision=proposal_revision,
             previous_review=previous_review,
@@ -1011,7 +1045,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         "max_validation_repairs": general_review_max_repairs,
                         "max_semantic_repairs": general_review_max_semantic_repairs,
                         "job_timeout_s": general_job_timeout_s,
-                        "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
+                        "review_attempt_timeout_s": general_review_timeout_s,
                     },
                 },
                 "construction_completion": {
@@ -2091,7 +2125,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         recovery = {
             "safe_action": None, "endpoint": None, "attempt_kind": None,
             "repeats_proposer": False, "continues_original_provider_call": False,
-            "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
+            "review_attempt_timeout_s": general_review_timeout_s,
             "max_model_calls": general_review_max_calls,
             "max_validation_repairs": general_review_max_repairs,
             "max_semantic_repairs": general_review_max_semantic_repairs,
@@ -2198,7 +2232,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             "review_revision": record.review_revision,
             "attempt_kind": "review_from_saved_proposal",
             "continues_original_provider_call": False,
-            "review_attempt_timeout_s": min(300.0, general_job_timeout_s),
+            "review_attempt_timeout_s": general_review_timeout_s,
             "max_model_calls": general_review_max_calls,
             "max_validation_repairs": general_review_max_repairs,
             "max_semantic_repairs": general_review_max_semantic_repairs,

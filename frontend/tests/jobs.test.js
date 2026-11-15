@@ -45,6 +45,16 @@ test("job polling preserves recovery checkpoint and cause",async()=>{
   assert.equal(result.recovery.safe_action,"resume_review");
 });
 
+test("job polling exposes a specific provider reason inside the API wrapper",async()=>{
+  const result=await pollJob("job-credit",{
+    getJob:async()=>({id:"job-credit",state:"failed",error:{code:"general_live_provider_failed",reason_code:"provider_credit_balance_exhausted"}}),
+    wait:async()=>{throw new Error("must not wait after terminal state");},
+  });
+
+  assert.equal(result.cause,"provider_credit_balance_exhausted");
+  assert.equal(result.error.code,"general_live_provider_failed");
+});
+
 test("job polling aborts without issuing another request", async () => {
   const controller = new AbortController(); let calls = 0;
   await assert.rejects(() => pollJob("job-3", {

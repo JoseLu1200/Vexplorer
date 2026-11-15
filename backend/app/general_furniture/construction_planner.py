@@ -21,6 +21,7 @@ from backend.app.contratos.modelos import (
 _VIEW_GAP_MM = 100.0
 _DIMENSION_OFFSET_MM = 45.0
 _CALLOUT_LINE_MAX_CHARS = 120
+_SUMMARY_SOURCE_REF_LIMIT = 64
 
 
 def _refs(*values: tuple[str, ...]) -> tuple[str, ...]:
@@ -450,6 +451,26 @@ def plan_general_construction(
             field_refs=(), consequence="provisional_only",
         ))
     occurrence_count = sum(piece.quantity.value or 0 for piece in piece_tuple)
+    aggregate_source_refs = tuple(sorted({
+        reference
+        for piece in piece_tuple
+        for reference in piece.source_refs
+    }))
+    summary_source_refs = aggregate_source_refs[:_SUMMARY_SOURCE_REF_LIMIT]
+    if len(aggregate_source_refs) > len(summary_source_refs):
+        warnings.append(GeneralConstructionWarning(
+            severity="warning",
+            code="summary_source_refs_truncated",
+            message=(
+                "Referencias agregadas del resumen limitadas: "
+                f"total={len(aggregate_source_refs)}, "
+                f"retained={len(summary_source_refs)}, "
+                f"truncated={len(aggregate_source_refs) - len(summary_source_refs)}."
+            ),
+            component_refs=(),
+            field_refs=("summary.source_refs",),
+            consequence="provisional_only",
+        ))
     return GeneralConstructionPlan(
         run_id=review.run_id,
         proposal_revision=review.proposal_revision,
@@ -462,7 +483,7 @@ def plan_general_construction(
         summary=GeneralConstructionSummary(
             label=f"Escenario constructivo {review.construction_scenario_id}",
             component_count=len(piece_tuple), occurrence_count=occurrence_count,
-            source_refs=_refs(*(piece.source_refs for piece in piece_tuple)),
+            source_refs=summary_source_refs,
             top_decision_ids=tuple(item.id for item in review.construction_decisions if item.impact == "high")[:3],
             warnings=tuple(warnings),
         ),

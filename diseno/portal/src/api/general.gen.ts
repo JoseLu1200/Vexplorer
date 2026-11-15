@@ -290,7 +290,7 @@ export interface GeneralAssemblyValidationReport {
 /** GeneralAutoReviewCheck */
 export interface GeneralAutoReviewCheck {
   id: string;
-  kind: "geometry_match" | "cross_view_identity" | "duplicate_scan" | "quantity_basis" | "dimension_binding" | "visual_consistency";
+  kind: "geometry_match" | "cross_view_identity" | "duplicate_scan" | "shared_projection_support" | "quantity_basis" | "dimension_binding" | "visual_consistency";
   outcome: "pass" | "fail" | "unknown";
   method: "deterministic" | "model_visual";
   target_refs: string[];
@@ -659,8 +659,9 @@ export interface GeneralDraftComponent {
 /** GeneralEvidenceDisposition */
 export interface GeneralEvidenceDisposition {
   candidate_region_id: string;
-  kind: "assigned" | "duplicate_projection" | "nonmaterial" | "unresolved";
+  kind: "assigned" | "duplicate_projection" | "shared_projection_support" | "nonmaterial" | "unresolved";
   component_id: string | null;
+  support_component_ids: string[];
   duplicate_of_region_id: string | null;
   reason_code: "hole" | "cutout" | "rabbet" | "groove" | "annotation" | "drawing_frame" | "void" | "other_unresolved" | null;
   source_refs: string[];

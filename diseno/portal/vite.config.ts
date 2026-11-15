@@ -4,7 +4,7 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 
 // `npm run build:single` genera un único index.html (modo mock) para publicarlo como Artifact.
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const env = loadEnv(mode, ".", "");
   const single = mode === "single";
   return {
     plugins: [react(), ...(single ? [viteSingleFile()] : [])],

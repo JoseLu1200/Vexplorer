@@ -9,6 +9,9 @@ from backend.app.contratos.modelos import (
     GeneralFurnitureProposal,
 )
 from backend.app.general_furniture.measurements import GeometryMeasurement
+from backend.app.general_furniture.orthographic_hypotheses import (
+    derive_orthographic_hypotheses,
+)
 from backend.app.general_furniture.projection_hypotheses import (
     ProjectionHypothesis,
     SourceSpatialRegion,
@@ -90,6 +93,33 @@ class CompactProjectionHypothesis:
 
 
 @dataclass(frozen=True)
+class CompactOrthographicHypothesis:
+    id: str
+    front_contour_id: str
+    top_contour_id: str
+    side_contour_id: str
+    x_measurement_refs: tuple[str, str]
+    y_measurement_refs: tuple[str, str]
+    z_measurement_refs: tuple[str, str]
+    axis_spans_mm: tuple[float, float, float]
+    axis_intervals_mm: tuple[
+        tuple[float, float], tuple[float, float], tuple[float, float]
+    ]
+    alignment_alternatives: tuple[str, ...]
+    max_interval_error_mm: float
+    tolerance_mm: float
+    shared_support_contour_ids: tuple[str, ...]
+    warnings: tuple[str, ...]
+    authority: str
+
+
+@dataclass(frozen=True)
+class CompactOrthographicFrameAlternative:
+    alignment: str
+    hypothesis_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class CompactContextMetadata:
     schema_version: Literal["compact-geometry-context-1"]
     source_unit: str
@@ -99,10 +129,15 @@ class CompactContextMetadata:
     queryable_segment_count: int
     region_count: int
     hypothesis_count: int
+    orthographic_hypothesis_count: int
     spatial_regions_truncated: bool
     projection_hypotheses_truncated: bool
+    orthographic_hypotheses_truncated: bool
+    orthographic_warnings: tuple[str, ...]
+    orthographic_frame_constraint: str
     measurement_authority: str
     projection_authority: str
+    orthographic_authority: str
     region_authority: str
     quantity_authority: str
     contour_interior_authority: str
@@ -117,6 +152,10 @@ class CompactGeometryContext:
     measurements: tuple[CompactMeasurement, ...]
     regions: tuple[CompactRegion, ...]
     projection_hypotheses: tuple[CompactProjectionHypothesis, ...]
+    orthographic_hypotheses: tuple[CompactOrthographicHypothesis, ...]
+    orthographic_frame_alternatives: tuple[
+        CompactOrthographicFrameAlternative, ...
+    ]
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -125,6 +164,12 @@ class CompactGeometryContext:
             "regions": tuple(asdict(item) for item in self.regions),
             "projection_hypotheses": tuple(
                 asdict(item) for item in self.projection_hypotheses
+            ),
+            "orthographic_hypotheses": tuple(
+                asdict(item) for item in self.orthographic_hypotheses
+            ),
+            "orthographic_frame_alternatives": tuple(
+                asdict(item) for item in self.orthographic_frame_alternatives
             ),
         }
 
@@ -254,6 +299,13 @@ def build_region_visual_links(
     bounds_by_id = {
         item.id: _contour_bounds(item) for item in extraction.contours
     }
+    bounds_by_view: dict[
+        str, dict[str, tuple[float, float, float, float]]
+    ] = {}
+    for contour in extraction.contours:
+        bounds_by_view.setdefault(contour.view_id, {})[contour.id] = bounds_by_id[
+            contour.id
+        ]
     region_ids = [item.id for item in regions]
     if len(region_ids) != len(set(region_ids)):
         raise ValueError("compact_region_visual_duplicate_region_id")
@@ -287,10 +339,12 @@ def build_region_visual_links(
         topology = []
         for contour_id in region.contour_ids:
             bounds = bounds_by_id[contour_id]
+            contour = contour_by_id[contour_id]
+            peer_bounds = bounds_by_view[contour.view_id]
             containers = tuple(
                 sorted(
                     other_id
-                    for other_id, other_bounds in bounds_by_id.items()
+                    for other_id, other_bounds in peer_bounds.items()
                     if other_id != contour_id
                     and _strictly_contains_bounds(other_bounds, bounds)
                 )
@@ -298,7 +352,7 @@ def build_region_visual_links(
             contained = tuple(
                 sorted(
                     other_id
-                    for other_id, other_bounds in bounds_by_id.items()
+                    for other_id, other_bounds in peer_bounds.items()
                     if other_id != contour_id
                     and _strictly_contains_bounds(bounds, other_bounds)
                 )
@@ -306,12 +360,11 @@ def build_region_visual_links(
             coincident = tuple(
                 sorted(
                     other_id
-                    for other_id, other_bounds in bounds_by_id.items()
+                    for other_id, other_bounds in peer_bounds.items()
                     if other_id != contour_id
                     and _bounds_close(bounds, other_bounds)
                 )
             )
-            contour = contour_by_id[contour_id]
             topology.append(
                 CompactContourTopology(
                     contour_id=contour_id,
@@ -502,6 +555,7 @@ def build_compact_geometry_context(
     hypotheses: tuple[ProjectionHypothesis, ...],
 ) -> CompactGeometryContext:
     _validate_references(extraction, measurements, regions, hypotheses)
+    orthographic = derive_orthographic_hypotheses(extraction, measurements)
     spans = tuple(
         _compact_measurement(item)
         for item in measurements
@@ -520,6 +574,7 @@ def build_compact_geometry_context(
             queryable_segment_count=len(segments),
             region_count=len(regions),
             hypothesis_count=len(hypotheses),
+            orthographic_hypothesis_count=len(orthographic.hypotheses),
             spatial_regions_truncated=any(
                 warning.startswith("spatial_region_set_truncated:")
                 for item in regions
@@ -530,12 +585,16 @@ def build_compact_geometry_context(
                 for item in hypotheses
                 for warning in item.warnings
             ),
+            orthographic_hypotheses_truncated=orthographic.truncated,
+            orthographic_warnings=orthographic.warnings,
+            orthographic_frame_constraint=orthographic.frame_constraint,
             measurement_authority=(
                 "ledger_geometry_observation_not_component_dimension"
             ),
             projection_authority=(
                 "heuristic_not_probability_or_physical_identity"
             ),
+            orthographic_authority=orthographic.authority,
             region_authority="source_coordinate_group_not_semantic_view",
             quantity_authority="unconfirmed",
             contour_interior_authority="not_classified",
@@ -565,6 +624,33 @@ def build_compact_geometry_context(
                 measurement_refs=item.source_measurement_ids,
             )
             for item in hypotheses
+        ),
+        orthographic_hypotheses=tuple(
+            CompactOrthographicHypothesis(
+                id=item.id,
+                front_contour_id=item.front_contour_id,
+                top_contour_id=item.top_contour_id,
+                side_contour_id=item.side_contour_id,
+                x_measurement_refs=item.x_measurement_refs,
+                y_measurement_refs=item.y_measurement_refs,
+                z_measurement_refs=item.z_measurement_refs,
+                axis_spans_mm=item.axis_spans_mm,
+                axis_intervals_mm=item.axis_intervals_mm,
+                alignment_alternatives=item.alignment_alternatives,
+                max_interval_error_mm=item.max_interval_error_mm,
+                tolerance_mm=item.tolerance_mm,
+                shared_support_contour_ids=item.shared_support_contour_ids,
+                warnings=item.warnings,
+                authority=item.authority,
+            )
+            for item in orthographic.hypotheses
+        ),
+        orthographic_frame_alternatives=tuple(
+            CompactOrthographicFrameAlternative(
+                alignment=item.alignment,
+                hypothesis_ids=item.hypothesis_ids,
+            )
+            for item in orthographic.frame_alignment_alternatives
         ),
     )
 

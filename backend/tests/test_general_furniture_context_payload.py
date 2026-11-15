@@ -161,6 +161,48 @@ def test_initial_context_preserves_exact_span_values_and_resolvable_refs() -> No
     assert payload["metadata"]["hypothesis_count"] == len(hypotheses)
 
 
+def test_initial_context_adds_non_authoritative_orthographic_triplets() -> None:
+    from backend.tests.test_general_furniture_orthographic_hypotheses import (
+        _drawing as orthographic_drawing,
+        _piece,
+    )
+
+    extraction = orthographic_drawing(
+        _piece("panel", x=(10.0, 40.0), y=(5.0, 25.0), z=(0.0, 50.0))
+    )
+
+    _, _, _, context = _context(extraction)
+    payload = context.to_payload()
+
+    assert payload["metadata"]["orthographic_hypothesis_count"] == 1
+    assert payload["metadata"]["orthographic_hypotheses_truncated"] is False
+    assert payload["metadata"]["orthographic_authority"] == (
+        "heuristic_not_physical_identity_or_quantity_or_ownership"
+    )
+    assert len(payload["orthographic_hypotheses"]) == 1
+    item = payload["orthographic_hypotheses"][0]
+    assert item["front_contour_id"] == "contour-panel-front"
+    assert item["top_contour_id"] == "contour-panel-top"
+    assert item["side_contour_id"] == "contour-panel-side"
+    assert item["x_measurement_refs"] == (
+        "measurement:contour:contour-panel-front:span-x",
+        "measurement:contour:contour-panel-top:span-x",
+    )
+    assert payload["metadata"]["orthographic_frame_constraint"] == (
+        "select_one_global_frame_alignment;"
+        "do_not_combine_incompatible_hypotheses"
+    )
+    assert payload["orthographic_frame_alternatives"] == (
+        {
+            "alignment": "top_x:direct|side_y:direct|side_z:direct",
+            "hypothesis_ids": (item["id"],),
+        },
+    )
+    assert item["authority"] == (
+        "heuristic_not_physical_identity_or_quantity_or_ownership"
+    )
+
+
 def test_unknown_units_keep_source_values_without_fabricating_metric_values() -> None:
     extraction = _drawing(
         (
@@ -323,6 +365,84 @@ def test_candidate_regions_link_to_smallest_visual_crop_and_keep_topology_nonsem
         == "candidate_region_visual_link_not_semantic_view_or_physical_identity_or_quantity"
         for item in links
     )
+
+
+def test_candidate_region_topology_isolated_per_view_with_overlapping_coordinates() -> None:
+    extraction = _drawing(
+        (
+            ("front-outer", 0.0, 0.0, 100.0, 100.0),
+            ("front-inner", 20.0, 20.0, 80.0, 80.0),
+            ("top-outer", 0.0, 0.0, 100.0, 100.0),
+            ("top-inner", 20.0, 20.0, 80.0, 80.0),
+        )
+    )
+    view_by_name = {
+        "front-outer": "view-front",
+        "front-inner": "view-front",
+        "top-outer": "view-top",
+        "top-inner": "view-top",
+    }
+    contours = tuple(
+        contour.model_copy(
+            update={"view_id": view_by_name[contour.id.removeprefix("contour-")]}
+        )
+        for contour in extraction.contours
+    )
+    bounds = Bounds2D(min_x=0.0, min_y=0.0, max_x=100.0, max_y=100.0)
+    views = tuple(
+        DrawingView(
+            id=view_id,
+            label=label,
+            entity_ids=tuple(
+                entity.id
+                for entity in extraction.entities
+                if view_by_name[entity.id.removeprefix("entity-")] == view_id
+            ),
+            bounds_source=bounds,
+            bounds_mm=bounds,
+        )
+        for view_id, label in (("view-front", "FRONT"), ("view-top", "TOP"))
+    )
+    extraction = extraction.model_copy(
+        update={"views": views, "contours": contours}
+    )
+    candidates = derive_relevant_candidate_regions(extraction)
+    pages = tuple(
+        SimpleNamespace(
+            reference=f"crop-{region.contour_ids[0]}",
+            source_contour_ids=region.contour_ids,
+            crop_bounds_source=region.bounds_source,
+        )
+        for region in candidates
+    )
+
+    links = context_payload.build_region_visual_links(extraction, candidates, pages)
+    topology = {
+        item.contour_ids[0]: item.topology[0]
+        for item in links
+    }
+
+    assert topology["contour-front-outer"].contained_contour_ids == (
+        "contour-front-inner",
+    )
+    assert topology["contour-front-inner"].container_contour_ids == (
+        "contour-front-outer",
+    )
+    assert topology["contour-top-outer"].contained_contour_ids == (
+        "contour-top-inner",
+    )
+    assert topology["contour-top-inner"].container_contour_ids == (
+        "contour-top-outer",
+    )
+    assert all(not item.coincident_contour_ids for item in topology.values())
+    assert all(item.containment_depth in (0, 1) for item in topology.values())
+    assert {
+        (item.visual_reference, item.match_kind)
+        for item in links
+    } == {
+        (f"crop-{item.contour_ids[0]}", "exact_contours_and_bounds")
+        for item in links
+    }
 
 
 def test_compact_review_context_preserves_review_authority_without_proposal_draft_duplication() -> None:

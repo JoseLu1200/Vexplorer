@@ -171,12 +171,13 @@ h3{margin:18px 0 8px;font-size:13px;font-weight:500;letter-spacing:-0.015em}
 .button--quiet:hover{background:transparent;color:var(--ink)}
 
 .workbench{display:grid;flex:1;grid-template-columns:minmax(0,1fr) minmax(280px,360px);grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden;background:var(--shell)}
-.navigator{display:flex;grid-column:1/-1;align-items:center;gap:12px;min-width:0;padding:10px 16px;border-bottom:1px solid var(--hairline)}
-.navigator__head{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1}
+.navigator{display:grid;grid-column:1/-1;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;min-width:0;padding:10px 16px;border-bottom:1px solid var(--hairline)}
+.navigator__head{display:flex;align-items:center;gap:10px;min-width:0;flex:1;flex-wrap:wrap}
 .navigator__head strong{max-width:240px;overflow:hidden;font-weight:500;letter-spacing:-0.02em;text-overflow:ellipsis;white-space:nowrap}
 .navigator__head>span{min-width:0;max-width:430px;flex:1;overflow:hidden;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
+.navigator__head>.button{flex:0 0 auto;max-width:min(100%,280px);height:auto;white-space:normal;text-align:center}
 #restore-run-retry{min-height:26px;padding:2px 10px;border:0;border-radius:999px;background:var(--escalar-soft);color:var(--escalar);font-family:var(--font-mono);font-size:11px;font-weight:500}
-.session-meta{display:flex;flex-wrap:wrap;gap:6px;min-width:0;margin-left:auto}
+.session-meta{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;min-width:0;margin-left:0}
 .session-meta span{padding:3px 8px;border-radius:999px;background:var(--canvas);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;white-space:nowrap}
 #run-mode-label{display:inline-flex;align-items:center;white-space:nowrap}
 #replay-source{display:inline-block;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -348,6 +349,9 @@ legend{font-weight:500;letter-spacing:-0.01em}
 .derived-drawing-view>header>div{display:grid;min-width:0}
 .derived-drawing-view small{overflow:hidden;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
 .derived-drawing-view select{min-width:160px;margin-left:auto}
+.derived-drawing-view nav{align-items:center}
+.derived-zoom-controls,.derived-pan-controls{display:flex;gap:6px}
+.derived-zoom-controls .button,.derived-pan-controls .button{min-width:36px;padding-inline:10px}
 .derived-drawing-canvas{position:relative;min-width:0;min-height:0;overflow:hidden;border-radius:8px;background:var(--well);cursor:grab}
 .derived-drawing-canvas:active{cursor:grabbing}
 .derived-drawing-view img{position:absolute;object-fit:contain;user-select:none;pointer-events:none}

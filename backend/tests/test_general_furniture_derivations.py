@@ -10,6 +10,7 @@ import pytest
 from backend.app.contratos.modelos import (
     GeneralAutoReviewCheck,
     GeneralComponentReview,
+    GeneralConstructionValidation,
     GeneralFurnitureReview,
     GeneralMachineFieldReview,
     GeneralMachineProvenance,
@@ -62,6 +63,54 @@ def test_derivations_emit_auditable_csv_svg_dxf_and_json_artifacts() -> None:
     assert {item.kind for item in package.artifacts} == {"bom_csv", "bom_json", "drawing_svg", "drawing_dxf"}
     assert all(item.content for item in package.artifacts)
     assert all(item.review_revision == 1 for item in package.artifacts)
+
+
+def test_derivations_keep_bom_and_construction_when_summary_refs_are_truncated() -> None:
+    review = _review()
+    components = tuple(
+        review.components[0].model_copy(update={
+            "id": component_id,
+            "label": f"Panel {component_id}",
+            "scenario_id": "scenario-many-refs",
+            "source_view_ids": (),
+            "source_observation_ids": (),
+            "source_contour_ids": tuple(
+                f"contour:{component_id}:{index:02d}" for index in range(30)
+            ),
+            "source_evidence_ids": (),
+            "source_dimension_ids": (),
+        })
+        for component_id in ("alpha", "beta", "gamma")
+    )
+    review = review.model_copy(update={
+        "components": components,
+        "occurrences": (),
+        "construction_scenario_id": "scenario-many-refs",
+        "construction_validation": GeneralConstructionValidation(
+            status="valid",
+            parameter_order=(),
+            max_depth=0,
+            constraint_results=(),
+            issues=(),
+        ),
+    })
+
+    package = derive_general_package(review)
+
+    assert package.status == "incomplete"
+    assert len(package.bom_rows) == 3
+    assert {item.kind for item in package.artifacts} >= {"bom_csv", "bom_json"}
+    assert package.construction is not None
+    assert len(package.construction.pieces) == 3
+    assert len(package.construction.summary.source_refs) == 64
+    warning = next(
+        item for item in package.construction.warnings
+        if item.code == "summary_source_refs_truncated"
+    )
+    assert "total=90" in warning.message
+    assert "retained=64" in warning.message
+    assert "truncated=26" in warning.message
+    assert package.construction.authority == "provisional_not_manufacturing"
 
 
 def test_csv_labels_provisional_quantity_separately_from_physical_occurrences() -> None:

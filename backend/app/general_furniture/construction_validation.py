@@ -468,22 +468,22 @@ def validate_construction_scenario(
         difference_interval = resolver.interval(difference)
         signed_residual = resolver.nominal(difference)
         if constraint.kind == "greater_equal":
-            if difference_interval[0] >= -constraint.tolerance_mm:
+            if difference_interval[0] >= -constraint.tolerance_mm - _EPSILON:
                 status = "pass"
-            elif difference_interval[1] < -constraint.tolerance_mm:
+            elif difference_interval[1] < -constraint.tolerance_mm - _EPSILON:
                 status = "fail"
             else:
                 status = "unknown"
             residual = max(0.0, -signed_residual)
         else:
             if (
-                difference_interval[0] >= -constraint.tolerance_mm
-                and difference_interval[1] <= constraint.tolerance_mm
+                difference_interval[0] >= -constraint.tolerance_mm - _EPSILON
+                and difference_interval[1] <= constraint.tolerance_mm + _EPSILON
             ):
                 status = "pass"
             elif (
-                difference_interval[0] > constraint.tolerance_mm
-                or difference_interval[1] < -constraint.tolerance_mm
+                difference_interval[0] > constraint.tolerance_mm + _EPSILON
+                or difference_interval[1] < -constraint.tolerance_mm - _EPSILON
             ):
                 status = "fail"
             else:

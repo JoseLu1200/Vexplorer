@@ -6,12 +6,15 @@ import httpx
 import pytest
 
 from backend.app.agente.config import ProviderSettings
-from backend.app.agente.provider import OpenAIResponsesProvider
+from backend.app.agente.provider import OpenAIResponsesProvider, ProviderError
 from backend.app.agente.provider import ProviderResponse, ToolCall
 from backend.app.agente.runner import AgentLimits
 from backend.app.contratos.modelos import Bounds2D, DrawingExtraction, DrawingObservation, DrawingView, Evidence, ObservedDimension, InspectGeneralContextArgs
 from backend.app.general_furniture import live as general_live
-from backend.app.general_furniture.live import general_furniture_tool_schemas
+from backend.app.general_furniture.live import (
+    GENERAL_FURNITURE_SYSTEM_PROMPT,
+    general_furniture_tool_schemas,
+)
 from backend.app.general_furniture.live import run_general_furniture_agent
 from backend.app.general_furniture.live import GeneralVisualPage
 from backend.app.agente.vision import VisionMark
@@ -43,6 +46,89 @@ def test_prompt_forbids_transferring_observed_dimension_to_hidden_geometry() -> 
     assert "parámetro estimated separado" in description
     assert "estabilidad" in prompt
     assert "detalle estimated explícito" in description
+    assert "IDs desnudos" in prompt
+    assert "parameter:P" in prompt
+    assert 'length_binding_id="B"' in prompt
+    assert "component.source_document_refs" in prompt
+    assert "allowed_typed_document_source_refs" in prompt
+    assert (
+        "Cuando cites una página o documento dentro de source_refs, basis_refs"
+        in prompt
+    )
+    assert "subensamblaje funcional" in prompt
+    assert "tipos de pieza física fabricada" in prompt
+    assert "x recorre length" in prompt
+    assert "y recorre width" in prompt
+    assert "bindings directos" in prompt
+    assert "sin crear un parámetro individual" in prompt
+    assert "orden serializado" in prompt
+    assert "no prueban por sí solos identidad" in prompt
+    assert "anotaciones explícitas" in prompt
+    assert "evidence_accounting.candidate_regions" in prompt
+    assert "projection-region:" in prompt
+    assert "declara un claim del componente" in prompt
+    assert "apoyo compartido" in prompt
+    assert "no crea un claim" in prompt
+    assert "orthographic_hypotheses" in prompt
+    assert "no es una referencia citable" in prompt
+    assert "no prueba identidad, ownership, cantidad ni material" in prompt
+    assert "hueco ni contorno interior" in prompt
+    assert "alineación global" in prompt
+    assert "no mezcles direct y mirrored" in prompt
+    assert "construction_placements=[]" in prompt
+    assert "decision category=assembly" in prompt
+    assert "marco 2D" in prompt
+    assert "dimension_refs del detalle" in prompt
+    assert "mediciones ledger van en source_refs" in prompt
+    assert "shared_projection_support" in prompt
+    assert "ancla assigned exclusiva" in prompt
+    assert "no declara ownership ni cantidad" in prompt
+
+    proposal_schema = next(
+        item for item in general_furniture_tool_schemas()
+        if item["name"] == "proponer_mueble_general"
+    )
+    quantity_description = proposal_schema["parameters"]["$defs"][
+        "GeneralComponentProposal"
+    ]["properties"]["quantity_basis_refs"]["description"]
+    assert "premise:<id>" in quantity_description
+    assert "contour:<id>" in quantity_description
+    assert "evidence:<id>" in quantity_description
+    assert "observation:<id>" in quantity_description
+    assert "view:<id>" not in quantity_description
+    assert "projection:" not in quantity_description
+    assert "machine checks" in quantity_description
+
+    component_properties = proposal_schema["parameters"]["$defs"][
+        "GeneralComponentProposal"
+    ]["properties"]
+    disposition_properties = proposal_schema["parameters"]["$defs"][
+        "GeneralEvidenceDisposition"
+    ]["properties"]
+    assert "claim" in component_properties["source_contour_ids"]["description"]
+    assert "evidence_accounting.candidate_regions" in disposition_properties[
+        "candidate_region_id"
+    ]["description"]
+    assert "Required for assigned and duplicate_projection" in disposition_properties[
+        "component_id"
+    ]["description"]
+    assert "same component" in disposition_properties[
+        "duplicate_of_region_id"
+    ]["description"]
+    assert "exact contour:<id>" in disposition_properties["source_refs"][
+        "description"
+    ]
+    assert "shared_projection_support" in disposition_properties["kind"]["enum"]
+    assert "separate exclusive assigned anchor" in disposition_properties[
+        "support_component_ids"
+    ]["description"]
+    detail_geometry = proposal_schema["parameters"]["$defs"][
+        "GeneralConstructionDetailGeometry"
+    ]["properties"]
+    assert "resolvable through the construction parameter graph" in (
+        detail_geometry["dimension_refs"]["description"]
+    )
+    assert "may be empty" in detail_geometry["dimension_refs"]["description"]
 
 
 class _Provider:
@@ -84,6 +170,13 @@ def test_live_agent_uses_strict_native_tool_and_returns_new_evidence_grounded_pr
     assert schema["parameters"]["additionalProperties"] is False
     payload = json.loads(provider.input_items[0]["content"][0]["text"])
     assert "raster_authority" not in payload
+    rules = payload["evidence_accounting"]["required_dispositions"]
+    assert "evidence_accounting.candidate_regions" in rules
+    assert "projection-region" in rules
+    assert "component_id is required" in rules
+    assert "source_contour_ids" in rules
+    assert payload["allowed_source_document_refs"] == []
+    assert payload["allowed_typed_document_source_refs"] == []
 
 
 def test_openai_provider_accepts_generic_instructions_without_changing_default_contract() -> None:
@@ -104,7 +197,28 @@ def test_openai_provider_accepts_generic_instructions_without_changing_default_c
 
 
 def test_live_agent_preserves_visual_mark_mapping_and_projection_context() -> None:
-    provider = _Provider()
+    class TypedVisualProvider(_Provider):
+        def create_response(self, **kwargs):
+            response = super().create_response(**kwargs)
+            call = response.tool_calls[0]
+            arguments = json.loads(call.arguments_json)
+            arguments["components"][0]["geometry"] = {
+                "shape_kind": "rectangle",
+                "source_contour_ids": [],
+                "basis_refs": ["visual:cad:region-001"],
+                "rationale": "Contexto visual tipado, sin medir píxeles.",
+            }
+            return ProviderResponse(
+                id=response.id,
+                model=response.model,
+                tool_calls=(ToolCall(
+                    call_id=call.call_id,
+                    name=call.name,
+                    arguments_json=json.dumps(arguments),
+                ),),
+            )
+
+    provider = TypedVisualProvider()
     page = GeneralVisualPage(
         reference="cad:region-001", media_type="image/png", sha256="a" * 64,
         content=b"png", source_view_ids=("front",), source_contour_ids=("contour-1",),
@@ -113,7 +227,7 @@ def test_live_agent_preserves_visual_mark_mapping_and_projection_context() -> No
         warnings=("spatial_region_not_semantic_view",),
     )
 
-    run_general_furniture_agent(
+    outcome = run_general_furniture_agent(
         _extraction(), ledger_revision="ledger-1", provider=provider,
         visual_pages=(page,),
     )
@@ -123,6 +237,14 @@ def test_live_agent_preserves_visual_mark_mapping_and_projection_context() -> No
     assert visual["marks"] == [{"mark_id": "M001", "source_kind": "contour", "source_id": "contour-1"}]
     assert visual["source_contour_ids"] == ["contour-1"]
     assert visual["crop_bounds_source"] == [0, 0, 10, 20]
+    assert payload["allowed_source_document_refs"] == ["cad:region-001"]
+    assert "document:cad" not in payload["allowed_source_document_refs"]
+    assert payload["allowed_typed_document_source_refs"] == [
+        "visual:cad:region-001"
+    ]
+    assert outcome.proposal.components[0].geometry.basis_refs == (
+        "visual:cad:region-001",
+    )
     assert payload["compact_geometry"]["metadata"]["initial_measurement_scope"] == "contour_spans_only"
     assert payload["compact_geometry"]["metadata"]["projection_authority"] == "heuristic_not_probability_or_physical_identity"
 
@@ -167,6 +289,131 @@ def test_live_agent_returns_bounded_validation_reason_then_accepts_repaired_quan
     assert outcome.proposal.components[0].quantity.value == 4
 
 
+def test_live_agent_returns_all_structured_referential_errors_in_one_repair() -> None:
+    class ReferentialRepairProvider(_Provider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+            self.repair_input = None
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            response = super().create_response(
+                input_items=input_items, tools=tools,
+                previous_response_id=previous_response_id, timeout_s=timeout_s,
+            )
+            call = response.tool_calls[0]
+            arguments = json.loads(call.arguments_json)
+            if self.calls == 1:
+                arguments["construction_constraints"] = [{
+                    "id": "bad-closure", "kind": "sum_equals",
+                    "left_refs": ["parameter:missing-constraint"],
+                    "right_refs": ["binding:panel-length"],
+                    "tolerance_mm": 0.1, "severity": "error",
+                    "source_refs": ["dimension:overall-width"],
+                    "rationale": "Fixture referencial inválido.",
+                }]
+                arguments["construction_details"] = [{
+                    "id": "bad-detail", "kind": "other",
+                    "component_ids": ["panel"],
+                    "parameter_refs": ["parameter:missing-detail"],
+                    "state": "deduced", "source_refs": ["dimension:overall-width"],
+                    "assumption_refs": [], "rationale": "Fixture referencial inválido.",
+                }]
+            else:
+                self.repair_input = input_items
+            return ProviderResponse(
+                id=f"response-{self.calls}",
+                tool_calls=(ToolCall(
+                    call_id=f"call-{self.calls}", name=call.name,
+                    arguments_json=json.dumps(arguments),
+                ),),
+                model="fake",
+            )
+
+    provider = ReferentialRepairProvider()
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    repair_payload = json.loads(provider.repair_input[0]["output"])
+    details_by_path = {item["loc"][0]: item for item in repair_payload["details"]}
+    constraint = details_by_path["construction_constraints[0].left_refs"]
+    detail = details_by_path["construction_details[0].parameter_refs"]
+    assert constraint["invalid_refs"] == ["parameter:missing-constraint"]
+    assert constraint["expected"] == "parameter:<id>|binding:<id>"
+    assert detail["invalid_refs"] == ["parameter:missing-detail"]
+    assert detail["expected"] == "parameter:<id>"
+    assert constraint["type"] == detail["type"] == "value_error.referential"
+
+
+def test_live_agent_returns_authority_and_document_paths_in_one_repair() -> None:
+    class DocumentRepairProvider(_Provider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+            self.repair_input = None
+
+        def create_response(self, *, input_items, tools, previous_response_id, timeout_s):
+            self.calls += 1
+            response = super().create_response(
+                input_items=input_items, tools=tools,
+                previous_response_id=previous_response_id, timeout_s=timeout_s,
+            )
+            call = response.tool_calls[0]
+            arguments = json.loads(call.arguments_json)
+            if self.calls == 1:
+                arguments["components"][0]["source_document_refs"] = [
+                    "document:missing-a", "document:missing-b",
+                ]
+                arguments["construction_parameters"] = [{
+                    "id": "estimated-depth", "label": "Fondo estimado",
+                    "basis": "estimated", "nominal_mm": 400,
+                    "range_mm": {"min_mm": 350, "max_mm": 450},
+                    "method": "construction_assumption", "binding_id": None,
+                    "source_refs": ["dimension:missing-depth"],
+                    "assumption_refs": ["premise:premise-panel"],
+                    "rationale": "Fixture referencial inválido.",
+                }]
+            else:
+                self.repair_input = input_items
+            return ProviderResponse(
+                id=f"response-{self.calls}",
+                tool_calls=(ToolCall(
+                    call_id=f"call-{self.calls}", name=call.name,
+                    arguments_json=json.dumps(arguments),
+                ),),
+                model="fake",
+            )
+
+    provider = DocumentRepairProvider()
+    run_general_furniture_agent(
+        _extraction(), ledger_revision="ledger-1", provider=provider,
+    )
+
+    repair_payload = json.loads(provider.repair_input[0]["output"])
+    details = {item["loc"][0]: item for item in repair_payload["details"]}
+    assert details["construction_parameters[0].source_refs"]["invalid_refs"] == [
+        "dimension:missing-depth"
+    ]
+    assert details["components[0].source_document_refs"] == {
+        "loc": ["components[0].source_document_refs"],
+        "msg": "proposal_reference_outside_document_context",
+        "type": "value_error.referential",
+        "invalid_refs": ["document:missing-a", "document:missing-b"],
+        "expected": "document or visual reference announced by the current context",
+        "truncated": False,
+    }
+
+
+def test_safe_validation_details_does_not_expose_arbitrary_value_error_body() -> None:
+    details = general_live._safe_validation_details(
+        ValueError("secret-provider-body=" + "x" * 200)
+    )
+
+    assert details == [{"loc": [], "msg": "invalid_value", "type": "value_error"}]
+
+
 def test_measurement_inspector_allows_explicit_first_segment_page() -> None:
     request = InspectGeneralContextArgs(
         evidence_ids=(), view_ids=(), measurement_ids=(),
@@ -185,8 +432,9 @@ def _raster_extraction() -> DrawingExtraction:
 
 
 class _RasterProvider:
-    def __init__(self, *, source_view_ids=()) -> None:
+    def __init__(self, *, source_view_ids=(), nested_refs=()) -> None:
         self.source_view_ids = list(source_view_ids)
+        self.nested_refs = list(nested_refs)
         self.tools = None
         self.input_items = None
 
@@ -212,6 +460,13 @@ class _RasterProvider:
             "premises": [{"id": "visual-premise", "description": "La silueta puede corresponder a un panel.", "required": True, "blocking": True}],
             "assumptions": ["No se infieren milímetros desde píxeles."],
         }
+        if self.nested_refs:
+            arguments["components"][0]["geometry"] = {
+                "shape_kind": "rectangle",
+                "source_contour_ids": [],
+                "basis_refs": self.nested_refs,
+                "rationale": "Contexto visual tipado, sin medir píxeles.",
+            }
         return ProviderResponse(
             id="raster-response", model="fake",
             tool_calls=(ToolCall(call_id="raster-call", name="proponer_mueble_general", arguments_json=json.dumps(arguments)),),
@@ -219,7 +474,9 @@ class _RasterProvider:
 
 
 def test_raster_live_accepts_only_announced_document_reference_without_fake_view() -> None:
-    provider = _RasterProvider()
+    provider = _RasterProvider(nested_refs=(
+        "visual:pdf-sha:pdf-page:0001", "document:pdf-child",
+    ))
     page = GeneralVisualPage(
         reference="pdf-sha:pdf-page:0001", media_type="image/png",
         sha256="b" * 64, content=b"png",
@@ -237,6 +494,15 @@ def test_raster_live_accepts_only_announced_document_reference_without_fake_view
     assert payload["raster_authority"]["allowed_source_document_refs"] == [
         "pdf-sha:pdf-page:0001", "document:pdf-child",
     ]
+    assert payload["allowed_source_document_refs"] == (
+        payload["raster_authority"]["allowed_source_document_refs"]
+    )
+    assert payload["allowed_typed_document_source_refs"] == [
+        "visual:pdf-sha:pdf-page:0001", "document:pdf-child",
+    ]
+    assert outcome.proposal.components[0].geometry.basis_refs == (
+        "visual:pdf-sha:pdf-page:0001", "document:pdf-child",
+    )
     assert payload["raster_authority"]["allowed_numeric_binding_refs"] == []
     proposal_schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
     assert "bindings=[]" in proposal_schema["description"]
@@ -281,6 +547,7 @@ def test_cad_tool_description_is_unchanged_when_raster_mode_is_disabled() -> Non
 def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -> None:
     class ProviderFailure(RuntimeError):
         code = "provider_response_incomplete"
+        incomplete_reason = "max_output_tokens"
 
     class InspectThenFailProvider:
         calls = 0
@@ -310,13 +577,16 @@ def test_live_error_preserves_safe_trace_and_counters_after_provider_failure() -
     assert caught.value.code == "provider_response_incomplete"
     assert caught.value.model_calls == 2
     assert caught.value.tool_calls == 1
-    assert caught.value.trace[-1]["tool"] == "inspeccionar_evidencia_general"
+    assert caught.value.trace[-2]["tool"] == "inspeccionar_evidencia_general"
+    assert caught.value.trace[-1] == {
+        "tool": "provider_response",
+        "ok": False,
+        "summary": "Provider response ended before a proposal was available.",
+        "reason_code": "provider_response_incomplete",
+        "provider_incomplete_reason": "max_output_tokens",
+    }
     assert "secret provider payload" not in json.dumps(caught.value.trace)
 
-
-from backend.app.agente.provider import OpenAIResponsesProvider, ProviderError
-
-from backend.app.general_furniture.live import GENERAL_FURNITURE_SYSTEM_PROMPT, run_general_furniture_agent
 
 def test_vector_context_announces_typed_assembly_and_exact_document_references() -> None:
     provider = _Provider()
@@ -403,14 +673,14 @@ def test_raster_live_accepts_announced_document_reference_without_fake_view() ->
     assert component.width.value_mm is None
     assert component.thickness.value_mm is None
     payload = json.loads(provider.input_items[0]["content"][0]["text"])
-    assert payload["raster_authority"] == {
-        "allowed_source_view_ids": [],
-        "allowed_source_document_refs": [
-            "pdf-sha:pdf-page:0001", "document:pdf-child",
-        ],
-        "allowed_numeric_binding_refs": [],
-        "instruction": payload["raster_authority"]["instruction"],
-    }
+    assert payload["raster_authority"]["allowed_source_view_ids"] == []
+    assert payload["raster_authority"]["allowed_source_document_refs"] == [
+        "pdf-sha:pdf-page:0001", "document:pdf-child",
+    ]
+    assert payload["raster_authority"]["allowed_typed_document_source_refs"] == [
+        "visual:pdf-sha:pdf-page:0001", "document:pdf-child",
+    ]
+    assert payload["raster_authority"]["allowed_numeric_binding_refs"] == []
     proposal_schema = next(item for item in provider.tools if item["name"] == "proponer_mueble_general")
     assert "source_view_ids=[]" in proposal_schema["description"]
     assert "no midas píxeles" in proposal_schema["description"]
@@ -455,4 +725,10 @@ def test_live_error_preserves_only_allowlisted_provider_diagnostic() -> None:
     assert error.provider_request_id == "req-safe"
     assert error.provider_response_id == "resp-safe"
     assert error.provider_incomplete_reason == "max_output_tokens"
-    assert error.trace == ()
+    assert error.trace == ({
+        "tool": "provider_response",
+        "ok": False,
+        "summary": "Provider response ended before a proposal was available.",
+        "reason_code": "provider_response_incomplete",
+        "provider_incomplete_reason": "max_output_tokens",
+    },)
