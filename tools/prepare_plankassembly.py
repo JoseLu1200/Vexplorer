@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import math
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 import shutil
 import tempfile
@@ -47,6 +48,8 @@ def _load_model(source: Path, filename: str) -> tuple[dict[str, object], bytes]:
     if Path(filename).name != filename or not filename.endswith(".json"):
         raise ValueError(f"unsafe model filename: {filename!r}")
     model_path = source / "extracted" / "data" / "model" / filename
+    if model_path.is_symlink():
+        raise ValueError(f"symlink rejected: {filename!r}")
     data = model_path.read_bytes()
     model = json.loads(data)
     planks = model.get("planks")
@@ -84,7 +87,12 @@ def _add_rectangle(modelspace, layer: str, x0: float, y0: float, x1: float, y1: 
         modelspace.add_line(start, end, dxfattribs={"layer": layer})
 
 
-def _write_assembled_dxf(path: Path, physical_planks: list[list[float]]) -> None:
+def _write_assembled_dxf(
+    path: Path,
+    physical_planks: Sequence[Sequence[float]],
+    views: tuple[str, ...] = ("front", "top", "side"),
+    shifts: Mapping[str, tuple[float, float]] | None = None,
+) -> None:
     document = ezdxf.new("R2010", setup=False)
     document.units = ezdxf.units.MM
     # Eliminate clock- and host-derived header values so equal inputs are byte-identical.
@@ -105,9 +113,15 @@ def _write_assembled_dxf(path: Path, physical_planks: list[list[float]]) -> None
         xmin, ymin, zmin, xmax, ymax, zmax = [
             value - origin[index % 3] for index, value in enumerate(bounds)
         ]
-        _add_rectangle(modelspace, layers[0], offsets[0] + xmin, zmin, offsets[0] + xmax, zmax)
-        _add_rectangle(modelspace, layers[1], offsets[1] + xmin, ymin, offsets[1] + xmax, ymax)
-        _add_rectangle(modelspace, layers[2], offsets[2] + ymin, zmin, offsets[2] + ymax, zmax)
+        if "front" in views:
+            fx, fy = (shifts or {}).get("front", (0.0, 0.0))
+            _add_rectangle(modelspace, layers[0], offsets[0] + xmin + fx, zmin + fy, offsets[0] + xmax + fx, zmax + fy)
+        if "top" in views:
+            fx, fy = (shifts or {}).get("top", (0.0, 0.0))
+            _add_rectangle(modelspace, layers[1], offsets[1] + xmin + fx, ymin + fy, offsets[1] + xmax + fx, ymax + fy)
+        if "side" in views:
+            fx, fy = (shifts or {}).get("side", (0.0, 0.0))
+            _add_rectangle(modelspace, layers[2], offsets[2] + ymin + fx, zmin + fy, offsets[2] + ymax + fx, zmax + fy)
     previous_fixed_metadata = ezdxf.options.write_fixed_meta_data_for_testing
     try:
         # ezdxf otherwise refreshes $VERSIONGUID, timestamps and EZDXF_META at write time.
@@ -240,7 +254,11 @@ def prepare_plankassembly(
         _write_hashes(public_stage)
         _write_hashes(private_stage)
         public_stage.rename(public_destination)
-        private_stage.rename(private_destination)
+        try:
+            private_stage.rename(private_destination)
+        except Exception:
+            shutil.rmtree(public_destination, ignore_errors=True)
+            raise
         return manifest
     except Exception:
         shutil.rmtree(public_stage, ignore_errors=True)

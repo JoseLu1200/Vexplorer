@@ -26,3 +26,6 @@ __pycache__/
 .worktrees/
 .runtime/
 .vexplorer-data/
+
+# Worktrees locales de Claude Code (pueden contener salidas de datasets con licencia)
+.claude/worktrees/

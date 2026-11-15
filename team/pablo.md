@@ -28,7 +28,7 @@
   - este archivo
 - Dependencias que solo leeré: `backend/app/historico/`, `backend/app/semantic/`, `backend/app/similarity/`, `backend/app/agente/provider.py`, `backend/app/contratos/modelos.py`, `backend/app/servicios/repository.py`
 - Archivos compartidos que requieren coordinación: `backend/app/main.py` (registro de routers, una sola zona)
-- Solapes detectados y acuerdo para resolverlos: no se modifica `historico/` (propiedad de `agente_historico_real`) ni `contratos/`; los modelos nuevos viven en `precedentes/`.
+- Solapes detectados y acuerdo para resolverlos: este trabajo no modifica `historico/` (propiedad de `agente_historico_real`) ni `contratos/`; los modelos nuevos viven en `precedentes/`. Aviso: el diff de la rama contra `main` sí incluye cambios en `historico/real_service.py` (sustituye `_cosine` por `cosine_similarity`), `validador/`, `semantic_explorer/` y `frontend/`, pero vienen del commit `fa4ec3b` de Sergio (nivel 1, `team/sergio.md`). Los de `frontend/` necesitan el visto bueno de la Persona C antes del PR.
 
 ## Hecho en el último bloque
 
@@ -39,6 +39,33 @@
 - Revisión independiente en solo lectura: 2 hallazgos altos (coste cúbico en 2.4, suplantación de actor en 3.4), 6 medios y 7 bajos. Todos corregidos por su implementador y verificados (segundo commit).
 - Documentación del incremento en `docs/PRECEDENTES.md`.
 - Fusión en `origin/embeddings` sobre el nivel 1 de Sergio, sin conflictos de texto. Integración semántica: umbrales calibrados de 1.2 en 2.1 (score relativo al techo de la consulta) y 2.3 (umbral combinado y abstención), coseno unificado de 1.4 en 3.3.
+
+## Bloque 2 (2026-11-14): similitud y evaluación — terminado, integrado en `feat/similitud-evaluacion`
+
+- Resultado: las cuatro ramas revisadas por Opus (1–3 rondas cada una) e integradas. Suite Python: 1198 passed, 1 skip; los mismos 2 fallos (`test_explorer_models.py`, falta `joblib`) y 6 errores de colección (dependencias opcionales del laboratorio, p. ej. `scipy`) que la línea base. Frontend sin cambios (no se ejecutó `npm test`).
+- Enganches en `backend/app/main.py`: import de `precedentes.mantenimiento`, `ColaMantenimiento` en el `lifespan` y `tras_guardar_biblioteca(...)` tras `save_library_item` en `save_to_library`.
+- `.gitignore`: añade `.claude/worktrees/`.
+- Pendientes conocidos (no corregidos por falta de presupuesto):
+  - Corpus, media: `_agrupar_cliques` deja casi duplicados dentro de una misma partición (representante de un grupo nuevo a ≤ tolerancia de otro representante). Corregir aplicando la misma regla que entre particiones a los supervivientes de la partición actual.
+  - Corpus, baja: traslación independiente por vista en variantes (puede solapar vistas; usar un desplazamiento común). La tarea de identidad sigue siendo fácil para métodos que normalicen coordenadas: documentarlo.
+  - Mantenimiento: sin escritura condicional en el repositorio (ventana mínima entre relectura y guardado); sin cola persistente; verificación de huella no programada.
+  - Comparativa: B/C/D sin adaptador de proveedor real (lo lleva quien lleva el harness); D sin índice histórico anotado; la variante A apenas extrae tableros en vistas montadas de PlankAssembly (tableros que se tocan se fusionan): requiere extractor en `geometria/`.
+  - Dataset PlankAssembly no descargado en esta máquina: el corpus solo se ha probado con fixtures sintéticos.
+  - `tools/biblioteca_juicios.py` no extrae descriptores: no hay extractor desde vistas ortográficas montadas; el operador aporta `--descriptores`.
+- Revisión integrada (Opus) de la rama contra `main` y correcciones (Sonnet), commits `04bfd61`..`3cb05eb`:
+  - Alta corregida: el middleware de acceso público se saltaba con el prefijo `VEXPLORER_ROOT_PATH` (también en history/library, ya existía en `main`). Ahora normaliza el prefijo y los routers de precedentes llevan además una dependencia 403. Tests con prefijo vacío, simple y doble.
+  - Corregidas: lector `PlankAssemblyCorpusReader` (`--corpus plankassembly-corpus`) para que la comparativa lea el corpus; lista de rutas protegidas generada desde OpenAPI; `try/finally` en el `lifespan`; constante `NOMBRE_BD_ESPACIO`; documentado el cambio de umbral por defecto de `POST /library/groups` (0,8 → 0,85/0,92); herramienta `tools.biblioteca_juicios`.
+  - Batería afectada: 388 passed. Pendiente de coordinación: visto bueno de frontend (Persona C) a los cambios de Sergio en `frontend/`.
+
+- Pedido por el usuario: "Lanza lo que no esté hecho ya" de las opciones 3, 4, 6 y 7 tras comprobar que 2.4, 3.1, 2.5/2.6 y 2.7 ya existían. Subagentes Sonnet en worktrees propios + revisor Opus en solo lectura.
+- Rama de integración: `feat/similitud-evaluacion` (desde `embeddings`, con `main` fusionado). Ramas por agente: `feat/sim-nesting`, `feat/sim-mantenimiento`, `feat/sim-corpus`, `feat/sim-comparativa`.
+- Tareas:
+  - **Nesting real (3.1):** colocación por guillotina en `backend/app/precedentes/lotes.py` (+ módulo nuevo en `precedentes/`).
+  - **Mantenimiento automático (2.5/2.6):** regeneración tras guardar revisión, huella del espacio por modelo/dimensiones/descriptor y candado persistente en SQLite; sin tocar `contratos/`.
+  - **Corpus PlankAssembly + juicios reales (2.7/T11):** ampliar `tools/prepare_plankassembly.py`, generar juicios en `evaluation/recuperacion/`. Dataset aún no descargado: fixtures sintéticos.
+  - **Comparativa de métodos (T13, `docs/COMPARATIVA_METODOS.md`):** módulo nuevo en `tools/`/`evaluation/`; el harness solo se invoca, no se modifica; sin llamadas de pago.
+- Alcance ampliado: `tools/prepare_plankassembly.py`, `tools/comparativa_metodos*.py`, `evaluation/comparativa/`, `evaluation/recuperacion/`, sus tests en `tests/` y `backend/tests/`, y el punto de enganche mínimo tras guardar en biblioteca (se anota la ruta exacta al integrar).
+- Fuera de alcance (compañeros): harness CAD (`agente/`, `general_furniture/`), `frontend/`, `contratos/`.
 
 ## Siguiente bloque
 

@@ -5,18 +5,18 @@
 - Nombre declarado por el usuario: Sergio Sande Cendán
 - Rol: Coordinador / Evaluación e Integración (D / General)
 - Archivo creado o designado explícitamente: Solicitado por el usuario ("crea mi archivo y ve metiendo toda la documentacion"), 2026-11-14 00:54 CET
-- Última actualización: 2026-11-14 13:40 CET
+- Última actualización: 2026-11-14 15:16 CET
 
 ## Tarea de la sesión
 
-- Objetivo concreto: Implementación del Nivel 1 completo (puntos 1.1 a 1.7) de `docs/BRAINSTORMING_EMBEDDINGS.md` repartido en 7 subagentes especializados, sin modificar `backend/app/contratos/`.
-- Referencia del plan: `docs/BRAINSTORMING_EMBEDDINGS.md` (Nivel 1: 1.1–1.7)
+- Objetivo concreto: Ejecución en 3 oleadas (+ QA revisor) de Ciclo de Vida de Embeddings (2.5), Evaluación de Recuperación (2.7) y Persistencia SQLite WAL + Idempotencia (A07), manteniendo intactos `backend/app/contratos/modelos.py`, `frontend/` y `backend/app/agente/`.
+- Referencia del plan: `docs/BRAINSTORMING_EMBEDDINGS.md` (Ideas 2.5, 2.7 y Fallo A07)
 - Estado: terminado
 
 ## Alcance y reservas
 
-- Archivos o carpetas que puedo editar: `team/sergio.md`, `tools/` (1.1), `backend/app/similarity/` (1.2, 1.3, 1.4), `backend/app/historico/real_service.py` y `backend/app/semantic_explorer/` (1.4), `backend/app/validador/` (1.6), `backend/app/ingesta/` (Fase A/C), `backend/app/main.py` (1.2, 1.3, 1.5, Fase C), `frontend/` (1.5, 1.7, Fase B), `backend/tests/` y `tests/`
-- Dependencias que solo leeré: `backend/app/contratos/modelos.py` (sin cambios de contrato), `team/*.md`, `data/`, `evaluation/`
+- Archivos o carpetas que puedo editar: `team/sergio.md`, `tools/`, `backend/app/similarity/`, `backend/app/semantic/`, `backend/app/semantic_explorer/`, `backend/app/historico/`, `backend/app/validador/`, `backend/app/ingesta/`, `backend/app/servicios/repository.py`, `backend/app/main.py`, `backend/tests/` y `tests/`
+- Dependencias que solo leeré: `backend/app/contratos/modelos.py` (sin cambios de contrato), `frontend/` (propiedad de C), `backend/app/agente/` (harness), `team/*.md`, `data/`, `evaluation/`
 - Archivos compartidos que requieren coordinación: `CLAUDE.md`, `team/README.md`
 - Solapes detectados y acuerdo para resolverlos: ninguno comprobado.
 
@@ -69,6 +69,7 @@
 | Nivel 1 Frontend (1.5 y 1.7) | `node --test frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 12 passed, 0 failed | Nuevos módulos 100% verdes (en `npm test` global persiste 1 fallo preexistente en `scene.test.js`) |
 | Tarea 1 · Motor Geométrico e Ingesta CAD (Fase A, B, C + QA) | `pytest backend/tests/test_dxf_ingest_hardening.py backend/tests/test_geometry.py backend/tests/test_ingesta_dwg.py tests/test_demo_workbench.py -v` + `node --test frontend/tests/drawing*.test.js frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 33 passed (Python) / 27 passed (JS), dictamen QA: **SHIP (0 issues)** | `backend/app/contratos/modelos.py` intacto |
 | Bloque 2 · Pandeo en `runner.py` + A04 Alzado/Encajar en visor | `pytest backend/tests/test_runner_pandeo.py backend/tests/test_validador_pandeo.py backend/tests/test_backend_agent.py backend/tests/test_backend_flow.py backend/tests/test_backend_table_agent.py tests/test_demo_workbench.py -v` + `node --test frontend/tests/drawing*.test.js frontend/tests/viewport.test.js frontend/tests/similarity_explain.test.js frontend/tests/duplicate_alert.test.js` | 41 passed (Python) / 34 passed (JS), dictamen QA: **SHIP (0 issues)** | `backend/app/contratos/modelos.py` intacto |
+| Ciclo Embeddings (2.5) + Eval Recuperación (2.7) + SQLite WAL/Idempotencia (A07) · Oleada 1-3 + QA | `.venv\Scripts\python.exe -m pytest tests/test_retrieval_evaluation.py tests/test_demo_isolation.py tests/test_demo_workbench.py backend/tests/test_run_idempotency.py backend/tests/test_library_revision_sync.py backend/tests/test_backend_library_api.py backend/tests/test_backend_api.py -v` + suite regresión + `python -m tools.evaluate_retrieval --json` | 41 passed (suite combinada QA) + 77 passed (regresión ampliada) + eval `MRR=1.0, P@1=1.0, P@3=1.0, P@5=0.8, R@1=0.25, R@3=0.75, R@5=1.0, nDCG@1=0.7714, nDCG@3=0.9432, nDCG@5=0.9454`, dictamen QA: **SHIP (0 issues bloqueantes)** | `backend/app/contratos/`, `frontend/` y `backend/app/agente/` sin cambios |
 | Verificación navegador interactivo | Navegación a `http://127.0.0.1:8765` en subagente de navegador | UI 100% funcional, 0 errores en consola, 13/13 peticiones HTTP 200 | Host-observed facts confirmados |
 
 ## Bloqueos y cierre

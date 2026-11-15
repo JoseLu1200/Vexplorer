@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
+import anyio.from_thread
 from fastapi import APIRouter, Query, Request
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
@@ -38,8 +38,8 @@ def crear_router_decisiones(almacen: AlmacenDecisiones, minimo_decisiones: int =
     router = APIRouter(prefix=PREFIJO_API + "/decisiones")
 
     @router.post("")
-    async def registrar_decision(request: Request) -> JSONResponse:
-        crudo = await _leer_cuerpo_limitado(request, MAX_BYTES_CUERPO)
+    def registrar_decision(request: Request) -> JSONResponse:
+        crudo = anyio.from_thread.run(_leer_cuerpo_limitado, request, MAX_BYTES_CUERPO)
         if crudo is None:
             return JSONResponse(status_code=413, content=respuesta_error("cuerpo_demasiado_grande", f"El cuerpo supera {MAX_BYTES_CUERPO} bytes."))
         try:
@@ -55,7 +55,7 @@ def crear_router_decisiones(almacen: AlmacenDecisiones, minimo_decisiones: int =
         except ValidationError as error:
             campos = sorted({".".join(str(parte) for parte in item["loc"]) for item in error.errors()})
             return JSONResponse(status_code=422, content=respuesta_error("decision_invalida", f"Campos inválidos: {', '.join(campos)}"))
-        resultado = await run_in_threadpool(almacen.registrar, entrada)
+        resultado = almacen.registrar(entrada)
         return JSONResponse(status_code=201 if resultado.estado == "creada" else 200, content=respuesta_ok(resultado))
 
     @router.get("/resumen")

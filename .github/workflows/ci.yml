@@ -76,3 +76,23 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
+
+  design-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [portal, landing]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.11.0"
+          cache: npm
+          cache-dependency-path: diseno/${{ matrix.app }}/package-lock.json
+      - name: Install and build design application
+        working-directory: diseno/${{ matrix.app }}
+        run: |
+          npm ci
+          npm run build

@@ -129,3 +129,42 @@ def test_output_is_reproducible_and_rejects_unsafe_scope(tmp_path: Path):
         prepare_plankassembly(source, tmp_path / "bad-offset", tmp_path / "private-offset", split="valid", offset=-1, limit=1)
     with pytest.raises(ValueError, match="separate"):
         prepare_plankassembly(source, tmp_path / "same", tmp_path / "same", split="valid", limit=2)
+
+
+def test_prepare_plankassembly_rejects_symlink_model(tmp_path: Path, monkeypatch):
+    from tools.prepare_plankassembly import _load_model
+    source = tmp_path / "src"
+    _write_fixture(source)
+    model_dir = source / "extracted" / "data" / "model"
+    target = model_dir / "fixture_normal.json"
+    link = model_dir / "link_model.json"
+    try:
+        link.symlink_to(target)
+        with pytest.raises(ValueError, match="symlink rejected"):
+            _load_model(source, "link_model.json")
+    except OSError:
+        pass
+    monkeypatch.setattr(Path, "is_symlink", lambda self: True)
+    with pytest.raises(ValueError, match="symlink rejected"):
+        _load_model(source, "fixture_normal.json")
+
+
+def test_prepare_plankassembly_cleans_up_public_on_private_rename_failure(tmp_path: Path, monkeypatch):
+    source = tmp_path / "source"
+    _write_fixture(source)
+    public = tmp_path / "pub"
+    private = tmp_path / "priv"
+    original_rename = Path.rename
+
+    def fake_rename(self, target):
+        if Path(target).resolve() == private.resolve():
+            raise OSError("simulated private rename failure")
+        return original_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", fake_rename)
+    with pytest.raises(OSError, match="simulated private rename failure"):
+        prepare_plankassembly(source, public, private, split="valid", limit=1)
+
+    assert not public.exists(), "public destination should be removed if private rename fails"
+    assert not private.exists(), "private destination should not exist"
+

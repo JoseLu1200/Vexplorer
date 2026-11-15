@@ -215,3 +215,30 @@ def test_api_rechaza_cuerpo_grande(tmp_path: Path) -> None:
     sin_longitud = cliente.post(RUTA, content=trozos, headers={"Content-Type": "application/json"})
     assert sin_longitud.status_code == 413
     assert cliente.get(RUTA + "/resumen", params={"metodo": "geometric"}).json()["data"]["total"] == 0
+
+
+def test_registro_concurrente_idempotente(tmp_path: Path) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    almacen = AlmacenDecisiones(tmp_path / "decisiones.sqlite3")
+    entrada = DecisionEntrada(
+        consulta_id="c-1",
+        candidato_id="cand-1",
+        metodo="geometric",
+        score_components={"dimensions": 0.9, "roles": 0.8},
+        aceptado=True,
+        actor="tester",
+    )
+
+    def tarea() -> str:
+        res = almacen.registrar(entrada)
+        return res.estado
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        estados = list(ex.map(lambda _: tarea(), range(20)))
+
+    # Exactamente una 'creada' y el resto 'sin_cambios', sin sqlite3.IntegrityError
+    assert estados.count("creada") == 1
+    assert estados.count("sin_cambios") == 19
+    decisiones = almacen.listar()
+    assert len(decisiones) == 1

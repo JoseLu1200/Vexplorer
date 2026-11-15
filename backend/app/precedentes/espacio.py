@@ -5,8 +5,8 @@ referencia por (modelo, dimensiones, versión de frases) en un SQLite propio; ca
 compara el coseno por frase con una tolerancia. Si el proveedor cambia su modelo interno sin cambiar
 el nombre, la deriva aparece aquí aunque el nombre del modelo sea el mismo.
 
-La integración con ``EmbeddingMetadata`` (identificador de espacio en la biblioteca) queda pendiente
-porque cambia el contrato (requiere acuerdo A/B).
+La huella no se guarda en ``EmbeddingMetadata`` (cambiaría el contrato y requiere acuerdo A/B): se
+vincula a cada embedding mediante sellos por ``cache_key`` en el mismo SQLite (ver ``mantenimiento``).
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -96,7 +97,7 @@ class ResultadoRotacion(ModeloEstricto):
     version_frases: str
     referencia_nueva: ResumenHuella
     referencia_anterior: HuellaRetirada | None = None
-    embeddings_invalidados: int = Field(ge=0)
+    embeddings_invalidados: int = Field(default=0, ge=0)
 
 
 class ErrorInvalidacionEmbeddings(RuntimeError):
@@ -176,8 +177,8 @@ def resumir(huella: HuellaEspacio, incluir_vectores: bool = False) -> ResumenHue
 class AlmacenEspacio:
     """SQLite propio con una huella de referencia por (modelo, dimensiones, versión de frases)."""
 
-    def __init__(self, ruta: Path) -> None:
-        self._ruta = ruta
+    def __init__(self, ruta: Path, timeout_s: float = 30.0) -> None:
+        self._ruta, self._timeout_s = ruta, timeout_s
         ruta.parent.mkdir(parents=True, exist_ok=True)
         with self._conectar() as db:
             db.execute(
@@ -191,12 +192,30 @@ class AlmacenEspacio:
                 "carga TEXT NOT NULL, retirada_en TEXT NOT NULL)"
             )
 
+    @property
+    def ruta(self) -> Path:
+        return self._ruta
+
     @contextmanager
     def _conectar(self) -> Iterator[sqlite3.Connection]:
-        conexion = sqlite3.connect(self._ruta)
+        conexion = sqlite3.connect(self._ruta, timeout=self._timeout_s, isolation_level=None)
         try:
-            with conexion:
+            for intento in range(5):
+                try:
+                    conexion.execute("BEGIN IMMEDIATE")
+                    break
+                except sqlite3.OperationalError as exc:
+                    if ("locked" in str(exc).lower() or "busy" in str(exc).lower()) and intento < 4:
+                        time.sleep(0.05 * (2**intento))
+                        continue
+                    raise
+            try:
                 yield conexion
+            except BaseException:
+                conexion.execute("ROLLBACK")
+                raise
+            else:
+                conexion.execute("COMMIT")
         finally:
             conexion.close()
 
@@ -222,7 +241,6 @@ class AlmacenEspacio:
     def rotar(self, huella: HuellaEspacio, retirada_en: str) -> HuellaRetirada | None:
         """Guarda ``huella`` como referencia vigente y archiva la anterior (si la había) con fecha."""
         with self._conectar() as db:
-            db.execute("BEGIN IMMEDIATE")
             fila = db.execute(
                 "SELECT carga FROM referencias_espacio WHERE modelo=? AND dimensiones=? AND version_frases=?",
                 (huella.modelo, huella.dimensiones, huella.version_frases),

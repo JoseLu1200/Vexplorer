@@ -13,6 +13,7 @@ Todas las medidas en milímetros. Las funciones son puras y deterministas.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable
 from typing import Literal, Protocol
 
@@ -42,6 +43,8 @@ class PiezaRef(ModeloEstricto):
     cantidad: int | None = Field(default=None, gt=0)
     material: str | None = Field(default=None, max_length=200)
     acabado: str | None = Field(default=None, max_length=200)
+    # False = tiene veta o no se puede girar 90° al cortar (lo usa el nesting de 3.1).
+    rotable: bool = True
     fuente: FuentePieza
 
 
@@ -55,6 +58,7 @@ class PiezaPedido(ModeloEstricto):
     cantidad: int | None = Field(default=None, gt=0)
     material: str | None = Field(default=None, max_length=200)
     acabado: str | None = Field(default=None, max_length=200)
+    rotable: bool = True
 
     def a_pieza_ref(self, origen_id: str) -> PiezaRef:
         """La fuente se fija siempre a ``peticion``: el cliente no puede declarar otra."""
@@ -150,21 +154,24 @@ def piezas_desde_registro_historico(registro: HistoricalRecord) -> tuple[PiezaRe
 
 
 def piezas_desde_biblioteca(items: Iterable[LibraryItem]) -> tuple[PiezaRef, ...]:
-    ordenados = sorted(items, key=lambda item: (item.run_id, item.id))
+    por_run: dict[str, LibraryItem] = {}
+    for item in items:
+        actual = por_run.get(item.run_id)
+        if actual is None or item.result_revision > actual.result_revision:
+            por_run[item.run_id] = item
+    ordenados = sorted(por_run.values(), key=lambda item: (item.run_id, item.id))
     return tuple(
         pieza for item in ordenados for pieza in piezas_desde_item_biblioteca(item)
     )
 
 
 def ids_duplicados(piezas: Iterable[PiezaRef]) -> tuple[str, ...]:
-    vistos: set[tuple[str, str]] = set()
-    duplicados: set[str] = set()
-    for pieza in piezas:
-        clave = (pieza.origen_id, pieza.pieza_id)
-        if clave in vistos:
-            duplicados.add(f"{pieza.origen_id}/{pieza.pieza_id}")
-        vistos.add(clave)
-    return tuple(sorted(duplicados))
+    conteo = Counter((pieza.origen_id, pieza.pieza_id) for pieza in piezas)
+    return tuple(
+        sorted(
+            f"{origen}/{pieza}" for (origen, pieza), cant in conteo.items() if cant > 1
+        )
+    )
 
 
 def contar_origen(piezas: Iterable[PiezaRef]) -> OrigenDatos:

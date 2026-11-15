@@ -187,9 +187,11 @@ def test_owner_migration_backfills_only_unanimous_linked_job_actor(tmp_path: Pat
     assert owners == {"run-conflict": None, "run-unanimous": "alice"}
 
 
+@pytest.mark.parametrize("prefix", ["", "/vexplorer"])
 def test_private_documents_and_runs_are_invisible_to_other_authenticated_users(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, prefix: str
 ) -> None:
+    monkeypatch.setenv("VEXPLORER_ROOT_PATH", prefix)
     client = _private_client(tmp_path, monkeypatch)
     repository = client.app.state.repository
     repository.create_run(
@@ -218,15 +220,15 @@ def test_private_documents_and_runs_are_invisible_to_other_authenticated_users(
         "/api/v1/runs/run-owned/drawing",
         "/api/v1/runs/run-owned/events",
     ):
-        response = client.get(path, auth=("bob", "bob password"))
+        response = client.get(prefix + path, auth=("bob", "bob password"))
         assert response.status_code == 404, (path, response.text)
 
     assert client.get(
-        f"/api/v1/documents/{document_id}/original",
+        prefix + f"/api/v1/documents/{document_id}/original",
         auth=("alice", "alice password"),
     ).status_code == 200
     assert client.get(
-        "/api/v1/runs/run-owned", auth=("alice", "alice password")
+        prefix + "/api/v1/runs/run-owned", auth=("alice", "alice password")
     ).status_code == 200
 
 

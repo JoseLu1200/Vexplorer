@@ -17,7 +17,7 @@ from threading import Lock
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -37,7 +37,7 @@ from backend.app.agente.replay import (
 )
 from backend.app.agente.runner import AgentLimits, run_agent, run_parts_agent, run_table_agent
 from backend.app.agente.tools import parts_tool_schemas, table_tool_schemas, tool_schemas
-from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
+from backend.app.contratos.modelos import DrawingExtraction, EmbeddingMetadata, GeneralAssemblyAttempt, LibraryItem, LibraryPublicationProvenance, Result, ReviewRequest, RunRequest, TableCostScope, TableDrawingFormatLink, TableDrawingManifest, TableDrawingManifestSheet
 from backend.app.estimacion.service import estimate_result
 from backend.app.estimacion.table_costs import estimate_table_costs, get_table_cost_catalog
 from backend.app.geometria import extract_drawing
@@ -65,6 +65,7 @@ from backend.app.servicios.table_explanations import explain_table_result
 from backend.app.servicios.repository import DemoRepository
 from backend.app.servicios.reconstruction import reconstruct_parts_scene, reconstruct_scene
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
+from backend.app.precedentes.mantenimiento import NOMBRE_BD_ESPACIO, ColaMantenimiento, tras_guardar_biblioteca
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
 from backend.app.semantic.embeddings import EmbeddingGemma2Provider, EmbeddingProviderError, EmbeddingSpaceIdentity, embedding_cache_key
 from backend.app.semantic_explorer.router import explorer_capability
@@ -85,9 +86,10 @@ class NormalizedDxfUnavailable(FileNotFoundError):
 
 
 class BoundedJsonBodyMiddleware:
-    def __init__(self, app: ASGIApp, *, max_bytes: int = MAX_JSON_BODY_BYTES) -> None:
+    def __init__(self, app: ASGIApp, *, max_bytes: int = MAX_JSON_BODY_BYTES, root_path: str = "") -> None:
         self.app = app
         self.max_bytes = max_bytes
+        self.root_path = root_path
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         headers = {key.lower(): value for key, value in scope.get("headers", ())}
@@ -110,7 +112,11 @@ class BoundedJsonBodyMiddleware:
             chunk = message.get("body", b"")
             consumed += len(chunk)
             if consumed > self.max_bytes:
-                if scope.get("path") == "/api/v1/history/import/json":
+                candidatas = _rutas_candidatas(
+                    str(scope.get("path", "")).rstrip("/"),
+                    (self.root_path, str(scope.get("root_path", ""))),
+                )
+                if "/api/v1/history/import/json" in candidatas:
                     response = JSONResponse(
                         {"schema_version": "1.0.0", "data": None, "error": {"code": "history_import_too_large", "message": "El cuerpo JSON supera 5 MiB.", "retryable": False}},
                         status_code=413,
@@ -235,10 +241,36 @@ def _error(status_code: int, code: str, message: str, retryable: bool = False):
     return JSONResponse({"schema_version": "0.2.0", "error": {"code": code, "message": message, "retryable": retryable}}, status_code=status_code)
 
 
-def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings) -> None:
+def _rutas_candidatas(path: str, prefixes: tuple[str, ...]) -> list[str]:
+    """La ruta tal cual y con cualquier ``root_path`` quitado (repetidamente) del inicio.
+
+    Starlette enruta quitando ``root_path`` al ``path`` del scope, así que ``/vx/api/v1/history``
+    llega al mismo handler que ``/api/v1/history``; el control de acceso debe ver ambas formas.
+    """
+    normalized = path.rstrip("/") or "/"
+    candidates = [normalized]
+    for prefix in {item.rstrip("/") for item in prefixes if item and item.rstrip("/")}:
+        current = normalized
+        while current == prefix or current.startswith(prefix + "/"):
+            current = current[len(prefix):]
+            candidates.append(current.rstrip("/") or "/")
+    return candidates
+
+
+def _es_ruta_compartida(path: str) -> bool:
+    """Operaciones del catálogo privado que el acceso público no puede usar."""
+    return (
+        path == "/api/v1/history" or path.startswith("/api/v1/history/")
+        or path == "/api/v1/semantic-explorer/review"
+        or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
+    )
+
+
+def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, historical_store, semantic_provider, settings: ProviderSettings, public_production: bool = False) -> None:
     """Registra las funcionalidades de ``backend/app/precedentes`` (ideas 2.1-3.5 del brainstorming de embeddings).
 
-    En acceso público quedan bloqueadas por el middleware, igual que el histórico y la biblioteca.
+    En acceso público quedan bloqueadas por el middleware, igual que el histórico, y además
+    cada router lleva una dependencia que responde 403 (defensa en profundidad si el middleware no las ve).
     """
     from backend.app.precedentes.api_analogia import crear_router_analogia
     from backend.app.precedentes.api_busqueda import (
@@ -255,14 +287,19 @@ def _incluir_routers_precedentes(app: FastAPI, *, root: Path, repository, histor
     from backend.app.precedentes.espacio import AlmacenEspacio
     from backend.app.precedentes.herrajes import AlmacenHerrajes
 
-    app.include_router(crear_router_sugerencias(repository))
-    app.include_router(crear_router_analogia(historical_store))
-    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / "precedentes_espacio.sqlite3")))
-    app.include_router(crear_router_piezas(repository))
-    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")))
-    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0))
-    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None))
-    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")))
+    def bloquear_en_acceso_publico() -> None:
+        if public_production:
+            raise HTTPException(403, "private_feature_unavailable")
+
+    guard = [Depends(bloquear_en_acceso_publico)]
+    app.include_router(crear_router_sugerencias(repository), dependencies=guard)
+    app.include_router(crear_router_analogia(historical_store), dependencies=guard)
+    app.include_router(crear_router_embeddings(repository, semantic_provider, AlmacenEspacio(root / NOMBRE_BD_ESPACIO)), dependencies=guard)
+    app.include_router(crear_router_piezas(repository), dependencies=guard)
+    app.include_router(crear_router_decisiones(AlmacenDecisiones(root / "precedentes_decisiones.sqlite3")), dependencies=guard)
+    app.include_router(crear_router_busqueda(repository, crear_proveedor_traductor(settings), timeout_s=20.0), dependencies=guard)
+    app.include_router(crear_router_imagen(repository, root / "precedentes_imagen.sqlite3", proveedor=None), dependencies=guard)
+    app.include_router(crear_router_herrajes(historical_store, AlmacenHerrajes(root / "precedentes_herrajes.sqlite3")), dependencies=guard)
 
 
 def create_app(
@@ -428,14 +465,22 @@ def create_app(
                 "Usa herramientas nativas, evalúa y corrige; nunca inventes coordenadas libres."
             ),
         )
+    cola_mantenimiento = ColaMantenimiento()  # una por app: apagar una no cancela la de otra
+
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        yield
-        job_executor.shutdown()
+        try:
+            yield
+        finally:
+            try:
+                job_executor.shutdown()
+            finally:
+                cola_mantenimiento.apagar()
 
     app = FastAPI(title="Vexplorer", version="0.2.0", lifespan=lifespan)
     app.root_path = root_path
     app.state.repository = repository
+    app.state.cola_mantenimiento = cola_mantenimiento
     app.state.job_executor = job_executor
     app.state.historical_store = historical_store
     app.state.history_db = history_db
@@ -882,7 +927,11 @@ def create_app(
     @app.middleware("http")
     async def private_access(request: Request, call_next):
         request.state.actor = None
-        if auth_enabled and request.url.path not in {"/api/v1/health", "/health"}:
+        candidatas = _rutas_candidatas(
+            request.url.path,
+            (root_path, str(request.scope.get("root_path", ""))),
+        )
+        if auth_enabled and not any(item in {"/api/v1/health", "/health"} for item in candidatas):
             client_key = request.client.host if request.client is not None else "unknown"
             now = time.monotonic()
             recent = [item for item in authentication_failures.get(client_key, ()) if now - item < 60]
@@ -898,7 +947,7 @@ def create_app(
                 return response
             authentication_failures.pop(client_key, None)
             request.state.actor = actor
-            path = request.url.path.rstrip("/")
+            path = min(candidatas, key=len)
             document_match = re.fullmatch(
                 r"/api/v1/documents/(doc-[0-9a-f]{32})(?:/.*)?", path
             )
@@ -954,16 +1003,14 @@ def create_app(
             if origin is not None and origin.rstrip("/") not in allowed_origins:
                 return _error(403, "origin_not_allowed", "Origen no autorizado.")
         if public_production:
-            path = request.url.path.rstrip("/")
-            shared_feature = (
-                path == "/api/v1/history" or path.startswith("/api/v1/history/")
-                or path == "/api/v1/semantic-explorer/review"
-                or path == "/api/v1/precedentes" or path.startswith("/api/v1/precedentes/")
+            shared_feature = any(
+                _es_ruta_compartida(candidate)
+                for candidate in candidatas
             )
             if shared_feature:
                 return _error(403, "private_feature_unavailable", "Esta operación del catálogo privado no está disponible en el acceso público.")
             if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-                action = "upload" if path == "/api/v1/documents" else "other"
+                action = "upload" if "/api/v1/documents" in candidatas else "other"
                 decision = await run_in_threadpool(
                     public_admission.admit_mutation,
                     request.client.host if request.client is not None else "unknown",
@@ -989,7 +1036,7 @@ def create_app(
 
     # Keep the byte bound outermost so authentication/body ownership checks never
     # materialize an unbounded JSON request first.
-    app.add_middleware(BoundedJsonBodyMiddleware)
+    app.add_middleware(BoundedJsonBodyMiddleware, root_path=root_path)
 
     @app.get("/health")
     @app.get("/api/v1/health")
@@ -1077,7 +1124,7 @@ def create_app(
     app.include_router(create_history_router(
         historical_store, scenario_snapshot_loader=load_provisional_scenario_snapshot,
     ))
-    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings)
+    _incluir_routers_precedentes(app, root=root, repository=repository, historical_store=historical_store, semantic_provider=semantic_provider, settings=settings, public_production=public_production)
     from backend.app.reconstruction3d.router import create_reconstruction_router
     from backend.app.reconstruction3d.service import SYSTEM_PROMPT as RECONSTRUCTION_PROMPT
     from dataclasses import replace
@@ -1984,10 +2031,57 @@ def create_app(
         return _ok({"run": run.model_dump(mode="json"), "result": repository.get_result(run_id).model_dump(mode="json")}, 201)
 
     @app.post("/api/v1/runs")
-    def create_run(request: RunRequest):
+    def create_run(
+        request: RunRequest,
+        http_request: Request,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ):
         if environment == "production":
             return _error(409, "use_jobs_endpoint", "Producción requiere el endpoint durable de trabajos.")
-        return _execute_run(request)
+        actor = getattr(http_request.state, "actor", None)
+        request_hash = ""
+        conflict_message = "Idempotency-Key ya utilizada con parámetros distintos."
+        if idempotency_key is not None:
+            if len(idempotency_key) > 128 or not idempotency_key.strip():
+                return _error(422, "invalid_idempotency_key", "Idempotency-Key inválida.")
+            idempotency_key = idempotency_key.strip()
+            request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+            try:
+                existing_run_id = repository.reserve_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                if str(exc) == "idempotency_key_in_progress":
+                    return _error(409, str(exc), "La ejecución con esta clave sigue pendiente.", True)
+                raise
+            if existing_run_id is not None:
+                run = repository.get_run(existing_run_id)
+                result = repository.get_result(existing_run_id, 1)
+                return _ok(
+                    {"run": run.model_dump(mode="json"), "result": result.model_dump(mode="json")},
+                    201,
+                )
+        response = _execute_run(request, actor=actor)
+        if idempotency_key is not None and response.status_code != 201:
+            repository.release_idempotent_run(actor=actor, idempotency_key=idempotency_key, request_hash=request_hash)
+        if idempotency_key is not None and response.status_code == 201:
+            run_id = json.loads(response.body)["data"]["run"]["id"]
+            try:
+                repository.save_idempotent_run(
+                    actor=actor,
+                    idempotency_key=idempotency_key,
+                    request_hash=request_hash,
+                    run_id=run_id,
+                )
+            except ValueError as exc:
+                if str(exc) == "idempotency_key_conflict":
+                    return _error(409, "idempotency_key_conflict", conflict_message)
+                raise
+        return response
 
     class PublicJobAdmissionDenied(ValueError):
         def __init__(self, decision) -> None:
@@ -2759,6 +2853,96 @@ def create_app(
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
 
+    def _refresh_library_item_for_result(result: Result) -> None:
+        """Keep an existing library item synchronized with a newly reviewed revision."""
+        try:
+            existing = repository.get_library_item(result.run_id)
+        except KeyError:
+            return
+        if existing.result_revision >= result.result_revision:
+            return
+        try:
+            descriptor = build_descriptor(result)
+        except ValueError:
+            return
+        fingerprint = descriptor_fingerprint(descriptor)
+        new_embedding: EmbeddingMetadata | None = None
+        if existing.embedding is not None and semantic_provider is not None:
+            model = semantic_provider.model
+            dimensions = semantic_provider.dimensions
+            text = semantic_text(descriptor)
+            cache_key = embedding_cache_key(semantic_identity, descriptor.descriptor_version, text)
+            try:
+                try:
+                    repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version, space_id=semantic_identity.space_id)
+                    status: Literal["generated", "cache"] = "cache"
+                except KeyError:
+                    generated = semantic_provider.embed(text)
+                    if generated.model != model or generated.dimensions != dimensions:
+                        raise EmbeddingProviderError("embedding_space_incompatible")
+                    repository.save_embedding(
+                        cache_key,
+                        generated.model,
+                        generated.dimensions,
+                        descriptor.descriptor_version,
+                        generated.vector,
+                        space_id=semantic_identity.space_id,
+                        identity_json=semantic_identity.model_dump_json(),
+                    )
+                    status = "generated"
+                new_embedding = EmbeddingMetadata(
+                    provider=semantic_identity.provider,
+                    model_revision=semantic_identity.model_revision,
+                    modality=semantic_identity.modality,
+                    normalization=semantic_identity.normalization,
+                    preprocessing_version=semantic_identity.preprocessing_version,
+                    prompt_name=semantic_identity.prompt_name,
+                    model=model,
+                    dimensions=dimensions,
+                    descriptor_version=descriptor.descriptor_version,
+                    cache_key=cache_key,
+                    status=status,
+                )
+            except (ValueError, EmbeddingProviderError):
+                # Never abort a committed human review if semantic refresh fails.
+                new_embedding = None
+        updated_item = LibraryItem(
+            id=existing.id,
+            run_id=result.run_id,
+            result_revision=result.result_revision,
+            label=existing.label,
+            descriptor=descriptor,
+            descriptor_fingerprint=fingerprint,
+            created_at=existing.created_at,
+            embedding=new_embedding,
+            publication=existing.publication,
+        )
+        while not repository.save_library_item(updated_item, expected=existing):
+            try:
+                current = repository.get_library_item(result.run_id)
+            except KeyError:
+                return
+            # Retry only forward progress by another automatic review refresh.
+            # Explicit saves change creation time or user metadata and must win.
+            if (
+                not existing.result_revision < current.result_revision < result.result_revision
+                or current.created_at != existing.created_at
+                or current.label != existing.label
+                or current.publication != existing.publication
+            ):
+                return
+            existing = current
+        tras_guardar_biblioteca(root, repository, semantic_provider, updated_item, cola_mantenimiento)
+        repository.append_event(
+            result.run_id,
+            "library_item_refreshed",
+            {
+                "library_item_id": existing.id,
+                "result_revision": result.result_revision,
+                "embedding_refreshed": new_embedding is not None,
+            },
+        )
+
     @app.post("/api/v1/runs/{run_id}/reviews")
     def review_run(
         run_id: str,
@@ -2769,18 +2953,20 @@ def create_app(
         if environment == "production" and not idempotency_key:
             return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
         try:
-            result = repository.review(
+            result, newly_committed = repository.review_with_status(
                 run_id,
                 review,
                 idempotency_key=idempotency_key,
                 actor=http_request.state.actor,
             )
-            return _ok(result.model_dump(mode="json"), 201)
         except KeyError:
             return _error(404, "run_not_found", "Ejecución inexistente.")
         except ValueError as exc:
             code = str(exc)
             return _error(409 if code in {"stale_result_revision", "idempotency_key_conflict"} else 422, code, "La revisión no es aplicable.")
+        if newly_committed:
+            _refresh_library_item_for_result(result)
+        return _ok(result.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/comparables")
     def comparables(run_id: str, limit: int = Query(default=3, ge=1, le=3)):
@@ -2818,6 +3004,7 @@ def create_app(
             descriptor = build_descriptor(result)
         except ValueError as exc:
             return _error(409, str(exc), "Completa la revisión del mueble antes de guardarlo en la biblioteca.")
+        creado_en = datetime.now(UTC).isoformat()
         embedding = None
         if request.embedding_mode == "embeddinggemma2":
             if public_production:
@@ -2860,8 +3047,9 @@ def create_app(
                 cache_key=cache_key,
                 status=status,
             )
-        item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=datetime.now(UTC).isoformat(), embedding=embedding, publication=publication)
+        item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=creado_en, embedding=embedding, publication=publication)
         repository.save_library_item(item)
+        tras_guardar_biblioteca(root, repository, semantic_provider, item, cola_mantenimiento)
         return _ok(item.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/library")
