@@ -1,0 +1,34 @@
+{
+  "contacts": [
+    [
+      "tapa",
+      "costado_izquierdo"
+    ],
+    [
+      "tapa",
+      "costado_derecho"
+    ],
+    [
+      "tapa",
+      "arriostramiento_trasero"
+    ],
+    [
+      "costado_izquierdo",
+      "arriostramiento_trasero"
+    ],
+    [
+      "costado_derecho",
+      "arriostramiento_trasero"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "costado_derecho",
+    "costado_izquierdo"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

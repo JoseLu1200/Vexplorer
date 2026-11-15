@@ -34,7 +34,11 @@ from pydantic import Field
 
 from backend.app.contratos.modelos import LibraryItem
 from backend.app.precedentes.comun import ModeloEstricto
-from backend.app.precedentes.espacio import AlmacenEspacio
+from backend.app.precedentes.espacio import (
+    VERSION_FRASES_CONTROL,
+    AlmacenEspacio,
+    HuellaEspacio,
+)
 from backend.app.precedentes.regeneracion import (
     LatidoPerdido,
     ProveedorEmbeddings,
@@ -282,11 +286,18 @@ class RegistroEspacio:
         referencia se creó después de generarse el vector (``generado_en``), no se sella y se borra el
         sello anterior: el vector queda *desconocido* en lugar de atribuirse a una huella equivocada.
         """
-        referencia = self._almacen.obtener(modelo, dimensiones)
-        if referencia is None:
-            return False
-        valido = (huella_esperada is None or referencia.huella_id == huella_esperada) and not _posterior(referencia.creada_en, generado_en)
-        with self._db() as db:
+        with self._db() as db, _transaccion(db):
+            fila = db.execute(
+                "SELECT carga FROM referencias_espacio "
+                "WHERE modelo=? AND dimensiones=? AND version_frases=?",
+                (modelo, dimensiones, VERSION_FRASES_CONTROL),
+            ).fetchone()
+            if fila is None:
+                return False
+            referencia = HuellaEspacio.model_validate_json(fila[0])
+            valido = (
+                huella_esperada is None or referencia.huella_id == huella_esperada
+            ) and not _posterior(referencia.creada_en, generado_en)
             if not valido:
                 db.execute("DELETE FROM sellos_embedding WHERE cache_key=?", (cache_key,))
                 return False

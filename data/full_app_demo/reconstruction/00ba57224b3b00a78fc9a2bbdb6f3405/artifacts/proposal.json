@@ -1,0 +1,182 @@
+{
+  "status": "proposed",
+  "intended_use": "Estantería abierta de tres huecos para almacenamiento doméstico; uso inferido del plano, no indicado por el usuario.",
+  "unit": "mm",
+  "components": [
+    {
+      "id": "lateral_izquierdo",
+      "label": "Costado izquierdo continuo apoyado en suelo",
+      "size_mm": [
+        18.0,
+        350.0,
+        1800.0
+      ],
+      "origin_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "El borde izquierdo frontal y la vista lateral se interpretan como un costado continuo de la misma construcción.",
+        "Altura de 1800 mm y profundidad de 350 mm inferidas proporcionalmente respecto a la anchura acotada de 900 mm; espesor de 18 mm elegido como decisión constructiva."
+      ]
+    },
+    {
+      "id": "lateral_derecho",
+      "label": "Costado derecho continuo apoyado en suelo",
+      "size_mm": [
+        18.0,
+        350.0,
+        1800.0
+      ],
+      "origin_mm": [
+        882.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se propone simetría respecto al costado izquierdo, conservando los 900 mm de anchura exterior acotada.",
+        "Altura de 1800 mm y profundidad de 350 mm inferidas por proporción; espesor de 18 mm propuesto, no acotado."
+      ]
+    },
+    {
+      "id": "tapa",
+      "label": "Tapa entre costados",
+      "size_mm": [
+        864.0,
+        350.0,
+        18.0
+      ],
+      "origin_mm": [
+        18.0,
+        0.0,
+        1782.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "La banda superior frontal se interpreta como una tapa, no como otra ocurrencia de los costados.",
+        "Se propone espesor de 18 mm, fondo completo de 350 mm y montaje entre costados, con cara superior a la altura inferida de 1800 mm."
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Base elevada entre costados",
+      "size_mm": [
+        864.0,
+        344.0,
+        18.0
+      ],
+      "origin_mm": [
+        18.0,
+        0.0,
+        80.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "La banda horizontal inferior se interpreta como base elevada; la zona bajo ella permanece vacía entre los costados.",
+        "Cota inferior de 80 mm inferida aproximadamente de las proporciones frontales; espesor de 18 mm propuesto.",
+        "El fondo de 344 mm es una decisión de diseño para alojar una trasera de 6 mm detrás, en contacto con el canto posterior."
+      ]
+    },
+    {
+      "id": "estante_inferior",
+      "label": "Estante fijo inferior",
+      "size_mm": [
+        864.0,
+        344.0,
+        18.0
+      ],
+      "origin_mm": [
+        18.0,
+        0.0,
+        600.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "La banda frontal intermedia inferior se interpreta como un estante único que separa dos huecos abiertos.",
+        "Cara inferior a 600 mm inferida proporcionalmente; espesor de 18 mm y fondo de 344 mm propuestos.",
+        "Se prevé unión portante a ambos costados; la trasera no sustituye esas uniones."
+      ]
+    },
+    {
+      "id": "estante_superior",
+      "label": "Estante fijo superior",
+      "size_mm": [
+        864.0,
+        344.0,
+        18.0
+      ],
+      "origin_mm": [
+        18.0,
+        0.0,
+        1200.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "La banda frontal intermedia superior se interpreta como un estante único, no como una puerta.",
+        "Cara inferior a 1200 mm inferida proporcionalmente; espesor de 18 mm y fondo de 344 mm propuestos.",
+        "Se prevé unión portante a ambos costados; no se añade ningún apoyo central que obstruya los huecos del plano."
+      ]
+    },
+    {
+      "id": "trasera",
+      "label": "Trasera propuesta para arriostramiento",
+      "size_mm": [
+        864.0,
+        6.0,
+        1702.0
+      ],
+      "origin_mm": [
+        18.0,
+        344.0,
+        80.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "El plano no confirma una trasera; su incorporación es una decisión explícita de diseño para controlar el descuadre.",
+        "Se propone espesor de 6 mm entre costados, detrás de base y estantes y bajo la tapa.",
+        "En esta revisión se prolonga su borde inferior hasta z=80 mm para obtener contacto superficial con el canto posterior de la base, en lugar de solo coincidencia de aristas.",
+        "Su material y fijaciones resistentes a costados, base, tapa y estantes quedan pendientes."
+      ]
+    }
+  ],
+  "assumptions": [
+    "La cota visible de 900 mm se interpreta como anchura exterior total.",
+    "Las vistas se interpretan como ortogonales y aproximadamente a igual escala: altura de 1800 mm y profundidad de 350 mm son inferencias, no cotas explícitas.",
+    "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina mínima de la envolvente, con suelo z=0.",
+    "Los tres rectángulos interiores se interpretan como huecos accesibles desde el frente, no como tableros macizos.",
+    "Todas las dimensiones no acotadas, los espesores y la construcción propuesta son hipótesis.",
+    "La revisión mantiene la estructura y las posiciones de estantes compatibles con el plano original. El render propuesto no se utiliza como evidencia del original."
+  ],
+  "missing_information": [
+    "Confirmar altura y profundidad exteriores inferidas de 1800 y 350 mm y posiciones verticales de los tableros.",
+    "Definir materiales, cargas previstas y flecha admisible para los estantes de 864 mm de luz.",
+    "Definir uniones portantes, fijaciones de la trasera y solución de control del vuelco según el lugar de instalación.",
+    "Confirmar si la trasera propuesta es compatible con el uso o se necesita acceso posterior."
+  ],
+  "functional_notes": [
+    "Los diagnósticos recibidos no señalan solapes, piezas flotantes ni elementos bajo el suelo; identifican ambos costados como apoyos en suelo.",
+    "Se mejora el encuentro base-trasera mediante contacto superficial, sin interpenetrar piezas ni cerrar el espacio bajo la base.",
+    "El recorrido de carga previsto es de tapa, estantes y base a los costados mediante uniones portantes, y de estos al suelo. El mero contacto geométrico no dimensiona esas uniones.",
+    "Huecos frontales libres: 864 mm de anchura y alturas aproximadas de 502, 582 y 564 mm de abajo arriba; fondo útil hasta la trasera de 344 mm.",
+    "Queda un espacio abierto de 80 mm bajo la base, salvo en los costados.",
+    "La trasera solo arriostra si el panel y sus fijaciones se dimensionan para ello; debe resolverse también el riesgo de vuelco.",
+    "No se certifican capacidad de carga, seguridad funcional ni aptitud para fabricación."
+  ]
+}

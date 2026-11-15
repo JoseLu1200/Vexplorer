@@ -187,6 +187,18 @@ def test_piezas_que_no_caben_con_giro() -> None:
     assert [p.pieza_id for p in lote.piezas_que_no_caben] == ["larga"]
 
 
+def test_unidades_incluye_las_piezas_que_no_caben() -> None:
+    piezas = [
+        pieza("P1", "normal", cantidad=1),
+        pieza("P1", "sobredimensionada", largo=2600, cantidad=2),
+    ]
+
+    lote = preparar_lotes(piezas, ConfiguracionLotes()).lotes[0]
+
+    assert lote.unidades == 3
+    assert [p.pieza_id for p in lote.piezas_que_no_caben] == ["sobredimensionada"]
+
+
 def test_orden_determinista_por_superficie() -> None:
     piezas = [
         pieza("P1", "pequena", largo=100, ancho=100, material="B"),

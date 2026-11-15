@@ -67,12 +67,12 @@ def test_library_only_includes_latest_compatible_embeddings(tmp_path, monkeypatc
     run = _reviewed_run(client, "test")
     client.post(
         f"/api/v1/runs/{run}/library",
-        json={"result_revision": 1, "label": "Vieja", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Vieja", "embedding_mode": "embeddinggemma2"},
     )
     assert client.get(API + "/spaces").json()["data"]["spaces"] == []
     client.post(
         f"/api/v1/runs/{run}/library",
-        json={"result_revision": 2, "label": "Actual", "embedding_mode": "openai"},
+        json={"result_revision": 2, "label": "Actual", "embedding_mode": "embeddinggemma2"},
     )
     spaces = client.get(API + "/spaces").json()["data"]["spaces"]
     assert len(spaces) == 1

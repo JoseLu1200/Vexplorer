@@ -1,0 +1,401 @@
+{
+  "schema_version": "0.6.0",
+  "data": {
+    "run_id": "run-b9dcbf54668f4dc2b3198a54e9c0a1f4",
+    "status": "approved",
+    "proposal_revision": 1,
+    "review_revision": 2,
+    "proposal": {
+      "schema_version": "0.6.0",
+      "id": "qa-integral-20261114T040600Z-e540ae8f-proposal",
+      "drawing_id": "drawing-77d4d2753effa570",
+      "ledger_revision": "drawing-77d4d2753effa570",
+      "proposal_origin": "human",
+      "bindings": [
+        {
+          "id": "qa-length",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-8D:span-x"
+          ]
+        },
+        {
+          "id": "qa-width",
+          "operation": "copy",
+          "rational_numerator": 1,
+          "rational_denominator": 1,
+          "operand_refs": [
+            "measurement:contour:contour-entity-8D:span-y"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "qa-panel-proposed",
+          "label": "QA panel proposal",
+          "kind": "panel",
+          "role": "unknown",
+          "length_binding_id": "qa-length",
+          "width_binding_id": "qa-width",
+          "thickness_binding_id": null,
+          "quantity": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "premise_ids": [
+            "qa-premise"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "QA semantic assignment; not manufacturing authority."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "quantity",
+            "material",
+            "finish",
+            "placement"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "qa-premise",
+          "description": "The selected contour may represent one reviewable panel.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "QA acceptance proposal; explicitly synthetic and revisable."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [],
+      "assembly_alternatives": []
+    },
+    "draft": {
+      "schema_version": "0.6.0",
+      "proposal_id": "qa-integral-20261114T040600Z-e540ae8f-proposal",
+      "drawing_id": "drawing-77d4d2753effa570",
+      "ledger_revision": "drawing-77d4d2753effa570",
+      "components": [
+        {
+          "id": "qa-panel-proposed",
+          "label": "QA panel proposal",
+          "kind": "panel",
+          "role": "unknown",
+          "length": {
+            "value_mm": 1200.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:qa-length"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 300.0,
+            "unit": "mm",
+            "state": "hypothesis",
+            "dependency_refs": [
+              "binding:qa-width"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": null,
+            "unit": "mm",
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": null,
+            "state": "unknown",
+            "dependency_refs": [],
+            "evidence_ids": []
+          },
+          "premise_ids": [
+            "qa-premise"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "QA semantic assignment; not manufacturing authority."
+          ],
+          "unknown_fields": [
+            "thickness",
+            "quantity",
+            "material",
+            "finish",
+            "placement"
+          ],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "premises": [
+        {
+          "id": "qa-premise",
+          "description": "The selected contour may represent one reviewable panel.",
+          "required": true,
+          "blocking": true
+        }
+      ],
+      "assumptions": [
+        "QA acceptance proposal; explicitly synthetic and revisable."
+      ],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_placements": [],
+      "evidence_dispositions": [],
+      "assembly_relations": [],
+      "assembly_alternatives": [],
+      "status": "needs_review"
+    },
+    "review": {
+      "schema_version": "0.6.0",
+      "run_id": "run-b9dcbf54668f4dc2b3198a54e9c0a1f4",
+      "proposal_id": "qa-integral-20261114T040600Z-e540ae8f-proposal",
+      "proposal_revision": 1,
+      "review_revision": 2,
+      "reviewer_name": "qa-client-claim",
+      "reviewer_kind": "human",
+      "machine_provenance": null,
+      "reason": "QA review 2 changes thickness and quantity while preserving revision 1",
+      "reviewed_at": "2026-11-14T04:06:02.434128+00:00",
+      "operations": [
+        {
+          "kind": "replace",
+          "source_component_ids": [
+            "qa-panel-reviewed-r1"
+          ],
+          "result_component_ids": [
+            "qa-panel-reviewed-r2"
+          ],
+          "reason": "QA review 2 changes thickness and quantity while preserving revision 1"
+        }
+      ],
+      "components": [
+        {
+          "id": "qa-panel-reviewed-r2",
+          "label": "QA confirmed panel",
+          "kind": "panel",
+          "role": "qa_panel",
+          "length": {
+            "value_mm": 1200.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "width": {
+            "value_mm": 300.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "thickness": {
+            "value_mm": 19.0,
+            "unit": "mm",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": [],
+            "dimension_ids": [],
+            "range_mm": null,
+            "method": null,
+            "formula": null,
+            "assumption_refs": []
+          },
+          "quantity": {
+            "value": 3,
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": []
+          },
+          "material": {
+            "value": "QA_SYNTHETIC_BOARD",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": []
+          },
+          "finish": {
+            "value": "QA_SYNTHETIC_FINISH",
+            "state": "confirmed",
+            "dependency_refs": [
+              "human:qa-client-claim:review:2"
+            ],
+            "evidence_ids": []
+          },
+          "replaces_component_ids": [
+            "qa-panel-reviewed-r1"
+          ],
+          "source_view_ids": [
+            "view-unknown"
+          ],
+          "source_observation_ids": [
+            "observation-view-unknown"
+          ],
+          "source_contour_ids": [
+            "contour-entity-8D"
+          ],
+          "source_evidence_ids": [
+            "evidence-contour-entity-8D"
+          ],
+          "source_dimension_ids": [],
+          "source_document_refs": [],
+          "assumptions": [
+            "QA human confirmation for acceptance only."
+          ],
+          "unknown_fields": [],
+          "scenario_id": "base",
+          "necessity": "visible",
+          "geometry": {
+            "shape_kind": "unknown",
+            "source_contour_ids": [],
+            "basis_refs": [],
+            "rationale": "geometry not declared"
+          },
+          "construction_parameter_ids": [],
+          "detail_ids": [],
+          "quantity_basis_refs": []
+        }
+      ],
+      "occurrences": [
+        {
+          "id": "qa-panel-reviewed-r2:1",
+          "component_id": "qa-panel-reviewed-r2",
+          "occurrence_index": 1
+        },
+        {
+          "id": "qa-panel-reviewed-r2:2",
+          "component_id": "qa-panel-reviewed-r2",
+          "occurrence_index": 2
+        },
+        {
+          "id": "qa-panel-reviewed-r2:3",
+          "component_id": "qa-panel-reviewed-r2",
+          "occurrence_index": 3
+        }
+      ],
+      "scenario_occurrences": [],
+      "machine_checks": [],
+      "machine_field_reviews": [],
+      "evidence_dispositions": [],
+      "auto_review_status": null,
+      "furniture_quantity": {
+        "value": 1,
+        "state": "confirmed",
+        "dependency_refs": [
+          "human:qa-client-claim:review:2"
+        ],
+        "evidence_ids": []
+      },
+      "currency": null,
+      "required_cost_scope": [],
+      "required_hours_scope": [],
+      "construction_scenario_id": "base",
+      "construction_parameters": [],
+      "construction_constraints": [],
+      "construction_details": [],
+      "construction_decisions": [],
+      "construction_validation": null,
+      "construction_placements": [],
+      "status": "approved"
+    }
+  }
+}

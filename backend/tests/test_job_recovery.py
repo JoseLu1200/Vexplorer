@@ -14,6 +14,7 @@ from backend.app.estimacion.table_costs import get_table_cost_catalog
 from backend.app.main import create_app
 from backend.app.servicios.repository import DemoRepository
 from backend.tests.test_integral_api_integration import DXF_FIXTURE, _GeneralLiveProvider
+from backend.tests.test_security_ownership import _extraction, _scenario
 
 
 class _CountingProposer(_GeneralLiveProvider):
@@ -50,6 +51,14 @@ def _wait_job(client: TestClient, job_id: str) -> dict:
 def test_job_run_checkpoint_survives_restart_and_cannot_be_relinked(tmp_path: Path) -> None:
     path = tmp_path / "jobs.sqlite3"
     repository = DemoRepository(path)
+    repository.create_run(
+        "run-original", "geometry_only", _extraction(), (_scenario(),),
+        owner_actor="alice",
+    )
+    repository.create_run(
+        "run-other", "geometry_only", _extraction(), (_scenario(),),
+        owner_actor="alice",
+    )
     repository.create_job("job-source", '{"mode":"live"}', actor="alice")
     repository.start_job("job-source")
 

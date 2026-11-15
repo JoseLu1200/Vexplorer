@@ -7,8 +7,10 @@ place that asks for the reference, and it does so with a verified freeze token.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -26,7 +28,7 @@ from .freeze import (
 )
 from .manifest import ManifestReader
 from .methods import Method
-from .model import OUTPUT_STATUSES, ComparisonError, MethodResult, RunLimits, parse_component
+from .model import OUTPUT_STATUSES, ComparisonError, MethodResult, PublicCase, RunLimits, parse_component
 from .report import build_report
 from .scoring import score_outputs
 
@@ -48,6 +50,52 @@ def _safe_error(exc: Exception) -> dict[str, str]:
 def _count(usage: dict[str, Any], name: str) -> int:
     value = usage.get(name)
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+
+class _InputMutation(ComparisonError):
+    """A method changed or removed the private copy of its public input."""
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _run_isolated(
+    method: Method,
+    case: PublicCase,
+    *,
+    repetition: int,
+    limits: RunLimits,
+    context: dict[str, Any],
+) -> MethodResult:
+    source = case.path.read_bytes()
+    if hashlib.sha256(source).hexdigest() != case.sha256:
+        raise _InputMutation("public input hash differs before method execution")
+    with tempfile.TemporaryDirectory(prefix=".comparativa-input-", dir=case.path.parent) as directory:
+        isolated_path = Path(directory) / case.path.name
+        isolated_path.write_bytes(source)
+        isolated = PublicCase(
+            case.case_id,
+            isolated_path,
+            case.sha256,
+            case.format,
+            case.unit,
+            case.view_kind,
+            case.instruction,
+        )
+        try:
+            result = method.run(isolated, repetition=repetition, limits=limits, context=context)
+        finally:
+            try:
+                isolated_hash = _sha256_file(isolated_path)
+                source_hash = _sha256_file(case.path)
+            except OSError as exc:
+                raise _InputMutation("method input was removed or became unreadable") from exc
+            if isolated_hash != case.sha256:
+                raise _InputMutation("method mutated its isolated input")
+            if source_hash != case.sha256:
+                raise _InputMutation("public input changed during method execution")
+        return result
 
 
 def execute_run(
@@ -78,7 +126,16 @@ def execute_run(
                 started = clock.perf()
                 error: dict[str, str] | None = None
                 try:
-                    result = method.run(case, repetition=repetition, limits=limits, context={"partition_id": meta[case.case_id].partition_id})
+                    result = _run_isolated(
+                        method,
+                        case,
+                        repetition=repetition,
+                        limits=limits,
+                        context={"partition_id": meta[case.case_id].partition_id},
+                    )
+                except _InputMutation as exc:
+                    result = MethodResult(status="failed", reason="input_mutated")
+                    error = _safe_error(exc)
                 except Exception as exc:  # noqa: BLE001 - recorded, never imputed as a zero score
                     result = MethodResult(status="failed", reason="method_raised")
                     error = _safe_error(exc)

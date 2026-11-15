@@ -60,7 +60,7 @@ def test_score_hibrido_combina_componentes_visibles(tmp_path: Path, monkeypatch)
     consulta = _run_revisado(principal, "a", "tablero")
     otro = _run_revisado(principal, "b", "pino")
     for run_id in (consulta, otro):
-        assert principal.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "openai"}).status_code == 201
+        assert principal.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": 2, "label": run_id, "embedding_mode": "embeddinggemma2"}).status_code == 201
 
     respuesta = cliente.post(URL, json={"run_id": consulta, "result_revision": 2, "limite": 5, "peso_geometrico": 3, "peso_semantico": 1})
     assert respuesta.status_code == 200

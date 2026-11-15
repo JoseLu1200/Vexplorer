@@ -1,0 +1,22 @@
+{
+  "contacts": [
+    [
+      "lateral_izquierdo",
+      "tapa_superior"
+    ],
+    [
+      "lateral_derecho",
+      "tapa_superior"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "lateral_derecho",
+    "lateral_izquierdo"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

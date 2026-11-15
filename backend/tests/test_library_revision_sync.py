@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import create_app
 from backend.app.semantic.descriptor import build_descriptor, semantic_text
-from backend.app.semantic.embeddings import EmbeddingProviderError, EmbeddingResult, embedding_cache_key
+from backend.app.semantic.embeddings import EmbeddingProviderError, EmbeddingResult, EmbeddingSpaceIdentity, embedding_cache_key
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_SHELF = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
@@ -16,8 +16,13 @@ FIXTURE_VARIANT = ROOT / "data" / "planos_demo" / "mueble_demo_002.dxf"
 
 
 class _HashEmbeddingProvider:
-    model = "text-embedding-3-small"
-    dimensions = 4
+    model = "google/embeddinggemma-2"
+    dimensions = 768
+    identity = EmbeddingSpaceIdentity(
+        provider="embeddinggemma2", model=model, model_revision="test-pinned-revision",
+        modality="text", dimensions=dimensions, normalization="l2",
+        preprocessing_version="test-text-v1", prompt_name="SentenceSimilarity",
+    )
 
     def __init__(self, *, fail_after_calls: int | None = None) -> None:
         self.calls = 0
@@ -28,7 +33,7 @@ class _HashEmbeddingProvider:
         if self.fail_after_calls is not None and self.calls > self.fail_after_calls:
             raise EmbeddingProviderError("semantic_provider_failed")
         digest = hashlib.sha256(text.encode("utf-8")).digest()
-        vector = tuple(1.0 + digest[index] / 255.0 for index in range(self.dimensions))
+        vector = tuple(1.0 + digest[index % len(digest)] / 255.0 for index in range(self.dimensions))
         return EmbeddingResult(vector=vector, model=self.model, dimensions=self.dimensions)
 
 
@@ -130,11 +135,11 @@ def test_semantic_review_regenerates_embedding_and_unblocks_similarity(tmp_path:
 
     save_a = client.post(
         f"/api/v1/runs/{run_a}/library",
-        json={"result_revision": 1, "label": "Estantería A", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Estantería A", "embedding_mode": "embeddinggemma2"},
     )
     save_b = client.post(
         f"/api/v1/runs/{run_b}/library",
-        json={"result_revision": 1, "label": "Variante B", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Variante B", "embedding_mode": "embeddinggemma2"},
     )
     assert save_a.status_code == 201 and save_b.status_code == 201
     rev1_cache_key = save_a.json()["data"]["embedding"]["cache_key"]
@@ -171,7 +176,7 @@ def test_semantic_review_regenerates_embedding_and_unblocks_similarity(tmp_path:
     # A second identical shelf reuses both Rev 1 and Rev 2 cached embeddings without extra provider calls.
     save_c = client.post(
         f"/api/v1/runs/{run_c}/library",
-        json={"result_revision": 1, "label": "Estantería C", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Estantería C", "embedding_mode": "embeddinggemma2"},
     )
     assert save_c.status_code == 201
     assert save_c.json()["data"]["embedding"]["status"] == "cache"
@@ -190,7 +195,7 @@ def test_review_degrades_gracefully_when_provider_raises_during_refresh(tmp_path
 
     saved = client.post(
         f"/api/v1/runs/{run_id}/library",
-        json={"result_revision": 1, "label": "Con embedding inicial", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Con embedding inicial", "embedding_mode": "embeddinggemma2"},
     )
     assert saved.status_code == 201
     assert saved.json()["data"]["embedding"] is not None
@@ -217,7 +222,7 @@ def test_review_degrades_gracefully_when_provider_unavailable_or_cache_incompati
     run_unavailable, scenario_unavailable = _create_run(client_with_provider, FIXTURE_SHELF, "no-provider")
     assert client_with_provider.post(
         f"/api/v1/runs/{run_unavailable}/library",
-        json={"result_revision": 1, "label": "Guardado con proveedor", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Guardado con proveedor", "embedding_mode": "embeddinggemma2"},
     ).status_code == 201
 
     client_without_provider = _client(dir_unavailable, monkeypatch, embedding_provider=None)
@@ -242,20 +247,19 @@ def test_review_degrades_gracefully_when_provider_unavailable_or_cache_incompati
     rev2_result = client_conflict.app.state.repository.get_result(run_seed, 2)
     rev2_descriptor = build_descriptor(rev2_result)
     rev2_cache_key = embedding_cache_key(
+        provider.identity,
         rev2_descriptor.descriptor_version,
-        provider.model,
-        provider.dimensions,
         semantic_text(rev2_descriptor),
     )
 
     run_target, scenario_target = _create_run(client_conflict, FIXTURE_SHELF, "target-rev1")
     assert client_conflict.post(
         f"/api/v1/runs/{run_target}/library",
-        json={"result_revision": 1, "label": "Conflicto caché", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Conflicto caché", "embedding_mode": "embeddinggemma2"},
     ).status_code == 201
     with sqlite3.connect(dir_cache_conflict / "vexplorer.sqlite3") as db:
         db.execute(
-            "INSERT OR REPLACE INTO embedding_cache VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO embedding_cache (cache_key,model,dimensions,descriptor_version,vector_json,created_at) VALUES (?, ?, ?, ?, ?, ?)",
             (rev2_cache_key, "other-model", provider.dimensions, rev2_descriptor.descriptor_version, "[1.0,1.0,1.0,1.0]", "2026-11-14T00:00:00Z"),
         )
 
@@ -293,7 +297,7 @@ def test_idempotent_review_replay_does_not_emit_duplicate_refresh_events(tmp_pat
 
     assert client.post(
         f"/api/v1/runs/{run_id}/library",
-        json={"result_revision": 1, "label": "Idempotente", "embedding_mode": "openai"},
+        json={"result_revision": 1, "label": "Idempotente", "embedding_mode": "embeddinggemma2"},
     ).status_code == 201
     assert provider.calls == 1
 
@@ -311,3 +315,108 @@ def test_idempotent_review_replay_does_not_emit_duplicate_refresh_events(tmp_pat
     saved_events = [item for item in events if item["event_type"] == "library_item_saved"]
     assert len(refreshed_events) == 1
     assert len(saved_events) == 2
+
+
+def test_review_refresh_does_not_overwrite_a_concurrent_library_save(tmp_path, monkeypatch):
+    provider = _HashEmbeddingProvider()
+    client = _client(tmp_path, monkeypatch, embedding_provider=provider)
+    run_id, scenario_id = _create_run(client, FIXTURE_SHELF, "concurrent")
+    assert client.post(f"/api/v1/runs/{run_id}/library", json={
+        "result_revision": 1, "label": "Original", "embedding_mode": "embeddinggemma2",
+    }).status_code == 201
+    repository = client.app.state.repository
+    embed = provider.embed
+
+    def save_while_embedding(text):
+        current = repository.get_library_item(run_id)
+        repository.save_library_item(current.model_copy(update={"label": "Concurrent choice"}))
+        return embed(text)
+
+    monkeypatch.setattr(provider, "embed", save_while_embedding)
+    response = client.post(f"/api/v1/runs/{run_id}/reviews", json=_review_payload(scenario_id))
+    assert response.status_code == 201
+    assert repository.get_library_item(run_id).label == "Concurrent choice"
+
+
+def test_maintenance_detects_changed_model_revision_with_same_dimensions(tmp_path, monkeypatch):
+    from backend.app.precedentes.regeneracion import regenerar_obsoletos
+
+    provider = _HashEmbeddingProvider()
+    client = _client(tmp_path, monkeypatch, embedding_provider=provider)
+    run_id, _ = _create_run(client, FIXTURE_SHELF, "space-revision")
+    assert client.post(f"/api/v1/runs/{run_id}/library", json={
+        "result_revision": 1, "label": "Old snapshot", "embedding_mode": "embeddinggemma2",
+    }).status_code == 201
+    replacement = _HashEmbeddingProvider()
+    replacement.identity = provider.identity.model_copy(update={"model_revision": "replacement-revision"})
+    report = regenerar_obsoletos(client.app.state.repository, replacement, True, 10)
+    assert len(report.elementos) == 1
+    assert "espacio_distinto" in report.elementos[0].motivos
+
+
+def test_maintenance_rejects_cache_row_with_missing_identity(tmp_path, monkeypatch):
+    from backend.app.precedentes.regeneracion import regenerar_obsoletos
+
+    provider = _HashEmbeddingProvider()
+    client = _client(tmp_path, monkeypatch, embedding_provider=provider)
+    run_id, _ = _create_run(client, FIXTURE_SHELF, "legacy-cache")
+    assert client.post(f"/api/v1/runs/{run_id}/library", json={
+        "result_revision": 1, "label": "Legacy row", "embedding_mode": "embeddinggemma2",
+    }).status_code == 201
+    repository = client.app.state.repository
+    with repository._connect() as db:
+        db.execute("UPDATE embedding_cache SET space_id=NULL")
+    report = regenerar_obsoletos(repository, provider, True, 10)
+    assert len(report.elementos) == 1
+    assert "embedding_corrupto" in report.elementos[0].motivos
+
+
+def test_review_replay_preserves_explicitly_resaved_snapshot(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    run_id, scenario_id = _create_run(client, FIXTURE_SHELF, "replay-snapshot")
+    headers = {"Idempotency-Key": "review-once"}
+    body = _review_payload(scenario_id)
+    assert client.post(f"/api/v1/runs/{run_id}/reviews", json=body, headers=headers).status_code == 201
+    assert client.post(f"/api/v1/runs/{run_id}/library", json={
+        "result_revision": 1, "label": "Chosen earlier snapshot", "embedding_mode": "offline",
+    }).status_code == 201
+    assert client.post(f"/api/v1/runs/{run_id}/reviews", json=body, headers=headers).status_code == 201
+    assert client.app.state.repository.get_library_item(run_id).result_revision == 1
+
+
+def test_overlapping_reviews_eventually_publish_newest_revision(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    client = _client(tmp_path, monkeypatch)
+    run_id, scenario_id = _create_run(client, FIXTURE_SHELF, "review-race")
+    assert client.post(f"/api/v1/runs/{run_id}/library", json={
+        "result_revision": 1, "label": "Initial", "embedding_mode": "offline",
+    }).status_code == 201
+    repository = client.app.state.repository
+    save = repository.save_library_item
+    first_waiting, second_waiting, first_saved = Event(), Event(), Event()
+
+    def ordered_save(item, **kwargs):
+        if kwargs.get("expected") is not None and item.result_revision == 2:
+            first_waiting.set()
+            assert second_waiting.wait(10)
+            result = save(item, **kwargs)
+            first_saved.set()
+            return result
+        if kwargs.get("expected") is not None and item.result_revision == 3:
+            second_waiting.set()
+            assert first_saved.wait(10)
+        return save(item, **kwargs)
+
+    monkeypatch.setattr(repository, "save_library_item", ordered_save)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(client.post, f"/api/v1/runs/{run_id}/reviews", json=_review_payload(scenario_id))
+        assert first_waiting.wait(10)
+        second_body = {**_review_payload(scenario_id), "base_result_revision": 2, "material": "New material"}
+        second = pool.submit(client.post, f"/api/v1/runs/{run_id}/reviews", json=second_body)
+        assert first.result(timeout=15).status_code == 201
+        assert second.result(timeout=15).status_code == 201
+    assert repository.get_run(run_id).result_revision == 3
+    assert repository.get_library_item(run_id).result_revision == 3
+    assert repository.get_library_item(run_id).descriptor.material == "New material"

@@ -1,0 +1,1986 @@
+{
+  "schema_version": "0.2.0",
+  "result_revision": 2,
+  "result": {
+    "schema_version": "0.2.0",
+    "run_id": "run-2c92e75d7f734ea19585c3a22168e411",
+    "result_revision": 2,
+    "state": "completed",
+    "scenarios": [],
+    "pieces": [
+      {
+        "id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "label": "K1:side_panel",
+        "role": "side_panel",
+        "quantity": 2,
+        "length_mm": 1300.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "source_part_observation_ids": [
+          "part-observation-k1"
+        ],
+        "human_confirmation": "Ensayo automatizado, no revisión industrial. Colocación esquemática aceptada como premisa.",
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-use-part-observation-k2-top_panel",
+        "proposal_id": "use-part-observation-k2-top_panel",
+        "label": "K2:top_panel",
+        "role": "top_panel",
+        "quantity": 1,
+        "length_mm": 964.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "source_part_observation_ids": [
+          "part-observation-k2"
+        ],
+        "human_confirmation": "Ensayo automatizado, no revisión industrial. Colocación esquemática aceptada como premisa.",
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-use-part-observation-k2-base_panel",
+        "proposal_id": "use-part-observation-k2-base_panel",
+        "label": "K2:base_panel",
+        "role": "base_panel",
+        "quantity": 1,
+        "length_mm": 964.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "source_part_observation_ids": [
+          "part-observation-k2"
+        ],
+        "human_confirmation": "Ensayo automatizado, no revisión industrial. Colocación esquemática aceptada como premisa.",
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "label": "K3:shelf",
+        "role": "shelf",
+        "quantity": 2,
+        "length_mm": 964.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "material": "tablero sintético",
+        "finish": "melamina sintética",
+        "source_observation_ids": [],
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "source_part_observation_ids": [
+          "part-observation-k3"
+        ],
+        "human_confirmation": "Ensayo automatizado, no revisión industrial. Colocación esquemática aceptada como premisa.",
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      }
+    ],
+    "rejected_proposal_ids": [],
+    "created_at": "2026-11-14T00:16:08.696375+00:00",
+    "review": {
+      "reviewer_name": "Agente auditor — prueba técnica",
+      "reason": "Ensayo automatizado, no revisión industrial. Colocación esquemática aceptada como premisa.",
+      "timestamp": "2026-11-14T00:16:08.696375+00:00",
+      "selected_scenario_id": null,
+      "selected_assembly_candidate_id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3",
+      "selected_table_program_id": null
+    },
+    "agent_selected_scenario_id": null,
+    "input_semantics": "separated_part_views",
+    "part_analysis": {
+      "schema_version": "0.4.0",
+      "drawing_id": "drawing-10276ed3482aee66",
+      "candidate_revision": "parts-77346ef11fdec875",
+      "input_kind": "separated_part_views",
+      "observations": [
+        {
+          "id": "part-observation-k1",
+          "part_key": "K1",
+          "association_basis": "explicit_key",
+          "views": [
+            {
+              "view_id": "view-part-k1-front",
+              "role": "FRONT",
+              "contour_ids": [
+                "contour-entity-8D"
+              ],
+              "local_origin_source": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "local_origin_mm": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 1300.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 1300.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k1-side",
+              "role": "SIDE",
+              "contour_ids": [
+                "contour-entity-D1"
+              ],
+              "local_origin_source": {
+                "x": 3000.0,
+                "y": 0.0
+              },
+              "local_origin_mm": {
+                "x": 3000.0,
+                "y": 0.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k1-top",
+              "role": "TOP",
+              "contour_ids": [
+                "contour-entity-AF"
+              ],
+              "local_origin_source": {
+                "x": 1500.0,
+                "y": 0.0
+              },
+              "local_origin_mm": {
+                "x": 1500.0,
+                "y": 0.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 1300.0,
+                "max_y": 18.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 1300.0,
+                "max_y": 18.0
+              }
+            }
+          ],
+          "dimensions": {
+            "length": {
+              "value_mm": 1300.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-8E",
+                "dimension-entity-B0"
+              ],
+              "view_ids": [
+                "view-part-k1-front",
+                "view-part-k1-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-AF",
+                "evidence-dimension-entity-8E",
+                "evidence-dimension-entity-B0"
+              ]
+            },
+            "width": {
+              "value_mm": 320.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-9E",
+                "dimension-entity-E2"
+              ],
+              "view_ids": [
+                "view-part-k1-front",
+                "view-part-k1-side"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-8D",
+                "evidence-contour-entity-D1",
+                "evidence-dimension-entity-9E",
+                "evidence-dimension-entity-E2"
+              ]
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-C0",
+                "dimension-entity-D2"
+              ],
+              "view_ids": [
+                "view-part-k1-side",
+                "view-part-k1-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-AF",
+                "evidence-contour-entity-D1",
+                "evidence-dimension-entity-C0",
+                "evidence-dimension-entity-D2"
+              ]
+            }
+          },
+          "quantity": {
+            "value": 2,
+            "state": "observed",
+            "evidence_ids": [
+              "evidence-text-entity-F3"
+            ]
+          },
+          "status": "complete",
+          "source_entity_ids": [
+            "entity-8D",
+            "entity-AF",
+            "entity-D1"
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-8D",
+            "evidence-contour-entity-AF",
+            "evidence-contour-entity-D1",
+            "evidence-text-entity-F3"
+          ],
+          "warnings": []
+        },
+        {
+          "id": "part-observation-k2",
+          "part_key": "K2",
+          "association_basis": "explicit_key",
+          "views": [
+            {
+              "view_id": "view-part-k2-front",
+              "role": "FRONT",
+              "contour_ids": [
+                "contour-entity-F4"
+              ],
+              "local_origin_source": {
+                "x": 0.0,
+                "y": 580.0
+              },
+              "local_origin_mm": {
+                "x": 0.0,
+                "y": 580.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k2-side",
+              "role": "SIDE",
+              "contour_ids": [
+                "contour-entity-138"
+              ],
+              "local_origin_source": {
+                "x": 3000.0,
+                "y": 580.0
+              },
+              "local_origin_mm": {
+                "x": 3000.0,
+                "y": 580.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k2-top",
+              "role": "TOP",
+              "contour_ids": [
+                "contour-entity-116"
+              ],
+              "local_origin_source": {
+                "x": 1500.0,
+                "y": 580.0
+              },
+              "local_origin_mm": {
+                "x": 1500.0,
+                "y": 580.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 18.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 18.0
+              }
+            }
+          ],
+          "dimensions": {
+            "length": {
+              "value_mm": 964.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-117",
+                "dimension-entity-F5"
+              ],
+              "view_ids": [
+                "view-part-k2-front",
+                "view-part-k2-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-116",
+                "evidence-contour-entity-F4",
+                "evidence-dimension-entity-117",
+                "evidence-dimension-entity-F5"
+              ]
+            },
+            "width": {
+              "value_mm": 320.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-105",
+                "dimension-entity-149"
+              ],
+              "view_ids": [
+                "view-part-k2-front",
+                "view-part-k2-side"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-138",
+                "evidence-contour-entity-F4",
+                "evidence-dimension-entity-105",
+                "evidence-dimension-entity-149"
+              ]
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-127",
+                "dimension-entity-139"
+              ],
+              "view_ids": [
+                "view-part-k2-side",
+                "view-part-k2-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-116",
+                "evidence-contour-entity-138",
+                "evidence-dimension-entity-127",
+                "evidence-dimension-entity-139"
+              ]
+            }
+          },
+          "quantity": {
+            "value": 2,
+            "state": "observed",
+            "evidence_ids": [
+              "evidence-text-entity-15A"
+            ]
+          },
+          "status": "complete",
+          "source_entity_ids": [
+            "entity-116",
+            "entity-138",
+            "entity-F4"
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-116",
+            "evidence-contour-entity-138",
+            "evidence-contour-entity-F4",
+            "evidence-text-entity-15A"
+          ],
+          "warnings": []
+        },
+        {
+          "id": "part-observation-k3",
+          "part_key": "K3",
+          "association_basis": "explicit_key",
+          "views": [
+            {
+              "view_id": "view-part-k3-front",
+              "role": "FRONT",
+              "contour_ids": [
+                "contour-entity-15B"
+              ],
+              "local_origin_source": {
+                "x": 0.0,
+                "y": 1160.0
+              },
+              "local_origin_mm": {
+                "x": 0.0,
+                "y": 1160.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k3-side",
+              "role": "SIDE",
+              "contour_ids": [
+                "contour-entity-19F"
+              ],
+              "local_origin_source": {
+                "x": 3000.0,
+                "y": 1160.0
+              },
+              "local_origin_mm": {
+                "x": 3000.0,
+                "y": 1160.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 18.0,
+                "max_y": 320.0
+              }
+            },
+            {
+              "view_id": "view-part-k3-top",
+              "role": "TOP",
+              "contour_ids": [
+                "contour-entity-17D"
+              ],
+              "local_origin_source": {
+                "x": 1500.0,
+                "y": 1160.0
+              },
+              "local_origin_mm": {
+                "x": 1500.0,
+                "y": 1160.0
+              },
+              "local_bounds_source": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 18.0
+              },
+              "local_bounds_mm": {
+                "min_x": 0.0,
+                "min_y": 0.0,
+                "max_x": 964.0,
+                "max_y": 18.0
+              }
+            }
+          ],
+          "dimensions": {
+            "length": {
+              "value_mm": 964.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-15C",
+                "dimension-entity-17E"
+              ],
+              "view_ids": [
+                "view-part-k3-front",
+                "view-part-k3-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-15B",
+                "evidence-contour-entity-17D",
+                "evidence-dimension-entity-15C",
+                "evidence-dimension-entity-17E"
+              ]
+            },
+            "width": {
+              "value_mm": 320.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-16C",
+                "dimension-entity-1B0"
+              ],
+              "view_ids": [
+                "view-part-k3-front",
+                "view-part-k3-side"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-15B",
+                "evidence-contour-entity-19F",
+                "evidence-dimension-entity-16C",
+                "evidence-dimension-entity-1B0"
+              ]
+            },
+            "thickness": {
+              "value_mm": 18.0,
+              "state": "observed",
+              "origin": "observed",
+              "measurement_ids": [
+                "dimension-entity-18E",
+                "dimension-entity-1A0"
+              ],
+              "view_ids": [
+                "view-part-k3-side",
+                "view-part-k3-top"
+              ],
+              "evidence_ids": [
+                "evidence-contour-entity-17D",
+                "evidence-contour-entity-19F",
+                "evidence-dimension-entity-18E",
+                "evidence-dimension-entity-1A0"
+              ]
+            }
+          },
+          "quantity": {
+            "value": 2,
+            "state": "observed",
+            "evidence_ids": [
+              "evidence-text-entity-1C1"
+            ]
+          },
+          "status": "complete",
+          "source_entity_ids": [
+            "entity-15B",
+            "entity-17D",
+            "entity-19F"
+          ],
+          "evidence_ids": [
+            "evidence-contour-entity-15B",
+            "evidence-contour-entity-17D",
+            "evidence-contour-entity-19F",
+            "evidence-text-entity-1C1"
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    },
+    "assembly_candidates": [
+      {
+        "id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3",
+        "family": "rectangular_shelving",
+        "family_status": "hypothesis",
+        "layout": "between_sides",
+        "layout_status": "hypothesis",
+        "uses": [
+          {
+            "id": "use-part-observation-k1-side_panel",
+            "part_observation_id": "part-observation-k1",
+            "role": "side_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 2,
+            "occurrence_indices": [
+              1,
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-F3"
+            ]
+          },
+          {
+            "id": "use-part-observation-k2-top_panel",
+            "part_observation_id": "part-observation-k2",
+            "role": "top_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 1,
+            "occurrence_indices": [
+              1
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-15A"
+            ]
+          },
+          {
+            "id": "use-part-observation-k2-base_panel",
+            "part_observation_id": "part-observation-k2",
+            "role": "base_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 1,
+            "occurrence_indices": [
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-15A"
+            ]
+          },
+          {
+            "id": "use-part-observation-k3-shelf",
+            "part_observation_id": "part-observation-k3",
+            "role": "shelf",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 2,
+            "occurrence_indices": [
+              1,
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-1C1"
+            ]
+          }
+        ],
+        "unassigned_part_observation_ids": [],
+        "constraints": [
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-depth",
+            "kind": "equal_dimensions",
+            "operation": "equal",
+            "dimension": "width",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k1-side_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k2-top_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k2-base_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k3-shelf.width_mm"
+            ],
+            "result_mm": 320.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-19F",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-contour-entity-F4",
+              "evidence-text-entity-15A",
+              "evidence-text-entity-1C1",
+              "evidence-text-entity-F3"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-thickness",
+            "kind": "equal_dimensions",
+            "operation": "equal",
+            "dimension": "thickness",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k1-side_panel.thickness_mm",
+              "review:2:piece:piece-use-part-observation-k2-top_panel.thickness_mm",
+              "review:2:piece:piece-use-part-observation-k2-base_panel.thickness_mm",
+              "review:2:piece:piece-use-part-observation-k3-shelf.thickness_mm"
+            ],
+            "result_mm": 18.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-19F",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-contour-entity-F4",
+              "evidence-text-entity-15A",
+              "evidence-text-entity-1C1",
+              "evidence-text-entity-F3"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-horizontal",
+            "kind": "role_compatibility",
+            "operation": "equal",
+            "dimension": "length",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k2-top_panel.length_mm",
+              "review:2:piece:piece-use-part-observation-k2-base_panel.length_mm",
+              "review:2:piece:piece-use-part-observation-k3-shelf.length_mm"
+            ],
+            "result_mm": 964.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-19F",
+              "evidence-contour-entity-F4",
+              "evidence-text-entity-15A",
+              "evidence-text-entity-1C1"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-assembled-width",
+            "kind": "exterior_from_parts",
+            "operation": "sum",
+            "dimension": "assembled_width",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k2-top_panel.length_mm",
+              "review:2:piece:piece-use-part-observation-k1-side_panel.thickness_mm",
+              "review:2:piece:piece-use-part-observation-k1-side_panel.thickness_mm"
+            ],
+            "result_mm": 1000.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-contour-entity-F4",
+              "evidence-text-entity-15A",
+              "evidence-text-entity-F3"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-assembled-height",
+            "kind": "exterior_from_parts",
+            "operation": "equal",
+            "dimension": "assembled_height",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k1-side_panel.length_mm"
+            ],
+            "result_mm": 1300.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-text-entity-F3"
+            ]
+          }
+        ],
+        "derived_dimensions": [
+          {
+            "axis": "width",
+            "value_mm": 1000.0,
+            "state": "derived",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k2-top_panel.length_mm",
+              "review:2:piece:piece-use-part-observation-k1-side_panel.thickness_mm",
+              "review:2:piece:piece-use-part-observation-k1-side_panel.thickness_mm"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-assembled-width"
+          },
+          {
+            "axis": "height",
+            "value_mm": 1300.0,
+            "state": "derived",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k1-side_panel.length_mm"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-assembled-height"
+          },
+          {
+            "axis": "depth",
+            "value_mm": 320.0,
+            "state": "derived",
+            "operand_refs": [
+              "review:2:piece:piece-use-part-observation-k1-side_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k2-top_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k2-base_panel.width_mm",
+              "review:2:piece:piece-use-part-observation-k3-shelf.width_mm"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3-depth"
+          }
+        ],
+        "unknown_fields": [],
+        "assumptions": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred."
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A",
+          "evidence-text-entity-1C1",
+          "evidence-text-entity-F3"
+        ],
+        "state": "hypothesis",
+        "needs_review": true
+      },
+      {
+        "id": "assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2",
+        "family": "rectangular_shelving",
+        "family_status": "hypothesis",
+        "layout": "between_sides",
+        "layout_status": "hypothesis",
+        "uses": [
+          {
+            "id": "use-part-observation-k1-side_panel",
+            "part_observation_id": "part-observation-k1",
+            "role": "side_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 2,
+            "occurrence_indices": [
+              1,
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-F3"
+            ]
+          },
+          {
+            "id": "use-part-observation-k3-top_panel",
+            "part_observation_id": "part-observation-k3",
+            "role": "top_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 1,
+            "occurrence_indices": [
+              1
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-1C1"
+            ]
+          },
+          {
+            "id": "use-part-observation-k3-base_panel",
+            "part_observation_id": "part-observation-k3",
+            "role": "base_panel",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 1,
+            "occurrence_indices": [
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-1C1"
+            ]
+          },
+          {
+            "id": "use-part-observation-k2-shelf",
+            "part_observation_id": "part-observation-k2",
+            "role": "shelf",
+            "role_status": "hypothesis",
+            "source_quantity": 2,
+            "allocated_quantity": 2,
+            "occurrence_indices": [
+              1,
+              2
+            ],
+            "quantity_source": "observed_annotation",
+            "evidence_ids": [
+              "evidence-text-entity-15A"
+            ]
+          }
+        ],
+        "unassigned_part_observation_ids": [],
+        "constraints": [
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-depth",
+            "kind": "equal_dimensions",
+            "operation": "equal",
+            "dimension": "width",
+            "operand_refs": [
+              "part-observation-k1.dimensions.width",
+              "part-observation-k3.dimensions.width",
+              "part-observation-k2.dimensions.width"
+            ],
+            "result_mm": 320.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-19F",
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-D1",
+              "evidence-contour-entity-F4",
+              "evidence-dimension-entity-105",
+              "evidence-dimension-entity-149",
+              "evidence-dimension-entity-16C",
+              "evidence-dimension-entity-1B0",
+              "evidence-dimension-entity-9E",
+              "evidence-dimension-entity-E2"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-thickness",
+            "kind": "equal_dimensions",
+            "operation": "equal",
+            "dimension": "thickness",
+            "operand_refs": [
+              "part-observation-k1.dimensions.thickness",
+              "part-observation-k3.dimensions.thickness",
+              "part-observation-k2.dimensions.thickness"
+            ],
+            "result_mm": 18.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-138",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-19F",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-dimension-entity-127",
+              "evidence-dimension-entity-139",
+              "evidence-dimension-entity-18E",
+              "evidence-dimension-entity-1A0",
+              "evidence-dimension-entity-C0",
+              "evidence-dimension-entity-D2"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-horizontal",
+            "kind": "role_compatibility",
+            "operation": "equal",
+            "dimension": "length",
+            "operand_refs": [
+              "part-observation-k3.dimensions.length",
+              "part-observation-k2.dimensions.length"
+            ],
+            "result_mm": 964.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-116",
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-F4",
+              "evidence-dimension-entity-117",
+              "evidence-dimension-entity-15C",
+              "evidence-dimension-entity-17E",
+              "evidence-dimension-entity-F5"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-assembled-width",
+            "kind": "exterior_from_parts",
+            "operation": "sum",
+            "dimension": "assembled_width",
+            "operand_refs": [
+              "part-observation-k3.dimensions.length",
+              "part-observation-k1.dimensions.thickness",
+              "part-observation-k1.dimensions.thickness"
+            ],
+            "result_mm": 1000.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-15B",
+              "evidence-contour-entity-17D",
+              "evidence-contour-entity-AF",
+              "evidence-contour-entity-D1",
+              "evidence-dimension-entity-15C",
+              "evidence-dimension-entity-17E",
+              "evidence-dimension-entity-C0",
+              "evidence-dimension-entity-D2"
+            ]
+          },
+          {
+            "id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-assembled-height",
+            "kind": "exterior_from_parts",
+            "operation": "equal",
+            "dimension": "assembled_height",
+            "operand_refs": [
+              "part-observation-k1.dimensions.length"
+            ],
+            "result_mm": 1300.0,
+            "status": "pass",
+            "tolerance_mm": 0.1,
+            "evidence_ids": [
+              "evidence-contour-entity-8D",
+              "evidence-contour-entity-AF",
+              "evidence-dimension-entity-8E",
+              "evidence-dimension-entity-B0"
+            ]
+          }
+        ],
+        "derived_dimensions": [
+          {
+            "axis": "width",
+            "value_mm": 1000.0,
+            "state": "derived",
+            "operand_refs": [
+              "part-observation-k3.dimensions.length",
+              "part-observation-k1.dimensions.thickness",
+              "part-observation-k1.dimensions.thickness"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-assembled-width"
+          },
+          {
+            "axis": "height",
+            "value_mm": 1300.0,
+            "state": "derived",
+            "operand_refs": [
+              "part-observation-k1.dimensions.length"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-assembled-height"
+          },
+          {
+            "axis": "depth",
+            "value_mm": 320.0,
+            "state": "derived",
+            "operand_refs": [
+              "part-observation-k1.dimensions.width",
+              "part-observation-k3.dimensions.width",
+              "part-observation-k2.dimensions.width"
+            ],
+            "constraint_id": "constraint-assembly-between_sides-part-observation-k1-part-observation-k3-part-observation-k2-depth"
+          }
+        ],
+        "unknown_fields": [],
+        "assumptions": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred."
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A",
+          "evidence-text-entity-1C1",
+          "evidence-text-entity-F3"
+        ],
+        "state": "hypothesis",
+        "needs_review": true
+      }
+    ],
+    "selected_assembly_candidate_id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3",
+    "table_analysis": null,
+    "table_programs": [],
+    "selected_table_program_id": null,
+    "evaluated_table_program": null,
+    "table_review_decisions": [],
+    "table_confirmed_values": [],
+    "table_observed_value_corrections": [],
+    "table_source_review_decisions": [],
+    "table_cost_scope": null
+  },
+  "scene": {
+    "schema_version": "0.3.0",
+    "run_id": "run-2c92e75d7f734ea19585c3a22168e411",
+    "result_revision": 2,
+    "state": "ready",
+    "selected_scenario_id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3",
+    "coordinate_system": "x=width,y=height,z=depth; origin=front-left-bottom",
+    "objects": [
+      {
+        "id": "scene-piece-use-part-observation-k1-side_panel-1",
+        "piece_id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "label": "K1:side_panel",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1300.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 18.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed side placement",
+        "part_observation_id": "part-observation-k1",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k1-side_panel-2",
+        "piece_id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "label": "K1:side_panel",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 982.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 18.0,
+          "y": 1300.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 982.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 1000.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed side placement",
+        "part_observation_id": "part-observation-k1",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k2-top_panel-1",
+        "piece_id": "piece-use-part-observation-k2-top_panel",
+        "proposal_id": "use-part-observation-k2-top_panel",
+        "role": "top_panel",
+        "label": "K2:top_panel",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 1282.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 1282.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 1300.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed top placement",
+        "part_observation_id": "part-observation-k2",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k2-base_panel-2",
+        "piece_id": "piece-use-part-observation-k2-base_panel",
+        "proposal_id": "use-part-observation-k2-base_panel",
+        "role": "base_panel",
+        "label": "K2:base_panel",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 18.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 18.0,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: reviewed base placement",
+        "part_observation_id": "part-observation-k2",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k3-shelf-1",
+        "piece_id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "label": "K3:shelf",
+        "occurrence_index": 1,
+        "position_mm": {
+          "x": 18.0,
+          "y": 427.3333333333333,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 427.3333333333333,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 445.3333333333333,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: schematic evenly spaced shelf placement; height not observed",
+        "part_observation_id": "part-observation-k3",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      },
+      {
+        "id": "scene-piece-use-part-observation-k3-shelf-2",
+        "piece_id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "label": "K3:shelf",
+        "occurrence_index": 2,
+        "position_mm": {
+          "x": 18.0,
+          "y": 854.6666666666666,
+          "z": 0.0
+        },
+        "dimensions_mm": {
+          "x": 964.0,
+          "y": 18.0,
+          "z": 320.0
+        },
+        "bbox_mm": {
+          "min": {
+            "x": 18.0,
+            "y": 854.6666666666666,
+            "z": 0.0
+          },
+          "max": {
+            "x": 982.0,
+            "y": 872.6666666666666,
+            "z": 320.0
+          }
+        },
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "placement_basis": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3: schematic evenly spaced shelf placement; height not observed",
+        "part_observation_id": "part-observation-k3",
+        "placement_status": "human_selected",
+        "placement_constraint_ids": []
+      }
+    ],
+    "warnings": [],
+    "assumptions": [
+      "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+      "Assembly layout is not observed and requires human review.",
+      "No back, hardware, material, or manufacturing detail is inferred.",
+      "Boxes are schematic reviewed panel occurrences, not manufacturing solids.",
+      "Shelf heights are schematic evenly spaced hypotheses because separate part views do not observe assembly levels.",
+      "Collision checking is not certified and remains not_evaluated."
+    ],
+    "collision_status": "not_evaluated"
+  },
+  "explanations": {
+    "schema_version": "0.3.0",
+    "run_id": "run-2c92e75d7f734ea19585c3a22168e411",
+    "result_revision": 2,
+    "pieces": [
+      {
+        "piece_id": "piece-use-part-observation-k1-side_panel",
+        "proposal_id": "use-part-observation-k1-side_panel",
+        "role": "side_panel",
+        "source_entity_ids": [
+          "entity-8D",
+          "entity-AF",
+          "entity-D1"
+        ],
+        "source_contour_ids": [
+          "contour-entity-8D",
+          "contour-entity-D1",
+          "contour-entity-AF"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-8D",
+          "evidence-contour-entity-AF",
+          "evidence-contour-entity-D1",
+          "evidence-text-entity-F3"
+        ],
+        "dimension_ids": [
+          "dimension-entity-8E",
+          "dimension-entity-9E",
+          "dimension-entity-B0",
+          "dimension-entity-C0",
+          "dimension-entity-D2",
+          "dimension-entity-E2"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 1300.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "human_selected_assembly_candidate"
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-use-part-observation-k2-top_panel",
+        "proposal_id": "use-part-observation-k2-top_panel",
+        "role": "top_panel",
+        "source_entity_ids": [
+          "entity-116",
+          "entity-138",
+          "entity-F4"
+        ],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "dimension_ids": [
+          "dimension-entity-105",
+          "dimension-entity-117",
+          "dimension-entity-127",
+          "dimension-entity-139",
+          "dimension-entity-149",
+          "dimension-entity-F5"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 964.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "human_selected_assembly_candidate"
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-use-part-observation-k2-base_panel",
+        "proposal_id": "use-part-observation-k2-base_panel",
+        "role": "base_panel",
+        "source_entity_ids": [
+          "entity-116",
+          "entity-138",
+          "entity-F4"
+        ],
+        "source_contour_ids": [
+          "contour-entity-F4",
+          "contour-entity-138",
+          "contour-entity-116"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-116",
+          "evidence-contour-entity-138",
+          "evidence-contour-entity-F4",
+          "evidence-text-entity-15A"
+        ],
+        "dimension_ids": [
+          "dimension-entity-105",
+          "dimension-entity-117",
+          "dimension-entity-127",
+          "dimension-entity-139",
+          "dimension-entity-149",
+          "dimension-entity-F5"
+        ],
+        "measurements": {
+          "quantity": 1,
+          "length_mm": 964.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "human_selected_assembly_candidate"
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      },
+      {
+        "piece_id": "piece-use-part-observation-k3-shelf",
+        "proposal_id": "use-part-observation-k3-shelf",
+        "role": "shelf",
+        "source_entity_ids": [
+          "entity-15B",
+          "entity-17D",
+          "entity-19F"
+        ],
+        "source_contour_ids": [
+          "contour-entity-15B",
+          "contour-entity-19F",
+          "contour-entity-17D"
+        ],
+        "evidence_ids": [
+          "evidence-contour-entity-15B",
+          "evidence-contour-entity-17D",
+          "evidence-contour-entity-19F",
+          "evidence-text-entity-1C1"
+        ],
+        "dimension_ids": [
+          "dimension-entity-15C",
+          "dimension-entity-16C",
+          "dimension-entity-17E",
+          "dimension-entity-18E",
+          "dimension-entity-1A0",
+          "dimension-entity-1B0"
+        ],
+        "measurements": {
+          "quantity": 2,
+          "length_mm": 964.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0
+        },
+        "formulas": [],
+        "premises": [
+          "Role allocation is a dimensional hypothesis; opaque part keys carry no role semantics.",
+          "Assembly layout is not observed and requires human review.",
+          "No back, hardware, material, or manufacturing detail is inferred.",
+          "human_selected_assembly_candidate"
+        ],
+        "unknown_fields": [],
+        "field_states": {
+          "quantity": "observed",
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "material": "confirmed",
+          "finish": "confirmed"
+        }
+      }
+    ],
+    "warnings": [
+      "pandeo_luz_excesiva: Aviso orientativo basado en un catálogo no confirmado por el taller. Posible pandeo en 'K2:top_panel' (piece-use-part-observation-k2-top_panel): luz de 964 mm con espesor de 18 mm (sin apoyo intermedio) supera el máximo recomendado de 900 mm.",
+      "pandeo_luz_excesiva: Aviso orientativo basado en un catálogo no confirmado por el taller. Posible pandeo en 'K3:shelf' (piece-use-part-observation-k3-shelf): luz de 964 mm con espesor de 18 mm (sin apoyo intermedio) supera el máximo recomendado de 900 mm."
+    ]
+  },
+  "descriptor": {
+    "descriptor_version": "furniture-v2",
+    "family": "rectangular_shelving",
+    "dimensions": {
+      "width_mm": 1000.0,
+      "depth_mm": 320.0,
+      "height_mm": 1300.0
+    },
+    "roles": [
+      {
+        "role": "base_panel",
+        "quantity": 1
+      },
+      {
+        "role": "shelf",
+        "quantity": 2
+      },
+      {
+        "role": "side_panel",
+        "quantity": 2
+      },
+      {
+        "role": "top_panel",
+        "quantity": 1
+      }
+    ],
+    "structure": "top_base_between_sides",
+    "material": "tablero sintético",
+    "finish": "melamina sintética",
+    "thicknesses_mm": [
+      18.0
+    ],
+    "classification_status": "confirmed",
+    "part_features": [
+      {
+        "length_mm": 964.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "quantity": 2,
+        "unknown_fields": [],
+        "field_states": {
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "quantity": "observed"
+        }
+      },
+      {
+        "length_mm": 964.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "quantity": 2,
+        "unknown_fields": [],
+        "field_states": {
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "quantity": "observed"
+        }
+      },
+      {
+        "length_mm": 1300.0,
+        "width_mm": 320.0,
+        "thickness_mm": 18.0,
+        "quantity": 2,
+        "unknown_fields": [],
+        "field_states": {
+          "length_mm": "observed",
+          "width_mm": "observed",
+          "thickness_mm": "observed",
+          "quantity": "observed"
+        }
+      }
+    ],
+    "unknown_fields": []
+  },
+  "library_item": {
+    "schema_version": "0.3.0",
+    "id": "library-run-2c92e75d7f734ea19585c3a22168e411",
+    "run_id": "run-2c92e75d7f734ea19585c3a22168e411",
+    "result_revision": 2,
+    "label": "Auditoría proveedor piezas_dimensiones_variante.dxf",
+    "descriptor": {
+      "descriptor_version": "furniture-v2",
+      "family": "rectangular_shelving",
+      "dimensions": {
+        "width_mm": 1000.0,
+        "depth_mm": 320.0,
+        "height_mm": 1300.0
+      },
+      "roles": [
+        {
+          "role": "base_panel",
+          "quantity": 1
+        },
+        {
+          "role": "shelf",
+          "quantity": 2
+        },
+        {
+          "role": "side_panel",
+          "quantity": 2
+        },
+        {
+          "role": "top_panel",
+          "quantity": 1
+        }
+      ],
+      "structure": "top_base_between_sides",
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "thicknesses_mm": [
+        18.0
+      ],
+      "classification_status": "confirmed",
+      "part_features": [
+        {
+          "length_mm": 964.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0,
+          "quantity": 2,
+          "unknown_fields": [],
+          "field_states": {
+            "length_mm": "observed",
+            "width_mm": "observed",
+            "thickness_mm": "observed",
+            "quantity": "observed"
+          }
+        },
+        {
+          "length_mm": 964.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0,
+          "quantity": 2,
+          "unknown_fields": [],
+          "field_states": {
+            "length_mm": "observed",
+            "width_mm": "observed",
+            "thickness_mm": "observed",
+            "quantity": "observed"
+          }
+        },
+        {
+          "length_mm": 1300.0,
+          "width_mm": 320.0,
+          "thickness_mm": 18.0,
+          "quantity": 2,
+          "unknown_fields": [],
+          "field_states": {
+            "length_mm": "observed",
+            "width_mm": "observed",
+            "thickness_mm": "observed",
+            "quantity": "observed"
+          }
+        }
+      ],
+      "unknown_fields": []
+    },
+    "descriptor_fingerprint": "fd19233b60e40d2058c6a33408e7df26f06999b8a7bc198592402f938b10f2b5",
+    "created_at": "2026-11-14T00:16:08.929439+00:00",
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "dimensions": 256,
+      "descriptor_version": "furniture-v2",
+      "cache_key": "694b4483d48ad8359d26575e632a43d44973141afc4935d39a9af64d79a37ff9",
+      "status": "generated"
+    },
+    "publication": null
+  },
+  "comparables": [
+    {
+      "id": "hist-syn-1",
+      "name": "Estantería sintética compacta",
+      "family": "estanteria_rectangular",
+      "width_mm": 800.0,
+      "depth_mm": 300.0,
+      "height_mm": 1700.0,
+      "material": "tablero sintético",
+      "finish": "melamina sintética",
+      "score": 0.81,
+      "differences": [
+        "dimensiones: 1000×320 mm frente a 800×300 mm",
+        "material coincide",
+        "acabado coincide"
+      ],
+      "fixed_cost_eur": 40.0,
+      "material_cost_eur": 60.0,
+      "reference_area_mm2": 1200000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-2",
+      "name": "Estantería sintética alta",
+      "family": "estanteria_rectangular",
+      "width_mm": 1000.0,
+      "depth_mm": 350.0,
+      "height_mm": 2100.0,
+      "material": "contrachapado sintético",
+      "finish": "barniz sintético",
+      "score": 0.5486,
+      "differences": [
+        "dimensiones: 1000×320 mm frente a 1000×350 mm",
+        "material distinto: tablero sintético / contrachapado sintético",
+        "acabado distinto: melamina sintética / barniz sintético"
+      ],
+      "fixed_cost_eur": 55.0,
+      "material_cost_eur": 95.0,
+      "reference_area_mm2": 1800000.0,
+      "hours": null,
+      "synthetic": true
+    },
+    {
+      "id": "hist-syn-3",
+      "name": "Módulo sintético abierto",
+      "family": "estanteria_rectangular",
+      "width_mm": 700.0,
+      "depth_mm": 280.0,
+      "height_mm": 1500.0,
+      "material": "tablero sintético",
+      "finish": "sin acabado",
+      "score": 0.4571,
+      "differences": [
+        "dimensiones: 1000×320 mm frente a 700×280 mm",
+        "material coincide",
+        "acabado distinto: melamina sintética / sin acabado"
+      ],
+      "fixed_cost_eur": 35.0,
+      "material_cost_eur": 48.0,
+      "reference_area_mm2": 980000.0,
+      "hours": null,
+      "synthetic": true
+    }
+  ],
+  "estimate": null,
+  "table_drawings": null,
+  "events": [
+    {
+      "sequence": 1,
+      "event_type": "run_state_changed",
+      "data": {
+        "timestamp": "2026-11-14T00:16:08.678722+00:00",
+        "state": "needs_review",
+        "mode": "geometry_only"
+      }
+    },
+    {
+      "sequence": 2,
+      "event_type": "result_committed",
+      "data": {
+        "timestamp": "2026-11-14T00:16:08.678722+00:00",
+        "result_revision": 1,
+        "state": "needs_review"
+      }
+    },
+    {
+      "sequence": 3,
+      "event_type": "run_finished",
+      "data": {
+        "timestamp": "2026-11-14T00:16:08.678722+00:00",
+        "state": "needs_review",
+        "result_revision": 1
+      }
+    },
+    {
+      "sequence": 4,
+      "event_type": "human_review_committed",
+      "data": {
+        "timestamp": "2026-11-14T00:16:08.705034+00:00",
+        "result_revision": 2,
+        "reviewer_name": "Agente auditor — prueba técnica",
+        "selected_scenario_id": null,
+        "selected_assembly_candidate_id": "assembly-between_sides-part-observation-k1-part-observation-k2-part-observation-k3"
+      }
+    },
+    {
+      "sequence": 5,
+      "event_type": "library_item_saved",
+      "data": {
+        "timestamp": "2026-11-14T00:16:08.940360+00:00",
+        "result_revision": 2,
+        "embedding_mode": "openai"
+      }
+    }
+  ]
+}

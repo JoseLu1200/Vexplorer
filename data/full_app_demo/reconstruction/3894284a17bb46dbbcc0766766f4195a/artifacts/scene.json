@@ -1,0 +1,88 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Envolvente de 1200 × 700 × 750 mm basada en las cotas del plano original. El usuario no ha aportado cotas adicionales de envolvente.",
+    "Origen en la esquina inferior delantera izquierda; x anchura, y hacia atrás y z altura, con suelo z=0.",
+    "Las tres vistas representan el mismo objeto; el hueco frontal permanece abierto.",
+    "Toda la geometría propuesta es una hipótesis constructiva, incluidos los espesores y el faldón añadido.",
+    "La imagen de propuesta se utiliza únicamente para revisar la construcción, no como evidencia del plano original."
+  ],
+  "objects": [
+    {
+      "piece_id": "sobre",
+      "label": "Sobre rectangular de trabajo",
+      "position_mm": [
+        0.0,
+        720.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        1200.0,
+        30.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_izquierdo",
+      "label": "Panel portante izquierdo",
+      "position_mm": [
+        0.0,
+        0.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        720.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_derecho",
+      "label": "Panel portante derecho",
+      "position_mm": [
+        1182.0,
+        0.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        720.0,
+        700.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "faldon_posterior",
+      "label": "Faldón posterior superior de rigidización",
+      "position_mm": [
+        18.0,
+        570.0,
+        -700.0
+      ],
+      "dimensions_mm": [
+        1164.0,
+        150.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

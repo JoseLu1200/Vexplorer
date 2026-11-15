@@ -1,0 +1,106 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; suelo z=0.",
+    "La envolvente 1200 × 600 × 750 mm es aportada por el usuario y no observada en el dibujo; el original no contiene cotas numéricas visibles.",
+    "La revisión conserva la geometría propuesta: su proyección frontal es compatible con las proporciones y bandas del alzado ORIGINAL.",
+    "La imagen de la propuesta no se utiliza como evidencia del original. La construcción en profundidad continúa siendo una hipótesis de diseño.",
+    "No se añaden herrajes ni bloques de conexión: el diagnóstico no identifica piezas flotantes ni exige corregir contactos."
+  ],
+  "objects": [
+    {
+      "piece_id": "tablero_superior",
+      "label": "Tablero de trabajo",
+      "position_mm": [
+        0.0,
+        720.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        1200.0,
+        30.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_izquierdo",
+      "label": "Lateral portante izquierdo",
+      "position_mm": [
+        0.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        60.0,
+        720.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_derecho",
+      "label": "Lateral portante derecho",
+      "position_mm": [
+        1140.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        60.0,
+        720.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "faldon_frontal",
+      "label": "Faldón frontal bajo el tablero",
+      "position_mm": [
+        60.0,
+        640.0,
+        -30.0
+      ],
+      "dimensions_mm": [
+        1080.0,
+        80.0,
+        30.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "faldon_trasero",
+      "label": "Faldón trasero de rigidización propuesta",
+      "position_mm": [
+        60.0,
+        640.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        1080.0,
+        80.0,
+        30.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

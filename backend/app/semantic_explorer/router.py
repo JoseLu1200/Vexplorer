@@ -12,6 +12,18 @@ from .service import ExplorerService
 from .store import ExplorerStore
 
 
+def explorer_capability(app=None) -> dict[str, bool | str | None]:
+    available = (
+        getattr(getattr(app, "state", None), "explorer_store", None) is not None
+        if app is not None
+        else os.getenv("VEXPLORER_EXPLORER_ENABLED", "0") == "1"
+    )
+    return {
+        "available": available,
+        "unavailable_reason": None if available else "explorer_disabled",
+    }
+
+
 def install_explorer(app, repository, root: Path) -> None:
     enabled = os.getenv("VEXPLORER_EXPLORER_ENABLED", "0") == "1"
     store = ExplorerStore(root / "semantic_explorer.sqlite3") if enabled else None

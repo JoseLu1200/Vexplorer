@@ -78,11 +78,11 @@ def main() -> None:
     if result["state"] == "completed":
         call("POST", f"/runs/{run_id}/table-costs", json={"result_revision": revision, "scope": {"material_tariff_id": None, "edge_scope": "none", "operation_tariff_ids": []}})
         if config["semantic"]["available"]:
-            first = call("POST", f"/runs/{run_id}/library", json={"result_revision": revision, "label": "Mesa generada — ensayo técnico", "embedding_mode": "openai"})
-            again = call("POST", f"/runs/{run_id}/library", json={"result_revision": revision, "label": "Mesa generada — caché", "embedding_mode": "openai"})
+            first = call("POST", f"/runs/{run_id}/library", json={"result_revision": revision, "label": "Mesa generada — ensayo técnico", "embedding_mode": "embeddinggemma2"})
+            again = call("POST", f"/runs/{run_id}/library", json={"result_revision": revision, "label": "Mesa generada — caché", "embedding_mode": "embeddinggemma2"})
             assert first["descriptor"]["descriptor_version"] == "furniture-v3"
             assert first["descriptor_fingerprint"] == again["descriptor_fingerprint"]
-            assert first["embedding"]["provider"] == "openai"
+            assert first["embedding"]["provider"] == "embeddinggemma2"
             assert again["embedding"]["status"] == "cache"
             compared = []
             for filename in ("mesa_demo_001.dxf", "mesa_demo_002.dxf"):
@@ -93,7 +93,7 @@ def main() -> None:
                 bd = [{"target_kind": kind, "target_id": item["id"], "action": "accept", "reason": "Agente auditor: acepta premisa para comparación sintética."} for kind, items in (("program", [bp]), ("component", bp["components"]), ("premise", bp["premises"])) for item in items]
                 reviewed = call("POST", f"/runs/{bid}/reviews", json={"base_result_revision": 1, "reviewer_name": "Agente auditor — comparación", "table_program_id": bp["id"], "table_decisions": bd, "notes": "Sin consultar referencia reservada."})
                 assert reviewed["state"] == "completed"
-                compared.append(call("POST", f"/runs/{bid}/library", json={"result_revision": 2, "label": "Mesa baseline " + filename, "embedding_mode": "openai"}))
+                compared.append(call("POST", f"/runs/{bid}/library", json={"result_revision": 2, "label": "Mesa baseline " + filename, "embedding_mode": "embeddinggemma2"}))
             assert compared[0]["descriptor_fingerprint"] != compared[1]["descriptor_fingerprint"]
             report["assertions"]["distinct_dimensions_change_descriptor"] = True
             call("POST", f"/runs/{run_id}/similarity", json={"result_revision": revision, "mode": "semantic", "limit": 10, "descriptor_version": "furniture-v3"})

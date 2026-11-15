@@ -8,10 +8,14 @@ RUN npm ci --ignore-scripts && npm run prepare:vendor
 FROM python:3.14.2-slim-bookworm AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
 WORKDIR /app
 COPY deploy/requirements-runtime.txt /tmp/requirements-runtime.txt
-RUN python -m pip install --no-cache-dir --disable-pip-version-check -r /tmp/requirements-runtime.txt \
+RUN python -m pip install --no-cache-dir --disable-pip-version-check \
+      --index-url https://download.pytorch.org/whl/cpu torch==2.10.0+cpu \
+    && python -m pip install --no-cache-dir --disable-pip-version-check -r /tmp/requirements-runtime.txt \
     && rm /tmp/requirements-runtime.txt \
     && addgroup --system --gid 10001 vexplorer \
     && adduser --system --uid 10001 --ingroup vexplorer --home /nonexistent --no-create-home vexplorer \

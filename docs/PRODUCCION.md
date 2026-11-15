@@ -6,7 +6,7 @@ Release activado el 2026-11-14: `d0ea7a85e787f4358ab4dbb05ea0250395f2083b`, dire
 
 ## Servicio
 
-Caddy existente publica TLS y `/vexplorer/*`. Uvicorn escucha solo en `127.0.0.1:18792`, mediante `systemctl --user vexplorer.service`, con **un único worker**. La cola y las reservas 3D usan sincronización dentro del proceso; varios workers no están soportados.
+Caddy existente publica TLS y `/vexplorer/*`. Uvicorn escucha solo en `127.0.0.1:18792`, mediante `systemctl --user vexplorer.service`, con **un único proceso worker**. Dentro de ese proceso la cola admite dos trabajos concurrentes por defecto (`VEXPLORER_JOB_MAX_WORKERS=2`, máximo 4) y conserva una admisión total acotada; varios procesos Uvicorn no están soportados.
 
 La raíz es `/home/kripta/apps/vexplorer`: `releases/` guarda código inmutable, `current` apunta al activo y `shared/` conserva datos, copias, restauraciones, catálogo, usuarios y `production.env`. El env tiene permisos 0600 y nunca se copia a Git o al release. [systemd-production.env.example](../deploy/systemd-production.env.example) contiene las variables efectivas; el ejemplo Docker no configura este servicio.
 

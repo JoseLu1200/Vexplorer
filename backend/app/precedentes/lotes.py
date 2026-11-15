@@ -202,7 +202,8 @@ def preparar_lotes(
     for indice, (espesor, material, acabado, miembros, superficie_mm2) in enumerate(
         grupos, start=1
     ):
-        ocurrencias = sum(
+        ocurrencias = sum(unidades(p) for p in miembros)
+        ocurrencias_nesting = sum(
             unidades(p)
             for p in miembros
             if cabe_en_tablero(
@@ -213,13 +214,13 @@ def preparar_lotes(
             )
         )
         omitido: str | None = None
-        if ocurrencias > LIMITE_OCURRENCIAS:
+        if ocurrencias_nesting > LIMITE_OCURRENCIAS:
             omitido = MOTIVO_DEMASIADAS_OCURRENCIAS
-        elif ocurrencias > presupuesto:
+        elif ocurrencias_nesting > presupuesto:
             omitido = MOTIVO_LIMITE_TOTAL
         resultado_nesting: ResultadoNesting | None = None
         if omitido is None:
-            presupuesto -= ocurrencias
+            presupuesto -= ocurrencias_nesting
             resultado_nesting = nestear(miembros, configuracion)
             no_caben = tuple(
                 PiezaNoCabe(

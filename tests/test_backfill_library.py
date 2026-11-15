@@ -21,7 +21,7 @@ def _manifest_entry() -> dict[str, object]:
         "run_id": "run-11111111111111111111111111111111",
         "result_revision": 2,
         "label": "Armario proyecto A revisado",
-        "embedding_mode": "openai",
+        "embedding_mode": "embeddinggemma2",
         "provenance": {
             "source_kind": "real_furniture",
             "document_sha256": "a" * 64,

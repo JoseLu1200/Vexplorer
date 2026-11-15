@@ -282,3 +282,44 @@ def test_create_run_in_production_checks_use_jobs_endpoint_first(tmp_path: Path,
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "use_jobs_endpoint"
+
+
+@pytest.mark.parametrize("same_payload", [True, False])
+def test_concurrent_request_reserved_before_execution(tmp_path, monkeypatch, same_payload):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    first_client = _client(tmp_path, monkeypatch)
+    second_client = _client(tmp_path, monkeypatch)
+    document = _upload(first_client)
+    other_document = document if same_payload else _upload(first_client, "other.dxf")
+    repository = first_client.app.state.repository
+    entered, release = Event(), Event()
+    original_create = repository.create_run
+
+    def delayed_create(*args, **kwargs):
+        entered.set()
+        assert release.wait(10)
+        return original_create(*args, **kwargs)
+
+    monkeypatch.setattr(repository, "create_run", delayed_create)
+    headers = {"Idempotency-Key": "overlapping-requests"}
+    body = {"document_id": document, "mode": "geometry_only"}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(first_client.post, "/api/v1/runs", json=body, headers=headers)
+        try:
+            assert entered.wait(10)
+            second = second_client.post("/api/v1/runs", json={**body, "document_id": other_document}, headers=headers)
+            assert second.status_code == 409
+            assert second.json()["error"]["code"] == (
+                "idempotency_key_in_progress" if same_payload else "idempotency_key_conflict"
+            )
+        finally:
+            release.set()
+        completed = first.result(timeout=10)
+    assert completed.status_code == 201
+    replay = second_client.post("/api/v1/runs", json=body, headers=headers)
+    assert replay.status_code == 201
+    assert replay.json()["data"]["run"]["id"] == completed.json()["data"]["run"]["id"]
+    with repository._connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 1

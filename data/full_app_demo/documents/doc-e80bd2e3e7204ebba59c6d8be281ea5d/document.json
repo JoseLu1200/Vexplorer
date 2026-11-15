@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "normalized_dxf": null,
+    "original": {
+      "media_type": "application/pdf",
+      "url": "/api/v1/documents/doc-e80bd2e3e7204ebba59c6d8be281ea5d/original"
+    },
+    "pages": [
+      {
+        "content_kind": "raster",
+        "height_mm": null,
+        "height_points": 510.0,
+        "image_count": 1,
+        "normalized_dxf": null,
+        "page_number": 1,
+        "preview": {
+          "media_type": "image/png",
+          "url": "/api/v1/documents/doc-e80bd2e3e7204ebba59c6d8be281ea5d/pages/1/preview.png"
+        },
+        "rotation": 0,
+        "text_block_count": 0,
+        "vector_path_count": 0,
+        "warnings": [
+          "raster_page_requires_manual_review:1"
+        ],
+        "width_mm": null,
+        "width_points": 750.0
+      }
+    ],
+    "preview": {
+      "media_type": "image/png",
+      "url": "/api/v1/documents/doc-e80bd2e3e7204ebba59c6d8be281ea5d/pages/1/preview.png"
+    }
+  },
+  "audit": {
+    "uploaded_at": "2026-11-14T11:50:37.748160+00:00",
+    "uploaded_by": null
+  },
+  "document_id": "doc-e80bd2e3e7204ebba59c6d8be281ea5d",
+  "ingestion": {
+    "capabilities": {
+      "geometry_analysis": false,
+      "page_geometry_analysis": false,
+      "page_review": true
+    },
+    "errors": [],
+    "state": "needs_review",
+    "warnings": [
+      "source_unit_unknown",
+      "raster_page_requires_manual_review:1"
+    ]
+  },
+  "original_filename": "visual-001.pdf",
+  "sha256": "7738983984818c30582ed989160386a3e51a1bef8ac522edae2043c69bf023a2",
+  "size_bytes": 57735,
+  "source": {
+    "filename": "visual-001.pdf",
+    "format": "pdf",
+    "media_type": "application/pdf",
+    "sha256": "7738983984818c30582ed989160386a3e51a1bef8ac522edae2043c69bf023a2",
+    "size_bytes": 57735,
+    "unit": "unknown"
+  },
+  "source_kind": "uploaded"
+}

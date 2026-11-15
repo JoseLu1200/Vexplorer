@@ -108,7 +108,7 @@ def load_manifest(path: Path) -> Manifest:
             raise BackfillError("invalid_result_revision")
         label = _required_text(value.get("label"), "invalid_label", maximum=120)
         embedding_mode = value.get("embedding_mode")
-        if embedding_mode not in {"offline", "openai"}:
+        if embedding_mode not in {"offline", "embeddinggemma2"}:
             raise BackfillError("invalid_embedding_mode")
         source = value.get("provenance")
         if not isinstance(source, dict):

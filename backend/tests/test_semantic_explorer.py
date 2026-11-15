@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from backend.app.semantic_explorer.core import make_snapshot, search
 from backend.app.semantic_explorer.models import Bundle, Entry, Space
 from backend.app.semantic_explorer.store import ExplorerStore
+from backend.app.semantic_explorer import router as explorer_router
 
 
 def bundle(vectors=((1, 0, 0), (0.8, 0.6, 0), (0, 1, 0)), **kwargs):
@@ -32,6 +33,31 @@ def png():
     output = BytesIO()
     Image.new("RGB", (12, 12), "white").save(output, format="PNG")
     return output.getvalue()
+
+
+def test_explorer_capability_is_explicit_and_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("VEXPLORER_EXPLORER_ENABLED", raising=False)
+    assert explorer_router.explorer_capability() == {
+        "available": False,
+        "unavailable_reason": "explorer_disabled",
+    }
+    monkeypatch.setenv("VEXPLORER_EXPLORER_ENABLED", "1")
+    assert explorer_router.explorer_capability() == {
+        "available": True,
+        "unavailable_reason": None,
+    }
+
+
+def test_explorer_capability_reflects_initialized_store_not_later_environment(monkeypatch):
+    app = type("App", (), {"state": type("State", (), {"explorer_store": object()})()})()
+    monkeypatch.setenv("VEXPLORER_EXPLORER_ENABLED", "0")
+    assert explorer_router.explorer_capability(app)["available"] is True
+    app.state.explorer_store = None
+    monkeypatch.setenv("VEXPLORER_EXPLORER_ENABLED", "1")
+    assert explorer_router.explorer_capability(app) == {
+        "available": False,
+        "unavailable_reason": "explorer_disabled",
+    }
 
 
 def test_neighbors_use_original_cosine_not_projection_and_stable_ties():

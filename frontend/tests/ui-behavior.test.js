@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 
 const ui = await import("../core/ui.js").catch(() => ({}));
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const reviewSource = await readFile(new URL("../core/review.js", import.meta.url), "utf8");
 
 function element(dataset = {}) {
   const attributes = new Map();
@@ -70,6 +72,8 @@ test("public CAD capability hides private history but exposes offline library ac
     semantic: false,
     costs: false,
     publicCad: true,
+    semanticExplorer: false,
+    recent: false,
     sessionLabel: "Acceso público · CAD disponible",
   });
   assert.match(app, /publicFeatureAvailability/);
@@ -141,6 +145,7 @@ test("saving a reviewed table uses only fields accepted by LibrarySaveRequest", 
     embedding_mode: "offline",
   });
   assert.equal("descriptor_version" in ui.librarySavePayload({ resultRevision: 2, label: "Mesa demo", semantic: false }), false);
+  assert.equal(ui.librarySavePayload({ resultRevision: 2, label: "Mesa demo", semantic: true }).embedding_mode,"embeddinggemma2");
 });
 
 test("pending table revisions cannot invoke descriptor-backed library actions", () => {
@@ -183,4 +188,33 @@ test("library similarities summarize known dimensions without exposing descripto
   assert.equal(result.technical.length, 3);
   assert.match(result.technical[2], /TableDescriptorComponentFeature/);
   assert.match(app, /Datos de comparación/);
+});
+
+test("semantic explorer is capability gated with enablement guidance", () => {
+  assert.match(app, /link\.id="semantic-explorer-link";link\.hidden=true/);
+  assert.match(app, /guidance\.id="semantic-explorer-guidance"/);
+  assert.match(app, /state\.features\.semanticExplorer/);
+  assert.match(app, /semantic-explorer-link/);
+});
+
+test("review drafts expose a dirty signal and guard destructive navigation", () => {
+  assert.match(app, /createReviewDraftGuard/);
+  assert.match(reviewSource, /beforeunload/);
+  assert.match(app, /canDiscard/);
+  assert.match(app, /review-form/);
+  assert.match(app, /function libraryRunLink\(item\)[\s\S]*recentRunLink/);
+  assert.match(app, /setupGuardedNavigation[\s\S]*\.brand/);
+  const rendered=app.indexOf("renderPartsAndReview();"),cleaned=app.indexOf("reviewDraftGuard?.markClean();",rendered),awaited=app.indexOf("await loadRevisionContext();",rendered);
+  assert.ok(rendered>=0&&cleaned>rendered&&cleaned<awaited,"review baseline is captured before awaited context work");
+});
+
+test("recent projects are separate from Library and active jobs can be cancelled", () => {
+  assert.match(html, /data-panel="projects"/);
+  assert.match(html, /data-panel-content="projects"/);
+  assert.match(html, /id="recent-projects"/);
+  assert.match(html, /id="recent-executions"/);
+  assert.match(html, /id="job-cancel"/);
+  assert.match(app, /api\.getProjects/);
+  assert.match(app, /api\.getExecutions/);
+  assert.match(app, /api\.cancelJob/);
 });

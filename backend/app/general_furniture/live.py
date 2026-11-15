@@ -6,7 +6,7 @@ import time
 from base64 import b64encode
 from dataclasses import asdict
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 
 from pydantic import ValidationError
 
@@ -291,6 +291,7 @@ def run_general_furniture_agent(
     provider: GeneralFurnitureProvider,
     limits: AgentLimits = AgentLimits(),
     visual_pages: tuple[GeneralVisualPage, ...] = (),
+    cancelled: Callable[[], bool] | None = None,
 ) -> GeneralFurnitureAgentOutcome:
     if len(visual_pages) > 4 or any(
         len(item.content) > 4 * 1024 * 1024 for item in visual_pages
@@ -473,6 +474,11 @@ def run_general_furniture_agent(
     )
     input_items = [{"role": "user", "content": content}]
     while calls < limits.max_model_calls:
+        if cancelled is not None and cancelled():
+            raise GeneralLiveError(
+                "job_cancelled", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         remaining = limits.timeout_s - (time.monotonic() - started)
         if remaining <= 0:
             if last_incomplete is not None:
@@ -505,6 +511,11 @@ def run_general_furniture_agent(
                 provider_response_id=getattr(exc, "response_id", None),
                 provider_incomplete_reason=getattr(exc, "incomplete_reason", None),
             ) from exc
+        if cancelled is not None and cancelled():
+            raise GeneralLiveError(
+                "job_cancelled", trace=tuple(trace),
+                model_calls=calls, tool_calls=tool_calls,
+            )
         previous_response_id = response.id
         if not response.tool_calls:
             input_items = [

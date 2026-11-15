@@ -14,6 +14,7 @@ services:
       VEXPLORER_ALLOWED_ORIGINS: ${VEXPLORER_ALLOWED_ORIGINS:?set an HTTPS origin}
       VEXPLORER_COST_CATALOG: /run/config/vexplorer-cost-catalog.json
       VEXPLORER_JOB_MAX_PENDING: ${VEXPLORER_JOB_MAX_PENDING:-8}
+      VEXPLORER_JOB_MAX_WORKERS: ${VEXPLORER_JOB_MAX_WORKERS:-2}
       VEXPLORER_ROOT_PATH: ${VEXPLORER_ROOT_PATH:-}
       VEXPLORER_MAX_STORAGE_BYTES: ${VEXPLORER_MAX_STORAGE_BYTES:-1073741824}
       VEXPLORER_RECORDING_MAX_COUNT: ${VEXPLORER_RECORDING_MAX_COUNT:-1000}
@@ -22,8 +23,10 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6.1-sol}
       OPENAI_MAX_OUTPUT_TOKENS: ${OPENAI_MAX_OUTPUT_TOKENS:-4096}
       OPENAI_VISION_ENABLED: ${OPENAI_VISION_ENABLED:-false}
-      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
-      OPENAI_EMBEDDING_DIMENSIONS: ${OPENAI_EMBEDDING_DIMENSIONS:-256}
+      VEXPLORER_EMBEDDING_MODEL: embeddinggemma2
+      VEXPLORER_EMBEDDING_REVISION: f9972ac22e696a105c482202646979e33e4b5a1e
+      VEXPLORER_EMBEDDING_SNAPSHOT: /opt/vexplorer/models/embeddinggemma-2/f9972ac22e696a105c482202646979e33e4b5a1e
+      VEXPLORER_EMBEDDING_DEVICE: cpu
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       HOME: /tmp
     secrets:
@@ -33,6 +36,7 @@ services:
         target: /run/config/vexplorer-cost-catalog.json
     volumes:
       - vexplorer_data:/var/lib/vexplorer
+      - ${VEXPLORER_EMBEDDING_SNAPSHOT_HOST:?set the pinned EmbeddingGemma 2 snapshot directory}:/opt/vexplorer/models/embeddinggemma-2/f9972ac22e696a105c482202646979e33e4b5a1e:ro
     expose:
       - "8000"
     read_only: true

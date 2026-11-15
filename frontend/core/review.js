@@ -28,6 +28,35 @@ export function buildScenarioReviewPayload(snapshot, values) {
   };
 }
 
+function reviewControlState(control, index) {
+  const key=control.name||control.id||control.dataset?.generalField||control.dataset?.decisionField||`control-${index}`;
+  const type=String(control.type??control.tagName??"").toLowerCase();
+  const value=["checkbox","radio"].includes(type)?Boolean(control.checked):String(control.value??"");
+  return [key,type,value,Boolean(control.disabled)];
+}
+
+export function reviewFormSignature(form) {
+  const controls=[...(form?.querySelectorAll?.("input, select, textarea")??[])];
+  return JSON.stringify(controls.filter((control)=>!["button","submit","reset"].includes(String(control.type??"").toLowerCase())).map(reviewControlState));
+}
+
+export function createReviewDraftGuard(form, { windowRef=globalThis.window, confirmDiscard=(message)=>globalThis.confirm?.(message)??true } = {}) {
+  let baseline=reviewFormSignature(form),dirty=false;
+  const publish=()=>{dirty=reviewFormSignature(form)!==baseline;if(form?.dataset)form.dataset.dirty=String(dirty);return dirty;};
+  const refresh=()=>publish();
+  const refreshAfterClick=()=>queueMicrotask(publish);
+  const beforeunload=(event)=>{if(!publish())return;event.preventDefault();event.returnValue="";};
+  form?.addEventListener?.("input",refresh);form?.addEventListener?.("change",refresh);form?.addEventListener?.("click",refreshAfterClick);
+  windowRef?.addEventListener?.("beforeunload",beforeunload);
+  publish();
+  return {
+    markClean(){baseline=reviewFormSignature(form);publish();},
+    isDirty(){return dirty;},
+    canDiscard(message="Hay cambios de revisión sin guardar. ¿Quieres descartarlos?"){return !dirty||Boolean(confirmDiscard(message));},
+    dispose(){form?.removeEventListener?.("input",refresh);form?.removeEventListener?.("change",refresh);form?.removeEventListener?.("click",refreshAfterClick);windowRef?.removeEventListener?.("beforeunload",beforeunload);},
+  };
+}
+
 export function buildAssemblyReviewPayload(snapshot, values) {
   if (!Number.isInteger(snapshot?.result_revision)) throw new TypeError("Falta la revisión base del resultado.");
   if (!values?.assembly_candidate_id) throw new TypeError("Selecciona una hipótesis de montaje.");

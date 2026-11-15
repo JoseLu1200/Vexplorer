@@ -56,7 +56,8 @@ class DemoRepository:
                     id TEXT PRIMARY KEY, mode TEXT NOT NULL, state TEXT NOT NULL,
                     reason_code TEXT, candidate_revision TEXT NOT NULL,
                     current_result_revision INTEGER, extraction_json TEXT NOT NULL,
-                    scenarios_json TEXT NOT NULL, created_at TEXT NOT NULL
+                    scenarios_json TEXT NOT NULL, created_at TEXT NOT NULL,
+                    owner_actor TEXT
                 );
                 CREATE TABLE IF NOT EXISTS results (
                     run_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL,
@@ -85,7 +86,8 @@ class DemoRepository:
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY, actor TEXT, request_json TEXT NOT NULL,
                     request_hash TEXT NOT NULL, state TEXT NOT NULL, run_id TEXT,
-                    error_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+                    error_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                    cancel_requested_at TEXT
                 );
                 CREATE TABLE IF NOT EXISTS job_idempotency (
                     actor TEXT NOT NULL, idempotency_key TEXT NOT NULL,
@@ -136,7 +138,8 @@ class DemoRepository:
                 );
                 CREATE TABLE IF NOT EXISTS embedding_cache (
                     cache_key TEXT PRIMARY KEY, model TEXT NOT NULL, dimensions INTEGER NOT NULL,
-                    descriptor_version TEXT NOT NULL, vector_json TEXT NOT NULL, created_at TEXT NOT NULL
+                    descriptor_version TEXT NOT NULL, vector_json TEXT NOT NULL, created_at TEXT NOT NULL,
+                    space_id TEXT, identity_json TEXT
                 );
                 CREATE TABLE IF NOT EXISTS table_cost_estimates (
                     run_id TEXT NOT NULL, revision INTEGER NOT NULL,
@@ -168,6 +171,36 @@ class DemoRepository:
                 db.execute("ALTER TABLE runs ADD COLUMN agent_selected_table_program_id TEXT")
             if "replay_source_recording_id" not in columns:
                 db.execute("ALTER TABLE runs ADD COLUMN replay_source_recording_id TEXT")
+            embedding_columns = {
+                row[1] for row in db.execute("PRAGMA table_info(embedding_cache)").fetchall()
+            }
+            if "space_id" not in embedding_columns:
+                db.execute("ALTER TABLE embedding_cache ADD COLUMN space_id TEXT")
+            if "identity_json" not in embedding_columns:
+                db.execute("ALTER TABLE embedding_cache ADD COLUMN identity_json TEXT")
+            if "owner_actor" not in columns:
+                db.execute("ALTER TABLE runs ADD COLUMN owner_actor TEXT")
+            job_columns = {
+                row[1] for row in db.execute("PRAGMA table_info(jobs)").fetchall()
+            }
+            if "cancel_requested_at" not in job_columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN cancel_requested_at TEXT")
+            db.execute(
+                """
+                UPDATE runs
+                SET owner_actor = (
+                    SELECT MIN(COALESCE(jobs.actor, 'local-demo'))
+                    FROM jobs
+                    WHERE jobs.run_id = runs.id
+                )
+                WHERE owner_actor IS NULL
+                  AND 1 = (
+                    SELECT COUNT(DISTINCT COALESCE(jobs.actor, 'local-demo'))
+                    FROM jobs
+                    WHERE jobs.run_id = runs.id
+                  )
+                """
+            )
             cost_columns = db.execute("PRAGMA table_info(table_cost_estimates)").fetchall()
             if cost_columns and "estimate_id" not in {row[1] for row in cost_columns}:
                 db.execute("ALTER TABLE table_cost_estimates RENAME TO table_cost_estimates_legacy")
@@ -194,15 +227,15 @@ class DemoRepository:
         connection.execute("PRAGMA synchronous=NORMAL")
         return connection
 
-    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, recording_reservation_id: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
+    def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, owner_actor: str | None = None, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, recording_reservation_id: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
         created_at = _now()
         input_semantics = extraction.input_kind
         candidate_revision = part_analysis.candidate_revision if part_analysis is not None else table_analysis.ledger_revision if table_analysis is not None else extraction.drawing_id
         initial = Result(run_id=run_id, result_revision=1, state="needs_review", scenarios=scenarios, pieces=(), created_at=created_at, agent_selected_scenario_id=agent_selected_scenario_id, input_semantics=input_semantics, part_analysis=part_analysis, assembly_candidates=assembly_candidates, table_analysis=table_analysis, table_programs=table_programs, evaluated_table_program=evaluated_table_program)
         with self._connect() as db:
             db.execute(
-                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id,agent_selected_table_program_id,replay_source_recording_id) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id, agent_selected_table_program_id, replay_source_recording_id),
+                "INSERT INTO runs (id,mode,state,reason_code,candidate_revision,current_result_revision,extraction_json,scenarios_json,created_at,agent_selected_scenario_id,document_id,input_kind,agent_selected_assembly_candidate_id,agent_selected_table_program_id,replay_source_recording_id,owner_actor) VALUES (?, ?, 'needs_review', NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, mode, candidate_revision, extraction.model_dump_json(), json.dumps([item.model_dump(mode="json") for item in scenarios]), created_at, agent_selected_scenario_id, document_id, extraction.input_kind, agent_selected_assembly_candidate_id, agent_selected_table_program_id, replay_source_recording_id, owner_actor),
             )
             db.execute("INSERT INTO results VALUES (?, 1, ?)", (run_id, initial.model_dump_json()))
             sequence = 1
@@ -248,6 +281,38 @@ class DemoRepository:
                 )
         return self.get_run(run_id)
 
+    def reserve_idempotent_run(self, *, actor: str | None, idempotency_key: str, request_hash: str) -> str | None:
+        """Reserve before execution across processes; an empty run ID denotes in-flight work.
+
+        Unknown outcomes remain reserved after a crash, so retry cannot duplicate work.
+        Production uses durable jobs instead of this synchronous endpoint.
+        """
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT request_hash,run_id FROM run_idempotency WHERE actor=? AND idempotency_key=?",
+                (actor or "", idempotency_key),
+            ).fetchone()
+            if row is not None:
+                if row["request_hash"] != request_hash:
+                    raise ValueError("idempotency_key_conflict")
+                if not row["run_id"]:
+                    raise ValueError("idempotency_key_in_progress")
+                return str(row["run_id"])
+            db.execute(
+                "INSERT INTO run_idempotency VALUES (?, ?, ?, '')",
+                (actor or "", idempotency_key, request_hash),
+            )
+        return None
+
+    def release_idempotent_run(self, *, actor: str | None, idempotency_key: str, request_hash: str) -> None:
+        """Release only a rejected request with no successful execution."""
+        with self._connect() as db:
+            db.execute(
+                "DELETE FROM run_idempotency WHERE actor=? AND idempotency_key=? AND request_hash=? AND run_id=''",
+                (actor or "", idempotency_key, request_hash),
+            )
+
     def get_idempotent_run(
         self,
         *,
@@ -281,12 +346,17 @@ class DemoRepository:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             existing = db.execute(
-                "SELECT request_hash FROM run_idempotency WHERE actor=? AND idempotency_key=?",
+                "SELECT request_hash,run_id FROM run_idempotency WHERE actor=? AND idempotency_key=?",
                 (actor_key, idempotency_key),
             ).fetchone()
             if existing is not None:
                 if existing["request_hash"] != request_hash:
                     raise ValueError("idempotency_key_conflict")
+                if not existing["run_id"]:
+                    db.execute(
+                        "UPDATE run_idempotency SET run_id=? WHERE actor=? AND idempotency_key=?",
+                        (run_id, actor_key, idempotency_key),
+                    )
                 return
             db.execute(
                 "INSERT INTO run_idempotency (actor, idempotency_key, request_hash, run_id) VALUES (?, ?, ?, ?)",
@@ -424,7 +494,8 @@ class DemoRepository:
                     client_daily_limit=public_client_daily_limit,
                 )
             db.execute(
-                "INSERT INTO jobs VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
+                "INSERT INTO jobs (id,actor,request_json,request_hash,state,run_id,error_json,created_at,updated_at) "
+                "VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
                 (job_id, actor, request_json, request_hash, timestamp, timestamp),
             )
             if idempotency_key is not None:
@@ -518,10 +589,17 @@ class DemoRepository:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
-                "SELECT state,run_id FROM jobs WHERE id=?", (job_id,)
+                "SELECT state,run_id,actor FROM jobs WHERE id=?", (job_id,)
             ).fetchone()
             if row is None:
                 raise KeyError(job_id)
+            run = db.execute(
+                "SELECT owner_actor FROM runs WHERE id=?", (run_id,)
+            ).fetchone()
+            if run is None:
+                raise KeyError(run_id)
+            if (row["actor"] or "local-demo") != (run["owner_actor"] or "local-demo"):
+                raise ValueError("job_run_owner_mismatch")
             if row["state"] != "running":
                 raise ValueError("job_not_running")
             if row["run_id"] == run_id:
@@ -601,7 +679,8 @@ class DemoRepository:
                     client_daily_limit=public_client_daily_limit,
                 )
             db.execute(
-                "INSERT INTO jobs VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
+                "INSERT INTO jobs (id,actor,request_json,request_hash,state,run_id,error_json,created_at,updated_at) "
+                "VALUES (?, ?, ?, ?, 'queued', NULL, NULL, ?, ?)",
                 (
                     retry_job_id,
                     actor,
@@ -664,13 +743,169 @@ class DemoRepository:
             if changed.rowcount != 1:
                 raise ValueError("job_not_queued")
 
-    def finish_job(
-        self, job_id: str, *, run_id: str | None = None, error: dict | None = None
-    ) -> None:
-        state = "failed" if error is not None else "succeeded"
-        if state == "succeeded" and run_id is None:
-            raise ValueError("successful_job_requires_run_id")
+    def request_job_cancellation(self, job_id: str, *, actor: str | None) -> dict:
+        """Cancel queued work or persist a cooperative request for running work."""
+        actor_key = actor or "local-demo"
+        timestamp = _now()
+        cancelled_error = json.dumps({
+            "code": "job_cancelled",
+            "message": "El trabajo fue cancelado antes de comenzar.",
+            "retryable": False,
+        })
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT state,actor FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if row is None or (row["actor"] or "local-demo") != actor_key:
+                raise KeyError(job_id)
+            if row["state"] == "queued":
+                db.execute(
+                    "UPDATE jobs SET state='cancelled',error_json=?,"
+                    "cancel_requested_at=?,updated_at=? WHERE id=? AND state='queued'",
+                    (cancelled_error, timestamp, timestamp, job_id),
+                )
+            elif row["state"] == "running":
+                db.execute(
+                    "UPDATE jobs SET cancel_requested_at=COALESCE(cancel_requested_at,?),"
+                    "updated_at=? WHERE id=? AND state='running'",
+                    (timestamp, timestamp, job_id),
+                )
+            elif row["state"] != "cancelled":
+                raise ValueError(f"job_not_cancellable:{row['state']}")
+            return self._get_job_in_transaction(db, job_id)
+
+    def is_job_cancel_requested(self, job_id: str) -> bool:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT cancel_requested_at FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(job_id)
+        return row["cancel_requested_at"] is not None
+
+    def get_job_queue_position(self, job_id: str, *, actor: str | None) -> int | None:
+        """Return global FIFO position while revealing no foreign job identity."""
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT state,actor,rowid AS admission_order FROM jobs WHERE id=?",
+                (job_id,),
+            ).fetchone()
+            if row is None or (row["actor"] or "local-demo") != actor_key:
+                raise KeyError(job_id)
+            if row["state"] != "queued":
+                return None
+            return int(db.execute(
+                "SELECT COUNT(*) FROM jobs WHERE state='queued' AND rowid <= ?",
+                (row["admission_order"],),
+            ).fetchone()[0])
+
+    def list_recent_jobs_for_actor(
+        self,
+        *,
+        actor: str | None,
+        limit: int,
+        before_sequence: int | None = None,
+    ) -> tuple[list[dict], int | None]:
+        if not 1 <= limit <= 100:
+            raise ValueError("invalid_recent_limit")
+        if before_sequence is not None and before_sequence <= 0:
+            raise ValueError("invalid_recent_cursor")
+        actor_key = actor or "local-demo"
+        parameters: list[object] = [actor_key]
+        where = (
+            "COALESCE(actor,'local-demo')=? "
+            "AND json_extract(request_json,'$.document_id') IS NOT NULL"
+        )
+        if before_sequence is not None:
+            where += " AND rowid < ?"
+            parameters.append(before_sequence)
+        parameters.append(limit + 1)
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT rowid AS admission_sequence,id,state,run_id,error_json,"
+                "request_json,created_at,updated_at,cancel_requested_at "
+                f"FROM jobs WHERE {where} ORDER BY rowid DESC LIMIT ?",
+                tuple(parameters),
+            ).fetchall()
+            selected = rows[:limit]
+            items: list[dict] = []
+            for row in selected:
+                try:
+                    request = json.loads(row["request_json"])
+                except json.JSONDecodeError:
+                    request = {}
+                queue_position = None
+                if row["state"] == "queued":
+                    queue_position = int(db.execute(
+                        "SELECT COUNT(*) FROM jobs WHERE state='queued' "
+                        "AND rowid <= ?",
+                        (row["admission_sequence"],),
+                    ).fetchone()[0])
+                items.append({
+                    "id": row["id"],
+                    "run_id": row["run_id"],
+                    "state": row["state"],
+                    "document_id": request.get("document_id"),
+                    "mode": request.get("mode"),
+                    "input_kind": request.get("input_kind"),
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "queue_position": queue_position,
+                    "cancel_requested": row["cancel_requested_at"] is not None,
+                })
+        next_cursor = selected[-1]["admission_sequence"] if len(rows) > limit else None
+        return items, next_cursor
+
+    def get_latest_job_summary_for_document(
+        self, document_id: str, *, actor: str | None
+    ) -> dict | None:
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT id,run_id,state,updated_at FROM jobs "
+                "WHERE COALESCE(actor,'local-demo')=? "
+                "AND json_extract(request_json,'$.document_id')=? "
+                "ORDER BY rowid DESC LIMIT 1",
+                (actor_key, document_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "job_id": row["id"], "run_id": row["run_id"],
+            "state": row["state"], "updated_at": row["updated_at"],
+        }
+
+    def finish_job(
+        self,
+        job_id: str,
+        *,
+        run_id: str | None = None,
+        error: dict | None = None,
+        cancelled: bool = False,
+    ) -> None:
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT state,cancel_requested_at FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if row is None or row["state"] != "running":
+                raise ValueError("job_not_running")
+            cancellation_wins = row["cancel_requested_at"] is not None
+            state = (
+                "cancelled"
+                if cancelled or cancellation_wins
+                else ("failed" if error is not None else "succeeded")
+            )
+            if state == "succeeded" and run_id is None:
+                raise ValueError("successful_job_requires_run_id")
+            if state == "cancelled" and (error is None or error.get("code") != "job_cancelled"):
+                error = {
+                    "code": "job_cancelled",
+                    "message": "El trabajo se detuvo en el siguiente checkpoint seguro.",
+                    "retryable": False,
+                }
             changed = db.execute(
                 "UPDATE jobs SET state=?,run_id=COALESCE(?,run_id),error_json=?,updated_at=? WHERE id=? AND state='running'",
                 (state, run_id, json.dumps(error) if error else None, _now(), job_id),
@@ -700,6 +935,21 @@ class DemoRepository:
         if row["replay_source_recording_id"] is not None:
             replay_source = self.get_agent_recording(row["replay_source_recording_id"]).replay_source()
         return RunSnapshot(id=row["id"], mode=row["mode"], state=row["state"], reason_code=row["reason_code"], candidate_revision=row["candidate_revision"], result_revision=row["current_result_revision"], created_at=row["created_at"], agent_selected_scenario_id=row["agent_selected_scenario_id"], agent_selected_assembly_candidate_id=row["agent_selected_assembly_candidate_id"], agent_selected_table_program_id=row["agent_selected_table_program_id"], document_id=row["document_id"], input_kind=row["input_kind"], replay_source=replay_source)
+
+    def assert_run_owner(self, run_id: str, *, actor: str | None) -> None:
+        """Fail as not-found unless the caller owns the run.
+
+        ``local-demo`` is the compatibility owner for unauthenticated local/public
+        runs. Authenticated legacy rows without an unambiguous historical actor
+        remain inaccessible rather than being guessed during migration.
+        """
+        actor_key = actor or "local-demo"
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT owner_actor FROM runs WHERE id=?", (run_id,)
+            ).fetchone()
+        if row is None or (row["owner_actor"] or "local-demo") != actor_key:
+            raise KeyError(run_id)
 
     def get_extraction(self, run_id: str) -> DrawingExtraction:
         with self._connect() as db:
@@ -731,6 +981,17 @@ class DemoRepository:
         idempotency_key: str | None = None,
         actor: str | None = None,
     ) -> Result:
+        result, _ = self.review_with_status(run_id, request, idempotency_key=idempotency_key, actor=actor)
+        return result
+
+    def review_with_status(
+        self,
+        run_id: str,
+        request: ReviewRequest,
+        *,
+        idempotency_key: str | None = None,
+        actor: str | None = None,
+    ) -> tuple[Result, bool]:
         if actor is not None:
             request = request.model_copy(update={"reviewer_name": actor})
         request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
@@ -750,7 +1011,7 @@ class DemoRepository:
                     ).fetchone()
                     if row is None:
                         raise RuntimeError("idempotency_result_missing")
-                    return Result.model_validate_json(row["payload"])
+                    return Result.model_validate_json(row["payload"]), False
             run_row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
             if run_row is None:
                 raise KeyError(run_id)
@@ -794,7 +1055,7 @@ class DemoRepository:
                     "INSERT INTO review_idempotency VALUES (?, ?, ?, ?)",
                     (run_id, idempotency_key, request_hash, result.result_revision),
                 )
-            return result
+            return result, True
 
     def _review_legacy(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
@@ -1090,14 +1351,19 @@ class DemoRepository:
             (run_id, sequence, event_type, json.dumps(stamped)),
         )
 
-    def save_library_item(self, item: LibraryItem) -> None:
+    def save_library_item(self, item: LibraryItem, *, expected: LibraryItem | None = None) -> bool:
         self.get_result(item.run_id, item.result_revision)
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if expected is not None:
+                row = db.execute("SELECT payload FROM library_items WHERE run_id=?", (item.run_id,)).fetchone()
+                if row is None or LibraryItem.model_validate_json(row["payload"]) != expected:
+                    return False
             db.execute("INSERT OR REPLACE INTO library_items (run_id,payload) VALUES (?, ?)", (item.run_id, item.model_dump_json()))
             self._append_event_in_transaction(
                 db, item.run_id, "library_item_saved", {"result_revision": item.result_revision}
             )
+        return True
 
     def get_library_items(self) -> tuple[LibraryItem, ...]:
         with self._connect() as db:
@@ -1111,12 +1377,17 @@ class DemoRepository:
             raise KeyError(run_id)
         return LibraryItem.model_validate_json(row[0])
 
-    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...]) -> None:
+    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...], *, space_id: str | None = None, identity_json: str | None = None) -> None:
         from backend.app.semantic.embeddings import validate_embedding
 
         validated = validate_embedding(list(vector), dimensions)
         with self._connect() as db:
-            db.execute("INSERT OR REPLACE INTO embedding_cache VALUES (?, ?, ?, ?, ?, ?)", (cache_key, model, dimensions, descriptor_version, json.dumps(validated), _now()))
+            db.execute(
+                "INSERT OR REPLACE INTO embedding_cache "
+                "(cache_key,model,dimensions,descriptor_version,vector_json,created_at,space_id,identity_json) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (cache_key, model, dimensions, descriptor_version, json.dumps(validated), _now(), space_id, identity_json),
+            )
 
     def invalidate_embeddings(self, model: str, dimensions: int) -> int:
         """Elimina atómicamente la caché de un espacio semántico de biblioteca."""
@@ -1127,14 +1398,14 @@ class DemoRepository:
             )
         return cursor.rowcount
 
-    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]:
+    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, *, space_id: str | None = None) -> tuple[float, ...]:
         from backend.app.semantic.embeddings import validate_embedding
 
         with self._connect() as db:
-            row = db.execute("SELECT model,dimensions,descriptor_version,vector_json FROM embedding_cache WHERE cache_key=?", (cache_key,)).fetchone()
+            row = db.execute("SELECT model,dimensions,descriptor_version,vector_json,space_id FROM embedding_cache WHERE cache_key=?", (cache_key,)).fetchone()
         if row is None:
             raise KeyError(cache_key)
-        if row["model"] != model or row["dimensions"] != dimensions or row["descriptor_version"] != descriptor_version:
+        if row["model"] != model or row["dimensions"] != dimensions or row["descriptor_version"] != descriptor_version or (space_id is not None and row["space_id"] != space_id):
             raise ValueError("embedding_space_incompatible")
         return validate_embedding(json.loads(row["vector_json"]), dimensions)
 

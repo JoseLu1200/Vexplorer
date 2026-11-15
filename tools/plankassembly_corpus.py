@@ -18,6 +18,7 @@ No descarga ni escribe datos en Git: las salidas deben ir fuera del repositorio
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import hmac
 import json
@@ -209,6 +210,66 @@ def _cercanos(a: ModeloAnalizado, b: ModeloAnalizado, tolerancia_mm: float) -> b
     return _dimensiones_cercanas(a, b, tolerancia_mm) or _escala_cercana(a, b, tolerancia_mm)
 
 
+class _IndiceCandidatos:
+    """Índice incremental sin falsos negativos para las dos relaciones de cercanía.
+
+    Una dimensión ancla basta para acotar candidatos: si todas las dimensiones están
+    cerca, también lo está la primera. Para escala usamos esa dimensión normalizada
+    por la extensión mayor. La comparación completa sigue en ``_cercanos``.
+    """
+
+    def __init__(self, tolerancia_mm: float) -> None:
+        self.tolerancia_mm = tolerancia_mm
+        self._dimensiones: dict[int, list[tuple[float, int, object]]] = {}
+        self._escalas: dict[int, list[tuple[float, int, object]]] = {}
+        self._secuencia = 0
+
+    @staticmethod
+    def _ancla(modelo: ModeloAnalizado) -> float:
+        return modelo.dims[0][0]
+
+    @staticmethod
+    def _rango(
+        indice: dict[int, list[tuple[float, int, object]]],
+        cantidad: int,
+        centro: float,
+        radio: float,
+    ) -> list[tuple[int, object]]:
+        filas = indice.get(cantidad, [])
+        inferior = math.nextafter(centro - radio, -math.inf)
+        superior = math.nextafter(centro + radio, math.inf)
+        inicio = bisect.bisect_left(filas, (inferior, -1))
+        fin = bisect.bisect_right(filas, (superior, math.inf))
+        return [(fila[1], fila[2]) for fila in filas[inicio:fin]]
+
+    def buscar(self, modelo: ModeloAnalizado) -> list[object]:
+        cantidad = len(modelo.dims)
+        ancla = self._ancla(modelo)
+        encontrados = self._rango(
+            self._dimensiones, cantidad, ancla, self.tolerancia_mm
+        )
+        if modelo.mayor > 0:
+            encontrados.extend(self._rango(
+                self._escalas,
+                cantidad,
+                ancla / modelo.mayor,
+                self.tolerancia_mm / modelo.mayor,
+            ))
+        return list(dict(encontrados).values())
+
+    def agregar(self, modelo: ModeloAnalizado, valor: object) -> None:
+        cantidad = len(modelo.dims)
+        ancla = self._ancla(modelo)
+        secuencia = self._secuencia
+        self._secuencia += 1
+        bisect.insort(self._dimensiones.setdefault(cantidad, []), (ancla, secuencia, valor))
+        if modelo.mayor > 0:
+            bisect.insort(
+                self._escalas.setdefault(cantidad, []),
+                (ancla / modelo.mayor, secuencia, valor),
+            )
+
+
 def _agrupar_cliques(modelos: Sequence[ModeloAnalizado], tolerancia_mm: float) -> list[list[ModeloAnalizado]]:
     """Agrupación voraz determinista (orden de entrada): cada grupo es un clique de modelos cercanos.
 
@@ -218,9 +279,9 @@ def _agrupar_cliques(modelos: Sequence[ModeloAnalizado], tolerancia_mm: float) -
     grupos: list[list[ModeloAnalizado]] = []
     firmas: list[list[ModeloAnalizado]] = []
     vistas: list[set[tuple[object, float]]] = []
-    por_clave: dict[Hashable, dict[int, None]] = {}
+    indice = _IndiceCandidatos(tolerancia_mm)
     for modelo in modelos:
-        candidatos = sorted({g for clave in modelo.claves for g in por_clave.get(clave, ())})
+        candidatos = sorted(set(indice.buscar(modelo)))
         destino = next((g for g in candidatos if all(_cercanos(x, modelo, tolerancia_mm) for x in firmas[g])), None)
         if destino is None:
             destino = len(grupos)
@@ -232,8 +293,7 @@ def _agrupar_cliques(modelos: Sequence[ModeloAnalizado], tolerancia_mm: float) -
         if firma not in vistas[destino]:
             vistas[destino].add(firma)
             firmas[destino].append(modelo)
-        for clave in modelo.claves:
-            por_clave.setdefault(clave, {})[destino] = None
+        indice.agregar(modelo, destino)
     return grupos
 
 
@@ -368,12 +428,12 @@ def auditar_universo(
     tamanos_grupo: dict[str, int] = {}
     clusters_multiples: dict[str, list[str]] = {}
     total_grupos = grupos_con_duplicados = cruzados = mayor_grupo = 0
-    indice_prioritario: dict[Hashable, list[ModeloAnalizado]] = {}
+    indice_prioritario = _IndiceCandidatos(tolerancia_mm)
     for partition in sorted(PARTICIONES, key=prioridad.__getitem__):
         modelos = [m for m in analizados if m.partition == partition]
         clusters = _agrupar_cliques(modelos, tolerancia_mm)
         finales: list[ModeloAnalizado] = []
-        indice_local: dict[Hashable, list[ModeloAnalizado]] = {}
+        indice_local = _IndiceCandidatos(tolerancia_mm)
         for miembros in clusters:
             representante = miembros[0]
             group_id = "grp-" + _digest(("group|" + representante.filename).encode())[:12]
@@ -387,7 +447,7 @@ def auditar_universo(
             grupo_de[representante.filename] = group_id
             vecino = any(
                 _cercanos(otro, representante, tolerancia_mm)
-                for clave in representante.claves for otro in indice_prioritario.get(clave, ())
+                for otro in indice_prioritario.buscar(representante)
             )
             if vecino:
                 cruce[partition].append(representante.filename)
@@ -395,17 +455,15 @@ def auditar_universo(
                 continue
             vecino_mismo = any(
                 _cercanos(otro, representante, tolerancia_mm)
-                for clave in representante.claves for otro in indice_local.get(clave, ())
+                for otro in indice_local.buscar(representante)
             )
             if vecino_mismo:
                 dentro[partition].append(representante.filename)
                 continue
             finales.append(representante)
-            for clave in representante.claves:
-                indice_local.setdefault(clave, []).append(representante)
+            indice_local.agregar(representante, representante)
         for modelo in finales:
-            for clave in modelo.claves:
-                indice_prioritario.setdefault(clave, []).append(modelo)
+            indice_prioritario.agregar(modelo, modelo)
         supervivientes.extend(finales)
     supervivientes.sort(key=lambda m: (prioridad[m.partition], m.filename))
     for lista in (*cruce.values(), *dentro.values()):
@@ -444,9 +502,9 @@ def auditar_universo(
             "max_group_size": max_group_size,
             "tolerance_mm": tolerancia_mm,
             "scale_step": paso_escala,
-            "keys": ["per_plank_dims_within_tolerance_dual_grid", "isotropic_scale_dual_grid"],
+            "candidate_index": ["anchor_dimension_inclusive_range", "normalized_anchor_inclusive_range"],
             "grouping": "within each partition, greedy clique clustering in filename order: a model joins a group only if it is close (per-plank dimension difference <= tolerance_mm, or a single isotropic factor with residual <= tolerance_mm) to every member, so the pairwise diameter is <= tolerance_mm. Valid/test representatives close to a surviving representative of a higher-priority partition are dropped (train > valid > test).",
-            "limitation": "Grid keys only propose candidates: pairs differing by >= step/2 per dimension in some axes can be missed, and anisotropic or parametric variants are not detected.",
+            "limitation": "The range index proposes conservative candidates and _cercanos verifies every pair; anisotropic or broader parametric variants are not detected.",
         },
         "warnings": avisos,
         "duplicate_clusters": clusters_multiples,

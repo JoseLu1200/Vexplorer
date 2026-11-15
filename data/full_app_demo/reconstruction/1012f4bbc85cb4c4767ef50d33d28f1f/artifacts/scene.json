@@ -1,0 +1,233 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "La única cota numérica explícita del original es la anchura de 900 mm.",
+    "Se mantiene la hipótesis de igual escala en FRONT y SIDE: altura aproximada de 600 mm y profundidad aproximada de 900 mm, ambas pendientes de confirmación.",
+    "Ejes: x anchura, y profundidad hacia atrás, z altura; origen en esquina frontal izquierda al nivel del suelo.",
+    "La revisión se basa en el plano original y los diagnósticos. El render anterior se usa solo para evaluar aquella propuesta, no como evidencia de dimensiones o piezas originales.",
+    "La comparación no justifica cambiar la distribución general: se conserva el frente izquierdo cerrado y el vano derecho abierto.",
+    "Los espesores, refuerzo, trasera, división y herrajes son decisiones de diseño hipotéticas, no mediciones del plano."
+  ],
+  "objects": [
+    {
+      "piece_id": "puerta_izquierda",
+      "label": "Puerta izquierda con holguras de funcionamiento propuestas",
+      "position_mm": [
+        2.0,
+        3.0,
+        -16.0
+      ],
+      "dimensions_mm": [
+        546.0,
+        594.0,
+        16.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "montante_frontal_derecho",
+      "label": "Listón frontal del costado derecho",
+      "position_mm": [
+        882.0,
+        0.0,
+        -18.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_derecho_delantero",
+      "label": "Panel delantero del costado derecho",
+      "position_mm": [
+        882.0,
+        0.0,
+        -350.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        332.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_derecho_trasero",
+      "label": "Panel trasero del costado derecho",
+      "position_mm": [
+        882.0,
+        0.0,
+        -900.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        550.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "costado_izquierdo",
+      "label": "Costado izquierdo portante",
+      "position_mm": [
+        0.0,
+        0.0,
+        -900.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        882.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "base",
+      "label": "Base elevada de ambos compartimentos",
+      "position_mm": [
+        18.0,
+        18.0,
+        -900.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        882.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "tapa",
+      "label": "Tapa rebajada entre costados",
+      "position_mm": [
+        18.0,
+        565.0,
+        -900.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        882.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "division",
+      "label": "División interior entre puerta y nicho",
+      "position_mm": [
+        550.0,
+        36.0,
+        -882.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        529.0,
+        864.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "trasera",
+      "label": "Trasera de cierre y arriostramiento",
+      "position_mm": [
+        18.0,
+        36.0,
+        -900.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        529.0,
+        18.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "refuerzo_junta_derecha",
+      "label": "Listón interior para unión de los tramos del costado",
+      "position_mm": [
+        864.0,
+        36.0,
+        -386.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        529.0,
+        72.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "herraje_puerta_inferior",
+      "label": "Envolvente cuboide idealizada del herraje inferior",
+      "position_mm": [
+        2.0,
+        100.0,
+        -18.0
+      ],
+      "dimensions_mm": [
+        16.0,
+        40.0,
+        2.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "herraje_puerta_superior",
+      "label": "Envolvente cuboide idealizada del herraje superior",
+      "position_mm": [
+        2.0,
+        460.0,
+        -18.0
+      ],
+      "dimensions_mm": [
+        16.0,
+        40.0,
+        2.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

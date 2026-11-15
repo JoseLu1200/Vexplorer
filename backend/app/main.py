@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import time
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 from dataclasses import asdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -65,7 +66,8 @@ from backend.app.servicios.reconstruction import reconstruct_parts_scene, recons
 from backend.app.servicios.table_reconstruction import derive_table_drawing_plan, reconstruct_table_scene
 from backend.app.precedentes.mantenimiento import NOMBRE_BD_ESPACIO, ColaMantenimiento, tras_guardar_biblioteca
 from backend.app.semantic.descriptor import build_descriptor, descriptor_fingerprint, semantic_text
-from backend.app.semantic.embeddings import EmbeddingProviderError, OpenAIEmbeddingProvider, embedding_cache_key
+from backend.app.semantic.embeddings import EmbeddingGemma2Provider, EmbeddingProviderError, EmbeddingSpaceIdentity, embedding_cache_key
+from backend.app.semantic_explorer.router import explorer_capability
 from backend.app.similarity.service import canonical_design_key, deduplicate_designs, geometric_groups, geometric_match, rank_semantic_candidates, semantic_groups
 from backend.app.similarity.publication import PublicLibraryEligibilityError, ensure_public_library_eligible
 from backend.app.similarity.thresholds import evaluate_similarity_abstention, resolve_group_threshold, resolve_near_duplicate_threshold, resolve_similarity_threshold
@@ -102,6 +104,8 @@ class BoundedJsonBodyMiddleware:
         consumed = 0
         while True:
             message = await receive()
+            if message.get("type") == "http.disconnect":
+                return
             if message.get("type") != "http.request":
                 continue
             chunk = message.get("body", b"")
@@ -128,7 +132,7 @@ class BoundedJsonBodyMiddleware:
         async def replay_receive():
             nonlocal delivered
             if delivered:
-                return {"type": "http.request", "body": b"", "more_body": False}
+                return await receive()
             delivered = True
             return {"type": "http.request", "body": b"".join(chunks), "more_body": False}
 
@@ -186,7 +190,7 @@ class LibraryPublicationRequest(RequestModel):
 class LibrarySaveRequest(RequestModel):
     result_revision: int = Field(gt=0)
     label: str = Field(min_length=1, max_length=120)
-    embedding_mode: Literal["offline", "openai"]
+    embedding_mode: Literal["offline", "embeddinggemma2"]
     publication: LibraryPublicationRequest | None = None
 
 
@@ -331,6 +335,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         allowed_origins = frozenset(origins)
     try:
         job_max_pending = int(os.getenv("VEXPLORER_JOB_MAX_PENDING", "8"))
+        job_max_workers = int(os.getenv("VEXPLORER_JOB_MAX_WORKERS", "2"))
         public_live_daily_limit = int(os.getenv("VEXPLORER_PUBLIC_LIVE_DAILY_LIMIT", "10"))
         public_live_client_daily_limit = int(os.getenv("VEXPLORER_PUBLIC_LIVE_CLIENT_DAILY_LIMIT", "3"))
         max_storage_bytes = int(os.getenv("VEXPLORER_MAX_STORAGE_BYTES", str(1024 * 1024 * 1024)))
@@ -350,6 +355,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         raise ValueError("invalid_numeric_production_limit") from exc
     if max_storage_bytes < MAX_UPLOAD_BYTES:
         raise ValueError("max_storage_below_upload_limit")
+    if not 1 <= job_max_workers <= min(4, job_max_pending):
+        raise ValueError("invalid_job_worker_policy")
     if recording_max_count <= 0 or recording_max_bytes < MAX_RECORDED_TRANSCRIPT_BYTES:
         raise ValueError("invalid_recording_storage_policy")
     if not 1 <= public_live_client_daily_limit <= public_live_daily_limit <= 10000:
@@ -367,7 +374,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     public_admission = PublicAdmissionStore(root / "vexplorer.sqlite3") if public_production else None
     repository.interrupt_unfinished_jobs()
     repository.release_stale_agent_recording_reservations()
-    job_executor = BoundedJobExecutor(job_max_pending)
+    job_executor = BoundedJobExecutor(job_max_pending, max_workers=job_max_workers)
     if environment == "production" and not os.getenv("VEXPLORER_COST_CATALOG"):
         raise ValueError("production_cost_catalog_required")
     table_cost_catalog_value = get_table_cost_catalog()
@@ -376,7 +383,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     embedding_settings = EmbeddingSettings.from_env()
     semantic_provider = embedding_provider
     if semantic_provider is None and embedding_settings.available:
-        semantic_provider = OpenAIEmbeddingProvider(api_key=embedding_settings.api_key or "", model=embedding_settings.model, dimensions=embedding_settings.dimensions, base_url=embedding_settings.base_url)
+        semantic_provider = EmbeddingGemma2Provider(
+            snapshot_path=embedding_settings.snapshot_path,
+            identity=embedding_settings.identity,
+            device=embedding_settings.device,
+        )
+    semantic_identity = (
+        getattr(semantic_provider, "identity", None)
+        if semantic_provider is not None else None
+    )
+    if semantic_provider is not None and semantic_identity is None:
+        semantic_identity = EmbeddingSpaceIdentity(
+            provider="openai", model=semantic_provider.model,
+            model_revision="injected-test-provider", modality="text",
+            dimensions=semantic_provider.dimensions, normalization="l2",
+            preprocessing_version="injected-test-provider", prompt_name=None,
+        )
     history_db = Path(os.getenv("VEXPLORER_HISTORY_DB", str(root / "history.sqlite3")))
     historical_store = HistoricalStore(history_db, embedding_provider=semantic_provider)
     general_furniture_db = root / "general_furniture.sqlite3"
@@ -433,8 +455,6 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     app.state.general_furniture_db = general_furniture_db
     app.state.general_review_model = review_model
     authentication_failures: dict[str, list[float]] = {}
-    app.add_middleware(BoundedJsonBodyMiddleware, root_path=root_path)
-
     def document_manifest_path(document_id: str) -> Path:
         return documents_dir / f"{document_id}.manifest.json"
 
@@ -467,6 +487,26 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             },
             "audit": {"uploaded_by": None},
         }
+
+    def manifest_owner_key(manifest: dict) -> str:
+        audit = manifest.get("audit")
+        source = manifest.get("source")
+        if not isinstance(audit, dict) or not isinstance(source, dict):
+            raise ValueError("invalid_document_manifest")
+        uploaded_by = audit.get("uploaded_by")
+        if uploaded_by is not None and not isinstance(uploaded_by, str):
+            raise ValueError("invalid_document_manifest")
+        return uploaded_by or "local-demo"
+
+    def assert_document_owner(document_id: str, *, actor: str | None) -> dict:
+        manifest = load_document_manifest(document_id)
+        try:
+            owner = manifest_owner_key(manifest) if manifest is not None else None
+        except ValueError:
+            owner = None
+        if manifest is None or owner != (actor or "local-demo"):
+            raise KeyError(document_id)
+        return manifest
 
     def normalized_document_path(document_id: str) -> Path | None:
         manifest = load_document_manifest(document_id)
@@ -529,18 +569,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             visual_pages=general_visual_pages(run.document_id, extraction),
         )
 
-    def execute_general_live(context: GeneralFurnitureContext):
+    def execute_general_live(context: GeneralFurnitureContext, cancelled=None):
         if general_agent_provider is None:
             raise RuntimeError("general_live_unavailable")
         return run_general_furniture_agent(
             context.extraction, ledger_revision=context.ledger_revision,
             provider=general_agent_provider, visual_pages=context.visual_pages,
             limits=AgentLimits(timeout_s=min(300.0, general_job_timeout_s * 0.6)),
+            cancelled=cancelled,
         )
 
     def execute_general_autonomous(
         context: GeneralFurnitureContext, proposal_outcome, *, timeout_s: float,
         proposal_revision: int = 1, previous_review=None, checkpoint_sink=None,
+        cancelled=None,
     ):
         timeout_s = min(timeout_s, 300.0)
         if general_review_provider is None:
@@ -562,6 +604,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             proposal_revision=proposal_revision,
             previous_review=previous_review,
             checkpoint_sink=checkpoint_sink,
+            cancelled=cancelled,
         )
 
     def execute_general_assembly(
@@ -870,6 +913,57 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 return response
             authentication_failures.pop(client_key, None)
             request.state.actor = actor
+            path = min(candidatas, key=len)
+            document_match = re.fullmatch(
+                r"/api/v1/documents/(doc-[0-9a-f]{32})(?:/.*)?", path
+            )
+            run_match = re.fullmatch(r"/api/v1/runs/([^/]+)(?:/.*)?", path)
+            reconstruction_match = re.fullmatch(
+                r"/api/v1/reconstruction/([0-9a-f]{32})(?:/.*)?", path
+            )
+            try:
+                if document_match is not None:
+                    assert_document_owner(document_match.group(1), actor=actor)
+                if run_match is not None:
+                    repository.assert_run_owner(run_match.group(1), actor=actor)
+                if reconstruction_match is not None:
+                    status_path = (
+                        root
+                        / "reconstruction"
+                        / reconstruction_match.group(1)
+                        / "status.json"
+                    )
+                    status = json.loads(status_path.read_text(encoding="utf-8"))
+                    if not isinstance(status, dict):
+                        raise KeyError(reconstruction_match.group(1))
+                    source_run_id = status.get("run_id")
+                    if not isinstance(source_run_id, str):
+                        raise KeyError(reconstruction_match.group(1))
+                    repository.assert_run_owner(source_run_id, actor=actor)
+                content_type = request.headers.get("content-type", "")
+                if (
+                    request.method in {"POST", "PUT", "PATCH"}
+                    and content_type.split(";", 1)[0].strip().lower()
+                    == "application/json"
+                ):
+                    try:
+                        payload = await request.json()
+                    except (UnicodeError, json.JSONDecodeError):
+                        payload = None
+                    if isinstance(payload, dict):
+                        body_document_id = payload.get("document_id")
+                        body_run_id = payload.get("run_id")
+                        if isinstance(body_document_id, str):
+                            assert_document_owner(body_document_id, actor=actor)
+                        if isinstance(body_run_id, str):
+                            repository.assert_run_owner(body_run_id, actor=actor)
+            except (KeyError, OSError, UnicodeError, json.JSONDecodeError):
+                if document_match is not None or (
+                    "body_document_id" in locals()
+                    and isinstance(body_document_id, str)
+                ):
+                    return _error(404, "document_not_found", "Documento inexistente.")
+                return _error(404, "run_not_found", "Ejecución inexistente.")
         if environment == "production" and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("Origin")
             if origin is not None and origin.rstrip("/") not in allowed_origins:
@@ -906,6 +1000,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             response.headers["Cache-Control"] = "no-cache"
         return response
 
+    # Keep the byte bound outermost so authentication/body ownership checks never
+    # materialize an unbounded JSON request first.
+    app.add_middleware(BoundedJsonBodyMiddleware, root_path=root_path)
+
     @app.get("/health")
     @app.get("/api/v1/health")
     def health():
@@ -937,7 +1035,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         )
         indexed_library = repository.get_library_items()
         indexed_semantic_count = sum(item.embedding is not None for item in indexed_library)
-        semantic_capability = {"available": semantic_provider is not None, "provider_configured": semantic_provider is not None, "cached_search_available": indexed_semantic_count > 0, "indexed_record_count": indexed_semantic_count, "generation_requires_authentication": False, "provider": "openai", "model": getattr(semantic_provider, "model", embedding_settings.model), "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
+        semantic_capability = {"available": semantic_provider is not None, "provider_configured": semantic_provider is not None, "cached_search_available": indexed_semantic_count > 0, "indexed_record_count": indexed_semantic_count, "generation_requires_authentication": False, "provider": "embeddinggemma2", "model": getattr(semantic_provider, "model", embedding_settings.model_id), "model_revision": getattr(getattr(semantic_provider, "identity", None), "model_revision", embedding_settings.revision), "modality": "text", "dimensions": getattr(semantic_provider, "dimensions", embedding_settings.dimensions), "normalization": "l2", "preprocessing_version": embedding_settings.preprocessing_version, "automatic_thresholds": "model_space_calibration_required", "unavailable_reason": None if semantic_provider is not None else embedding_settings.unavailable_reason, "offline_mode": "geometric"}
         if public_production:
             semantic_capability = {**semantic_capability, "available": False, "generation_requires_authentication": True, "unavailable_reason": "public_semantic_indexing_requires_authentication"}
         capabilities = {
@@ -978,10 +1076,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 },
             },
             "history": {"available": not public_production and _module_available("backend.app.api.history")},
+            "recent": {"available": not public_production, "projects": not public_production, "executions": not public_production},
             "library": {"available": True, "read_available": True, "geometric_search_available": True, "offline_save_available": True, "semantic_cached_search_available": indexed_semantic_count > 0, "semantic_generation_available": semantic_provider is not None and not public_production},
+            "semantic_explorer": explorer_capability(app),
             "evaluation": {"available": False, "reason": "offline_private_reference"},
         }
-        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "library_requires_real_reviewed": public_production, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
+        return _ok({"environment": environment, "root_path": root_path, "authenticated": auth_enabled, "library_requires_real_reviewed": public_production, "run_submission": {"jobs": True, "legacy_sync": environment == "local", "poll_interval_ms": 500, "cancel": True, "queue_positions": True, "max_workers": job_max_workers}, "events": {"kind": "completed_history", "streaming": False}, "provider": "openai_responses", "model": settings.model, "live_available": effective_live_available, "unavailable_reason": unavailable_reason, "recorded_replay_available": replay_available, "recorded_replay_availability_endpoint": f"{root_path}/api/v1/replay-availability", "recordings": {"max_count": recording_max_count, "max_bytes": recording_max_bytes, "reservation_bytes": MAX_RECORDED_TRANSCRIPT_BYTES, "capacity_available": recording_capacity, "unavailable_reason": None if recording_capacity else "recording_storage_exhausted:maintenance_or_increase_quota_required"}, "modes": ["geometry_only"] + (["live"] if effective_live_available else []) + (["recorded_replay"] if replay_available else []), "modality": "structured_vector_evidence_with_opt_in_vision" if settings.vision_enabled else "structured_vector_evidence_without_vision", "vision": {"enabled": settings.vision_enabled, "default": False, "source": "ledger_rendered_png", "authority": "context_only_not_measurement_source", "limits": {"max_views": 3, "max_dimension_px": 1024, "max_png_bytes_per_view": 2_000_000}}, "limits": {"max_model_calls": 15, "max_tool_calls": 30, "timeout_s": 120, "max_output_tokens": settings.max_output_tokens}, "tools": [{"name": item["name"], "description": item["description"]} for item in all_tools], "semantic": semantic_capability, "capabilities": capabilities})
 
     @app.get("/api/v1/table-cost-catalog")
     def table_cost_catalog():
@@ -1128,32 +1228,43 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
 
         def process_assembly_retry() -> None:
             try:
-                repository.start_job(job_id)
+                try:
+                    repository.start_job(job_id)
+                except ValueError:
+                    if repository.is_job_cancel_requested(job_id):
+                        return
+                    raise
                 execute_general_assembly(
                     run_id,
                     body.base_proposal_revision,
                     body.base_review_revision,
-                    cancelled=lambda: general_furniture_repository.is_assembly_cancelled(
-                        job_id, run_id
+                    cancelled=lambda: (
+                        repository.is_job_cancel_requested(job_id)
+                        or general_furniture_repository.is_assembly_cancelled(job_id, run_id)
                     ),
                     cancellation_job_id=job_id,
                 )
                 repository.finish_job(job_id, run_id=run_id)
             except Exception as exc:
+                cancelled = (
+                    repository.is_job_cancel_requested(job_id)
+                    or isinstance(exc, AssemblyLiveError) and exc.code == "assembly_cancelled"
+                )
                 repository.finish_job(job_id, run_id=run_id, error={
-                    "code": exc.code if isinstance(exc, AssemblyLiveError) else "general_assembly_failed",
+                    "code": "job_cancelled" if cancelled else (exc.code if isinstance(exc, AssemblyLiveError) else "general_assembly_failed"),
                     "message": "El reintento de montaje no terminó con una escena validada.",
-                    "retryable": True,
+                    "retryable": not cancelled,
                     "run_id": run_id,
-                })
+                }, cancelled=cancelled)
 
+        process_assembly_retry.__vexplorer_job_id__ = job_id
         job_executor.submit_reserved(process_assembly_retry)
         return _ok(job, 202)
 
     @app.post("/api/v1/runs/{run_id}/general/assembly/retry/{job_id}/cancel")
-    def cancel_general_assembly_retry(run_id: str, job_id: str):
+    def cancel_general_assembly_retry(run_id: str, job_id: str, http_request: Request):
         try:
-            job = repository.get_job(job_id)
+            job = repository.get_job_for_actor(job_id, actor=http_request.state.actor)
             request_payload = json.loads(repository.get_job_request(job_id))
         except (KeyError, json.JSONDecodeError):
             return _error(404, "job_not_found", "Trabajo inexistente.")
@@ -1162,15 +1273,26 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             or request_payload.get("run_id") != run_id
         ):
             return _error(404, "general_assembly_job_not_found", "El trabajo no pertenece a este montaje.")
-        if job["state"] not in {"queued", "running"}:
+        if job["state"] not in {"queued", "running", "cancelled"}:
             return _error(409, "general_assembly_job_not_cancellable", "El trabajo ya terminó.")
-        general_furniture_repository.request_assembly_cancellation(
-            job_id, run_id, datetime.now(UTC).isoformat()
-        )
-        repository.append_event(run_id, "general_assembly_cancel_requested", {
-            "job_id": job_id,
-        })
-        return _ok({"job_id": job_id, "cancel_requested": True}, 202)
+        already_requested = repository.is_job_cancel_requested(job_id)
+        try:
+            updated = repository.request_job_cancellation(
+                job_id, actor=http_request.state.actor
+            )
+        except ValueError:
+            return _error(409, "general_assembly_job_not_cancellable", "El trabajo ya terminó.")
+        if job["state"] == "queued":
+            job_executor.cancel_queued(job_id)
+        if not already_requested:
+            general_furniture_repository.request_assembly_cancellation(
+                job_id, run_id, datetime.now(UTC).isoformat()
+            )
+            repository.append_event(run_id, "general_assembly_cancel_requested", {
+                "job_id": job_id,
+            })
+        status_code = 202 if updated["state"] == "running" else 200
+        return _ok(recoverable_job_view(updated, actor=http_request.state.actor), status_code)
 
     @app.post("/api/v1/documents")
     async def upload_document(http_request: Request, file: UploadFile = File(...)):
@@ -1503,10 +1625,14 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(422, code, "No se pudo generar la previsualización SVG.")
         return Response(svg, media_type="image/svg+xml", headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff"})
 
-    def _prepare_run(request: RunRequest):
+    def _prepare_run(request: RunRequest, *, actor: str | None = None):
         if request.mode == "live" and not live_available:
             raise RuntimeError("live_provider_unavailable")
-        manifest = load_document_manifest(request.document_id)
+        manifest = (
+            assert_document_owner(request.document_id, actor=actor)
+            if auth_enabled
+            else load_document_manifest(request.document_id)
+        )
         if manifest is None:
             raise FileNotFoundError(request.document_id)
         path = normalized_document_path(request.document_id)
@@ -1583,13 +1709,15 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint)
 
     @app.post("/api/v1/replay-availability")
-    def replay_availability(request: RunRequest):
+    def replay_availability(request: RunRequest, http_request: Request):
         if request.mode != "recorded_replay":
             return _error(422, "recorded_replay_mode_required", "La consulta requiere mode recorded_replay.")
         if request.input_kind == "general_furniture":
             return _ok({"available": False, "document_id": request.document_id, "input_kind": request.input_kind, "reason": "general_furniture_replay_unavailable"})
         try:
-            *_, fingerprint = _prepare_run(request)
+            *_, fingerprint = _prepare_run(
+                request, actor=http_request.state.actor
+            )
         except NormalizedDxfUnavailable:
             return _error(409, "normalized_dxf_unavailable", "El documento no tiene un DXF normalizado utilizable.")
         except FileNotFoundError:
@@ -1602,11 +1730,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
     def _execute_run(
         request: RunRequest, *, actor: str | None = None, job_id: str | None = None,
     ):
+        cancelled = (
+            (lambda: repository.is_job_cancel_requested(job_id))
+            if job_id is not None else None
+        )
         if request.mode == "live" and not live_available:
             return _error(503, "live_provider_unavailable", settings.unavailable_reason or "Proveedor no disponible.", True)
         try:
             (extraction, part_analysis, assembly_candidates, scenarios, table_analysis,
-             table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint) = _prepare_run(request)
+             table_programs, evaluated_table_program, comparison_candidates, limits, fingerprint) = _prepare_run(
+                request, actor=actor
+            )
         except NormalizedDxfUnavailable:
             return _error(409, "normalized_dxf_unavailable", "El documento no tiene un DXF normalizado utilizable.")
         except FileNotFoundError:
@@ -1657,19 +1791,20 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         extraction, table_analysis, provider, limits,
                         vision_enabled=settings.vision_enabled,
                         comparison_candidates=comparison_candidates,
+                        cancelled=cancelled,
                     )
                     table_programs = (outcome.program,)
                     evaluated_table_program = evaluate_table_program(table_analysis, outcome.program)
                     agent_selected_table_program_id = outcome.program.id
                 elif request.input_kind == "separated_part_views":
-                    outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, limits)
+                    outcome = run_parts_agent(extraction, part_analysis, assembly_candidates, provider, limits, cancelled=cancelled)
                     assembly_candidates = tuple(sorted(
                         assembly_candidates,
                         key=lambda item: item.id != outcome.selected_assembly_candidate_id,
                     ))
                     agent_selected_assembly_candidate_id = outcome.selected_assembly_candidate_id
                 else:
-                    outcome = run_agent(extraction, scenarios, provider, limits)
+                    outcome = run_agent(extraction, scenarios, provider, limits, cancelled=cancelled)
                     scenarios = tuple(sorted(scenarios, key=lambda item: item.id != outcome.selected_scenario_id))
                     agent_selected_scenario_id = outcome.selected_scenario_id
                 if request.mode == "live":
@@ -1717,7 +1852,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 visual_pages=general_visual_pages(request.document_id, extraction),
             )
             try:
-                general_outcome = execute_general_live(general_context)
+                general_outcome = execute_general_live(general_context, cancelled=cancelled)
             except GeneralLiveError as exc:
                 return JSONResponse({
                     "schema_version": "0.2.0",
@@ -1740,6 +1875,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 payload = json.loads(response.body)
                 payload["error"]["phase"] = "proposal"
                 return JSONResponse(payload, status_code=502)
+            if job_id is not None and repository.is_job_cancel_requested(job_id):
+                return _error(
+                    409,
+                    "job_cancelled",
+                    "El trabajo se detuvo después de la llamada en curso.",
+                )
         try:
             run = repository.create_run(
                 run_id,
@@ -1756,6 +1897,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 table_programs,
                 agent_selected_table_program_id,
                 evaluated_table_program,
+                owner_actor=actor,
                 recording_draft=recording_draft,
                 recording_fingerprint=fingerprint if recording_draft is not None else None,
                 recording_actor=actor or "local-demo",
@@ -1791,15 +1933,31 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 repository.append_event(run_id, "general_auto_review_failed", error)
                 return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=504)
             try:
+                def persist_review_checkpoint(checkpoint) -> None:
+                    persist_general_auto_checkpoint(run_id, checkpoint)
+                    if job_id is not None and repository.is_job_cancel_requested(job_id):
+                        raise RuntimeError("job_cancelled")
+
                 general_auto_outcome = execute_general_autonomous(
                     general_context, general_outcome, timeout_s=remaining,
-                    checkpoint_sink=lambda checkpoint: persist_general_auto_checkpoint(run_id, checkpoint),
+                    checkpoint_sink=persist_review_checkpoint,
+                    cancelled=cancelled,
                 )
             except GeneralAutonomousError as exc:
+                if exc.code == "job_cancelled" or (
+                    job_id is not None and repository.is_job_cancel_requested(job_id)
+                ):
+                    error = {"code": "job_cancelled", "phase": "autonomous_review", "proposal_revision": general_revision, "message": "La revisión se detuvo en el siguiente checkpoint seguro.", "retryable": False, "run_id": run_id}
+                    return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=409)
                 record_general_auto_review_failure(run_id, exc)
                 error = {"code": exc.code, "phase": "autonomous_review", "proposal_revision": general_revision, "message": "La revisión autónoma falló de forma acotada.", "retryable": True, "run_id": run_id}
                 return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=502)
             except Exception as exc:
+                if str(exc) == "job_cancelled" or (
+                    job_id is not None and repository.is_job_cancel_requested(job_id)
+                ):
+                    error = {"code": "job_cancelled", "phase": "autonomous_review", "proposal_revision": general_revision, "message": "La revisión se detuvo en el siguiente checkpoint seguro.", "retryable": False, "run_id": run_id}
+                    return JSONResponse({"schema_version": "0.2.0", "run_id": run_id, "error": error}, status_code=409)
                 code = "general_auto_review_unavailable" if str(exc) == "general_auto_review_unavailable" else "general_auto_review_failed"
                 status = 503 if code == "general_auto_review_unavailable" else 502
                 error = {"code": code, "phase": "autonomous_review", "proposal_revision": general_revision, "message": f"La revisión autónoma falló: {type(exc).__name__}.", "retryable": True, "run_id": run_id}
@@ -1829,6 +1987,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                             run_id,
                             general_auto_outcome.review.proposal_revision,
                             general_auto_outcome.review.review_revision,
+                            cancelled=cancelled,
+                            cancellation_job_id=job_id,
                         )
                     except Exception:
                         # Assembly is an independent, retryable phase. Its persisted
@@ -1853,7 +2013,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             idempotency_key = idempotency_key.strip()
             request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
             try:
-                existing_run_id = repository.get_idempotent_run(
+                existing_run_id = repository.reserve_idempotent_run(
                     actor=actor,
                     idempotency_key=idempotency_key,
                     request_hash=request_hash,
@@ -1861,6 +2021,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             except ValueError as exc:
                 if str(exc) == "idempotency_key_conflict":
                     return _error(409, "idempotency_key_conflict", conflict_message)
+                if str(exc) == "idempotency_key_in_progress":
+                    return _error(409, str(exc), "La ejecución con esta clave sigue pendiente.", True)
                 raise
             if existing_run_id is not None:
                 run = repository.get_run(existing_run_id)
@@ -1870,6 +2032,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     201,
                 )
         response = _execute_run(request, actor=actor)
+        if idempotency_key is not None and response.status_code != 201:
+            repository.release_idempotent_run(actor=actor, idempotency_key=idempotency_key, request_hash=request_hash)
         if idempotency_key is not None and response.status_code == 201:
             run_id = json.loads(response.body)["data"]["run"]["id"]
             try:
@@ -1940,29 +2104,71 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         return response
 
     def enqueue_reserved_job(job_id: str, request: RunRequest, actor: str | None) -> None:
+        def finish_cancelled(run_id: str | None = None) -> None:
+            repository.finish_job(
+                job_id,
+                run_id=run_id,
+                error={
+                    "code": "job_cancelled",
+                    "message": "El trabajo se detuvo en el siguiente checkpoint seguro.",
+                    "retryable": False,
+                },
+                cancelled=True,
+            )
+
         def process() -> None:
             try:
-                repository.start_job(job_id)
+                try:
+                    repository.start_job(job_id)
+                except ValueError:
+                    if repository.is_job_cancel_requested(job_id):
+                        return
+                    raise
+                if repository.is_job_cancel_requested(job_id):
+                    finish_cancelled()
+                    return
                 response = _execute_run(request, actor=actor, job_id=job_id)
                 payload = json.loads(response.body)
+                run_id = (
+                    payload.get("data", {}).get("run", {}).get("id")
+                    or payload.get("run_id")
+                )
+                if repository.is_job_cancel_requested(job_id):
+                    finish_cancelled(run_id)
+                    return
                 if response.status_code == 201:
-                    repository.finish_job(job_id, run_id=payload["data"]["run"]["id"])
+                    repository.finish_job(job_id, run_id=run_id)
                 else:
-                    repository.finish_job(job_id, run_id=payload.get("run_id"), error=payload.get("error") or {
+                    repository.finish_job(job_id, run_id=run_id, error=payload.get("error") or {
                         "code": "job_failed", "message": "El trabajo no terminó.", "retryable": False
                     })
             except Exception as exc:
+                if repository.is_job_cancel_requested(job_id):
+                    try:
+                        finish_cancelled()
+                    except ValueError:
+                        pass
+                    return
                 repository.finish_job(job_id, error={
                     "code": "job_failed",
                     "message": f"El trabajo falló de forma segura: {type(exc).__name__}.",
                     "retryable": False,
                 })
 
+        process.__vexplorer_job_id__ = job_id
         job_executor.submit_reserved(process)
 
     def recoverable_job_view(job: dict, *, actor: str | None) -> dict:
         """Expose persisted progress without presenting a proposal as approved."""
         result = dict(job)
+        result["cancel_requested"] = repository.is_job_cancel_requested(result["id"])
+        result["queue_position"] = repository.get_job_queue_position(
+            result["id"], actor=actor
+        )
+        result["can_cancel"] = (
+            result.get("state") in {"queued", "running"}
+            and not result["cancel_requested"]
+        )
         error = result.get("error") if isinstance(result.get("error"), dict) else {}
         saved_attempt = repository.get_job_resume_checkpoint(result["id"]) or {}
         effective_run_id = result.get("run_id") or error.get("run_id") or saved_attempt.get("run_id")
@@ -1998,6 +2204,63 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             })
         result["recovery"] = recovery
         return result
+
+    def encode_recent_cursor(kind: str, payload: dict) -> str:
+        encoded = json.dumps(
+            {"kind": kind, **payload}, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return urlsafe_b64encode(encoded).decode("ascii").rstrip("=")
+
+    def decode_recent_cursor(cursor: str | None, kind: str) -> dict | None:
+        if cursor is None:
+            return None
+        if not 1 <= len(cursor) <= 256 or re.fullmatch(r"[A-Za-z0-9_-]+", cursor) is None:
+            raise ValueError("invalid_recent_cursor")
+        try:
+            padding = "=" * (-len(cursor) % 4)
+            payload = json.loads(urlsafe_b64decode(cursor + padding))
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            raise ValueError("invalid_recent_cursor") from exc
+        if not isinstance(payload, dict) or payload.get("kind") != kind:
+            raise ValueError("invalid_recent_cursor")
+        if kind == "executions":
+            sequence = payload.get("sequence")
+            if (
+                set(payload) != {"kind", "sequence"}
+                or isinstance(sequence, bool)
+                or not isinstance(sequence, int)
+                or sequence <= 0
+            ):
+                raise ValueError("invalid_recent_cursor")
+        elif kind == "projects":
+            created_at = payload.get("created_at")
+            document_id = payload.get("document_id")
+            if (
+                set(payload) != {"kind", "created_at", "document_id"}
+                or not isinstance(created_at, str)
+                or not isinstance(document_id, str)
+                or DOCUMENT_ID_PATTERN.fullmatch(document_id) is None
+            ):
+                raise ValueError("invalid_recent_cursor")
+            try:
+                parsed_created_at = datetime.fromisoformat(created_at)
+            except ValueError as exc:
+                raise ValueError("invalid_recent_cursor") from exc
+            if parsed_created_at.tzinfo is None:
+                raise ValueError("invalid_recent_cursor")
+        return payload
+
+    def actor_owns_manifest(manifest: dict, actor: str | None) -> bool:
+        try:
+            return manifest_owner_key(manifest) == (actor or "local-demo")
+        except ValueError:
+            return False
+
+    def owned_document_manifest(document_id: str, actor: str | None) -> dict | None:
+        manifest = load_document_manifest(document_id)
+        if manifest is None or not actor_owns_manifest(manifest, actor):
+            return None
+        return manifest
 
     def build_resume_checkpoint(source_job_id: str, *, actor: str | None) -> tuple[RunRequest, dict]:
         source = repository.get_job_for_actor(source_job_id, actor=actor)
@@ -2036,12 +2299,33 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         }
 
     def enqueue_resume_job(job_id: str) -> None:
+        def finish_cancelled(checkpoint: dict | None) -> None:
+            repository.finish_job(
+                job_id,
+                run_id=checkpoint.get("run_id") if checkpoint else None,
+                error={
+                    "code": "job_cancelled",
+                    "phase": "autonomous_review",
+                    "message": "La reanudación se detuvo en el siguiente checkpoint seguro.",
+                    "retryable": False,
+                },
+                cancelled=True,
+            )
+
         def process() -> None:
             checkpoint = repository.get_job_resume_checkpoint(job_id)
             try:
                 if checkpoint is None:
                     raise ValueError("job_resume_checkpoint_missing")
-                repository.start_job(job_id)
+                try:
+                    repository.start_job(job_id)
+                except ValueError:
+                    if repository.is_job_cancel_requested(job_id):
+                        return
+                    raise
+                if repository.is_job_cancel_requested(job_id):
+                    finish_cancelled(checkpoint)
+                    return
                 repository.link_job_run(job_id, checkpoint["run_id"])
                 manifest = load_document_manifest(checkpoint["document_id"])
                 document_sha256 = ((manifest.get("sha256") or manifest.get("source", {}).get("sha256")) if manifest else None)
@@ -2070,13 +2354,23 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "attempt_kind": "review_from_saved_proposal",
                     "continues_original_provider_call": False,
                 })
+
+                def persist_resume_checkpoint(item) -> None:
+                    persist_general_auto_checkpoint(checkpoint["run_id"], item)
+                    if repository.is_job_cancel_requested(job_id):
+                        raise RuntimeError("job_cancelled")
+
                 outcome = execute_general_autonomous(
                     context, proposal_outcome,
                     timeout_s=checkpoint["review_attempt_timeout_s"],
                     proposal_revision=record.proposal_revision,
                     previous_review=record.review,
-                    checkpoint_sink=lambda item: persist_general_auto_checkpoint(checkpoint["run_id"], item),
+                    checkpoint_sink=persist_resume_checkpoint,
+                    cancelled=lambda: repository.is_job_cancel_requested(job_id),
                 )
+                if repository.is_job_cancel_requested(job_id):
+                    finish_cancelled(checkpoint)
+                    return
                 latest = general_furniture_repository.get(checkpoint["run_id"])
                 if latest is None or latest.proposal_revision != outcome.review.proposal_revision or latest.review_revision != checkpoint["review_revision"]:
                     raise ValueError("job_resume_checkpoint_stale")
@@ -2084,6 +2378,9 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 record_general_auto_review_events(checkpoint["run_id"], outcome)
                 repository.finish_job(job_id, run_id=checkpoint["run_id"])
             except GeneralAutonomousError as exc:
+                if repository.is_job_cancel_requested(job_id):
+                    finish_cancelled(checkpoint)
+                    return
                 if checkpoint is not None:
                     record_general_auto_review_failure(checkpoint["run_id"], exc)
                 repository.finish_job(job_id, run_id=checkpoint["run_id"] if checkpoint else None, error={
@@ -2092,6 +2389,12 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     "message": "El nuevo intento de revisión falló de forma acotada.", "retryable": True,
                 })
             except Exception as exc:
+                if repository.is_job_cancel_requested(job_id):
+                    try:
+                        finish_cancelled(checkpoint)
+                    except ValueError:
+                        pass
+                    return
                 code = str(exc) if str(exc).startswith("job_resume_checkpoint_") else "job_resume_failed"
                 try:
                     repository.finish_job(job_id, run_id=checkpoint["run_id"] if checkpoint else None, error={
@@ -2102,6 +2405,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 except ValueError:
                     pass
 
+        process.__vexplorer_job_id__ = job_id
         job_executor.submit_reserved(process)
 
     @app.post("/api/v1/jobs")
@@ -2253,6 +2557,127 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _ok(recoverable_job_view(job, actor=http_request.state.actor))
         except KeyError:
             return _error(404, "job_not_found", "Trabajo inexistente.")
+
+    @app.post("/api/v1/jobs/{job_id}/cancel")
+    def cancel_job(job_id: str, http_request: Request):
+        if re.fullmatch(r"job-[0-9a-f]{32}", job_id) is None:
+            return _error(422, "invalid_job_id", "Identificador de trabajo inválido.")
+        actor = http_request.state.actor
+        try:
+            current = repository.get_job_for_actor(job_id, actor=actor)
+            job = repository.request_job_cancellation(job_id, actor=actor)
+        except KeyError:
+            return _error(404, "job_not_found", "Trabajo inexistente.")
+        except ValueError as exc:
+            return _error(409, str(exc), "El trabajo ya no admite cancelación.")
+        if current["state"] == "queued":
+            job_executor.cancel_queued(job_id)
+        status_code = 202 if job["state"] == "running" else 200
+        return _ok(recoverable_job_view(job, actor=actor), status_code)
+
+    @app.get("/api/v1/executions")
+    def list_recent_executions(
+        http_request: Request,
+        limit: int = Query(20, ge=1, le=100),
+        cursor: str | None = Query(default=None, max_length=256),
+    ):
+        if public_production:
+            return _error(403, "recent_unavailable", "Las ejecuciones recientes no están disponibles en acceso público.")
+        try:
+            decoded = decode_recent_cursor(cursor, "executions")
+            before_sequence = int(decoded["sequence"]) if decoded is not None else None
+            jobs, next_sequence = repository.list_recent_jobs_for_actor(
+                actor=http_request.state.actor,
+                limit=limit,
+                before_sequence=before_sequence,
+            )
+        except (KeyError, TypeError, ValueError):
+            return _error(422, "invalid_recent_cursor", "El cursor de ejecuciones no es válido.")
+        items = []
+        for job in jobs:
+            manifest = owned_document_manifest(job["document_id"], http_request.state.actor)
+            if manifest is None:
+                continue
+            if job["run_id"] is not None:
+                try:
+                    repository.assert_run_owner(
+                        job["run_id"], actor=http_request.state.actor
+                    )
+                except KeyError:
+                    continue
+            items.append({
+                "job_id": job["id"], "run_id": job["run_id"],
+                "document_id": job["document_id"],
+                "filename": manifest.get("original_filename") or manifest.get("source", {}).get("filename"),
+                "mode": job["mode"], "input_kind": job["input_kind"],
+                "state": job["state"], "created_at": job["created_at"],
+                "updated_at": job["updated_at"],
+                "queue_position": job["queue_position"],
+                "cancel_requested": job["cancel_requested"],
+            })
+        next_cursor = (
+            encode_recent_cursor("executions", {"sequence": next_sequence})
+            if next_sequence is not None else None
+        )
+        return _ok({"items": items, "next_cursor": next_cursor})
+
+    @app.get("/api/v1/projects")
+    def list_recent_projects(
+        http_request: Request,
+        limit: int = Query(20, ge=1, le=100),
+        cursor: str | None = Query(default=None, max_length=256),
+    ):
+        if public_production:
+            return _error(403, "recent_unavailable", "Los proyectos recientes no están disponibles en acceso público.")
+        try:
+            decoded = decode_recent_cursor(cursor, "projects")
+            before = (
+                (str(decoded["created_at"]), str(decoded["document_id"]))
+                if decoded is not None else None
+            )
+        except (KeyError, TypeError, ValueError):
+            return _error(422, "invalid_recent_cursor", "El cursor de proyectos no es válido.")
+        projects: list[tuple[tuple[str, str], dict]] = []
+        for path in documents_dir.glob("doc-*.manifest.json"):
+            try:
+                manifest = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not actor_owns_manifest(manifest, http_request.state.actor):
+                continue
+            document_id = manifest.get("document_id")
+            audit = manifest.get("audit", {})
+            created_at = audit.get("selected_at") or audit.get("uploaded_at")
+            if not isinstance(document_id, str) or not isinstance(created_at, str):
+                continue
+            key = (created_at, document_id)
+            if before is not None and key >= before:
+                continue
+            latest = repository.get_latest_job_summary_for_document(
+                document_id, actor=http_request.state.actor
+            )
+            if latest is not None and latest["run_id"] is not None:
+                try:
+                    repository.assert_run_owner(
+                        latest["run_id"], actor=http_request.state.actor
+                    )
+                except KeyError:
+                    latest = None
+            projects.append((key, {
+                "document_id": document_id,
+                "filename": manifest.get("original_filename") or manifest.get("source", {}).get("filename"),
+                "created_at": created_at,
+                "latest_execution": latest,
+            }))
+        projects.sort(key=lambda item: item[0], reverse=True)
+        selected = projects[:limit]
+        next_cursor = None
+        if len(projects) > limit:
+            last_key = selected[-1][0]
+            next_cursor = encode_recent_cursor(
+                "projects", {"created_at": last_key[0], "document_id": last_key[1]}
+            )
+        return _ok({"items": [item for _, item in selected], "next_cursor": next_cursor})
 
     @app.get("/api/v1/runs/{run_id}")
     def get_run(run_id: str, http_request: Request):
@@ -2412,10 +2837,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             model = semantic_provider.model
             dimensions = semantic_provider.dimensions
             text = semantic_text(descriptor)
-            cache_key = embedding_cache_key(descriptor.descriptor_version, model, dimensions, text)
+            cache_key = embedding_cache_key(semantic_identity, descriptor.descriptor_version, text)
             try:
                 try:
-                    repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version)
+                    repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version, space_id=semantic_identity.space_id)
                     status: Literal["generated", "cache"] = "cache"
                 except KeyError:
                     generated = semantic_provider.embed(text)
@@ -2427,9 +2852,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                         generated.dimensions,
                         descriptor.descriptor_version,
                         generated.vector,
+                        space_id=semantic_identity.space_id,
+                        identity_json=semantic_identity.model_dump_json(),
                     )
                     status = "generated"
                 new_embedding = EmbeddingMetadata(
+                    provider=semantic_identity.provider,
+                    model_revision=semantic_identity.model_revision,
+                    modality=semantic_identity.modality,
+                    normalization=semantic_identity.normalization,
+                    preprocessing_version=semantic_identity.preprocessing_version,
+                    prompt_name=semantic_identity.prompt_name,
                     model=model,
                     dimensions=dimensions,
                     descriptor_version=descriptor.descriptor_version,
@@ -2450,7 +2883,22 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             embedding=new_embedding,
             publication=existing.publication,
         )
-        repository.save_library_item(updated_item)
+        while not repository.save_library_item(updated_item, expected=existing):
+            try:
+                current = repository.get_library_item(result.run_id)
+            except KeyError:
+                return
+            # Retry only forward progress by another automatic review refresh.
+            # Explicit saves change creation time or user metadata and must win.
+            if (
+                not existing.result_revision < current.result_revision < result.result_revision
+                or current.created_at != existing.created_at
+                or current.label != existing.label
+                or current.publication != existing.publication
+            ):
+                return
+            existing = current
+        tras_guardar_biblioteca(root, repository, semantic_provider, updated_item, cola_mantenimiento)
         repository.append_event(
             result.run_id,
             "library_item_refreshed",
@@ -2471,7 +2919,7 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         if environment == "production" and not idempotency_key:
             return _error(428, "idempotency_key_required", "Idempotency-Key es obligatorio en producción.")
         try:
-            result = repository.review(
+            result, newly_committed = repository.review_with_status(
                 run_id,
                 review,
                 idempotency_key=idempotency_key,
@@ -2482,7 +2930,8 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         except ValueError as exc:
             code = str(exc)
             return _error(409 if code in {"stale_result_revision", "idempotency_key_conflict"} else 422, code, "La revisión no es aplicable.")
-        _refresh_library_item_for_result(result)
+        if newly_committed:
+            _refresh_library_item_for_result(result)
         return _ok(result.model_dump(mode="json"), 201)
 
     @app.get("/api/v1/runs/{run_id}/comparables")
@@ -2523,17 +2972,17 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
             return _error(409, str(exc), "Completa la revisión del mueble antes de guardarlo en la biblioteca.")
         creado_en = datetime.now(UTC).isoformat()
         embedding = None
-        if request.embedding_mode == "openai":
+        if request.embedding_mode == "embeddinggemma2":
             if public_production:
-                return _error(403, "public_semantic_indexing_requires_authentication", "La indexación semántica con proveedor de pago requiere acceso autenticado; el guardado público admite modo offline.")
+                return _error(403, "public_semantic_indexing_requires_authentication", "La indexación semántica privada requiere acceso autenticado; el guardado público admite modo offline.")
             if semantic_provider is None:
                 return _error(503, "semantic_provider_unavailable", embedding_settings.unavailable_reason or "El proveedor semántico no está configurado.", True)
             model = semantic_provider.model
             dimensions = semantic_provider.dimensions
             text = semantic_text(descriptor)
-            cache_key = embedding_cache_key(descriptor.descriptor_version, model, dimensions, text)
+            cache_key = embedding_cache_key(semantic_identity, descriptor.descriptor_version, text)
             try:
-                repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version)
+                repository.get_embedding(cache_key, model, dimensions, descriptor.descriptor_version, space_id=semantic_identity.space_id)
                 status = "cache"
             except KeyError:
                 try:
@@ -2542,11 +2991,28 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                     code = str(exc)
                     status_code = 409 if code == "embedding_space_incompatible" else 502
                     return _error(status_code, code, "El proveedor no devolvió un embedding utilizable.", True)
-                repository.save_embedding(cache_key, generated.model, generated.dimensions, descriptor.descriptor_version, generated.vector)
+                repository.save_embedding(
+                    cache_key, generated.model, generated.dimensions,
+                    descriptor.descriptor_version, generated.vector,
+                    space_id=semantic_identity.space_id,
+                    identity_json=semantic_identity.model_dump_json(),
+                )
                 status = "generated"
             except (ValueError, EmbeddingProviderError) as exc:
                 return _error(409, str(exc), "El caché pertenece a un espacio de embedding incompatible.")
-            embedding = EmbeddingMetadata(model=model, dimensions=dimensions, descriptor_version=descriptor.descriptor_version, cache_key=cache_key, status=status)
+            embedding = EmbeddingMetadata(
+                provider=semantic_identity.provider,
+                model=model,
+                model_revision=semantic_identity.model_revision,
+                modality=semantic_identity.modality,
+                dimensions=dimensions,
+                normalization=semantic_identity.normalization,
+                preprocessing_version=semantic_identity.preprocessing_version,
+                prompt_name=semantic_identity.prompt_name,
+                descriptor_version=descriptor.descriptor_version,
+                cache_key=cache_key,
+                status=status,
+            )
         item = LibraryItem(id=f"library-{run_id}", run_id=run_id, result_revision=result.result_revision, label=request.label, descriptor=descriptor, descriptor_fingerprint=descriptor_fingerprint(descriptor), created_at=creado_en, embedding=embedding, publication=publication)
         repository.save_library_item(item)
         tras_guardar_biblioteca(root, repository, semantic_provider, item, cola_mantenimiento)
@@ -2588,15 +3054,19 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
                 query = repository.get_library_item(run_id)
                 if query.result_revision != request.result_revision or query.embedding is None:
                     raise KeyError(run_id)
-                semantic_model = query.embedding.model
-                query_vector = repository.get_embedding(query.embedding.cache_key, query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version)
+                semantic_model = (
+                    f"embeddinggemma2:{query.embedding.space_id}"
+                    if query.embedding.provider == "embeddinggemma2"
+                    else query.embedding.model
+                )
+                query_vector = repository.get_embedding(query.embedding.cache_key, query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version, space_id=query.embedding.space_id)
                 candidates_with_vectors = []
                 for item in candidates:
-                    if item.embedding is None or (item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version) != (query.embedding.model, query.embedding.dimensions, query.embedding.descriptor_version):
+                    if item.embedding is None or item.embedding.space_identity != query.embedding.space_identity:
                         excluded_count += 1
                         continue
                     try:
-                        candidate_vector = repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
+                        candidate_vector = repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version, space_id=item.embedding.space_id)
                     except (KeyError, ValueError, EmbeddingProviderError):
                         excluded_count += 1
                         continue
@@ -2626,7 +3096,10 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         abstention = None
         if request.include_abstention:
             resolve_search_threshold = resolve_near_duplicate_threshold if request.threshold_kind == "near_duplicate" else resolve_similarity_threshold
-            threshold = request.min_score if request.min_score is not None else resolve_search_threshold(request.mode, descriptor_version, model=semantic_model)
+            try:
+                threshold = request.min_score if request.min_score is not None else resolve_search_threshold(request.mode, descriptor_version, model=semantic_model)
+            except ValueError as exc:
+                return _error(409, str(exc), "El espacio semántico no tiene un umbral calibrado; indica min_score explícitamente.")
             abstention = evaluate_similarity_abstention(matches, threshold)
             matches = list(abstention.filtered_matches)
         elif request.min_score is not None:
@@ -2646,16 +3119,38 @@ def create_app(data_dir: Path | None = None, frontend_dir: Path | None = None, e
         all_items = repository.get_library_items()
         items = tuple(item for item in all_items if request.descriptor_version is None or item.descriptor.descriptor_version == request.descriptor_version)
         excluded_count = len(all_items) - len(items)
-        semantic_model = next((item.embedding.model for item in items if item.embedding is not None), None) if request.mode == "semantic" else None
-        threshold = (
-            request.threshold
-            if request.threshold is not None
-            else resolve_group_threshold(request.mode, request.descriptor_version, model=semantic_model)
+        if request.mode == "semantic":
+            compatible = tuple(
+                item for item in items
+                if item.embedding is None
+                or (
+                    item.embedding.model_revision is not None
+                    and item.embedding.preprocessing_version is not None
+                )
+            )
+            excluded_count += len(items) - len(compatible)
+            items = compatible
+        first_embedding = next((item.embedding for item in items if item.embedding is not None), None)
+        effective_descriptor_version = request.descriptor_version
+        if request.mode == "semantic" and effective_descriptor_version is None:
+            descriptor_versions = {item.descriptor.descriptor_version for item in items}
+            if len(descriptor_versions) > 1:
+                return _error(409, "descriptor_space_incompatible", "La biblioteca contiene varias versiones de descriptor; selecciona una explícitamente.")
+            if descriptor_versions:
+                effective_descriptor_version = next(iter(descriptor_versions))
+        semantic_model = (
+            f"embeddinggemma2:{first_embedding.space_id}"
+            if request.mode == "semantic" and first_embedding is not None and first_embedding.provider == "embeddinggemma2"
+            else first_embedding.model if request.mode == "semantic" and first_embedding is not None else None
         )
+        try:
+            threshold = request.threshold if request.threshold is not None else resolve_group_threshold(request.mode, effective_descriptor_version, model=semantic_model)
+        except ValueError as exc:
+            return _error(409, str(exc), "El espacio semántico no tiene un umbral calibrado; indica threshold explícitamente.")
         if request.mode == "semantic":
             try:
                 vectors = {
-                    item.id: repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version)
+                    item.id: repository.get_embedding(item.embedding.cache_key, item.embedding.model, item.embedding.dimensions, item.embedding.descriptor_version, space_id=item.embedding.space_id)
                     for item in items if item.embedding is not None
                 }
                 values = semantic_groups(items, vectors, threshold)

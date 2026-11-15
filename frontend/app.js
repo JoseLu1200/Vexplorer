@@ -4,8 +4,8 @@ import { createEventLedger, eventLabel, eventTimestamp, parseEventStream } from 
 import { formatMeasurement, sourceLabel } from "./core/format.js";
 import { availableModes, componentsForSnapshot, executionModeLabel, fieldOrigin, normaliseRunPayload, presentEstimate, presentReplaySource, snapshotStatusPresentation } from "./core/presentation.js";
 import { normalisePartsWorkspace, partSelectionViewIds, preferredCandidateId, presentDescriptorV2, presentReviewedUse, resolveAssemblyOperand, translateAssumption } from "./core/parts.js";
-import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues } from "./core/review.js";
-import { clearRunSession, persistJob, persistRunId, restoredRunRecovery, restoreJob, restoreRunId } from "./core/session.js";
+import { buildAssemblyReviewPayload, buildScenarioReviewPayload, changedReviewDecisionValues, createReviewDraftGuard } from "./core/review.js";
+import { browserStorage, clearRunSession, persistJob, persistRunId, restoredRunRecovery, restoreJob, restoreRunId } from "./core/session.js";
 import { boundsForPoints, fitViewport, panViewport, svgUnitPerPixel, zoomViewport } from "./core/viewport.js";
 import { fitImageViewport, imageViewportStyle, panImageViewport, zoomImageViewport } from "./core/image-viewport.js";
 import { createRequestFence } from "./core/request-fence.js";
@@ -25,7 +25,9 @@ import { formatSimilarityScore, libraryCounts, libraryEmptyMessage, presentPiece
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const api = createApiClient();
-const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, jobRecovery: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() };
+const storage=browserStorage(globalThis);
+const state = { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, jobRecovery: null, jobState: null, config: {}, features: publicFeatureAvailability(), session: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map(), recent: { projectsCursor:null, executionsCursor:null } };
+let reviewDraftGuard;
 let sceneViewer;
 let reconstructionPanel;
 const reconstructionButton=document.createElement('button');
@@ -47,6 +49,9 @@ function setMessage(value, error = false) { const node = $("#global-message"); t
 
 function emptyParagraph(value) { const node = document.createElement("p"); node.className = "empty-copy"; node.textContent = value; return node; }
 function toggleHidden(node, hidden) { node?.toggleAttribute("hidden", Boolean(hidden)); }
+function guardNavigationLink(link,message){link?.addEventListener("click",(event)=>{if(!reviewDraftGuard?.canDiscard(message))event.preventDefault();});return link;}
+function setupGuardedNavigation(){guardNavigationLink($(".brand"),"Hay cambios de revisión sin guardar. ¿Quieres volver al inicio y descartarlos?");guardNavigationLink($("#duplicate-precedent-link"),"Hay cambios de revisión sin guardar. ¿Quieres abrir el precedente y descartarlos?");}
+function setupSemanticExplorerLink(){const link=$('a[href="./explorer.html"]');if(!link)return;link.id="semantic-explorer-link";link.hidden=true;link.addEventListener("click",(event)=>{if(!reviewDraftGuard?.canDiscard("Hay cambios de revisión sin guardar. ¿Quieres abrir el explorador y descartarlos?"))event.preventDefault();});const guidance=document.createElement("span");guidance.id="semantic-explorer-guidance";guidance.className="field-note";guidance.textContent="El explorador necesita que una persona administradora lo habilite y publique un espacio semántico.";link.after(guidance);}
 function semanticAvailabilityText(config = state.config) { const semantic=config.semantic??config.capabilities?.semantic??{},model=semantic.model??config.semantic_model??"modelo no publicado",rawDimensions=semantic.dimensions,dimensions=Number.isInteger(rawDimensions)?`${rawDimensions} dimensiones`:rawDimensions??"dimensiones no publicadas",indexed=Number.isInteger(semantic.indexed_record_count)?semantic.indexed_record_count:0,providerConfigured=Boolean(semantic.provider_configured||semantic.available),searchAvailable=Boolean(semantic.cached_search_available||semantic.available),provider=providerConfigured?"Proveedor semántico configurado":"Proveedor semántico no configurado",search=searchAvailable?"búsqueda semántica disponible":"búsqueda semántica no disponible",generation=semantic.generation_requires_authentication?"Generar embeddings requiere autenticación.":semantic.available?"Generación de embeddings disponible.":"Generación de embeddings no disponible.";return `${provider} · ${model} · ${dimensions} · ${indexed} registros indexados; ${search}. ${generation}`; }
 function previewFigure(src,label){const figure=document.createElement("figure"),image=document.createElement("img"),caption=document.createElement("figcaption");image.src=src;image.alt=label;image.loading="lazy";caption.textContent=label;figure.append(image,caption);return figure;}
 async function appendComparisonThumbnails(card,item,candidate){const candidateRunId=candidate?.run_id??item.candidate_run_id??item.run_id;if(!state.documentId||!candidateRunId)return;const root=document.createElement("div");root.className="comparison-thumbnails";root.append(previewFigure(api.documentPreviewUrl(state.documentId),"Diseño consultado"));const pending=emptyParagraph("Cargando referencia…");root.append(pending);card.append(root);try{const run=await api.getRun(candidateRunId),documentId=run.document_id??run.run?.document_id;if(!documentId)throw new TypeError();pending.replaceWith(previewFigure(api.documentPreviewUrl(documentId),"Diseño de referencia"));}catch{pending.textContent="Preview de referencia no disponible.";}}
@@ -72,9 +77,9 @@ function resetRunUi() {
   runFence.invalidate(); contextFence.invalidate(); sceneFence.invalidate(); uploadFence.invalidate(); actionFence.invalidate(); duplicateFence.invalidate();
   hideDuplicatePrecedentBanner();
   state.jobAbort?.abort();
-  Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
+  Object.assign(state, { documentId: null, documentIngestion: null, runId: null, jobId: null, jobAbort: null, jobState: null, snapshot: null, drawing: null, drawingModel: null, partsWorkspace: null, tableWorkspace: null, generalWorkspace: null, generalDerived: null, generalAssembly: null, generalAssemblyError: null, assemblyDiagnostic: false, assemblyDisplayUp: "y", tableDrawings: null, tableCostCatalog: null, ledger: null, eventLedger: null, selected: null, viewport: null, fittedViewport: null, activeView: "all", activeArtifact: "source", derivedImageViewport: fitImageViewport(), explanations: null, scene: null, libraryItems: new Map() });
   state.jobRecovery=null;
-  clearRunSession(localStorage, location, history);
+  clearRunSession(storage, location, history);
   $("#drawing-viewer").replaceChildren(); $("#view-tabs").replaceChildren(); $("#drawing-empty").hidden = false;
   $("#original-preview").removeAttribute("src"); $("#original-view").hidden = true; $("#scene-viewer").hidden = true;
   toggleHidden($("#explode-control"),true); $("#explode-scene").checked=false; sceneViewer?.setExploded(false); sceneViewer?.setScene({state:"unavailable",objects:[],warnings:[]}); toggleHidden($("#scene-warning"),true); text($("#scene-warning"),"");
@@ -88,14 +93,14 @@ function resetRunUi() {
   toggleHidden($("#scene-premises"),true); $("#scene-premises-list").replaceChildren();
   text($("#scenario-status"), "Pendiente de análisis"); text($("#revision-label"), "Sin revisión");
   const legend = document.createElement("legend"); legend.textContent = "Escenario respaldado"; $("#scenario-options").replaceChildren(legend, emptyParagraph("Las alternativas aparecerán cuando el backend las proponga."));
-  $("#review-form").reset(); if(state.session?.authenticated&&state.session.username)$("#reviewer-name").value=state.session.username; $("#review-submit").disabled = true; text($("#review-message"), "");
+  $("#review-form").reset(); if(state.session?.authenticated&&state.session.username)$("#reviewer-name").value=state.session.username; $("#review-submit").disabled = true; text($("#review-message"), "");reviewDraftGuard?.markClean();
   $("#comparables-list").replaceChildren(emptyParagraph("Sin comparables disponibles."));
   toggleHidden($("#historical-scenarios"),true);$("#historical-scenarios-list")?.replaceChildren(emptyParagraph("La auto-revisión aún no tiene un snapshot consultable."));
   if($("#historical-confirmed-details"))$("#historical-confirmed-details").open=true;if($("#historical-confirmed-details > summary"))$("#historical-confirmed-details > summary").hidden=true;
   $$('[data-export="bom_csv"],[data-export="bom_json"]').forEach((button)=>button.disabled=true);resetEstimateUi(); $("#estimate-button").disabled = true;
   $("#trace-export").disabled = true;
   $("#trace-list").replaceChildren(emptyParagraph("No hay eventos todavía."));
-  text($("#trace-gap-status"), ""); text($("#job-status"), ""); toggleHidden($("#job-retry"),true);
+  text($("#trace-gap-status"), ""); text($("#job-status"), ""); toggleHidden($("#job-retry"),true);toggleHidden($("#job-cancel"),true);
 }
 
 function configureModes(config = {}) {
@@ -103,8 +108,11 @@ function configureModes(config = {}) {
   state.features = publicFeatureAvailability(config);
   const libraryTab=$('[data-panel="library"]'),libraryPanel=$('[data-panel-content="library"]');
   const estimateTab=$('[data-panel="estimate"]'),estimatePanel=$('[data-panel-content="estimate"]');
+  const projectsTab=$('[data-panel="projects"]'),projectsPanel=$('[data-panel-content="projects"]');
   toggleHidden(libraryTab,!state.features.library);toggleHidden(libraryPanel,!state.features.library);
   toggleHidden(estimateTab,!state.features.costs);toggleHidden(estimatePanel,!state.features.costs);
+  toggleHidden(projectsTab,!state.features.recent);toggleHidden(projectsPanel,!state.features.recent);
+  toggleHidden($("#semantic-explorer-link"),!state.features.semanticExplorer);toggleHidden($("#semantic-explorer-guidance"),state.features.semanticExplorer);
   toggleHidden($("#history-import-form"),!state.features.history);
   toggleHidden($("#history-list"),!state.features.history);
   toggleHidden($("#library-publication"),!config.library_requires_real_reviewed);
@@ -618,7 +626,7 @@ function renderGeneralOperationEditors(workspace,root){
 async function createManualGeneralProposal(){try{const label=$("#general-manual-label").value,kind=$("#general-manual-kind").value,role=$("#general-manual-role").value,reason=$("#general-manual-reason").value,proposal=buildManualGeneralProposal({drawingId:state.drawing?.drawing_id??state.generalWorkspace?.drawingId,ledgerRevision:state.snapshot?.candidate_revision??state.generalWorkspace?.ledgerRevision,label,kind,role,reason});await api.createGeneralProposal(state.runId,{mode:"manual",base_proposal_revision:state.generalWorkspace?.proposalRevision??0,proposal});text($("#review-message"),"Propuesta manual opcional creada con medidas desconocidas. Puedes corregirla o lanzar la verificación automática.");await refreshRun();}catch(error){text($("#review-message"),error.message);}}
 
 function setGeneralManualCorrectionVisible(visible){toggleHidden($("#general-review-operations"),!visible);toggleHidden($("#review-form > .form-grid"),!visible);toggleHidden($("#review-submit"),!visible);}
-async function requestGeneralAutoReview(){if(!state.documentId)return;const button=$("#general-auto-review"),prior=button?.textContent,resume=state.jobRecovery?.safeAction==="resume_review";if(button){button.disabled=true;button.textContent=resume?"Reanudando revisión…":"Iniciando nueva ejecución…";}try{if(resume){text($("#review-message"),"Reanudando la revisión del borrador guardado sin repetir la propuesta.");await retryCurrentJob();}else{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
+async function requestGeneralAutoReview(){if(!state.documentId||!reviewDraftGuard?.canDiscard("Hay cambios de revisión sin guardar. ¿Quieres iniciar otra ejecución y descartarlos?"))return;const button=$("#general-auto-review"),prior=button?.textContent,resume=state.jobRecovery?.safeAction==="resume_review";if(button){button.disabled=true;button.textContent=resume?"Reanudando revisión…":"Iniciando nueva ejecución…";}try{if(resume){text($("#review-message"),"Reanudando la revisión del borrador guardado sin repetir la propuesta.");await retryCurrentJob();}else{text($("#review-message"),"Se inicia otra ejecución durable; el snapshot actual permanece consultable hasta que termine.");await startRunForDocument({documentId:state.documentId,mode:"live",inputKind:"general_furniture",runOptions:generalRunOptions("live")});}}catch(error){text($("#review-message"),error.message);}finally{if(button){button.disabled=false;button.textContent=prior;}}}
 
 async function retryGeneralAssembly(){
   const proposal=state.generalWorkspace?.proposalRevision,review=state.generalWorkspace?.reviewRevision;
@@ -783,7 +791,7 @@ async function refreshRun() {
     if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalDerived=presentGeneralDerived(await api.getGeneralDerived(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){const failure=generalDerivedLoadFailure(error);if(failure){text($("#upload-status"),failure.label);setMessage(failure.message,true);}else if(!(error instanceof ApiError)||error.status!==404)throw error;}}
     if(Number.isInteger(state.generalWorkspace.proposalRevision)&&state.generalWorkspace.reviewRevision>0){try{state.generalAssembly=normaliseGeneralAssemblyResponse(await api.getGeneralAssembly(requestedRun,state.generalWorkspace.proposalRevision,state.generalWorkspace.reviewRevision));}catch(error){if(!(error instanceof ApiError)||![404,409].includes(error.status))state.generalAssemblyError=error.message;}}
   }
-  renderPartsAndReview(); updateArtifactTabs();
+  renderPartsAndReview(); updateArtifactTabs();reviewDraftGuard?.markClean();
   const tableReady=tableResourcesReady(state.tableWorkspace,state.snapshot);
   if(tableReady){try{const raw=await api.getTableDrawings(requestedRun,state.snapshot.result_revision); if(!runFence.isCurrent(token,state.runId))return; state.tableDrawings=normaliseTableDrawingManifest(raw);}catch(error){if(!runFence.isCurrent(token,state.runId))return;if(!(error instanceof ApiError)||![404,409].includes(error.status))throw error;}}
   await loadRevisionContext();
@@ -974,13 +982,13 @@ async function startRunForDocument({ documentId, mode, inputKind, runOptions = {
     setMessage("Grabación compatible localizada. Se reproducirá offline sin una inferencia nueva.");
   }
   if(state.config?.run_submission?.jobs===true){const job=await api.createJob(request);if(!stillCurrent())return;setMessage("Plano aceptado. El trabajo queda guardado y puede recuperarse tras recargar.");await followJob(job);}
-  else {setMessage("Modo local manual: esta instalación usa la ejecución síncrona compatible.");const runPayload=await api.createRun(documentId,mode,inputKind,runOptions);if(!stillCurrent())return;state.snapshot=normaliseRunPayload(runPayload);state.runId=state.snapshot.id;persistRunId(state.runId,localStorage,location,history);text($("#upload-status"),"En proceso");await refreshRun();await refreshTraceHistory();}
+  else {setMessage("Modo local manual: esta instalación usa la ejecución síncrona compatible.");const runPayload=await api.createRun(documentId,mode,inputKind,runOptions);if(!stillCurrent())return;state.snapshot=normaliseRunPayload(runPayload);state.runId=state.snapshot.id;persistRunId(state.runId,storage,location,history);text($("#upload-status"),"En proceso");await refreshRun();await refreshTraceHistory();}
 }
 
 async function followJob(initialJob) {
   state.jobAbort?.abort();
   const controller = new AbortController(); state.jobAbort = controller; state.jobId = initialJob.id;
-  persistJob(initialJob, localStorage);
+  persistJob(initialJob, storage);state.jobState=initialJob;updateJobCancel(initialJob);
   const intervalMs = Number(state.config?.run_submission?.poll_interval_ms) || 500;
   let result;
   try{result = await pollJob(initialJob.id, {
@@ -988,7 +996,7 @@ async function followJob(initialJob) {
     intervalMs,
     getJob: api.getJob,
     onUpdate: async (job) => {
-      persistJob({ id: job.id, run_id: job.runId, state: job.state }, localStorage);
+      persistJob({ id: job.id, run_id: job.runId, state: job.state }, storage);state.jobState=job;updateJobCancel(job);
       if(job.checkpoint||job.recovery)state.jobRecovery=presentJobRecovery(job);
       const automatic=$("#upload-form").elements.input_kind.value==="general_furniture"&&$("#upload-form").elements.mode.value==="live",label=automatic&&["queued","running"].includes(job.state)?`Revisión visual automática · ${jobStatusLabel(job)}`:jobStatusLabel(job);text($("#job-status"), `${label} · ${job.id}`);
       text($("#upload-status"), label);
@@ -1000,21 +1008,24 @@ async function followJob(initialJob) {
   });}catch(error){state.jobAbort=null;if(error?.name==="TimeoutError"&&state.jobRecovery){const recovery=state.jobRecovery,message=`La espera local agotó el tiempo. ${recovery.message}`;setMessage(message,true);text($("#job-status"),recovery.phaseLabel);toggleHidden($("#job-retry"),!recovery.safeAction);text($("#job-retry"),recovery.actionLabel);throw new ApiError(message,{code:"local_poll_timeout",retryable:Boolean(recovery.safeAction)});}throw error;}
   if (controller.signal.aborted) return null;
   state.jobAbort = null;
+  if(result.state==="cancelled"){persistJob({id:result.id,state:"cancelled"},storage);state.jobState=result;updateJobCancel(result);toggleHidden($("#job-retry"),true);text($("#job-status"),jobStatusLabel(result));setMessage("Trabajo cancelado. No se modificó el último resultado guardado.");await refreshRecent();return result;}
   if (result.state !== "succeeded" || !result.runId) {
     const presented=presentJobRecovery(result),retryable=Boolean(presented.safeAction)&&["failed","interrupted"].includes(result.state);state.jobRecovery=presented;toggleHidden($("#job-retry"),!retryable);$("#job-retry").disabled=!retryable;text($("#job-retry"),presented.actionLabel);text($("#job-status"),presented.phaseLabel);setMessage(presented.message,true);
     const error = new ApiError(presented.message, { code: result.error?.code ?? result.state, retryable });
     throw error;
   }
   toggleHidden($("#job-retry"),true);
-  state.runId = result.runId; persistRunId(result.runId, localStorage, location, history);
-  await refreshRun(); await refreshTraceHistory(3);
+  state.runId = result.runId; persistRunId(result.runId, storage, location, history);
+  await refreshRun(); await refreshTraceHistory(3); await refreshRecent();
   return result;
 }
 
 async function retryCurrentJob(){if(!state.jobId)return;const sourceJobId=state.jobId,button=$("#job-retry"),action=state.jobRecovery?.safeAction;button.disabled=true;try{const resume=action==="resume_review";setMessage(resume?`Reanudando la revisión de la propuesta recuperada; no se repetirá el proponente.`:`Repitiendo desde el inicio. Esta acción puede volver a consumir el proveedor; el trabajo original se conserva.`);const next=resume?await api.resumeJob(sourceJobId):await api.retryJob(sourceJobId);state.jobRecovery=null;text($("#job-status"),`${resume?"Reanudación":"Reintento"} de ${sourceJobId} · ${next.id}`);toggleHidden(button,true);await followJob(next);}catch(error){setMessage(error.message,true);button.disabled=false;toggleHidden(button,error.retryable===false);}}
+function updateJobCancel(job){const button=$("#job-cancel"),active=["queued","running"].includes(job?.state),requested=job?.cancelRequested===true||job?.cancel_requested===true,available=state.config?.run_submission?.cancel===true;toggleHidden(button,!available||!active||requested);if(button){button.disabled=requested;button.textContent=requested?"Cancelación solicitada…":"Cancelar trabajo";}}
+async function cancelCurrentJob(){if(!state.jobId)return;const button=$("#job-cancel");button.disabled=true;try{const result=await api.cancelJob(state.jobId),job={...result,runId:result.run_id??null,queuePosition:result.queue_position??null,cancelRequested:result.cancel_requested===true};state.jobState=job;persistJob({id:result.id??state.jobId,run_id:result.run_id??null,state:result.state},storage);updateJobCancel(job);text($("#job-status"),jobStatusLabel(job));setMessage(result.state==="cancelled"?"Trabajo cancelado antes de ejecutarse.":"Cancelación solicitada. El trabajo se detendrá en el siguiente punto seguro.");await refreshRecent();}catch(error){button.disabled=false;setMessage(`No se pudo cancelar el trabajo: ${error.message}`,true);}}
 
 async function runUpload(event) {
-  event.preventDefault(); const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
+  event.preventDefault();if(!reviewDraftGuard?.canDiscard("Hay cambios de revisión sin guardar. ¿Quieres abrir otro plano y descartarlos?"))return; const file = $("#drawing-file").files[0]; if (!file) return setMessage("Selecciona un plano DXF, DWG o PDF.", true);
   if (file.size > 20 * 1024 * 1024) return setMessage("El archivo supera 20 MiB. Selecciona un plano más pequeño.", true);
   const formData = new FormData(event.currentTarget);
   const mode = formData.get("mode");
@@ -1325,7 +1336,7 @@ async function refreshInitialLibrary() {
 }
 
 function libraryRunLink(item) {
-  const link=document.createElement("a"), url=new URL(location.href); url.searchParams.set("run",item.run_id); link.href=url; link.className="library-link";
+  const link=recentRunLink(item.run_id,"");link.className="library-link";
   const label=document.createElement("span"); label.textContent=item.label; const action=document.createElement("b"); action.textContent=`Abrir rev. ${item.result_revision}`; link.append(label,action); return link;
 }
 
@@ -1334,16 +1345,24 @@ async function saveCurrentToLibrary(){ const identity=actionIdentity(), token=ac
 async function findSimilarCurrent(){const identity=actionIdentity(),token=actionFence.issue(identity),mode=$("#similarity-mode").value,descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.findSimilar(state.runId,{result_revision:state.snapshot.result_revision,mode,limit:6,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 async function groupCurrentLibrary(){const identity=actionIdentity(),token=actionFence.issue(identity),selected=$("#similarity-mode").value,mode=selected==="semantic"?"semantic":"geometric",threshold=Number($("#group-threshold").value),descriptor=state.tableWorkspace?.isTable?"furniture-v3":undefined; try{const result=await api.groupLibrary({mode,threshold,include_summary:true,...(descriptor?{descriptor_version:descriptor}:{})}); if(actionFence.isCurrent(token,actionIdentity()))renderLibraryResults(result,mode);}catch(error){if(actionFence.isCurrent(token,actionIdentity()))$("#library-list").replaceChildren(emptyParagraph(error.message));}}
 
+const recentDateFormatter=new Intl.DateTimeFormat("es-ES",{dateStyle:"medium",timeStyle:"short"});
+function recentDate(value){const date=new Date(value);return Number.isNaN(date.valueOf())?"Fecha no publicada":recentDateFormatter.format(date);}
+function recentStateLabel(value){return({queued:"En cola",running:"En curso",succeeded:"Terminada",failed:"Fallida",interrupted:"Interrumpida",cancelled:"Cancelada"})[value]??"Estado desconocido";}
+function recentRunLink(runId,label){const link=document.createElement("a"),url=new URL(location.href);url.searchParams.set("run",runId);link.href=url;link.textContent=label;return guardNavigationLink(link,"Hay cambios de revisión sin guardar. ¿Quieres abrir otra ejecución y descartarlos?");}
+function recentCard(item,kind){const card=document.createElement("article"),head=document.createElement("div"),title=document.createElement("strong"),meta=document.createElement("small"),status=document.createElement("span"),actions=document.createElement("div"),latest=kind==="project"?item.latest_execution:item,runId=latest?.run_id??null,jobId=latest?.job_id??item.job_id??null;card.className="recent-card";head.className="recent-card__head";title.textContent=item.filename??item.document_name??item.document_id??"Proyecto sin nombre";status.className="status-chip";status.textContent=latest?recentStateLabel(latest.state):"Sin ejecución";meta.textContent=`${kind==="project"?"Proyecto":"Ejecución"} · ${recentDate(latest?.updated_at??item.updated_at??item.created_at)}`;actions.className="recent-actions";if(runId)actions.append(recentRunLink(runId,"Abrir resultado guardado"));else if(jobId&&["queued","running"].includes(latest?.state)){const follow=document.createElement("button");follow.type="button";follow.className="button";follow.textContent="Seguir trabajo";follow.addEventListener("click",async()=>{if(!reviewDraftGuard?.canDiscard("Hay cambios de revisión sin guardar. ¿Quieres seguir otro trabajo y descartarlos?"))return;resetRunUi();await followJob({id:jobId,state:latest.state,run_id:null});});actions.append(follow);}head.append(title,status);card.append(head,meta,actions);return card;}
+async function loadRecent(kind,{append=false}={}){if(!state.features.recent)return;const projects=kind==="projects",root=$(projects?"#recent-projects":"#recent-executions"),more=$(projects?"#recent-projects-more":"#recent-executions-more"),cursor=state.recent[projects?"projectsCursor":"executionsCursor"];if(!append)root.replaceChildren(emptyParagraph(projects?"Cargando proyectos…":"Cargando ejecuciones…"));try{const raw=projects?await api.getProjects({limit:20,...(append&&cursor?{cursor}:{})}):await api.getExecutions({limit:20,...(append&&cursor?{cursor}:{})}),items=raw.items??[];if(!append)root.replaceChildren();items.forEach((item)=>root.append(recentCard(item,projects?"project":"execution")));if(!root.children.length)root.append(emptyParagraph(projects?"Todavía no hay proyectos guardados.":"Todavía no hay ejecuciones guardadas."));state.recent[projects?"projectsCursor":"executionsCursor"]=raw.next_cursor??null;toggleHidden(more,!raw.next_cursor);}catch(error){if(!append)root.replaceChildren(emptyParagraph(`No se pudo cargar la actividad reciente: ${error.message}`));toggleHidden(more,true);}}
+async function refreshRecent(){if(!state.features.recent)return;await Promise.all([loadRecent("projects"),loadRecent("executions")]);}
+
 async function restoreRunReference(runId) {
   const retry=$("#restore-run-retry"), initial=restoredRunRecovery(runId);
-  if(initial.discard){clearRunSession(localStorage,location,history);state.runId=null;toggleHidden(retry,true);setMessage("La referencia de ejecución guardada no es válida y se ha descartado.",true);return;}
+  if(initial.discard){clearRunSession(storage,location,history);state.runId=null;toggleHidden(retry,true);setMessage("La referencia de ejecución guardada no es válida y se ha descartado.",true);return;}
   state.runId=runId; retry.disabled=true; toggleHidden(retry,true); text($("#upload-status"),"Recuperando");
   let runConfirmed=false;
   try {
     await refreshRun(); runConfirmed=true; await refreshTraceHistory(); toggleHidden(retry,true);
   } catch(error) {
     const recovery=runConfirmed?{discard:false,retry:true}:restoredRunRecovery(runId,error);
-    if(recovery.discard){clearRunSession(localStorage,location,history);state.runId=null;toggleHidden(retry,true);text($("#upload-status"),"Listo");setMessage("La ejecución guardada ya no existe en el servidor.",true);return;}
+    if(recovery.discard){clearRunSession(storage,location,history);state.runId=null;toggleHidden(retry,true);text($("#upload-status"),"Listo");setMessage("La ejecución guardada ya no existe en el servidor.",true);return;}
     toggleHidden(retry,false); text($("#upload-status"),"Recuperación pendiente"); setMessage(`No se pudo restaurar la ejecución. La referencia se conserva: ${error.message}`,true);
   } finally { retry.disabled=false; }
 }
@@ -1366,11 +1385,11 @@ function paintTheme(theme) {
 }
 function setupChrome() {
   let theme = "light";
-  try { theme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"; } catch { theme = "light"; }
+  theme = storage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
   paintTheme(theme);
   $("#theme-toggle")?.addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    try { if (next === "dark") localStorage.setItem(THEME_KEY, "dark"); else localStorage.removeItem(THEME_KEY); } catch { /* modo privado */ }
+    if (next === "dark") storage.setItem(THEME_KEY, "dark"); else storage.removeItem(THEME_KEY);
     paintTheme(next);
   });
   const frame = $(".app-frame");
@@ -1381,17 +1400,20 @@ function setupChrome() {
     railButton?.setAttribute("aria-label", collapsed ? "Expandir menú" : "Contraer menú");
     if (railButton) railButton.textContent = collapsed ? "⟩" : "⟨";
   };
-  try { applyRail(localStorage.getItem(RAIL_KEY) === "collapsed"); } catch { applyRail(false); }
+  applyRail(storage.getItem(RAIL_KEY) === "collapsed");
   railButton?.addEventListener("click", () => {
     const collapsed = !frame.classList.contains("is-rail-collapsed");
     applyRail(collapsed);
-    try { if (collapsed) localStorage.setItem(RAIL_KEY, "collapsed"); else localStorage.removeItem(RAIL_KEY); } catch { /* modo privado */ }
+    if (collapsed) storage.setItem(RAIL_KEY, "collapsed"); else storage.removeItem(RAIL_KEY);
   });
 }
 
 async function boot() {
   setupChrome();
+  setupSemanticExplorerLink();
   setupWorkspaceControls();
+  reviewDraftGuard=createReviewDraftGuard($("#review-form"));
+  setupGuardedNavigation();
   createHistoryEstimateControls();
   text($("#drawing-empty strong"),"Abre un plano DXF, DWG o PDF");
   if(!$('#history-provenance option[value="published"]')){const published=document.createElement("option");published.value="published";published.textContent="Fuentes públicas publicadas";published.selected=true;$("#history-provenance").insertBefore(published,$('#history-provenance option[value="synthetic"]'));}
@@ -1414,8 +1436,11 @@ async function boot() {
   $$('[data-threshold-preset]').forEach((button)=>button.addEventListener("click",()=>{$("#group-threshold").value=button.dataset.thresholdPreset;}));
   $("#restore-run-retry").addEventListener("click",()=>{if(state.runId)restoreRunReference(state.runId);});
   $("#job-retry").addEventListener("click",retryCurrentJob);
+  $("#job-cancel").addEventListener("click",cancelCurrentJob);
+  $("#recent-projects-more").addEventListener("click",()=>loadRecent("projects",{append:true}));
+  $("#recent-executions-more").addEventListener("click",()=>loadRecent("executions",{append:true}));
   try { configureModes(await api.getConfig()); $(".signal").classList.add("is-online"); text($("#service-status"), "Servicio disponible"); } catch { configureModes({}); text($("#service-status"), "Servicio sin configuración"); }
-  await refreshInitialLibrary();
+  await Promise.all([refreshInitialLibrary(),refreshRecent()]);
   try {
     state.session=await api.getSession();
     const authenticated=state.session.authenticated===true&&Boolean(state.session.username), reviewer=$("#reviewer-name");
@@ -1423,8 +1448,8 @@ async function boot() {
     if(authenticated){reviewer.value=state.session.username;reviewer.readOnly=true;}
   } catch { text($("#session-user"),"Local · identidad manual"); }
   await refreshHistoryRecords();
-  const restoredRunId = restoreRunId(location, localStorage);
-  const restoredJob=new URLSearchParams(location.search).has("run")?null:restoreJob(localStorage);
+  const restoredRunId = restoreRunId(location, storage);
+  const restoredJob=new URLSearchParams(location.search).has("run")?null:restoreJob(storage);
   if (restoredJob) {
     try { await followJob(restoredJob); } catch (error) { setMessage(`No se pudo restaurar el trabajo: ${error.message}`,true); }
   } else if (restoredRunId) {

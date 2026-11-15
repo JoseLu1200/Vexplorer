@@ -1,0 +1,70 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "Origen en la esquina inferior delantera izquierda; x anchura, y profundidad hacia atrás y z altura desde el suelo.",
+    "La única dimensión numérica visible es 1200 mm de anchura. Altura, profundidad, espesores y disposición de juntas siguen siendo hipótesis.",
+    "Se conserva la construcción de tres paneles: el plano original no justifica añadir base, estantes, puertas o trasera.",
+    "La viabilidad funcional propuesta depende de arriostramiento mediante fijaciones a una pared resistente; no se plantea como estructura autoportante sin ellas.",
+    "No se modelan pared ni herrajes: su geometría, material y condiciones de instalación no están definidos."
+  ],
+  "objects": [
+    {
+      "piece_id": "lateral_izquierdo",
+      "label": "Lateral izquierdo con apoyo continuo en suelo",
+      "position_mm": [
+        0.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        2042.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_derecho",
+      "label": "Lateral derecho con apoyo continuo en suelo",
+      "position_mm": [
+        1182.0,
+        0.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        2042.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "tapa_superior",
+      "label": "Tapa apoyada sobre los dos laterales, sin vuelos",
+      "position_mm": [
+        0.0,
+        2042.0,
+        -600.0
+      ],
+      "dimensions_mm": [
+        1200.0,
+        18.0,
+        600.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

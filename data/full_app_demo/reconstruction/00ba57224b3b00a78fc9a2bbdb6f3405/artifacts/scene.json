@@ -1,0 +1,143 @@
+{
+  "state": "proposed",
+  "coordinate_system": "x-right_y-up_z-depth",
+  "warnings": [
+    "Diseño hipotético; no certificado para fabricación."
+  ],
+  "assumptions": [
+    "La cota visible de 900 mm se interpreta como anchura exterior total.",
+    "Las vistas se interpretan como ortogonales y aproximadamente a igual escala: altura de 1800 mm y profundidad de 350 mm son inferencias, no cotas explícitas.",
+    "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina mínima de la envolvente, con suelo z=0.",
+    "Los tres rectángulos interiores se interpretan como huecos accesibles desde el frente, no como tableros macizos.",
+    "Todas las dimensiones no acotadas, los espesores y la construcción propuesta son hipótesis.",
+    "La revisión mantiene la estructura y las posiciones de estantes compatibles con el plano original. El render propuesto no se utiliza como evidencia del original."
+  ],
+  "objects": [
+    {
+      "piece_id": "lateral_izquierdo",
+      "label": "Costado izquierdo continuo apoyado en suelo",
+      "position_mm": [
+        0.0,
+        0.0,
+        -350.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        1800.0,
+        350.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "lateral_derecho",
+      "label": "Costado derecho continuo apoyado en suelo",
+      "position_mm": [
+        882.0,
+        0.0,
+        -350.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        1800.0,
+        350.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "tapa",
+      "label": "Tapa entre costados",
+      "position_mm": [
+        18.0,
+        1782.0,
+        -350.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        350.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "base",
+      "label": "Base elevada entre costados",
+      "position_mm": [
+        18.0,
+        80.0,
+        -344.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        344.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "estante_inferior",
+      "label": "Estante fijo inferior",
+      "position_mm": [
+        18.0,
+        600.0,
+        -344.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        344.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "estante_superior",
+      "label": "Estante fijo superior",
+      "position_mm": [
+        18.0,
+        1200.0,
+        -344.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        18.0,
+        344.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    },
+    {
+      "piece_id": "trasera",
+      "label": "Trasera propuesta para arriostramiento",
+      "position_mm": [
+        18.0,
+        80.0,
+        -350.0
+      ],
+      "dimensions_mm": [
+        864.0,
+        1702.0,
+        6.0
+      ],
+      "placement_status": "design_hypothesis",
+      "evidence_ids": [
+        "input"
+      ]
+    }
+  ]
+}

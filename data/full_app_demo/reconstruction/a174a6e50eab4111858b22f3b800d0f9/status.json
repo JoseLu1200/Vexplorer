@@ -1,0 +1,364 @@
+{
+  "run_id": "run-b1537484028f47f3838301234173216f",
+  "ledger_revision": "drawing-c8aa3006c1098f06",
+  "source_sha256": "f64bd99dcd90cc347c61917d2d409935460a212e0203fa857f9b8f34e3685890",
+  "source_refs": [
+    "c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-front:overview",
+    "c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-side:overview",
+    "c8aa3006c1098f06df0bc56ac57dfa4e46f597aa5f7c721818e4608d7d367d82:view:view-top:overview"
+  ],
+  "original_image_sha256": [
+    "cd5b35963c6ca50b79a917956d07cbeda6a106b15750959aa7a3e95b2662f67b",
+    "bbcc77eaefd44275c5ef46acb3f1b03f5e7a3b1edd576342b00fd7809680fa92",
+    "490d0679597d95d25a2081c4495adb2a12d5be898bdf402e9ba1e2f555722acf"
+  ],
+  "unit": "mm",
+  "intended_use_from_user": "Mesa de trabajo autoportante para uso doméstico; material y uniones siguen pendientes",
+  "parent_job_id": "3894284a17bb46dbbcc0766766f4195a",
+  "revision": 2,
+  "clarifications": [],
+  "envelope_mm": {
+    "width": 1200.0,
+    "depth": 700.0,
+    "height": 750.0
+  },
+  "certified_for_manufacturing": false,
+  "job_id": "a174a6e50eab4111858b22f3b800d0f9",
+  "status": "needs_review",
+  "refinement_supported": true,
+  "context_sha256": "b1eac263e3dc6591562713ae4bd0686abd8b54878205712f3ff28b70454a84e0",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Mesa de trabajo autoportante para uso doméstico, según declaración del usuario.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Tapa rectangular de trabajo",
+          "size_mm": [
+            1200.0,
+            700.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            720.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la franja superior frontal y lateral del plano original como una única tapa.",
+            "Espesor de 30 mm inferido aproximadamente de la franja dibujada, no acotado; pendiente de verificación estructural.",
+            "Anchura de 1200 mm y profundidad de 700 mm adoptadas de las cotas originales, coincidentes con la envolvente declarada por el usuario; cara superior a 750 mm."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado portante izquierdo",
+          "size_mm": [
+            18.0,
+            700.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda izquierda frontal y el contorno lateral se interpretan como un costado de profundidad completa, no como vistas de piezas adicionales.",
+            "Espesor de 18 mm propuesto por aproximación a la banda frontal; no es una cota observada.",
+            "Profundidad de 700 mm compatible con la cota original y la envolvente humana; altura de 720 mm derivada de descontar la tapa propuesta a los 750 mm totales.",
+            "Se propone apoyo directo en suelo y contacto con la cara inferior de la tapa."
+          ]
+        },
+        {
+          "id": "costado_derecho",
+          "label": "Costado portante derecho",
+          "size_mm": [
+            18.0,
+            700.0,
+            720.0
+          ],
+          "origin_mm": [
+            1182.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda derecha frontal se interpreta como un segundo costado, simétrico al izquierdo.",
+            "Espesor de 18 mm y profundidad completa son hipótesis constructivas; no se deducen de un render.",
+            "Posición x=1182 mm derivada de los 1200 mm de anchura del plano y la declaración humana; altura de 720 mm derivada de la tapa propuesta.",
+            "Se propone apoyo directo en suelo y contacto con la tapa, sin interpenetración."
+          ]
+        },
+        {
+          "id": "arriostramiento_trasero",
+          "label": "Faldón posterior entre costados",
+          "size_mm": [
+            1164.0,
+            18.0,
+            200.0
+          ],
+          "origin_mm": [
+            18.0,
+            682.0,
+            520.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Decisión de diseño añadida para rigidizar la mesa autoportante; no se identifica como pieza medida en el plano original.",
+            "Anchura de 1164 mm derivada del espacio entre los costados propuestos; espesor de 18 mm y altura de 200 mm son hipótesis.",
+            "Se coloca en la banda posterior superior, en contacto con ambos costados y con la tapa, sin rellenar el hueco central.",
+            "Las uniones necesarias para mantener su posición y transmitir esfuerzos siguen pendientes; no se añaden herrajes ficticios."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Coordenadas: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina mínima de la envolvente y suelo z=0.",
+        "Envolvente total de 1200 × 700 × 750 mm: las cotas del plano original coinciden con envelope_mm aportado por el usuario; esa declaración humana no es observación del dibujo.",
+        "Se mantienen cuatro ocurrencias físicas para las tres vistas del mismo objeto.",
+        "La revisión compara los contornos originales con la propuesta y los diagnósticos. El render de propuesta no se utiliza como evidencia del plano.",
+        "No se requiere cambio geométrico a partir de los diagnósticos recibidos; se conserva el faldón como decisión explícita de diseño, no como evidencia del original.",
+        "No se supone instalación a pared."
+      ],
+      "missing_information": [
+        "Material y propiedades resistentes para comprobar espesores, flecha y estabilidad.",
+        "Diseño y dimensionado de las uniones entre tapa, costados y faldón.",
+        "Cargas previstas, equipos, cargas puntuales y acciones laterales.",
+        "Condiciones del suelo y requisitos de los apoyos."
+      ],
+      "functional_notes": [
+        "Los diagnósticos aportados indican contactos tapa-costados, tapa-faldón y faldón-costados, ambos costados apoyados en suelo, sin solapes, piezas flotantes ni piezas bajo el suelo.",
+        "Estos contactos geométricos no verifican las uniones ni la capacidad de carga; ambas figuran como no evaluadas.",
+        "La tapa apoya sobre los dos costados. El faldón está destinado a limitar el descuadre transversal, condicionado a material y uniones adecuados.",
+        "Se conserva el acceso frontal: 1164 mm entre costados y 720 mm bajo la tapa, salvo la banda posterior superior del faldón.",
+        "El faldón comienza a 682 mm del frente y deja 520 mm de altura libre inferior. No se añade base ni se convierte el hueco en tablero macizo.",
+        "El render no permite confirmar por sí solo el faldón posterior, que puede quedar oculto por la perspectiva; se mantiene por su función propuesta y por los contactos diagnosticados.",
+        "Propuesta conceptual sin certificación de seguridad, fabricación ni capacidad de carga."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Mesa de trabajo autoportante para uso doméstico, según lo indicado por el usuario.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "tapa",
+          "label": "Superficie de trabajo rectangular",
+          "size_mm": [
+            1200.0,
+            700.0,
+            30.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            720.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la franja superior de las vistas frontal y lateral como una única tapa, no como piezas distintas.",
+            "Espesor de 30 mm propuesto por aproximación a las franjas dibujadas; no está acotado.",
+            "Anchura y profundidad adoptadas de las cotas del plano, coincidentes con la envolvente declarada por el usuario; posición superior ajustada a la altura total de 750 mm."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado portante izquierdo hasta el suelo",
+          "size_mm": [
+            18.0,
+            700.0,
+            720.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la banda vertical izquierda del frente y el contorno lateral como un costado de profundidad completa.",
+            "Espesor de 18 mm inferido aproximadamente de la banda frontal, no medido ni acotado.",
+            "Altura de 720 mm derivada de la altura total de 750 mm menos la tapa propuesta de 30 mm; apoya directamente en el suelo y recibe la tapa."
+          ]
+        },
+        {
+          "id": "costado_derecho",
+          "label": "Costado portante derecho hasta el suelo",
+          "size_mm": [
+            18.0,
+            700.0,
+            720.0
+          ],
+          "origin_mm": [
+            1182.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta la banda vertical derecha del frente como otro costado portante, simétrico al izquierdo.",
+            "Espesor de 18 mm y profundidad completa de 700 mm propuestos; la profundidad total coincide con la cota del plano y la declaración humana.",
+            "Posición x=1182 mm derivada de la anchura total de 1200 mm; altura ajustada a la cara inferior de la tapa, sin solapamiento."
+          ]
+        },
+        {
+          "id": "arriostramiento_trasero",
+          "label": "Faldón posterior de rigidización entre costados",
+          "size_mm": [
+            1164.0,
+            18.0,
+            200.0
+          ],
+          "origin_mm": [
+            18.0,
+            682.0,
+            520.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Elemento añadido como decisión de diseño para la mesa autoportante; no se considera una pieza identificada en el plano.",
+            "Espesor de 18 mm y altura de 200 mm propuestos, pendientes de verificar con el material y las cargas.",
+            "Se sitúa al fondo, entre los costados y en contacto con la cara inferior de la tapa; su fijación a estos elementos está pendiente de definición.",
+            "No representa el hueco frontal como un tablero: sólo ocupa una banda superior posterior."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Ejes: x anchura, y profundidad desde el frente hacia atrás y z altura; suelo z=0.",
+        "La envolvente de 1200 × 700 × 750 mm procede tanto de las cotas visibles como de la declaración humana envelope_mm, que no es una observación del dibujo.",
+        "Las tres vistas se interpretan como proyecciones del mismo objeto; no se duplican componentes.",
+        "La solución de tapa sobre dos costados es una hipótesis constructiva compatible con la función declarada y los contornos del plano.",
+        "No se supone fijación a pared ni se añaden herrajes o bloques de conexión ficticios."
+      ],
+      "missing_information": [
+        "Material y propiedades de los tableros, necesarios para verificar los espesores propuestos y la flecha de la tapa.",
+        "Tipo y dimensionado de las uniones tapa-costados y faldón-costados/tapa, incluyendo transmisión de esfuerzos de arriostramiento.",
+        "Cargas de trabajo previstas, incluidas cargas puntuales, acciones laterales y posibles equipos pesados.",
+        "Condiciones del suelo y requisitos de estabilidad y acabado de los apoyos."
+      ],
+      "functional_notes": [
+        "La tapa descarga verticalmente sobre ambos costados; estos alcanzan el suelo sin piezas flotantes ni interpenetraciones.",
+        "El frente queda abierto: espacio entre costados de 1164 mm y altura libre bajo tapa de 720 mm, salvo la banda posterior de rigidización.",
+        "El faldón posterior deja 682 mm de profundidad libre desde el frente antes de su cara anterior y 520 mm libres por debajo.",
+        "El faldón propone arriostramiento transversal; la estabilidad del conjunto depende de uniones capaces de transmitir los esfuerzos y del material seleccionado. Los costados completos aportan rigidez en profundidad.",
+        "No se añade base inferior que obstruya los pies ni se rellena el hueco central.",
+        "Propuesta conceptual, no certificación de seguridad ni documentación lista para fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "tapa",
+          "costado_izquierdo"
+        ],
+        [
+          "tapa",
+          "costado_derecho"
+        ],
+        [
+          "tapa",
+          "arriostramiento_trasero"
+        ],
+        [
+          "costado_izquierdo",
+          "arriostramiento_trasero"
+        ],
+        [
+          "costado_derecho",
+          "arriostramiento_trasero"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "costado_derecho",
+        "costado_izquierdo"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "f64bd99dcd90cc347c61917d2d409935460a212e0203fa857f9b8f34e3685890",
+    "trace": [
+      {
+        "response_id": "resp_0e2f6d622c5e5a01006af8208efc6887d2bddf1d8ab9e60200",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 6596,
+        "output_tokens": 1149,
+        "duration_ms": 26815
+      },
+      {
+        "response_id": "resp_0ca1e7ad7eea9801006af820a9b58487d2a166988960e03107",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 7935,
+        "output_tokens": 1115,
+        "duration_ms": 19667
+      }
+    ],
+    "duration_s": 46.495588300000236,
+    "status": "needs_review",
+    "certified_for_manufacturing": false,
+    "user_declarations": {
+      "answers": [],
+      "envelope_mm": {
+        "width": 1200.0,
+        "depth": 700.0,
+        "height": 750.0
+      },
+      "is_observed_in_drawing": false
+    },
+    "harness_prompt_sha256": "09352747ffbfba7643630ab7a00123bb368175a589a4422a5b26db708fbc18a2"
+  },
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/arriostramiento_trasero.dxf",
+    "parts/arriostramiento_trasero.svg",
+    "parts/costado_derecho.dxf",
+    "parts/costado_derecho.svg",
+    "parts/costado_izquierdo.dxf",
+    "parts/costado_izquierdo.svg",
+    "parts/tapa.dxf",
+    "parts/tapa.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "revision.json",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

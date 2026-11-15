@@ -1,0 +1,17 @@
+{
+  "dimensions": [],
+  "allowed_component_source_refs": [
+    "input"
+  ],
+  "composite_views": [
+    {
+      "label": "SOURCE VIEW 1/1 - same object, not extra parts",
+      "image_bounds_px": [
+        0,
+        40,
+        960,
+        640
+      ]
+    }
+  ]
+}

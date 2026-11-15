@@ -1,0 +1,108 @@
+{
+  "contacts": [
+    [
+      "puerta_izquierda",
+      "herraje_puerta_inferior"
+    ],
+    [
+      "puerta_izquierda",
+      "herraje_puerta_superior"
+    ],
+    [
+      "montante_frontal_derecho",
+      "costado_derecho_delantero"
+    ],
+    [
+      "costado_derecho_delantero",
+      "costado_derecho_trasero"
+    ],
+    [
+      "costado_derecho_delantero",
+      "base"
+    ],
+    [
+      "costado_derecho_delantero",
+      "tapa"
+    ],
+    [
+      "costado_derecho_delantero",
+      "refuerzo_junta_derecha"
+    ],
+    [
+      "costado_derecho_trasero",
+      "base"
+    ],
+    [
+      "costado_derecho_trasero",
+      "tapa"
+    ],
+    [
+      "costado_derecho_trasero",
+      "trasera"
+    ],
+    [
+      "costado_derecho_trasero",
+      "refuerzo_junta_derecha"
+    ],
+    [
+      "costado_izquierdo",
+      "base"
+    ],
+    [
+      "costado_izquierdo",
+      "tapa"
+    ],
+    [
+      "costado_izquierdo",
+      "trasera"
+    ],
+    [
+      "costado_izquierdo",
+      "herraje_puerta_inferior"
+    ],
+    [
+      "costado_izquierdo",
+      "herraje_puerta_superior"
+    ],
+    [
+      "base",
+      "division"
+    ],
+    [
+      "base",
+      "trasera"
+    ],
+    [
+      "base",
+      "refuerzo_junta_derecha"
+    ],
+    [
+      "tapa",
+      "division"
+    ],
+    [
+      "tapa",
+      "trasera"
+    ],
+    [
+      "tapa",
+      "refuerzo_junta_derecha"
+    ],
+    [
+      "division",
+      "trasera"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "costado_derecho_delantero",
+    "costado_derecho_trasero",
+    "costado_izquierdo",
+    "montante_frontal_derecho"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

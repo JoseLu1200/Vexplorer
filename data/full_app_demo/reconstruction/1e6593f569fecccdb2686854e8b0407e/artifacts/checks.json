@@ -1,0 +1,113 @@
+{
+  "contacts": [
+    [
+      "tapa",
+      "costado_izquierdo"
+    ],
+    [
+      "tapa",
+      "division_armario"
+    ],
+    [
+      "tapa",
+      "costado_derecho"
+    ],
+    [
+      "tapa",
+      "trasera_armario"
+    ],
+    [
+      "tapa",
+      "separador_nichos"
+    ],
+    [
+      "costado_izquierdo",
+      "fondo_armario_inferior"
+    ],
+    [
+      "costado_izquierdo",
+      "zocalo_delantero"
+    ],
+    [
+      "costado_izquierdo",
+      "zocalo_trasero"
+    ],
+    [
+      "costado_izquierdo",
+      "trasera_armario"
+    ],
+    [
+      "costado_izquierdo",
+      "puerta_armario"
+    ],
+    [
+      "division_armario",
+      "fondo_armario_inferior"
+    ],
+    [
+      "division_armario",
+      "zocalo_delantero"
+    ],
+    [
+      "division_armario",
+      "zocalo_trasero"
+    ],
+    [
+      "division_armario",
+      "trasera_armario"
+    ],
+    [
+      "division_armario",
+      "repisa_superior"
+    ],
+    [
+      "division_armario",
+      "faldon_trasero"
+    ],
+    [
+      "costado_derecho",
+      "repisa_superior"
+    ],
+    [
+      "costado_derecho",
+      "faldon_trasero"
+    ],
+    [
+      "fondo_armario_inferior",
+      "zocalo_delantero"
+    ],
+    [
+      "fondo_armario_inferior",
+      "zocalo_trasero"
+    ],
+    [
+      "fondo_armario_inferior",
+      "trasera_armario"
+    ],
+    [
+      "fondo_armario_inferior",
+      "puerta_armario"
+    ],
+    [
+      "repisa_superior",
+      "separador_nichos"
+    ],
+    [
+      "repisa_superior",
+      "faldon_trasero"
+    ]
+  ],
+  "overlaps": [],
+  "grounded_ids": [
+    "costado_derecho",
+    "costado_izquierdo",
+    "division_armario",
+    "zocalo_delantero",
+    "zocalo_trasero"
+  ],
+  "floating_ids": [],
+  "below_ground_ids": [],
+  "load_capacity": "not_evaluated",
+  "joint_design": "not_evaluated",
+  "functional_certification": false
+}

@@ -65,12 +65,16 @@ export function publicFeatureAvailability(config = {}) {
   const semanticCapability = config.semantic ?? config.capabilities?.semantic ?? {};
   const semantic = Boolean(semanticCapability.available || semanticCapability.cached_search_available);
   const publicCad = config.environment === "production" && config.authenticated === false && !history;
+  const semanticExplorer = config.capabilities?.semantic_explorer?.available === true;
+  const recentCapability = config.capabilities?.recent ?? {};
   return {
     history,
     library,
     semantic,
     costs,
     publicCad,
+    semanticExplorer,
+    recent: recentCapability.available === true,
     sessionLabel: publicCad ? "Acceso público · CAD disponible" : null,
   };
 }
@@ -138,7 +142,7 @@ export function librarySavePayload({ resultRevision, label, semantic = false }) 
   return {
     result_revision: resultRevision,
     label,
-    embedding_mode: semantic ? "openai" : "offline",
+    embedding_mode: semantic ? "embeddinggemma2" : "offline",
   };
 }
 

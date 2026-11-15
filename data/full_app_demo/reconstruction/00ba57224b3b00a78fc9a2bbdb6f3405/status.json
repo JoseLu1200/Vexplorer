@@ -1,0 +1,501 @@
+{
+  "job_id": "00ba57224b3b00a78fc9a2bbdb6f3405",
+  "run_id": "study:case-02",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-02/drawing.png"
+  ],
+  "source_sha256": "1fbd9a1e2cfb63a921ae9d0aca189102762dbf4a54b9ba15586d47ad68eb7f0f",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Estantería abierta de tres huecos para almacenamiento doméstico; uso inferido del plano, no indicado por el usuario.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "lateral_izquierdo",
+          "label": "Costado izquierdo continuo apoyado en suelo",
+          "size_mm": [
+            18.0,
+            350.0,
+            1800.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El borde izquierdo frontal y la vista lateral se interpretan como un costado continuo de la misma construcción.",
+            "Altura de 1800 mm y profundidad de 350 mm inferidas proporcionalmente respecto a la anchura acotada de 900 mm; espesor de 18 mm elegido como decisión constructiva."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Costado derecho continuo apoyado en suelo",
+          "size_mm": [
+            18.0,
+            350.0,
+            1800.0
+          ],
+          "origin_mm": [
+            882.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se propone simetría respecto al costado izquierdo, conservando los 900 mm de anchura exterior acotada.",
+            "Altura de 1800 mm y profundidad de 350 mm inferidas por proporción; espesor de 18 mm propuesto, no acotado."
+          ]
+        },
+        {
+          "id": "tapa",
+          "label": "Tapa entre costados",
+          "size_mm": [
+            864.0,
+            350.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            1782.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda superior frontal se interpreta como una tapa, no como otra ocurrencia de los costados.",
+            "Se propone espesor de 18 mm, fondo completo de 350 mm y montaje entre costados, con cara superior a la altura inferida de 1800 mm."
+          ]
+        },
+        {
+          "id": "base",
+          "label": "Base elevada entre costados",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            80.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda horizontal inferior se interpreta como base elevada; la zona bajo ella permanece vacía entre los costados.",
+            "Cota inferior de 80 mm inferida aproximadamente de las proporciones frontales; espesor de 18 mm propuesto.",
+            "El fondo de 344 mm es una decisión de diseño para alojar una trasera de 6 mm detrás, en contacto con el canto posterior."
+          ]
+        },
+        {
+          "id": "estante_inferior",
+          "label": "Estante fijo inferior",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            600.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda frontal intermedia inferior se interpreta como un estante único que separa dos huecos abiertos.",
+            "Cara inferior a 600 mm inferida proporcionalmente; espesor de 18 mm y fondo de 344 mm propuestos.",
+            "Se prevé unión portante a ambos costados; la trasera no sustituye esas uniones."
+          ]
+        },
+        {
+          "id": "estante_superior",
+          "label": "Estante fijo superior",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            1200.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La banda frontal intermedia superior se interpreta como un estante único, no como una puerta.",
+            "Cara inferior a 1200 mm inferida proporcionalmente; espesor de 18 mm y fondo de 344 mm propuestos.",
+            "Se prevé unión portante a ambos costados; no se añade ningún apoyo central que obstruya los huecos del plano."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Trasera propuesta para arriostramiento",
+          "size_mm": [
+            864.0,
+            6.0,
+            1702.0
+          ],
+          "origin_mm": [
+            18.0,
+            344.0,
+            80.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El plano no confirma una trasera; su incorporación es una decisión explícita de diseño para controlar el descuadre.",
+            "Se propone espesor de 6 mm entre costados, detrás de base y estantes y bajo la tapa.",
+            "En esta revisión se prolonga su borde inferior hasta z=80 mm para obtener contacto superficial con el canto posterior de la base, en lugar de solo coincidencia de aristas.",
+            "Su material y fijaciones resistentes a costados, base, tapa y estantes quedan pendientes."
+          ]
+        }
+      ],
+      "assumptions": [
+        "La cota visible de 900 mm se interpreta como anchura exterior total.",
+        "Las vistas se interpretan como ortogonales y aproximadamente a igual escala: altura de 1800 mm y profundidad de 350 mm son inferencias, no cotas explícitas.",
+        "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina mínima de la envolvente, con suelo z=0.",
+        "Los tres rectángulos interiores se interpretan como huecos accesibles desde el frente, no como tableros macizos.",
+        "Todas las dimensiones no acotadas, los espesores y la construcción propuesta son hipótesis.",
+        "La revisión mantiene la estructura y las posiciones de estantes compatibles con el plano original. El render propuesto no se utiliza como evidencia del original."
+      ],
+      "missing_information": [
+        "Confirmar altura y profundidad exteriores inferidas de 1800 y 350 mm y posiciones verticales de los tableros.",
+        "Definir materiales, cargas previstas y flecha admisible para los estantes de 864 mm de luz.",
+        "Definir uniones portantes, fijaciones de la trasera y solución de control del vuelco según el lugar de instalación.",
+        "Confirmar si la trasera propuesta es compatible con el uso o se necesita acceso posterior."
+      ],
+      "functional_notes": [
+        "Los diagnósticos recibidos no señalan solapes, piezas flotantes ni elementos bajo el suelo; identifican ambos costados como apoyos en suelo.",
+        "Se mejora el encuentro base-trasera mediante contacto superficial, sin interpenetrar piezas ni cerrar el espacio bajo la base.",
+        "El recorrido de carga previsto es de tapa, estantes y base a los costados mediante uniones portantes, y de estos al suelo. El mero contacto geométrico no dimensiona esas uniones.",
+        "Huecos frontales libres: 864 mm de anchura y alturas aproximadas de 502, 582 y 564 mm de abajo arriba; fondo útil hasta la trasera de 344 mm.",
+        "Queda un espacio abierto de 80 mm bajo la base, salvo en los costados.",
+        "La trasera solo arriostra si el panel y sus fijaciones se dimensionan para ello; debe resolverse también el riesgo de vuelco.",
+        "No se certifican capacidad de carga, seguridad funcional ni aptitud para fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Estantería abierta de tres huecos para almacenamiento doméstico; uso inferido de las vistas frontal y lateral.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "lateral_izquierdo",
+          "label": "Lateral izquierdo continuo hasta el suelo",
+          "size_mm": [
+            18.0,
+            350.0,
+            1800.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto el borde vertical izquierdo del frente y el rectángulo lateral como un costado continuo, no como piezas separadas por vista.",
+            "Altura de 1800 mm y profundidad de 350 mm inferidas proporcionalmente de las vistas usando la anchura acotada de 900 mm; no son cotas explícitas.",
+            "Espesor de 18 mm propuesto, compatible aproximadamente con el doble trazo frontal."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Lateral derecho continuo hasta el suelo",
+          "size_mm": [
+            18.0,
+            350.0,
+            1800.0
+          ],
+          "origin_mm": [
+            882.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Propongo un costado simétrico al izquierdo; ambos delimitan los 900 mm de anchura exterior acotada.",
+            "Altura de 1800 mm y fondo de 350 mm inferidos de las proporciones dibujadas.",
+            "Espesor de 18 mm como decisión constructiva; el apoyo en suelo se realiza mediante el canto inferior."
+          ]
+        },
+        {
+          "id": "tapa",
+          "label": "Tapa superior entre costados",
+          "size_mm": [
+            864.0,
+            350.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            1782.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la banda horizontal superior del frente como una tapa entre los dos costados.",
+            "Espesor de 18 mm y unión a testa propuestos; su cara superior queda a la altura exterior inferida de 1800 mm.",
+            "Se propone fondo completo de 350 mm."
+          ]
+        },
+        {
+          "id": "base",
+          "label": "Base elevada del hueco inferior",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            80.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la banda horizontal próxima al suelo como una base elevada, manteniendo vacío el espacio inferior entre costados.",
+            "Cara inferior a 80 mm del suelo inferida de la separación dibujada; espesor de 18 mm propuesto.",
+            "Fondo de 344 mm propuesto para dejar 6 mm a una trasera añadida como decisión de diseño."
+          ]
+        },
+        {
+          "id": "estante_inferior",
+          "label": "Estante fijo intermedio inferior",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            600.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la banda horizontal frontal situada aproximadamente a un tercio de la altura como un único estante, no como el borde de una puerta.",
+            "Cara inferior a 600 mm inferida por proporción respecto a la cota de 900 mm.",
+            "Espesor de 18 mm y fondo de 344 mm propuestos; se prevé fijación a ambos costados."
+          ]
+        },
+        {
+          "id": "estante_superior",
+          "label": "Estante fijo intermedio superior",
+          "size_mm": [
+            864.0,
+            344.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            0.0,
+            1200.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la banda horizontal frontal situada aproximadamente a dos tercios de la altura como un único estante.",
+            "Cara inferior a 1200 mm inferida por proporción del dibujo.",
+            "Espesor de 18 mm y fondo de 344 mm propuestos; se prevé fijación a ambos costados."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Trasera continua de arriostramiento entre costados",
+          "size_mm": [
+            864.0,
+            6.0,
+            1684.0
+          ],
+          "origin_mm": [
+            18.0,
+            344.0,
+            98.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La existencia de una trasera no queda confirmada en el plano; se añade explícitamente como decisión de diseño para limitar el descuadre.",
+            "Panel de 6 mm propuesto, situado detrás de los estantes y entre la cara superior de la base y la cara inferior de la tapa, sin interpenetraciones.",
+            "Se supone unión a costados, tapa, base y cantos posteriores de estantes; fijaciones y material pendientes de definición."
+          ]
+        }
+      ],
+      "assumptions": [
+        "La cota visible de 900 mm se interpreta como anchura exterior total.",
+        "Las vistas se consideran ortogonales y aproximadamente a la misma escala: se infieren unos 1800 mm de altura y 350 mm de profundidad.",
+        "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; origen en la esquina inferior izquierda frontal de la envolvente.",
+        "Se interpreta una estantería abierta de tres huecos; los rectángulos interiores representan espacios útiles, no paneles macizos ni puertas.",
+        "Todas las dimensiones no acotadas y todas las soluciones de unión son hipótesis de construcción, no mediciones confirmadas."
+      ],
+      "missing_information": [
+        "Confirmar altura y profundidad exteriores: 1800 y 350 mm son inferencias proporcionales.",
+        "Definir material, acabado, cargas previstas y capacidad admisible de los estantes de 864 mm de luz.",
+        "Definir uniones de estantes y base a costados, fijación de trasera y solución antivuelco compatible con el soporte de instalación.",
+        "Confirmar si se requiere trasera o acceso también por la parte posterior."
+      ],
+      "functional_notes": [
+        "Los dos costados llegan al suelo; base, tapa y estantes salvan la luz entre ellos y requieren uniones portantes, sin apoyos flotantes.",
+        "Los tres huecos quedan accesibles desde el frente, con anchura libre de 864 mm y alturas libres aproximadas de 502, 582 y 564 mm, de abajo arriba.",
+        "Bajo la base queda un espacio abierto de 80 mm de altura, salvo los costados.",
+        "La trasera propuesta proporciona arriostramiento únicamente si sus fijaciones se diseñan para transmitir esfuerzos; no se considera un cierre frontal.",
+        "Por la esbeltez del conjunto se debe prever control del vuelco; la propuesta no certifica seguridad ni aptitud para fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "lateral_izquierdo",
+          "tapa"
+        ],
+        [
+          "lateral_izquierdo",
+          "base"
+        ],
+        [
+          "lateral_izquierdo",
+          "estante_inferior"
+        ],
+        [
+          "lateral_izquierdo",
+          "estante_superior"
+        ],
+        [
+          "lateral_izquierdo",
+          "trasera"
+        ],
+        [
+          "lateral_derecho",
+          "tapa"
+        ],
+        [
+          "lateral_derecho",
+          "base"
+        ],
+        [
+          "lateral_derecho",
+          "estante_inferior"
+        ],
+        [
+          "lateral_derecho",
+          "estante_superior"
+        ],
+        [
+          "lateral_derecho",
+          "trasera"
+        ],
+        [
+          "tapa",
+          "trasera"
+        ],
+        [
+          "base",
+          "trasera"
+        ],
+        [
+          "estante_inferior",
+          "trasera"
+        ],
+        [
+          "estante_superior",
+          "trasera"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "lateral_derecho",
+        "lateral_izquierdo"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "1fbd9a1e2cfb63a921ae9d0aca189102762dbf4a54b9ba15586d47ad68eb7f0f",
+    "trace": [
+      {
+        "response_id": "resp_0a68a504f78f6427006af7fe5ad8ec87d28b900822b1919da5",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 1573,
+        "duration_ms": 29180
+      },
+      {
+        "response_id": "resp_03a0d6e0f5622282006af7fe7921ec87d2895927d297dc18fc",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 3765,
+        "output_tokens": 1484,
+        "duration_ms": 24943
+      }
+    ],
+    "duration_s": 54.14108219999616,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/base.dxf",
+    "parts/base.svg",
+    "parts/estante_inferior.dxf",
+    "parts/estante_inferior.svg",
+    "parts/estante_superior.dxf",
+    "parts/estante_superior.svg",
+    "parts/lateral_derecho.dxf",
+    "parts/lateral_derecho.svg",
+    "parts/lateral_izquierdo.dxf",
+    "parts/lateral_izquierdo.svg",
+    "parts/tapa.dxf",
+    "parts/tapa.svg",
+    "parts/trasera.dxf",
+    "parts/trasera.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

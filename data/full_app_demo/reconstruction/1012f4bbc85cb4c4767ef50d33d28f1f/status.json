@@ -1,0 +1,708 @@
+{
+  "job_id": "1012f4bbc85cb4c4767ef50d33d28f1f",
+  "run_id": "study:case-06",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-06/drawing.png"
+  ],
+  "source_sha256": "1cc474a686f0140524ffd86ff501a9fdff865821e4943309366c5c01fb42cfbb",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Mueble bajo de almacenamiento con compartimento izquierdo cerrado y nicho derecho abierto; uso inferido.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "puerta_izquierda",
+          "label": "Puerta izquierda con holguras de funcionamiento propuestas",
+          "size_mm": [
+            546.0,
+            16.0,
+            594.0
+          ],
+          "origin_mm": [
+            2.0,
+            0.0,
+            3.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El rectángulo izquierdo de FRONT se interpreta como puerta; su envolvente gráfica aproximada es 550 por 600 mm.",
+            "Se reduce esa envolvente con holguras propuestas: 2 mm laterales y 3 mm arriba y abajo; espesor elegido de 16 mm.",
+            "Respecto de la propuesta anterior, deja de tocar suelo, base, tapa y costado; su apoyo se realiza mediante herrajes idealizados."
+          ]
+        },
+        {
+          "id": "montante_frontal_derecho",
+          "label": "Listón frontal del costado derecho",
+          "size_mm": [
+            18.0,
+            18.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La franja extrema derecha de FRONT se interpreta como borde frontal del costado.",
+            "Sección de 18 por 18 mm elegida; altura inferida de la proporción del original.",
+            "Es una pieza unida al tramo delantero, no una duplicación de la vista lateral."
+          ]
+        },
+        {
+          "id": "costado_derecho_delantero",
+          "label": "Panel delantero del costado derecho",
+          "size_mm": [
+            18.0,
+            332.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            18.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La línea intermedia de SIDE se interpreta hipotéticamente como junta de paneles en y=350 mm.",
+            "Espesor de 18 mm elegido; altura y profundidades inferidas suponiendo igual escala entre vistas.",
+            "Apoya en el suelo y se une al tramo trasero con refuerzo interior propuesto."
+          ]
+        },
+        {
+          "id": "costado_derecho_trasero",
+          "label": "Panel trasero del costado derecho",
+          "size_mm": [
+            18.0,
+            550.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            350.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Continúa el mismo costado detrás de la junta inferida de SIDE.",
+            "Profundidad exterior total de 900 mm inferida, no acotada; espesor elegido de 18 mm.",
+            "Se conserva la junta visible sin superponer dos paneles."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado izquierdo portante",
+          "size_mm": [
+            18.0,
+            882.0,
+            600.0
+          ],
+          "origin_mm": [
+            0.0,
+            18.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Apoyo añadido detrás de la puerta como decisión constructiva; no identificable por separado en FRONT.",
+            "Espesor elegido de 18 mm; profundidad y altura derivadas de la envolvente inferida.",
+            "Recibe los herrajes, base, tapa y trasera mediante fijaciones pendientes."
+          ]
+        },
+        {
+          "id": "base",
+          "label": "Base elevada de ambos compartimentos",
+          "size_mm": [
+            864.0,
+            882.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            18.0,
+            18.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La línea inferior del vano derecho se interpreta como borde inferior de una base elevada.",
+            "Retiro inferior aproximado de 18 mm inferido del original; espesor de 18 mm elegido.",
+            "Se mantiene entre costados y no llena el vano."
+          ]
+        },
+        {
+          "id": "tapa",
+          "label": "Tapa rebajada entre costados",
+          "size_mm": [
+            864.0,
+            882.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            18.0,
+            565.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "La línea superior del vano derecho se interpreta como borde superior de la tapa.",
+            "Su cota superior de 583 mm se aproxima por proporción gráfica; espesor elegido de 18 mm.",
+            "El rebaje de 17 mm respecto de los costados se conserva al comparar con FRONT."
+          ]
+        },
+        {
+          "id": "division",
+          "label": "División interior entre puerta y nicho",
+          "size_mm": [
+            18.0,
+            864.0,
+            529.0
+          ],
+          "origin_mm": [
+            550.0,
+            18.0,
+            36.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "División propuesta detrás del límite derecho de la puerta para separar compartimentos y reducir luces.",
+            "Espesor elegido de 18 mm; posición aproximada deducida del cambio de frente en x=550 mm.",
+            "Apoya sobre la base y llega hasta la cara inferior de la tapa y la cara frontal de la trasera."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Trasera de cierre y arriostramiento",
+          "size_mm": [
+            864.0,
+            18.0,
+            529.0
+          ],
+          "origin_mm": [
+            18.0,
+            882.0,
+            36.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Panel añadido por funcionalidad; el plano no demuestra su existencia.",
+            "Espesor elegido de 18 mm, encajado sin solapamientos entre costados, base y tapa.",
+            "Su capacidad de arriostramiento depende de fijaciones perimetrales y a la división todavía sin dimensionar."
+          ]
+        },
+        {
+          "id": "refuerzo_junta_derecha",
+          "label": "Listón interior para unión de los tramos del costado",
+          "size_mm": [
+            18.0,
+            72.0,
+            529.0
+          ],
+          "origin_mm": [
+            864.0,
+            314.0,
+            36.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Añadido de diseño para dar continuidad a la junta hipotética de SIDE, no medido ni observado.",
+            "Sección de 18 por 72 mm elegida, centrada sobre y=350 mm y adosada al interior del costado.",
+            "Contacta ambos tramos, base y tapa sin penetrarlos; tornillería y resistencia pendientes."
+          ]
+        },
+        {
+          "id": "herraje_puerta_inferior",
+          "label": "Envolvente cuboide idealizada del herraje inferior",
+          "size_mm": [
+            16.0,
+            2.0,
+            40.0
+          ],
+          "origin_mm": [
+            2.0,
+            16.0,
+            100.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Herraje añadido para conectar la puerta al costado sin hacerla apoyar en el suelo.",
+            "Cuboide simplificado entre la cara posterior de la puerta y el frente del costado; no representa la cinemática ni el detalle de una bisagra real.",
+            "Dimensiones y posición elegidas; selección, alojamiento, fijaciones y apertura pendientes de comprobar."
+          ]
+        },
+        {
+          "id": "herraje_puerta_superior",
+          "label": "Envolvente cuboide idealizada del herraje superior",
+          "size_mm": [
+            16.0,
+            2.0,
+            40.0
+          ],
+          "origin_mm": [
+            2.0,
+            16.0,
+            460.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Segundo herraje propuesto para sostener la puerta junto con el inferior.",
+            "Conecta por caras la puerta y el costado; no duplica una pieza observada en otra vista.",
+            "Dimensiones y posición elegidas; el cuboide no acredita compatibilidad con herrajes comerciales ni giro libre."
+          ]
+        }
+      ],
+      "assumptions": [
+        "La única cota numérica explícita del original es la anchura de 900 mm.",
+        "Se mantiene la hipótesis de igual escala en FRONT y SIDE: altura aproximada de 600 mm y profundidad aproximada de 900 mm, ambas pendientes de confirmación.",
+        "Ejes: x anchura, y profundidad hacia atrás, z altura; origen en esquina frontal izquierda al nivel del suelo.",
+        "La revisión se basa en el plano original y los diagnósticos. El render anterior se usa solo para evaluar aquella propuesta, no como evidencia de dimensiones o piezas originales.",
+        "La comparación no justifica cambiar la distribución general: se conserva el frente izquierdo cerrado y el vano derecho abierto.",
+        "Los espesores, refuerzo, trasera, división y herrajes son decisiones de diseño hipotéticas, no mediciones del plano."
+      ],
+      "missing_information": [
+        "Confirmar altura y profundidad e igualdad de escala entre vistas.",
+        "Confirmar si el frente izquierdo es una puerta y si la línea intermedia lateral es una junta constructiva.",
+        "Definir material, cargas, uniones y fijaciones, especialmente de la base, la trasera y la junta lateral.",
+        "Seleccionar bisagras y verificar holguras, recorrido de apertura, acceso al fondo y necesidad de fijación antivuelco."
+      ],
+      "functional_notes": [
+        "Los diagnósticos anteriores no indicaban solapamientos ni piezas flotantes, pero sí una puerta apoyada en el suelo y en contacto con base y tapa. Se introducen holguras y conexiones idealizadas para corregir esa condición funcional.",
+        "Los costados siguen apoyando en z=0; la puerta no se utiliza como soporte estructural del mueble.",
+        "El listón interior proporciona una solución propuesta para unir los dos tramos del costado derecho; su eficacia requiere dimensionar las fijaciones.",
+        "El nicho derecho permanece accesible y vacío entre base, tapa, división y costado, salvo el refuerzo lateral localizado.",
+        "La profundidad inferida de unos 900 mm dificulta alcanzar el fondo; conviene validar el uso antes de desarrollar accesorios interiores.",
+        "Las bisagras solo se representan mediante envolventes ortogonales en posición cerrada; no se ha comprobado su movimiento.",
+        "La trasera debe fijarse adecuadamente para limitar el descuadre. El contacto geométrico por sí solo no constituye una unión resistente.",
+        "Los diagnósticos aportados corresponden a la versión anterior; no equivalen a una validación de esta revisión. No se certifican seguridad, capacidad de carga ni aptitud para fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Mueble bajo de almacenamiento con frente izquierdo cerrado mediante puerta y nicho derecho abierto; uso inferido, no especificado por el usuario.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "puerta_izquierda",
+          "label": "Puerta frontal izquierda, envolvente nominal",
+          "size_mm": [
+            550.0,
+            18.0,
+            600.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto el gran rectángulo izquierdo de FRONT como una puerta, no como un bloque macizo.",
+            "Anchura 550 y altura 600 inferidas proporcionalmente respecto a la cota total de 900 mm; espesor 18 elegido.",
+            "La geometría es nominal: holguras de giro y separación del suelo pendientes de definir."
+          ]
+        },
+        {
+          "id": "montante_frontal_derecho",
+          "label": "Montante frontal del extremo derecho",
+          "size_mm": [
+            18.0,
+            18.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la franja estrecha derecha de FRONT y la franja inicial de SIDE como el extremo frontal de un costado.",
+            "Sección de 18 por 18 mm propuesta; altura 600 inferida.",
+            "Se une al costado posterior sin solapamiento."
+          ]
+        },
+        {
+          "id": "costado_derecho_delantero",
+          "label": "Tramo delantero del costado derecho",
+          "size_mm": [
+            18.0,
+            332.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            18.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto las líneas verticales de SIDE como juntas del costado, no como piezas adicionales superpuestas.",
+            "Profundidad hasta y=350 inferida de la posición proporcional de la línea intermedia de SIDE.",
+            "Espesor de 18 mm elegido como decisión de diseño."
+          ]
+        },
+        {
+          "id": "costado_derecho_trasero",
+          "label": "Tramo trasero del costado derecho",
+          "size_mm": [
+            18.0,
+            550.0,
+            600.0
+          ],
+          "origin_mm": [
+            882.0,
+            350.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la línea intermedia de SIDE como junta entre dos tramos coplanares.",
+            "Profundidad total de 900 y altura de 600 inferidas suponiendo igual escala en ambas vistas.",
+            "La junta a y=350 requiere unión estructural; su solución no aparece en el plano."
+          ]
+        },
+        {
+          "id": "costado_izquierdo",
+          "label": "Costado izquierdo de apoyo",
+          "size_mm": [
+            18.0,
+            882.0,
+            600.0
+          ],
+          "origin_mm": [
+            0.0,
+            18.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Pieza de apoyo propuesta detrás de la puerta; no se considera medida directamente en el dibujo.",
+            "Espesor elegido de 18 mm y profundidad hasta y=900 inferida.",
+            "El costado apoya en el suelo y recibe tapa, base y trasera mediante uniones pendientes."
+          ]
+        },
+        {
+          "id": "base",
+          "label": "Base elevada del almacenamiento y del nicho",
+          "size_mm": [
+            864.0,
+            882.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            18.0,
+            18.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la línea inferior del vano frontal como borde de una base, manteniendo vacío el espacio sobre ella.",
+            "Retiro vertical de 18 mm inferido de la imagen; espesor de 18 mm propuesto.",
+            "Las líneas del plano se tratan como esquemáticas: el espesor puede producir un borde adicional en la proyección."
+          ]
+        },
+        {
+          "id": "tapa",
+          "label": "Tapa ligeramente rebajada respecto de los costados",
+          "size_mm": [
+            864.0,
+            882.0,
+            18.0
+          ],
+          "origin_mm": [
+            18.0,
+            18.0,
+            565.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Interpreto la línea superior del vano como borde de una tapa situada aproximadamente 17 mm bajo el extremo de los costados.",
+            "Cota superior 583 mm inferida proporcionalmente; espesor de 18 mm elegido.",
+            "La tapa se une a costados y división; no es una pieza flotante."
+          ]
+        },
+        {
+          "id": "division",
+          "label": "División entre compartimento cerrado y nicho abierto",
+          "size_mm": [
+            18.0,
+            864.0,
+            529.0
+          ],
+          "origin_mm": [
+            550.0,
+            18.0,
+            36.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "División interior propuesta para separar usos y acortar la luz de los tableros, no observada de forma inequívoca.",
+            "Se sitúa detrás del borde derecho de la puerta, entre base y tapa.",
+            "Espesor 18 mm elegido; termina contra la trasera sin interpenetrarla."
+          ]
+        },
+        {
+          "id": "trasera",
+          "label": "Trasera de cierre y arriostramiento",
+          "size_mm": [
+            864.0,
+            18.0,
+            529.0
+          ],
+          "origin_mm": [
+            18.0,
+            882.0,
+            36.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Trasera añadida como decisión funcional de cierre y arriostramiento; no identificable directamente en las vistas.",
+            "Espesor 18 mm elegido; situada entre base y tapa y entre los costados.",
+            "Debe fijarse perimetralmente y a la división mediante uniones por dimensionar."
+          ]
+        }
+      ],
+      "assumptions": [
+        "La única cota numérica visible es la anchura total de 900 mm en FRONT.",
+        "Se supone igual escala gráfica para FRONT y SIDE: de sus proporciones se infieren aproximadamente 600 mm de altura y 900 mm de profundidad; no son cotas explícitas.",
+        "Origen en la esquina frontal izquierda al nivel del suelo; x anchura, y hacia el fondo y z altura.",
+        "SIDE se interpreta como vista del costado derecho con juntas a aproximadamente 18 y 350 mm del frente.",
+        "Se propone una construcción de paneles de 18 mm; material y espesor son decisiones de diseño, no evidencia medida.",
+        "Las dos vistas representan el mismo mueble y no generan duplicados de sus piezas."
+      ],
+      "missing_information": [
+        "Confirmar altura y profundidad, actualmente inferidas suponiendo igual escala en ambas vistas.",
+        "Confirmar si el rectángulo frontal izquierdo es una puerta y si la línea intermedia de SIDE representa realmente una junta de costado.",
+        "Definir material, cargas previstas, herrajes, holguras de puerta y uniones, especialmente la junta del costado derecho.",
+        "Determinar necesidad de niveladores y de fijación antivuelco según uso y emplazamiento."
+      ],
+      "functional_notes": [
+        "El nicho derecho permanece hueco y accesible por el frente; no se representa como un tablero macizo.",
+        "El compartimento izquierdo se accede abriendo la puerta; la profundidad cercana a 900 mm dificulta alcanzar su fondo y debe validarse para el uso real.",
+        "Los costados transmiten las cargas al suelo. Base, tapa y división necesitan fijaciones estructurales, no simples contactos.",
+        "La trasera proporciona una vía de arriostramiento si se fija adecuadamente; la junta del costado requiere continuidad estructural.",
+        "La puerta nominal requiere ajuste de holguras y bisagras antes de fabricar; el modelo no representa mecanismos de apertura.",
+        "Propuesta hipotética de construcción, sin certificación de seguridad, capacidad de carga ni aptitud para fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "puerta_izquierda",
+          "herraje_puerta_inferior"
+        ],
+        [
+          "puerta_izquierda",
+          "herraje_puerta_superior"
+        ],
+        [
+          "montante_frontal_derecho",
+          "costado_derecho_delantero"
+        ],
+        [
+          "costado_derecho_delantero",
+          "costado_derecho_trasero"
+        ],
+        [
+          "costado_derecho_delantero",
+          "base"
+        ],
+        [
+          "costado_derecho_delantero",
+          "tapa"
+        ],
+        [
+          "costado_derecho_delantero",
+          "refuerzo_junta_derecha"
+        ],
+        [
+          "costado_derecho_trasero",
+          "base"
+        ],
+        [
+          "costado_derecho_trasero",
+          "tapa"
+        ],
+        [
+          "costado_derecho_trasero",
+          "trasera"
+        ],
+        [
+          "costado_derecho_trasero",
+          "refuerzo_junta_derecha"
+        ],
+        [
+          "costado_izquierdo",
+          "base"
+        ],
+        [
+          "costado_izquierdo",
+          "tapa"
+        ],
+        [
+          "costado_izquierdo",
+          "trasera"
+        ],
+        [
+          "costado_izquierdo",
+          "herraje_puerta_inferior"
+        ],
+        [
+          "costado_izquierdo",
+          "herraje_puerta_superior"
+        ],
+        [
+          "base",
+          "division"
+        ],
+        [
+          "base",
+          "trasera"
+        ],
+        [
+          "base",
+          "refuerzo_junta_derecha"
+        ],
+        [
+          "tapa",
+          "division"
+        ],
+        [
+          "tapa",
+          "trasera"
+        ],
+        [
+          "tapa",
+          "refuerzo_junta_derecha"
+        ],
+        [
+          "division",
+          "trasera"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "costado_derecho_delantero",
+        "costado_derecho_trasero",
+        "costado_izquierdo",
+        "montante_frontal_derecho"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "1cc474a686f0140524ffd86ff501a9fdff865821e4943309366c5c01fb42cfbb",
+    "trace": [
+      {
+        "response_id": "resp_0419e77cbe5af8aa006af7ff4f14c487d2a7e301293eb46f70",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 2489,
+        "duration_ms": 53815
+      },
+      {
+        "response_id": "resp_08a6d637355d0120006af7ff84ecc887d2834737ad4bbf07d6",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 4046,
+        "output_tokens": 2305,
+        "duration_ms": 46003
+      }
+    ],
+    "duration_s": 99.84506369999872,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/base.dxf",
+    "parts/base.svg",
+    "parts/costado_derecho_delantero.dxf",
+    "parts/costado_derecho_delantero.svg",
+    "parts/costado_derecho_trasero.dxf",
+    "parts/costado_derecho_trasero.svg",
+    "parts/costado_izquierdo.dxf",
+    "parts/costado_izquierdo.svg",
+    "parts/division.dxf",
+    "parts/division.svg",
+    "parts/herraje_puerta_inferior.dxf",
+    "parts/herraje_puerta_inferior.svg",
+    "parts/herraje_puerta_superior.dxf",
+    "parts/herraje_puerta_superior.svg",
+    "parts/montante_frontal_derecho.dxf",
+    "parts/montante_frontal_derecho.svg",
+    "parts/puerta_izquierda.dxf",
+    "parts/puerta_izquierda.svg",
+    "parts/refuerzo_junta_derecha.dxf",
+    "parts/refuerzo_junta_derecha.svg",
+    "parts/tapa.dxf",
+    "parts/tapa.svg",
+    "parts/trasera.dxf",
+    "parts/trasera.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

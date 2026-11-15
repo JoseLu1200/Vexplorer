@@ -1,0 +1,66 @@
+{
+  "artifacts": {
+    "normalized_dxf": null,
+    "original": {
+      "media_type": "application/pdf",
+      "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/original"
+    },
+    "pages": [
+      {
+        "content_kind": "vector",
+        "height_mm": null,
+        "height_points": 140.0,
+        "image_count": 0,
+        "normalized_dxf": {
+          "media_type": "application/dxf",
+          "unit": "unknown",
+          "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/pages/1/normalized.dxf"
+        },
+        "page_number": 1,
+        "preview": {
+          "media_type": "image/png",
+          "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/pages/1/preview.png"
+        },
+        "rotation": 0,
+        "text_block_count": 1,
+        "vector_path_count": 1,
+        "warnings": [],
+        "width_mm": null,
+        "width_points": 300.0
+      }
+    ],
+    "preview": {
+      "media_type": "image/png",
+      "url": "/api/v1/documents/doc-8a08872bd1904c67afa95430696b60fe/pages/1/preview.png"
+    }
+  },
+  "audit": {
+    "uploaded_at": "2026-11-14T04:06:01.717254+00:00",
+    "uploaded_by": null
+  },
+  "document_id": "doc-8a08872bd1904c67afa95430696b60fe",
+  "ingestion": {
+    "capabilities": {
+      "geometry_analysis": false,
+      "page_geometry_analysis": true,
+      "page_review": true
+    },
+    "errors": [],
+    "state": "needs_review",
+    "warnings": [
+      "source_unit_unknown"
+    ]
+  },
+  "original_filename": "qa-integral-20261114T040600Z-e540ae8f-vector.pdf",
+  "sha256": "5bccf8971939611cdb2119926e15744ef479ee81d882c03670e0d07b7fa351e8",
+  "size_bytes": 948,
+  "source": {
+    "filename": "qa-integral-20261114T040600Z-e540ae8f-vector.pdf",
+    "format": "pdf",
+    "media_type": "application/pdf",
+    "sha256": "5bccf8971939611cdb2119926e15744ef479ee81d882c03670e0d07b7fa351e8",
+    "size_bytes": 948,
+    "unit": "unknown"
+  },
+  "source_kind": "uploaded"
+}

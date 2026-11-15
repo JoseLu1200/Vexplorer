@@ -184,10 +184,26 @@ class HistoricalStore:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS historical_embeddings ("
                 "record_id TEXT NOT NULL, payload_hash TEXT NOT NULL, model TEXT NOT NULL, "
-                "dimensions INTEGER NOT NULL, vector TEXT NOT NULL, "
-                "PRIMARY KEY (record_id, payload_hash, model, dimensions), "
+                "dimensions INTEGER NOT NULL, space_id TEXT NOT NULL, vector TEXT NOT NULL, "
+                "PRIMARY KEY (record_id, payload_hash, space_id), "
                 "FOREIGN KEY (record_id) REFERENCES historical_records(record_id))"
             )
+            embedding_columns = {row[1] for row in db.execute("PRAGMA table_info(historical_embeddings)").fetchall()}
+            if "space_id" not in embedding_columns:
+                db.execute("ALTER TABLE historical_embeddings RENAME TO historical_embeddings_legacy")
+                db.execute(
+                    "CREATE TABLE historical_embeddings ("
+                    "record_id TEXT NOT NULL, payload_hash TEXT NOT NULL, model TEXT NOT NULL, "
+                    "dimensions INTEGER NOT NULL, space_id TEXT NOT NULL, vector TEXT NOT NULL, "
+                    "PRIMARY KEY (record_id, payload_hash, space_id), "
+                    "FOREIGN KEY (record_id) REFERENCES historical_records(record_id))"
+                )
+                db.execute(
+                    "INSERT INTO historical_embeddings "
+                    "SELECT record_id,payload_hash,model,dimensions,"
+                    "'legacy:' || model || ':' || dimensions,vector FROM historical_embeddings_legacy"
+                )
+                db.execute("DROP TABLE historical_embeddings_legacy")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path, timeout=10)
@@ -451,8 +467,13 @@ class HistoricalStore:
             if self.embedding_provider is None:
                 raise ValueError("semantic_provider_unavailable")
             target_embedding = self.embedding_provider.embed(_semantic_text(target))
+            identity = getattr(self.embedding_provider, "identity", None)
             embedding_space = EmbeddingSpace(
-                model=target_embedding.model, dimensions=target_embedding.dimensions
+                **(
+                    identity.model_dump(mode="python", exclude={"prompt_name"})
+                    if identity is not None
+                    else {"model": target_embedding.model, "dimensions": target_embedding.dimensions}
+                )
             )
             ranked_pool = sorted(
                 records,
@@ -504,15 +525,16 @@ class HistoricalStore:
         if self.embedding_provider is None:
             raise ValueError("semantic_provider_unavailable")
         payload_hash = hashlib.sha256(_canonical(record).encode("utf-8")).hexdigest()
+        identity = getattr(self.embedding_provider, "identity", None)
+        space_id = identity.space_id if identity is not None else f"legacy:{self.embedding_provider.model}:{self.embedding_provider.dimensions}"
         with closing(self._connect()) as db, db:
             row = db.execute(
                 "SELECT vector FROM historical_embeddings "
-                "WHERE record_id=? AND payload_hash=? AND model=? AND dimensions=?",
+                "WHERE record_id=? AND payload_hash=? AND space_id=?",
                 (
                     record.record_id,
                     payload_hash,
-                    self.embedding_provider.model,
-                    self.embedding_provider.dimensions,
+                    space_id,
                 ),
             ).fetchone()
             if row is not None:
@@ -523,12 +545,11 @@ class HistoricalStore:
                 except (json.JSONDecodeError, EmbeddingProviderError, TypeError):
                     db.execute(
                         "DELETE FROM historical_embeddings "
-                        "WHERE record_id=? AND payload_hash=? AND model=? AND dimensions=?",
+                        "WHERE record_id=? AND payload_hash=? AND space_id=?",
                         (
                             record.record_id,
                             payload_hash,
-                            self.embedding_provider.model,
-                            self.embedding_provider.dimensions,
+                            space_id,
                         ),
                     )
                 else:
@@ -545,12 +566,14 @@ class HistoricalStore:
                 raise ValueError("embedding_space_incompatible")
             vector = validate_embedding(list(result.vector), result.dimensions)
             db.execute(
-                "INSERT INTO historical_embeddings VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO historical_embeddings "
+                "(record_id,payload_hash,model,dimensions,space_id,vector) VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     record.record_id,
                     payload_hash,
                     result.model,
                     result.dimensions,
+                    space_id,
                     json.dumps(vector, separators=(",", ":")),
                 ),
             )

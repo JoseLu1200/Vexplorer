@@ -99,7 +99,7 @@ El target declara `required_cost_scope` y `required_hours_scope` como listas de 
 
 Todas las respuestas correctas usan `{"data": ..., "error": null}`. Por defecto se excluyen sintéticos, el mismo `project_id` y los `exclude_record_ids` del target.
 
-La recuperación `attribute` publica cada componente del score y diferencias concretas. La recuperación `semantic` requiere un `OpenAIEmbeddingProvider` compatible, publica modelo/dimensiones y cachea por hash del registro, modelo y dimensión. Nunca se presenta el coseno como distancia geométrica, probabilidad o equivalencia de fabricación.
+La recuperación `attribute` publica cada componente del score y diferencias concretas. La recuperación `semantic` requiere el proveedor textual local de EmbeddingGemma 2, publica la identidad completa del espacio y cachea por hash del registro y `space_id`. Nunca se presenta el coseno como distancia geométrica, probabilidad o equivalencia de fabricación.
 
 ## Escenarios provisionales sin promoción de hechos
 

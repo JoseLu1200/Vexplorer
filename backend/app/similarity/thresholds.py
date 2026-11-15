@@ -14,8 +14,9 @@ ThresholdKind = Literal["similarity", "group", "near_duplicate"]
 ABSTENTION_REASON_NO_PRECEDENTS: Literal["sin_precedentes_suficientes"] = "sin_precedentes_suficientes"
 CALIBRATION_FILE_ENV_VAR = "VEXPLORER_SIMILARITY_THRESHOLDS_FILE"
 
-# Calibrated defaults: semantic cosine scores in text-embedding-3-small are
-# compressed into a narrower upper band than geometric descriptor scores.
+# Legacy safety defaults retained for API compatibility. They are not an
+# EmbeddingGemma 2 calibration; deployments must supply model-specific values
+# through VEXPLORER_SIMILARITY_THRESHOLDS_FILE before treating them as gates.
 DEFAULT_SIMILARITY_THRESHOLDS: dict[SimilarityMode, float] = {
     "geometric": 0.78,
     "semantic": 0.90,
@@ -101,6 +102,12 @@ def resolve_threshold(
         raise ValueError(f"unsupported_similarity_mode:{mode}")
     data = _load_calibration_data(config_path)
     section = data.get(kind)
+    if mode == "semantic" and model and model.startswith("embeddinggemma2:"):
+        exact_key = f"{mode}:{descriptor_version}:{model}" if descriptor_version else None
+        candidate = section.get(exact_key) if exact_key and isinstance(section, Mapping) else None
+        if _is_valid_threshold(candidate):
+            return float(candidate)
+        raise ValueError("semantic_threshold_uncalibrated")
     if isinstance(section, Mapping):
         for key in _candidate_keys(mode, descriptor_version, model):
             candidate = section.get(key)

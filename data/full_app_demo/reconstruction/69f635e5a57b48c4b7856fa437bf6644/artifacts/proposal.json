@@ -1,0 +1,138 @@
+{
+  "status": "proposed",
+  "intended_use": "Mesa de trabajo doméstica autoportante para una persona, según declaración humana; sin fijación a pared.",
+  "unit": "mm",
+  "components": [
+    {
+      "id": "tablero_superior",
+      "label": "Tablero de trabajo",
+      "size_mm": [
+        1200.0,
+        600.0,
+        30.0
+      ],
+      "origin_mm": [
+        0.0,
+        0.0,
+        720.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Anchura y profundidad proceden de la envolvente declarada por el usuario, no de cotas del dibujo.",
+        "La banda superior del alzado se interpreta como tablero; los 30 mm de espesor son una hipótesis proporcional.",
+        "Apoyo directo sobre laterales y faldones, sin voladizo; material pendiente."
+      ]
+    },
+    {
+      "id": "lateral_izquierdo",
+      "label": "Lateral portante izquierdo",
+      "size_mm": [
+        60.0,
+        600.0,
+        720.0
+      ],
+      "origin_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se interpreta la banda vertical izquierda como apoyo al suelo; anchura de 60 mm inferida por proporción, no medida.",
+        "Resolverlo como panel de profundidad completa es una decisión de diseño: el alzado no determina su desarrollo en profundidad.",
+        "Profundidad de 600 mm tomada de la declaración humana; altura ajustada al tablero propuesto y a la altura total declarada."
+      ]
+    },
+    {
+      "id": "lateral_derecho",
+      "label": "Lateral portante derecho",
+      "size_mm": [
+        60.0,
+        600.0,
+        720.0
+      ],
+      "origin_mm": [
+        1140.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se interpreta la banda vertical derecha como apoyo simétrico al izquierdo; anchura de 60 mm hipotética.",
+        "El panel de profundidad completa es una decisión de diseño, no una observación del alzado.",
+        "Posición calculada dentro de la anchura humana de 1200 mm; profundidad de 600 mm declarada y altura ajustada al tablero propuesto."
+      ]
+    },
+    {
+      "id": "faldon_frontal",
+      "label": "Faldón frontal bajo el tablero",
+      "size_mm": [
+        1080.0,
+        30.0,
+        80.0
+      ],
+      "origin_mm": [
+        60.0,
+        0.0,
+        640.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "La línea horizontal interior del alzado se interpreta como borde inferior de un faldón, manteniendo abierto el hueco inferior.",
+        "Altura de 80 mm inferida proporcionalmente y espesor de 30 mm elegido como hipótesis de diseño.",
+        "Se propone entre laterales, en contacto con ellos y con el tablero; la unión resistente está pendiente."
+      ]
+    },
+    {
+      "id": "faldon_trasero",
+      "label": "Faldón trasero de rigidización propuesta",
+      "size_mm": [
+        1080.0,
+        30.0,
+        80.0
+      ],
+      "origin_mm": [
+        60.0,
+        570.0,
+        640.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Elemento añadido como decisión de diseño para contribuir al arriostramiento; no es una segunda pieza observada en el alzado.",
+        "Dimensiones y ubicación hipotéticas, alineadas en altura con el faldón frontal para no alterar la abertura frontal.",
+        "Contacta con tablero y laterales; su eficacia depende de uniones aún no definidas."
+      ]
+    }
+  ],
+  "assumptions": [
+    "Ejes: x anchura, y profundidad desde el frente hacia atrás, z altura; suelo z=0.",
+    "La envolvente 1200 × 600 × 750 mm es aportada por el usuario y no observada en el dibujo; el original no contiene cotas numéricas visibles.",
+    "La revisión conserva la geometría propuesta: su proyección frontal es compatible con las proporciones y bandas del alzado ORIGINAL.",
+    "La imagen de la propuesta no se utiliza como evidencia del original. La construcción en profundidad continúa siendo una hipótesis de diseño.",
+    "No se añaden herrajes ni bloques de conexión: el diagnóstico no identifica piezas flotantes ni exige corregir contactos."
+  ],
+  "missing_information": [
+    "Definir materiales y constitución de los paneles.",
+    "Definir cargas de trabajo y acciones laterales previstas.",
+    "Diseñar y verificar uniones, rigidez frente al descuadre, estabilidad y deformaciones.",
+    "Comprobar la altura libre para muslos con la persona y silla previstas."
+  ],
+  "functional_notes": [
+    "Envolvente total de 1200 × 600 × 750 mm, conforme a las dimensiones humanas.",
+    "Hueco frontal libre de 1080 mm de anchura y 640 mm de altura bajo el faldón; permanece vacío y accesible.",
+    "Ambos laterales alcanzan el suelo y sustentan directamente el tablero. Los faldones quedan entre ellos y bajo el tablero, sin interpenetraciones.",
+    "Los diagnósticos aportados registran los ocho contactos previstos, ambos laterales apoyados en suelo, ninguna pieza flotante y ningún solapamiento; no indican necesidad de cambios geométricos.",
+    "Los laterales completos ofrecen una base de apoyo en profundidad y los faldones pueden contribuir a la rigidez transversal únicamente con uniones adecuadas, pendientes de diseño.",
+    "No se presupone fijación a pared. Capacidad de carga y diseño de uniones no evaluados; esta propuesta no certifica seguridad ni aptitud de fabricación."
+  ]
+}

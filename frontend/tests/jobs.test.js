@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { pollJob } from "../core/jobs.js";
+import { jobStatusLabel, pollJob } from "../core/jobs.js";
 
 const appSource = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
@@ -65,4 +65,19 @@ test("job polling stops locally after ten minutes without cancelling the durable
     timeoutMs:600_000,
   }),(error)=>error.name==="TimeoutError"&&/servidor/.test(error.message));
   assert.equal(calls,6);
+});
+
+test("cancelled is terminal and preserves durable cancellation metadata", async () => {
+  const result = await pollJob("job-cancelled", {
+    getJob: async () => ({ id: "job-cancelled", state: "cancelled", queue_position: null, cancel_requested: true, error: { code: "job_cancelled", message: "Cancelado" } }),
+    wait: async () => { throw new Error("must not wait after cancellation"); },
+  });
+  assert.equal(result.state, "cancelled");
+  assert.equal(result.cancelRequested, true);
+});
+
+test("queue labels expose position and pending cancellation", () => {
+  assert.equal(jobStatusLabel({ state: "queued", queuePosition: 3 }), "En cola · posición 3");
+  assert.equal(jobStatusLabel({ state: "running", cancelRequested: true }), "Cancelación solicitada…");
+  assert.equal(jobStatusLabel({ state: "cancelled" }), "Análisis cancelado");
 });

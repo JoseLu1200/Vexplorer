@@ -27,7 +27,7 @@ from backend.app.precedentes.mantenimiento import (
     RegistroEspacio,
 )
 from backend.app.precedentes.regeneracion import estado_vector, regenerar_obsoletos
-from backend.app.semantic.embeddings import EmbeddingResult
+from backend.app.semantic.embeddings import EmbeddingResult, EmbeddingSpaceIdentity
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "planos_demo" / "estanteria_montada.dxf"
@@ -206,6 +206,11 @@ def test_dos_routers_sobre_la_misma_bd_comparten_candado_e_intervalo(tmp_path: P
 class ProveedorFalso:
     model = "modelo-falso"
     dimensions = 4
+    identity = EmbeddingSpaceIdentity(
+        provider="openai", model=model, model_revision="injected-test-provider",
+        modality="text", dimensions=dimensions, normalization="l2",
+        preprocessing_version="injected-test-provider", prompt_name=None,
+    )
 
     def __init__(self) -> None:
         self.llamadas = 0
@@ -245,7 +250,7 @@ def _run_revisado(cliente: TestClient, etiqueta: str) -> str:
     return run_id
 
 
-def _guardar(principal: TestClient, run_id: str, revision: int = 2, modo: str = "openai"):
+def _guardar(principal: TestClient, run_id: str, revision: int = 2, modo: str = "embeddinggemma2"):
     respuesta = principal.post(f"/api/v1/runs/{run_id}/library", json={"result_revision": revision, "label": f"et-{run_id}", "embedding_mode": modo})
     assert respuesta.status_code == 201, respuesta.text
     return respuesta.json()["data"]
@@ -267,7 +272,7 @@ def test_deriva_rotacion_marca_obsoleto_y_la_regeneracion_no_reutiliza_la_cache(
     antes = repositorio.get_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version)
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
-    repositorio.save_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version, antes)
+    repositorio.save_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version, antes, space_id=proveedor.identity.space_id, identity_json=proveedor.identity.model_dump_json())
     [elemento] = _obsoletos(router)
     assert elemento["motivos"] == ["huella_retirada"] and elemento["estado"] == "pendiente"
 
@@ -336,7 +341,7 @@ def _preparar_cache_retirada(principal, router, proveedor, monkeypatch):
     vector_a = repositorio.get_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"])
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
-    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector_a)
+    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector_a, space_id=proveedor.identity.space_id, identity_json=proveedor.identity.model_dump_json())
     assert [item["motivos"] for item in _obsoletos(router)] == [["huella_retirada"]]
     return run_a, _run_revisado(principal, "b")
 
@@ -440,7 +445,7 @@ def test_auto_con_revision_antigua_y_huella_retirada_regenera_sin_cambiar_la_rev
     vector = repositorio.get_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"])
     proveedor.deriva = 0.5
     assert router.post(ROTAR).status_code == 200
-    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector)
+    repositorio.save_embedding(meta["cache_key"], meta["model"], meta["dimensions"], meta["descriptor_version"], vector, space_id=proveedor.identity.space_id, identity_json=proveedor.identity.model_dump_json())
     monkeypatch.setenv(VARIABLE_REGENERACION_AUTO, "1")
     monkeypatch.setattr(mantenimiento.ColaMantenimiento, "encolar", lambda self, clave, tarea: tarea())
     guardado, llamadas = _contar(proveedor, lambda: _guardar(principal, run_id, revision=1))
@@ -663,7 +668,7 @@ def test_un_guardado_concurrente_no_se_pierde_con_la_regeneracion_de_fondo(tmp_p
     monkeypatch.setattr(proveedor, "embed", embed_bloqueante_la_primera_vez)
     _guardar(principal, run_b, revision=2)  # cache hit con huella retirada: encola la regeneracion de fondo
     assert dentro.wait(10)
-    nuevo = principal.post(f"/api/v1/runs/{run_b}/library", json={"result_revision": 1, "label": "NUEVA", "embedding_mode": "openai"})
+    nuevo = principal.post(f"/api/v1/runs/{run_b}/library", json={"result_revision": 1, "label": "NUEVA", "embedding_mode": "embeddinggemma2"})
     assert nuevo.status_code == 201
     soltar.set()
     principal.app.state.cola_mantenimiento.esperar(10)

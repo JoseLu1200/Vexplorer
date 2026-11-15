@@ -1,0 +1,113 @@
+{
+  "status": "proposed",
+  "intended_use": "Mesa de trabajo autoportante, según uso indicado por el usuario.",
+  "unit": "mm",
+  "components": [
+    {
+      "id": "sobre",
+      "label": "Sobre de trabajo rectangular",
+      "size_mm": [
+        1200.0,
+        700.0,
+        30.0
+      ],
+      "origin_mm": [
+        0.0,
+        0.0,
+        720.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se propone un sobre continuo interpretando conjuntamente la planta rectangular y la franja superior de los alzados, no como tres piezas distintas.",
+        "Anchura 1200, profundidad 700 y altura total 750 mm tomadas de las cotas del plano; su aplicación a esta construcción es una hipótesis.",
+        "Espesor de 30 mm inferido aproximadamente de la franja superior, no acotado; apoya directamente sobre ambos laterales."
+      ]
+    },
+    {
+      "id": "lateral_izquierdo",
+      "label": "Panel lateral izquierdo de apoyo",
+      "size_mm": [
+        18.0,
+        700.0,
+        720.0
+      ],
+      "origin_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se interpreta la banda estrecha izquierda del frente y el contorno lateral como un panel vertical de profundidad completa, no como una pata aislada.",
+        "Espesor de 18 mm propuesto por proporción aproximada del frente; no existe cota de espesor.",
+        "Altura 720 mm resultante del sobre propuesto de 30 mm y la cota total de 750 mm; apoyo continuo en suelo."
+      ]
+    },
+    {
+      "id": "lateral_derecho",
+      "label": "Panel lateral derecho de apoyo",
+      "size_mm": [
+        18.0,
+        700.0,
+        720.0
+      ],
+      "origin_mm": [
+        1182.0,
+        0.0,
+        0.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Se interpreta la banda derecha del frente como un segundo panel simétrico al izquierdo, perteneciente al mismo mueble.",
+        "Espesor de 18 mm y profundidad completa de 700 mm son hipótesis constructivas compatibles con las vistas.",
+        "Posición calculada para mantener la anchura total de 1200 mm; altura de 720 mm derivada del sobre propuesto."
+      ]
+    },
+    {
+      "id": "faldon_posterior",
+      "label": "Faldón posterior superior para rigidización",
+      "size_mm": [
+        1164.0,
+        18.0,
+        150.0
+      ],
+      "origin_mm": [
+        18.0,
+        682.0,
+        570.0
+      ],
+      "source_refs": [
+        "input"
+      ],
+      "assumptions": [
+        "Elemento añadido como decisión de diseño para contribuir al arriostramiento de una mesa autoportante; no se identifica expresamente en el plano.",
+        "Se propone situado atrás, con 150 mm de altura y 18 mm de espesor, entre los laterales y en contacto con la cara inferior del sobre.",
+        "Longitud 1164 mm derivada de la anchura total y los espesores laterales propuestos; requiere uniones estructurales pendientes de definición."
+      ]
+    }
+  ],
+  "assumptions": [
+    "Envolvente propuesta de 1200 × 700 × 750 mm, basada en las tres cotas visibles del plano, no en cotas adicionales declaradas por el usuario.",
+    "Origen en la esquina inferior delantera izquierda; x anchura, y hacia el fondo, z vertical.",
+    "Las tres vistas representan un solo objeto. El hueco frontal se conserva vacío.",
+    "Se propone una construcción de paneles planos; materiales y espesores definitivos deben verificarse para el trabajo previsto."
+  ],
+  "missing_information": [
+    "Material, cargas de trabajo y posibles cargas concentradas o equipos sobre el sobre.",
+    "Definición y dimensionado de las uniones sobre-laterales-faldón para transmitir esfuerzos y evitar descuadre.",
+    "Confirmación de que el faldón posterior añadido es compatible con el acceso y uso previstos."
+  ],
+  "functional_notes": [
+    "El sobre transmite las cargas verticales a dos paneles laterales apoyados en el suelo; no se propone fijación a pared.",
+    "Hueco frontal útil propuesto: 1164 mm de anchura y 720 mm de altura hasta el sobre; el faldón queda restringido a los últimos 18 mm del fondo y reduce allí la altura libre a 570 mm.",
+    "Los paneles laterales aportan rigidez en profundidad; el faldón posterior debe trabajar con uniones resistentes para limitar el desplazamiento lateral.",
+    "Las piezas se encuentran por sus caras sin interpenetración; no se representan herrajes desconocidos.",
+    "Propuesta conceptual, sin certificación de estabilidad, capacidad de carga ni aptitud para fabricación."
+  ]
+}

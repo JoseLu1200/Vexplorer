@@ -959,6 +959,38 @@ def test_auditar_universo_deduplica_en_misma_particion(tmp_path: Path):
     assert "m_x.json" in audit["dropped_within_split_duplicate"]["train"]
 
 
+@pytest.mark.parametrize(
+    ("particiones", "campo_audit"),
+    [
+        (("train", "train"), "dropped_within_split_duplicate"),
+        (("train", "test"), "dropped_cross_split"),
+    ],
+)
+def test_indice_no_pierde_vecinos_en_fronteras_de_rejilla(tmp_path: Path, particiones, campo_audit):
+    def modelo(largo: float) -> dict:
+        return {
+            "planks": [
+                [0, 0, 0, 100, 40, 25],
+                [0, 0, 0, largo, 40, 100],
+            ],
+            "attach": [[-1] * 6, [-1] * 6],
+        }
+
+    root = _fuente_con(
+        tmp_path,
+        {
+            "a.json": (particiones[0], modelo(20.48)),
+            "b.json": (particiones[1], modelo(22.48)),
+        },
+        f"src-index-{particiones[1]}",
+    )
+
+    supervivientes, audit = plankassembly_corpus.auditar_universo(root, tolerancia_mm=2.0)
+
+    assert [item.filename for item in supervivientes] == ["a.json"]
+    assert audit[campo_audit][particiones[1]] == ["b.json"]
+
+
 def test_leer_particiones_rechaza_symlink(tmp_path: Path, monkeypatch):
     root = tmp_path / "src_symlink"
     model_dir = root / "extracted" / "data" / "model"

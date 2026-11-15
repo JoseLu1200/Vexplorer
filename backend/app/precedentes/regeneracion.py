@@ -37,6 +37,7 @@ from backend.app.semantic.descriptor import (
 from backend.app.semantic.embeddings import (
     EmbeddingProviderError,
     EmbeddingResult,
+    EmbeddingSpaceIdentity,
     embedding_cache_key,
 )
 
@@ -50,6 +51,7 @@ EstadoRegeneracion = Literal["pendiente", "regenerado", "de_cache", "error", "om
 class ProveedorEmbeddings(Protocol):
     model: str
     dimensions: int
+    identity: EmbeddingSpaceIdentity
 
     def embed(self, text: str) -> EmbeddingResult: ...
 
@@ -57,7 +59,7 @@ class ProveedorEmbeddings(Protocol):
 class RepositorioBiblioteca(Protocol):
     def get_library_items(self) -> tuple[LibraryItem, ...]: ...
 
-    def save_library_item(self, item: LibraryItem) -> None: ...
+    def save_library_item(self, item: LibraryItem, *, expected: LibraryItem | None = None) -> bool: ...
 
     def get_run(self, run_id: str) -> RunSnapshot: ...
 
@@ -65,9 +67,9 @@ class RepositorioBiblioteca(Protocol):
 
     def get_result(self, run_id: str, revision: int | None = None) -> Result: ...
 
-    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str) -> tuple[float, ...]: ...
+    def get_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, *, space_id: str | None = None) -> tuple[float, ...]: ...
 
-    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...]) -> None: ...
+    def save_embedding(self, cache_key: str, model: str, dimensions: int, descriptor_version: str, vector: tuple[float, ...], *, space_id: str | None = None, identity_json: str | None = None) -> None: ...
 
     def invalidate_embeddings(self, model: str, dimensions: int) -> int: ...
 
@@ -148,6 +150,7 @@ def estado_vector(
     espacio_vigente: tuple[str, int] | None = None,
     contexto: ContextoEspacio | None = None,
     incluir_sin_huella: bool = False,
+    identidad_vigente: EmbeddingSpaceIdentity | None = None,
 ) -> EstadoVector:
     """``espacio_vigente`` = (modelo, dimensiones) del proveedor; sin proveedor no se juzga el espacio.
 
@@ -159,10 +162,12 @@ def estado_vector(
         return "ausente"
     if espacio_vigente is not None and (metadatos.model, metadatos.dimensions) != espacio_vigente:
         return "espacio_distinto"
+    if identidad_vigente is not None and metadatos.space_id != identidad_vigente.space_id:
+        return "espacio_distinto"
     if metadatos.descriptor_version != elemento.descriptor.descriptor_version:
         return "espacio_distinto"
     try:
-        repositorio.get_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version)
+        repositorio.get_embedding(metadatos.cache_key, metadatos.model, metadatos.dimensions, metadatos.descriptor_version, space_id=metadatos.space_id)
     except KeyError:
         return "ausente"
     except (ValueError, EmbeddingProviderError):
@@ -185,6 +190,7 @@ def recopilar_hechos(
     contexto: ContextoEspacio | None = None,
     incluir_sin_huella: bool = False,
     solo_ids: frozenset[str] | None = None,
+    identidad_vigente: EmbeddingSpaceIdentity | None = None,
 ) -> tuple[HechosElemento, ...]:
     hechos: list[HechosElemento] = []
     for elemento in sorted(repositorio.get_library_items(), key=lambda item: item.id):
@@ -195,7 +201,7 @@ def recopilar_hechos(
             existe = True
         except KeyError:
             vigente, existe = None, False
-        hechos.append(HechosElemento(elemento=elemento, revision_vigente=vigente, run_existe=existe, estado_vector=estado_vector(repositorio, elemento, espacio_vigente, contexto, incluir_sin_huella)))
+        hechos.append(HechosElemento(elemento=elemento, revision_vigente=vigente, run_existe=existe, estado_vector=estado_vector(repositorio, elemento, espacio_vigente, contexto, incluir_sin_huella, identidad_vigente)))
     return tuple(hechos)
 
 
@@ -290,14 +296,14 @@ def regenerar_elemento(
     except ValueError as exc:
         return _resultado(obsoleto, "omitido", motivo_omision=str(exc) or "descriptor_no_disponible")
     modelo, dimensiones, version = proveedor.model, proveedor.dimensions, descriptor.descriptor_version
+    identidad = proveedor.identity
     texto = semantic_text(descriptor)
-    clave = embedding_cache_key(version, modelo, dimensiones, texto)
-    # La huella se toma ANTES de embeber: si la referencia cambia mientras tanto, no se sella.
+    clave = embedding_cache_key(identidad, version, texto)
     referencia = contexto.referencia_vigente(modelo, dimensiones) if contexto is not None else None
     try:
         if _cache_en_espacio_retirado(contexto, obsoleto, clave, modelo, dimensiones):
             raise KeyError(clave)
-        repositorio.get_embedding(clave, modelo, dimensiones, version)
+        repositorio.get_embedding(clave, modelo, dimensiones, version, space_id=identidad.space_id)
         estado: EstadoRegeneracion = "de_cache"
     except (KeyError, ValueError, EmbeddingProviderError):
         # Ausente, corrupto o de un espacio retirado en caché: se vuelve a embeber y se sobrescribe.
@@ -307,13 +313,25 @@ def regenerar_elemento(
                 raise EmbeddingProviderError("embedding_space_incompatible")
             if latido is not None:
                 latido()
-            repositorio.save_embedding(clave, generado.model, generado.dimensions, version, generado.vector)
+            repositorio.save_embedding(
+                clave, generado.model, generado.dimensions, version, generado.vector,
+                space_id=identidad.space_id,
+                identity_json=identidad.model_dump_json(),
+            )
         except EmbeddingProviderError as exc:
             return _resultado(obsoleto, "error", codigo=str(exc) or "semantic_provider_failed")
         estado = "regenerado"
         if contexto is not None and referencia is not None:
             contexto.sellar(clave, modelo, dimensiones, version, huella_esperada=referencia.huella_id)
-    metadatos = EmbeddingMetadata(model=modelo, dimensions=dimensiones, descriptor_version=version, cache_key=clave, status="cache" if estado == "de_cache" else "generated")
+    metadatos = EmbeddingMetadata(
+        provider=identidad.provider, model=modelo,
+        model_revision=identidad.model_revision, modality=identidad.modality,
+        normalization=identidad.normalization,
+        preprocessing_version=identidad.preprocessing_version,
+        prompt_name=identidad.prompt_name,
+        dimensions=dimensiones, descriptor_version=version, cache_key=clave,
+        status="cache" if estado == "de_cache" else "generated",
+    )
     actualizado = LibraryItem(
         id=elemento.id,
         run_id=elemento.run_id,
@@ -331,7 +349,8 @@ def regenerar_elemento(
         # El usuario guardó otra cosa mientras se embebía: escribir ahora pisaría su guardado.
         return _resultado(obsoleto, "omitido", motivo_omision="modificado_durante_regeneracion")
     try:
-        repositorio.save_library_item(actualizado)
+        if not repositorio.save_library_item(actualizado, expected=elemento):
+            return _resultado(obsoleto, "omitido", motivo_omision="modificado_durante_regeneracion")
     except (KeyError, ValueError) as exc:
         return _resultado(obsoleto, "error", codigo=f"guardado_fallido:{exc}")
     if contexto is not None:
@@ -382,7 +401,7 @@ def regenerar_obsoletos(
     if not simular and proveedor is None:
         raise LookupError("proveedor_no_disponible")
     espacio = (proveedor.model, proveedor.dimensions) if proveedor is not None else None
-    hechos = recopilar_hechos(repositorio, espacio, contexto, incluir_sin_huella, solo_ids)
+    hechos = recopilar_hechos(repositorio, espacio, contexto, incluir_sin_huella, solo_ids, proveedor.identity if proveedor is not None else None)
     obsoletos = detectar_obsoletos(hechos)
     if conservar_revision:
         obsoletos = _solo_por_espacio(obsoletos, {hecho.elemento.id: hecho.elemento for hecho in hechos})

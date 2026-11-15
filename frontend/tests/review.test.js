@@ -38,3 +38,21 @@ test("scenario review sends technical premises without calculating dimensions in
 test("scenario review rejects a missing or non positive thickness", () => {
   assert.throws(() => buildScenarioReviewPayload({ result_revision: 1 }, { scenario_id: "a", reviewer_name: "Marta", confirmed_thickness_mm: "0", notes: "motivo" }), /espesor/i);
 });
+
+test("review draft guard tracks effective changes and protects unload", async () => {
+  const { createReviewDraftGuard } = await import("../core/review.js");
+  const listeners=new Map(),windowListeners=new Map(),control={id:"review-reason",name:"",type:"text",value:"initial",checked:false,disabled:false,dataset:{}};
+  const form={dataset:{},querySelectorAll:()=>[control],addEventListener:(type,handler)=>listeners.set(type,handler),removeEventListener(){}};
+  const windowRef={addEventListener:(type,handler)=>windowListeners.set(type,handler),removeEventListener(){}};
+  let confirms=0;
+  const guard=createReviewDraftGuard(form,{windowRef,confirmDiscard:()=>{confirms+=1;return false;}});
+  guard.markClean();
+  assert.equal(form.dataset.dirty,"false");
+  control.value="changed";listeners.get("input")();
+  assert.equal(form.dataset.dirty,"true");
+  assert.equal(guard.canDiscard(),false);assert.equal(confirms,1);
+  let prevented=false;const event={preventDefault(){prevented=true;},returnValue:null};windowListeners.get("beforeunload")(event);
+  assert.equal(prevented,true);assert.equal(event.returnValue,"");
+  control.value="initial";listeners.get("input")();
+  assert.equal(form.dataset.dirty,"false");
+});

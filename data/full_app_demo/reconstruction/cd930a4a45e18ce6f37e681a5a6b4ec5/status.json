@@ -1,0 +1,276 @@
+{
+  "job_id": "cd930a4a45e18ce6f37e681a5a6b4ec5",
+  "run_id": "study:case-05",
+  "status": "needs_review",
+  "source_refs": [
+    "inputs/case-05/drawing.png"
+  ],
+  "source_sha256": "959000cac5f5bb43cc264299b76c410df941dea4c647def33581d60fb59f9ac7",
+  "unit": "mm",
+  "outcome": {
+    "proposal": {
+      "status": "proposed",
+      "intended_use": "Hipótesis: envolvente alta de mobiliario para alojar un equipo o delimitar un nicho, abierta por delante, detrás y abajo, con instalación arriostrada a pared.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "lateral_izquierdo",
+          "label": "Lateral izquierdo con apoyo continuo en suelo",
+          "size_mm": [
+            18.0,
+            600.0,
+            2042.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El doble trazo vertical izquierdo de FRONT se interpreta como los bordes de un único panel.",
+            "Espesor de 18 mm adoptado como decisión de diseño, no como cota medida.",
+            "Profundidad de 600 mm y altura exterior de 2060 mm inferidas aproximadamente por proporción con la anchura acotada, suponiendo igual escala en ambas vistas.",
+            "Se propone que termine bajo la tapa y apoye sobre suelo nivelado; su fijación posterior a pared queda pendiente de diseño."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Lateral derecho con apoyo continuo en suelo",
+          "size_mm": [
+            18.0,
+            600.0,
+            2042.0
+          ],
+          "origin_mm": [
+            1182.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El doble trazo vertical derecho de FRONT se interpreta como un único panel simétrico al izquierdo.",
+            "Espesor de 18 mm y profundidad de 600 mm adoptados como hipótesis de diseño y proporción, respectivamente.",
+            "Se dispone bajo la tapa, dejando 1200 mm de anchura exterior y 1164 mm de hueco libre.",
+            "SIDE representa la proyección lateral del mismo conjunto, no un panel adicional; la fijación posterior a pared queda pendiente de diseño."
+          ]
+        },
+        {
+          "id": "tapa_superior",
+          "label": "Tapa apoyada sobre los dos laterales, sin vuelos",
+          "size_mm": [
+            1200.0,
+            600.0,
+            18.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            2042.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El doble trazo horizontal superior de FRONT se interpreta como una tapa única.",
+            "La cota visible de 1200 mm se adopta como anchura exterior total, coincidente con la tapa.",
+            "Profundidad de 600 mm inferida por proporción de SIDE; espesor de 18 mm elegido como decisión de diseño.",
+            "Se adopta una unión a tope sobre los laterales, sin interpenetraciones; herrajes y rigidez de las juntas por definir."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Origen en la esquina inferior delantera izquierda; x anchura, y profundidad hacia atrás y z altura desde el suelo.",
+        "La única dimensión numérica visible es 1200 mm de anchura. Altura, profundidad, espesores y disposición de juntas siguen siendo hipótesis.",
+        "Se conserva la construcción de tres paneles: el plano original no justifica añadir base, estantes, puertas o trasera.",
+        "La viabilidad funcional propuesta depende de arriostramiento mediante fijaciones a una pared resistente; no se plantea como estructura autoportante sin ellas.",
+        "No se modelan pared ni herrajes: su geometría, material y condiciones de instalación no están definidos."
+      ],
+      "missing_information": [
+        "Confirmar uso previsto, altura y profundidad, inferidas estas últimas del dibujo.",
+        "Determinar material, espesores definitivos, cargas y uniones entre tapa y laterales.",
+        "Definir pared receptora, fijaciones y disposición del arriostramiento contra descuadre y vuelco.",
+        "Si se alojará un equipo, confirmar sus dimensiones y necesidades de ventilación y mantenimiento."
+      ],
+      "functional_notes": [
+        "Revisión frente al plano ORIGINAL: FRONT mantiene la abertura hasta el suelo y los tres lados del contorno; SIDE es compatible con un lateral de profundidad continua. No se identifica una discrepancia que justifique cambiar la posición de las tres piezas.",
+        "Los diagnósticos suministrados indican contacto de la tapa con ambos laterales, dos laterales apoyados en suelo y ausencia de solapes, piezas flotantes o piezas bajo el suelo. Se conserva por ello la geometría propuesta.",
+        "La imagen de la propuesta se utiliza solo para revisar esa geometría, no como evidencia dimensional del plano original.",
+        "Hueco nominal: 1164 mm de anchura por 2042 mm de altura y 600 mm de profundidad, sin descontar futuros herrajes. El hueco no se convierte en un tablero.",
+        "La carga de la tapa se transmite a ambos laterales y al suelo; la resistencia de la tapa y las uniones no está evaluada.",
+        "La geometría por sí sola no resuelve el arriostramiento: las fijaciones a pared son una condición pendiente, no un elemento ya verificado.",
+        "No se certifican seguridad, capacidad de carga ni aptitud de fabricación."
+      ]
+    },
+    "baseline": {
+      "status": "proposed",
+      "intended_use": "Hipótesis: envolvente alta de mobiliario, abierta por delante, detrás y abajo, para alojar un equipo o crear un nicho accesible; no se interpreta como mesa ni como armario equipado.",
+      "unit": "mm",
+      "components": [
+        {
+          "id": "lateral_izquierdo",
+          "label": "Panel lateral izquierdo apoyado en el suelo",
+          "size_mm": [
+            18.0,
+            600.0,
+            2042.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta el trazo vertical doble izquierdo de FRONT como un único panel, no como dos piezas.",
+            "Espesor de 18 mm propuesto por diseño, compatible aproximadamente con la separación de trazos; no está acotado.",
+            "Profundidad de 600 mm y altura total de conjunto de 2060 mm inferidas por proporción gráfica respecto a los 1200 mm de anchura, suponiendo igual escala en FRONT y SIDE.",
+            "El lateral termina bajo la tapa y su canto inferior apoya continuamente en suelo nivelado."
+          ]
+        },
+        {
+          "id": "lateral_derecho",
+          "label": "Panel lateral derecho apoyado en el suelo",
+          "size_mm": [
+            18.0,
+            600.0,
+            2042.0
+          ],
+          "origin_mm": [
+            1182.0,
+            0.0,
+            0.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "Se interpreta el trazo vertical doble derecho de FRONT como un único panel.",
+            "Espesor de 18 mm propuesto, simétrico al lateral izquierdo; no es una cota explícita.",
+            "Se adopta profundidad de 600 mm y altura hasta la cara inferior de la tapa de 2042 mm por la misma hipótesis proporcional del conjunto.",
+            "SIDE se interpreta como la proyección de uno de los laterales completos, no como una pieza adicional."
+          ]
+        },
+        {
+          "id": "tapa_superior",
+          "label": "Tapa horizontal apoyada sobre ambos laterales",
+          "size_mm": [
+            1200.0,
+            600.0,
+            18.0
+          ],
+          "origin_mm": [
+            0.0,
+            0.0,
+            2042.0
+          ],
+          "source_refs": [
+            "input"
+          ],
+          "assumptions": [
+            "El doble trazo superior de FRONT se interpreta como una tapa que cubre los cantos superiores de ambos laterales.",
+            "Se adopta la anchura exterior acotada de 1200 mm como anchura de la tapa, sin vuelos.",
+            "Profundidad inferida de 600 mm y espesor de diseño de 18 mm; altura exterior resultante de 2060 mm.",
+            "Las juntas superiores se proponen a tope, con fijaciones por definir; los volúmenes solamente se tocan, sin interpenetrarse."
+          ]
+        }
+      ],
+      "assumptions": [
+        "Ejes: x de izquierda a derecha, y desde el frente hacia el fondo y z desde el suelo hacia arriba; origen en la esquina inferior delantera izquierda del conjunto.",
+        "La única cota explícita es la anchura de 1200 mm. Las restantes dimensiones son hipótesis de construcción, no mediciones certificadas.",
+        "Se supone igual escala gráfica entre ambas vistas: la altura dibujada equivale aproximadamente a 2060 mm y la profundidad a 600 mm, redondeadas.",
+        "La abertura inferior de FRONT se conserva: no se añaden base, puertas, estantes ni un panel macizo que ocupe el hueco.",
+        "Se propone instalación fija contra una pared resistente, no uso autoportante sin arriostramiento."
+      ],
+      "missing_information": [
+        "Confirmar uso, altura y profundidad requeridas; estas dos últimas no están acotadas.",
+        "Definir material, espesores definitivos, cargas y prestaciones de las uniones superiores.",
+        "Definir soporte de pared y anclajes necesarios para arriostrar ambos laterales y la zona superior, evitando descuadre y vuelco.",
+        "Confirmar dimensiones y holguras de acceso, ventilación y mantenimiento si se alojará un equipo."
+      ],
+      "functional_notes": [
+        "Los dos laterales transmiten al suelo el peso propio y las cargas de la tapa; no hay piezas flotantes.",
+        "El hueco geométrico propuesto mide 1164 mm de ancho, 2042 mm de alto y 600 mm de profundidad, sin descontar herrajes futuros.",
+        "El hueco queda abierto hasta el suelo y por la parte posterior; la pared de instalación no se representa como componente del mueble.",
+        "La configuración en U requiere uniones superiores y fijaciones a pared que proporcionen arriostramiento. Sin resolverlas no se considera apta para uso libre.",
+        "No se presupone capacidad portante de la tapa para almacenamiento ni para cargas suspendidas. Esta propuesta no certifica seguridad ni fabricación."
+      ]
+    },
+    "checks": {
+      "contacts": [
+        [
+          "lateral_izquierdo",
+          "tapa_superior"
+        ],
+        [
+          "lateral_derecho",
+          "tapa_superior"
+        ]
+      ],
+      "overlaps": [],
+      "grounded_ids": [
+        "lateral_derecho",
+        "lateral_izquierdo"
+      ],
+      "floating_ids": [],
+      "below_ground_ids": [],
+      "load_capacity": "not_evaluated",
+      "joint_design": "not_evaluated",
+      "functional_certification": false
+    },
+    "source_sha256": "959000cac5f5bb43cc264299b76c410df941dea4c647def33581d60fb59f9ac7",
+    "trace": [
+      {
+        "response_id": "resp_0e0cb017135b67e2006af7ff1e325487d2927b502b82709cee",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 2013,
+        "output_tokens": 1201,
+        "duration_ms": 30054
+      },
+      {
+        "response_id": "resp_0beb4801c50e475c006af7ff3c3f3887d28d80c11e6a911c7b",
+        "model": "gpt-6.1-sol",
+        "input_tokens": 3245,
+        "output_tokens": 1026,
+        "duration_ms": 18635
+      }
+    ],
+    "duration_s": 48.698387899996305,
+    "status": "needs_review",
+    "certified_for_manufacturing": false
+  },
+  "study_output": true,
+  "artifacts": [
+    "assembly.glb",
+    "bom.csv",
+    "checks.json",
+    "exploded.png",
+    "mask-00.png",
+    "mask-01.png",
+    "mask-02.png",
+    "mask-03.png",
+    "mask-04.png",
+    "mask-05.png",
+    "parts/lateral_derecho.dxf",
+    "parts/lateral_derecho.svg",
+    "parts/lateral_izquierdo.dxf",
+    "parts/lateral_izquierdo.svg",
+    "parts/tapa_superior.dxf",
+    "parts/tapa_superior.svg",
+    "proposal.json",
+    "retrieval-context.jsonl",
+    "scene.json",
+    "view-00.png",
+    "view-01.png",
+    "view-02.png",
+    "view-03.png",
+    "view-04.png",
+    "view-05.png"
+  ]
+}

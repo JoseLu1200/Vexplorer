@@ -511,15 +511,7 @@ def semantic_match(
 ) -> SimilarityMatch:
     if query.embedding is None or candidate.embedding is None:
         raise ValueError("semantic_embedding_missing")
-    if (
-        query.embedding.model,
-        query.embedding.dimensions,
-        query.embedding.descriptor_version,
-    ) != (
-        candidate.embedding.model,
-        candidate.embedding.dimensions,
-        candidate.embedding.descriptor_version,
-    ):
+    if query.embedding.space_identity != candidate.embedding.space_identity:
         raise ValueError("embedding_space_incompatible")
     score = round(cosine_similarity(query_vector, candidate_vector), 6)
     comparison = technical_similarity(query.descriptor, candidate.descriptor)
@@ -714,11 +706,7 @@ def semantic_groups(
     if any(item.embedding is None or item.id not in vectors for item in ordered):
         raise ValueError("semantic_embedding_missing")
     spaces = {
-        (
-            item.embedding.model,
-            item.embedding.dimensions,
-            item.embedding.descriptor_version,
-        )
+        item.embedding.space_identity
         for item in ordered
         if item.embedding is not None
     }

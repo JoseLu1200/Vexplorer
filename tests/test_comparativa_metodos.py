@@ -139,6 +139,52 @@ def test_reference_is_not_opened_before_the_run_is_frozen(tmp_path: Path) -> Non
     assert SpyReader.private_reads == 1
 
 
+def test_each_method_gets_an_isolated_input_and_mutation_fails(tmp_path: Path) -> None:
+    from evaluation.comparativa.model import MethodResult
+
+    seen_paths: dict[str, list[Path]] = {}
+    original = dev_reader(tmp_path / "stage").public_cases()[0]
+    expected = original.path.read_bytes()
+
+    class Mutator:
+        variant = "mutator"
+        stochastic = False
+
+        def describe(self):
+            return {"variant": self.variant}
+
+        def run(self, case, **_kwargs):
+            seen_paths.setdefault(case.case_id, []).append(case.path)
+            case.path.write_bytes(b"mutated")
+            return MethodResult()
+
+    class Observer:
+        variant = "observer"
+        stochastic = False
+
+        def describe(self):
+            return {"variant": self.variant}
+
+        def run(self, case, **_kwargs):
+            seen_paths.setdefault(case.case_id, []).append(case.path)
+            assert case.path.read_bytes() != b"mutated"
+            return MethodResult()
+
+    run_dir = tmp_path / "run"
+    execute_run(dev_reader(tmp_path / "stage-run"), [Mutator(), Observer()], run_dir, clock=fixed_clock())
+
+    first_case = {
+        row["variant"]: row
+        for path in (run_dir / "outputs").rglob("*.json")
+        if (row := json.loads(path.read_text(encoding="utf-8")))["case_id"] == original.case_id
+    }
+    assert first_case["mutator"]["status"] == "failed"
+    assert first_case["mutator"]["reason"] == "input_mutated"
+    assert first_case["observer"]["status"] == "ok"
+    assert all(len(paths) == 2 and paths[0] != paths[1] for paths in seen_paths.values())
+    assert original.path.read_bytes() == expected
+
+
 def test_extra_output_file_after_freezing_blocks_the_reference(tmp_path: Path) -> None:
     SpyReader.private_reads = 0
     reader = SpyReader(REPO / "data" / "planos_demo", REPO / "evaluation" / "reference", tmp_path / "stage")
