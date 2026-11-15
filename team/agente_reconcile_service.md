@@ -36,4 +36,3 @@
 
 - Sin commits. El coordinador conserva la suite global y la integración final.
 - Reservas de los tres archivos entregables liberables tras la revisión.
-
