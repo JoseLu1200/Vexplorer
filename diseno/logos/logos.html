@@ -1,0 +1,380 @@
+<title>Vexplorer Logos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- Direcciones de logo de Vexplorer, línea cobalto. Generado por build_logos.py; no editar a mano. Fuentes: Sofia Sans (OFL) desde Google Fonts. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22%3E%3Crect width=%2248%22 height=%2248%22 fill=%22%232a4486%22/%3E%3Cpolygon points=%224,12 12,12 22.4,42 17.6,42%22 fill=%22%23e9edf6%22/%3E%3Cpolygon points=%2244.4,6 36.4,6 26,36 30.8,36%22 fill=%22%23e9edf6%22/%3E%3Cline x1=%2223.2%22 y1=%2241.6%22 x2=%2228.8%22 y2=%2241.6%22 stroke=%22%23cfa477%22 stroke-width=%223.4%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@300..900&family=Sofia+Sans+Condensed:wght@500..900&family=Sofia+Sans+Extra+Condensed:wght@500..900&family=Sofia+Sans+Semi+Condensed:wght@400..800&display=swap">
+<style>
+/* Hoja de especímenes: cada dirección es un cajetín de celdas unidas por líneas de 1 px, con el símbolo sobre papel como celda principal y la cabecera real debajo. */
+:root {
+  --bg: #ece6da;
+  --bg-2: #e3dccd;
+  --ink: #1c2541;
+  --ink-2: #4c5570;
+  --line: rgba(28, 37, 65, 0.18);
+  --wood: #c79a68;
+  /* Superficies de prueba: no cambian con el tema, porque enseñan el logo sobre cada fondo de la marca. */
+  --paper: #ece6da;
+  --paper-ink: #1c2541;
+  --paper-acc: #c79a68;
+  --paper-line: rgba(28, 37, 65, 0.16);
+  --paper-hover: #e4dccb;
+  --cob: #2a4486;
+  --cob-ink: #e9edf6;
+  --cob-acc: #cfa477;
+  --night: #131a2c;
+  --night-ink: #e6e1d6;
+  --night-acc: #cfa477;
+  --night-line: rgba(230, 225, 214, 0.14);
+  --tab-l-frame: #d8d2c6;
+  --tab-l: #f6f2ea;
+  --tab-l-ink: #1c2541;
+  --tab-d-frame: #0e1322;
+  --tab-d: #222a40;
+  --tab-d-ink: #e6e1d6;
+  --f-display: "Sofia Sans Extra Condensed", "Arial Narrow", sans-serif;
+  --f-cond: "Sofia Sans Condensed", "Arial Narrow", sans-serif;
+  --f-semi: "Sofia Sans Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-wide: "Sofia Sans", Arial, sans-serif;
+  --gutter-l: max(16px, 4vw, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, 4vw, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131a2c;
+    --bg-2: #1a2238;
+    --ink: #e6e1d6;
+    --ink-2: #a8aec0;
+    --line: rgba(230, 225, 214, 0.16);
+    --wood: #cfa477;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131a2c;
+  --bg-2: #1a2238;
+  --ink: #e6e1d6;
+  --ink-2: #a8aec0;
+  --line: rgba(230, 225, 214, 0.16);
+  --wood: #cfa477;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-semi);
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  padding-left: var(--gutter-l);
+  padding-right: var(--gutter-r);
+  padding-block: 52px 136px;
+}
+:focus-visible { outline: 2px solid var(--wood); outline-offset: 3px; }
+
+.top { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 46ch); gap: 20px 52px; align-items: end; }
+.top h1 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(52px, 8.4vw, 132px);
+  line-height: 0.86;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+.top p { margin: 0 0 6px; color: var(--ink-2); max-width: 46ch; }
+
+.index {
+  margin-top: 52px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.index a {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 20px 8px 14px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  --mk-acc: var(--paper-acc);
+  --mk-bg: var(--paper);
+  text-decoration: none;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1;
+}
+.index a:hover { background: var(--paper-hover); --mk-bg: var(--paper-hover); }
+.index svg { width: 56px; height: 56px; }
+
+.dir { margin-top: 136px; }
+.dir + .dir { margin-top: 84px; }
+.dir-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 32px; margin-bottom: 20px; }
+.dir-head h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(40px, 5.2vw, 76px);
+  line-height: 0.9;
+}
+.dir-head p { margin: 0; color: var(--ink-2); max-width: 62ch; flex: 1 1 32ch; min-width: 0; }
+
+.board {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 4fr);
+  grid-template-rows: auto 168px auto auto;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.cell { min-width: 0; display: grid; place-items: center; padding: 20px; overflow: hidden; }
+.paper { background: var(--paper); color: var(--paper-ink); --mk-acc: var(--paper-acc); --mk-bg: var(--paper); }
+.cob { background: var(--cob); color: var(--cob-ink); --mk-acc: var(--cob-acc); --mk-bg: var(--cob); }
+.sym-p { grid-column: 1; grid-row: 1; min-height: 360px; }
+.sym-c { grid-column: 2; grid-row: 1; }
+.word { grid-column: 3; grid-row: 1; font-size: clamp(40px, 4.6vw, 70px); }
+.lock-p { grid-column: 1; grid-row: 2; font-size: clamp(30px, 3vw, 44px); }
+.lock-c { grid-column: 2; grid-row: 2; font-size: clamp(26px, 2.2vw, 34px); }
+.fav { grid-column: 3; grid-row: 2; }
+.nav { grid-column: 1 / -1; padding: 0; display: block; place-items: normal; }
+.sym-p .big { width: min(72%, 300px); height: auto; }
+.sym-c .big { width: min(66%, 200px); height: auto; }
+
+/* logotipos: cada dirección trae su corte */
+.wm { display: inline-block; line-height: 1; white-space: nowrap; }
+.wm-despiece { font-family: var(--f-display); font-weight: 700; letter-spacing: 0.01em; }
+.wm-tablero { font-family: var(--f-wide); font-weight: 800; letter-spacing: -0.02em; font-size: 0.86em; }
+.wm-cota { font-family: var(--f-semi); font-weight: 600; letter-spacing: 0.005em; font-size: 0.9em; display: inline-grid; }
+.wm-cota .wm-dim { display: block; width: 0; min-width: 100%; height: 0.36em; overflow: visible; margin-top: 0.06em; }
+.wm-cota .wm-dim line { stroke: currentColor; stroke-width: 1; }
+.wm-cota .wm-dim .tk { stroke: var(--mk-acc); stroke-width: 2; }
+.wm-curvas { font-family: var(--f-wide); font-weight: 500; letter-spacing: 0.035em; font-size: 0.84em; }
+.wm-brote { font-family: var(--f-cond); font-weight: 600; letter-spacing: 0.02em; font-size: 0.94em; }
+.wm-milano { font-family: var(--f-display); font-weight: 900; letter-spacing: 0.015em; }
+.wm-ensanche span { display: inline-block; }
+.wm-ensanche { font-size: 0.92em; }
+.wm-cap .e0 { font-size: 1.42em; line-height: 0.8; margin-right: 0.03em; }
+.wm-ensanche .e0 { font-family: var(--f-display); font-weight: 900; }
+.wm-ensanche .e1 { font-family: var(--f-display); font-weight: 840; }
+.wm-ensanche .e2 { font-family: var(--f-cond); font-weight: 770; }
+.wm-ensanche .e3 { font-family: var(--f-cond); font-weight: 700; }
+.wm-ensanche .e4 { font-family: var(--f-semi); font-weight: 640; }
+.wm-ensanche .e5 { font-family: var(--f-semi); font-weight: 560; }
+.wm-ensanche .e6 { font-family: var(--f-wide); font-weight: 480; }
+.wm-ensanche .e7 { font-family: var(--f-wide); font-weight: 400; }
+.wm-ensanche .e8 { font-family: var(--f-wide); font-weight: 320; }
+
+/* combinación: el símbolo mide algo más que la altura de mayúscula */
+.lock { display: inline-flex; align-items: center; gap: var(--lk-gap, 0.18em); white-space: nowrap; }
+.lock .lk-sym { width: var(--lk, 1.16em); height: var(--lk, 1.16em); flex: none; margin-block: -0.1em; }
+.lock .wm { transform: translateY(var(--lk-y, 0.04em)); }
+.lk-tablero { --lk: 1.02em; --lk-gap: 0.16em; }
+.lk-cota { --lk: 1.2em; --lk-y: 0.12em; }
+.lk-curvas { --lk: 1.12em; --lk-gap: 0.14em; }
+.lk-brote { --lk: 1.22em; --lk-gap: 0.1em; }
+.lk-milano { --lk: 1.1em; --lk-gap: 0.12em; }
+.lk-ensanche { --lk: 1.1em; --lk-gap: 0.08em; }
+
+/* prueba de favicon: pestañas a tamaño real, 16 px, y el icono a 32 px */
+.fav { display: grid; grid-template-columns: auto auto; gap: 8px 16px; align-content: center; justify-content: center; background: var(--bg-2); padding: 16px; }
+.tabbar { grid-column: 1; padding: 7px 10px 0; display: flex; }
+.tb-l { background: var(--tab-l-frame); }
+.tb-d { background: var(--tab-d-frame); }
+.tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 10px 0 11px; border-radius: 7px 7px 0 0;
+  font: 12px/1 system-ui, "Segoe UI", sans-serif;
+  min-width: 128px;
+}
+.tab svg { flex: none; }
+.tb-l .tab { background: var(--tab-l); color: var(--tab-l-ink); }
+.tb-d .tab { background: var(--tab-d); color: var(--tab-d-ink); }
+.tab .tt { flex: 1; }
+.tab .tx { opacity: 0.55; font-size: 13px; }
+.ic32 { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.ic { display: grid; place-items: center; width: 48px; height: 48px; }
+.ic-l { background: var(--tab-l); }
+.ic-d { background: var(--tab-d-frame); }
+
+/* cabecera de ejemplo con las medidas de la landing */
+.nav-light { background: var(--paper); color: var(--paper-ink); --mk-acc: var(--paper-acc); --mk-bg: var(--paper); --nl: var(--paper-line); --btn: var(--paper-acc); --btn-ink: var(--paper-ink); }
+.nav-dark { background: var(--night); color: var(--night-ink); --mk-acc: var(--night-acc); --mk-bg: var(--night); --nl: var(--night-line); --btn: var(--night-acc); --btn-ink: var(--night); }
+.mnav {
+  height: 68px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 var(--gutter-r) 0 var(--gutter-l);
+  border-bottom: 1px solid var(--nl);
+  margin-bottom: 28px;
+  font-size: 26px;
+}
+.mnav .lock { gap: calc(var(--lk-gap, 0.18em) * 0.9); }
+.mnav-r { display: flex; gap: 12px; align-items: center; }
+.mtheme { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--nl); }
+.mbtn {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px;
+  background: var(--btn); color: var(--btn-ink);
+  font-family: var(--f-semi); font-weight: 650; font-size: 15px; line-height: 1;
+}
+
+/* movimiento al pasar el ratón por los símbolos grandes; reposo = logo montado */
+@media (prefers-reduced-motion: no-preference) {
+  .big * { transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.5s; transform-box: view-box; }
+  .a-despiece .p-r { transition-duration: 0.8s; }
+  .cell:hover > .a-despiece .p-r { transform: translate(-2.4px, 6px); }
+  .cell:hover > .a-despiece .p-seat { opacity: 0; }
+  .cell:hover > .a-tablero .p-tl { transform: translate(-2.2px, 0.6px); }
+  .cell:hover > .a-tablero .p-tr { transform: translate(2.2px, 0.6px); }
+  .cell:hover > .a-tablero .p-tm { transform: translate(0, -2.4px); }
+  .cell:hover > .a-tablero .p-tv { transform: translate(0, 1.4px); }
+  .cell:hover > .a-cota .p-dim { animation: dim-draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .cell:hover > .a-cota .p-ticks { animation: tick-in 0.9s steps(1, end); }
+  .a-curvas .p-k2 { transition-delay: 0.08s; }
+  .cell:hover > .a-curvas .p-k1 { transform: translate(0, 1.6px); }
+  .cell:hover > .a-curvas .p-k2 { transform: translate(0, 3.4px); }
+  .a-brote .p-bl, .a-brote .p-br { transform-origin: 24px 42.5px; }
+  .cell:hover > .a-brote .p-bl { transform: rotate(-7deg); }
+  .cell:hover > .a-brote .p-br { transform: rotate(6deg); }
+  .cell:hover > .a-milano .p-mr { transform: translate(0, -4px); }
+}
+@keyframes dim-draw { from { stroke-dasharray: 0 1; } to { stroke-dasharray: 1 0; } }
+@keyframes tick-in { 0% { opacity: 0; } 70% { opacity: 1; } }
+
+@media (max-width: 900px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  .board { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; }
+  .sym-p, .sym-c { grid-row: 1; min-height: 0; aspect-ratio: 1; }
+  .sym-p { grid-column: 1; }
+  .sym-c { grid-column: 2; }
+  .word, .lock-p, .lock-c, .fav { grid-column: 1 / -1; grid-row: auto; }
+  .word { font-size: clamp(44px, 12vw, 72px); padding-block: 32px; }
+  .lock-p { font-size: clamp(30px, 8.4vw, 44px); padding-block: 28px; }
+  .lock-c { font-size: clamp(24px, 6.6vw, 34px); padding-block: 24px; }
+  .sym-p .big, .sym-c .big { width: 70%; }
+}
+@media (max-width: 760px) {
+  .wrap { padding-block: 32px 84px; }
+  .mnav { height: 60px; font-size: 24px; }
+  .mbtn { padding: 0 14px; }
+  .dir { margin-top: 84px; }
+  .dir + .dir { margin-top: 64px; }
+  .dir-head { margin-bottom: 12px; }
+}
+@media (max-width: 600px) {
+  .index { margin-top: 32px; }
+  .index a { font-size: 13px; padding: 12px 2px 10px; gap: 6px; }
+  .index svg { width: 34px; height: 34px; }
+  .tab { min-width: 108px; }
+}
+@media (max-width: 420px) {
+  .mnav { font-size: 21px; }
+  .mnav-r { gap: 8px; }
+}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="s-despiece" viewBox="0 0 48 48"><polygon points="4,12 12,12 22.4,42 17.6,42" fill="currentColor"/><g class="p-r"><polygon points="43.16,6.8 36.97,6.8 27.12,35.2 30.28,35.2" fill="none" stroke="currentColor" stroke-width="1.6"/></g><line class="p-seat" x1="23.6" y1="42" x2="28.4" y2="42" stroke="var(--mk-acc)" stroke-width="2"/></symbol><symbol id="f-despiece" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><polygon points="4,12 12,12 22.4,42 17.6,42" fill="#e9edf6"/><polygon points="44.4,6 36.4,6 26,36 30.8,36" fill="#e9edf6"/><line x1="23.2" y1="41.6" x2="28.8" y2="41.6" stroke="#cfa477" stroke-width="3.4"/></symbol><symbol id="s-tablero" viewBox="0 0 48 48"><polygon class="p-tl" points="6.75,6.75 9.44,6.75 19.99,41.25 6.75,41.25" fill="var(--mk-acc)"/><polygon class="p-tr" points="38.56,6.75 41.25,6.75 41.25,41.25 28.01,41.25" fill="var(--mk-acc)"/><polygon class="p-tm" points="19.01,6.75 28.99,6.75 24,23.04" fill="var(--mk-acc)"/><polygon class="p-tv" points="11.01,6.75 17.45,6.75 24,28.16 30.55,6.75 36.99,6.75 26.44,41.25 21.56,41.25" fill="#1c2541"/></symbol><symbol id="f-tablero" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><polygon class="p-tl" points="7.5,7.5 8.89,7.5 18.97,40.5 7.5,40.5" fill="#cfa477"/><polygon class="p-tr" points="39.11,7.5 40.5,7.5 40.5,40.5 29.03,40.5" fill="#cfa477"/><polygon class="p-tm" points="20.03,7.5 27.97,7.5 24,20.48" fill="#cfa477"/><polygon class="p-tv" points="12.03,7.5 16.89,7.5 24,30.72 31.11,7.5 35.97,7.5 25.89,40.5 22.11,40.5" fill="#1c2541"/></symbol><symbol id="s-cota" viewBox="0 0 48 48"><g transform="translate(0 1.2)"><polygon points="5,17 12,17 24,35 36,17 43,17 27,41 21,41" fill="currentColor"/><g fill="none" stroke="currentColor"><line x1="5" y1="4.5" x2="5" y2="14.6" stroke-width="1"/><line x1="43" y1="4.5" x2="43" y2="14.6" stroke-width="1"/><line class="p-dim" x1="5" y1="8" x2="43" y2="8" stroke-width="1.3" pathLength="1"/></g><g class="p-ticks"><line x1="2.6" y1="10.4" x2="7.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/><line x1="40.6" y1="10.4" x2="45.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/></g></g></symbol><symbol id="f-cota" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><g transform="translate(0 2)"><polygon points="5,17 12,17 24,35 36,17 43,17 27,41 21,41" fill="#e9edf6"/><line x1="5" y1="8" x2="43" y2="8" stroke="#cfa477" stroke-width="3.2"/></g></symbol><symbol id="s-curvas" viewBox="0 0 48 48"><path d="M4 8.6 C4.43 9.23 5.53 10.47 6.6 12.4 C7.67 14.33 9.1 17.53 10.4 20.2 C11.7 22.87 13.03 25.83 14.4 28.4 C15.77 30.97 17.32 33.55 18.6 35.6 C19.88 37.65 21.2 39.63 22.1 40.7 C23 41.77 23.37 42.03 24 42 C24.63 41.97 25.03 41.63 25.9 40.5 C26.77 39.37 28.08 37.18 29.2 35.2 C30.32 33.22 31.53 30.7 32.6 28.6 C33.67 26.5 34.57 24.43 35.6 22.6 C36.63 20.77 37.8 19.2 38.8 17.6 C39.8 16 40.67 14.13 41.6 13 C42.53 11.87 43.93 11.17 44.4 10.8" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><g class="p-k1"><path d="M11.8 4.6 C12.13 5.6 13 8.3 13.8 10.6 C14.6 12.9 15.63 15.8 16.6 18.4 C17.57 21 18.63 24 19.6 26.2 C20.57 28.4 21.65 30.47 22.4 31.6 C23.15 32.73 23.52 32.98 24.1 33 C24.68 33.02 25.23 32.67 25.9 31.7 C26.57 30.73 27.38 28.95 28.1 27.2 C28.82 25.45 29.55 23.2 30.2 21.2 C30.85 19.2 31.27 17.07 32 15.2 C32.73 13.33 33.53 11.6 34.6 10 C35.67 8.4 37.77 6.33 38.4 5.6" fill="none" stroke="var(--mk-acc)" stroke-width="1.7" stroke-linecap="round"/></g><g class="p-k2"><path d="M18.8 4.4 C19 5.37 19.5 8.2 20 10.2 C20.5 12.2 21.23 14.67 21.8 16.4 C22.37 18.13 22.93 19.75 23.4 20.6 C23.87 21.45 24.18 21.57 24.6 21.5 C25.02 21.43 25.52 21.02 25.9 20.2 C26.28 19.38 26.62 17.93 26.9 16.6 C27.18 15.27 27.18 13.6 27.6 12.2 C28.02 10.8 28.6 9.4 29.4 8.2 C30.2 7 31.9 5.53 32.4 5" fill="none" stroke="var(--mk-acc)" stroke-width="1.4" stroke-linecap="round"/></g></symbol><symbol id="f-curvas" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><g transform="translate(24 24) scale(0.9) translate(-24 -23.6)"><path d="M4 8.6 C4.43 9.23 5.53 10.47 6.6 12.4 C7.67 14.33 9.1 17.53 10.4 20.2 C11.7 22.87 13.03 25.83 14.4 28.4 C15.77 30.97 17.32 33.55 18.6 35.6 C19.88 37.65 21.2 39.63 22.1 40.7 C23 41.77 23.37 42.03 24 42 C24.63 41.97 25.03 41.63 25.9 40.5 C26.77 39.37 28.08 37.18 29.2 35.2 C30.32 33.22 31.53 30.7 32.6 28.6 C33.67 26.5 34.57 24.43 35.6 22.6 C36.63 20.77 37.8 19.2 38.8 17.6 C39.8 16 40.67 14.13 41.6 13 C42.53 11.87 43.93 11.17 44.4 10.8" fill="none" stroke="#e9edf6" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.8 4.6 C12.13 5.6 13 8.3 13.8 10.6 C14.6 12.9 15.63 15.8 16.6 18.4 C17.57 21 18.63 24 19.6 26.2 C20.57 28.4 21.65 30.47 22.4 31.6 C23.15 32.73 23.52 32.98 24.1 33 C24.68 33.02 25.23 32.67 25.9 31.7 C26.57 30.73 27.38 28.95 28.1 27.2 C28.82 25.45 29.55 23.2 30.2 21.2 C30.85 19.2 31.27 17.07 32 15.2 C32.73 13.33 33.53 11.6 34.6 10 C35.67 8.4 37.77 6.33 38.4 5.6" fill="none" stroke="#cfa477" stroke-width="3.6" stroke-linecap="round"/></g></symbol><symbol id="s-brote" viewBox="0 0 48 48"><g class="p-br"><path d="M24 42.5 C31.75 41.29 39.2 26.63 40.5 12.5 C29.74 21.43 21.34 35.57 24 42.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="26.64" y1="37.7" x2="37.86" y2="17.3" stroke="var(--mk-acc)" stroke-width="1.1"/></g><g class="p-bl"><path d="M24 42.5 C27.51 34.89 18.84 19.8 7 10.5 C8.59 25.25 16.24 40.88 24 42.5Z" fill="currentColor" stroke="var(--mk-bg)" stroke-width="2.4" paint-order="stroke"/></g></symbol><symbol id="f-brote" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><path d="M24 42.5 C31.75 41.29 39.2 26.63 40.5 12.5 C29.74 21.43 21.34 35.57 24 42.5Z" fill="#cfa477"/><path d="M24 42.5 C27.51 34.89 18.84 19.8 7 10.5 C8.59 25.25 16.24 40.88 24 42.5Z" fill="#e9edf6" stroke="#2a4486" stroke-width="3.4" paint-order="stroke"/></symbol><symbol id="s-milano" viewBox="0 0 48 48"><g class="p-mr"><clipPath id="mil-milano-s"><polygon points="34,8 45,8 29.5,41 24,41 24,36.6 29,38.4 29,30.4 24,32.2 24,29.29"/></clipPath><g clip-path="url(#mil-milano-s)" stroke="currentColor" stroke-width="0.8" opacity=".8"><line x1="-20" y1="46" x2="22" y2="4"/><line x1="-17.5" y1="46" x2="24.5" y2="4"/><line x1="-15" y1="46" x2="27" y2="4"/><line x1="-12.5" y1="46" x2="29.5" y2="4"/><line x1="-10" y1="46" x2="32" y2="4"/><line x1="-7.5" y1="46" x2="34.5" y2="4"/><line x1="-5" y1="46" x2="37" y2="4"/><line x1="-2.5" y1="46" x2="39.5" y2="4"/><line x1="0" y1="46" x2="42" y2="4"/><line x1="2.5" y1="46" x2="44.5" y2="4"/><line x1="5" y1="46" x2="47" y2="4"/><line x1="7.5" y1="46" x2="49.5" y2="4"/><line x1="10" y1="46" x2="52" y2="4"/><line x1="12.5" y1="46" x2="54.5" y2="4"/><line x1="15" y1="46" x2="57" y2="4"/><line x1="17.5" y1="46" x2="59.5" y2="4"/><line x1="20" y1="46" x2="62" y2="4"/><line x1="22.5" y1="46" x2="64.5" y2="4"/><line x1="25" y1="46" x2="67" y2="4"/><line x1="27.5" y1="46" x2="69.5" y2="4"/><line x1="30" y1="46" x2="72" y2="4"/><line x1="32.5" y1="46" x2="74.5" y2="4"/><line x1="35" y1="46" x2="77" y2="4"/><line x1="37.5" y1="46" x2="79.5" y2="4"/><line x1="40" y1="46" x2="82" y2="4"/><line x1="42.5" y1="46" x2="84.5" y2="4"/><line x1="45" y1="46" x2="87" y2="4"/><line x1="47.5" y1="46" x2="89.5" y2="4"/><line x1="50" y1="46" x2="92" y2="4"/><line x1="52.5" y1="46" x2="94.5" y2="4"/></g><polyline points="24,29.29 34,8 45,8 29.5,41 24,41" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/></g><polygon points="3,8 14,8 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 18.5,41" fill="currentColor"/><polyline points="24,27.6 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 24,42" fill="none" stroke="var(--mk-bg)" stroke-width="1.4" stroke-linejoin="round"/></symbol><symbol id="f-milano" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><polygon points="34,8 45,8 29.5,41 24,41 24,29.29" fill="#cfa477"/><polygon points="3,8 14,8 24,29.29 24,41 18.5,41" fill="#e9edf6"/><line x1="24" y1="28" x2="24" y2="41" stroke="#2a4486" stroke-width="2.4"/></symbol><symbol id="s-ensanche" viewBox="0 0 48 48"><path d="M149 0Q140 0 137 11L5 640Q3 655 15 655H152Q163 655 165 645L216 282Q222 248 225.5 212.5Q229 177 233 137H235Q237 177 241 212.5Q245 248 250 282L298 644Q300 655 311 655H449Q461 655 458 641L329 10Q326 0 317 0Z" transform="translate(11.98 41) scale(0.05191 -0.05191)" fill="currentColor"/></symbol><symbol id="f-ensanche" viewBox="0 0 48 48"><rect width="48" height="48" fill="#2a4486"/><path d="M149 0Q140 0 137 11L5 640Q3 655 15 655H152Q163 655 165 645L216 282Q222 248 225.5 212.5Q229 177 233 137H235Q237 177 241 212.5Q245 248 250 282L298 644Q300 655 311 655H449Q461 655 458 641L329 10Q326 0 317 0Z" transform="translate(9.85 44) scale(0.06107 -0.06107)" fill="#e9edf6"/></symbol></defs></svg>
+<div class="wrap">
+<header class="top">
+  <h1>Logos de Vexplorer</h1>
+  <p>Cada dirección enseña el símbolo, el logotipo y la combinación sobre papel y sobre cobalto, el favicon a 16 y 32 px y la cabecera en claro y en oscuro, y en seis de las siete el símbolo grande se mueve al pasar el ratón.</p>
+</header>
+<nav class="index" aria-label="Direcciones"><a href="#despiece"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-despiece"/></svg><span>Despiece</span></a><a href="#tablero"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-tablero"/></svg><span>Tablero</span></a><a href="#cota"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-cota"/></svg><span>Cota</span></a><a href="#curvas"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-curvas"/></svg><span>Curvas</span></a><a href="#brote"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-brote"/></svg><span>Brote</span></a><a href="#milano"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-milano"/></svg><span>Milano</span></a><a href="#ensanche"><svg class="ix" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-ensanche"/></svg><span>Ensanche</span></a></nav>
+<main>
+<section class="dir" id="despiece" aria-labelledby="h-despiece">
+  <div class="dir-head"><h2 id="h-despiece">Despiece</h2><p>La V actual con los dos tableros iguales y en espejo, porque en la original el derecho es más corto y más vertical, y la línea de madera sigue marcando dónde encaja.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-despiece" viewBox="0 0 48 48" role="img" aria-label="Símbolo Despiece sobre papel"><polygon points="4,12 12,12 22.4,42 17.6,42" fill="currentColor"/><g class="p-r"><polygon points="43.16,6.8 36.97,6.8 27.12,35.2 30.28,35.2" fill="none" stroke="currentColor" stroke-width="1.6"/></g><line class="p-seat" x1="23.6" y1="42" x2="28.4" y2="42" stroke="var(--mk-acc)" stroke-width="2"/></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-despiece" viewBox="0 0 48 48" role="img" aria-label="Símbolo Despiece sobre cobalto"><polygon points="4,12 12,12 22.4,42 17.6,42" fill="currentColor"/><g class="p-r"><polygon points="43.16,6.8 36.97,6.8 27.12,35.2 30.28,35.2" fill="none" stroke="currentColor" stroke-width="1.6"/></g><line class="p-seat" x1="23.6" y1="42" x2="28.4" y2="42" stroke="var(--mk-acc)" stroke-width="2"/></svg></div>
+    <div class="cell paper word"><span class="wm wm-despiece">Vexplorer</span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-despiece"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-despiece"/></svg><span class="wm wm-despiece">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-despiece"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-despiece"/></svg><span class="wm wm-despiece">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-despiece"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-despiece"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-despiece"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-despiece"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-despiece"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-despiece"/></svg><span class="wm wm-despiece">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-despiece"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-despiece"/></svg><span class="wm wm-despiece">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="tablero" aria-labelledby="h-tablero">
+  <div class="dir-head"><h2 id="h-tablero">Tablero</h2><p>La V es una de las cuatro piezas que salen de un tablero cuadrado, con el hueco de la sierra entre ellas.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-tablero" viewBox="0 0 48 48" role="img" aria-label="Símbolo Tablero sobre papel"><polygon class="p-tl" points="6.75,6.75 9.44,6.75 19.99,41.25 6.75,41.25" fill="var(--mk-acc)"/><polygon class="p-tr" points="38.56,6.75 41.25,6.75 41.25,41.25 28.01,41.25" fill="var(--mk-acc)"/><polygon class="p-tm" points="19.01,6.75 28.99,6.75 24,23.04" fill="var(--mk-acc)"/><polygon class="p-tv" points="11.01,6.75 17.45,6.75 24,28.16 30.55,6.75 36.99,6.75 26.44,41.25 21.56,41.25" fill="#1c2541"/></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-tablero" viewBox="0 0 48 48" role="img" aria-label="Símbolo Tablero sobre cobalto"><polygon class="p-tl" points="6.75,6.75 9.44,6.75 19.99,41.25 6.75,41.25" fill="var(--mk-acc)"/><polygon class="p-tr" points="38.56,6.75 41.25,6.75 41.25,41.25 28.01,41.25" fill="var(--mk-acc)"/><polygon class="p-tm" points="19.01,6.75 28.99,6.75 24,23.04" fill="var(--mk-acc)"/><polygon class="p-tv" points="11.01,6.75 17.45,6.75 24,28.16 30.55,6.75 36.99,6.75 26.44,41.25 21.56,41.25" fill="#1c2541"/></svg></div>
+    <div class="cell paper word"><span class="wm wm-tablero">Vexplorer</span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-tablero"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-tablero"/></svg><span class="wm wm-tablero">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-tablero"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-tablero"/></svg><span class="wm wm-tablero">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-tablero"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-tablero"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-tablero"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-tablero"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-tablero"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-tablero"/></svg><span class="wm wm-tablero">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-tablero"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-tablero"/></svg><span class="wm wm-tablero">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="cota" aria-labelledby="h-cota">
+  <div class="dir-head"><h2 id="h-cota">Cota</h2><p>Una cota con sus líneas de extensión mide el ancho de la V, y el logotipo suelto lleva otra debajo que desaparece en la combinación porque el símbolo ya la tiene.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-cota" viewBox="0 0 48 48" role="img" aria-label="Símbolo Cota sobre papel"><g transform="translate(0 1.2)"><polygon points="5,17 12,17 24,35 36,17 43,17 27,41 21,41" fill="currentColor"/><g fill="none" stroke="currentColor"><line x1="5" y1="4.5" x2="5" y2="14.6" stroke-width="1"/><line x1="43" y1="4.5" x2="43" y2="14.6" stroke-width="1"/><line class="p-dim" x1="5" y1="8" x2="43" y2="8" stroke-width="1.3" pathLength="1"/></g><g class="p-ticks"><line x1="2.6" y1="10.4" x2="7.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/><line x1="40.6" y1="10.4" x2="45.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/></g></g></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-cota" viewBox="0 0 48 48" role="img" aria-label="Símbolo Cota sobre cobalto"><g transform="translate(0 1.2)"><polygon points="5,17 12,17 24,35 36,17 43,17 27,41 21,41" fill="currentColor"/><g fill="none" stroke="currentColor"><line x1="5" y1="4.5" x2="5" y2="14.6" stroke-width="1"/><line x1="43" y1="4.5" x2="43" y2="14.6" stroke-width="1"/><line class="p-dim" x1="5" y1="8" x2="43" y2="8" stroke-width="1.3" pathLength="1"/></g><g class="p-ticks"><line x1="2.6" y1="10.4" x2="7.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/><line x1="40.6" y1="10.4" x2="45.4" y2="5.6" stroke="var(--mk-acc)" stroke-width="1.25"/></g></g></svg></div>
+    <div class="cell paper word"><span class="wm wm-cota"><span>Vexplorer</span><svg class="wm-dim" aria-hidden="true" focusable="false"><line x1="0.5" y1="0" x2="0.5" y2="100%"/><line x1="100%" y1="0" x2="100%" y2="100%" transform="translate(-0.5 0)"/><line x1="0" y1="62%" x2="100%" y2="62%"/><svg x="0" y="62%" overflow="visible"><line class="tk" x1="-0.09em" y1="0.09em" x2="0.09em" y2="-0.09em"/></svg><svg x="100%" y="62%" overflow="visible"><line class="tk" x1="-0.09em" y1="0.09em" x2="0.09em" y2="-0.09em"/></svg></svg></span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-cota"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-cota"/></svg><span class="wm wm-cota">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-cota"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-cota"/></svg><span class="wm wm-cota">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-cota"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-cota"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-cota"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-cota"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-cota"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-cota"/></svg><span class="wm wm-cota">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-cota"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-cota"/></svg><span class="wm wm-cota">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="curvas" aria-labelledby="h-curvas">
+  <div class="dir-head"><h2 id="h-curvas">Curvas</h2><p>Las curvas de nivel forman una V cuando cruzan un valle, y la más gruesa hace de letra.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-curvas" viewBox="0 0 48 48" role="img" aria-label="Símbolo Curvas sobre papel"><path d="M4 8.6 C4.43 9.23 5.53 10.47 6.6 12.4 C7.67 14.33 9.1 17.53 10.4 20.2 C11.7 22.87 13.03 25.83 14.4 28.4 C15.77 30.97 17.32 33.55 18.6 35.6 C19.88 37.65 21.2 39.63 22.1 40.7 C23 41.77 23.37 42.03 24 42 C24.63 41.97 25.03 41.63 25.9 40.5 C26.77 39.37 28.08 37.18 29.2 35.2 C30.32 33.22 31.53 30.7 32.6 28.6 C33.67 26.5 34.57 24.43 35.6 22.6 C36.63 20.77 37.8 19.2 38.8 17.6 C39.8 16 40.67 14.13 41.6 13 C42.53 11.87 43.93 11.17 44.4 10.8" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><g class="p-k1"><path d="M11.8 4.6 C12.13 5.6 13 8.3 13.8 10.6 C14.6 12.9 15.63 15.8 16.6 18.4 C17.57 21 18.63 24 19.6 26.2 C20.57 28.4 21.65 30.47 22.4 31.6 C23.15 32.73 23.52 32.98 24.1 33 C24.68 33.02 25.23 32.67 25.9 31.7 C26.57 30.73 27.38 28.95 28.1 27.2 C28.82 25.45 29.55 23.2 30.2 21.2 C30.85 19.2 31.27 17.07 32 15.2 C32.73 13.33 33.53 11.6 34.6 10 C35.67 8.4 37.77 6.33 38.4 5.6" fill="none" stroke="var(--mk-acc)" stroke-width="1.7" stroke-linecap="round"/></g><g class="p-k2"><path d="M18.8 4.4 C19 5.37 19.5 8.2 20 10.2 C20.5 12.2 21.23 14.67 21.8 16.4 C22.37 18.13 22.93 19.75 23.4 20.6 C23.87 21.45 24.18 21.57 24.6 21.5 C25.02 21.43 25.52 21.02 25.9 20.2 C26.28 19.38 26.62 17.93 26.9 16.6 C27.18 15.27 27.18 13.6 27.6 12.2 C28.02 10.8 28.6 9.4 29.4 8.2 C30.2 7 31.9 5.53 32.4 5" fill="none" stroke="var(--mk-acc)" stroke-width="1.4" stroke-linecap="round"/></g></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-curvas" viewBox="0 0 48 48" role="img" aria-label="Símbolo Curvas sobre cobalto"><path d="M4 8.6 C4.43 9.23 5.53 10.47 6.6 12.4 C7.67 14.33 9.1 17.53 10.4 20.2 C11.7 22.87 13.03 25.83 14.4 28.4 C15.77 30.97 17.32 33.55 18.6 35.6 C19.88 37.65 21.2 39.63 22.1 40.7 C23 41.77 23.37 42.03 24 42 C24.63 41.97 25.03 41.63 25.9 40.5 C26.77 39.37 28.08 37.18 29.2 35.2 C30.32 33.22 31.53 30.7 32.6 28.6 C33.67 26.5 34.57 24.43 35.6 22.6 C36.63 20.77 37.8 19.2 38.8 17.6 C39.8 16 40.67 14.13 41.6 13 C42.53 11.87 43.93 11.17 44.4 10.8" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><g class="p-k1"><path d="M11.8 4.6 C12.13 5.6 13 8.3 13.8 10.6 C14.6 12.9 15.63 15.8 16.6 18.4 C17.57 21 18.63 24 19.6 26.2 C20.57 28.4 21.65 30.47 22.4 31.6 C23.15 32.73 23.52 32.98 24.1 33 C24.68 33.02 25.23 32.67 25.9 31.7 C26.57 30.73 27.38 28.95 28.1 27.2 C28.82 25.45 29.55 23.2 30.2 21.2 C30.85 19.2 31.27 17.07 32 15.2 C32.73 13.33 33.53 11.6 34.6 10 C35.67 8.4 37.77 6.33 38.4 5.6" fill="none" stroke="var(--mk-acc)" stroke-width="1.7" stroke-linecap="round"/></g><g class="p-k2"><path d="M18.8 4.4 C19 5.37 19.5 8.2 20 10.2 C20.5 12.2 21.23 14.67 21.8 16.4 C22.37 18.13 22.93 19.75 23.4 20.6 C23.87 21.45 24.18 21.57 24.6 21.5 C25.02 21.43 25.52 21.02 25.9 20.2 C26.28 19.38 26.62 17.93 26.9 16.6 C27.18 15.27 27.18 13.6 27.6 12.2 C28.02 10.8 28.6 9.4 29.4 8.2 C30.2 7 31.9 5.53 32.4 5" fill="none" stroke="var(--mk-acc)" stroke-width="1.4" stroke-linecap="round"/></g></svg></div>
+    <div class="cell paper word"><span class="wm wm-curvas">Vexplorer</span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-curvas"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-curvas"/></svg><span class="wm wm-curvas">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-curvas"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-curvas"/></svg><span class="wm wm-curvas">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-curvas"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-curvas"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-curvas"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-curvas"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-curvas"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-curvas"/></svg><span class="wm wm-curvas">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-curvas"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-curvas"/></svg><span class="wm wm-curvas">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="brote" aria-labelledby="h-brote">
+  <div class="dir-head"><h2 id="h-brote">Brote</h2><p>Dos hojas que salen del mismo punto, una rellena y la otra solo contorno como los tableros de la V actual.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-brote" viewBox="0 0 48 48" role="img" aria-label="Símbolo Brote sobre papel"><g class="p-br"><path d="M24 42.5 C31.75 41.29 39.2 26.63 40.5 12.5 C29.74 21.43 21.34 35.57 24 42.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="26.64" y1="37.7" x2="37.86" y2="17.3" stroke="var(--mk-acc)" stroke-width="1.1"/></g><g class="p-bl"><path d="M24 42.5 C27.51 34.89 18.84 19.8 7 10.5 C8.59 25.25 16.24 40.88 24 42.5Z" fill="currentColor" stroke="var(--mk-bg)" stroke-width="2.4" paint-order="stroke"/></g></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-brote" viewBox="0 0 48 48" role="img" aria-label="Símbolo Brote sobre cobalto"><g class="p-br"><path d="M24 42.5 C31.75 41.29 39.2 26.63 40.5 12.5 C29.74 21.43 21.34 35.57 24 42.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="26.64" y1="37.7" x2="37.86" y2="17.3" stroke="var(--mk-acc)" stroke-width="1.1"/></g><g class="p-bl"><path d="M24 42.5 C27.51 34.89 18.84 19.8 7 10.5 C8.59 25.25 16.24 40.88 24 42.5Z" fill="currentColor" stroke="var(--mk-bg)" stroke-width="2.4" paint-order="stroke"/></g></svg></div>
+    <div class="cell paper word"><span class="wm wm-brote">Vexplorer</span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-brote"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-brote"/></svg><span class="wm wm-brote">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-brote"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-brote"/></svg><span class="wm wm-brote">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-brote"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-brote"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-brote"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-brote"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-brote"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-brote"/></svg><span class="wm wm-brote">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-brote"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-brote"/></svg><span class="wm wm-brote">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="milano" aria-labelledby="h-milano">
+  <div class="dir-head"><h2 id="h-milano">Milano</h2><p>Los dos brazos se unen con una cola de milano y el derecho lleva el rayado de sección de la madera cortada, aunque en el favicon la junta queda recta porque la cola no se distingue a 16 px.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-milano" viewBox="0 0 48 48" role="img" aria-label="Símbolo Milano sobre papel"><g class="p-mr"><clipPath id="mil-milano-p"><polygon points="34,8 45,8 29.5,41 24,41 24,36.6 29,38.4 29,30.4 24,32.2 24,29.29"/></clipPath><g clip-path="url(#mil-milano-p)" stroke="currentColor" stroke-width="0.8" opacity=".8"><line x1="-20" y1="46" x2="22" y2="4"/><line x1="-17.5" y1="46" x2="24.5" y2="4"/><line x1="-15" y1="46" x2="27" y2="4"/><line x1="-12.5" y1="46" x2="29.5" y2="4"/><line x1="-10" y1="46" x2="32" y2="4"/><line x1="-7.5" y1="46" x2="34.5" y2="4"/><line x1="-5" y1="46" x2="37" y2="4"/><line x1="-2.5" y1="46" x2="39.5" y2="4"/><line x1="0" y1="46" x2="42" y2="4"/><line x1="2.5" y1="46" x2="44.5" y2="4"/><line x1="5" y1="46" x2="47" y2="4"/><line x1="7.5" y1="46" x2="49.5" y2="4"/><line x1="10" y1="46" x2="52" y2="4"/><line x1="12.5" y1="46" x2="54.5" y2="4"/><line x1="15" y1="46" x2="57" y2="4"/><line x1="17.5" y1="46" x2="59.5" y2="4"/><line x1="20" y1="46" x2="62" y2="4"/><line x1="22.5" y1="46" x2="64.5" y2="4"/><line x1="25" y1="46" x2="67" y2="4"/><line x1="27.5" y1="46" x2="69.5" y2="4"/><line x1="30" y1="46" x2="72" y2="4"/><line x1="32.5" y1="46" x2="74.5" y2="4"/><line x1="35" y1="46" x2="77" y2="4"/><line x1="37.5" y1="46" x2="79.5" y2="4"/><line x1="40" y1="46" x2="82" y2="4"/><line x1="42.5" y1="46" x2="84.5" y2="4"/><line x1="45" y1="46" x2="87" y2="4"/><line x1="47.5" y1="46" x2="89.5" y2="4"/><line x1="50" y1="46" x2="92" y2="4"/><line x1="52.5" y1="46" x2="94.5" y2="4"/></g><polyline points="24,29.29 34,8 45,8 29.5,41 24,41" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/></g><polygon points="3,8 14,8 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 18.5,41" fill="currentColor"/><polyline points="24,27.6 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 24,42" fill="none" stroke="var(--mk-bg)" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-milano" viewBox="0 0 48 48" role="img" aria-label="Símbolo Milano sobre cobalto"><g class="p-mr"><clipPath id="mil-milano-c"><polygon points="34,8 45,8 29.5,41 24,41 24,36.6 29,38.4 29,30.4 24,32.2 24,29.29"/></clipPath><g clip-path="url(#mil-milano-c)" stroke="currentColor" stroke-width="0.8" opacity=".8"><line x1="-20" y1="46" x2="22" y2="4"/><line x1="-17.5" y1="46" x2="24.5" y2="4"/><line x1="-15" y1="46" x2="27" y2="4"/><line x1="-12.5" y1="46" x2="29.5" y2="4"/><line x1="-10" y1="46" x2="32" y2="4"/><line x1="-7.5" y1="46" x2="34.5" y2="4"/><line x1="-5" y1="46" x2="37" y2="4"/><line x1="-2.5" y1="46" x2="39.5" y2="4"/><line x1="0" y1="46" x2="42" y2="4"/><line x1="2.5" y1="46" x2="44.5" y2="4"/><line x1="5" y1="46" x2="47" y2="4"/><line x1="7.5" y1="46" x2="49.5" y2="4"/><line x1="10" y1="46" x2="52" y2="4"/><line x1="12.5" y1="46" x2="54.5" y2="4"/><line x1="15" y1="46" x2="57" y2="4"/><line x1="17.5" y1="46" x2="59.5" y2="4"/><line x1="20" y1="46" x2="62" y2="4"/><line x1="22.5" y1="46" x2="64.5" y2="4"/><line x1="25" y1="46" x2="67" y2="4"/><line x1="27.5" y1="46" x2="69.5" y2="4"/><line x1="30" y1="46" x2="72" y2="4"/><line x1="32.5" y1="46" x2="74.5" y2="4"/><line x1="35" y1="46" x2="77" y2="4"/><line x1="37.5" y1="46" x2="79.5" y2="4"/><line x1="40" y1="46" x2="82" y2="4"/><line x1="42.5" y1="46" x2="84.5" y2="4"/><line x1="45" y1="46" x2="87" y2="4"/><line x1="47.5" y1="46" x2="89.5" y2="4"/><line x1="50" y1="46" x2="92" y2="4"/><line x1="52.5" y1="46" x2="94.5" y2="4"/></g><polyline points="24,29.29 34,8 45,8 29.5,41 24,41" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/></g><polygon points="3,8 14,8 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 18.5,41" fill="currentColor"/><polyline points="24,27.6 24,29.29 24,32.2 29,30.4 29,38.4 24,36.6 24,41 24,42" fill="none" stroke="var(--mk-bg)" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+    <div class="cell paper word"><span class="wm wm-milano">Vexplorer</span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-milano"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-milano"/></svg><span class="wm wm-milano">Vexplorer</span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-milano"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-milano"/></svg><span class="wm wm-milano">Vexplorer</span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-milano"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-milano"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-milano"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-milano"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-milano"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-milano"/></svg><span class="wm wm-milano">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-milano"><svg class="lk-sym" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#s-milano"/></svg><span class="wm wm-milano">Vexplorer</span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+<section class="dir" id="ensanche" aria-labelledby="h-ensanche">
+  <div class="dir-head"><h2 id="h-ensanche">Ensanche</h2><p>Logotipo sin símbolo que pasa letra a letra de Sofia Sans Extra Condensed en negra a Sofia Sans en ligera, y su propia V hace de favicon y crece en la combinación.</p></div>
+  <div class="board">
+    <div class="cell paper sym-p"><svg class="big a-ensanche" viewBox="0 0 48 48" role="img" aria-label="Símbolo Ensanche sobre papel"><path d="M149 0Q140 0 137 11L5 640Q3 655 15 655H152Q163 655 165 645L216 282Q222 248 225.5 212.5Q229 177 233 137H235Q237 177 241 212.5Q245 248 250 282L298 644Q300 655 311 655H449Q461 655 458 641L329 10Q326 0 317 0Z" transform="translate(11.98 41) scale(0.05191 -0.05191)" fill="currentColor"/></svg></div>
+    <div class="cell cob sym-c"><svg class="big a-ensanche" viewBox="0 0 48 48" role="img" aria-label="Símbolo Ensanche sobre cobalto"><path d="M149 0Q140 0 137 11L5 640Q3 655 15 655H152Q163 655 165 645L216 282Q222 248 225.5 212.5Q229 177 233 137H235Q237 177 241 212.5Q245 248 250 282L298 644Q300 655 311 655H449Q461 655 458 641L329 10Q326 0 317 0Z" transform="translate(11.98 41) scale(0.05191 -0.05191)" fill="currentColor"/></svg></div>
+    <div class="cell paper word"><span class="wm wm-ensanche"><span class="e0">V</span><span class="e1">e</span><span class="e2">x</span><span class="e3">p</span><span class="e4">l</span><span class="e5">o</span><span class="e6">r</span><span class="e7">e</span><span class="e8">r</span></span></div>
+    <div class="cell paper lock-p" aria-hidden="true"><span class="lock lk-ensanche"><span class="wm wm-ensanche wm-cap"><span class="e0">V</span><span class="e1">e</span><span class="e2">x</span><span class="e3">p</span><span class="e4">l</span><span class="e5">o</span><span class="e6">r</span><span class="e7">e</span><span class="e8">r</span></span></span></div>
+    <div class="cell cob lock-c" aria-hidden="true"><span class="lock lk-ensanche"><span class="wm wm-ensanche wm-cap"><span class="e0">V</span><span class="e1">e</span><span class="e2">x</span><span class="e3">p</span><span class="e4">l</span><span class="e5">o</span><span class="e6">r</span><span class="e7">e</span><span class="e8">r</span></span></span></div>
+    <div class="cell fav" aria-hidden="true"><div class="tabbar tb-l"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-ensanche"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="tabbar tb-d"><span class="tab"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-ensanche"/></svg><span class="tt">Vexplorer</span><span class="tx">×</span></span></div><div class="ic32"><span class="ic ic-l"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-ensanche"/></svg></span><span class="ic ic-d"><svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#f-ensanche"/></svg></span></div></div>
+    <div class="cell nav nav-light" aria-hidden="true"><div class="mnav"><span class="lock lk-ensanche"><span class="wm wm-ensanche wm-cap"><span class="e0">V</span><span class="e1">e</span><span class="e2">x</span><span class="e3">p</span><span class="e4">l</span><span class="e5">o</span><span class="e6">r</span><span class="e7">e</span><span class="e8">r</span></span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+    <div class="cell nav nav-dark" aria-hidden="true"><div class="mnav"><span class="lock lk-ensanche"><span class="wm wm-ensanche wm-cap"><span class="e0">V</span><span class="e1">e</span><span class="e2">x</span><span class="e3">p</span><span class="e4">l</span><span class="e5">o</span><span class="e6">r</span><span class="e7">e</span><span class="e8">r</span></span></span><span class="mnav-r"><span class="mtheme"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3 A7 7 0 0 1 10 17 Z" fill="currentColor"/></svg></span><span class="mbtn">Pedir demo</span></span></div></div>
+  </div>
+</section>
+</main>
+</div>

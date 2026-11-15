@@ -24,3 +24,10 @@ En curso. Detectados conflictos API/regeneración, caché antigua en PR3/7, carr
 - Compilación, pip check, wheel y Ruff F pasan. No se cambia workflow para ocultar fallos.
 - Nuevos commits main 8022ac6/a467280 de Martín: se integrarán íntegros diseno/** y team/martin.md antes de publicar. Usuario exige preservarlos expresamente.
 - Limpieza de tmp pytest-9448 bloqueada por política automática; no se eludió. Pruebas de evaluación repetidas correctamente cuando volvió a haber espacio.
+
+
+## Integración del diseño y revisión final
+- Integrados íntegros los commits de Martín 8022ac6 y a467280; fuentes visuales, assets, scripts y logos sin diferencias frente a a467280.
+- Build portal RED: TS2591 en vite.config.ts por falta de tipos Node. Se añade @types/node dev fijado y types node en tsconfig, sin tocar lógica ni presentación. Build portal y landing GREEN.
+- Se ignoran node_modules/dist/tsbuildinfo del portal y se incorpora matriz CI design-build portal/landing.
+- Segunda revisión independiente: READY tras corregir los casos de CAS/replay e identidad persistida. Suite focal final: 64 passed. Full Python final y CI remoto pendientes al publicar la rama para validación.

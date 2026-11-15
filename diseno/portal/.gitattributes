@@ -1,0 +1,2 @@
+# Los DXF de ejemplo se descargan tal cual con «Abrir en CAD»: sin conversión de finales de línea.
+*.dxf -text

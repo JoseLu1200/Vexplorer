@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vexplorer Logo Boceto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Sofia+Sans+Semi+Condensed:wght@400;600&family=Martian+Mono:wght@400&display=swap">
+<style>
+  :root { --bg: #ece6da; --bg-2: #e3dccd; --ink: #1c2541; --ink-2: #4c5570; --line: rgba(28,37,65,.16); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131a2c; --bg-2: #1a2238; --ink: #e6e1d6; --ink-2: #a8aec0; --line: rgba(230,225,214,.14); } }
+  :root[data-theme="dark"] { --bg: #131a2c; --bg-2: #1a2238; --ink: #e6e1d6; --ink-2: #a8aec0; --line: rgba(230,225,214,.14); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Sofia Sans Semi Condensed", sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(56px, 9vw, 120px); line-height: .95; margin: 0 0 12px; }
+  .sub { color: var(--ink-2); margin: 0 0 48px; max-width: 60ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); background: var(--bg); }
+  .big { aspect-ratio: 4/3; display: grid; place-items: center; border-bottom: 1px solid var(--line); }
+  .big svg { width: 52%; height: auto; }
+  .row { display: flex; align-items: center; gap: 18px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .inv { background: var(--ink); color: var(--bg); padding: 10px; display: inline-grid; place-items: center; }
+  .lock { display: inline-flex; align-items: center; gap: 10px; font-family: "Instrument Serif", serif; font-size: 34px; line-height: 1; }
+  .lock svg { width: 34px; height: 34px; }
+  .name { padding: 14px 20px; display: flex; justify-content: space-between; align-items: baseline; }
+  .name strong { font-family: "Instrument Serif", serif; font-weight: 400; font-size: 30px; }
+  .name span { color: var(--ink-2); font-size: 15px; }
+  .boceto { display: flex; gap: 16px; align-items: center; margin-bottom: 40px; color: var(--ink-2); font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Logo boceto</h1>
+  <p class="sub">El tablero cortado en sección y la flecha forman la V. Seis acabados a una tinta, con su versión en pestaña, invertida y junto al nombre.</p>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+// Geometría común (viewBox 0 0 100 100): dos tableros inclinados y una flecha que sale del pie del primero.
+const A = "10,18 27,18 51,82 34,82";
+const B = "35,18 52,18 76,82 59,82";
+const arrow = (w, head = "square") => head === "square"
+  ? `<path d="M44 80 L88 22" stroke="currentColor" stroke-width="${w}" fill="none" stroke-linecap="square"/><path d="M71 20 L90 20 L90 39" stroke="currentColor" stroke-width="${w}" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>`
+  : `<path d="M44 80 L88 22" stroke="currentColor" stroke-width="${w}" fill="none"/><path d="M38 86 L50 74" stroke="currentColor" stroke-width="${w}"/><path d="M73 21 L90 20 L89 37" stroke="currentColor" stroke-width="${w}" fill="none"/>`;
+const hatch = (id, gap = 4.2, w = 1.6) => `<pattern id="${id}" width="${gap}" height="${gap}" patternUnits="userSpaceOnUse" patternTransform="rotate(20)"><line x1="0" y1="0" x2="0" y2="${gap}" stroke="currentColor" stroke-width="${w}"/></pattern>`;
+let n = 0;
+const V = {
+  Sección: () => { const h = "h" + n++; return `<defs>${hatch(h)}</defs><polygon points="${A}" fill="url(#${h})" stroke="currentColor" stroke-width="3"/><polygon points="${B}" fill="url(#${h})" stroke="currentColor" stroke-width="3"/>${arrow(4.5)}`; },
+  Macizo: () => { const h = "h" + n++; return `<defs>${hatch(h)}</defs><polygon points="${A}" fill="currentColor"/><polygon points="${B}" fill="url(#${h})" stroke="currentColor" stroke-width="3"/>${arrow(5.5)}`; },
+  Cota: () => `<polygon points="${A}" fill="currentColor"/><polygon points="${B}" fill="currentColor"/>` + `<g style="color:var(--bg)">${''}</g>` + `<path d="M44 80 L88 22" stroke="var(--bg)" stroke-width="9" fill="none"/>` + arrow(4, "tick"),
+  Corte: () => { const h = "h" + n++; const m = "m" + n++; return `<defs>${hatch(h)}<mask id="${m}"><rect width="100" height="100" fill="white"/><path d="M44 80 L88 22" stroke="black" stroke-width="11"/></mask></defs><g mask="url(#${m})"><polygon points="${A}" fill="url(#${h})" stroke="currentColor" stroke-width="3"/><polygon points="${B}" fill="currentColor"/></g>${arrow(4.5)}`; },
+  Uno: () => { const h = "h" + n++; return `<defs>${hatch(h, 3.8)}</defs><polygon points="16,18 36,18 62,82 42,82" fill="url(#${h})" stroke="currentColor" stroke-width="3.5"/><path d="M54 80 L88 26" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="square"/><path d="M71 22 L91 22 L91 42" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="square"/>`; },
+  Sello: () => { const h = "h" + n++; return `<defs>${hatch(h)}</defs><rect x="3" y="3" width="94" height="94" fill="none" stroke="currentColor" stroke-width="3"/><g transform="translate(9 9) scale(.82)"><polygon points="${A}" fill="currentColor"/><polygon points="${B}" fill="url(#${h})" stroke="currentColor" stroke-width="3.5"/>${arrow(6)}</g>`; },
+};
+// A tamaño pestaña el rayado se empasta: los favicons rellenan los tableros.
+const solid = name => `<polygon points="${name === 'Uno' ? '16,18 36,18 62,82 42,82' : A}" fill="currentColor"/>${name === 'Uno' ? '' : `<polygon points="${B}" fill="currentColor" opacity=".55"/>`}${arrow(9)}`;
+const notes = { Sección: "fiel al boceto", Macizo: "un tablero lleno, otro en sección", Cota: "la flecha como cota que corta los tableros", Corte: "la flecha abre un hueco al cruzar", Uno: "un solo tablero y la flecha: la V más limpia", Sello: "en caja, como el boceto" };
+const svg = (inner, size) => `<svg viewBox="0 0 100 100" ${size ? `width="${size}" height="${size}"` : ""} role="img" aria-label="Logo de Vexplorer">${inner}</svg>`;
+document.getElementById("grid").innerHTML = Object.keys(V).map(k => `
+  <section class="card">
+    <div class="big">${svg(V[k]())}</div>
+    <div class="row">${svg(solid(k), 32)}${svg(solid(k), 16)}<span class="inv">${svg(V[k](), 40)}</span><span class="lock">${svg(V[k]())}Vexplorer</span></div>
+    <div class="name"><strong>${k}</strong><span>${notes[k]}</span></div>
+  </section>`).join("");
+</script>
+</body>
+</html>
