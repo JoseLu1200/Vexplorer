@@ -43,7 +43,7 @@ class JuiciosConsulta(ModeloEstricto):
 
 class ConjuntoJuicios(ModeloEstricto):
     version: str = Field(min_length=1)
-    origen: Literal["synthetic", "team_reviewed"]
+    origen: Literal["synthetic", "team_reviewed", "derived_reference"]
     descripcion: str = Field(min_length=1)
     consultas: tuple[JuiciosConsulta, ...] = Field(min_length=1)
 

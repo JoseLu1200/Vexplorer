@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Callable
-from contextlib import closing
+from collections.abc import Callable, Iterator
+from contextlib import closing, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
@@ -142,6 +142,27 @@ def _ahora_utc() -> str:
     return datetime.now(UTC).isoformat()
 
 
+@contextmanager
+def _conexion(ruta: Path, timeout_s: float = 10.0) -> Iterator[sqlite3.Connection]:
+    conexion = sqlite3.connect(ruta, timeout=timeout_s, isolation_level=None)
+    conexion.execute("PRAGMA busy_timeout=10000")
+    try:
+        yield conexion
+    finally:
+        conexion.close()
+
+
+@contextmanager
+def _transaccion(conexion: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    conexion.execute("BEGIN IMMEDIATE")
+    try:
+        yield conexion
+    except BaseException:
+        conexion.execute("ROLLBACK")
+        raise
+    conexion.execute("COMMIT")
+
+
 class AlmacenDecisiones:
     """SQLite propio de decisiones. Idempotente por (consulta, candidato, método, actor)."""
 
@@ -149,7 +170,7 @@ class AlmacenDecisiones:
         self.ruta = Path(ruta)
         self._ahora = ahora
         self.ruta.parent.mkdir(parents=True, exist_ok=True)
-        with closing(self._conectar()) as db, db:
+        with self._conexion() as db, _transaccion(db):
             db.execute(
                 "CREATE TABLE IF NOT EXISTS decisiones ("
                 " consulta_id TEXT NOT NULL, candidato_id TEXT NOT NULL, metodo TEXT NOT NULL,"
@@ -157,6 +178,11 @@ class AlmacenDecisiones:
                 " aceptado INTEGER NOT NULL, motivo TEXT, registrada_en TEXT NOT NULL, actualizada_en TEXT NOT NULL,"
                 " PRIMARY KEY (consulta_id, candidato_id, metodo, actor_clave))"
             )
+
+    @contextmanager
+    def _conexion(self) -> Iterator[sqlite3.Connection]:
+        with _conexion(self.ruta) as db:
+            yield db
 
     def _conectar(self) -> sqlite3.Connection:
         conexion = sqlite3.connect(self.ruta, timeout=10)
@@ -167,7 +193,7 @@ class AlmacenDecisiones:
         componentes = json.dumps(entrada.score_components, sort_keys=True)
         clave = (entrada.consulta_id, entrada.candidato_id, entrada.metodo, entrada.actor or "")
         ahora = self._ahora()
-        with closing(self._conectar()) as db, db:
+        with self._conexion() as db, _transaccion(db):
             fila = db.execute(
                 "SELECT score_components, aceptado, motivo, registrada_en, actualizada_en FROM decisiones"
                 " WHERE consulta_id=? AND candidato_id=? AND metodo=? AND actor_clave=?", clave,
@@ -198,7 +224,7 @@ class AlmacenDecisiones:
             consulta += " WHERE metodo=?"
             parametros = (metodo,)
         consulta += " ORDER BY consulta_id, candidato_id, metodo, actor_clave"
-        with closing(self._conectar()) as db:
+        with self._conexion() as db:
             filas = db.execute(consulta, parametros).fetchall()
         return tuple(
             Decision(consulta_id=f[0], candidato_id=f[1], metodo=f[2], actor=f[3], score_components=json.loads(f[4]), aceptado=bool(f[5]), motivo=f[6], registrada_en=f[7], actualizada_en=f[8])

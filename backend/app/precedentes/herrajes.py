@@ -15,7 +15,8 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
 from datetime import date
 from pathlib import Path
 from statistics import median
@@ -104,18 +105,45 @@ class PaginaHerrajes(ModeloEstricto):
     desplazamiento: int
 
 
+@contextmanager
+def _conexion(ruta: Path, timeout_s: float = 10.0) -> Iterator[sqlite3.Connection]:
+    conexion = sqlite3.connect(ruta, timeout=timeout_s, isolation_level=None)
+    conexion.row_factory = sqlite3.Row
+    conexion.execute("PRAGMA busy_timeout=10000")
+    try:
+        yield conexion
+    finally:
+        conexion.close()
+
+
+@contextmanager
+def _transaccion(conexion: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    conexion.execute("BEGIN IMMEDIATE")
+    try:
+        yield conexion
+    except BaseException:
+        conexion.execute("ROLLBACK")
+        raise
+    conexion.execute("COMMIT")
+
+
 class AlmacenHerrajes:
     """SQLite propio de herrajes, separado de la base del histórico."""
 
     def __init__(self, ruta: Path) -> None:
         self.ruta = Path(ruta)
         self.ruta.parent.mkdir(parents=True, exist_ok=True)
-        with closing(self._conectar()) as db, db:
+        with self._conexion() as db, _transaccion(db):
             db.execute(
                 "CREATE TABLE IF NOT EXISTS herrajes_registros ("
                 "record_id TEXT PRIMARY KEY, origen TEXT NOT NULL, "
                 "huella TEXT NOT NULL, payload TEXT NOT NULL)"
             )
+
+    @contextmanager
+    def _conexion(self) -> Iterator[sqlite3.Connection]:
+        with _conexion(self.ruta) as db:
+            yield db
 
     def _conectar(self) -> sqlite3.Connection:
         conexion = sqlite3.connect(self.ruta, timeout=10)
@@ -124,7 +152,7 @@ class AlmacenHerrajes:
 
     def importar(self, valor: ImportacionHerrajes) -> ResultadoImportacionHerrajes:
         insertados = actualizados = sin_cambios = 0
-        with closing(self._conectar()) as db, db:
+        with self._conexion() as db, _transaccion(db):
             for registro in valor.registros:
                 huella = registro.huella()
                 fila = db.execute(
@@ -153,7 +181,7 @@ class AlmacenHerrajes:
         )
 
     def listar(self, *, limite: int = 100, desplazamiento: int = 0) -> PaginaHerrajes:
-        with closing(self._conectar()) as db:
+        with self._conexion() as db:
             total = db.execute("SELECT COUNT(*) FROM herrajes_registros").fetchone()[0]
             filas = db.execute(
                 "SELECT payload FROM herrajes_registros ORDER BY record_id LIMIT ? OFFSET ?",
@@ -170,7 +198,7 @@ class AlmacenHerrajes:
         if not record_ids:
             return {}
         marcadores = ",".join("?" for _ in record_ids)
-        with closing(self._conectar()) as db:
+        with self._conexion() as db:
             filas = db.execute(
                 f"SELECT record_id, payload FROM herrajes_registros "
                 f"WHERE record_id IN ({marcadores})",

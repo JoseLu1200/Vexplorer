@@ -48,6 +48,8 @@ class DemoRepository:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as db:
+            db.execute("PRAGMA journal_mode=WAL")
+            db.execute("PRAGMA synchronous=NORMAL")
             db.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS runs (
@@ -73,6 +75,13 @@ class DemoRepository:
                     run_id TEXT NOT NULL, idempotency_key TEXT NOT NULL,
                     request_hash TEXT NOT NULL, result_revision INTEGER NOT NULL,
                     PRIMARY KEY (run_id, idempotency_key)
+                );
+                CREATE TABLE IF NOT EXISTS run_idempotency (
+                    actor TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    request_hash TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    PRIMARY KEY (actor, idempotency_key)
                 );
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY, actor TEXT, request_json TEXT NOT NULL,
@@ -215,6 +224,7 @@ class DemoRepository:
         connection = sqlite3.connect(self.path, timeout=10)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA busy_timeout=10000")
+        connection.execute("PRAGMA synchronous=NORMAL")
         return connection
 
     def create_run(self, run_id: str, mode: str, extraction: DrawingExtraction, scenarios: tuple[DecompositionScenario, ...], trace_events: tuple[dict, ...] = (), agent_selected_scenario_id: str | None = None, document_id: str | None = None, part_analysis: SeparatedPartsExtraction | None = None, assembly_candidates: tuple[AssemblyCandidate, ...] = (), agent_selected_assembly_candidate_id: str | None = None, table_analysis: MountedTableAnalysis | None = None, table_programs: tuple[TableProgramProposal, ...] = (), agent_selected_table_program_id: str | None = None, evaluated_table_program: EvaluatedTableProgram | None = None, *, owner_actor: str | None = None, recording_draft: RecordingDraft | None = None, recording_fingerprint: str | None = None, recording_actor: str | None = None, recording_reservation_id: str | None = None, replay_source_recording_id: str | None = None) -> RunSnapshot:
@@ -270,6 +280,88 @@ class DemoRepository:
                     (recording_reservation_id,),
                 )
         return self.get_run(run_id)
+
+    def reserve_idempotent_run(self, *, actor: str | None, idempotency_key: str, request_hash: str) -> str | None:
+        """Reserve before execution across processes; an empty run ID denotes in-flight work.
+
+        Unknown outcomes remain reserved after a crash, so retry cannot duplicate work.
+        Production uses durable jobs instead of this synchronous endpoint.
+        """
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT request_hash,run_id FROM run_idempotency WHERE actor=? AND idempotency_key=?",
+                (actor or "", idempotency_key),
+            ).fetchone()
+            if row is not None:
+                if row["request_hash"] != request_hash:
+                    raise ValueError("idempotency_key_conflict")
+                if not row["run_id"]:
+                    raise ValueError("idempotency_key_in_progress")
+                return str(row["run_id"])
+            db.execute(
+                "INSERT INTO run_idempotency VALUES (?, ?, ?, '')",
+                (actor or "", idempotency_key, request_hash),
+            )
+        return None
+
+    def release_idempotent_run(self, *, actor: str | None, idempotency_key: str, request_hash: str) -> None:
+        """Release only a rejected request with no successful execution."""
+        with self._connect() as db:
+            db.execute(
+                "DELETE FROM run_idempotency WHERE actor=? AND idempotency_key=? AND request_hash=? AND run_id=''",
+                (actor or "", idempotency_key, request_hash),
+            )
+
+    def get_idempotent_run(
+        self,
+        *,
+        actor: str | None,
+        idempotency_key: str,
+        request_hash: str,
+    ) -> str | None:
+        """Return stored run_id for a matching request, None if absent, or raise on conflict."""
+        actor_key = actor or ""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT request_hash, run_id FROM run_idempotency WHERE actor=? AND idempotency_key=?",
+                (actor_key, idempotency_key),
+            ).fetchone()
+        if row is None:
+            return None
+        if row["request_hash"] != request_hash:
+            raise ValueError("idempotency_key_conflict")
+        return str(row["run_id"])
+
+    def save_idempotent_run(
+        self,
+        *,
+        actor: str | None,
+        idempotency_key: str,
+        request_hash: str,
+        run_id: str,
+    ) -> None:
+        """Atomically persist a run idempotency entry, rejecting differing concurrent payloads."""
+        actor_key = actor or ""
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT request_hash,run_id FROM run_idempotency WHERE actor=? AND idempotency_key=?",
+                (actor_key, idempotency_key),
+            ).fetchone()
+            if existing is not None:
+                if existing["request_hash"] != request_hash:
+                    raise ValueError("idempotency_key_conflict")
+                if not existing["run_id"]:
+                    db.execute(
+                        "UPDATE run_idempotency SET run_id=? WHERE actor=? AND idempotency_key=?",
+                        (run_id, actor_key, idempotency_key),
+                    )
+                return
+            db.execute(
+                "INSERT INTO run_idempotency (actor, idempotency_key, request_hash, run_id) VALUES (?, ?, ?, ?)",
+                (actor_key, idempotency_key, request_hash, run_id),
+            )
 
     def recording_storage_usage(self) -> dict[str, int]:
         with self._connect() as db:
@@ -889,6 +981,17 @@ class DemoRepository:
         idempotency_key: str | None = None,
         actor: str | None = None,
     ) -> Result:
+        result, _ = self.review_with_status(run_id, request, idempotency_key=idempotency_key, actor=actor)
+        return result
+
+    def review_with_status(
+        self,
+        run_id: str,
+        request: ReviewRequest,
+        *,
+        idempotency_key: str | None = None,
+        actor: str | None = None,
+    ) -> tuple[Result, bool]:
         if actor is not None:
             request = request.model_copy(update={"reviewer_name": actor})
         request_hash = hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
@@ -908,7 +1011,7 @@ class DemoRepository:
                     ).fetchone()
                     if row is None:
                         raise RuntimeError("idempotency_result_missing")
-                    return Result.model_validate_json(row["payload"])
+                    return Result.model_validate_json(row["payload"]), False
             run_row = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
             if run_row is None:
                 raise KeyError(run_id)
@@ -952,7 +1055,7 @@ class DemoRepository:
                     "INSERT INTO review_idempotency VALUES (?, ?, ?, ?)",
                     (run_id, idempotency_key, request_hash, result.result_revision),
                 )
-            return result
+            return result, True
 
     def _review_legacy(self, run_id: str, previous: Result, request: ReviewRequest) -> Result:
         proposals = {proposal.id: proposal for scenario in previous.scenarios for proposal in scenario.components}
@@ -1248,14 +1351,19 @@ class DemoRepository:
             (run_id, sequence, event_type, json.dumps(stamped)),
         )
 
-    def save_library_item(self, item: LibraryItem) -> None:
+    def save_library_item(self, item: LibraryItem, *, expected: LibraryItem | None = None) -> bool:
         self.get_result(item.run_id, item.result_revision)
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if expected is not None:
+                row = db.execute("SELECT payload FROM library_items WHERE run_id=?", (item.run_id,)).fetchone()
+                if row is None or LibraryItem.model_validate_json(row["payload"]) != expected:
+                    return False
             db.execute("INSERT OR REPLACE INTO library_items (run_id,payload) VALUES (?, ?)", (item.run_id, item.model_dump_json()))
             self._append_event_in_transaction(
                 db, item.run_id, "library_item_saved", {"result_revision": item.result_revision}
             )
+        return True
 
     def get_library_items(self) -> tuple[LibraryItem, ...]:
         with self._connect() as db:

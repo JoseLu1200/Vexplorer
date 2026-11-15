@@ -247,6 +247,16 @@ def vistas_desde_repositorio(repositorio: RepositorioRuns, run_id: str) -> Vista
 # --- Almacén SQLite --------------------------------------------------------------------
 
 
+@contextmanager
+def _conexion(ruta: Path, timeout_s: float = 30.0) -> Iterator[sqlite3.Connection]:
+    conexion = sqlite3.connect(ruta, timeout=timeout_s)
+    try:
+        with conexion:
+            yield conexion
+    finally:
+        conexion.close()
+
+
 class AlmacenImagen:
     """Vectores de imagen por (run, revisión, vista, sha256, espacio) con caché por hash."""
 
@@ -281,7 +291,7 @@ class AlmacenImagen:
 
     @contextmanager
     def _conexion(self) -> Iterator[sqlite3.Connection]:
-        with closing(sqlite3.connect(self.ruta)) as db, db:
+        with _conexion(self.ruta) as db:
             yield db
 
     def obtener_vector(

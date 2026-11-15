@@ -1,3 +1,6 @@
 dist-single/
 dist-real/
 public/local/
+node_modules/
+dist/
+*.tsbuildinfo
